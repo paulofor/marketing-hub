@@ -619,3 +619,49 @@ Foi entregue a Sprint UI-1 do OPRM no frontend do Marketing Hub com novo item de
 **Próximo passo sugerido:**  
 - implementar Sprint UI-2 com tela de rotina consumindo `occupationPersonaRoutineCard` e sinais derivados
 - evoluir endpoint de workspace para retornar agregados de confiança/dor/oportunidade a partir dos artefatos publicados
+
+## 2026-04-16 — sprint UI-2: rotina da persona + builder de oferta
+
+**Status:** concluído
+
+**Resumo:**  
+Foi entregue a Sprint UI-2 do OPRM no Marketing Hub com tela de Rotina e tela de Oferta conectadas a dados reais publicados no backend, incluindo navegação interna do módulo, seleção de dor/resultado/mecanismo e preview estruturado do framework dor → resultado → oferta → mecanismo → prova.
+
+**O que foi implementado:**  
+- criação do endpoint backend `GET /api/oprm/workspace/routine/{occupationSeedRef}` para consolidar os artefatos publicados (`occupationPersonaRoutineCard` e `dorResultadoOfertaMecanismoProvaInput`) e expor payloads/sinais para consumo da UI
+- implementação da tela `Rotina` com resumo executivo, tarefas, restrições, workarounds e blocos de sinais (dores, resultados e mecanismos)
+- implementação da tela `Oferta` com seleção guiada de dor/resultado/mecanismo, campos obrigatórios de prova e oferta e preview estruturado
+- adição da rota `/oprm/offer/:occupationSeedRef` e substituição do placeholder da rotina por página funcional
+- extração da navegação interna do OPRM para componente reutilizável nas telas do módulo
+- atualização da tela de `Ocupações` para incluir ação direta `Ir para oferta`
+
+**Arquivos principais alterados:**  
+- `frontend/src/App.tsx`
+- `frontend/src/pages/oprm/OprmWorkspacePage.tsx`
+- `frontend/src/pages/oprm/OprmModuleNavigation.tsx`
+- `frontend/src/pages/oprm/OprmRoutinePage.tsx`
+- `frontend/src/pages/oprm/OprmOfferPage.tsx`
+- `frontend/src/api/oprm/useOprmRoutineWorkspaceData.ts`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmWorkspaceController.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmArtifactService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmArtifactRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmRoutineWorkspaceResponseDto.java`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**  
+- endpoint novo: `GET /api/oprm/workspace/routine/{occupationSeedRef}`
+- artefatos consumidos na UI: `occupationPersonaRoutineCard` e `dorResultadoOfertaMecanismoProvaInput`
+- nenhum artefato canônico novo
+
+**Testes executados:**  
+- `cd frontend && npx vitest run src/__tests__/OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+- `cd backend/ads-service && mvn -s ../settings.xml -DskipTests compile` — **falhou** por indisponibilidade de rede no ambiente para resolver dependências Maven
+
+**Limitações ou pendências:**  
+- ações de exportação na tela de oferta redirecionam para os módulos de destino e não persistem payload de exportação dedicado nesta sprint
+- não foi possível validar compilação do backend localmente por bloqueio de rede para download de dependências Maven
+
+**Próximo passo sugerido:**  
+- implementar endpoints de exportação explícitos do builder de oferta para hipótese/landing/experimento com persistência do payload selecionado
+- iniciar Sprint UI-3 com telas de `Evidências` e `Feedback` usando lineage e histórico persistido

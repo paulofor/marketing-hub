@@ -9,6 +9,7 @@ import {
   useOprmWorkspaceOccupations,
 } from "../../api/oprm/useOprmWorkspaceOccupations";
 import { useCreateOprmJob } from "../../api/oprm/useCreateOprmJob";
+import OprmModuleNavigation from "./OprmModuleNavigation";
 
 const STATUS_LABEL: Record<OprmJobStatus, string> = {
   PENDING: "Pendente",
@@ -87,26 +88,7 @@ export default function OprmWorkspacePage() {
         </p>
       </header>
 
-      <nav aria-label="Navegação interna do OPRM">
-        <ul className="nav nav-pills gap-2">
-          <li className="nav-item">
-            <span className="nav-link active" aria-current="page">
-              Ocupações
-            </span>
-          </li>
-          {[
-            "Rotina",
-            "Oferta",
-            "Evidências",
-            "Feedback",
-            "Operações",
-          ].map((item) => (
-            <li className="nav-item" key={item}>
-              <span className="nav-link disabled">{item}</span>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <OprmModuleNavigation />
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
@@ -218,6 +200,12 @@ export default function OprmWorkspacePage() {
                               className="btn btn-outline-primary btn-sm"
                             >
                               Ver rotina
+                            </Link>
+                            <Link
+                              to={`/oprm/offer/${encodeURIComponent(occupation.occupationSeedRef)}`}
+                              className="btn btn-outline-success btn-sm"
+                            >
+                              Ir para oferta
                             </Link>
                             <button
                               type="button"

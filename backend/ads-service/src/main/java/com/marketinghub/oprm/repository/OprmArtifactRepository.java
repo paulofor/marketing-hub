@@ -15,4 +15,7 @@ public interface OprmArtifactRepository extends JpaRepository<OprmArtifact, Long
                                                                                      OprmArtifactStatus artifactStatus);
 
     List<OprmArtifact> findByOccupationSeedRefOrderByCreatedAtDesc(String occupationSeedRef);
+
+    java.util.Optional<OprmArtifact> findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(String occupationSeedRef,
+                                                                                                      String artifactType);
 }

@@ -109,7 +109,8 @@ import NewPromptDomainPage from "./pages/promptDomain/NewPromptDomainPage";
 import EditPromptDomainPage from "./pages/promptDomain/EditPromptDomainPage";
 import TargetingRecentQueriesPage from "./pages/targeting/TargetingRecentQueriesPage";
 import OprmWorkspacePage from "./pages/oprm/OprmWorkspacePage";
-import OprmRoutinePlaceholderPage from "./pages/oprm/OprmRoutinePlaceholderPage";
+import OprmRoutinePage from "./pages/oprm/OprmRoutinePage";
+import OprmOfferPage from "./pages/oprm/OprmOfferPage";
 
 export default function App() {
   return (
@@ -257,7 +258,11 @@ export default function App() {
               <Route path="/oprm" element={<OprmWorkspacePage />} />
               <Route
                 path="/oprm/routine/:occupationSeedRef"
-                element={<OprmRoutinePlaceholderPage />}
+                element={<OprmRoutinePage />}
+              />
+              <Route
+                path="/oprm/offer/:occupationSeedRef"
+                element={<OprmOfferPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

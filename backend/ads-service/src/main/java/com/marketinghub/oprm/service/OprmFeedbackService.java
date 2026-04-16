@@ -16,6 +16,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OprmFeedbackService {
     private final OprmJobRepository jobRepository;
     private final OprmFeedbackSnapshotRepository feedbackSnapshotRepository;
@@ -70,6 +72,8 @@ public class OprmFeedbackService {
                 .notes("feedback snapshot persisted from OPRM worker")
                 .build();
         feedbackHistoryRepository.save(history);
+        log.info("oprm-feedback-published jobId={} correlationId={} occupationName={} personaLabel={} generatedAt={}",
+                job.getId(), request.correlationId(), request.occupationName(), request.personaLabel(), generatedAt);
     }
 
     @Transactional(readOnly = true)

@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprm.OprmArtifact;
 import com.marketinghub.oprm.OprmArtifactStatus;
@@ -9,11 +10,13 @@ import com.marketinghub.oprm.dto.OprmArtifactEnvelopeDto;
 import com.marketinghub.oprm.dto.OprmArtifactPublishRequestDto;
 import com.marketinghub.oprm.dto.OprmArtifactPublishResponseDto;
 import com.marketinghub.oprm.dto.OprmArtifactSummaryDto;
+import com.marketinghub.oprm.dto.OprmRoutineWorkspaceResponseDto;
 import com.marketinghub.oprm.repository.OprmArtifactRepository;
 import com.marketinghub.oprm.repository.OprmJobRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -118,6 +121,44 @@ public class OprmArtifactService {
                 "use correlationId or occupationSeedRef to filter OPRM artifacts");
     }
 
+
+    @Transactional(readOnly = true)
+    public OprmRoutineWorkspaceResponseDto getRoutineWorkspace(String occupationSeedRef) {
+        OprmArtifact routineCardArtifact = artifactRepository
+                .findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(
+                        occupationSeedRef,
+                        "occupationPersonaRoutineCard"
+                )
+                .orElse(null);
+
+        OprmArtifact frameworkInputArtifact = artifactRepository
+                .findFirstByOccupationSeedRefAndArtifactTypeOrderByCreatedAtDesc(
+                        occupationSeedRef,
+                        "dorResultadoOfertaMecanismoProvaInput"
+                )
+                .orElse(null);
+
+        Map<String, Object> routinePayload = readPayload(routineCardArtifact);
+        Map<String, Object> frameworkPayload = readPayload(frameworkInputArtifact);
+
+        List<Map<String, Object>> painSignals = readSignalList(frameworkPayload.get("painSignals"));
+        if (painSignals.isEmpty()) {
+            painSignals = readSignalList(routinePayload.get("painSignals"));
+        }
+
+        return new OprmRoutineWorkspaceResponseDto(
+                occupationSeedRef,
+                frameworkInputArtifact != null
+                        ? frameworkInputArtifact.getCorrelationId()
+                        : routineCardArtifact != null ? routineCardArtifact.getCorrelationId() : null,
+                routinePayload.isEmpty() ? null : routinePayload,
+                frameworkPayload.isEmpty() ? null : frameworkPayload,
+                painSignals,
+                readSignalList(frameworkPayload.get("desiredOutcomeSignals")),
+                readSignalList(frameworkPayload.get("mechanismOpportunitySignals"))
+        );
+    }
+
     private OprmArtifactSummaryDto toSummary(OprmArtifact artifact) {
         return new OprmArtifactSummaryDto(
                 artifact.getArtifactId(),
@@ -128,6 +169,35 @@ public class OprmArtifactService {
                 artifact.getCorrelationId(),
                 artifact.getCreatedAt().toString()
         );
+    }
+
+
+    private Map<String, Object> readPayload(OprmArtifact artifact) {
+        if (artifact == null) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            return objectMapper.readValue(artifact.getPayloadJson(), new TypeReference<>() {
+            });
+        } catch (JsonProcessingException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "unable to parse persisted OPRM artifact payload"
+            );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> readSignalList(Object rawValue) {
+        if (!(rawValue instanceof List<?> list)) {
+            return List.of();
+        }
+
+        return list.stream()
+                .filter(item -> item instanceof Map<?, ?>)
+                .map(item -> (Map<String, Object>) item)
+                .toList();
     }
 
     private Instant parseCreatedAt(String createdAt) {

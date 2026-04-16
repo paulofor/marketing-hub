@@ -259,6 +259,48 @@ Foi concluída a preparação de finalização operacional do OPRM para publica�
 - executar o fluxo de cópia e apply no host `177.153.62.107` com usuário de infraestrutura
 - versionar contrato HTTP backend↔OPRM para jobs e publicação de artefatos end-to-end
 
+## 2026-04-16 — alinhamento backend OPRM com contrato swagger required-endpoints v1.1.0
+
+**Status:** concluído
+
+**Resumo:**  
+Foi realizado o alinhamento dos endpoints OPRM do backend principal para aderir ao contrato de `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`, padronizando códigos HTTP de erro para payload inválido, resposta de conflito no claim de job e retorno `404` em workspaces sem artefatos.
+
+**O que foi implementado:**  
+- ajuste do fluxo de claim para retornar conflito explícito (`409`) quando houver disputa de lock no job pendente
+- ajuste dos serviços de artifacts e feedback para tratar payload inconsistente como `422` e aceitar listagem de artefatos sem filtro
+- ajuste dos endpoints de workspace para retornar `404` quando não houver dados para a ocupação solicitada
+- criação de `OprmApiExceptionHandler` para padronizar resposta de erro OPRM no formato `{code, message, correlationId, details}` e converter falhas de validação para `422`
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmJobOrchestrationService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmArtifactService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmFeedbackService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmApiExceptionHandler.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmApiErrorResponseDto.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmArtifactRepository.java`
+
+**Contratos / artefatos afetados:**  
+- endpoints do contrato `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`:
+  - `POST /api/oprm/jobs/claim`
+  - `GET /api/oprm/workspace/routine/{occupationSeedRef}`
+  - `GET /api/oprm/workspace/insights/{occupationSeedRef}`
+  - `POST /api/oprm/artifacts`
+  - `POST /api/oprm/feedback`
+  - `POST /api/oprm/heartbeat`
+- contrato de erro OPRM (`OprmApiErrorResponse`)
+
+**Testes executados:**  
+- `cd backend/ads-service && mvn -s ../settings.xml test` — **falhou** por indisponibilidade de rede no ambiente (`Network is unreachable` ao resolver `spring-boot-starter-parent:3.2.5`)
+
+**Limitações ou pendências:**  
+- não foram adicionados testes automatizados dedicados de controller/MockMvc para cada endpoint OPRM nesta etapa
+- `maxJobs` do claim permanece no contrato, mas o backend ainda realiza claim unitário de 1 job por requisição
+
+**Próximo passo sugerido:**  
+- adicionar suíte de testes HTTP para validar status code e payload de erro por endpoint OPRM
+- alinhar decisão de produto sobre claim em lote (`maxJobs > 1`) e evoluir contrato/implementação em conjunto
+
 ## 2026-04-16 — ajuste da tela inicial do workspace OPRM
 
 **Status:** concluído

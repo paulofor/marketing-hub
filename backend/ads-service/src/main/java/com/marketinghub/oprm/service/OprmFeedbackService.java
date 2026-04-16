@@ -35,11 +35,11 @@ public class OprmFeedbackService {
         try {
             jobId = UUID.fromString(request.jobId());
         } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobId must be a valid UUID");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "jobId must be a valid UUID");
         }
 
         OprmJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "OPRM job not found"));
 
         Instant generatedAt = parseGeneratedAt(request.generatedAt());
         OprmFeedbackSnapshot snapshot = OprmFeedbackSnapshot.builder()
@@ -93,7 +93,7 @@ public class OprmFeedbackService {
         try {
             return Instant.parse(generatedAt);
         } catch (DateTimeParseException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "generatedAt must use ISO-8601 format");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "generatedAt must use ISO-8601 format");
         }
     }
 

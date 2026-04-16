@@ -52,11 +52,11 @@ public class OprmArtifactService {
         try {
             jobId = UUID.fromString(request.jobId());
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobId must be a valid UUID");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "jobId must be a valid UUID");
         }
 
         OprmJob job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM job not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "OPRM job not found"));
 
         OprmArtifactEnvelopeDto artifactEnvelope = request.artifact();
         if (!request.correlationId().equals(artifactEnvelope.correlationId())) {
@@ -118,8 +118,10 @@ public class OprmArtifactService {
             return artifacts.stream().map(this::toSummary).toList();
         }
 
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "use correlationId or occupationSeedRef to filter OPRM artifacts");
+        return artifactRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toSummary)
+                .toList();
     }
 
 
@@ -138,6 +140,10 @@ public class OprmArtifactService {
                         "dorResultadoOfertaMecanismoProvaInput"
                 )
                 .orElse(null);
+
+        if (routineCardArtifact == null && frameworkInputArtifact == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM workspace routine not found");
+        }
 
         Map<String, Object> routinePayload = readPayload(routineCardArtifact);
         Map<String, Object> frameworkPayload = readPayload(frameworkInputArtifact);
@@ -164,6 +170,9 @@ public class OprmArtifactService {
     @Transactional(readOnly = true)
     public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(String occupationSeedRef) {
         List<OprmArtifact> artifacts = artifactRepository.findByOccupationSeedRefOrderByCreatedAtDesc(occupationSeedRef);
+        if (artifacts.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM workspace insights not found");
+        }
 
         OprmArtifact routineCardArtifact = findLatestArtifactByType(artifacts, "occupationPersonaRoutineCard");
         OprmArtifact feedbackArtifact = findLatestArtifactByType(artifacts, "occupationFeedbackLoopSnapshot");
@@ -279,7 +288,7 @@ public class OprmArtifactService {
         try {
             return Instant.parse(createdAt);
         } catch (DateTimeParseException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "artifact.createdAt must use ISO-8601");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "artifact.createdAt must use ISO-8601");
         }
     }
 

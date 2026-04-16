@@ -86,7 +86,7 @@ public class OprmJobOrchestrationService {
         );
 
         if (updated == 0) {
-            return Optional.empty();
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "OPRM job claim conflict");
         }
 
         OprmJob job = jobRepository.findById(nextJobId.get())
@@ -224,7 +224,7 @@ public class OprmJobOrchestrationService {
         try {
             return Instant.parse(occurredAt);
         } catch (DateTimeParseException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "occurredAt must use ISO-8601 format");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "occurredAt must use ISO-8601 format");
         }
     }
 

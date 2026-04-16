@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface OprmArtifactRepository extends JpaRepository<OprmArtifact, Long> {
     Optional<OprmArtifact> findByIdempotencyKey(String idempotencyKey);
 
+    List<OprmArtifact> findAllByOrderByCreatedAtDesc();
+
     List<OprmArtifact> findByCorrelationIdOrderByCreatedAtDesc(String correlationId);
 
     List<OprmArtifact> findByOccupationSeedRefAndArtifactStatusOrderByCreatedAtDesc(String occupationSeedRef,

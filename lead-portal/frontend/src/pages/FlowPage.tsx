@@ -893,31 +893,6 @@ function isEmailField(key: string) {
   return key.includes("email") || key === "e-mail";
 }
 
-function normalizeScrollArguments(optionsOrX?: number | ScrollToOptions, maybeY?: number) {
-  if (typeof optionsOrX === "object" && optionsOrX !== null) {
-    const behavior = optionsOrX.behavior === "smooth" ? "smooth" : "auto";
-    const top = typeof optionsOrX.top === "number" ? optionsOrX.top : 0;
-    return { top, behavior };
-  }
-  if (typeof optionsOrX === "number" && typeof maybeY === "number") {
-    return { top: maybeY, behavior: "auto" };
-  }
-  if (typeof optionsOrX === "number") {
-    return { top: optionsOrX, behavior: "auto" };
-  }
-  if (typeof maybeY === "number") {
-    return { top: maybeY, behavior: "auto" };
-  }
-  return { top: 0, behavior: "auto" };
-}
-
-function normalizeBehavior(arg?: boolean | ScrollIntoViewOptions): ScrollBehavior {
-  if (arg && typeof arg === "object" && arg.behavior === "smooth") {
-    return "smooth";
-  }
-  return "auto";
-}
-
 function scrollParentToElement(iframe: HTMLIFrameElement, element: Element, behavior: ScrollBehavior) {
   const doc = iframe.contentDocument;
   const win = iframe.contentWindow;

@@ -608,7 +608,7 @@ Foi entregue a Sprint UI-1 do OPRM no frontend do Marketing Hub com novo item de
 - nenhum artefato canônico novo
 
 **Testes executados:**  
-- `cd frontend && npm run test -- src/__tests__/OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run test -- --run src/__tests__/OprmNavigation.test.tsx` — **passou**
 - `cd frontend && npm run build` — **passou**
 - `cd backend/ads-service && mvn -s ../settings.xml -DskipTests compile` — **passou**
 
@@ -665,3 +665,45 @@ Foi entregue a Sprint UI-2 do OPRM no Marketing Hub com tela de Rotina e tela de
 **Próximo passo sugerido:**  
 - implementar endpoints de exportação explícitos do builder de oferta para hipótese/landing/experimento com persistência do payload selecionado
 - iniciar Sprint UI-3 com telas de `Evidências` e `Feedback` usando lineage e histórico persistido
+
+## 2026-04-16 — sprint UI-3: evidências e feedback
+
+**Status:** concluído
+
+**Resumo:**  
+Foi implementada a Sprint UI-3 do módulo OPRM no Marketing Hub, adicionando as telas de Evidências e Feedback com leitura de dados reais via backend, timeline de artefatos por ocupação e comparativo de recalibração de confiança.
+
+**O que foi implementado:**  
+- criação do endpoint backend `GET /api/oprm/workspace/insights/{occupationSeedRef}` para consolidar timeline, lineage, fontes, excerpts e snapshots de feedback
+- implementação da tela `OPRM · Evidências` com timeline de geração, lista de fontes e painel de excerpts
+- implementação da tela `OPRM · Feedback` com histórico por ocupação e comparativo antes/depois de confiança
+- atualização da navegação interna do OPRM para incluir links ativos de `Evidências` e `Feedback` quando uma ocupação está selecionada
+- inclusão das novas rotas do frontend para as telas de sprint UI-3
+
+**Arquivos principais alterados:**  
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmArtifactService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmWorkspaceController.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmInsightsWorkspaceResponseDto.java`
+- `frontend/src/api/oprm/useOprmInsightsWorkspaceData.ts`
+- `frontend/src/pages/oprm/OprmEvidencePage.tsx`
+- `frontend/src/pages/oprm/OprmFeedbackPage.tsx`
+- `frontend/src/pages/oprm/OprmModuleNavigation.tsx`
+- `frontend/src/App.tsx`
+
+**Contratos / artefatos afetados:**  
+- endpoint backend: `GET /api/oprm/workspace/insights/{occupationSeedRef}`
+- leitura dos artefatos `occupationPersonaRoutineCard` e `occupationFeedbackLoopSnapshot` na composição de workspace
+- nenhum artefato canônico novo
+
+**Testes executados:**  
+- `cd frontend && npm run test -- --run src/__tests__/OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+- `cd backend/ads-service && mvn -DskipTests compile` — **passou**
+
+**Limitações ou pendências:**  
+- o painel de excerpts depende da presença de `evidenceExcerpts` no payload persistido de rotina
+- a comparação de feedback usa os dois snapshots mais recentes da ocupação; não há configuração de janela temporal customizada nesta sprint
+
+**Próximo passo sugerido:**  
+- implementar Sprint UI-4 com tela de Operações completa (jobs, heartbeat, métricas e falhas)
+- padronizar payload de evidências no pipeline para enriquecer a profundidade de auditoria na UI

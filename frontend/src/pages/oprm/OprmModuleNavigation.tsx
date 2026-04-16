@@ -11,8 +11,6 @@ interface OprmNavItem {
 
 const baseItems: OprmNavItem[] = [
   { label: "Ocupações", to: "/oprm" },
-  { label: "Evidências" },
-  { label: "Feedback" },
   { label: "Operações" },
 ];
 
@@ -29,8 +27,16 @@ export default function OprmModuleNavigation({
           label: "Oferta",
           to: `/oprm/offer/${encodeURIComponent(occupationSeedRef)}`,
         },
+        {
+          label: "Evidências",
+          to: `/oprm/evidence/${encodeURIComponent(occupationSeedRef)}`,
+        },
+        {
+          label: "Feedback",
+          to: `/oprm/feedback/${encodeURIComponent(occupationSeedRef)}`,
+        },
       ]
-    : [{ label: "Rotina" }, { label: "Oferta" }];
+    : [{ label: "Rotina" }, { label: "Oferta" }, { label: "Evidências" }, { label: "Feedback" }];
 
   const items: OprmNavItem[] = [baseItems[0], ...scopedItems, ...baseItems.slice(1)];
 

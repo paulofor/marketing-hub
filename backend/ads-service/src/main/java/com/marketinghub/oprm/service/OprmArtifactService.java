@@ -10,6 +10,7 @@ import com.marketinghub.oprm.dto.OprmArtifactEnvelopeDto;
 import com.marketinghub.oprm.dto.OprmArtifactPublishRequestDto;
 import com.marketinghub.oprm.dto.OprmArtifactPublishResponseDto;
 import com.marketinghub.oprm.dto.OprmArtifactSummaryDto;
+import com.marketinghub.oprm.dto.OprmInsightsWorkspaceResponseDto;
 import com.marketinghub.oprm.dto.OprmRoutineWorkspaceResponseDto;
 import com.marketinghub.oprm.repository.OprmArtifactRepository;
 import com.marketinghub.oprm.repository.OprmJobRepository;
@@ -159,6 +160,63 @@ public class OprmArtifactService {
         );
     }
 
+
+    @Transactional(readOnly = true)
+    public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(String occupationSeedRef) {
+        List<OprmArtifact> artifacts = artifactRepository.findByOccupationSeedRefOrderByCreatedAtDesc(occupationSeedRef);
+
+        OprmArtifact routineCardArtifact = findLatestArtifactByType(artifacts, "occupationPersonaRoutineCard");
+        OprmArtifact feedbackArtifact = findLatestArtifactByType(artifacts, "occupationFeedbackLoopSnapshot");
+
+        Map<String, Object> routinePayload = readPayload(routineCardArtifact);
+        Map<String, Object> routineLineage = readJsonMap(routineCardArtifact == null ? null : routineCardArtifact.getLineageJson());
+        List<Map<String, Object>> feedbackSnapshots = artifacts.stream()
+                .filter(artifact -> "occupationFeedbackLoopSnapshot".equals(artifact.getArtifactType()))
+                .map(this::readPayload)
+                .toList();
+
+        Map<String, Object> latestFeedback = readPayload(feedbackArtifact);
+        Map<String, Object> previousFeedback = feedbackSnapshots.size() > 1 ? feedbackSnapshots.get(1) : Map.of();
+
+        List<Map<String, Object>> sources = readSignalList(routinePayload.get("sourceRefs"));
+        if (sources.isEmpty()) {
+            sources = readSignalList(routineLineage.get("sourceRefs"));
+        }
+
+        List<Map<String, Object>> excerpts = readSignalList(routinePayload.get("evidenceExcerpts"));
+
+        List<OprmArtifactSummaryDto> timeline = artifacts.stream()
+                .limit(20)
+                .map(this::toSummary)
+                .toList();
+
+        Map<String, Object> feedbackComparison = new java.util.LinkedHashMap<>();
+        feedbackComparison.put("latestConfidence", latestFeedback.get("recalibratedConfidenceScore"));
+        feedbackComparison.put("previousConfidence", previousFeedback.get("recalibratedConfidenceScore"));
+        feedbackComparison.put("latestGeneratedAt", latestFeedback.get("generatedAt"));
+        feedbackComparison.put("previousGeneratedAt", previousFeedback.get("generatedAt"));
+
+        return new OprmInsightsWorkspaceResponseDto(
+                occupationSeedRef,
+                feedbackArtifact != null
+                        ? feedbackArtifact.getCorrelationId()
+                        : routineCardArtifact != null ? routineCardArtifact.getCorrelationId() : null,
+                timeline,
+                sources,
+                excerpts,
+                routineLineage,
+                feedbackSnapshots,
+                feedbackComparison
+        );
+    }
+
+    private OprmArtifact findLatestArtifactByType(List<OprmArtifact> artifacts, String artifactType) {
+        return artifacts.stream()
+                .filter(artifact -> artifactType.equals(artifact.getArtifactType()))
+                .findFirst()
+                .orElse(null);
+    }
+
     private OprmArtifactSummaryDto toSummary(OprmArtifact artifact) {
         return new OprmArtifactSummaryDto(
                 artifact.getArtifactId(),
@@ -184,6 +242,23 @@ public class OprmArtifactService {
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "unable to parse persisted OPRM artifact payload"
+            );
+        }
+    }
+
+
+    private Map<String, Object> readJsonMap(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return Map.of();
+        }
+
+        try {
+            return objectMapper.readValue(rawJson, new TypeReference<>() {
+            });
+        } catch (JsonProcessingException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "unable to parse persisted OPRM artifact lineage"
             );
         }
     }

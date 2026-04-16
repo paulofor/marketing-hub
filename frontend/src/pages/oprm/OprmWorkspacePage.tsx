@@ -117,7 +117,7 @@ export default function OprmWorkspacePage() {
           <div>
             <h2 className="h5 mb-1">Rodar OPRM</h2>
             <p className="text-secondary mb-0">
-              Inicie um novo processamento informando a referência da ocupação/persona.
+              Inicie um novo processamento informando a referência da ocupação/persona já cadastrada no catálogo.
             </p>
           </div>
           <form
@@ -129,7 +129,7 @@ export default function OprmWorkspacePage() {
           >
             <div className="col-12 col-lg-8">
               <label className="form-label" htmlFor="oprm-seed-ref">
-                Ocupação/persona
+                Ocupação/persona *
               </label>
               <input
                 id="oprm-seed-ref"
@@ -154,6 +154,9 @@ export default function OprmWorkspacePage() {
               </button>
             </div>
           </form>
+          <p className="text-secondary mb-0">
+            Precisa cadastrar uma nova ocupação? Acesse a aba <Link to="/oprm/occupations">Catálogo</Link>.
+          </p>
         </div>
       </section>
 

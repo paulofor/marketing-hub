@@ -10,7 +10,8 @@ interface OprmNavItem {
 }
 
 const baseItems: OprmNavItem[] = [
-  { label: "Ocupações", to: "/oprm" },
+  { label: "Workspace", to: "/oprm" },
+  { label: "Catálogo", to: "/oprm/occupations" },
   { label: "Operações", to: "/oprm/operations" },
 ];
 

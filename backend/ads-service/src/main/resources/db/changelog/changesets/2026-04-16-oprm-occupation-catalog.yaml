@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-16-01-oprm-occupation-catalog
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        not:
+          tableExists:
+            tableName: oprm_occupation
+      changes:
+        - createTable:
+            tableName: oprm_occupation
+            columns:
+              - column:
+                  name: id
+                  type: CHAR(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: occupation_seed_ref
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aliases_json
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BIT(1)
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: oprm_occupation
+            columnNames: occupation_seed_ref
+            constraintName: uk_oprm_occupation_seed_ref
+        - createIndex:
+            tableName: oprm_occupation
+            indexName: idx_oprm_occupation_active_display
+            columns:
+              - column:
+                  name: active
+              - column:
+                  name: display_name
+        - insert:
+            tableName: oprm_occupation
+            columns:
+              - column: { name: id, value: "3a1bda9f-1023-4df3-b151-9af69a10c101" }
+              - column: { name: occupation_seed_ref, value: "personal trainer" }
+              - column: { name: display_name, value: "Personal Trainer" }
+              - column: { name: aliases_json, value: '["treinador pessoal","pt"]' }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: oprm_occupation
+            columns:
+              - column: { name: id, value: "3a1bda9f-1023-4df3-b151-9af69a10c102" }
+              - column: { name: occupation_seed_ref, value: "pastor" }
+              - column: { name: display_name, value: "Pastor" }
+              - column: { name: aliases_json, value: '["líder religioso evangélico","ministro pastoral"]' }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: oprm_occupation
+            columns:
+              - column: { name: id, value: "3a1bda9f-1023-4df3-b151-9af69a10c103" }
+              - column: { name: occupation_seed_ref, value: "agricultor" }
+              - column: { name: display_name, value: "Agricultor" }
+              - column: { name: aliases_json, value: '["produtor rural","lavrador"]' }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: oprm_occupation
+            columns:
+              - column: { name: id, value: "3a1bda9f-1023-4df3-b151-9af69a10c104" }
+              - column: { name: occupation_seed_ref, value: "manicure" }
+              - column: { name: display_name, value: "Manicure" }
+              - column: { name: aliases_json, value: '["nail designer","profissional de unhas"]' }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: oprm_occupation
+            columns:
+              - column: { name: id, value: "3a1bda9f-1023-4df3-b151-9af69a10c105" }
+              - column: { name: occupation_seed_ref, value: "cabeleireiro" }
+              - column: { name: display_name, value: "Cabeleireiro" }
+              - column: { name: aliases_json, value: '["hair stylist","profissional de salão"]' }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: oprm_occupation
+            columns:
+              - column: { name: id, value: "3a1bda9f-1023-4df3-b151-9af69a10c106" }
+              - column: { name: occupation_seed_ref, value: "dono de loja de celulares" }
+              - column: { name: display_name, value: "Dono de Loja de Celulares" }
+              - column: { name: aliases_json, value: '["lojista de celulares","comerciante de smartphones"]' }
+              - column: { name: active, valueBoolean: true }

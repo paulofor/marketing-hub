@@ -425,3 +425,24 @@ Para sustentar a Fase 3 do framework, foram criadas duas novas tabelas vinculada
   - `insights_json` e `suggestions_json` armazenam, em JSON, listas tipadas de insights (Dor/Resultado/Mecanismo/Prova/Oferta) e recomendações de backlog.
 
 Essas tabelas alimentam a nova API de "Banco de aprendizados" e o recomendador de backlog por nicho. Cada novo aprendizado nasce de uma `EXPERIMENT_LEARNING_REQUEST` consumida pelo AI Worker, garantindo rastreabilidade e versionamento dos insights.
+
+## Catálogo de ocupações do OPRM
+
+Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cadastro, alteração e exclusão), foi adicionada a entidade de catálogo abaixo no backend principal:
+
+### OPRM_OCCUPATION
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| id | CHAR(36) PK | Identificador UUID textual da ocupação |
+| occupation_seed_ref | VARCHAR(191) UNIQUE | Referência estável usada nos jobs e no workspace OPRM |
+| display_name | VARCHAR(191) | Nome amigável exibido na UI |
+| aliases_json | LONGTEXT | Lista JSON de aliases da ocupação |
+| active | BIT(1) | Flag operacional para liberar uso da ocupação no fluxo de jobs |
+| created_at / updated_at | DATETIME(6) | Auditoria padrão |
+
+**Relacionamentos e uso operacional**
+
+- `OPRM_OCCUPATION` não substitui `OPRM_JOB`; ela governa o catálogo permitido para criação de novos jobs OPRM.
+- A criação de job (`POST /api/oprm/jobs`) valida se `occupation_seed_ref` está ativa no catálogo.
+- A UI do OPRM passa a consumir endpoints dedicados de catálogo (`/api/oprm/occupations`) para CRUD administrativo.

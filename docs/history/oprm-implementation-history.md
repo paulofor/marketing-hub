@@ -953,3 +953,53 @@ Foi atualizada a documentação OpenAPI de endpoints obrigatórios do backend OP
 **Próximo passo sugerido:**
 - revisar com o time de produto se devem ser traduzidos também nomes de tags e exemplos de payload exibidos na UI de documentação
 - alinhar eventual dicionário oficial de termos OPRM pt-BR para manter consistência entre backend, frontend e worker
+
+## 2026-04-16 — sprint catálogo de ocupações: CRUD backend + tela administrativa
+
+**Status:** concluído
+
+**Resumo:**
+Foi implementado o gerenciamento completo de ocupações do OPRM com CRUD no backend principal e nova tela administrativa no frontend, permitindo cadastrar, alterar e excluir ocupações com persistência em tabela dedicada e validação de ocupações ativas na criação de jobs.
+
+**O que foi implementado:**
+- criação da tabela `oprm_occupation` via Liquibase com índices, restrição de unicidade e seed inicial das ocupações MVP
+- criação de entidade, repositório, DTOs, serviço e controller para o contrato `GET/POST/PUT/DELETE /api/oprm/occupations`
+- validação no fluxo de criação de job OPRM para aceitar apenas `occupationSeedRef` ativa no catálogo
+- criação da tela `OPRM · Catálogo de Ocupações` no frontend com formulário e ações de editar/excluir
+- inclusão da rota `/oprm/occupations` e novo item `Catálogo` na navegação interna do módulo OPRM
+- atualização da documentação de modelo de dados e do contrato OpenAPI consolidado do backend OPRM
+
+**Arquivos principais alterados:**
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/OprmOccupation.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmOccupationRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmOccupationService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmOccupationController.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmJobOrchestrationService.java`
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-16-oprm-occupation-catalog.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `frontend/src/pages/oprm/OprmOccupationCatalogPage.tsx`
+- `frontend/src/api/oprm/useOprmOccupationCatalog.ts`
+- `frontend/src/pages/oprm/OprmModuleNavigation.tsx`
+- `frontend/src/pages/oprm/OprmWorkspacePage.tsx`
+- `frontend/src/App.tsx`
+- `frontend/src/__tests__/OprmNavigation.test.tsx`
+- `docs/modelo-dados-experimento.md`
+- `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+
+**Contratos / artefatos afetados:**
+- endpoints novos: `GET /api/oprm/occupations`, `POST /api/oprm/occupations`, `PUT /api/oprm/occupations/{occupationId}`, `DELETE /api/oprm/occupations/{occupationId}`
+- endpoint ajustado: `POST /api/oprm/jobs` (validação de `occupationSeedRef` ativa no catálogo)
+- nenhum artefato canônico novo
+
+**Testes executados:**
+- `cd frontend && npm run test -- --run src/__tests__/OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+- `cd backend/ads-service && mvn -s ../settings.xml -DskipTests compile` — **passou**
+
+**Limitações ou pendências:**
+- o worker OPRM ainda mantém catálogo local estruturado para geração de payload detalhado (sumário, tarefas, skills), portanto o CRUD atual governa seed e ativação no backend, mas não substitui automaticamente o catálogo interno do worker
+- não foi adicionada tela de confirmação modal para exclusão; a ação é imediata no clique do botão
+
+**Próximo passo sugerido:**
+- integrar o worker OPRM para consumir o catálogo gerenciado do backend como fonte única de ocupações e aliases
+- evoluir o catálogo para incluir campos estruturados completos do perfil ocupacional (sumário, tarefas, skills e contexto de trabalho)

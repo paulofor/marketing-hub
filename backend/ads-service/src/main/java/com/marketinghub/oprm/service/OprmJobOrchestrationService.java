@@ -11,6 +11,7 @@ import com.marketinghub.oprm.dto.OprmJobDetailResponseDto;
 import com.marketinghub.oprm.dto.OprmJobStatusUpdateRequestDto;
 import com.marketinghub.oprm.dto.OprmWorkspaceOccupationSummaryDto;
 import com.marketinghub.oprm.repository.OprmJobEventRepository;
+import com.marketinghub.oprm.repository.OprmOccupationRepository;
 import com.marketinghub.oprm.repository.OprmJobInputRepository;
 import com.marketinghub.oprm.repository.OprmJobRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,14 +37,21 @@ public class OprmJobOrchestrationService {
     private final OprmJobRepository jobRepository;
     private final OprmJobInputRepository jobInputRepository;
     private final OprmJobEventRepository jobEventRepository;
+    private final OprmOccupationRepository occupationRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
     public OprmJobDetailResponseDto createJob(OprmCreateJobRequestDto request) {
+        String normalizedOccupationSeedRef = request.occupationSeedRef().trim().toLowerCase();
+        occupationRepository.findByOccupationSeedRefIgnoreCase(normalizedOccupationSeedRef)
+                .filter(com.marketinghub.oprm.OprmOccupation::isActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "occupationSeedRef is not active in OPRM catalog"));
+
         OprmJob job = OprmJob.builder()
                 .jobType(request.jobType())
                 .jobStatus(OprmJobStatus.PENDING)
-                .occupationSeedRef(request.occupationSeedRef())
+                .occupationSeedRef(normalizedOccupationSeedRef)
                 .correlationId(resolveCorrelationId(request.correlationId()))
                 .build();
         OprmJob saved = jobRepository.save(job);

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "composite": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -15,7 +15,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "ignoreDeprecations": "5.0"
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "vite.config.ts"

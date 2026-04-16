@@ -207,6 +207,7 @@ class FlowControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.customFormHtml").value(containsString("Exp 10")))
+                .andExpect(jsonPath("$.customFormRenderMode").value("IFRAME"))
                 .andExpect(jsonPath("$.questions", hasSize(0)));
     }
 
@@ -235,7 +236,8 @@ class FlowControllerTest {
 
         mockMvc.perform(get("/api/flows/landing-preview"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.customFormHtml").value(containsString("<body>Landing</body>")));
+                .andExpect(jsonPath("$.customFormHtml").value(containsString("<body>Landing</body>")))
+                .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"));
     }
 
     private UpsertFlowRequest buildRequest() {

@@ -1,16 +1,22 @@
 package com.marketinghub.leadportal.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.marketinghub.leadportal.model.CustomFormRenderMode;
 import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.util.StringUtils;
 
 public record FlowResponse(
         String slug,
         String name,
         String description,
         String customFormHtml,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        CustomFormRenderMode customFormRenderMode,
         List<QuestionResponse> questions,
         SimpleFormStyleResponse simpleFormStyle) {
 
@@ -29,8 +35,22 @@ public record FlowResponse(
                 flow.name(),
                 flow.description(),
                 flow.customFormHtml(),
+                determineCustomFormRenderMode(flow),
                 questions,
                 style);
+    }
+
+    private static CustomFormRenderMode determineCustomFormRenderMode(Flow flow) {
+        if (flow == null || !StringUtils.hasText(flow.customFormHtml())) {
+            return null;
+        }
+        String normalized = flow.customFormHtml().trim().toLowerCase(Locale.ROOT);
+        if (normalized.startsWith("<!doctype")
+                || normalized.startsWith("<html")
+                || normalized.contains("<body")) {
+            return CustomFormRenderMode.STANDALONE_PAGE;
+        }
+        return CustomFormRenderMode.IFRAME;
     }
 
     public record QuestionResponse(

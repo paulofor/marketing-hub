@@ -79,6 +79,7 @@ export interface LeadPortalFlow {
   name: string;
   description?: string | null;
   customFormHtml?: string | null;
+  customFormRenderMode?: "IFRAME" | "STANDALONE_PAGE" | null;
   engagementContract?: LeadPortalEngagementContract | null;
   questions: FlowQuestion[];
   simpleFormStyle?: LeadPortalSimpleFormStyle | null;

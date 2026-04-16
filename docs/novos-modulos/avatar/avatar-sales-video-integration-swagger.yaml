@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: Avatar Sales Video - Backend x Video Module Integration API
+  version: 1.0.0
+  description: |
+    Contrato de integração entre o `backend/ads-service` (fonte canônica de estado/persistência)
+    e o módulo assíncrono de vídeo (`video-management-service`) para o pipeline Avatar Sales Video.
+
+    Escopo: endpoints usados na troca de dados operacional do ciclo de render.
+servers:
+  - url: http://backend:8000
+    description: Ambiente local/staging
+
+tags:
+  - name: InternalVideoJobs
+    description: Endpoints internos consumidos pelo módulo de vídeo para orquestrar jobs.
+  - name: PublicVideoProfiles
+    description: Endpoints de leitura de perfil usados pelo módulo de vídeo.
+
+paths:
+  /internal/video/jobs:
+    get:
+      tags: [InternalVideoJobs]
+      summary: Lista jobs de vídeo para processamento assíncrono
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/SalesVideoStatus'
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/SalesVideoJobType'
+        - in: query
+          name: providerFamily
+          schema:
+            $ref: '#/components/schemas/SalesVideoProviderFamily'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 25
+      responses:
+        '200':
+          description: Lista de jobs encontrada
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /internal/video/jobs/{jobId}:
+    get:
+      tags: [InternalVideoJobs]
+      summary: Busca um job específico
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Job encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+        '404':
+          description: Job não encontrado
+
+  /internal/video/jobs/{jobId}/claim:
+    post:
+      tags: [InternalVideoJobs]
+      summary: Faz claim de job para o worker atual
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobClaimRequest'
+      responses:
+        '200':
+          description: Claim aplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /internal/video/jobs/{jobId}/heartbeat:
+    post:
+      tags: [InternalVideoJobs]
+      summary: Atualiza heartbeat do job em execução
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobHeartbeatRequest'
+      responses:
+        '200':
+          description: Heartbeat registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /internal/video/jobs/{jobId}/progress:
+    post:
+      tags: [InternalVideoJobs]
+      summary: Reporta progresso intermediário do job
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobProgressRequest'
+      responses:
+        '200':
+          description: Progresso atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /internal/video/jobs/{jobId}/complete:
+    post:
+      tags: [InternalVideoJobs]
+      summary: Marca job como concluído
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCompletionRequest'
+      responses:
+        '200':
+          description: Job concluído
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /internal/video/jobs/{jobId}/fail:
+    post:
+      tags: [InternalVideoJobs]
+      summary: Marca job como falho
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobFailureRequest'
+      responses:
+        '200':
+          description: Falha registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /internal/video/jobs/{jobId}/expired:
+    post:
+      tags: [InternalVideoJobs]
+      summary: Marca job como expirado pelo provider
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobExpirationRequest'
+      responses:
+        '200':
+          description: Expiração registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoJobDto'
+
+  /api/sales-videos/profiles/{profileId}:
+    get:
+      tags: [PublicVideoProfiles]
+      summary: Carrega perfil para execução do render
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Perfil encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoProfileDto'
+        '404':
+          description: Perfil não encontrado
+
+components:
+  parameters:
+    JobId:
+      in: path
+      name: jobId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  schemas:
+    SalesVideoStatus:
+      type: string
+      enum:
+        - DRAFT
+        - SCRIPT_PENDING
+        - SCRIPT_READY
+        - STORYBOARD_PENDING
+        - STORYBOARD_READY
+        - VIDEO_REQUESTED
+        - VIDEO_PROCESSING
+        - VIDEO_READY
+        - VIDEO_FAILED
+        - PUBLISHED
+        - ARCHIVED
+
+    SalesVideoJobType:
+      type: string
+      enum: [SCRIPT, STORYBOARD, RENDER, PUBLISH, RETRY]
+
+    SalesVideoProviderFamily:
+      type: string
+      enum: [OPENAI, EXTERNAL_VIDEO_MODULE]
+
+    SalesVideoRetryReason:
+      type: string
+      enum:
+        - MANUAL_INTERVENTION
+        - PROVIDER_FAILURE
+        - ASSET_EXPIRED
+        - QUALITY_ASSURANCE
+        - AUTO_RECOVERY
+        - OTHER
+
+    SalesVideoKind:
+      type: string
+      enum: [HERO, OBJECTION, PROOF]
+
+    SalesVideoScriptSource:
+      type: string
+      enum: [MANUAL, OPENAI]
+
+    SalesVideoScriptStatus:
+      type: string
+      enum: [DRAFT, READY_FOR_REVIEW, APPROVED, ARCHIVED]
+
+    SalesVideoJobDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        profileId: { type: integer, format: int64 }
+        scriptId: { type: integer, format: int64 }
+        tenantId: { type: string }
+        providerFamily: { $ref: '#/components/schemas/SalesVideoProviderFamily' }
+        providerName: { type: string }
+        providerJobId: { type: string }
+        jobType: { $ref: '#/components/schemas/SalesVideoJobType' }
+        status: { $ref: '#/components/schemas/SalesVideoStatus' }
+        retryAttempt: { type: integer }
+        retryReason: { $ref: '#/components/schemas/SalesVideoRetryReason' }
+        retryOfJobId: { type: integer, format: int64 }
+        retryNotes: { type: string }
+        progressPercent: { type: integer }
+        failureCode: { type: string }
+        failureDetail: { type: string }
+        requestedBy: { type: string }
+        requestedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        assetId: { type: integer, format: int64 }
+        posterAssetId: { type: integer, format: int64 }
+        vttAssetId: { type: integer, format: int64 }
+        metadataJson: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SalesVideoScriptDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        version: { type: integer }
+        createdBy: { type: string }
+        scriptText: { type: string }
+        hookText: { type: string }
+        ctaText: { type: string }
+        captionText: { type: string }
+        storyboardJson: { type: string }
+        source: { $ref: '#/components/schemas/SalesVideoScriptSource' }
+        model: { type: string }
+        prompt: { type: string }
+        status: { $ref: '#/components/schemas/SalesVideoScriptStatus' }
+        approvedBy: { type: string }
+        approvedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    SalesVideoProfileDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        productId: { type: integer, format: int64 }
+        landingPageId: { type: integer, format: int64 }
+        tenantId: { type: string }
+        createdBy: { type: string }
+        videoKind: { $ref: '#/components/schemas/SalesVideoKind' }
+        title: { type: string }
+        personaName: { type: string }
+        personaStyle: { type: string }
+        voiceStyle: { type: string }
+        language: { type: string }
+        targetDurationSeconds: { type: integer }
+        status: { $ref: '#/components/schemas/SalesVideoStatus' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        latestScript: { $ref: '#/components/schemas/SalesVideoScriptDto' }
+        lastJob: { $ref: '#/components/schemas/SalesVideoJobDto' }
+
+    JobClaimRequest:
+      type: object
+      required: [workerId]
+      properties:
+        workerId:
+          type: string
+          minLength: 1
+        message:
+          type: string
+
+    JobHeartbeatRequest:
+      type: object
+      properties:
+        message: { type: string }
+        detailsJson: { type: string }
+
+    JobProgressRequest:
+      type: object
+      properties:
+        progressPercent: { type: integer, minimum: 0, maximum: 100 }
+        status: { $ref: '#/components/schemas/SalesVideoStatus' }
+        message: { type: string }
+        detailsJson: { type: string }
+
+    GeneratedScriptResultPayload:
+      type: object
+      properties:
+        scriptText: { type: string }
+        hookText: { type: string }
+        ctaText: { type: string }
+        captionText: { type: string }
+        storyboardJson: { type: string }
+        prompt: { type: string }
+        model: { type: string }
+
+    JobCompletionRequest:
+      type: object
+      properties:
+        status: { $ref: '#/components/schemas/SalesVideoStatus' }
+        assetId: { type: integer, format: int64 }
+        posterAssetId: { type: integer, format: int64 }
+        vttAssetId: { type: integer, format: int64 }
+        providerJobId: { type: string }
+        metadataJson: { type: string }
+        message: { type: string }
+        detailsJson: { type: string }
+        scriptResult:
+          $ref: '#/components/schemas/GeneratedScriptResultPayload'
+
+    JobFailureRequest:
+      type: object
+      properties:
+        failureCode: { type: string }
+        failureDetail: { type: string }
+        status: { $ref: '#/components/schemas/SalesVideoStatus' }
+        message: { type: string }
+
+    JobExpirationRequest:
+      type: object
+      properties:
+        message: { type: string }
+        detailsJson: { type: string }

@@ -111,6 +111,8 @@ import TargetingRecentQueriesPage from "./pages/targeting/TargetingRecentQueries
 import OprmWorkspacePage from "./pages/oprm/OprmWorkspacePage";
 import OprmRoutinePage from "./pages/oprm/OprmRoutinePage";
 import OprmOfferPage from "./pages/oprm/OprmOfferPage";
+import OprmEvidencePage from "./pages/oprm/OprmEvidencePage";
+import OprmFeedbackPage from "./pages/oprm/OprmFeedbackPage";
 
 export default function App() {
   return (
@@ -263,6 +265,14 @@ export default function App() {
               <Route
                 path="/oprm/offer/:occupationSeedRef"
                 element={<OprmOfferPage />}
+              />
+              <Route
+                path="/oprm/evidence/:occupationSeedRef"
+                element={<OprmEvidencePage />}
+              />
+              <Route
+                path="/oprm/feedback/:occupationSeedRef"
+                element={<OprmFeedbackPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

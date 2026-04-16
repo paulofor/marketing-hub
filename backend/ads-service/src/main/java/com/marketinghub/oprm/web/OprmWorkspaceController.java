@@ -1,5 +1,6 @@
 package com.marketinghub.oprm.web;
 
+import com.marketinghub.oprm.dto.OprmInsightsWorkspaceResponseDto;
 import com.marketinghub.oprm.dto.OprmRoutineWorkspaceResponseDto;
 import com.marketinghub.oprm.service.OprmArtifactService;
 import lombok.RequiredArgsConstructor;
@@ -17,5 +18,10 @@ public class OprmWorkspaceController {
     @GetMapping("/routine/{occupationSeedRef}")
     public OprmRoutineWorkspaceResponseDto getRoutineWorkspace(@PathVariable String occupationSeedRef) {
         return artifactService.getRoutineWorkspace(occupationSeedRef);
+    }
+
+    @GetMapping("/insights/{occupationSeedRef}")
+    public OprmInsightsWorkspaceResponseDto getInsightsWorkspace(@PathVariable String occupationSeedRef) {
+        return artifactService.getInsightsWorkspace(occupationSeedRef);
     }
 }

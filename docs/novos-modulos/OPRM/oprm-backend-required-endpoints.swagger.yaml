@@ -1,0 +1,792 @@
+openapi: 3.0.3
+info:
+  title: OPRM — Backend Required Endpoints
+  version: 1.1.0
+  description: |
+    Contrato consolidado dos endpoints que o backend principal deve oferecer para o OPRM operar
+    como worker integrado e para suportar as telas do workspace OPRM no Marketing Hub.
+servers:
+  - url: https://backend.marketinghub.local
+    description: Backend principal
+  - url: http://localhost:8080
+    description: Ambiente local
+
+tags:
+  - name: jobs
+    description: Orquestração e ciclo de vida de jobs OPRM
+  - name: artifacts
+    description: Publicação e consulta de artefatos canônicos OPRM
+  - name: workspace
+    description: Endpoints de leitura para telas do módulo OPRM
+  - name: feedback
+    description: Feedback loop e histórico de recalibração
+  - name: operations
+    description: Sinalização operacional do worker OPRM
+
+paths:
+  /api/oprm/jobs:
+    post:
+      tags: [jobs]
+      summary: Cria um novo job para processamento do OPRM
+      operationId: createOprmJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmCreateJobRequest'
+      responses:
+        '200':
+          description: Job criado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmJobDetailResponse'
+        '422':
+          description: Payload inválido para criação do job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/jobs/claim:
+    post:
+      tags: [jobs]
+      summary: Claim de job disponível para processamento do OPRM
+      operationId: claimOprmJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmJobClaimRequest'
+      responses:
+        '200':
+          description: Job disponível e reservado para o worker.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmJobClaimResponse'
+        '204':
+          description: Nenhum job disponível no momento.
+        '409':
+          description: Conflito de lock/claim.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+        '422':
+          description: Contrato inválido (versão incompatível ou payload inconsistente).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/jobs/workspace/occupations:
+    get:
+      tags: [workspace]
+      summary: Lista ocupações consolidadas para a home do workspace OPRM
+      operationId: listOprmWorkspaceOccupations
+      responses:
+        '200':
+          description: Lista de ocupações com metadados resumidos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OprmWorkspaceOccupationSummary'
+
+  /api/oprm/jobs/{jobId}:
+    get:
+      tags: [jobs]
+      summary: Consulta os detalhes do job
+      operationId: getOprmJobDetails
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalhes completos do job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmJobDetailResponse'
+        '404':
+          description: Job não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/jobs/{jobId}/status:
+    post:
+      tags: [jobs]
+      summary: Atualiza o status de processamento do job
+      operationId: updateOprmJobStatus
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmJobStatusUpdateRequest'
+      responses:
+        '202':
+          description: Status aceito para processamento assíncrono.
+        '404':
+          description: Job não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+        '409':
+          description: Transição de estado inválida para o job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/artifacts:
+    post:
+      tags: [artifacts]
+      summary: Publica artefato gerado pelo OPRM
+      operationId: publishOprmArtifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmArtifactPublishRequest'
+      responses:
+        '202':
+          description: Artefato aceito para persistência.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmArtifactPublishResponse'
+        '409':
+          description: Duplicidade de idempotency key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+        '422':
+          description: Envelope inválido ou lineage insuficiente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+    get:
+      tags: [artifacts]
+      summary: Lista artefatos persistidos com filtros opcionais
+      operationId: listOprmArtifacts
+      parameters:
+        - in: query
+          name: correlationId
+          schema:
+            type: string
+        - in: query
+          name: occupationSeedRef
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/OprmArtifactStatus'
+      responses:
+        '200':
+          description: Lista de artefatos resumidos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OprmArtifactSummary'
+
+  /api/oprm/workspace/routine/{occupationSeedRef}:
+    get:
+      tags: [workspace]
+      summary: Retorna o workspace de rotina da ocupação
+      operationId: getOprmRoutineWorkspace
+      parameters:
+        - in: path
+          name: occupationSeedRef
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dados agregados para tela Rotina.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmRoutineWorkspaceResponse'
+        '404':
+          description: Ocupação ou artefato não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/workspace/insights/{occupationSeedRef}:
+    get:
+      tags: [workspace]
+      summary: Retorna evidências e timeline para a tela de insights
+      operationId: getOprmInsightsWorkspace
+      parameters:
+        - in: path
+          name: occupationSeedRef
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dados agregados de evidência, lineage e feedback.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmInsightsWorkspaceResponse'
+        '404':
+          description: Ocupação ou artefato não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/feedback:
+    post:
+      tags: [feedback]
+      summary: Publica snapshot de feedback loop
+      operationId: publishOprmFeedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmFeedbackPublishRequest'
+      responses:
+        '202':
+          description: Feedback aceito para persistência.
+        '422':
+          description: Snapshot inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+  /api/oprm/feedback/history:
+    get:
+      tags: [feedback]
+      summary: Lista histórico de feedback por ocupação/persona
+      operationId: listOprmFeedbackHistory
+      parameters:
+        - in: query
+          name: occupationName
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: personaLabel
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Histórico de snapshots de recalibração.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OprmFeedbackHistoryEntry'
+
+  /api/oprm/heartbeat:
+    post:
+      tags: [operations]
+      summary: Heartbeat operacional do worker OPRM
+      operationId: publishOprmHeartbeat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OprmHeartbeatRequest'
+      responses:
+        '202':
+          description: Heartbeat recebido.
+        '422':
+          description: Heartbeat inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OprmApiErrorResponse'
+
+components:
+  schemas:
+    OprmCreateJobRequest:
+      type: object
+      required: [jobType, occupationSeedRef]
+      properties:
+        jobType:
+          $ref: '#/components/schemas/OprmJobType'
+        occupationSeedRef:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        inputRefs:
+          type: array
+          items:
+            type: string
+          nullable: true
+
+    OprmJobClaimRequest:
+      type: object
+      required: [workerId, workerVersion, contractVersion, maxJobs, leaseSeconds]
+      properties:
+        workerId:
+          type: string
+        workerVersion:
+          type: string
+        contractVersion:
+          type: string
+          example: '1.0'
+        maxJobs:
+          type: integer
+          minimum: 1
+          maximum: 20
+        leaseSeconds:
+          type: integer
+          minimum: 30
+
+    OprmJobClaimResponse:
+      type: object
+      required: [jobId, jobType, occupationSeedRef, correlationId, parameters, claimedAt, leaseExpiresAt]
+      properties:
+        jobId:
+          type: string
+        jobType:
+          $ref: '#/components/schemas/OprmJobType'
+        occupationSeedRef:
+          type: string
+        correlationId:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+        claimedAt:
+          type: string
+          format: date-time
+        leaseExpiresAt:
+          type: string
+          format: date-time
+
+    OprmWorkspaceOccupationSummary:
+      type: object
+      required: [occupationSeedRef]
+      properties:
+        occupationSeedRef:
+          type: string
+        lastJobStatus:
+          $ref: '#/components/schemas/OprmJobStatus'
+          nullable: true
+        lastCorrelationId:
+          type: string
+          nullable: true
+        lastUpdatedAt:
+          type: string
+          nullable: true
+          description: Timestamp serializado pelo backend.
+
+    OprmJobDetailResponse:
+      type: object
+      required: [jobId, jobType, jobStatus, occupationSeedRef, correlationId, attemptCount, createdAt, parameters, inputRefs]
+      properties:
+        jobId:
+          type: string
+        jobType:
+          $ref: '#/components/schemas/OprmJobType'
+        jobStatus:
+          $ref: '#/components/schemas/OprmJobStatus'
+        occupationSeedRef:
+          type: string
+        correlationId:
+          type: string
+        attemptCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+        claimedAt:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          nullable: true
+        finishedAt:
+          type: string
+          nullable: true
+        parameters:
+          type: object
+          additionalProperties: true
+        inputRefs:
+          type: array
+          items:
+            type: string
+        errorCode:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+
+    OprmJobStatusUpdateRequest:
+      type: object
+      required: [workerId, status, occurredAt]
+      properties:
+        workerId:
+          type: string
+        status:
+          $ref: '#/components/schemas/OprmJobStatus'
+        occurredAt:
+          type: string
+        phase:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        metrics:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    OprmArtifactPublishRequest:
+      type: object
+      required: [jobId, correlationId, artifact, lineage, idempotencyKey]
+      properties:
+        jobId:
+          type: string
+        correlationId:
+          type: string
+        artifact:
+          $ref: '#/components/schemas/OprmArtifactEnvelope'
+        lineage:
+          type: object
+          additionalProperties: true
+        idempotencyKey:
+          type: string
+
+    OprmArtifactPublishResponse:
+      type: object
+      required: [artifactId, artifactType, artifactVersion, persistedAt, status, duplicated]
+      properties:
+        artifactId:
+          type: string
+        artifactType:
+          type: string
+        artifactVersion:
+          type: string
+        persistedAt:
+          type: string
+        status:
+          type: string
+        duplicated:
+          type: boolean
+
+    OprmArtifactEnvelope:
+      type: object
+      required:
+        - artifactType
+        - artifactVersion
+        - artifactId
+        - moduleName
+        - producer
+        - createdAt
+        - correlationId
+        - traceId
+        - sourceRefs
+        - inputRefs
+        - payload
+        - status
+        - metadata
+      properties:
+        artifactType:
+          type: string
+        artifactVersion:
+          type: string
+        artifactId:
+          type: string
+        moduleName:
+          type: string
+          example: oprm
+        producer:
+          type: string
+        createdAt:
+          type: string
+        correlationId:
+          type: string
+        traceId:
+          type: string
+        sourceRefs:
+          type: array
+          items:
+            type: string
+        inputRefs:
+          type: array
+          items:
+            type: string
+        payload:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/OprmArtifactStatus'
+        confidenceScore:
+          type: number
+          format: double
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    OprmArtifactSummary:
+      type: object
+      required: [artifactId, artifactType, artifactVersion, artifactStatus, occupationSeedRef, correlationId, createdAt]
+      properties:
+        artifactId:
+          type: string
+        artifactType:
+          type: string
+        artifactVersion:
+          type: string
+        artifactStatus:
+          $ref: '#/components/schemas/OprmArtifactStatus'
+        occupationSeedRef:
+          type: string
+        correlationId:
+          type: string
+        createdAt:
+          type: string
+
+    OprmRoutineWorkspaceResponse:
+      type: object
+      required:
+        - occupationSeedRef
+      properties:
+        occupationSeedRef:
+          type: string
+        lastCorrelationId:
+          type: string
+          nullable: true
+        routineCardPayload:
+          type: object
+          additionalProperties: true
+          nullable: true
+        frameworkInputPayload:
+          type: object
+          additionalProperties: true
+          nullable: true
+        painSignals:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        desiredOutcomeSignals:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        mechanismOpportunitySignals:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    OprmInsightsWorkspaceResponse:
+      type: object
+      required: [occupationSeedRef, timeline, sources, excerpts, feedbackSnapshots]
+      properties:
+        occupationSeedRef:
+          type: string
+        lastCorrelationId:
+          type: string
+          nullable: true
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/OprmArtifactSummary'
+        sources:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        excerpts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        lineage:
+          type: object
+          additionalProperties: true
+          nullable: true
+        feedbackSnapshots:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        feedbackComparison:
+          type: object
+          additionalProperties: true
+          nullable: true
+
+    OprmFeedbackPublishRequest:
+      type: object
+      required:
+        - jobId
+        - correlationId
+        - occupationName
+        - personaLabel
+        - baselineRoutineArtifactId
+        - baselineFrameworkArtifactId
+        - recalibratedPainSignals
+        - recalibratedMechanismSignals
+        - hypothesisComparison
+        - scoreReweighting
+        - generatedAt
+      properties:
+        jobId:
+          type: string
+        correlationId:
+          type: string
+        occupationName:
+          type: string
+        personaLabel:
+          type: string
+        baselineRoutineArtifactId:
+          type: string
+        baselineFrameworkArtifactId:
+          type: string
+        recalibratedPainSignals:
+          type: object
+          additionalProperties: true
+        recalibratedMechanismSignals:
+          type: object
+          additionalProperties: true
+        hypothesisComparison:
+          type: object
+          additionalProperties: true
+        scoreReweighting:
+          type: object
+          additionalProperties: true
+        generatedAt:
+          type: string
+
+    OprmFeedbackHistoryEntry:
+      type: object
+      required:
+        - generatedAt
+        - previousRoutineConfidence
+        - recalibratedRoutineConfidence
+        - previousFrameworkConfidence
+        - recalibratedFrameworkConfidence
+        - averageHypothesisImpact
+      properties:
+        generatedAt:
+          type: string
+        previousRoutineConfidence:
+          type: number
+          format: double
+        recalibratedRoutineConfidence:
+          type: number
+          format: double
+        previousFrameworkConfidence:
+          type: number
+          format: double
+        recalibratedFrameworkConfidence:
+          type: number
+          format: double
+        averageHypothesisImpact:
+          type: number
+          format: double
+        notes:
+          type: string
+          nullable: true
+
+    OprmHeartbeatRequest:
+      type: object
+      required: [workerId, workerVersion, contractVersion, sentAt, health, counters]
+      properties:
+        workerId:
+          type: string
+        workerVersion:
+          type: string
+        contractVersion:
+          type: string
+          example: '1.0'
+        sentAt:
+          type: string
+        health:
+          type: object
+          additionalProperties: true
+        counters:
+          type: object
+          additionalProperties: true
+
+    OprmApiErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+          nullable: true
+        details:
+          type: string
+          nullable: true
+
+    OprmJobType:
+      type: string
+      enum:
+        - OCCUPATION_MAPPING
+        - FEEDBACK_RECALIBRATION
+
+    OprmJobStatus:
+      type: string
+      enum:
+        - PENDING
+        - CLAIMED
+        - RUNNING
+        - SUCCEEDED
+        - FAILED
+        - RETRY_WAIT
+        - CANCELLED
+
+    OprmArtifactStatus:
+      type: string
+      enum:
+        - DRAFT
+        - GENERATED
+        - VALIDATED
+        - REJECTED
+        - PUBLISHED
+        - SUPERSEDED

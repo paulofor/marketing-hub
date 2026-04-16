@@ -127,7 +127,19 @@ Especificação de Telas :docs/novos-modulos/OPRM/oprm_especificacao_telas_menu_
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 
-Crie um swagger em : docs/novos-modulos/OPRM com todos os endpoints que o OPRM precisa que o backend ofereça
+Crie um swagger em : docs/novos-modulos/OPRM com todos os endpoints que o OPRM precisa que o backend ofereça com suas especificações.
+
+Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+Atue no backend que fornece endpoints para o modulo OPRM
+
+Verifique se estão corretos todos os itens do swagger : docs/novos-modulos/OPRM
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 

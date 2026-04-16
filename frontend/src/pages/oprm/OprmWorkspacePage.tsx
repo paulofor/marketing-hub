@@ -41,6 +41,7 @@ function formatDate(value: string): string {
 export default function OprmWorkspacePage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | OprmJobStatus>("ALL");
   const [search, setSearch] = useState("");
+  const [newOccupationSeedRef, setNewOccupationSeedRef] = useState("");
   const [processingOccupation, setProcessingOccupation] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
@@ -79,6 +80,27 @@ export default function OprmWorkspacePage() {
     }
   }
 
+  async function handleCreateJob() {
+    const occupationSeedRef = newOccupationSeedRef.trim();
+    if (!occupationSeedRef) {
+      return;
+    }
+
+    setProcessingOccupation(occupationSeedRef);
+    try {
+      await reprocessMutation.mutateAsync({
+        jobType: "OCCUPATION_MAPPING",
+        occupationSeedRef,
+      });
+      setNewOccupationSeedRef("");
+      await queryClient.invalidateQueries({
+        queryKey: ["oprm", "workspace", "occupations"],
+      });
+    } finally {
+      setProcessingOccupation(null);
+    }
+  }
+
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
@@ -89,6 +111,51 @@ export default function OprmWorkspacePage() {
       </header>
 
       <OprmModuleNavigation />
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div>
+            <h2 className="h5 mb-1">Rodar OPRM</h2>
+            <p className="text-secondary mb-0">
+              Inicie um novo processamento informando a referência da ocupação/persona.
+            </p>
+          </div>
+          <form
+            className="row g-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              await handleCreateJob();
+            }}
+          >
+            <div className="col-12 col-lg-8">
+              <label className="form-label" htmlFor="oprm-seed-ref">
+                Ocupação/persona
+              </label>
+              <input
+                id="oprm-seed-ref"
+                className="form-control"
+                placeholder="Ex.: dentista"
+                value={newOccupationSeedRef}
+                onChange={(event) => setNewOccupationSeedRef(event.target.value)}
+              />
+            </div>
+            <div className="col-12 col-lg-4 d-grid align-content-end">
+              <button
+                type="submit"
+                className="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2"
+                disabled={reprocessMutation.isPending || newOccupationSeedRef.trim().length === 0}
+              >
+                {reprocessMutation.isPending && processingOccupation === newOccupationSeedRef.trim() ? (
+                  <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                ) : (
+                  <RefreshCw size={14} aria-hidden="true" />
+                )}
+                Rodar OPRM
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
@@ -157,9 +224,19 @@ export default function OprmWorkspacePage() {
 
       {!occupationsQuery.isLoading && !occupationsQuery.isError ? (
         filteredOccupations.length === 0 ? (
-          <div className="alert alert-secondary mb-0" role="status">
-            Nenhuma ocupação encontrada com os filtros atuais.
-          </div>
+          <section className="card border-0 shadow-sm">
+            <div className="card-body d-flex flex-column gap-3">
+              <h2 className="h5 mb-0">Workspace de Ocupações vazio</h2>
+              <p className="text-secondary mb-0">
+                Nenhuma ocupação foi encontrada para os filtros atuais. Para iniciar o fluxo guiado do OPRM:
+              </p>
+              <ol className="mb-0">
+                <li>Informe a ocupação/persona no bloco <strong>Rodar OPRM</strong>.</li>
+                <li>Dispare o processamento e aguarde o status mudar para concluído.</li>
+                <li>Use as ações da tabela para abrir <strong>Rotina</strong> e <strong>Oferta</strong>.</li>
+              </ol>
+            </div>
+          </section>
         ) : (
           <section className="card border-0 shadow-sm">
             <div className="table-responsive">

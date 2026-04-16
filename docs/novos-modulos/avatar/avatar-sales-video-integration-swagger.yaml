@@ -10,6 +10,8 @@ info:
 servers:
   - url: http://backend:8000
     description: Ambiente local/staging
+  - url: http://191.252.181.168:8000
+    description: Backend staging compartilhado (Sprint V1)
 
 tags:
   - name: InternalVideoJobs

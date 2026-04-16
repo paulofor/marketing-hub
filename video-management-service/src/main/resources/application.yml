@@ -2,13 +2,26 @@ server:
   port: 8095
 
 video:
-  backend-base-url: http://backend:8000
+  backend-base-url: http://191.252.181.168:8000
   worker-id: vm-service-local
   auth-token: ""
   jobs:
     polling-enabled: false
     poll-interval: PT30S
     batch-size: 10
+  providers:
+    real:
+      enabled: false
+      accepted-names:
+        - REAL
+        - HEYGEN
+        - SYNTHESIA
+      base-url: http://real-video-provider:8080
+      auth-token: ""
+      create-path: /v1/renders
+      status-path-template: /v1/renders/{providerJobId}
+      poll-interval: PT5S
+      max-poll-attempts: 120
 
 management:
   endpoints:

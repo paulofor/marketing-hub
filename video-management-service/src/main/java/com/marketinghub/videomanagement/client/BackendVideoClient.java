@@ -5,7 +5,9 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.client.payload.JobClaimPayload;
 import com.marketinghub.videomanagement.client.payload.JobCompletionPayload;
+import com.marketinghub.videomanagement.client.payload.JobExpirationPayload;
 import com.marketinghub.videomanagement.client.payload.JobFailurePayload;
+import com.marketinghub.videomanagement.client.payload.JobHeartbeatPayload;
 import com.marketinghub.videomanagement.client.payload.JobProgressPayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
@@ -90,12 +92,20 @@ public class BackendVideoClient {
         postIgnoringBody("/internal/video/jobs/{jobId}/progress", jobId, payload);
     }
 
+    public void reportHeartbeat(Long jobId, JobHeartbeatPayload payload) {
+        postIgnoringBody("/internal/video/jobs/{jobId}/heartbeat", jobId, payload);
+    }
+
     public void completeJob(Long jobId, JobCompletionPayload payload) {
         postIgnoringBody("/internal/video/jobs/{jobId}/complete", jobId, payload);
     }
 
     public void failJob(Long jobId, JobFailurePayload payload) {
         postIgnoringBody("/internal/video/jobs/{jobId}/fail", jobId, payload);
+    }
+
+    public void expireJob(Long jobId, JobExpirationPayload payload) {
+        postIgnoringBody("/internal/video/jobs/{jobId}/expired", jobId, payload);
     }
 
     private SalesVideoJob postForJob(String path,

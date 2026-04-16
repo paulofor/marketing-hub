@@ -10,6 +10,8 @@ import org.springframework.validation.annotation.Validated;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -31,6 +33,9 @@ public class VideoManagementProperties {
     @NotNull
     private Jobs jobs = new Jobs();
 
+    @NotNull
+    private Providers providers = new Providers();
+
     @Getter
     @Setter
     public static class Jobs {
@@ -41,5 +46,43 @@ public class VideoManagementProperties {
 
         @Min(1)
         private int batchSize = 10;
+    }
+
+    @Getter
+    @Setter
+    public static class Providers {
+        @NotNull
+        private Real real = new Real();
+    }
+
+    @Getter
+    @Setter
+    public static class Real {
+        private boolean enabled = false;
+
+        /**
+         * Nomes que identificam o provider real dentro de providerName do job.
+         */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("REAL", "HEYGEN", "SYNTHESIA"));
+
+        /**
+         * Base URL da API do provider real.
+         */
+        private URI baseUrl;
+
+        /**
+         * Token opcional para autenticação bearer na API do provider.
+         */
+        private String authToken;
+
+        private String createPath = "/v1/renders";
+        private String statusPathTemplate = "/v1/renders/{providerJobId}";
+
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(5);
+
+        @Min(1)
+        private int maxPollAttempts = 120;
     }
 }

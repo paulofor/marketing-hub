@@ -259,6 +259,38 @@ Foi concluída a preparação de finalização operacional do OPRM para publica�
 - executar o fluxo de cópia e apply no host `177.153.62.107` com usuário de infraestrutura
 - versionar contrato HTTP backend↔OPRM para jobs e publicação de artefatos end-to-end
 
+## 2026-04-16 — ajuste da tela inicial do workspace OPRM
+
+**Status:** concluído
+
+**Resumo:**  
+Foi ajustada a tela inicial do módulo OPRM no frontend para reduzir a sensação de incompletude no primeiro acesso, adicionando entrada explícita para disparar processamento e um estado vazio guiado para o fluxo de negócio.
+
+**O que foi implementado:**  
+- inclusão de bloco dedicado `Rodar OPRM` com campo para ocupação/persona e ação de submit
+- implementação de disparo de job OPRM diretamente pela tela inicial usando a mutação já existente
+- inclusão de indicador de carregamento e bloqueio do botão durante a requisição assíncrona
+- substituição do alerta simples de vazio por estado guiado com próximos passos (rodar processamento, aguardar status e navegar para rotina/oferta)
+
+**Arquivos principais alterados:**  
+- `frontend/src/pages/oprm/OprmWorkspacePage.tsx`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**  
+- nenhum contrato novo
+
+**Testes executados:**  
+- `cd frontend && npm run test -- OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+
+**Limitações ou pendências:**  
+- campos adicionais da tabela de ocupações previstos na especificação (nicho, confiança/dor/oportunidade reais e origem) continuam dependentes de expansão do payload do backend
+- filtro de confiança permanece como placeholder de sprint futura
+
+**Próximo passo sugerido:**  
+- evoluir endpoint `/api/oprm/jobs/workspace/occupations` para retornar metadados completos da ocupação previstos na especificação
+- implementar filtro de confiança real no workspace usando dados persistidos do card de rotina e artefatos correlatos
+
 ## 2026-04-15 — sprint 1: contrato oficial backend ↔ OPRM
 
 **Status:** concluído
@@ -745,3 +777,35 @@ Foi concluída a Sprint UI-4 do módulo OPRM no frontend com a nova tela de Oper
 **Próximo passo sugerido:**  
 - expor endpoint de observabilidade dedicado para heartbeat e métricas do worker no backend
 - adicionar endpoint de listagem operacional de jobs com paginação para detalhamento técnico completo
+
+## 2026-04-16 — ajuste da tela inicial do workspace OPRM
+
+**Status:** concluído
+
+**Resumo:**  
+Foi ajustada a tela inicial do módulo OPRM no frontend para reduzir a sensação de incompletude no primeiro acesso, adicionando entrada explícita para disparar processamento e um estado vazio guiado para o fluxo de negócio.
+
+**O que foi implementado:**  
+- inclusão de bloco dedicado `Rodar OPRM` com campo para ocupação/persona e ação de submit
+- implementação de disparo de job OPRM diretamente pela tela inicial usando a mutação já existente
+- inclusão de indicador de carregamento e bloqueio do botão durante a requisição assíncrona
+- substituição do alerta simples de vazio por estado guiado com próximos passos (rodar processamento, aguardar status e navegar para rotina/oferta)
+
+**Arquivos principais alterados:**  
+- `frontend/src/pages/oprm/OprmWorkspacePage.tsx`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**  
+- nenhum contrato novo
+
+**Testes executados:**  
+- `cd frontend && npm run test -- --run OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+
+**Limitações ou pendências:**  
+- campos adicionais da tabela de ocupações previstos na especificação (nicho, confiança/dor/oportunidade reais e origem) continuam dependentes de expansão do payload do backend
+- filtro de confiança permanece como placeholder de sprint futura
+
+**Próximo passo sugerido:**  
+- evoluir endpoint `/api/oprm/jobs/workspace/occupations` para retornar metadados completos da ocupação previstos na especificação
+- implementar filtro de confiança real no workspace usando dados persistidos do card de rotina e artefatos correlatos

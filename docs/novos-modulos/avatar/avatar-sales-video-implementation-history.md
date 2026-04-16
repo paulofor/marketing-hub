@@ -14,6 +14,7 @@ Cada entrada descreve:
 
 ## Índice rápido
 - 2026-04-16 — Sprint V1 (contrato de integração e atualização de planejamento)
+- 2026-04-16 — Sprint V1 (implementação do adapter real e integração backend)
 
 ---
 
@@ -75,3 +76,75 @@ Cada entrada descreve:
 - Riscos abertos: drift de estado entre provider externo e backend; backlog por falhas intermitentes sem auto-recuperação.
 - Dependências externas: credenciais/provider real e ambiente de staging com conectividade validada.
 - Onde continuar: `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md` e `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`.
+
+## 2026-04-16 — Sprint V1 (implementação do adapter real e integração backend)
+
+**Status:** parcialmente concluída
+
+### Resumo
+- Foi implementado um adapter `real` no `video-management-service`, preservando o `stub` como fallback de desenvolvimento.
+- O fluxo real passou a suportar `submit`, polling, download de artefatos e devolução de metadata mínima para o backend.
+- Falhas do provider e expiração foram normalizadas para os endpoints internos canônicos do backend.
+
+### O que foi implementado
+- Novo provider `RealVideoProvider` com:
+  - seleção por `providerName`;
+  - criação de job no provider externo;
+  - polling de status com timeout configurável;
+  - download de vídeo/poster/legenda por URL;
+  - metadata com `provider`, `provider_job_id` e status externo final.
+- Ampliação do `BackendVideoClient` para:
+  - `heartbeat` (`POST /internal/video/jobs/{jobId}/heartbeat`);
+  - `expired` (`POST /internal/video/jobs/{jobId}/expired`).
+- Atualização do `VideoJobProcessor` para:
+  - mapear `PROVIDER_ASSET_EXPIRED` para endpoint de expiração;
+  - manter tradução de falhas técnicas em `failureCode`.
+- Configuração de staging com backend `http://191.252.181.168:8000`.
+
+### O que foi alterado
+- Arquivos:
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/provider/RealVideoProvider.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/provider/VideoProviderException.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobProcessor.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobProgressReporter.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/BackendVideoClient.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/payload/JobHeartbeatPayload.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/payload/JobExpirationPayload.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java`
+  - `video-management-service/src/main/resources/application.yml`
+  - `video-management-service/README.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+- Módulos:
+  - `video-management-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `/internal/video/jobs/{jobId}/heartbeat`
+  - `/internal/video/jobs/{jobId}/expired`
+  - `/internal/video/jobs/{jobId}/progress`
+  - `/internal/video/jobs/{jobId}/complete`
+  - `/internal/video/jobs/{jobId}/fail`
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoRenderJob.v1` (campos `providerName`, `providerJobId`, estados do ciclo assíncrono).
+- `avatar.salesVideoProviderExecution.v1` (metadata técnica de provider devolvida ao backend).
+- Payloads de job interno para heartbeat e expiração.
+
+### Testes e validações executados
+- Build e suíte de testes do `video-management-service`.
+- Revisão de compatibilidade do client com os endpoints OpenAPI da integração backend ↔ módulo de vídeo.
+
+### Limitações e pendências
+- Sem credenciais reais no repositório para validar provider externo contra ambiente staging.
+- Contrato JSON do provider real pode exigir ajuste fino por vendor (nomes de campos de status/URL).
+- Sem observabilidade consolidada de métricas/alertas (escopo Sprint V3).
+
+### Próximo passo sugerido
+- Executar validação E2E em staging com credenciais reais, cobrindo sucesso/falha/expiração e aferindo tempos de polling.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: Sprint V2 (robustez de timeout/retry/deduplicação) + validação E2E do provider real.
+- O que não deve ser refeito: contrato de endpoints internos `/internal/video/jobs/*` e fluxo canônico backend como fonte de verdade.
+- Riscos abertos: campos de status divergentes entre providers reais e parser atual; timeout insuficiente para renders longos.
+- Dependências externas: credenciais e documentação final do provider real por ambiente.
+- Onde continuar: `video-management-service/src/main/java/com/marketinghub/videomanagement/service/provider/RealVideoProvider.java`.

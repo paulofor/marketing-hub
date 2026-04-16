@@ -94,17 +94,24 @@ Substituir a dependência exclusiva do provider `stub` por um **adapter real de 
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- concluída com pendências (escopo documental + contrato de integração backend ↔ módulo de vídeo)
+- concluída com pendências (adapter real inicial implementado no `video-management-service`, aguardando validação E2E em staging)
 
 ### O que foi implementado
 - consolidação do contrato operacional da Sprint V1 para o fluxo `VIDEO_REQUESTED -> VIDEO_PROCESSING -> VIDEO_READY/VIDEO_FAILED`.
 - definição formal (OpenAPI) dos endpoints que o `video-management-service` consome para buscar jobs, claim, progresso, conclusão, falha e expiração.
 - alinhamento explícito da fronteira arquitetural: backend como persistência canônica e módulo de vídeo como executor assíncrono.
+- implementação do adapter `real` com fluxo `submit -> polling -> download`, mantendo `stub` para desenvolvimento.
+- normalização de falhas técnicas (`PROVIDER_TIMEOUT`, `PROVIDER_RENDER_FAILED`) e expiração (`PROVIDER_ASSET_EXPIRED`) para atualização do backend via endpoints internos.
+- envio de heartbeat durante progress updates para reforçar rastreabilidade operacional.
 
 ### Arquivos alterados
 - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
 - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
 - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- `video-management-service/src/main/java/com/marketinghub/videomanagement/service/provider/RealVideoProvider.java`
+- `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobProcessor.java`
+- `video-management-service/src/main/java/com/marketinghub/videomanagement/client/BackendVideoClient.java`
+- `video-management-service/src/main/resources/application.yml`
 
 ### Endpoints/contratos afetados
 - `GET /internal/video/jobs`
@@ -122,7 +129,7 @@ Substituir a dependência exclusiva do provider `stub` por um **adapter real de 
 - `real` (alvo da integração da Sprint V1; habilitação condicionada por configuração por ambiente)
 
 ### Limitações restantes
-- adapter de provider real ainda depende de credenciais, mapeamento de erros e validação E2E em staging.
+- adapter de provider real ainda depende de credenciais válidas e endpoints definitivos do provider por ambiente.
 - sem política endurecida de timeout/heartbeat/retry para recuperação automática.
 - sem baseline operacional de métricas e alertas.
 
@@ -131,6 +138,7 @@ Substituir a dependência exclusiva do provider `stub` por um **adapter real de 
 - especificar retry técnico com deduplicação e classificação de `retryReason`.
 - documentar fallback operacional por ambiente (staging vs produção).
 - incluir cenários de asset expirado e job órfão como casos obrigatórios de validação.
+- validar E2E em staging do provider real (job completo + falha + asset expirado) contra backend `191.252.181.168`.
 
 ### Evidências/testes executados
 - validação documental do contrato comparando o plano de reinício com os controladores e DTOs existentes no backend.

@@ -8,6 +8,7 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.client.payload.JobClaimPayload;
 import com.marketinghub.videomanagement.client.payload.JobCompletionPayload;
+import com.marketinghub.videomanagement.client.payload.JobExpirationPayload;
 import com.marketinghub.videomanagement.client.payload.JobFailurePayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
@@ -70,11 +71,20 @@ public class VideoJobProcessor {
             log.info("Job {} concluído com vídeo {}", job.id(), uploadedAssets.videoAssetId());
         } catch (VideoProviderException | BackendIntegrationException ex) {
             log.warn("Falha ao processar job {}: {}", job.id(), ex.getMessage());
-            backendClient.failJob(job.id(), new JobFailurePayload(
-                    "VIDEO_PROVIDER_ERROR",
-                    ex.getMessage(),
-                    SalesVideoStatus.VIDEO_FAILED,
-                    ex.getMessage()));
+            if (isExpiredFailure(ex)) {
+                backendClient.expireJob(job.id(), new JobExpirationPayload(
+                        "Provider informou asset expirado",
+                        ex.getMessage()));
+            } else {
+                String failureCode = ex instanceof VideoProviderException providerException
+                        ? providerException.getCode()
+                        : "VIDEO_PROVIDER_ERROR";
+                backendClient.failJob(job.id(), new JobFailurePayload(
+                        failureCode,
+                        ex.getMessage(),
+                        SalesVideoStatus.VIDEO_FAILED,
+                        ex.getMessage()));
+            }
         } catch (Exception ex) {
             log.error("Erro inesperado ao processar job {}", job.id(), ex);
             backendClient.failJob(job.id(), new JobFailurePayload(
@@ -83,6 +93,13 @@ public class VideoJobProcessor {
                     SalesVideoStatus.VIDEO_FAILED,
                     "Falha inesperada ao processar job"));
         }
+    }
+
+    private boolean isExpiredFailure(Exception ex) {
+        if (ex instanceof VideoProviderException providerException) {
+            return "PROVIDER_ASSET_EXPIRED".equalsIgnoreCase(providerException.getCode());
+        }
+        return false;
     }
 
     private SalesVideoProfile loadProfile(SalesVideoJob job) {

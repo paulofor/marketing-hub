@@ -94,28 +94,47 @@ Substituir a dependência exclusiva do provider `stub` por um **adapter real de 
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (escopo documental + contrato de integração backend ↔ módulo de vídeo)
 
 ### O que foi implementado
-- 
+- consolidação do contrato operacional da Sprint V1 para o fluxo `VIDEO_REQUESTED -> VIDEO_PROCESSING -> VIDEO_READY/VIDEO_FAILED`.
+- definição formal (OpenAPI) dos endpoints que o `video-management-service` consome para buscar jobs, claim, progresso, conclusão, falha e expiração.
+- alinhamento explícito da fronteira arquitetural: backend como persistência canônica e módulo de vídeo como executor assíncrono.
 
 ### Arquivos alterados
-- 
+- `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+- `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+- `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 
 ### Endpoints/contratos afetados
-- 
+- `GET /internal/video/jobs`
+- `GET /internal/video/jobs/{jobId}`
+- `POST /internal/video/jobs/{jobId}/claim`
+- `POST /internal/video/jobs/{jobId}/heartbeat`
+- `POST /internal/video/jobs/{jobId}/progress`
+- `POST /internal/video/jobs/{jobId}/complete`
+- `POST /internal/video/jobs/{jobId}/fail`
+- `POST /internal/video/jobs/{jobId}/expired`
+- `GET /api/sales-videos/profiles/{profileId}`
 
 ### Providers suportados
-- 
+- `stub` (homologação/desenvolvimento)
+- `real` (alvo da integração da Sprint V1; habilitação condicionada por configuração por ambiente)
 
 ### Limitações restantes
-- 
+- adapter de provider real ainda depende de credenciais, mapeamento de erros e validação E2E em staging.
+- sem política endurecida de timeout/heartbeat/retry para recuperação automática.
+- sem baseline operacional de métricas e alertas.
 
 ### Pendências carregadas para a Sprint V2
-- 
+- definir política canônica de claim duplicado, heartbeat e timeout com regras de recuperação.
+- especificar retry técnico com deduplicação e classificação de `retryReason`.
+- documentar fallback operacional por ambiente (staging vs produção).
+- incluir cenários de asset expirado e job órfão como casos obrigatórios de validação.
 
 ### Evidências/testes executados
-- 
+- validação documental do contrato comparando o plano de reinício com os controladores e DTOs existentes no backend.
+- revisão de consistência semântica com os cânones (`system-governance` e artefatos do módulo).
 
 ---
 
@@ -468,36 +487,36 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Handoff para a próxima sprint
 
 ### 1. Resumo factual do estado atual
-- O que está concluído:
-- O que está parcialmente concluído:
-- O que ainda não começou:
+- O que está concluído: contrato de integração backend ↔ módulo de vídeo formalizado e backlog da Sprint V1 consolidado.
+- O que está parcialmente concluído: validação do fluxo com provider real (dependente de credenciais, adapter final e testes em staging).
+- O que ainda não começou: robustez avançada de retry/timeout, observabilidade operacional e rollout controlado.
 
 ### 2. Pendências carregadas
-- Pendência 1:
-- Pendência 2:
-- Pendência 3:
+- Pendência 1: implementar política de timeout + heartbeat + detecção de job órfão no worker de vídeo.
+- Pendência 2: endurecer retry técnico sem duplicação silenciosa de processamento.
+- Pendência 3: validar cenários de expiração de asset com transição de estado previsível no backend.
 
 ### 3. Riscos abertos
-- Risco 1:
-- Risco 2:
-- Risco 3:
+- Risco 1: divergência entre estado externo do provider e estado canônico interno (`SalesVideoStatus`).
+- Risco 2: falhas intermitentes do provider causarem backlog sem reprocessamento automático seguro.
+- Risco 3: aumento de latência sem métricas mínimas em tempo real dificultar operação.
 
 ### 4. Decisões tomadas nesta sprint
-- Decisão 1:
-- Decisão 2:
-- Decisão 3:
+- Decisão 1: manter backend como única fonte de verdade para estado e persistência do módulo.
+- Decisão 2: formalizar o contrato de integração em OpenAPI dentro do diretório canônico do módulo.
+- Decisão 3: carregar para a Sprint V2 toda regra de robustez operacional (claim/timeout/retry/expiração).
 
 ### 5. Contratos/artefatos afetados
-- Endpoint:
-- DTO/schema:
-- Eventos:
-- Métricas:
-- Flags:
+- Endpoint: `/internal/video/jobs/*` e `/api/sales-videos/profiles/{profileId}`.
+- DTO/schema: `SalesVideoJobDto`, `SalesVideoProfileDto`, `JobClaimRequest`, `JobProgressRequest`, `JobCompletionRequest`, `JobFailureRequest`, `JobHeartbeatRequest`, `JobExpirationRequest`.
+- Eventos: atualizações de progresso/conclusão/falha/expiração reportadas pelo módulo assíncrono ao backend.
+- Métricas: pendente para Sprint V3 (ainda não implementadas).
+- Flags: pendente para Sprint V6 (rollout por tenant/feature flag).
 
 ### 6. Instruções para o próximo ciclo do Codex
-- Prioridade imediata:
-- O que não deve ser refeito:
-- Onde continuar:
+- Prioridade imediata: Sprint V2 com foco em robustez do ciclo assíncrono e prevenção de jobs órfãos.
+- O que não deve ser refeito: contrato de endpoints já mapeado/documentado para integração backend ↔ módulo de vídeo.
+- Onde continuar: `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md` e `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`.
 
 ---
 

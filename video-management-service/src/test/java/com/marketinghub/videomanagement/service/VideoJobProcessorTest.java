@@ -14,6 +14,7 @@ import com.marketinghub.videomanagement.client.payload.JobClaimPayload;
 import com.marketinghub.videomanagement.client.payload.JobCompletionPayload;
 import com.marketinghub.videomanagement.client.payload.JobFailurePayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import com.marketinghub.videomanagement.exception.BackendIntegrationException;
 import com.marketinghub.videomanagement.service.VideoAssetUploader.UploadedAssets;
 import com.marketinghub.videomanagement.service.provider.ProviderArtifacts;
 import com.marketinghub.videomanagement.service.provider.ProviderAssetRole;
@@ -103,16 +104,34 @@ class VideoJobProcessorTest {
         assertThat(failureCaptor.getValue().failureCode()).isEqualTo("VIDEO_PROVIDER_ERROR");
     }
 
+    @Test
+    void shouldSkipProcessingWhenClaimIsDuplicated() {
+        SalesVideoJob job = job();
+        when(backendClient.claimJob(any(), any()))
+                .thenThrow(new BackendIntegrationException("claim conflict", 409));
+
+        processor.process(job);
+
+        verify(backendClient, never()).fetchProfile(any());
+        verify(backendClient, never()).failJob(any(), any());
+        verify(backendClient, never()).completeJob(any(), any());
+    }
+
     private SalesVideoJob job() {
         return new SalesVideoJob(
                 1L,
                 2L,
                 3L,
+                "tenant-a",
                 SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
                 "STUB",
                 null,
                 SalesVideoJobType.RENDER,
                 SalesVideoStatus.VIDEO_REQUESTED,
+                1,
+                null,
+                null,
+                null,
                 0,
                 null,
                 null,

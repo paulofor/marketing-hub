@@ -40,12 +40,22 @@ public class VideoManagementProperties {
     @Setter
     public static class Jobs {
         private boolean pollingEnabled = false;
+        private boolean orphanRecoveryEnabled = true;
 
         @NotNull
         private Duration pollInterval = Duration.ofSeconds(30);
 
+        @NotNull
+        private Duration orphanThreshold = Duration.ofMinutes(10);
+
+        @NotNull
+        private Duration backendCallBackoff = Duration.ofSeconds(2);
+
         @Min(1)
         private int batchSize = 10;
+
+        @Min(1)
+        private int backendCallMaxAttempts = 3;
     }
 
     @Getter

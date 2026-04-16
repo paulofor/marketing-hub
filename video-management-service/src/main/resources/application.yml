@@ -7,8 +7,12 @@ video:
   auth-token: ""
   jobs:
     polling-enabled: false
+    orphan-recovery-enabled: true
     poll-interval: PT30S
+    orphan-threshold: PT10M
     batch-size: 10
+    backend-call-backoff: PT2S
+    backend-call-max-attempts: 3
   providers:
     real:
       enabled: false

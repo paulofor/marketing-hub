@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OprmArtifactService {
     private final OprmArtifactRepository artifactRepository;
     private final OprmJobRepository jobRepository;
@@ -38,6 +40,8 @@ public class OprmArtifactService {
     public OprmArtifactPublishResponseDto publishArtifact(OprmArtifactPublishRequestDto request) {
         OprmArtifact duplicatedArtifact = artifactRepository.findByIdempotencyKey(request.idempotencyKey()).orElse(null);
         if (duplicatedArtifact != null) {
+            log.info("oprm-artifact-duplicate idempotencyKey={} artifactId={} correlationId={}",
+                    request.idempotencyKey(), duplicatedArtifact.getArtifactId(), duplicatedArtifact.getCorrelationId());
             return new OprmArtifactPublishResponseDto(
                     duplicatedArtifact.getArtifactId(),
                     duplicatedArtifact.getArtifactType(),
@@ -89,6 +93,9 @@ public class OprmArtifactService {
                 .confidenceScore(toBigDecimal(artifactEnvelope.confidenceScore()))
                 .idempotencyKey(request.idempotencyKey())
                 .build());
+        log.info("oprm-artifact-published jobId={} artifactId={} artifactType={} artifactVersion={} correlationId={} status={}",
+                jobId, saved.getArtifactId(), saved.getArtifactType(), saved.getArtifactVersion(),
+                saved.getCorrelationId(), saved.getArtifactStatus());
 
         return new OprmArtifactPublishResponseDto(
                 saved.getArtifactId(),

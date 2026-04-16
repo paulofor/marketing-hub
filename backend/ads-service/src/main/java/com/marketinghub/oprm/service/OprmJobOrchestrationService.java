@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OprmJobOrchestrationService {
     private final OprmJobRepository jobRepository;
     private final OprmJobInputRepository jobInputRepository;
@@ -63,6 +65,8 @@ public class OprmJobOrchestrationService {
                 .message("job created via backend orchestration")
                 .occurredAt(Instant.now())
                 .build());
+        log.info("oprm-job-created jobId={} jobType={} occupationSeedRef={} correlationId={}",
+                saved.getId(), saved.getJobType(), saved.getOccupationSeedRef(), saved.getCorrelationId());
 
         return toJobDetail(saved, jobInputRepository.findByJobIdOrderByCreatedAtAsc(saved.getId()));
     }
@@ -71,6 +75,7 @@ public class OprmJobOrchestrationService {
     public Optional<OprmJobClaimResponseDto> claimNextJob(OprmJobClaimRequestDto request) {
         Optional<UUID> nextJobId = jobRepository.findNextPendingJobId();
         if (nextJobId.isEmpty()) {
+            log.debug("oprm-job-claim-empty workerId={} leaseSeconds={}", request.workerId(), request.leaseSeconds());
             return Optional.empty();
         }
 
@@ -100,6 +105,8 @@ public class OprmJobOrchestrationService {
                 .message("job claimed by worker")
                 .occurredAt(now)
                 .build());
+        log.info("oprm-job-claimed jobId={} workerId={} leaseExpiresAt={}",
+                job.getId(), request.workerId(), job.getLeaseExpiresAt());
 
         return Optional.of(new OprmJobClaimResponseDto(
                 job.getId().toString(),
@@ -141,6 +148,7 @@ public class OprmJobOrchestrationService {
     public void updateJobStatus(UUID jobId, OprmJobStatusUpdateRequestDto request) {
         OprmJob job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM job not found"));
+        OprmJobStatus previousStatus = job.getJobStatus();
 
         OprmJobStatus requestedStatus = request.status();
         if (!isTransitionAllowed(job.getJobStatus(), requestedStatus)) {
@@ -175,6 +183,8 @@ public class OprmJobOrchestrationService {
                 .workerId(request.workerId())
                 .occurredAt(parseOccurredAt(request.occurredAt()))
                 .build());
+        log.info("oprm-job-status-updated jobId={} previousStatus={} newStatus={} workerId={} phase={} errorCode={}",
+                job.getId(), previousStatus, requestedStatus, request.workerId(), request.phase(), job.getErrorCode());
     }
 
     private OprmJobDetailResponseDto toJobDetail(OprmJob job, List<OprmJobInput> inputs) {

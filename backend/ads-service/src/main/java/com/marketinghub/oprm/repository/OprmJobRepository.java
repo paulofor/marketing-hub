@@ -3,6 +3,7 @@ package com.marketinghub.oprm.repository;
 import com.marketinghub.oprm.OprmJob;
 import com.marketinghub.oprm.OprmJobStatus;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface OprmJobRepository extends JpaRepository<OprmJob, UUID> {
+    List<OprmJob> findTop500ByOrderByCreatedAtDesc();
 
     @Query("""
             select j.id

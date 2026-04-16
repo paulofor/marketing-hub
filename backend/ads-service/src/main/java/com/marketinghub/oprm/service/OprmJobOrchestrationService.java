@@ -9,6 +9,7 @@ import com.marketinghub.oprm.dto.OprmJobClaimRequestDto;
 import com.marketinghub.oprm.dto.OprmJobClaimResponseDto;
 import com.marketinghub.oprm.dto.OprmJobDetailResponseDto;
 import com.marketinghub.oprm.dto.OprmJobStatusUpdateRequestDto;
+import com.marketinghub.oprm.dto.OprmWorkspaceOccupationSummaryDto;
 import com.marketinghub.oprm.repository.OprmJobEventRepository;
 import com.marketinghub.oprm.repository.OprmJobInputRepository;
 import com.marketinghub.oprm.repository.OprmJobRepository;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,6 +117,24 @@ public class OprmJobOrchestrationService {
         OprmJob job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "OPRM job not found"));
         return toJobDetail(job, jobInputRepository.findByJobIdOrderByCreatedAtAsc(jobId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OprmWorkspaceOccupationSummaryDto> listWorkspaceOccupations() {
+        Map<String, OprmJob> latestJobByOccupation = new LinkedHashMap<>();
+        for (OprmJob job : repository.findTop500ByOrderByCreatedAtDesc()) {
+            latestJobByOccupation.putIfAbsent(job.getOccupationSeedRef(), job);
+        }
+
+        return latestJobByOccupation.values()
+                .stream()
+                .map(job -> new OprmWorkspaceOccupationSummaryDto(
+                        job.getOccupationSeedRef(),
+                        job.getJobStatus(),
+                        job.getCorrelationId(),
+                        job.getUpdatedAt().toString()
+                ))
+                .toList();
     }
 
     @Transactional

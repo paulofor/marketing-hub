@@ -572,3 +572,50 @@ Foram alinhados os changeSets YAML do cluster de orquestração de jobs e public
 **Próximo passo sugerido:**  
 - reexecutar o workflow de backend no GitHub Actions para confirmar `liquibase:validate` com o banco real
 - planejar o `liquibase updateSQL`/`update` direcionado para staging antes da sincronização com o worker OPRM
+
+## 2026-04-16 — sprint UI-1: menu principal OPRM + workspace de ocupações
+
+**Status:** concluído
+
+**Resumo:**  
+Foi entregue a Sprint UI-1 do OPRM no frontend do Marketing Hub com novo item de menu principal, rota dedicada do módulo e tela inicial de Ocupações consumindo dados reais do backend por endpoint de workspace, incluindo filtros básicos e ações de abrir rotina e reprocessar ocupação.
+
+**O que foi implementado:**  
+- inclusão do item de menu principal `OPRM` na navegação lateral
+- criação das rotas `/oprm` (workspace de ocupações) e `/oprm/routine/:occupationSeedRef` (placeholder da Sprint UI-2)
+- implementação da tela `Ocupações` com busca, filtro por status, estado de loading/erro/vazio e tabela com ações de `Ver rotina` e `Reprocessar`
+- implementação do reprocessamento com `POST /api/oprm/jobs`, botão com `spinner` e estado desabilitado durante requisição assíncrona
+- criação do endpoint backend `GET /api/oprm/jobs/workspace/occupations` para listar ocupações reais do workspace com base nos jobs mais recentes por `occupationSeedRef`
+- inclusão de teste de navegação garantindo rota e link do menu para o OPRM
+
+**Arquivos principais alterados:**  
+- `frontend/src/components/MainNavigation.tsx`
+- `frontend/src/App.tsx`
+- `frontend/src/pages/oprm/OprmWorkspacePage.tsx`
+- `frontend/src/pages/oprm/OprmRoutinePlaceholderPage.tsx`
+- `frontend/src/api/oprm/useOprmWorkspaceOccupations.ts`
+- `frontend/src/api/oprm/useCreateOprmJob.ts`
+- `frontend/src/__tests__/OprmNavigation.test.tsx`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/web/OprmJobController.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/service/OprmJobOrchestrationService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmJobRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/oprm/dto/OprmWorkspaceOccupationSummaryDto.java`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**  
+- endpoint novo: `GET /api/oprm/jobs/workspace/occupations`
+- endpoint reutilizado: `POST /api/oprm/jobs` para ação de reprocessamento no workspace
+- nenhum artefato canônico novo
+
+**Testes executados:**  
+- `cd frontend && npm run test -- src/__tests__/OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+- `cd backend/ads-service && mvn -s ../settings.xml -DskipTests compile` — **passou**
+
+**Limitações ou pendências:**  
+- colunas de confiança, quantidade de dores e oportunidades permanecem como placeholder nesta sprint por ausência de endpoint consolidado com esses agregados
+- rota de rotina está como placeholder até a Sprint UI-2
+
+**Próximo passo sugerido:**  
+- implementar Sprint UI-2 com tela de rotina consumindo `occupationPersonaRoutineCard` e sinais derivados
+- evoluir endpoint de workspace para retornar agregados de confiança/dor/oportunidade a partir dos artefatos publicados

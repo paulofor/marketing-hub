@@ -5,8 +5,10 @@ import com.marketinghub.oprm.dto.OprmJobClaimRequestDto;
 import com.marketinghub.oprm.dto.OprmJobClaimResponseDto;
 import com.marketinghub.oprm.dto.OprmJobDetailResponseDto;
 import com.marketinghub.oprm.dto.OprmJobStatusUpdateRequestDto;
+import com.marketinghub.oprm.dto.OprmWorkspaceOccupationSummaryDto;
 import com.marketinghub.oprm.service.OprmJobOrchestrationService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,11 @@ public class OprmJobController {
     public ResponseEntity<OprmJobClaimResponseDto> claim(@Valid @RequestBody OprmJobClaimRequestDto request) {
         Optional<OprmJobClaimResponseDto> claimed = service.claimNextJob(request);
         return claimed.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/workspace/occupations")
+    public List<OprmWorkspaceOccupationSummaryDto> listWorkspaceOccupations() {
+        return service.listWorkspaceOccupations();
     }
 
     @GetMapping("/{jobId}")

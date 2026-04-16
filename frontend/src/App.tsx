@@ -108,6 +108,8 @@ import PromptDomainListPage from "./pages/promptDomain/PromptDomainListPage";
 import NewPromptDomainPage from "./pages/promptDomain/NewPromptDomainPage";
 import EditPromptDomainPage from "./pages/promptDomain/EditPromptDomainPage";
 import TargetingRecentQueriesPage from "./pages/targeting/TargetingRecentQueriesPage";
+import OprmWorkspacePage from "./pages/oprm/OprmWorkspacePage";
+import OprmRoutinePlaceholderPage from "./pages/oprm/OprmRoutinePlaceholderPage";
 
 export default function App() {
   return (
@@ -251,6 +253,11 @@ export default function App() {
               <Route
                 path="/targeting/recent-queries"
                 element={<TargetingRecentQueriesPage />}
+              />
+              <Route path="/oprm" element={<OprmWorkspacePage />} />
+              <Route
+                path="/oprm/routine/:occupationSeedRef"
+                element={<OprmRoutinePlaceholderPage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

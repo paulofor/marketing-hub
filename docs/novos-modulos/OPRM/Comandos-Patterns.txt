@@ -1,0 +1,119 @@
+https://chatgpt.com/g/g-p-69d0003f10d08191aaad9780f8e2e4ff-marketing-hub/c/69ddb248-53b0-83e9-995c-b3e1b6570641
+
+
+Vamos trabalhar na construção do novo modulo para o Marketing Hub - OPRM
+
+Leia o documento : docs/novos-modulos/OPRM/oprm_plano_geral_implementacao_atualizado.md
+Já fizemos a fase 1,2, 3, 4 e 5
+Execute a fase de finalização. Vamos publicar o container no IP: 177.153.62.107
+Faça a montagem do container e publicação, arquivos yml
+
+Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
+
+---------------------------------------------------------------------------------------------------------------
+
+Vamos trabalhar na melhoria do novo modulo para o Marketing Hub - OPRM
+
+Leia o documento :docs/novos-modulos/OPRM/oprm_plano_unico_desenvolvimento_integracao.md
+
+Já fizemos a Sprint 1 e 2
+Execute a Sprint 3
+
+
+Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
+
+
+-----------------------------------------------------------------------------------------------------------------
+
+Vamos trabalhar na melhoria do novo modulo para o Marketing Hub - OPRM
+
+Temos um erro no action do GitHub, precisamos ajustar.
+
+Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md
+
+Veja o erro, lembre que estamos usando Mysql 5.7
+
+[INFO] ####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Get documentation at docs.liquibase.com       ##
+##  Get certified courses at learn.liquibase.com  ## 
+##                                                ##
+####################################################
+Starting Liquibase at 23:02:53 (version 4.26.0 #1141 built at 2024-02-06 21:31+0000)
+Loading class `com.mysql.jdbc.Driver'. This is deprecated. The new driver class is `com.mysql.cj.jdbc.Driver'. The driver is automatically registered via the SPI and manual loading of the driver class is generally unnecessary.
+[INFO] Executing on Database: jdbc:mysql://localhost:3306/ads
+[INFO] Logging exception.
+[INFO] ERROR: Exception Details
+[INFO] ERROR: Exception Primary Class:  ParserException
+[INFO] ERROR: Exception Primary Reason: while parsing a block mapping
+ in 'reader', line 6, column 9:
+            onFail: MARK_RAN
+            ^
+expected <block end>, but found '-'
+ in 'reader', line 8, column 9:
+            - dbms:
+            ^
+
+[INFO] ERROR: Exception Primary Source: MySQL 5.7.44
+[INFO] Command execution complete
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.347 s
+[INFO] Finished at: 2026-04-15T23:02:54Z
+[INFO] ------------------------------------------------------------------------
+Error:  Failed to execute goal org.liquibase:liquibase-maven-plugin:4.26.0:validate (default-cli) on project ads-service: 
+Error:  Error setting up or running Liquibase:
+Error:  liquibase.exception.ChangeLogParseException: Error parsing src/main/resources/db/changelog/db.changelog-master.yaml : Syntax error in file src/main/resources/db/changelog/changesets/2026-04-15-oprm-job-orchestration.yaml: while parsing a block mapping
+Error:   in 'reader', line 6, column 9:
+Error:              onFail: MARK_RAN
+Error:              ^
+Error:  expected <block end>, but found '-'
+Error:   in 'reader', line 8, column 9:
+Error:              - dbms:
+Error:              ^
+Error:  -> [Help 1]
+Error:  
+Error:  To see the full stack trace of the errors, re-run Maven with the -e switch.
+Error:  Re-run Maven using the -X switch to enable full debug logging.
+Error:  
+Error:  For more information about the errors and possible solutions, please read the following articles:
+Error:  [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+Error: Process completed with exit code 1.
+
+-------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+
+Vamos trabalhar na UI do novo modulo para o Marketing Hub - OPRM
+
+Leia o documento :docs/novos-modulos/OPRM/oprm_especificacao_telas_menu_com_sprints.md
+
+Já executamos a Sprint 1
+Execute a Sprint 2
+
+
+Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefatos.md

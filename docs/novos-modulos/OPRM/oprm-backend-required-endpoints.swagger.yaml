@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: OPRM — Backend Required Endpoints
+  title: OPRM — Endpoints obrigatórios do backend
   version: 1.1.0
   description: |
     Contrato consolidado dos endpoints que o backend principal deve oferecer para o OPRM operar
@@ -52,7 +52,7 @@ paths:
   /api/oprm/jobs/claim:
     post:
       tags: [jobs]
-      summary: Claim de job disponível para processamento do OPRM
+      summary: Reserva (claim) de job disponível para processamento do OPRM
       operationId: claimOprmJob
       requestBody:
         required: true
@@ -70,13 +70,13 @@ paths:
         '204':
           description: Nenhum job disponível no momento.
         '409':
-          description: Conflito de lock/claim.
+          description: Conflito de bloqueio (lock) ou reserva (claim).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/OprmApiErrorResponse'
         '422':
-          description: Contrato inválido (versão incompatível ou payload inconsistente).
+          description: Contrato inválido (versão incompatível ou corpo da requisição inconsistente).
           content:
             application/json:
               schema:
@@ -242,7 +242,7 @@ paths:
   /api/oprm/workspace/insights/{occupationSeedRef}:
     get:
       tags: [workspace]
-      summary: Retorna evidências e timeline para a tela de insights
+      summary: Retorna evidências e linha do tempo para a tela de insights
       operationId: getOprmInsightsWorkspace
       parameters:
         - in: path
@@ -252,7 +252,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Dados agregados de evidência, lineage e feedback.
+          description: Dados agregados de evidência, rastreabilidade (lineage) e feedback.
           content:
             application/json:
               schema:
@@ -288,7 +288,7 @@ paths:
   /api/oprm/feedback/history:
     get:
       tags: [feedback]
-      summary: Lista histórico de feedback por ocupação/persona
+      summary: Lista o histórico de feedback por ocupação e persona
       operationId: listOprmFeedbackHistory
       parameters:
         - in: query
@@ -314,7 +314,7 @@ paths:
   /api/oprm/heartbeat:
     post:
       tags: [operations]
-      summary: Heartbeat operacional do worker OPRM
+      summary: Sinal de vida (heartbeat) operacional do worker OPRM
       operationId: publishOprmHeartbeat
       requestBody:
         required: true
@@ -324,9 +324,9 @@ paths:
               $ref: '#/components/schemas/OprmHeartbeatRequest'
       responses:
         '202':
-          description: Heartbeat recebido.
+          description: Sinal de vida recebido.
         '422':
-          description: Heartbeat inválido.
+          description: Sinal de vida inválido.
           content:
             application/json:
               schema:
@@ -361,7 +361,7 @@ components:
           type: string
         contractVersion:
           type: string
-          example: '1.0'
+          example: '1.1.0'
         maxJobs:
           type: integer
           minimum: 1
@@ -407,7 +407,7 @@ components:
         lastUpdatedAt:
           type: string
           nullable: true
-          description: Timestamp serializado pelo backend.
+          description: Data/hora serializada pelo backend em padrão ISO-8601.
 
     OprmJobDetailResponse:
       type: object
@@ -618,6 +618,9 @@ components:
           items:
             type: object
             additionalProperties: true
+      description: |
+        Resposta agregada para a tela Rotina no contexto brasileiro, consolidando
+        sinais de dores, resultados e oportunidades de mecanismo da ocupação mapeada.
 
     OprmInsightsWorkspaceResponse:
       type: object
@@ -655,6 +658,9 @@ components:
           type: object
           additionalProperties: true
           nullable: true
+      description: |
+        Resposta para a tela de Evidências, com linha do tempo dos artefatos,
+        fontes observadas e snapshots de feedback para auditoria operacional.
 
     OprmFeedbackPublishRequest:
       type: object
@@ -679,6 +685,7 @@ components:
           type: string
         personaLabel:
           type: string
+          example: personal trainer autônomo
         baselineRoutineArtifactId:
           type: string
         baselineFrameworkArtifactId:
@@ -697,6 +704,7 @@ components:
           additionalProperties: true
         generatedAt:
           type: string
+          description: Data/hora de geração do snapshot de feedback em ISO-8601.
 
     OprmFeedbackHistoryEntry:
       type: object
@@ -728,6 +736,7 @@ components:
         notes:
           type: string
           nullable: true
+          description: Observações opcionais da equipe sobre a recalibração.
 
     OprmHeartbeatRequest:
       type: object
@@ -739,7 +748,7 @@ components:
           type: string
         contractVersion:
           type: string
-          example: '1.0'
+          example: '1.1.0'
         sentAt:
           type: string
         health:
@@ -763,6 +772,7 @@ components:
         details:
           type: string
           nullable: true
+          description: Detalhes adicionais úteis para diagnóstico operacional.
 
     OprmJobType:
       type: string

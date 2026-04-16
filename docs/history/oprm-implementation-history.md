@@ -920,3 +920,36 @@ Foi corrigido o mapeamento JPA da entidade `OprmJob` para alinhar o tipo de UUID
 **Próximo passo sugerido:**
 - executar subida da aplicação em ambiente integrado com MySQL para confirmar ausência dos `alter table ... binary(16)` no startup
 - padronizar mapeamentos UUID legados (CHAR vs BINARY) em guideline interno para evitar regressões futuras
+
+## 2026-04-16 — tradução do contrato OpenAPI do OPRM para português-BR
+
+**Status:** concluído
+
+**Resumo:**
+Foi atualizada a documentação OpenAPI de endpoints obrigatórios do backend OPRM para reduzir trechos em inglês e padronizar a linguagem para português do Brasil, mantendo o contrato técnico e a estrutura de schemas existentes.
+
+**O que foi implementado:**
+- tradução de título e descrições operacionais do contrato para português-BR
+- ajuste de resumos de endpoints para termos mais claros ao time local (ex.: reserva de job, linha do tempo, sinal de vida)
+- inclusão de descrições em schemas de resposta/erro para melhorar entendimento operacional no contexto Brasil
+- atualização de exemplos de versão de contrato (`1.1.0`) e campo de persona com exemplo em português
+
+**Arquivos principais alterados:**
+- `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- `docs/history/oprm-implementation-history.md`
+
+**Contratos / artefatos afetados:**
+- contrato OpenAPI: `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- nenhum endpoint novo; apenas adaptação textual e de documentação
+
+**Testes executados:**
+- `python - <<'PY' ... yaml.safe_load(...)` — **falhou** por ausência do módulo `yaml` no ambiente
+- `ruby -e "require 'yaml'; YAML.load_file(...)"` — **passou**
+
+**Limitações ou pendências:**
+- ainda existem termos técnicos em inglês preservados por compatibilidade de nomenclatura de domínio (ex.: `job`, `worker`, `lineage`)
+- não foi executada validação externa via editor Swagger remoto; validação local ficou restrita ao parser YAML do ambiente
+
+**Próximo passo sugerido:**
+- revisar com o time de produto se devem ser traduzidos também nomes de tags e exemplos de payload exibidos na UI de documentação
+- alinhar eventual dicionário oficial de termos OPRM pt-BR para manter consistência entre backend, frontend e worker

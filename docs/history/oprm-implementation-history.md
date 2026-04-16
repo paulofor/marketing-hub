@@ -707,3 +707,41 @@ Foi implementada a Sprint UI-3 do módulo OPRM no Marketing Hub, adicionando as 
 **Próximo passo sugerido:**  
 - implementar Sprint UI-4 com tela de Operações completa (jobs, heartbeat, métricas e falhas)
 - padronizar payload de evidências no pipeline para enriquecer a profundidade de auditoria na UI
+
+## 2026-04-16 — sprint ui-4: operações e hardening da UI
+
+**Status:** concluído
+
+**Resumo:**  
+Foi concluída a Sprint UI-4 do módulo OPRM no frontend com a nova tela de Operações, busca por `correlationId`, visão de falhas recentes e refinamento da navegação interna para manter consistência entre as telas do módulo.
+
+**O que foi implementado:**  
+- criação da tela `OPRM · Operações` com cards operacionais, tabela de jobs por ocupação e painel de falhas recentes
+- adição de busca por `correlationId` com listagem de artefatos correlacionados
+- adição da rota `/oprm/operations` e ativação do item `Operações` na navegação interna do OPRM
+- inclusão de reexecução de job com estado assíncrono (botão desabilitado + spinner)
+- adição de hook de dados para operações consumindo `/api/oprm/artifacts` com filtros de status e correlação
+
+**Arquivos principais alterados:**  
+- `frontend/src/pages/oprm/OprmOperationsPage.tsx`
+- `frontend/src/api/oprm/useOprmOperationsWorkspaceData.ts`
+- `frontend/src/pages/oprm/OprmModuleNavigation.tsx`
+- `frontend/src/App.tsx`
+- `frontend/src/__tests__/OprmNavigation.test.tsx`
+
+**Contratos / artefatos afetados:**  
+- consumo de contrato existente `GET /api/oprm/artifacts` com filtros `status` e `correlationId`
+- consumo de contrato existente `GET /api/oprm/jobs/workspace/occupations`
+- nenhum contrato novo
+
+**Testes executados:**  
+- `cd frontend && npm run test -- OprmNavigation.test.tsx` — **passou**
+- `cd frontend && npm run build` — **passou**
+
+**Limitações ou pendências:**  
+- heartbeat exibido via proxy do último `lastUpdatedAt` dos jobs; não há endpoint de leitura dedicado de heartbeat no backend atual
+- tabela operacional de jobs usa resumo por ocupação, pois não existe endpoint de listagem completa de jobs no workspace
+
+**Próximo passo sugerido:**  
+- expor endpoint de observabilidade dedicado para heartbeat e métricas do worker no backend
+- adicionar endpoint de listagem operacional de jobs com paginação para detalhamento técnico completo

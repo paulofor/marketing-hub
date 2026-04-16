@@ -11,7 +11,7 @@ interface OprmNavItem {
 
 const baseItems: OprmNavItem[] = [
   { label: "Ocupações", to: "/oprm" },
-  { label: "Operações" },
+  { label: "Operações", to: "/oprm/operations" },
 ];
 
 export default function OprmModuleNavigation({

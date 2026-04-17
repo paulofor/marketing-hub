@@ -13,6 +13,7 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-16 — Sprint V3 (observabilidade e confiabilidade operacional)
 - 2026-04-16 — Sprint V2 (robustez do ciclo assíncrono e recuperação de órfãos)
 - 2026-04-16 — Sprint V1 (contrato de integração e atualização de planejamento)
 - 2026-04-16 — Sprint V1 (implementação do adapter real e integração backend)
@@ -20,6 +21,67 @@ Cada entrada descreve:
 ---
 
 ## Entradas
+
+## 2026-04-16 — Sprint V3 (observabilidade e confiabilidade operacional)
+
+**Status:** concluída com pendências
+
+### Resumo
+- A Sprint V3 instrumentou observabilidade mínima no `video-management-service` com métricas, correlação de logs e exposição Prometheus.
+- O contrato de falha backend ↔ módulo de vídeo foi alinhado ao Swagger canônico com `retryable` e `retryReason`.
+- Dashboards e alertas foram definidos como baseline documental, permanecendo a implantação na stack compartilhada como pendência operacional.
+
+### O que foi implementado
+- Instrumentação de métricas operacionais para dispatch, conclusão, falha, expiração, conflito de claim, retry backend, recuperação de órfãos, backlog e latência total de render.
+- Inclusão de contexto de correlação (`jobId`, `profileId`, `provider`, `providerJobId`, `tenant`) no MDC do processamento de jobs.
+- Padronização do `logging.pattern.level` para emitir os campos de correlação em todos os logs do módulo durante execução do job.
+- Exposição de métricas em `/actuator/prometheus` via Micrometer Prometheus Registry.
+- Alinhamento do payload de falha para incluir `retryable` e `retryReason` em conformidade com `JobFailureRequest` do OpenAPI canônico.
+
+### O que foi alterado
+- Arquivos:
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobObservabilityService.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobProcessor.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobPoller.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/BackendVideoClient.java`
+  - `video-management-service/src/main/java/com/marketinghub/videomanagement/client/payload/JobFailurePayload.java`
+  - `video-management-service/src/main/resources/application.yml`
+  - `video-management-service/pom.xml`
+  - `video-management-service/README.md`
+  - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoJobProcessorTest.java`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `video-management-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `/internal/video/jobs/{jobId}/fail` (payload alinhado com `retryable` + `retryReason`)
+  - `/actuator/prometheus` (telemetria operacional)
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoRenderJob.v1` (rastreabilidade operacional de retries, falhas e latência do ciclo).
+- `avatar.salesVideoJobEvent.v1` (correlação de logs e eventos por chaves de contexto).
+- `JobFailureRequest`/`JobFailurePayload` com `retryable` e `retryReason` como campos explícitos no fluxo de falha.
+
+### Testes e validações executados
+- `mvn test` no `video-management-service` com ajuste dos testes de `VideoJobProcessor`.
+- `mvn package -DskipTests` no `video-management-service` para validar build com novo registry Prometheus.
+- Revisão de consistência entre documentação de sprint, histórico e contrato OpenAPI do módulo.
+
+### Limitações e pendências
+- Dashboards e alertas ainda não foram provisionados no ambiente compartilhado de observabilidade (Grafana/Alertmanager).
+- Limiar de alertas ainda depende de baseline real em staging com carga concorrente.
+- Validação E2E dos alarmes em cenários de degradação permanece para próximos ciclos.
+
+### Próximo passo sugerido
+- Iniciar Sprint V4 (compliance/consentimento), mantendo em paralelo a materialização dos dashboards e alertas definidos na Sprint V3.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: implementar bloqueios de workflow para compliance e trilha auditável de consentimento/publicação.
+- O que não deve ser refeito: métricas base, MDC de correlação, alinhamento de payload de falha e retry técnico do backend.
+- Riscos abertos: alertas sem calibração em produção podem ter ruído; compliance ainda não bloqueia render produtivo.
+- Dependências externas: stack de observabilidade compartilhada para dashboards/alertas e staging com provider real.
+- Onde continuar: `backend/ads-service` (regras de compliance), `video-management-service` (calibração de métricas) e documentação canônica de Sprint V4.
 
 ## 2026-04-16 — Sprint V2 (robustez do ciclo assíncrono e recuperação de órfãos)
 

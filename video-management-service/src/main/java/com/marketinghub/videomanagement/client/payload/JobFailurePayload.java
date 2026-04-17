@@ -8,5 +8,7 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 public record JobFailurePayload(String failureCode,
                                 String failureDetail,
                                 SalesVideoStatus status,
-                                String message) {
+                                String message,
+                                Boolean retryable,
+                                String retryReason) {
 }

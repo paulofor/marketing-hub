@@ -193,7 +193,7 @@ public class ExperimentPipelineOpenAiClient {
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
     private final boolean enabled;
-    private final Map<String, String> promptTemplates;
+    private final Map<String, PromptTemplate> promptTemplates;
 
     public ExperimentPipelineOpenAiClient(WebClient.Builder builder,
                                           ObjectMapper objectMapper,
@@ -248,10 +248,11 @@ public class ExperimentPipelineOpenAiClient {
             String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
+            TemplateTrace templateTrace = resolveTemplateTrace(job, effectiveModel);
             return new ExperimentPipelineJobCompletionPayload(
                     sectionContent,
                     objectMapper.writeValueAsString(response),
-                    objectMapper.writeValueAsString(payload),
+                    buildTrackedRequestBodyJson(payload, templateTrace),
                     inputTokens,
                     outputTokens,
                     OpenAiCostEstimator.estimateUsd(effectiveModel, response.usage()));
@@ -489,11 +490,11 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     private String appendSectionTemplate(String basePrompt, String templatePath, ExperimentPipelineJobDto job) {
-        String template = promptTemplates.get(templatePath);
-        if (!StringUtils.hasText(template)) {
+        PromptTemplate template = promptTemplates.get(templatePath);
+        if (template == null || !StringUtils.hasText(template.body())) {
             return basePrompt;
         }
-        return basePrompt + "\n\n" + applyTemplateVariables(template, templateVariables(job));
+        return basePrompt + "\n\n" + applyTemplateVariables(template.body(), templateVariables(job));
     }
 
     private Map<String, String> templateVariables(ExperimentPipelineJobDto job) {
@@ -528,8 +529,8 @@ public class ExperimentPipelineOpenAiClient {
         return resolved;
     }
 
-    private Map<String, String> loadPromptTemplates() {
-        Map<String, String> templates = new LinkedHashMap<>();
+    private Map<String, PromptTemplate> loadPromptTemplates() {
+        Map<String, PromptTemplate> templates = new LinkedHashMap<>();
         List<String> paths = List.of(
                 CAMPAIGN_ANGLE_TEMPLATE_PATH,
                 LANDING_COPY_TEMPLATE_PATH,
@@ -542,18 +543,120 @@ public class ExperimentPipelineOpenAiClient {
         return Map.copyOf(templates);
     }
 
-    private String readPromptTemplate(String path) {
+    private PromptTemplate readPromptTemplate(String path) {
         ClassPathResource resource = new ClassPathResource(path);
         try {
             if (!resource.exists()) {
                 log.warn("Template de prompt não encontrado no classpath: {}", path);
-                return "";
+                return PromptTemplate.empty(path);
             }
-            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
+            return parsePromptTemplate(path, StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8));
         } catch (IOException ex) {
             log.warn("Falha ao carregar template de prompt {}: {}", path, ex.getMessage());
-            return "";
+            return PromptTemplate.empty(path);
         }
+    }
+
+    private PromptTemplate parsePromptTemplate(String path, String rawTemplate) {
+        if (!StringUtils.hasText(rawTemplate)) {
+            return PromptTemplate.empty(path);
+        }
+        String normalized = rawTemplate.replace("\r\n", "\n");
+        String[] lines = normalized.split("\n", -1);
+        Map<String, String> headerValues = new LinkedHashMap<>();
+        int bodyStartIndex = 0;
+        for (int index = 0; index < lines.length; index++) {
+            String currentLine = lines[index];
+            if (currentLine == null || currentLine.isBlank()) {
+                bodyStartIndex = index + 1;
+                break;
+            }
+            Matcher matcher = Pattern.compile("^\\s*([a-zA-Z_]+)\\s*:\\s*(.+?)\\s*$").matcher(currentLine);
+            if (!matcher.matches()) {
+                bodyStartIndex = index;
+                break;
+            }
+            String key = matcher.group(1).trim().toLowerCase(Locale.ROOT);
+            if (!"template_id".equals(key) && !"template_version".equals(key) && !"artifact_target".equals(key)) {
+                bodyStartIndex = index;
+                break;
+            }
+            headerValues.put(key, matcher.group(2).trim());
+            bodyStartIndex = index + 1;
+        }
+
+        String body = String.join("\n", java.util.Arrays.copyOfRange(lines, bodyStartIndex, lines.length)).trim();
+        String inferredTemplateId = inferTemplateId(path);
+        String templateId = headerValues.getOrDefault("template_id", inferredTemplateId);
+        String templateVersion = headerValues.getOrDefault("template_version", "unknown");
+        String artifactTarget = headerValues.getOrDefault("artifact_target", inferArtifactTarget(path));
+        return new PromptTemplate(path, body, templateId, templateVersion, artifactTarget);
+    }
+
+    private TemplateTrace resolveTemplateTrace(ExperimentPipelineJobDto job, String model) {
+        String path = resolveTemplatePath(job);
+        PromptTemplate template = path != null ? promptTemplates.get(path) : null;
+        if (template == null) {
+            return new TemplateTrace("unknown", "unknown", "unknown", model);
+        }
+        return new TemplateTrace(
+                StringUtils.hasText(template.templateId()) ? template.templateId() : inferTemplateId(path),
+                StringUtils.hasText(template.templateVersion()) ? template.templateVersion() : "unknown",
+                StringUtils.hasText(template.artifactTarget()) ? template.artifactTarget() : inferArtifactTarget(path),
+                model);
+    }
+
+    private String buildTrackedRequestBodyJson(Map<String, Object> payload, TemplateTrace trace) throws IOException {
+        Map<String, Object> tracked = new LinkedHashMap<>();
+        if (payload != null) {
+            tracked.putAll(payload);
+        }
+        tracked.put("templateTrace", Map.of(
+                "template_id", trace.templateId(),
+                "template_version", trace.templateVersion(),
+                "artifact_target", trace.artifactTarget(),
+                "model", trace.model()));
+        return objectMapper.writeValueAsString(tracked);
+    }
+
+    private String resolveTemplatePath(ExperimentPipelineJobDto job) {
+        if (isCampaignAngleSection(job)) {
+            return CAMPAIGN_ANGLE_TEMPLATE_PATH;
+        }
+        if (isLandingCopySection(job)) {
+            return LANDING_COPY_TEMPLATE_PATH;
+        }
+        if (isLandingLayoutSection(job)) {
+            return LANDING_WIREFRAME_TEMPLATE_PATH;
+        }
+        if (isLandingImagePlanningSection(job)) {
+            return LANDING_IMAGE_PLANNING_TEMPLATE_PATH;
+        }
+        if (isLandingHtmlSection(job)) {
+            return LANDING_HTML_TEMPLATE_PATH;
+        }
+        return null;
+    }
+
+    private String inferTemplateId(String path) {
+        if (!StringUtils.hasText(path)) {
+            return "unknown";
+        }
+        int slash = path.lastIndexOf('/');
+        String fileName = slash >= 0 ? path.substring(slash + 1) : path;
+        int dot = fileName.lastIndexOf('.');
+        return dot > 0 ? fileName.substring(0, dot) : fileName;
+    }
+
+    private String inferArtifactTarget(String path) {
+        return switch (path) {
+            case CAMPAIGN_ANGLE_TEMPLATE_PATH -> "campaignAngle";
+            case LANDING_COPY_TEMPLATE_PATH -> "landingPageCopy";
+            case LANDING_WIREFRAME_TEMPLATE_PATH -> "landingPageWireframe";
+            case LANDING_IMAGE_PLANNING_TEMPLATE_PATH -> "landingPageImagePlanning";
+            case LANDING_HTML_TEMPLATE_PATH -> "landingPageHtml";
+            default -> "unknown";
+        };
     }
 
     @SuppressWarnings("unchecked")
@@ -760,5 +863,23 @@ public class ExperimentPipelineOpenAiClient {
             fields.add(matcher.group(2).trim().toLowerCase(Locale.ROOT));
         }
         return fields.toString();
+    }
+
+    private record PromptTemplate(
+            String path,
+            String body,
+            String templateId,
+            String templateVersion,
+            String artifactTarget) {
+        private static PromptTemplate empty(String path) {
+            return new PromptTemplate(path, "", "unknown", "unknown", "unknown");
+        }
+    }
+
+    private record TemplateTrace(
+            String templateId,
+            String templateVersion,
+            String artifactTarget,
+            String model) {
     }
 }

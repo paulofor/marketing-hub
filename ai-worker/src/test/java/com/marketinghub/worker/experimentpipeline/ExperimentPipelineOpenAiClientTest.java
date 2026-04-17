@@ -625,6 +625,78 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(payload.get("model")).isEqualTo("gpt-5.2");
     }
 
+    @Test
+    void storesTemplateTraceInTrackedRequestBodyForLandingCopy() throws Exception {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                22L,
+                "landing-page-copy",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        ExperimentPipelineJobCompletionPayload completionPayload = client.generate(job);
+        Map<String, Object> trackedRequest = MAPPER.readValue(completionPayload.requestBodyJson(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> templateTrace = (Map<String, Object>) trackedRequest.get("templateTrace");
+        assertThat(templateTrace)
+                .containsEntry("template_id", "landing-copy")
+                .containsEntry("template_version", "v1")
+                .containsEntry("artifact_target", "landingPageCopy")
+                .containsEntry("model", "gpt-5.2");
+    }
+
+    @Test
+    void stripsTemplateHeaderFromPromptSentToOpenAi() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                23L,
+                "campaign-angle",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt base"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).doesNotContain("template_id:");
+        assertThat(userPrompt).doesNotContain("template_version:");
+        assertThat(userPrompt).doesNotContain("artifact_target:");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return capturePayloadExchange(payloadRef, "{\"content\":\"ok\"}");
     }

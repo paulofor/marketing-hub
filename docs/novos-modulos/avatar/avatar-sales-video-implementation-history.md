@@ -13,6 +13,7 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-17 — Hotfix backend (compliance snapshot + normalização de executionMode no request-render)
 - 2026-04-17 — Sprint V6 (rollout controlado por tenant/perfil e atualização de contrato)
 - 2026-04-17 — Sprint V5 (validação E2E administrativa, compliance UI e cobertura backend)
 - 2026-04-17 — Sprint V4 (compliance, consentimento e governança)
@@ -24,6 +25,51 @@ Cada entrada descreve:
 ---
 
 ## Entradas
+
+## 2026-04-17 — Hotfix backend (compliance snapshot + normalização de executionMode no request-render)
+
+**Status:** concluída
+
+### Resumo
+- Corrigido erro de build no `backend/ads-service` causado por falha na serialização do snapshot de auditoria (`auditSnapshotJson`) em render `PRODUCTION`.
+- Adicionada proteção defensiva para `executionMode` quando a normalização de rollout retornar `null`, evitando NPE durante a criação do job.
+- Mantida aderência ao contrato canônico: persistência via backend e governança de render produtivo com compliance.
+
+### O que foi implementado
+- `ObjectMapper` do `SalesVideoProfileService` migrado para `JsonMapper.builder().findAndAddModules().build()` para suportar serialização de tipos Java Time (`Instant`) no snapshot de auditoria.
+- Fallback explícito de `executionMode` em `requestRender`: quando `rolloutService.normalizeExecutionMode(...)` retornar `null`, o serviço passa a usar o modo solicitado no request e, na ausência deste, `TEST`.
+- Mantido fluxo de bloqueio de `PRODUCTION` por rollout/compliance sem alterar o contrato de endpoint.
+
+### O que foi alterado
+- Arquivos:
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoProfileService.java`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `backend/ads-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `POST /api/sales-videos/profiles/{profileId}/request-render` (mesmo contrato, com robustez interna no tratamento de `executionMode`)
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoRenderJob.v1` (snapshot auditável em render produtivo com serialização estável).
+- `RequestVideoRenderRequest.executionMode` (normalização defensiva sem alteração de schema).
+
+### Testes e validações executados
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoProfileServiceTest`.
+
+### Limitações e pendências
+- Hotfix cobre o erro de build unitário; validação E2E em staging com provider real continua pendente conforme plano de reinício.
+- Baseline operacional de rollout/compliance em ambiente compartilhado segue dependente de credenciais e janela operacional do time.
+
+### Próximo passo sugerido
+- Executar bateria E2E de staging para validar os cenários de sucesso/falha/timeout/asset expirado após este hotfix.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: validar no staging compartilhado o fluxo `PRODUCTION` completo com compliance aprovado.
+- O que não deve ser refeito: gate de rollout/compliance e contrato de endpoint permanecem os mesmos.
+- Riscos abertos: sem E2E real, ainda há risco de divergência entre provider e estado canônico do backend.
+- Dependências externas: credenciais do provider real, tenant/header de staging e disponibilidade do backend `191.252.181.168`.
+- Onde continuar: `backend/ads-service` (testes de integração) e `video-management-service` (validação operacional E2E).
 
 
 ## 2026-04-17 — Sprint V6 (rollout controlado por tenant/perfil e atualização de contrato)

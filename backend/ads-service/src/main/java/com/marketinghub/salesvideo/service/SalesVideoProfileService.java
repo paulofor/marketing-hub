@@ -15,6 +15,7 @@ import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -30,7 +31,9 @@ import java.util.Optional;
  */
 @Service
 public class SalesVideoProfileService {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .findAndAddModules()
+            .build();
 
     private final SalesVideoProfileRepository profileRepository;
     private final ProductRepository productRepository;
@@ -153,6 +156,9 @@ public class SalesVideoProfileService {
                 .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
         SalesVideoExecutionMode executionMode = rolloutService.normalizeExecutionMode(request.getExecutionMode());
+        if (executionMode == null) {
+            executionMode = Optional.ofNullable(request.getExecutionMode()).orElse(SalesVideoExecutionMode.TEST);
+        }
         if (executionMode == SalesVideoExecutionMode.PRODUCTION) {
             rolloutService.assertProductionRolloutAllowed(profile);
             ensureProductionCompliance(profile);

@@ -14,8 +14,9 @@ Regras fixas da etapa:
 6. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
 7. `consistencyChecks` deve incluir CTA_MATCH e EXPERIENCE_CONTINUITY.
 8. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
-9. Não converter para HTML final nesta etapa.
-10. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+9. `backgroundColorStrategy` deve orientar variação intencional de cores de fundo entre seções para melhorar escaneabilidade.
+10. Não converter para HTML final nesta etapa.
+11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

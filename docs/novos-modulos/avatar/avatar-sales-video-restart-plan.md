@@ -412,25 +412,42 @@ Validar o ciclo completo do módulo em staging com cenários reais de uso e falh
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (fluxo E2E administrativo reforçado com compliance na UI e cobertura de backend; validação integral em staging compartilhado ainda pendente)
 
 ### Cenários E2E validados
-- 
+- fluxo administrativo local: atualização de checklist de compliance no frontend via `PATCH /api/sales-videos/profiles/{profileId}/compliance`.
+- fluxo de render com `executionMode=TEST` e `executionMode=PRODUCTION` alinhado ao contrato de integração no payload de request.
+- validações backend automatizadas para:
+  - bloqueio de render `PRODUCTION` sem consentimento/revisão humana;
+  - geração de `auditSnapshotJson` ao solicitar render produtivo com compliance completo;
+  - limpeza de campos de consentimento ao desativar obrigatoriedade (`requiresConsent=false`).
 
 ### Problemas encontrados
-- 
+- frontend administrativo ainda não expunha checklist de compliance apesar do endpoint existir no backend desde a Sprint V4.
+- payload de render no frontend não enviava `executionMode`, gerando risco de inconsistência entre UI e regra de governança do backend.
+- ausência de testes dedicados em `SalesVideoProfileService` para cobrir trilha de auditoria de render produtivo.
 
 ### Correções aplicadas
-- 
+- adicionada mutation dedicada no frontend para atualização de compliance (`useUpdateSalesVideoCompliance`) e integração ao detalhe do perfil.
+- adicionada seção de checklist de compliance na tela de perfil com persistência de consentimento, revisão humana e notas.
+- formulário de solicitação de render atualizado com seletor explícito de `executionMode` (`TEST`/`PRODUCTION`), aderente ao Swagger.
+- tipagens frontend (`types.ts`) expandidas para refletir contrato atual (`executionMode`, campos de compliance e `auditSnapshotJson`).
+- criados testes unitários em backend (`SalesVideoProfileServiceTest`) cobrindo bloqueio de compliance e snapshot de auditoria.
 
 ### Riscos residuais
-- 
+- execução E2E contra o backend staging `191.252.181.168` ainda depende de tenant/header e credenciais operacionais válidas do ambiente.
+- não foi realizada simulação completa com provider real em staging nesta sprint (timeout/falha/asset expirado continuam para validação operacional).
+- painel de observabilidade com métricas de bloqueio de compliance segue pendente na stack compartilhada.
 
 ### Pendências carregadas para a Sprint V6
-- 
+- executar bateria E2E completa em staging compartilhado incluindo cenários de falha do provider real e publicação em landing sem intervenção manual.
+- calibrar alertas de compliance/retry/backlog com baseline real por tenant/provider.
+- finalizar runbook de rollout controlado por tenant/feature flag usando os novos controles de compliance no frontend.
 
 ### Evidências/testes executados
-- 
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoProfileServiceTest,SalesVideoJobServiceTest`
+- `cd frontend && npm run build`
+- `cd frontend && npm run test -- --runInBand`
 
 ---
 
@@ -543,37 +560,39 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Handoff para a próxima sprint
 
 ### 1. Resumo factual do estado atual
-- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona) e Sprint V3 (instrumentação de observabilidade no `video-management-service`).
-- O que está parcialmente concluído: materialização de dashboards/alertas na stack oficial de monitoramento de staging.
-- O que ainda não começou: bloqueios de compliance e governança operacional da Sprint V4.
+- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona), Sprint V3 (instrumentação de observabilidade), Sprint V4 (compliance backend) e Sprint V5 (alinhamento frontend + testes de compliance/auditoria).
+- O que está parcialmente concluído: validação E2E integral em staging compartilhado com provider real e dashboards oficiais de observabilidade.
+- O que ainda não começou: rollout controlado por tenant/feature flag da Sprint V6.
 
 ### 2. Pendências carregadas
-- Pendência 1: publicar dashboards no ambiente de observabilidade compartilhado (Prometheus/Grafana).
-- Pendência 2: calibrar limiares de alerta com baseline real por provider/tenant.
-- Pendência 3: executar bateria E2E em staging com cenários de alerta e degradação para validar alarmística.
+- Pendência 1: executar bateria E2E integral em staging (`191.252.181.168`) cobrindo sucesso, timeout, falha de provider, asset expirado, retry e publicação final.
+- Pendência 2: publicar dashboards no ambiente de observabilidade compartilhado (Prometheus/Grafana) com recortes de bloqueio de compliance.
+- Pendência 3: calibrar limiares de alerta com baseline real por provider/tenant.
 
 ### 3. Riscos abertos
 - Risco 1: divergência entre status externo do provider e estado canônico interno (`SalesVideoStatus`) ainda depende de validação E2E contínua.
 - Risco 2: sem calibração de limiar, alertas podem gerar ruído (falso positivo) ou atraso de detecção (falso negativo).
-- Risco 3: compliance de consentimento ainda não bloqueia workflow produtivo (escopo Sprint V4).
+- Risco 3: execução em staging pode falhar por dependências externas (credenciais do provider real, conectividade e headers de tenant).
 
 ### 4. Decisões tomadas nesta sprint
 - Decisão 1: manter backend como única fonte de verdade para estado e persistência do módulo.
 - Decisão 2: expor métricas via Actuator/Prometheus no próprio `video-management-service`.
 - Decisão 3: padronizar logs correlacionáveis por MDC com chaves de rastreio de job/provider/tenant.
 - Decisão 4: manter contrato de falha com `retryable` e `retryReason` alinhado ao Swagger canônico.
+- Decisão 5: tornar `executionMode` explícito no frontend para reduzir ambiguidade operacional entre render de teste e render produtivo.
+- Decisão 6: centralizar atualização de compliance no endpoint canônico do backend, sem estado paralelo no frontend.
 
 ### 5. Contratos/artefatos afetados
-- Endpoint: `/internal/video/jobs/*` e `/api/sales-videos/profiles/{profileId}` (sem mudança de rota, com alinhamento de payload de falha).
-- DTO/schema: `JobFailureRequest`/`JobFailurePayload` com `retryable` e `retryReason`.
-- Eventos: atualizações de progresso/conclusão/falha/expiração reportadas pelo módulo assíncrono ao backend.
-- Métricas: `video_jobs_*`, `video_render_latency_seconds`, `video_backend_retry_total`, `video_jobs_backlog`.
+- Endpoint: `/api/sales-videos/profiles/{profileId}/compliance` (consumido pelo frontend administrativo).
+- Endpoint: `/api/sales-videos/profiles/{profileId}/request-render` (payload com `executionMode` explícito).
+- DTO/schema: `SalesVideoProfileDto`, `SalesVideoJobDto`, `RequestVideoRenderRequest`, `UpdateSalesVideoComplianceRequest`.
+- Artefatos: `avatar.salesVideoComplianceRecord.v1` e `avatar.salesVideoRenderJob.v1` (snapshot auditável em render produtivo).
 - Flags: pendente para Sprint V6 (rollout por tenant/feature flag).
 
 ### 6. Instruções para o próximo ciclo do Codex
-- Prioridade imediata: Sprint V4 com foco em compliance/consentimento e trilha auditável de publicação.
-- O que não deve ser refeito: instrumentação de métricas, MDC de correlação e políticas de retry/claim/orphan já implementadas até V3.
-- Onde continuar: backend (`ads-service`) para regras de bloqueio de workflow e documentação canônica de compliance do módulo.
+- Prioridade imediata: Sprint V6 com rollout controlado por tenant/feature flag, após rodar E2E integral em staging.
+- O que não deve ser refeito: checklist de compliance backend/frontend, tipagens de `executionMode` e testes de snapshot auditável já implementados.
+- Onde continuar: `video-management-service` (E2E staging), `backend/ads-service` (readiness + rollout flags) e documentação operacional de rollout.
 
 ---
 

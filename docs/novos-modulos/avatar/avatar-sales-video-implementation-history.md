@@ -13,6 +13,7 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-17 — Sprint V5 (validação E2E administrativa, compliance UI e cobertura backend)
 - 2026-04-17 — Sprint V4 (compliance, consentimento e governança)
 - 2026-04-16 — Sprint V3 (observabilidade e confiabilidade operacional)
 - 2026-04-16 — Sprint V2 (robustez do ciclo assíncrono e recuperação de órfãos)
@@ -22,6 +23,66 @@ Cada entrada descreve:
 ---
 
 ## Entradas
+
+## 2026-04-17 — Sprint V5 (validação E2E administrativa, compliance UI e cobertura backend)
+
+**Status:** concluída com pendências
+
+### Resumo
+- A Sprint V5 atacou pendências remanescentes das Sprints V4/V5 com foco em aderência ponta a ponta do fluxo administrativo ao contrato canônico.
+- O frontend passou a operar o checklist de compliance diretamente no endpoint canônico do backend.
+- A cobertura de testes de serviço no backend foi ampliada para bloquear render produtivo sem compliance e validar snapshot auditável.
+
+### O que foi implementado
+- Integração frontend do endpoint `PATCH /api/sales-videos/profiles/{profileId}/compliance` com mutation dedicada.
+- Nova seção de checklist de compliance na tela de detalhe do perfil para consentimento, revisão humana e notas.
+- Ajuste do formulário de render para enviar `executionMode` explícito (`TEST`/`PRODUCTION`) conforme Swagger.
+- Expansão das tipagens frontend para refletir campos de compliance e auditoria (`executionMode`, `auditSnapshotJson`, metadados de compliance).
+- Novos testes unitários no backend (`SalesVideoProfileServiceTest`) cobrindo:
+  - bloqueio de `PRODUCTION` sem compliance;
+  - geração de `auditSnapshotJson` quando compliance está completo;
+  - limpeza de campos de consentimento ao desativar exigência.
+
+### O que foi alterado
+- Arquivos:
+  - `frontend/src/api/salesVideo/types.ts`
+  - `frontend/src/api/salesVideo/useUpdateSalesVideoCompliance.ts`
+  - `frontend/src/pages/salesVideo/SalesVideoProfileDetailPage.tsx`
+  - `backend/ads-service/src/test/java/com/marketinghub/salesvideo/service/SalesVideoProfileServiceTest.java`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `frontend`
+  - `backend/ads-service` (camada de testes)
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `PATCH /api/sales-videos/profiles/{profileId}/compliance`
+  - `POST /api/sales-videos/profiles/{profileId}/request-render` (campo `executionMode`)
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoComplianceRecord.v1` (operação via UI administrativa conectada ao backend canônico).
+- `avatar.salesVideoRenderJob.v1` (execução com `executionMode` explícito e snapshot de auditoria validado por testes).
+- `RequestVideoRenderRequest`, `UpdateSalesVideoComplianceRequest`, `SalesVideoProfileDto` e `SalesVideoJobDto`.
+
+### Testes e validações executados
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoProfileServiceTest,SalesVideoJobServiceTest`.
+- `cd frontend && npm run build`.
+- `cd frontend && npm run test -- --runInBand`.
+
+### Limitações e pendências
+- validação E2E integral contra o backend staging `191.252.181.168` não foi concluída nesta sprint devido dependências externas (headers/credenciais/provider real).
+- cenários de timeout/falha/expiração com provider real permanecem para bateria E2E de staging.
+- dashboards/alertas de compliance ainda dependem de provisionamento na stack de observabilidade compartilhada.
+
+### Próximo passo sugerido
+- Executar Sprint V6 com rollout controlado apenas após concluir a bateria E2E integral em staging e consolidar baseline operacional.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: concluir E2E em staging para sucesso, falha, timeout, retry, asset expirado e publicação final.
+- O que não deve ser refeito: integração de compliance no frontend e testes de snapshot auditável já implementados.
+- Riscos abertos: dependência de provider real/credenciais pode impedir validação completa; limiares de alerta sem baseline ainda podem gerar ruído.
+- Dependências externas: backend staging (`191.252.181.168`), credenciais de provider real e stack de observabilidade compartilhada.
+- Onde continuar: `video-management-service` (validação operacional), `backend/ads-service` (rollout/flags) e documentação de runbook da Sprint V6.
 
 ## 2026-04-17 — Sprint V4 (compliance, consentimento e governança)
 

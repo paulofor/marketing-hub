@@ -14,8 +14,10 @@ import { useUpdateLandingVideoSlot } from "../../api/salesVideo/useUpdateLanding
 import { useSalesVideoScripts } from "../../api/salesVideo/useSalesVideoScripts";
 import { useLandingVideoSlotHistory } from "../../api/salesVideo/useLandingVideoSlotHistory";
 import { useRetrySalesVideoJob } from "../../api/salesVideo/useRetrySalesVideoJob";
+import { useUpdateSalesVideoCompliance } from "../../api/salesVideo/useUpdateSalesVideoCompliance";
 import {
   LandingVideoSlot,
+  SalesVideoExecutionMode,
   SalesVideoJob,
   SalesVideoProviderFamily,
   SalesVideoRetryReason,
@@ -25,6 +27,7 @@ import { TenantContextBanner } from "../../components/TenantContextBanner";
 import { useTenantContext } from "../../utils/tenantContext";
 
 const PROVIDER_FAMILIES: SalesVideoProviderFamily[] = ["EXTERNAL_VIDEO_MODULE", "OPENAI"];
+const EXECUTION_MODES: SalesVideoExecutionMode[] = ["TEST", "PRODUCTION"];
 
 export default function SalesVideoProfileDetailPage() {
   const { profileId } = useParams();
@@ -50,6 +53,13 @@ export default function SalesVideoProfileDetailPage() {
     requestedBy: tenantContext.userEmail,
     providerFamily: "EXTERNAL_VIDEO_MODULE" as SalesVideoProviderFamily,
     providerName: "video-management-service",
+    executionMode: "TEST" as SalesVideoExecutionMode,
+  });
+  const [complianceForm, setComplianceForm] = useState({
+    requiresConsent: false,
+    consentEvidenceUrl: "",
+    humanReviewApproved: false,
+    complianceNotes: "",
   });
   const [slotForm, setSlotForm] = useState({
     slotName: "hero",
@@ -73,6 +83,7 @@ export default function SalesVideoProfileDetailPage() {
   const createSlot = useCreateLandingVideoSlot(landingId);
   const updateSlot = useUpdateLandingVideoSlot(landingId);
   const retryJob = useRetrySalesVideoJob();
+  const updateCompliance = useUpdateSalesVideoCompliance(profileId);
   const RETRY_REASONS: SalesVideoRetryReason[] = [
     "MANUAL_INTERVENTION",
     "PROVIDER_FAILURE",
@@ -100,6 +111,18 @@ export default function SalesVideoProfileDetailPage() {
       }));
     }
   }, [profile?.latestScript?.id]);
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+    setComplianceForm({
+      requiresConsent: profile.requiresConsent ?? false,
+      consentEvidenceUrl: profile.consentEvidenceUrl ?? "",
+      humanReviewApproved: Boolean(profile.humanReviewApprovedAt),
+      complianceNotes: profile.complianceNotes ?? "",
+    });
+  }, [profile]);
 
   useEffect(() => {
     setScriptRequestForm((prev) => ({ ...prev, requestedBy: tenantContext.userEmail }));
@@ -190,6 +213,7 @@ export default function SalesVideoProfileDetailPage() {
         requestedBy: tenantContext.userEmail,
         providerFamily: renderForm.providerFamily,
         providerName: renderForm.providerName.trim() || undefined,
+        executionMode: renderForm.executionMode,
       });
       toast.success("Render solicitado");
     } catch (error) {
@@ -282,6 +306,28 @@ export default function SalesVideoProfileDetailPage() {
     }
   };
 
+  const handleComplianceSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (complianceForm.requiresConsent && !complianceForm.consentEvidenceUrl.trim()) {
+      toast.error("Informe a evidência de consentimento quando o perfil exigir consentimento.");
+      return;
+    }
+    try {
+      await updateCompliance.mutateAsync({
+        requiresConsent: complianceForm.requiresConsent,
+        consentRecordedBy: complianceForm.requiresConsent ? tenantContext.userEmail : undefined,
+        consentEvidenceUrl: complianceForm.requiresConsent ? complianceForm.consentEvidenceUrl.trim() : "",
+        humanReviewApproved: complianceForm.humanReviewApproved,
+        humanReviewApprovedBy: complianceForm.humanReviewApproved ? tenantContext.userEmail : undefined,
+        complianceNotes: complianceForm.complianceNotes.trim() || "",
+      });
+      toast.success("Checklist de compliance atualizado.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao atualizar compliance";
+      toast.error(message);
+    }
+  };
+
   return (
     <div>
       <PageTitle>Perfil de Vídeo #{profile.id}</PageTitle>
@@ -319,7 +365,7 @@ export default function SalesVideoProfileDetailPage() {
               <h3 className="h6 mb-3">Solicitar geração de script</h3>
               <form onSubmit={handleScriptRequestSubmit} className="d-flex flex-column gap-3">
                 <div>
-                  <label className="form-label">Solicitante</label>
+                  <label className="form-label">Solicitante *</label>
                   <input
                     className="form-control"
                     value={scriptRequestForm.requestedBy}
@@ -339,6 +385,7 @@ export default function SalesVideoProfileDetailPage() {
                   />
                 </div>
                 <button className="btn btn-outline-primary" type="submit" disabled={generateScript.isPending}>
+                  {generateScript.isPending && <span className="spinner-border spinner-border-sm me-2" />}
                   {generateScript.isPending ? "Enviando..." : "Gerar script"}
                 </button>
               </form>
@@ -349,7 +396,7 @@ export default function SalesVideoProfileDetailPage() {
               <h3 className="h6 mb-3">Solicitar renderização</h3>
               <form onSubmit={handleRenderRequestSubmit} className="d-flex flex-column gap-3">
                 <div>
-                  <label className="form-label">Solicitante</label>
+                  <label className="form-label">Solicitante *</label>
                   <input
                     className="form-control"
                     value={renderForm.requestedBy}
@@ -378,6 +425,25 @@ export default function SalesVideoProfileDetailPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="form-label">Modo de execução *</label>
+                  <select
+                    className="form-select"
+                    value={renderForm.executionMode}
+                    onChange={(event) =>
+                      setRenderForm((prev) => ({
+                        ...prev,
+                        executionMode: event.target.value as SalesVideoExecutionMode,
+                      }))
+                    }
+                  >
+                    {EXECUTION_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="form-label">Provider (opcional)</label>
                   <input
                     className="form-control"
@@ -388,6 +454,7 @@ export default function SalesVideoProfileDetailPage() {
                   />
                 </div>
                 <button className="btn btn-outline-primary" type="submit" disabled={requestRender.isPending}>
+                  {requestRender.isPending && <span className="spinner-border spinner-border-sm me-2" />}
                   {requestRender.isPending ? "Solicitando..." : "Solicitar render"}
                 </button>
               </form>
@@ -456,7 +523,72 @@ export default function SalesVideoProfileDetailPage() {
             </div>
             <div className="col-12">
               <button className="btn btn-success" type="submit" disabled={approveScript.isPending}>
+                {approveScript.isPending && <span className="spinner-border spinner-border-sm me-2" />}
                 {approveScript.isPending ? "Salvando..." : "Aprovar script"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section className="mb-4">
+        <div className="card p-3">
+          <h2 className="h5">Checklist de compliance</h2>
+          <form className="row g-3" onSubmit={handleComplianceSubmit}>
+            <div className="col-md-4">
+              <label className="form-check-label">
+                <input
+                  className="form-check-input me-2"
+                  type="checkbox"
+                  checked={complianceForm.requiresConsent}
+                  onChange={(event) =>
+                    setComplianceForm((prev) => ({ ...prev, requiresConsent: event.target.checked }))
+                  }
+                />
+                Exigir consentimento auditável
+              </label>
+            </div>
+            <div className="col-md-8">
+              <label className="form-label">
+                Evidência de consentimento {complianceForm.requiresConsent ? "*" : "(opcional)"}
+              </label>
+              <input
+                className="form-control"
+                placeholder="URL, hash ou identificador da evidência"
+                value={complianceForm.consentEvidenceUrl}
+                onChange={(event) =>
+                  setComplianceForm((prev) => ({ ...prev, consentEvidenceUrl: event.target.value }))
+                }
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-check-label">
+                <input
+                  className="form-check-input me-2"
+                  type="checkbox"
+                  checked={complianceForm.humanReviewApproved}
+                  onChange={(event) =>
+                    setComplianceForm((prev) => ({ ...prev, humanReviewApproved: event.target.checked }))
+                  }
+                />
+                Revisão humana aprovada
+              </label>
+            </div>
+            <div className="col-md-8">
+              <label className="form-label">Notas de compliance (opcional)</label>
+              <textarea
+                className="form-control"
+                rows={3}
+                value={complianceForm.complianceNotes}
+                onChange={(event) =>
+                  setComplianceForm((prev) => ({ ...prev, complianceNotes: event.target.value }))
+                }
+              />
+            </div>
+            <div className="col-12">
+              <button className="btn btn-outline-secondary" type="submit" disabled={updateCompliance.isPending}>
+                {updateCompliance.isPending && <span className="spinner-border spinner-border-sm me-2" />}
+                {updateCompliance.isPending ? "Salvando..." : "Salvar checklist"}
               </button>
             </div>
           </form>
@@ -658,6 +790,7 @@ export default function SalesVideoProfileDetailPage() {
                 </div>
                 <div className="col-12">
                   <button className="btn btn-primary" type="submit" disabled={createSlot.isPending}>
+                    {createSlot.isPending && <span className="spinner-border spinner-border-sm me-2" />}
                     {createSlot.isPending ? "Salvando..." : "Publicar na landing"}
                   </button>
                 </div>

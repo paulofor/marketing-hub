@@ -13,6 +13,7 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-17 — Sprint V6 (rollout controlado por tenant/perfil e atualização de contrato)
 - 2026-04-17 — Sprint V5 (validação E2E administrativa, compliance UI e cobertura backend)
 - 2026-04-17 — Sprint V4 (compliance, consentimento e governança)
 - 2026-04-16 — Sprint V3 (observabilidade e confiabilidade operacional)
@@ -23,6 +24,72 @@ Cada entrada descreve:
 ---
 
 ## Entradas
+
+
+## 2026-04-17 — Sprint V6 (rollout controlado por tenant/perfil e atualização de contrato)
+
+**Status:** concluída com pendências
+
+### Resumo
+- A Sprint V6 implementou o gate canônico de rollout no backend para liberar render produtivo de forma gradual por tenant e por perfil.
+- O módulo passou a expor endpoints de leitura de elegibilidade para reduzir decisões manuais durante operação assistida.
+- O Swagger de integração foi atualizado para refletir os novos contratos operacionais de rollout.
+
+### O que foi implementado
+- Serviço de política de rollout (`SalesVideoRolloutService`) com regras de elegibilidade por `tenantId` e `profileId`.
+- Bloqueio explícito de `request-render` em `PRODUCTION` quando rollout não estiver habilitado para o escopo solicitado, retornando `ROLLOUT_NOT_ALLOWED`.
+- Novos endpoints administrativos:
+  - `GET /api/sales-videos/rollout/status`
+  - `GET /api/sales-videos/profiles/{profileId}/rollout-status`
+- Inclusão de flags de configuração no backend:
+  - `sales-video.rollout.enabled`
+  - `sales-video.rollout.allowed-tenants`
+  - `sales-video.rollout.allowed-profile-ids`
+- Cobertura de teste no `SalesVideoProfileServiceTest` para cenário de bloqueio por rollout.
+
+### O que foi alterado
+- Arquivos:
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoRolloutService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoRolloutStatusDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoProfileService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/web/SalesVideoProfileController.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/exception/VideoModuleErrorCode.java`
+  - `backend/ads-service/src/main/resources/application.properties`
+  - `backend/ads-service/src/test/java/com/marketinghub/salesvideo/service/SalesVideoProfileServiceTest.java`
+  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `backend/ads-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `POST /api/sales-videos/profiles/{profileId}/request-render` (gate de rollout para `PRODUCTION`)
+  - `GET /api/sales-videos/rollout/status`
+  - `GET /api/sales-videos/profiles/{profileId}/rollout-status`
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoRenderJob.v1` (governança de liberação por rollout antes da criação de render produtivo).
+- `SalesVideoRolloutStatusDto` no Swagger canônico para consulta de elegibilidade operacional.
+- `VideoModuleErrorCode` expandido com `ROLLOUT_NOT_ALLOWED`.
+
+### Testes e validações executados
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoProfileServiceTest`.
+- revisão de consistência do Swagger de integração com os endpoints implementados no backend.
+
+### Limitações e pendências
+- validação E2E completa com provider real em staging (`191.252.181.168`) ainda depende de credenciais/tenant operacionais.
+- baseline diário real de rollout (sucesso/falha/latência/retry por tenant/provider) ainda não foi coletado na stack compartilhada.
+- runbook de rollback ainda precisa ser exercitado em simulação operacional com o time.
+
+### Próximo passo sugerido
+- Iniciar Sprint V7 após executar rollout piloto assistido em staging, registrar baseline real e validar rollback por flags sem intervenção em banco.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: rodar ciclo piloto com tenant/perfil autorizados e registrar baseline por 3-5 dias operacionais.
+- O que não deve ser refeito: gate de rollout no backend e contratos de status já publicados no Swagger.
+- Riscos abertos: sem baseline real, alertas podem continuar descalibrados no primeiro rollout.
+- Dependências externas: credenciais do provider real, janela de operação em staging e stack de observabilidade compartilhada.
+- Onde continuar: `backend/ads-service` (governança operacional), `video-management-service` (monitoramento do ciclo assíncrono), documentação da Sprint V7.
 
 ## 2026-04-17 — Sprint V5 (validação E2E administrativa, compliance UI e cobertura backend)
 

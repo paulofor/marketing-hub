@@ -7,6 +7,7 @@ import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
+import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
@@ -41,6 +42,8 @@ class SalesVideoProfileServiceTest {
     private SalesVideoJobRepository jobRepository;
     @Mock
     private SalesVideoJobService jobService;
+    @Mock
+    private SalesVideoRolloutService rolloutService;
 
     private SalesVideoProfileService service;
 
@@ -51,7 +54,8 @@ class SalesVideoProfileServiceTest {
                 landingPageRepository,
                 scriptRepository,
                 jobRepository,
-                jobService);
+                jobService,
+                rolloutService);
     }
 
     @Test
@@ -68,6 +72,30 @@ class SalesVideoProfileServiceTest {
                 SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
 
         assertThrows(VideoModuleException.class, () -> service.requestRender(profile.getId(), request));
+    }
+
+    @Test
+    void shouldBlockProductionRenderWhenRolloutIsNotAllowed() {
+        SalesVideoProfile profile = profileWithDefaults();
+        profile.setRequiresConsent(false);
+        profile.setHumanReviewApprovedBy("reviewer@tenant.io");
+        profile.setHumanReviewApprovedAt(Instant.parse("2026-04-17T09:30:00Z"));
+        SalesVideoScript script = approvedScript(profile);
+        RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+        request.setRequestedBy("owner@tenant.io");
+        request.setExecutionMode(SalesVideoExecutionMode.PRODUCTION);
+
+        given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+        given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
+                SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+        org.mockito.Mockito.doThrow(VideoModuleException.conflict(VideoModuleErrorCode.ROLLOUT_NOT_ALLOWED,
+                        "Rollout bloqueado"))
+                .when(rolloutService)
+                .assertProductionRolloutAllowed(profile);
+
+        VideoModuleException ex = assertThrows(VideoModuleException.class,
+                () -> service.requestRender(profile.getId(), request));
+        assertThat(ex.getErrorCode()).isEqualTo(VideoModuleErrorCode.ROLLOUT_NOT_ALLOWED);
     }
 
     @Test
@@ -102,6 +130,7 @@ class SalesVideoProfileServiceTest {
         given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
         given(scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(profile.getId(),
                 SalesVideoScriptStatus.APPROVED)).willReturn(Optional.of(script));
+        org.mockito.Mockito.doNothing().when(rolloutService).assertProductionRolloutAllowed(profile);
         given(jobService.createJob(any(), any(), any(), any(), any(), any(), any())).willReturn(generatedJob);
         given(jobRepository.save(any(SalesVideoJob.class))).willAnswer(invocation -> invocation.getArgument(0));
         given(profileRepository.save(any(SalesVideoProfile.class))).willAnswer(invocation -> invocation.getArgument(0));

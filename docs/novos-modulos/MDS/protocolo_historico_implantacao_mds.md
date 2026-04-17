@@ -636,3 +636,71 @@ O MDS agora executa busca estruturada em fontes científicas, registra a estrat�
 **Próximo passo sugerido:**
 
 Implementar a Sprint 4 com deduplicação, triagem estruturada, `EvidenceConfidenceService` e persistência de `evidenceItem`.
+
+## [2026-04-17] — Etapa: sprint 4 - normalização, deduplicação, triagem e evidenceItem
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+A Sprint 4 foi implementada no módulo `mds/` com deduplicação de documentos, triagem por relevância/aplicabilidade, classificação de confiança e publicação de `evidenceItem` com lineage para os `sourceDocument` de origem.
+
+**Objetivo da etapa:**
+
+Transformar os resultados brutos da busca da Sprint 3 em evidências priorizadas e persistíveis no backend, mantendo rastreabilidade e eventos por etapa.
+
+**O que foi implementado:**
+
+- criação de `SourceDedupService` com regras por DOI, PMID, PMCID, título normalizado e URL canônica;
+- criação de `EvidenceScreeningService` para triagem mínima e priorização de evidências;
+- criação de `EvidenceConfidenceService` com níveis `alta`, `moderada`, `baixa` e `muito_baixa`;
+- criação de `EvidenceItemBuilder` para montar `evidenceItem` com limitação, proximidade com problema, aplicabilidade ao nicho e sinais de força da evidência;
+- atualização do `MechanismDiscoveryPipelineService` para publicar `evidenceItem` e ligar lineage ao `sourceDocument` via `parentArtifactIds`;
+- heartbeat por etapa (`dedup-normalize`, `screening`, `evidence-analysis`) para registrar eventos operacionais no backend.
+
+**Arquivos alterados/criados:**
+
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/main/java/com/marketinghub/mds/search/SourceDedupService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceScreeningService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceConfidenceService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceItemBuilder.java
+- mds/src/main/java/com/marketinghub/mds/search/ScreenedEvidence.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- mds/src/test/java/com/marketinghub/mds/search/SourceDedupServiceTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- `artifact_record` (novo tipo persistido: `evidenceItem`)
+- `artifact_lineage_edge` (lineage `evidenceItem` -> `sourceDocument`)
+- `mds_processing_event` (eventos adicionais por etapa do pipeline)
+
+**APIs / endpoints / contratos afetados:**
+
+- `POST /api/internal/mds/artifacts/publish-batch` (uso expandido para `evidenceItem`)
+- `POST /api/internal/mds/requests/{id}/heartbeat` (uso expandido para eventos de etapa da Sprint 4)
+
+**Artefatos / schemas impactados:**
+
+- `mds.evidenceItem.v1`
+- `mds.sourceDocument.v1` (lineage consumido como origem)
+- `mds.mechanismEvidenceSearch.v1` (metadados de deduplicação/triagem)
+
+**Testes executados:**
+
+- `cd mds && mvn test`
+
+**Resultado observado:**
+
+O MDS agora reduz duplicatas de fontes, aplica triagem mínima, classifica confiança e publica `evidenceItem` com rastreabilidade para o documento fonte, preparando o terreno para construção de mecanismos candidatos na sprint seguinte.
+
+**Limitações / pendências:**
+
+- heurísticas de triagem e confiança ainda não avaliam profundidade metodológica completa dos estudos;
+- extração de componentes ativos e recomendação de mecanismo não fazem parte desta sprint.
+
+**Próximo passo sugerido:**
+
+Implementar a Sprint 5 com extração de componentes ativos, montagem de `mechanismCandidate` e seleção do mecanismo recomendado.

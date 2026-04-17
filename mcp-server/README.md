@@ -30,6 +30,8 @@ mvn -s settings.xml spring-boot:run
 
 ## Docker
 
+### Apenas o container do MCP (desenvolvimento/local)
+
 ```bash
 docker build -t marketinghub/mcp-server .
 docker run --rm -p 8096:8096 \
@@ -39,6 +41,29 @@ docker run --rm -p 8096:8096 \
   -e MCP_API_KEY=<token-forte> \
   marketinghub/mcp-server
 ```
+
+### MCP + Nginx (VPS em HTTP porta 80)
+
+O `docker-compose.yml` deste diretório sobe dois containers:
+
+- `mcp-server` (interno, exposto apenas na rede Docker em `8096`);
+- `nginx` (público, escutando na porta `80` e fazendo proxy para o MCP).
+
+```bash
+cd mcp-server
+docker compose up -d --build
+```
+
+Depois, valide:
+
+```bash
+curl -i http://mcpserverdigi.shop/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <MCP_API_KEY>' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+```
+
+Quando o certificado estiver pronto, basta ajustar o Nginx para `443` e redirecionar `80 -> 443`.
 
 ## Configuração no Codex Cloud (Plugin MCP)
 

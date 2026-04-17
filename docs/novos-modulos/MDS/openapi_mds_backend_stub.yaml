@@ -1,0 +1,444 @@
+openapi: 3.1.0
+info:
+  title: Marketing Hub - MDS Internal Integration API
+  version: 0.1.0-draft
+  summary: Contrato inicial de integração entre o backend principal e o Mechanism Discovery Service (MDS).
+  description: |
+    Stub inicial em OpenAPI para orientar a integração entre o backend do Marketing Hub e o MDS.
+
+    Regras arquiteturais consideradas:
+    - Somente o backend principal acessa o banco de dados.
+    - O MDS não acessa MySQL diretamente.
+    - Toda persistência, versionamento, lineage e leitura oficial de artefatos passa pelo backend.
+    - Esta especificação define contratos HTTP internos entre serviços.
+
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: http://mds:8080
+    description: Serviço MDS no ambiente docker interno
+  - url: http://localhost:8091
+    description: Serviço MDS em desenvolvimento local
+
+tags:
+  - name: Discovery
+    description: Busca e preparação de corpus de evidência.
+  - name: Analysis
+    description: Análise, triagem e extração de evidências.
+  - name: Mechanism
+    description: Construção de mecanismos candidatos e mecanismo recomendado.
+  - name: Publication
+    description: Publicação de packs e relatórios.
+  - name: Reports
+    description: Recuperação de relatórios de descoberta.
+  - name: Health
+    description: Operação e healthcheck.
+
+paths:
+  /internal/mechanism-discovery/search:
+    post:
+      tags: [Discovery]
+      operationId: searchMechanismEvidence
+      summary: Executa busca inicial de evidência.
+      description: |
+        Recebe uma requisição de descoberta e devolve um resultado inicial de busca.
+        Nesta versão de stub, os campos são mínimos e podem ser refinados depois.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MechanismDiscoverySearchRequest'
+      responses:
+        '202':
+          description: Busca aceita para processamento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchAcceptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /internal/mechanism-discovery/analyze:
+    post:
+      tags: [Analysis]
+      operationId: analyzeMechanismCorpus
+      summary: Analisa corpus recuperado e extrai evidências.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MechanismDiscoveryAnalyzeRequest'
+      responses:
+        '202':
+          description: Análise aceita para processamento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeAcceptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /internal/mechanism-discovery/build-mechanism:
+    post:
+      tags: [Mechanism]
+      operationId: buildMechanismCandidates
+      summary: Constrói mecanismos candidatos e propõe um mecanismo recomendado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildMechanismRequest'
+      responses:
+        '202':
+          description: Construção de mecanismo aceita para processamento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildMechanismAcceptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /internal/mechanism-discovery/publish-pack:
+    post:
+      tags: [Publication]
+      operationId: publishMechanismPack
+      summary: Publica evidence packs, mechanismSpec e practicalKnowledgePack.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishPackRequest'
+      responses:
+        '202':
+          description: Publicação aceita para processamento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishPackAcceptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /internal/mechanism-discovery/reports/{id}:
+    get:
+      tags: [Reports]
+      operationId: getMechanismDiscoveryReport
+      summary: Recupera relatório de descoberta.
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Relatório encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MechanismDiscoveryReportResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /internal/mechanism-discovery/actuator/health:
+    get:
+      tags: [Health]
+      operationId: getMdsHealth
+      summary: Healthcheck do MDS.
+      responses:
+        '200':
+          description: Serviço saudável.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  parameters:
+    ReportId:
+      name: id
+      in: path
+      required: true
+      description: Identificador do relatório de descoberta.
+      schema:
+        type: string
+        minLength: 1
+
+  responses:
+    BadRequest:
+      description: Requisição inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Erro interno.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    MechanismDiscoverySearchRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - market
+        - problem
+        - desiredOutcome
+      properties:
+        requestId:
+          type: string
+        market:
+          type: string
+        problem:
+          type: string
+        desiredOutcome:
+          type: string
+        context:
+          type: string
+        language:
+          type: string
+          default: pt-BR
+        evidencePreference:
+          type: string
+        searchSources:
+          type: array
+          items:
+            type: string
+            enum: [pubmed, pmc, europe-pmc, crossref, openalex]
+
+    SearchAcceptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - status
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum: [accepted]
+        searchJobId:
+          type: string
+        message:
+          type: string
+
+    MechanismDiscoveryAnalyzeRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+      properties:
+        requestId:
+          type: string
+        searchJobId:
+          type: string
+        selectedDocumentIds:
+          type: array
+          items:
+            type: string
+        allowAbstractOnly:
+          type: boolean
+          default: true
+
+    AnalyzeAcceptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - status
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum: [accepted]
+        analysisJobId:
+          type: string
+        message:
+          type: string
+
+    BuildMechanismRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+      properties:
+        requestId:
+          type: string
+        analysisJobId:
+          type: string
+        evidenceItemIds:
+          type: array
+          items:
+            type: string
+        buildMode:
+          type: string
+          enum: [candidate-only, candidate-and-recommended]
+          default: candidate-and-recommended
+
+    BuildMechanismAcceptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - status
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum: [accepted]
+        buildJobId:
+          type: string
+        message:
+          type: string
+
+    PublishPackRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+      properties:
+        requestId:
+          type: string
+        buildJobId:
+          type: string
+        mechanismCandidateIds:
+          type: array
+          items:
+            type: string
+        chosenMechanismId:
+          type: string
+        publishMechanismSpec:
+          type: boolean
+          default: true
+        publishPracticalKnowledgePack:
+          type: boolean
+          default: true
+        publishDiscoveryReport:
+          type: boolean
+          default: true
+
+    PublishPackAcceptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - status
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum: [accepted]
+        publishJobId:
+          type: string
+        message:
+          type: string
+
+    MechanismDiscoveryReportResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        requestId:
+          type: string
+        reportId:
+          type: string
+        status:
+          type: string
+        market:
+          type: string
+        problem:
+          type: string
+        desiredOutcome:
+          type: string
+        confidenceLevel:
+          type: string
+          enum: [alta, moderada, baixa, muito_baixa]
+        selectedEvidenceCount:
+          type: integer
+          minimum: 0
+        mechanismCandidateCount:
+          type: integer
+          minimum: 0
+        chosenMechanismId:
+          type: string
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtifactRef'
+        createdAt:
+          type: string
+          format: date-time
+
+    ArtifactRef:
+      type: object
+      additionalProperties: false
+      properties:
+        artifactId:
+          type: string
+        artifactType:
+          type: string
+          enum:
+            - mechanismDiscoveryRequest
+            - mechanismEvidenceSearch
+            - sourceDocument
+            - evidenceItem
+            - mechanismCandidate
+            - mechanismSpec
+            - practicalKnowledgePack
+            - mechanismDiscoveryReport
+        artifactVersion:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [DRAFT, VALIDATED, APPROVED, REJECTED]
+
+    HealthResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        status:
+          type: string
+          examples: [UP]
+        service:
+          type: string
+          examples: [mds]
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string

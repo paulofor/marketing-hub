@@ -644,3 +644,6 @@ databaseChangeLog:
   - include:
       file: V2037_04_11__lead_portal_schema_first_flags_mysql5.sql
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-04-17-mds-sprint1-base.yaml
+      relativeToChangelogFile: true

@@ -367,19 +367,27 @@ Preparar o backend para ser o centro de persistência e orquestração do MDS.
 - ainda sem pipeline de análise.
 
 ### Registro do Codex ao final da sprint
-**Status:** `NAO_INICIADA`
+**Status:** `CONCLUIDO`
 
 **O que foi concluído:**
-- 
+- Namespace backend do MDS criado no `ads-service` com entidades, repositories, services e controller interno para requests, claim, heartbeat, complete, fail e publicação em lote de artefatos.
+- Migration Liquibase em YAML (MySQL 5.7) criada com as tabelas mínimas de Sprint 1 (`mds_request`, `artifact_record`, `artifact_lineage_edge`, `source_access_record`, `mds_processing_event`).
+- Contrato backend ↔ MDS documentado no arquivo `contrato_backend_mds.md`.
 
 **O que ficou pendente para a próxima sprint:**
-- 
+- Criar módulo `mds/` independente com loop de polling e integração ativa com os endpoints do backend.
+- Implementar processamento real de discovery (formulação de perguntas, busca, deduplicação e análise de evidência).
+- Implementar testes de contrato backend ↔ módulo MDS em execução ponta a ponta.
 
 **Riscos / observações:**
-- 
+- O contrato OpenAPI de stub em `openapi_mds_backend_stub.yaml` descreve rotas do serviço MDS, enquanto Sprint 1 focou rotas internas no backend para orquestração e persistência.
+- A tabela `source_access_record` foi criada para aderência ao artefato canônico, mas o preenchimento operacional ficará para as sprints com busca em fontes externas.
 
 **Arquivos alterados/criados:**
-- 
+- backend/ads-service/src/main/java/com/marketinghub/mds/*
+- backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-17-mds-sprint1-base.yaml
+- backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml
+- docs/novos-modulos/MDS/contrato_backend_mds.md
 
 ---
 
@@ -421,19 +429,29 @@ Criar o módulo `mds/` e conectá-lo ao backend para consumir requests reais.
 - ainda sem fontes externas operacionais.
 
 ### Registro do Codex ao final da sprint
-**Status:** `NAO_INICIADA`
+**Status:** `PARCIAL`
 
 **O que foi concluído:**
-- 
+- Criação do módulo independente `mds/` na raiz do repositório com projeto Maven Spring Boot completo (`pom.xml`, `Dockerfile`, `README.md`, `application.yml`, código e testes).
+- Bootstrap do serviço (`MdsApplication`), configuração (`MdsProperties`, `BackendClientConfig`) e health endpoint em `/internal/mechanism-discovery/actuator/health`.
+- Implementação de cliente HTTP para backend interno e loop básico de processamento com polling de pendências + claim + heartbeat + complete/fail.
 
 **O que ficou pendente para a próxima sprint:**
-- 
+- Discovery real (question builder, busca em fontes externas, deduplicação, screening e análise de evidências).
+- Implementação completa dos componentes de pipeline científico previstos no plano.
+- Hardening de observabilidade e retries avançados.
 
 **Riscos / observações:**
-- 
+- O loop atual publica artefatos stub para validar o acoplamento com o backend sem acesso direto ao banco.
+- Contratos HTTP dependem dos endpoints internos do backend para persistência e lifecycle.
 
 **Arquivos alterados/criados:**
-- 
+- mds/pom.xml
+- mds/Dockerfile
+- mds/README.md
+- mds/src/main/resources/application.yml
+- mds/src/main/java/com/marketinghub/mds/*
+- mds/src/test/java/com/marketinghub/mds/*
 
 ---
 

@@ -1,0 +1,92 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-17-mds-sprint1-base
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: mds_request
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mds_request (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                status VARCHAR(32) NOT NULL,
+                market VARCHAR(191) NOT NULL,
+                problem LONGTEXT NOT NULL,
+                desired_outcome LONGTEXT NOT NULL,
+                context_json LONGTEXT NOT NULL,
+                delivery_constraint VARCHAR(191) NULL,
+                evidence_preference VARCHAR(64) NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                started_at TIMESTAMP NULL,
+                finished_at TIMESTAMP NULL,
+                failure_reason LONGTEXT NULL,
+                correlation_id VARCHAR(191) NOT NULL,
+                PRIMARY KEY (id),
+                KEY idx_mds_request_status_created_at (status, created_at),
+                KEY idx_mds_request_correlation_id (correlation_id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE artifact_record (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                artifact_type VARCHAR(128) NOT NULL,
+                schema_version VARCHAR(32) NOT NULL,
+                version VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                producer_module VARCHAR(64) NOT NULL,
+                owner_module VARCHAR(64) NOT NULL,
+                request_id BIGINT NOT NULL,
+                content_json LONGTEXT NOT NULL,
+                hash VARCHAR(64) NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_artifact_record_request FOREIGN KEY (request_id) REFERENCES mds_request (id),
+                KEY idx_artifact_record_request_id (request_id),
+                KEY idx_artifact_record_type_status (artifact_type, status)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE artifact_lineage_edge (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                parent_artifact_id BIGINT NOT NULL,
+                child_artifact_id BIGINT NOT NULL,
+                relation_type VARCHAR(64) NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_artifact_lineage_parent FOREIGN KEY (parent_artifact_id) REFERENCES artifact_record (id),
+                CONSTRAINT fk_artifact_lineage_child FOREIGN KEY (child_artifact_id) REFERENCES artifact_record (id),
+                KEY idx_artifact_lineage_parent_id (parent_artifact_id),
+                KEY idx_artifact_lineage_child_id (child_artifact_id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE source_access_record (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                source_document_id VARCHAR(191) NOT NULL,
+                access_class VARCHAR(64) NOT NULL,
+                permission_state VARCHAR(64) NOT NULL,
+                license_text LONGTEXT NULL,
+                access_url VARCHAR(512) NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_source_access_source_document (source_document_id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE mds_processing_event (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                request_id BIGINT NOT NULL,
+                stage_name VARCHAR(128) NOT NULL,
+                event_type VARCHAR(32) NOT NULL,
+                message LONGTEXT NOT NULL,
+                payload_json LONGTEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_mds_processing_event_request FOREIGN KEY (request_id) REFERENCES mds_request (id),
+                KEY idx_mds_processing_event_request_stage (request_id, stage_name)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

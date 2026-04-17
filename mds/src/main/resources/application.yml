@@ -1,0 +1,20 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: mds
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+mds:
+  loop-enabled: true
+  loop-interval-ms: 15000
+  poll-limit: 5
+  backend:
+    base-url: ${MDS_BACKEND_BASE_URL:http://localhost:8080}
+    worker-id: ${MDS_WORKER_ID:mds-worker-local}

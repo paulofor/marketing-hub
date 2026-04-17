@@ -499,7 +499,7 @@ public class ExperimentPipelineOpenAiClient {
             return check("DELIVERABLE_TO_OUTCOME_LINK", "FAIL",
                     "A landing lista entregáveis sem conectar explicitamente com resultado esperado.");
         }
-        if (deliverableHits > 0 && (outcomeHits < 2 || linkHits < 2)) {
+        if (deliverableHits > 0 && (outcomeHits < 2 || linkHits == 0)) {
             return check("DELIVERABLE_TO_OUTCOME_LINK", "WARN",
                     "A conexão entre entregáveis e resultado existe, mas ainda está fraca.");
         }
@@ -580,8 +580,13 @@ public class ExperimentPipelineOpenAiClient {
         }
         boolean hasPreviewHints = containsAny(document, PREVIEW_TERMS);
         boolean hasBoundImage = document.contains("data-image-section-id=") || document.contains("data-image-binding-key=");
+        boolean hasImageNode = document.contains("<img") || document.contains("<picture")
+                || document.contains("background-image");
         if (hasPreviewHints && !hasBoundImage) {
-            return check("PREVIEW_CONCRETENESS", "FAIL", "Landing promete preview, mas não vincula imagem concreta.");
+            if (hasImageNode) {
+                return check("PREVIEW_CONCRETENESS", "FAIL", "Landing promete preview, mas não vincula imagem concreta.");
+            }
+            return check("PREVIEW_CONCRETENESS", "WARN", "HTML cita preview, porém sem bloco visual verificável.");
         }
         if (!hasPreviewHints && !hasBoundImage) {
             return check("PREVIEW_CONCRETENESS", "WARN", "HTML não evidencia preview visual concreto.");
@@ -667,8 +672,7 @@ public class ExperimentPipelineOpenAiClient {
             return check("ARTIFACT_SCHEMA_COMPATIBILITY", "FAIL",
                     "Artefato " + artifactName + " incompatível com campos obrigatórios: " + String.join(", ", missing) + ".");
         }
-        boolean hasEmptyCollection = requiredFields.stream()
-                .map(artifact::get)
+        boolean hasEmptyCollection = artifact.values().stream()
                 .anyMatch(value -> value instanceof List<?> list && list.isEmpty());
         if (hasEmptyCollection) {
             return check("ARTIFACT_SCHEMA_COMPATIBILITY", "WARN",

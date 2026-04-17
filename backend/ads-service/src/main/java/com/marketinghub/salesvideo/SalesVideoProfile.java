@@ -55,6 +55,28 @@ public class SalesVideoProfile {
     private String language;
     private Integer targetDurationSeconds;
 
+    @Builder.Default
+    @Column(name = "requires_consent", nullable = false)
+    private boolean requiresConsent = false;
+
+    @Column(name = "consent_recorded_by")
+    private String consentRecordedBy;
+
+    @Column(name = "consent_recorded_at")
+    private Instant consentRecordedAt;
+
+    @Column(name = "consent_evidence_url")
+    private String consentEvidenceUrl;
+
+    @Column(name = "human_review_approved_by")
+    private String humanReviewApprovedBy;
+
+    @Column(name = "human_review_approved_at")
+    private Instant humanReviewApprovedAt;
+
+    @Lob
+    private String complianceNotes;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 64)
     private SalesVideoStatus status;

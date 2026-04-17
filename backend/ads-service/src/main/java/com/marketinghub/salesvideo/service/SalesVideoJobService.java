@@ -59,7 +59,8 @@ public class SalesVideoJobService {
                                    SalesVideoJobType jobType,
                                    SalesVideoProviderFamily providerFamily,
                                    String providerName,
-                                   String requestedBy) {
+                                   String requestedBy,
+                                   SalesVideoExecutionMode executionMode) {
         SalesVideoStatus initialStatus = initialStatus(jobType);
         SalesVideoJob job = SalesVideoJob.builder()
                 .profile(profile)
@@ -67,6 +68,7 @@ public class SalesVideoJobService {
                 .script(script)
                 .jobType(jobType)
                 .providerFamily(providerFamily)
+                .executionMode(executionMode != null ? executionMode : SalesVideoExecutionMode.TEST)
                 .providerName(providerName)
                 .status(initialStatus)
                 .requestedBy(requestedBy)
@@ -229,7 +231,8 @@ public class SalesVideoJobService {
                 job.getJobType(),
                 job.getProviderFamily(),
                 job.getProviderName(),
-                requestedBy);
+                requestedBy,
+                job.getExecutionMode());
         newJob.setRetryOfJob(job);
         newJob.setRetryAttempt(job.getRetryAttempt() + 1);
         newJob.setRetryReason(request.getReason());

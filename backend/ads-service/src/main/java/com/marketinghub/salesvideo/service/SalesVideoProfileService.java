@@ -13,11 +13,16 @@ import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -25,6 +30,8 @@ import java.util.Optional;
  */
 @Service
 public class SalesVideoProfileService {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final SalesVideoProfileRepository profileRepository;
     private final ProductRepository productRepository;
     private final LandingPageRepository landingPageRepository;
@@ -101,7 +108,8 @@ public class SalesVideoProfileService {
                 SalesVideoJobType.SCRIPT,
                 SalesVideoProviderFamily.OPENAI,
                 request.getProviderName(),
-                requestedBy);
+                requestedBy,
+                SalesVideoExecutionMode.TEST);
         profileRepository.save(profile);
         return SalesVideoMapper.toDto(job);
     }
@@ -141,6 +149,11 @@ public class SalesVideoProfileService {
                 .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
                 .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
+        SalesVideoExecutionMode executionMode = Optional.ofNullable(request.getExecutionMode())
+                .orElse(SalesVideoExecutionMode.PRODUCTION);
+        if (executionMode == SalesVideoExecutionMode.PRODUCTION) {
+            ensureProductionCompliance(profile);
+        }
         SalesVideoProviderFamily family = Optional.ofNullable(request.getProviderFamily())
                 .orElse(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
         String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
@@ -149,10 +162,55 @@ public class SalesVideoProfileService {
                 SalesVideoJobType.RENDER,
                 family,
                 request.getProviderName(),
-                requestedBy);
+                requestedBy,
+                executionMode);
+        job.setAuditSnapshotJson(buildAuditSnapshot(profile, script, job, requestedBy));
+        jobRepository.save(job);
         profile.setStatus(SalesVideoStatus.VIDEO_REQUESTED);
         profileRepository.save(profile);
         return SalesVideoMapper.toDto(job);
+    }
+
+    @Transactional
+    public SalesVideoProfileDto updateCompliance(Long profileId, UpdateSalesVideoComplianceRequest request) {
+        SalesVideoProfile profile = loadProfile(profileId);
+        if (request.getRequiresConsent() != null) {
+            profile.setRequiresConsent(request.getRequiresConsent());
+            if (!request.getRequiresConsent()) {
+                profile.setConsentRecordedBy(null);
+                profile.setConsentRecordedAt(null);
+                profile.setConsentEvidenceUrl(null);
+            }
+        }
+        if (StringUtils.hasText(request.getConsentRecordedBy())) {
+            profile.setConsentRecordedBy(TenantContextHolder.resolveUserEmail(request.getConsentRecordedBy()));
+            profile.setConsentRecordedAt(Instant.now());
+        }
+        if (request.getConsentEvidenceUrl() != null) {
+            profile.setConsentEvidenceUrl(StringUtils.hasText(request.getConsentEvidenceUrl())
+                    ? request.getConsentEvidenceUrl().trim()
+                    : null);
+        }
+        if (request.getHumanReviewApproved() != null) {
+            if (request.getHumanReviewApproved()) {
+                String reviewer = TenantContextHolder.resolveUserEmail(request.getHumanReviewApprovedBy());
+                if (!StringUtils.hasText(reviewer)) {
+                    throw VideoModuleException.badRequest(VideoModuleErrorCode.COMPLIANCE_HUMAN_REVIEW_REQUIRED,
+                            "Informe o responsável pela revisão humana.");
+                }
+                profile.setHumanReviewApprovedBy(reviewer);
+                profile.setHumanReviewApprovedAt(Instant.now());
+            } else {
+                profile.setHumanReviewApprovedBy(null);
+                profile.setHumanReviewApprovedAt(null);
+            }
+        }
+        if (request.getComplianceNotes() != null) {
+            profile.setComplianceNotes(StringUtils.hasText(request.getComplianceNotes())
+                    ? request.getComplianceNotes().trim()
+                    : null);
+        }
+        return toDto(profileRepository.save(profile));
     }
 
     @Transactional(readOnly = true)
@@ -170,6 +228,51 @@ public class SalesVideoProfileService {
                         "Perfil de vídeo não encontrado: " + profileId));
         TenantContextHolder.assertTenant(profile.getTenantId());
         return profile;
+    }
+
+    private void ensureProductionCompliance(SalesVideoProfile profile) {
+        if (profile.isRequiresConsent()) {
+            if (!StringUtils.hasText(profile.getConsentRecordedBy())
+                    || profile.getConsentRecordedAt() == null
+                    || !StringUtils.hasText(profile.getConsentEvidenceUrl())) {
+                throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_CONSENT_REQUIRED,
+                        "Render produtivo bloqueado: registre consentimento auditável antes de continuar.");
+            }
+        }
+        if (!StringUtils.hasText(profile.getHumanReviewApprovedBy()) || profile.getHumanReviewApprovedAt() == null) {
+            throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_HUMAN_REVIEW_REQUIRED,
+                    "Render produtivo bloqueado: revisão humana obrigatória antes da publicação.");
+        }
+    }
+
+    private String buildAuditSnapshot(SalesVideoProfile profile,
+                                      SalesVideoScript script,
+                                      SalesVideoJob job,
+                                      String requestedBy) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("capturedAt", Instant.now());
+        snapshot.put("requestedBy", requestedBy);
+        snapshot.put("profileId", profile.getId());
+        snapshot.put("scriptId", script.getId());
+        snapshot.put("scriptVersion", script.getVersion());
+        snapshot.put("scriptSource", script.getSource());
+        snapshot.put("scriptModel", script.getModel());
+        snapshot.put("scriptPrompt", script.getPrompt());
+        snapshot.put("providerFamily", job.getProviderFamily());
+        snapshot.put("providerName", job.getProviderName());
+        snapshot.put("executionMode", job.getExecutionMode());
+        snapshot.put("requiresConsent", profile.isRequiresConsent());
+        snapshot.put("consentRecordedBy", profile.getConsentRecordedBy());
+        snapshot.put("consentRecordedAt", profile.getConsentRecordedAt());
+        snapshot.put("consentEvidenceUrl", profile.getConsentEvidenceUrl());
+        snapshot.put("humanReviewApprovedBy", profile.getHumanReviewApprovedBy());
+        snapshot.put("humanReviewApprovedAt", profile.getHumanReviewApprovedAt());
+        try {
+            return OBJECT_MAPPER.writeValueAsString(snapshot);
+        } catch (JsonProcessingException ex) {
+            throw VideoModuleException.internal(VideoModuleErrorCode.INTERNAL_ERROR,
+                    "Falha ao serializar snapshot de auditoria do render.");
+        }
     }
 
     private SalesVideoProfileDto toDto(SalesVideoProfile profile) {

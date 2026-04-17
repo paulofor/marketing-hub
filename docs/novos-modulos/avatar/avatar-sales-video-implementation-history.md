@@ -13,6 +13,7 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-17 — Sprint V4 (compliance, consentimento e governança)
 - 2026-04-16 — Sprint V3 (observabilidade e confiabilidade operacional)
 - 2026-04-16 — Sprint V2 (robustez do ciclo assíncrono e recuperação de órfãos)
 - 2026-04-16 — Sprint V1 (contrato de integração e atualização de planejamento)
@@ -21,6 +22,76 @@ Cada entrada descreve:
 ---
 
 ## Entradas
+
+## 2026-04-17 — Sprint V4 (compliance, consentimento e governança)
+
+**Status:** concluída com pendências
+
+### Resumo
+- A Sprint V4 implementou o checklist mínimo de compliance no backend e passou a bloquear render/publish produtivo sem pré-condições obrigatórias.
+- O fluxo de render recebeu separação explícita por modo de execução (`TEST` vs `PRODUCTION`) para impedir publicação produtiva sem governança.
+- Foi adicionada trilha auditável no job com snapshot de script/provider/model/prompt/consentimento no momento da solicitação.
+
+### O que foi implementado
+- Novos campos de compliance no `SalesVideoProfile` para consentimento auditável e revisão humana obrigatória.
+- Endpoint de administração `PATCH /api/sales-videos/profiles/{profileId}/compliance` para atualizar checklist mínimo de governança.
+- Validação de compliance no `request-render`: modo `PRODUCTION` exige consentimento (quando aplicável) e revisão humana concluída.
+- Bloqueio de publicação em `LandingVideoSlotService` sem checklist mínimo de compliance.
+- Inclusão de `executionMode` e `auditSnapshotJson` em `SalesVideoJob` para rastreabilidade operacional e auditoria posterior.
+- Novo changelog Liquibase incremental para persistência de compliance e governança no MySQL 5.7.
+
+### O que foi alterado
+- Arquivos:
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/SalesVideoExecutionMode.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/SalesVideoProfile.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/SalesVideoJob.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/RequestVideoRenderRequest.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/UpdateSalesVideoComplianceRequest.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoProfileDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoJobDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/mapper/SalesVideoMapper.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/exception/VideoModuleErrorCode.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoProfileService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoJobService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/LandingVideoSlotService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/web/SalesVideoProfileController.java`
+  - `backend/ads-service/src/main/resources/db/changelog/changesets/2037-04-17-sales-video-compliance-governance.yaml`
+  - `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `backend/ads-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - `PATCH /api/sales-videos/profiles/{profileId}/compliance`
+  - `POST /api/sales-videos/profiles/{profileId}/request-render` (campo `executionMode` com bloqueio de compliance)
+  - `GET /api/sales-videos/profiles/{profileId}` e DTOs internos com campos adicionais de compliance/auditoria
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoComplianceRecord.v1` (materializado via campos canônicos de consentimento e revisão humana no perfil).
+- `avatar.salesVideoRenderJob.v1` (novos campos `executionMode` e `auditSnapshotJson` para rastreabilidade de governança).
+- `avatar.landingVideoSlotHistorySnapshot.v1` (publicação condicionada ao checklist de compliance no backend).
+
+### Testes e validações executados
+- `mvn -s ../settings.xml test` no `backend/ads-service`.
+- validação estática de consistência entre contrato OpenAPI e DTOs/serviços atualizados.
+- revisão de aderência do plano de sprint e protocolo de histórico após implementação.
+
+### Limitações e pendências
+- ainda sem fluxo de UI dedicado para atualizar compliance no frontend administrativo.
+- ausência de validação E2E em staging com o backend `191.252.181.168` cobrindo bloqueios de compliance.
+- política de consentimento ainda não contém taxonomia detalhada de evidência por tipo de avatar/jurisdição.
+
+### Próximo passo sugerido
+- Executar Sprint V5 com foco em validação E2E dos bloqueios e operação real em staging.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: executar bateria E2E em staging para os cenários `TEST` e `PRODUCTION` com e sem compliance.
+- O que não deve ser refeito: modelagem base de compliance no perfil e bloqueios backend de render/publicação já implementados.
+- Riscos abertos: ausência de UI pode induzir operação manual por API; falta de validação E2E pode esconder edge-cases.
+- Dependências externas: disponibilidade do backend staging (`191.252.181.168`) e credenciais do provider real.
+- Onde continuar: `backend/ads-service` (testes de integração), `frontend` (painel de compliance) e runbook operacional de staging.
 
 ## 2026-04-16 — Sprint V3 (observabilidade e confiabilidade operacional)
 

@@ -57,4 +57,10 @@ public class SalesVideoProfileController {
                                           @Valid @RequestBody RequestVideoRenderRequest request) {
         return profileService.requestRender(profileId, request);
     }
+
+    @PatchMapping("/sales-videos/profiles/{profileId}/compliance")
+    public SalesVideoProfileDto updateCompliance(@PathVariable Long profileId,
+                                                 @RequestBody UpdateSalesVideoComplianceRequest request) {
+        return profileService.updateCompliance(profileId, request);
+    }
 }

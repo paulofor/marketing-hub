@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.dto;
 import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoRetryReason;
+import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import lombok.Data;
 
@@ -18,6 +19,7 @@ public class SalesVideoJobDto {
     private Long scriptId;
     private String tenantId;
     private SalesVideoProviderFamily providerFamily;
+    private SalesVideoExecutionMode executionMode;
     private String providerName;
     private String providerJobId;
     private SalesVideoJobType jobType;
@@ -38,6 +40,7 @@ public class SalesVideoJobDto {
     private Long posterAssetId;
     private Long vttAssetId;
     private String metadataJson;
+    private String auditSnapshotJson;
     private Instant createdAt;
     private Instant updatedAt;
 }

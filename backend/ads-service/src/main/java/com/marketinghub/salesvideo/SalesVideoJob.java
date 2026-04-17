@@ -61,6 +61,11 @@ public class SalesVideoJob {
     @Column(name = "provider_family", nullable = false, length = 32)
     private SalesVideoProviderFamily providerFamily;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "execution_mode", nullable = false, length = 16)
+    private SalesVideoExecutionMode executionMode = SalesVideoExecutionMode.TEST;
+
     private String providerName;
     private String providerJobId;
 
@@ -105,6 +110,10 @@ public class SalesVideoJob {
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String metadataJson;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    private String auditSnapshotJson;
 
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

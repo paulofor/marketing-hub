@@ -214,6 +214,31 @@ paths:
         '404':
           description: Perfil não encontrado
 
+  /api/sales-videos/profiles/{profileId}/compliance:
+    patch:
+      tags: [PublicVideoProfiles]
+      summary: Atualiza checklist mínimo de compliance do perfil
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSalesVideoComplianceRequest'
+      responses:
+        '200':
+          description: Compliance atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoProfileDto'
+
 components:
   parameters:
     JobId:
@@ -248,6 +273,10 @@ components:
       type: string
       enum: [OPENAI, EXTERNAL_VIDEO_MODULE]
 
+    SalesVideoExecutionMode:
+      type: string
+      enum: [TEST, PRODUCTION]
+
     SalesVideoRetryReason:
       type: string
       enum:
@@ -278,6 +307,7 @@ components:
         scriptId: { type: integer, format: int64 }
         tenantId: { type: string }
         providerFamily: { $ref: '#/components/schemas/SalesVideoProviderFamily' }
+        executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
         providerName: { type: string }
         providerJobId: { type: string }
         jobType: { $ref: '#/components/schemas/SalesVideoJobType' }
@@ -298,6 +328,7 @@ components:
         posterAssetId: { type: integer, format: int64 }
         vttAssetId: { type: integer, format: int64 }
         metadataJson: { type: string }
+        auditSnapshotJson: { type: string }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
@@ -335,6 +366,13 @@ components:
         voiceStyle: { type: string }
         language: { type: string }
         targetDurationSeconds: { type: integer }
+        requiresConsent: { type: boolean }
+        consentRecordedBy: { type: string }
+        consentRecordedAt: { type: string, format: date-time }
+        consentEvidenceUrl: { type: string }
+        humanReviewApprovedBy: { type: string }
+        humanReviewApprovedAt: { type: string, format: date-time }
+        complianceNotes: { type: string }
         status: { $ref: '#/components/schemas/SalesVideoStatus' }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -350,6 +388,15 @@ components:
           minLength: 1
         message:
           type: string
+
+    RequestVideoRenderRequest:
+      type: object
+      required: [requestedBy]
+      properties:
+        requestedBy: { type: string }
+        providerFamily: { $ref: '#/components/schemas/SalesVideoProviderFamily' }
+        providerName: { type: string }
+        executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
 
     JobHeartbeatRequest:
       type: object
@@ -408,3 +455,15 @@ components:
       properties:
         message: { type: string }
         detailsJson: { type: string }
+
+    UpdateSalesVideoComplianceRequest:
+      type: object
+      properties:
+        requiresConsent: { type: boolean }
+        consentRecordedBy: { type: string }
+        consentEvidenceUrl: { type: string }
+        humanReviewApproved:
+          type: boolean
+          description: Marca revisão humana obrigatória como aprovada ou revogada.
+        humanReviewApprovedBy: { type: string }
+        complianceNotes: { type: string }

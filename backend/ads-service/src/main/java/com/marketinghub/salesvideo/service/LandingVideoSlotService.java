@@ -53,6 +53,7 @@ public class LandingVideoSlotService {
                         "Landing page não encontrada: " + landingId));
         SalesVideoProfile profile = loadProfile(request.getProfileId());
         TenantContextHolder.assertTenant(profile.getTenantId());
+        ensurePublicationCompliance(profile);
         slotRepository.findByLandingPageIdAndSlotName(landingId, request.getSlotName())
                 .ifPresent(existing -> {
                     throw VideoModuleException.conflict(VideoModuleErrorCode.SLOT_CONFLICT,
@@ -110,6 +111,7 @@ public class LandingVideoSlotService {
                 || !slot.getProfile().getId().equals(request.getProfileId()))) {
             SalesVideoProfile profile = loadProfile(request.getProfileId());
             TenantContextHolder.assertTenant(profile.getTenantId());
+            ensurePublicationCompliance(profile);
             slot.setProfile(profile);
             slot.setTenantId(profile.getTenantId());
         }
@@ -151,6 +153,7 @@ public class LandingVideoSlotService {
         String actor = resolveActor(null);
         if (request.getPublishedBy() != null) {
             if (StringUtils.hasText(request.getPublishedBy())) {
+                ensurePublicationCompliance(slot.getProfile());
                 String publishedBy = resolveActor(request.getPublishedBy());
                 slot.setPublishedBy(publishedBy);
                 slot.setPublishedAt(Instant.now());
@@ -236,5 +239,22 @@ public class LandingVideoSlotService {
 
     private String resolveActor(String candidate) {
         return TenantContextHolder.resolveUserEmail(candidate);
+    }
+
+    private void ensurePublicationCompliance(SalesVideoProfile profile) {
+        if (profile == null) {
+            return;
+        }
+        if (!StringUtils.hasText(profile.getHumanReviewApprovedBy()) || profile.getHumanReviewApprovedAt() == null) {
+            throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_HUMAN_REVIEW_REQUIRED,
+                    "Publicação bloqueada: revisão humana obrigatória para publicar vídeo na landing.");
+        }
+        if (profile.isRequiresConsent()
+                && (!StringUtils.hasText(profile.getConsentRecordedBy())
+                || profile.getConsentRecordedAt() == null
+                || !StringUtils.hasText(profile.getConsentEvidenceUrl()))) {
+            throw VideoModuleException.conflict(VideoModuleErrorCode.COMPLIANCE_CONSENT_REQUIRED,
+                    "Publicação bloqueada: consentimento auditável obrigatório para avatar pessoal.");
+        }
     }
 }

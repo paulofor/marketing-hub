@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: sales-video-compliance-001
+      author: marketinghub-ai
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_profile
+                  ADD COLUMN requires_consent TINYINT(1) NOT NULL DEFAULT 0 AFTER target_duration_seconds,
+                  ADD COLUMN consent_recorded_by VARCHAR(255) NULL AFTER requires_consent,
+                  ADD COLUMN consent_recorded_at DATETIME(6) NULL AFTER consent_recorded_by,
+                  ADD COLUMN consent_evidence_url VARCHAR(1024) NULL AFTER consent_recorded_at,
+                  ADD COLUMN human_review_approved_by VARCHAR(255) NULL AFTER consent_evidence_url,
+                  ADD COLUMN human_review_approved_at DATETIME(6) NULL AFTER human_review_approved_by,
+                  ADD COLUMN compliance_notes LONGTEXT NULL AFTER human_review_approved_at;
+  - changeSet:
+      id: sales-video-compliance-002
+      author: marketinghub-ai
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_job
+                  ADD COLUMN execution_mode VARCHAR(16) NOT NULL DEFAULT 'TEST' AFTER provider_family,
+                  ADD COLUMN audit_snapshot_json LONGTEXT NULL AFTER metadata_json;

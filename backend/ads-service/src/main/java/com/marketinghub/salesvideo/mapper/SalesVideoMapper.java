@@ -29,6 +29,13 @@ public final class SalesVideoMapper {
         dto.setVoiceStyle(profile.getVoiceStyle());
         dto.setLanguage(profile.getLanguage());
         dto.setTargetDurationSeconds(profile.getTargetDurationSeconds());
+        dto.setRequiresConsent(profile.isRequiresConsent());
+        dto.setConsentRecordedBy(profile.getConsentRecordedBy());
+        dto.setConsentRecordedAt(profile.getConsentRecordedAt());
+        dto.setConsentEvidenceUrl(profile.getConsentEvidenceUrl());
+        dto.setHumanReviewApprovedBy(profile.getHumanReviewApprovedBy());
+        dto.setHumanReviewApprovedAt(profile.getHumanReviewApprovedAt());
+        dto.setComplianceNotes(profile.getComplianceNotes());
         dto.setStatus(profile.getStatus());
         dto.setCreatedAt(profile.getCreatedAt());
         dto.setUpdatedAt(profile.getUpdatedAt());
@@ -70,6 +77,7 @@ public final class SalesVideoMapper {
         dto.setScriptId(job.getScript() != null ? job.getScript().getId() : null);
         dto.setTenantId(job.getTenantId());
         dto.setProviderFamily(job.getProviderFamily());
+        dto.setExecutionMode(job.getExecutionMode());
         dto.setProviderName(job.getProviderName());
         dto.setProviderJobId(job.getProviderJobId());
         dto.setJobType(job.getJobType());
@@ -90,6 +98,7 @@ public final class SalesVideoMapper {
         dto.setPosterAssetId(job.getPosterAsset() != null ? job.getPosterAsset().getId() : null);
         dto.setVttAssetId(job.getVttAsset() != null ? job.getVttAsset().getId() : null);
         dto.setMetadataJson(job.getMetadataJson());
+        dto.setAuditSnapshotJson(job.getAuditSnapshotJson());
         dto.setCreatedAt(job.getCreatedAt());
         dto.setUpdatedAt(job.getUpdatedAt());
         return dto;

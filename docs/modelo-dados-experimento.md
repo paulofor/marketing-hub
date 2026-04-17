@@ -12,6 +12,26 @@ criativos, campanha e objetos de ativação/medição.
 - Geração de públicos e criativos por IA.
 - Estrutura de mídia paga (campanha, conjunto de anúncios e anúncios no Meta Ads).
 - Coleta de leads no fluxo vinculado ao experimento.
+- Governança mínima de compliance para o módulo Avatar Sales Video (consentimento e revisão humana antes de render/publicação produtiva).
+
+## Atualização incremental — Avatar Sales Video (Sprint V4)
+
+Campos adicionados no backend (`sales_video_profile` / `sales_video_job`) para suportar compliance e auditoria:
+
+- `sales_video_profile`
+  - `requires_consent` (flag de obrigatoriedade de consentimento para avatar pessoal).
+  - `consent_recorded_by`, `consent_recorded_at`, `consent_evidence_url`.
+  - `human_review_approved_by`, `human_review_approved_at`.
+  - `compliance_notes`.
+- `sales_video_job`
+  - `execution_mode` (`TEST` ou `PRODUCTION`).
+  - `audit_snapshot_json` (snapshot auditável com script/provider/model/prompt e estado de compliance no momento da solicitação).
+
+Regras operacionais associadas:
+
+- render em `PRODUCTION` exige checklist mínimo de compliance completo;
+- publicação em landing é bloqueada sem revisão humana aprovada;
+- quando `requires_consent=true`, consentimento auditável é obrigatório para render/publicação produtivos.
 
 ## Diagrama ER (contexto do experimento)
 

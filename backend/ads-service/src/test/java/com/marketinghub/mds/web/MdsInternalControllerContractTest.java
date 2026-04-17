@@ -22,6 +22,7 @@ import java.time.Instant;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -143,6 +144,30 @@ class MdsInternalControllerContractTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.savedCount").value(1));
+    }
+
+    @Test
+    void shouldGetRecommendedMechanismByRequest() throws Exception {
+        when(artifactService.getRecommendedMechanismByRequest(12L))
+                .thenReturn(new com.marketinghub.mds.dto.MdsRecommendedMechanismResponse(
+                        12L,
+                        401L,
+                        "mechanismSpec",
+                        "v1",
+                        "v1",
+                        "DRAFT",
+                        java.util.Map.of(
+                                "recommendedMechanismCandidateKey", "mc-1",
+                                "confidenceLevel", "moderada"
+                        )
+                ));
+
+        mockMvc.perform(get("/api/internal/mds/requests/12/recommended-mechanism"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestId").value(12))
+                .andExpect(jsonPath("$.artifactId").value(401))
+                .andExpect(jsonPath("$.artifactType").value("mechanismSpec"))
+                .andExpect(jsonPath("$.content.recommendedMechanismCandidateKey").value("mc-1"));
     }
 
     private MdsRequestStatusResponse response(MdsRequestStatus status) {

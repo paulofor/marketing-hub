@@ -502,39 +502,33 @@ Fazer o MDS sair de “orquestração vazia” para um pipeline que formula perg
 **Status:** `CONCLUIDO`
 
 **O que foi concluído:**
-- Implementada formulação de pergunta de mecanismo (`MechanismQuestionBuilder`) e planejamento de queries por fonte (`SearchQueryPlanBuilder`) no módulo `mds/`.
-- Implementados clientes reais de busca estruturada para PubMed/NCBI E-utilities e Crossref, com execução via `SearchExecutionService`.
-- Pipeline do MDS passou a publicar `mechanismEvidenceSearch` e `sourceDocument` com query rastreável, metadados normalizados e classificação inicial de acesso/permissão.
-- Backend recebeu suporte explícito para persistência de `source_access_record` por lote via endpoint interno dedicado (`/api/internal/mds/source-access/publish-batch`).
-- Contratos de teste foram atualizados no backend e no módulo `mds/` para cobrir o fluxo novo de Sprint 3.
+- Implementados `ActiveComponentExtractor` e `MechanismCandidateBuilder` no módulo `mds/`, cobrindo extração de componentes ativos, agrupamento recorrente e separação de componentes essenciais/opcionais.
+- O pipeline do MDS passou a gerar e publicar `mechanismCandidate` com justificativa explícita, riscos/limitações e nível de confiança consolidado a partir de `evidenceItem`.
+- O pipeline passou a gerar e publicar `mechanismSpec` com seleção de mecanismo recomendado e lineage para o `mechanismCandidate` escolhido e evidências de suporte.
+- Backend recebeu endpoint interno para leitura do mecanismo recomendado por request (`GET /api/internal/mds/requests/{id}/recommended-mechanism`), baseado no artefato `mechanismSpec`.
+- Testes unitários e de contrato foram atualizados para cobrir publicação de `mechanismCandidate`, publicação de `mechanismSpec` e leitura de mecanismo final no backend.
 
 **O que ficou pendente para a próxima sprint:**
-- Deduplicação avançada de `sourceDocument` por DOI/PMID/PMCID/título/URL canônica.
-- Triagem científica estruturada com critérios de elegibilidade e priorização.
-- Construção e persistência de `evidenceItem` com classificação de confiança.
+- Geração de `practicalKnowledgePack` para consumo downstream ainda não foi implementada nesta sprint.
+- Publicação de `mechanismDiscoveryReport` final ainda não foi implementada nesta sprint.
+- Consolidação de relatório operacional fim-a-fim (com pacote prático + spec + métricas finais) permanece para a Sprint 6.
 
 **Riscos / observações:**
-- Os clientes externos de busca dependem de disponibilidade e limites das APIs públicas (NCBI e Crossref), podendo reduzir volume em execuções reais sem fallback adicional.
-- A classificação `accessClass` / `permissionState` nesta sprint é inicial e heurística, devendo ser refinada na Sprint 4 junto com triagem.
+- A extração de componentes ativos nesta sprint é heurística e lexical; agrupamento semântico mais robusto pode melhorar precisão em corpora heterogêneos.
+- Em requests com baixa densidade textual nos abstracts, a cobertura de componentes pode ficar limitada e reduzir qualidade da justificativa.
+- A leitura de mecanismo recomendado no backend depende da publicação prévia de `mechanismSpec`; requests sem artefato retornam `404`.
 
 **Arquivos alterados/criados:**
 - mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
-- mds/src/main/java/com/marketinghub/mds/client/BackendMdsClient.java
-- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchRequestDto.java
-- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchResponseDto.java
-- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestion.java
-- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestionBuilder.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlan.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlanBuilder.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchExecutionService.java
-- mds/src/main/java/com/marketinghub/mds/search/EvidenceSearchClient.java
-- mds/src/main/java/com/marketinghub/mds/search/PubmedSearchClient.java
-- mds/src/main/java/com/marketinghub/mds/search/CrossrefSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/ActiveComponentExtractor.java
+- mds/src/main/java/com/marketinghub/mds/search/MechanismCandidateBuilder.java
 - mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- mds/src/test/java/com/marketinghub/mds/search/ActiveComponentExtractorTest.java
+- mds/src/test/java/com/marketinghub/mds/search/MechanismCandidateBuilderTest.java
 - backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsSourceAccessService.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchRequest.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsArtifactService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsArtifactRecordRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsRecommendedMechanismResponse.java
 - backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
 - docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
 - docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
@@ -650,39 +644,33 @@ Implementar o coração do MDS: extrair componentes ativos e montar mecanismos c
 **Status:** `CONCLUIDO`
 
 **O que foi concluído:**
-- Implementada formulação de pergunta de mecanismo (`MechanismQuestionBuilder`) e planejamento de queries por fonte (`SearchQueryPlanBuilder`) no módulo `mds/`.
-- Implementados clientes reais de busca estruturada para PubMed/NCBI E-utilities e Crossref, com execução via `SearchExecutionService`.
-- Pipeline do MDS passou a publicar `mechanismEvidenceSearch` e `sourceDocument` com query rastreável, metadados normalizados e classificação inicial de acesso/permissão.
-- Backend recebeu suporte explícito para persistência de `source_access_record` por lote via endpoint interno dedicado (`/api/internal/mds/source-access/publish-batch`).
-- Contratos de teste foram atualizados no backend e no módulo `mds/` para cobrir o fluxo novo de Sprint 3.
+- Implementados `ActiveComponentExtractor` e `MechanismCandidateBuilder` no módulo `mds/`, cobrindo extração de componentes ativos, agrupamento recorrente e separação de componentes essenciais/opcionais.
+- O pipeline do MDS passou a gerar e publicar `mechanismCandidate` com justificativa explícita, riscos/limitações e nível de confiança consolidado a partir de `evidenceItem`.
+- O pipeline passou a gerar e publicar `mechanismSpec` com seleção de mecanismo recomendado e lineage para o `mechanismCandidate` escolhido e evidências de suporte.
+- Backend recebeu endpoint interno para leitura do mecanismo recomendado por request (`GET /api/internal/mds/requests/{id}/recommended-mechanism`), baseado no artefato `mechanismSpec`.
+- Testes unitários e de contrato foram atualizados para cobrir publicação de `mechanismCandidate`, publicação de `mechanismSpec` e leitura de mecanismo final no backend.
 
 **O que ficou pendente para a próxima sprint:**
-- Deduplicação avançada de `sourceDocument` por DOI/PMID/PMCID/título/URL canônica.
-- Triagem científica estruturada com critérios de elegibilidade e priorização.
-- Construção e persistência de `evidenceItem` com classificação de confiança.
+- Geração de `practicalKnowledgePack` para consumo downstream ainda não foi implementada nesta sprint.
+- Publicação de `mechanismDiscoveryReport` final ainda não foi implementada nesta sprint.
+- Consolidação de relatório operacional fim-a-fim (com pacote prático + spec + métricas finais) permanece para a Sprint 6.
 
 **Riscos / observações:**
-- Os clientes externos de busca dependem de disponibilidade e limites das APIs públicas (NCBI e Crossref), podendo reduzir volume em execuções reais sem fallback adicional.
-- A classificação `accessClass` / `permissionState` nesta sprint é inicial e heurística, devendo ser refinada na Sprint 4 junto com triagem.
+- A extração de componentes ativos nesta sprint é heurística e lexical; agrupamento semântico mais robusto pode melhorar precisão em corpora heterogêneos.
+- Em requests com baixa densidade textual nos abstracts, a cobertura de componentes pode ficar limitada e reduzir qualidade da justificativa.
+- A leitura de mecanismo recomendado no backend depende da publicação prévia de `mechanismSpec`; requests sem artefato retornam `404`.
 
 **Arquivos alterados/criados:**
 - mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
-- mds/src/main/java/com/marketinghub/mds/client/BackendMdsClient.java
-- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchRequestDto.java
-- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchResponseDto.java
-- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestion.java
-- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestionBuilder.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlan.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlanBuilder.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchExecutionService.java
-- mds/src/main/java/com/marketinghub/mds/search/EvidenceSearchClient.java
-- mds/src/main/java/com/marketinghub/mds/search/PubmedSearchClient.java
-- mds/src/main/java/com/marketinghub/mds/search/CrossrefSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/ActiveComponentExtractor.java
+- mds/src/main/java/com/marketinghub/mds/search/MechanismCandidateBuilder.java
 - mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- mds/src/test/java/com/marketinghub/mds/search/ActiveComponentExtractorTest.java
+- mds/src/test/java/com/marketinghub/mds/search/MechanismCandidateBuilderTest.java
 - backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsSourceAccessService.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchRequest.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsArtifactService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsArtifactRecordRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsRecommendedMechanismResponse.java
 - backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
 - docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
 - docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md

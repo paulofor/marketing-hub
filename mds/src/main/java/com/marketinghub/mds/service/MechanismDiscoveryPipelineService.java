@@ -10,6 +10,7 @@ import com.marketinghub.mds.search.EvidenceItemBuilder;
 import com.marketinghub.mds.search.EvidenceScreeningService;
 import com.marketinghub.mds.search.MechanismQuestion;
 import com.marketinghub.mds.search.MechanismQuestionBuilder;
+import com.marketinghub.mds.search.MechanismCandidateBuilder;
 import com.marketinghub.mds.search.ScreenedEvidence;
 import com.marketinghub.mds.search.SearchExecutionService;
 import com.marketinghub.mds.search.SearchQueryPlan;
@@ -33,6 +34,7 @@ public class MechanismDiscoveryPipelineService {
     private final EvidenceScreeningService evidenceScreeningService;
     private final EvidenceConfidenceService evidenceConfidenceService;
     private final EvidenceItemBuilder evidenceItemBuilder;
+    private final MechanismCandidateBuilder mechanismCandidateBuilder;
 
     public MechanismDiscoveryPipelineService(BackendMdsClient backendMdsClient,
                                              MechanismQuestionBuilder mechanismQuestionBuilder,
@@ -41,7 +43,8 @@ public class MechanismDiscoveryPipelineService {
                                              SourceDedupService sourceDedupService,
                                              EvidenceScreeningService evidenceScreeningService,
                                              EvidenceConfidenceService evidenceConfidenceService,
-                                             EvidenceItemBuilder evidenceItemBuilder) {
+                                             EvidenceItemBuilder evidenceItemBuilder,
+                                             MechanismCandidateBuilder mechanismCandidateBuilder) {
         this.backendMdsClient = backendMdsClient;
         this.mechanismQuestionBuilder = mechanismQuestionBuilder;
         this.searchQueryPlanBuilder = searchQueryPlanBuilder;
@@ -50,6 +53,7 @@ public class MechanismDiscoveryPipelineService {
         this.evidenceScreeningService = evidenceScreeningService;
         this.evidenceConfidenceService = evidenceConfidenceService;
         this.evidenceItemBuilder = evidenceItemBuilder;
+        this.mechanismCandidateBuilder = mechanismCandidateBuilder;
     }
 
     public void execute(BackendMdsRequestDto request) {
@@ -148,21 +152,59 @@ public class MechanismDiscoveryPipelineService {
         }
 
         List<ArtifactPayloadDto> evidenceItems = new ArrayList<>();
+        Map<String, String> confidenceBySourceDocumentId = new LinkedHashMap<>();
         for (ScreenedEvidence screenedEvidence : prioritized) {
             String confidenceLevel = evidenceConfidenceService.classify(screenedEvidence);
+            confidenceBySourceDocumentId.put(screenedEvidence.sourceDocumentId(), confidenceLevel);
             Long parentArtifactId = sourceArtifactIdsBySourceDocumentId.get(screenedEvidence.sourceDocumentId());
             evidenceItems.add(evidenceItemBuilder.build(request.id(), screenedEvidence, confidenceLevel,
                     parentArtifactId == null ? List.of() : List.of(parentArtifactId)));
         }
 
+        Map<String, Long> evidenceArtifactIdsBySourceDocumentId = new LinkedHashMap<>();
         if (!evidenceItems.isEmpty()) {
-            backendMdsClient.publishBatch(new BackendArtifactPublishBatchRequestDto(request.id(), evidenceItems));
+            var evidencePublishResponse =
+                    backendMdsClient.publishBatch(new BackendArtifactPublishBatchRequestDto(request.id(), evidenceItems));
+            List<Long> evidenceArtifactIds = evidencePublishResponse.artifactIds();
+            for (int i = 0; i < prioritized.size() && i < evidenceArtifactIds.size(); i++) {
+                evidenceArtifactIdsBySourceDocumentId.put(prioritized.get(i).sourceDocumentId(), evidenceArtifactIds.get(i));
+            }
         }
 
         backendMdsClient.heartbeat(request.id(), new com.marketinghub.mds.dto.BackendHeartbeatRequestDto(
                 "evidence-analysis",
                 "evidence items published",
                 Map.of("evidenceItemCount", evidenceItems.size())
+        ));
+
+        var mechanismBuild = mechanismCandidateBuilder.build(
+                request.id(),
+                prioritized,
+                confidenceBySourceDocumentId,
+                evidenceArtifactIdsBySourceDocumentId
+        );
+        if (!mechanismBuild.candidateArtifacts().isEmpty()) {
+            var candidatePublishResponse = backendMdsClient.publishBatch(
+                    new BackendArtifactPublishBatchRequestDto(request.id(), mechanismBuild.candidateArtifacts())
+            );
+            Long selectedCandidateArtifactId = candidatePublishResponse.artifactIds().isEmpty()
+                    ? null
+                    : candidatePublishResponse.artifactIds().get(0);
+
+            ArtifactPayloadDto mechanismSpec = mechanismCandidateBuilder.buildMechanismSpec(
+                    mechanismBuild.mechanismSpecDraft(),
+                    selectedCandidateArtifactId,
+                    mechanismBuild.supportingEvidenceArtifactIds()
+            );
+            if (mechanismSpec != null) {
+                backendMdsClient.publishBatch(new BackendArtifactPublishBatchRequestDto(request.id(), List.of(mechanismSpec)));
+            }
+        }
+
+        backendMdsClient.heartbeat(request.id(), new com.marketinghub.mds.dto.BackendHeartbeatRequestDto(
+                "mechanism-building",
+                "mechanism candidates and mechanism spec published",
+                Map.of("mechanismCandidateCount", mechanismBuild.candidateArtifacts().size())
         ));
     }
 

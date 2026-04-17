@@ -704,3 +704,73 @@ O MDS agora reduz duplicatas de fontes, aplica triagem mínima, classifica confi
 **Próximo passo sugerido:**
 
 Implementar a Sprint 5 com extração de componentes ativos, montagem de `mechanismCandidate` e seleção do mecanismo recomendado.
+
+## [2026-04-17] — Etapa: mechanismCandidate e mechanismSpec com recomendação final
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+Foi implementada a etapa de construção de `mechanismCandidate` e seleção do mecanismo recomendado com publicação de `mechanismSpec`, incluindo leitura do mecanismo final por request no backend.
+
+**Objetivo da etapa:**
+
+Concluir o núcleo da Sprint 5 para transformar evidências priorizadas em mecanismo candidato rastreável, selecionar recomendação com justificativa explícita e persistir `mechanismSpec` com lineage.
+
+**O que foi implementado:**
+
+- criação do `ActiveComponentExtractor` para extração heurística de componentes ativos a partir de título e resumo das evidências;
+- criação do `MechanismCandidateBuilder` para agrupamento de componentes recorrentes, separação essencial/opcional, agregação de limitações e cálculo de confiança consolidada;
+- atualização do pipeline (`MechanismDiscoveryPipelineService`) para publicar `mechanismCandidate` e `mechanismSpec` após publicação de `evidenceItem`, com lineage até artefatos de evidência;
+- criação do endpoint backend `GET /api/internal/mds/requests/{id}/recommended-mechanism` para leitura do mecanismo recomendado por request com base no último `mechanismSpec`;
+- ampliação de testes de unidade e contrato para cobrir a nova etapa de construção e leitura do mecanismo final.
+
+**Arquivos alterados/criados:**
+
+- mds/src/main/java/com/marketinghub/mds/search/ActiveComponentExtractor.java
+- mds/src/main/java/com/marketinghub/mds/search/MechanismCandidateBuilder.java
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/test/java/com/marketinghub/mds/search/ActiveComponentExtractorTest.java
+- mds/src/test/java/com/marketinghub/mds/search/MechanismCandidateBuilderTest.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsRecommendedMechanismResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsArtifactRecordRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsArtifactService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- artifact_record
+- artifact_lineage_edge
+
+**APIs / endpoints / contratos afetados:**
+
+- `POST /api/internal/mds/artifacts/publish-batch` (uso ampliado para `mechanismCandidate` e `mechanismSpec`)
+- `GET /api/internal/mds/requests/{id}/recommended-mechanism` (novo endpoint)
+
+**Artefatos / schemas impactados:**
+
+- mds.mechanismCandidate.v1
+- mds.mechanismSpec.v1
+
+**Testes executados:**
+
+- `cd mds && mvn test -Dtest=MechanismDiscoveryPipelineServiceTest,ActiveComponentExtractorTest,MechanismCandidateBuilderTest`
+- `cd backend/ads-service && mvn test -Dtest=MdsInternalControllerContractTest`
+
+**Resultado observado:**
+
+Requests com evidência priorizada agora geram `mechanismCandidate`, escolhem um mecanismo recomendado com justificativa explícita e publicam `mechanismSpec` com lineage para suporte rastreável no backend.
+
+**Limitações / pendências:**
+
+- `practicalKnowledgePack` não foi implementado nesta etapa;
+- relatório final (`mechanismDiscoveryReport`) permanece pendente;
+- extração de componentes ainda é heurística lexical (sem clusterização semântica avançada).
+
+**Próximo passo sugerido:**
+
+Implementar a Sprint 6 para publicação de `practicalKnowledgePack`, relatório final e fechamento completo do pacote de saída do MDS.

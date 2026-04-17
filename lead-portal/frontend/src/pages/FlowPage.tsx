@@ -104,6 +104,13 @@ export default function FlowPage() {
     };
   }, [resolvedFlowSlug, isLoading, isError, hasTrackedRenderComplete, campaignCode]);
 
+  useEffect(() => {
+    if (!flow?.facebookPixelId) {
+      return;
+    }
+    initializeMetaPixel(flow.facebookPixelId);
+  }, [flow?.facebookPixelId]);
+
   if (!slug) {
     return <p className="flow-message">Fluxo não informado.</p>;
   }
@@ -138,12 +145,6 @@ export default function FlowPage() {
           questions: formQuestions,
         };
 
-  useEffect(() => {
-    if (!flow?.facebookPixelId) {
-      return;
-    }
-    initializeMetaPixel(flow.facebookPixelId);
-  }, [flow?.facebookPixelId]);
   if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
     if (shouldRenderStandaloneTemplate) {
@@ -1232,8 +1233,10 @@ function extractSimpleFormMetadata(questions: FlowQuestion[]): SimpleFormMetadat
   };
 }
 
-type FbqFunction = ((...args: any[]) => void) & {
-  callMethod?: (...args: any[]) => void;
+type FbqArgument = string | number | boolean | null | undefined | Record<string, unknown>;
+
+type FbqFunction = ((...args: FbqArgument[]) => void) & {
+  callMethod?: (...args: FbqArgument[]) => void;
   queue: unknown[];
   push?: FbqFunction;
   loaded?: boolean;
@@ -1276,9 +1279,9 @@ function ensureMetaPixelBase(): FbqFunction {
   if (w.fbq) {
     return w.fbq;
   }
-  const fbq: FbqFunction = function (...args: any[]) {
+  const fbq: FbqFunction = function (...args: FbqArgument[]) {
     if (fbq.callMethod) {
-      fbq.callMethod.apply(fbq, args);
+      fbq.callMethod(...args);
     } else {
       fbq.queue.push(args);
     }

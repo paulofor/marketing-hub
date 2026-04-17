@@ -50,6 +50,27 @@ Regras operacionais associadas:
 - resumo comercial (`performance-summary`) é projeção derivada dos fatos persistidos em `sales_video_conversion_event`;
 - comparação por variação técnica usa, no mínimo, o eixo `scriptId + providerName` para iniciar rotina de aprendizado.
 
+## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
+
+Entidades/tabelas adicionadas no backend (`ads-service`) para suportar o início do Mechanism Discovery Service:
+
+- `mds_request`
+  - request de descoberta com `status`, `market`, `problem`, `desired_outcome`, `context_json`, `correlation_id` e timestamps de ciclo de vida.
+- `artifact_record`
+  - catálogo de artefatos publicados com `artifact_type`, `schema_version`, `version`, `status`, `producer_module`, `owner_module`, `request_id`, `content_json` e `hash`.
+- `artifact_lineage_edge`
+  - edges explícitas de lineage entre artefatos (`parent_artifact_id`, `child_artifact_id`, `relation_type`).
+- `source_access_record`
+  - controle de classe de acesso/permissão de documento (`access_class`, `permission_state`, `license_text`, `access_url`).
+- `mds_processing_event`
+  - trilha operacional por request (`stage_name`, `event_type`, `message`, `payload_json`).
+
+Regras operacionais associadas:
+
+- persistência MDS permanece exclusiva do backend principal (MySQL 5.7);
+- ciclo mínimo de request no backend: `PENDING` → `IN_PROGRESS` → `COMPLETED`/`FAILED`;
+- publicação de artefatos aceita status canônico (`DRAFT`, `VALIDATED`, `APPROVED`) com lineage persistida.
+
 ## Diagrama ER (contexto do experimento)
 
 ```mermaid

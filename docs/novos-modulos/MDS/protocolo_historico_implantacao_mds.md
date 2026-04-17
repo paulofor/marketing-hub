@@ -320,3 +320,177 @@ Ao fim de cada etapa relevante, o modelo deve:
 3. não reescrever entradas antigas, exceto para correção factual;
 4. registrar pendências reais;
 5. manter o documento utilizável como handoff entre chats e entre agentes.
+
+## [2026-04-17] — Etapa: sprint 1 - persistência e orquestração base no backend
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+Foi implementada a base de Sprint 1 do MDS no backend principal, com persistência MySQL 5.7 via Liquibase, endpoints internos de orquestração de requests e publicação inicial de artefatos com lineage.
+
+**Objetivo da etapa:**
+
+Preparar o `backend/ads-service` como camada única de persistência e orquestração para o MDS, sem antecipar o módulo worker da Sprint 2.
+
+**O que foi implementado:**
+
+- Criação do namespace `com.marketinghub.mds` no backend com entidades e repositórios para as tabelas mínimas da sprint.
+- Implementação dos serviços de request lifecycle (`create`, `pending`, `claim`, `heartbeat`, `complete`, `fail`) e publicação em lote de artefatos.
+- Implementação de endpoints internos em `/api/internal/mds` para requests, artifact publish batch, lineage e health.
+- Criação de changelog Liquibase YAML da Sprint 1 com `preConditions` para MySQL e SQL com `splitStatements` / `stripComments`.
+- Documentação do contrato backend ↔ MDS da Sprint 1 em arquivo dedicado.
+
+**Arquivos alterados/criados:**
+
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsArtifactRecord.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsArtifactLineageEdge.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsSourceAccessRecord.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsProcessingEvent.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsRequestStatus.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsArtifactStatus.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/MdsEventType.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsRequestRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsArtifactRecordRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsArtifactLineageEdgeRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsSourceAccessRecordRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsProcessingEventRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsRequestCreateRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsRequestStatusResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsClaimRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsHeartbeatRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsCompleteRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsFailRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsArtifactPublishBatchRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsArtifactPublishBatchResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsLineageCreateRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsLineageResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsRequestService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsArtifactService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
+- backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-17-mds-sprint1-base.yaml
+- backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml
+- docs/novos-modulos/MDS/contrato_backend_mds.md
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+
+**Tabelas / persistência afetadas:**
+
+- `mds_request`
+- `artifact_record`
+- `artifact_lineage_edge`
+- `source_access_record`
+- `mds_processing_event`
+
+**APIs / endpoints / contratos afetados:**
+
+- `POST /api/internal/mds/requests`
+- `GET /api/internal/mds/requests/pending`
+- `POST /api/internal/mds/requests/{id}/claim`
+- `POST /api/internal/mds/requests/{id}/heartbeat`
+- `POST /api/internal/mds/requests/{id}/complete`
+- `POST /api/internal/mds/requests/{id}/fail`
+- `GET /api/internal/mds/requests/{id}`
+- `POST /api/internal/mds/artifacts/publish-batch`
+- `POST /api/internal/mds/artifacts/{id}/lineage`
+- `GET /api/internal/mds/health`
+- `docs/novos-modulos/MDS/contrato_backend_mds.md`
+
+**Artefatos / schemas impactados:**
+
+- `mechanismDiscoveryRequest`
+- `artifact_record` envelope canônico para tipos MDS (status/version/schemaVersion/hash)
+- `artifact_lineage_edge`
+
+**Testes executados:**
+
+- `cd backend/ads-service && mvn -s ../settings.xml test`
+
+**Resultado observado:**
+
+O backend agora consegue registrar requests de discovery, controlar ciclo de execução básico e receber lote de artefatos com persistência de lineage no MySQL por meio de contratos internos.
+
+**Limitações / pendências:**
+
+- Não há módulo `mds/` executando loop de processamento ainda (escopo da Sprint 2).
+- Não há busca externa de evidências, deduplicação e análise científica nesta etapa.
+- Não há contract tests ponta a ponta com serviço MDS externo nesta sprint.
+
+**Próximo passo sugerido:**
+
+Iniciar Sprint 2 com criação do módulo `mds/` independente e integração ativa com endpoints internos do backend já implementados.
+
+## [2026-04-17] — Etapa: modulo mds independente (bootstrap Spring Boot)
+
+**Status:** `PARCIAL`
+
+**Resumo:**
+
+Foi criado o módulo `mds/` como serviço independente na raiz do repositório, com projeto Maven Spring Boot completo e loop básico de integração com endpoints internos do backend, sem acesso direto ao banco.
+
+**Objetivo da etapa:**
+
+Atender a diretriz de desacoplamento do MDS em container próprio, preservando a regra de persistência exclusiva do backend.
+
+**O que foi implementado:**
+
+- Novo projeto `mds/` com `pom.xml`, `Dockerfile`, `README.md`, `application.yml`, bootstrap Java e testes.
+- Cliente HTTP interno para consumo dos endpoints `/api/internal/mds/*` do backend.
+- Loop básico (`MdsLoopRunner`) com polling de pendências, claim, heartbeat, execução de pipeline stub e complete/fail.
+- Serviço de pipeline inicial (`MechanismDiscoveryPipelineService`) com publicação de artefatos stub no backend.
+- Endpoint de health do serviço em `/internal/mechanism-discovery/actuator/health`.
+
+**Arquivos alterados/criados:**
+
+- mds/pom.xml
+- mds/Dockerfile
+- mds/README.md
+- mds/src/main/resources/application.yml
+- mds/src/main/java/com/marketinghub/mds/MdsApplication.java
+- mds/src/main/java/com/marketinghub/mds/config/MdsProperties.java
+- mds/src/main/java/com/marketinghub/mds/config/BackendClientConfig.java
+- mds/src/main/java/com/marketinghub/mds/client/BackendMdsClient.java
+- mds/src/main/java/com/marketinghub/mds/controller/MdsHealthController.java
+- mds/src/main/java/com/marketinghub/mds/service/MdsLoopRunner.java
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/main/java/com/marketinghub/mds/dto/*
+- mds/src/test/java/com/marketinghub/mds/MdsApplicationTests.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- `nenhuma` (o módulo `mds/` não acessa banco diretamente)
+
+**APIs / endpoints / contratos afetados:**
+
+- consumo de `GET /api/internal/mds/requests/pending`
+- consumo de `POST /api/internal/mds/requests/{id}/claim`
+- consumo de `POST /api/internal/mds/requests/{id}/heartbeat`
+- consumo de `POST /api/internal/mds/requests/{id}/complete`
+- consumo de `POST /api/internal/mds/requests/{id}/fail`
+- consumo de `POST /api/internal/mds/artifacts/publish-batch`
+- criação de `GET /internal/mechanism-discovery/actuator/health` no módulo independente
+
+**Artefatos / schemas impactados:**
+
+- `mechanismSpec` (stub inicial)
+- `practicalKnowledgePack` (stub inicial)
+
+**Testes executados:**
+
+- `cd mds && mvn test`
+
+**Resultado observado:**
+
+O MDS passa a existir como serviço executável independente em JAR/Container, integrado ao backend apenas por HTTP interno para persistência e ciclo de execução.
+
+**Limitações / pendências:**
+
+- Pipeline ainda é stub, sem busca científica real.
+- Sem implementação das etapas avançadas previstas nas sprints seguintes.
+
+**Próximo passo sugerido:**
+
+Implementar as etapas de discovery real (formulação de perguntas, busca em fontes externas, deduplicação e análise de evidência) mantendo persistência exclusivamente via backend.

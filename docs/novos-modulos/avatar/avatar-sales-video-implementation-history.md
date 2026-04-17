@@ -13,6 +13,7 @@ Cada entrada descreve:
 ---
 
 ## Índice rápido
+- 2026-04-17 — Sprint V7 (camada comercial inicial com playbooks e eventos de conversão)
 - 2026-04-17 — Hotfix backend (compliance snapshot + normalização de executionMode no request-render)
 - 2026-04-17 — Sprint V6 (rollout controlado por tenant/perfil e atualização de contrato)
 - 2026-04-17 — Sprint V5 (validação E2E administrativa, compliance UI e cobertura backend)
@@ -25,6 +26,80 @@ Cada entrada descreve:
 ---
 
 ## Entradas
+
+## 2026-04-17 — Sprint V7 (camada comercial inicial com playbooks e eventos de conversão)
+
+**Status:** concluída com pendências
+
+### Resumo
+- Implementada a primeira camada comercial da Sprint V7 no backend com persistência canônica de playbooks e eventos de conversão por perfil.
+- O módulo passou a expor endpoints para registrar fatos de conversão e gerar resumo comparativo por script/provider.
+- O Swagger canônico foi atualizado para refletir os novos contratos de integração do módulo com a base via backend.
+
+### O que foi implementado
+- Nova entidade `sales_video_commercial_playbook` para registrar objeções e CTA por nicho/variação.
+- Nova entidade `sales_video_conversion_event` para registrar eventos de conversão (`VIEW`, `LEAD`, `QUALIFIED_LEAD`, `CHECKOUT_STARTED`, `PURCHASE`) vinculáveis a perfil/job/script.
+- Serviço `SalesVideoCommercialInsightsService` com:
+  - criação e listagem de playbooks;
+  - ingestão de eventos de conversão;
+  - resumo de performance comercial por variação técnica (`scriptId` + `providerName`) com agregados de leads, purchases e receita.
+- Novos endpoints:
+  - `POST /api/sales-videos/profiles/{profileId}/commercial-playbooks`
+  - `GET /api/sales-videos/profiles/{profileId}/commercial-playbooks`
+  - `POST /api/sales-videos/profiles/{profileId}/conversion-events`
+  - `GET /api/sales-videos/profiles/{profileId}/performance-summary`
+
+### O que foi alterado
+- Arquivos:
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/SalesVideoCommercialPlaybook.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/SalesVideoConversionEvent.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/SalesVideoConversionEventType.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoCommercialInsightsService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/web/SalesVideoCommercialController.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/CreateSalesVideoCommercialPlaybookRequest.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoCommercialPlaybookDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/CreateSalesVideoConversionEventRequest.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoConversionEventDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoPerformanceSummaryDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/dto/SalesVideoVariantPerformanceDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/repository/SalesVideoCommercialPlaybookRepository.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/repository/SalesVideoConversionEventRepository.java`
+  - `backend/ads-service/src/main/resources/db/changelog/changesets/2037-04-17-sales-video-commercial-insights.yaml`
+  - `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
+  - `docs/modelo-dados-experimento.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md`
+  - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
+- Módulos:
+  - `backend/ads-service`
+  - documentação canônica do módulo Avatar Sales Video
+- Endpoints/contratos:
+  - contratos comerciais da Sprint V7 adicionados ao Swagger canônico.
+
+### Contratos e artefatos afetados
+- `avatar.salesVideoCommercialPlaybook.v1` (novo artefato canônico inicial para variações de objeção/CTA por nicho).
+- `avatar.salesVideoConversionEvent.v1` (novo artefato canônico inicial para fatos de conversão vinculados ao perfil/job/script).
+- `avatar.salesVideoPerformanceSummary.v1` (projeção agregada para revisão comercial inicial).
+
+### Testes e validações executados
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoCommercialInsightsServiceTest`.
+- revisão de consistência do contrato OpenAPI em `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`.
+
+### Limitações e pendências
+- painel administrativo no frontend para operar playbooks e leitura do resumo comercial ainda não foi implementado.
+- ingestão automática de conversão a partir da landing/checkout ainda depende de integração operacional em módulos consumidores.
+- validação E2E em staging (`191.252.181.168`) continua dependente de credenciais operacionais e janela assistida.
+
+### Próximo passo sugerido
+- Executar Sprint V8 focando em automação de ingestão de conversões, painel de revisão comercial e rotina semanal de aprendizado por tenant/perfil.
+
+### Handoff para a próxima etapa
+- Prioridade imediata: integrar emissão de eventos de conversão dos pontos de contato reais ao endpoint canônico do backend.
+- O que não deve ser refeito: modelagem de entidades comerciais da Sprint V7 e contratos básicos de playbook/performance-summary.
+- Riscos abertos: sem automação de ingestão, o resumo comercial pode ficar incompleto e enviesado.
+- Dependências externas: credenciais de staging, headers de tenant e integração com fontes reais de conversão.
+- Onde continuar: `backend/ads-service` (integrações de ingestão e agregações), frontend (painel comercial) e docs do plano de reinício.
 
 ## 2026-04-17 — Hotfix backend (compliance snapshot + normalização de executionMode no request-render)
 

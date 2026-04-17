@@ -551,22 +551,35 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (camada comercial inicial implementada no backend com playbooks e eventos de conversão; operação assistida e painel executivo no frontend ainda pendentes)
 
 ### Variações testadas
-- 
+- criação e leitura de playbooks por perfil (`nicheKey`, `variantKey`, `objectionText`, `ctaText`) via backend canônico.
+- matriz inicial de comparação por `scriptId + providerName` no resumo de performance comercial.
+- fallback de variação para `default` quando evento não possuir mapeamento explícito de variação ativa.
 
 ### Eventos de conversão conectados
-- 
+- endpoint canônico para ingestão de eventos de conversão do módulo:
+  - `POST /api/sales-videos/profiles/{profileId}/conversion-events`
+- tipos de evento iniciais suportados:
+  - `VIEW`, `LEAD`, `QUALIFIED_LEAD`, `CHECKOUT_STARTED`, `PURCHASE`
+- leitura agregada de performance:
+  - `GET /api/sales-videos/profiles/{profileId}/performance-summary`
 
 ### Principais aprendizados
-- 
+- o backend permaneceu como única fronteira de persistência para dados comerciais (playbooks + eventos), evitando estado paralelo em frontend/worker.
+- o vínculo opcional de evento com `jobId` e `scriptId` permitiu comparar performance por variação técnica sem acoplamento ao provider.
+- baseline comercial inicial pode ser construída mesmo antes de A/B completo, desde que eventos de conversão sejam registrados com consistência.
 
 ### Próximos ajustes sugeridos
-- 
+- expor painel administrativo no frontend para operação dos novos endpoints de playbook e resumo de performance.
+- configurar integração operacional de conversão (landing/checkout) para publicar eventos automaticamente no endpoint canônico.
+- evoluir métrica de variação para incluir dimensão explícita de avatar e nicho na coleta automática.
+- validar ciclo E2E em staging com backend `191.252.181.168`, tenant piloto e dados reais de conversão.
 
 ### Evidências/testes executados
-- 
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoCommercialInsightsServiceTest`
+- revisão de contrato OpenAPI em `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml` para novos endpoints de Sprint V7.
 
 ---
 
@@ -577,14 +590,16 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Handoff para a próxima sprint
 
 ### 1. Resumo factual do estado atual
-- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona), Sprint V3 (instrumentação de observabilidade), Sprint V4 (compliance backend), Sprint V5 (alinhamento frontend + testes de compliance/auditoria) e Sprint V6 (gate de rollout controlado por tenant/perfil no backend).
-- O que está parcialmente concluído: validação E2E integral em staging compartilhado com provider real, coleta de baseline diária e dashboards oficiais de observabilidade.
-- O que ainda não começou: Sprint V7 (camada de evolução comercial e rotina de aprendizado por conversão).
+- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona), Sprint V3 (instrumentação de observabilidade), Sprint V4 (compliance backend), Sprint V5 (alinhamento frontend + testes de compliance/auditoria), Sprint V6 (gate de rollout controlado por tenant/perfil no backend) e Sprint V7 (camada comercial inicial no backend).
+- O que está parcialmente concluído: validação E2E integral em staging compartilhado com provider real, coleta de baseline diária, dashboards oficiais de observabilidade e painel comercial no frontend.
+- O que ainda não começou: Sprint V8 (operação comercial assistida com rotina de revisão semanal e automação de ingestão de conversão).
 
 ### 2. Pendências carregadas
 - Pendência 1: executar bateria E2E integral em staging (`191.252.181.168`) com tenant/perfil piloto habilitado no rollout, cobrindo sucesso, timeout, falha de provider, asset expirado, retry e publicação final.
 - Pendência 2: publicar dashboards no ambiente de observabilidade compartilhado (Prometheus/Grafana) com recortes de bloqueio de compliance.
 - Pendência 3: calibrar limiares de alerta com baseline real por provider/tenant após coleta diária do ciclo piloto.
+- Pendência 4: integrar fontes de conversão (landing/checkout) ao endpoint `POST /api/sales-videos/profiles/{profileId}/conversion-events` para reduzir lançamento manual.
+- Pendência 5: disponibilizar no frontend administrativo a operação de playbooks e relatório de `performance-summary`.
 
 ### 3. Riscos abertos
 - Risco 1: divergência entre status externo do provider e estado canônico interno (`SalesVideoStatus`) ainda depende de validação E2E contínua.
@@ -608,9 +623,9 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 - Flags: implementadas na Sprint V6 (`sales-video.rollout.enabled`, `sales-video.rollout.allowed-tenants`, `sales-video.rollout.allowed-profile-ids`).
 
 ### 6. Instruções para o próximo ciclo do Codex
-- Prioridade imediata: iniciar Sprint V7 após validar rollout piloto em staging e consolidar baseline operacional do ciclo V6.
+- Prioridade imediata: iniciar Sprint V8 com operação assistida dos endpoints comerciais da Sprint V7 e integração automática de eventos de conversão.
 - O que não deve ser refeito: checklist de compliance backend/frontend, tipagens de `executionMode` e testes de snapshot auditável já implementados.
-- Onde continuar: `video-management-service` (E2E staging), `backend/ads-service` (readiness + rollout flags) e documentação operacional de rollout.
+- Onde continuar: `video-management-service` (E2E staging), `backend/ads-service` (readiness + rollout flags + performance comercial) e frontend administrativo (painel comercial).
 
 ---
 

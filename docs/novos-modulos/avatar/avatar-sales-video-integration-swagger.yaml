@@ -272,6 +272,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/SalesVideoProfileDto'
 
+  /api/sales-videos/profiles/{profileId}/commercial-playbooks:
+    get:
+      tags: [PublicVideoProfiles]
+      summary: Lista playbooks comerciais ativos/inativos para o perfil
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Playbooks encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SalesVideoCommercialPlaybookDto'
+    post:
+      tags: [PublicVideoProfiles]
+      summary: Cria playbook comercial inicial (objeção + CTA) por nicho/variação
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSalesVideoCommercialPlaybookRequest'
+      responses:
+        '200':
+          description: Playbook criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoCommercialPlaybookDto'
+
+  /api/sales-videos/profiles/{profileId}/conversion-events:
+    post:
+      tags: [PublicVideoProfiles]
+      summary: Registra evento de conversão vinculado ao perfil/job/script
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSalesVideoConversionEventRequest'
+      responses:
+        '200':
+          description: Evento registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoConversionEventDto'
+
+  /api/sales-videos/profiles/{profileId}/performance-summary:
+    get:
+      tags: [PublicVideoProfiles]
+      summary: Resume performance comercial por script/provider para o perfil
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Resumo calculado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoPerformanceSummaryDto'
+
 components:
   parameters:
     JobId:
@@ -516,3 +614,87 @@ components:
           description: Marca revisão humana obrigatória como aprovada ou revogada.
         humanReviewApprovedBy: { type: string }
         complianceNotes: { type: string }
+
+    SalesVideoConversionEventType:
+      type: string
+      enum: [VIEW, LEAD, QUALIFIED_LEAD, CHECKOUT_STARTED, PURCHASE]
+
+    CreateSalesVideoCommercialPlaybookRequest:
+      type: object
+      required: [nicheKey, variantKey, objectionText, ctaText]
+      properties:
+        nicheKey: { type: string }
+        variantKey: { type: string }
+        objectionText: { type: string }
+        ctaText: { type: string }
+        active: { type: boolean }
+        createdBy: { type: string }
+
+    SalesVideoCommercialPlaybookDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        profileId: { type: integer, format: int64 }
+        tenantId: { type: string }
+        nicheKey: { type: string }
+        variantKey: { type: string }
+        objectionText: { type: string }
+        ctaText: { type: string }
+        active: { type: boolean }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CreateSalesVideoConversionEventRequest:
+      type: object
+      required: [eventType]
+      properties:
+        jobId: { type: integer, format: int64 }
+        scriptId: { type: integer, format: int64 }
+        eventType: { $ref: '#/components/schemas/SalesVideoConversionEventType' }
+        eventValue: { type: number, format: double }
+        currencyCode: { type: string }
+        source: { type: string }
+        occurredAt: { type: string, format: date-time }
+        metadataJson: { type: string }
+
+    SalesVideoConversionEventDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        profileId: { type: integer, format: int64 }
+        jobId: { type: integer, format: int64 }
+        scriptId: { type: integer, format: int64 }
+        tenantId: { type: string }
+        eventType: { $ref: '#/components/schemas/SalesVideoConversionEventType' }
+        eventValue: { type: number, format: double }
+        currencyCode: { type: string }
+        source: { type: string }
+        occurredAt: { type: string, format: date-time }
+        metadataJson: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    SalesVideoVariantPerformanceDto:
+      type: object
+      properties:
+        scriptId: { type: integer, format: int64, nullable: true }
+        providerName: { type: string, nullable: true }
+        variantKey: { type: string }
+        events: { type: integer, format: int64 }
+        leads: { type: integer, format: int64 }
+        purchases: { type: integer, format: int64 }
+        revenue: { type: number, format: double }
+
+    SalesVideoPerformanceSummaryDto:
+      type: object
+      properties:
+        profileId: { type: integer, format: int64 }
+        tenantId: { type: string }
+        totalEvents: { type: integer, format: int64 }
+        totalLeads: { type: integer, format: int64 }
+        totalPurchases: { type: integer, format: int64 }
+        totalRevenue: { type: number, format: double }
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesVideoVariantPerformanceDto'

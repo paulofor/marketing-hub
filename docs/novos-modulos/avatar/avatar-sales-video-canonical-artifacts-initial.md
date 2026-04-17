@@ -259,6 +259,77 @@ Representa a configuração canônica de um tipo de vídeo de vendas para uma of
 - `ai-worker`
 - `video-management-service`
 
+---
+
+## 8.10 `avatar.salesVideoCommercialPlaybook.v1`
+
+### Finalidade
+Representa variações comerciais iniciais (objeção + CTA) por nicho para orientar iterações da Sprint V7.
+
+### Produzido por
+- backend
+
+### Consumido por
+- backend
+- frontend administrativo
+
+### Campos mínimos recomendados
+- `profileId`
+- `tenantId`
+- `nicheKey`
+- `variantKey`
+- `objectionText`
+- `ctaText`
+- `active`
+
+---
+
+## 8.11 `avatar.salesVideoConversionEvent.v1`
+
+### Finalidade
+Representa fato de conversão associado ao módulo para aprendizado comercial e comparação entre script/provider.
+
+### Produzido por
+- backend (via endpoint canônico de ingestão)
+
+### Consumido por
+- backend
+- frontend administrativo
+
+### Campos mínimos recomendados
+- `profileId`
+- `jobId` (opcional)
+- `scriptId` (opcional)
+- `tenantId`
+- `eventType`
+- `eventValue`
+- `currencyCode`
+- `occurredAt`
+- `source`
+
+---
+
+## 8.12 `avatar.salesVideoPerformanceSummary.v1`
+
+### Finalidade
+Projeção agregada para revisão comercial inicial da Sprint V7, consolidando eventos totais, leads, compras e receita por variação.
+
+### Produzido por
+- backend
+
+### Consumido por
+- frontend administrativo
+- operação comercial
+
+### Campos mínimos recomendados
+- `profileId`
+- `tenantId`
+- `totalEvents`
+- `totalLeads`
+- `totalPurchases`
+- `totalRevenue`
+- `variants[]` com `scriptId`, `providerName`, `variantKey`, `events`, `leads`, `purchases`, `revenue`
+
 ### Pais típicos
 - nenhum obrigatório
 

@@ -33,6 +33,23 @@ Regras operacionais associadas:
 - publicação em landing é bloqueada sem revisão humana aprovada;
 - quando `requires_consent=true`, consentimento auditável é obrigatório para render/publicação produtivos.
 
+## Atualização incremental — Avatar Sales Video (Sprint V7)
+
+Entidades adicionadas no backend para iniciar a camada de aprendizado comercial do módulo:
+
+- `sales_video_commercial_playbook`
+  - playbook por perfil com `niche_key`, `variant_key`, `objection_text`, `cta_text`, `active`.
+  - objetivo: registrar matriz inicial de variações comerciais por nicho sem estado paralelo fora do backend.
+- `sales_video_conversion_event`
+  - fatos de conversão com vínculo canônico ao perfil e vínculo opcional a `job_id`/`script_id`.
+  - campos centrais: `event_type`, `event_value`, `currency_code`, `source`, `occurred_at`, `metadata_json`.
+
+Regras operacionais associadas:
+
+- eventos de conversão do módulo devem ser persistidos somente via endpoint do backend;
+- resumo comercial (`performance-summary`) é projeção derivada dos fatos persistidos em `sales_video_conversion_event`;
+- comparação por variação técnica usa, no mínimo, o eixo `scriptId + providerName` para iniciar rotina de aprendizado.
+
 ## Diagrama ER (contexto do experimento)
 
 ```mermaid

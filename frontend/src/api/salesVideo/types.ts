@@ -12,6 +12,7 @@ export type SalesVideoStatus =
   | "PUBLISHED"
   | "ARCHIVED";
 export type SalesVideoProviderFamily = "OPENAI" | "EXTERNAL_VIDEO_MODULE";
+export type SalesVideoExecutionMode = "TEST" | "PRODUCTION";
 export type SalesVideoJobType = "SCRIPT" | "STORYBOARD" | "RENDER" | "PUBLISH" | "RETRY";
 export type SalesVideoRetryReason =
   | "MANUAL_INTERVENTION"
@@ -47,6 +48,7 @@ export interface SalesVideoJob {
   scriptId?: number | null;
   tenantId?: string | null;
   providerFamily: SalesVideoProviderFamily;
+  executionMode?: SalesVideoExecutionMode | null;
   providerName?: string | null;
   providerJobId?: string | null;
   jobType: SalesVideoJobType;
@@ -84,6 +86,13 @@ export interface SalesVideoProfile {
   voiceStyle?: string | null;
   language?: string | null;
   targetDurationSeconds?: number | null;
+  requiresConsent: boolean;
+  consentRecordedBy?: string | null;
+  consentRecordedAt?: string | null;
+  consentEvidenceUrl?: string | null;
+  humanReviewApprovedBy?: string | null;
+  humanReviewApprovedAt?: string | null;
+  complianceNotes?: string | null;
   status: SalesVideoStatus;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -152,6 +161,16 @@ export interface RequestVideoRenderPayload {
   requestedBy: string;
   providerFamily?: SalesVideoProviderFamily;
   providerName?: string;
+  executionMode?: SalesVideoExecutionMode;
+}
+
+export interface UpdateSalesVideoCompliancePayload {
+  requiresConsent?: boolean;
+  consentRecordedBy?: string;
+  consentEvidenceUrl?: string;
+  humanReviewApproved?: boolean;
+  humanReviewApprovedBy?: string;
+  complianceNotes?: string;
 }
 
 export interface CreateLandingVideoSlotPayload {

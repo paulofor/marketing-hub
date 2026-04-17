@@ -66,6 +66,7 @@ public class MdsRequestService {
     @Transactional
     public MdsRequestStatusResponse heartbeat(Long id, MdsHeartbeatRequest heartbeatRequest) {
         MdsRequest request = findRequest(id);
+        assertInProgress(request, "heartbeat can only be sent for in-progress requests");
         persistEvent(
                 request,
                 defaultValue(heartbeatRequest.stageName(), "pipeline"),
@@ -79,6 +80,7 @@ public class MdsRequestService {
     @Transactional
     public MdsRequestStatusResponse complete(Long id, MdsCompleteRequest completeRequest) {
         MdsRequest request = findRequest(id);
+        assertInProgress(request, "request can only be completed from in-progress status");
         request.setStatus(MdsRequestStatus.COMPLETED);
         request.setFinishedAt(Instant.now());
         request.setFailureReason(null);
@@ -90,6 +92,7 @@ public class MdsRequestService {
     @Transactional
     public MdsRequestStatusResponse fail(Long id, MdsFailRequest failRequest) {
         MdsRequest request = findRequest(id);
+        assertInProgress(request, "request can only fail from in-progress status");
         request.setStatus(MdsRequestStatus.FAILED);
         request.setFinishedAt(Instant.now());
         request.setFailureReason(failRequest.reason());
@@ -152,5 +155,11 @@ public class MdsRequestService {
 
     private String defaultValue(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private void assertInProgress(MdsRequest request, String message) {
+        if (request.getStatus() != MdsRequestStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, message);
+        }
     }
 }

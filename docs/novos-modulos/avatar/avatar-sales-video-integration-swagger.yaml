@@ -193,6 +193,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/SalesVideoJobDto'
 
+
+  /api/sales-videos/rollout/status:
+    get:
+      tags: [PublicVideoProfiles]
+      summary: Consulta elegibilidade de rollout para o tenant ativo
+      responses:
+        '200':
+          description: Status de rollout do tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoRolloutStatusDto'
+
+  /api/sales-videos/profiles/{profileId}/rollout-status:
+    get:
+      tags: [PublicVideoProfiles]
+      summary: Consulta elegibilidade de rollout para um perfil específico
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Status de rollout do perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoRolloutStatusDto'
+        '404':
+          description: Perfil não encontrado
   /api/sales-videos/profiles/{profileId}:
     get:
       tags: [PublicVideoProfiles]
@@ -350,6 +383,22 @@ components:
         approvedBy: { type: string }
         approvedAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
+
+
+    SalesVideoRolloutStatusDto:
+      type: object
+      properties:
+        rolloutEnabled: { type: boolean }
+        tenantEligible: { type: boolean }
+        profileEligible: { type: boolean }
+        tenantId: { type: string }
+        profileId: { type: integer, format: int64, nullable: true }
+        allowedTenants:
+          type: array
+          items: { type: string }
+        allowedProfileIds:
+          type: array
+          items: { type: integer, format: int64 }
 
     SalesVideoProfileDto:
       type: object

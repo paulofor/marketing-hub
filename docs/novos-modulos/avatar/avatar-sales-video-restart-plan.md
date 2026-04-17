@@ -483,25 +483,42 @@ Liberar o módulo de forma gradual, com controle por tenant/flag e monitoramento
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (rollout controlado por tenant/perfil implementado no backend e contrato atualizado; rollout operacional em staging compartilhado ainda depende de credenciais e janela de operação do time)
 
 ### Flags/tenants habilitados
-- 
+- adicionadas flags canônicas no backend para rollout controlado:
+  - `sales-video.rollout.enabled`
+  - `sales-video.rollout.allowed-tenants`
+  - `sales-video.rollout.allowed-profile-ids`
+- bloqueio explícito de render `PRODUCTION` quando tenant/perfil não estiver elegível ao rollout (`ROLLOUT_NOT_ALLOWED`).
+- endpoints administrativos para leitura de elegibilidade por tenant/perfil:
+  - `GET /api/sales-videos/rollout/status`
+  - `GET /api/sales-videos/profiles/{profileId}/rollout-status`
 
 ### Baseline de métricas
-- 
+- baseline técnico inicial registrado para o primeiro ciclo de rollout:
+  - volume de requests `PRODUCTION` autorizadas vs bloqueadas por rollout;
+  - distribuição por tenant/perfil elegível;
+  - cruzamento operacional com métricas existentes de backlog/falha/retry do `video-management-service`.
+- baseline operacional em staging compartilhado permanece pendente de execução diária com tráfego real.
 
 ### Problemas observados no rollout
-- 
+- ausência de credenciais/headers operacionais no ciclo automatizado impede validação E2E completa contra `191.252.181.168` dentro deste passo.
+- baseline real por tenant/provider ainda não foi coletado em janela contínua de operação assistida.
 
 ### Mitigações aplicadas
-- 
+- gate de segurança no backend para impedir render produtivo fora do escopo autorizado de rollout.
+- exposição de endpoints de status para reduzir operação manual e facilitar checklist de readiness por tenant/perfil.
+- atualização do Swagger canônico para manter contrato backend↔consumidores alinhado com a política de rollout.
 
 ### Pendências carregadas para a próxima fase
-- 
+- executar rollout assistido em staging compartilhado com tenant/perfil piloto e registrar baseline diário real (sucesso/falha/latência/retry/bloqueio).
+- publicar dashboard operacional consolidando métricas de rollout + compliance + provider.
+- validar runbook de rollback em incidente real/simulado com reversão de flags sem intervenção em banco.
 
 ### Evidências/testes executados
-- 
+- `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoProfileServiceTest`
+- revisão de contrato OpenAPI em `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml` com novos endpoints de rollout.
 
 ---
 
@@ -560,14 +577,14 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Handoff para a próxima sprint
 
 ### 1. Resumo factual do estado atual
-- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona), Sprint V3 (instrumentação de observabilidade), Sprint V4 (compliance backend) e Sprint V5 (alinhamento frontend + testes de compliance/auditoria).
-- O que está parcialmente concluído: validação E2E integral em staging compartilhado com provider real e dashboards oficiais de observabilidade.
-- O que ainda não começou: rollout controlado por tenant/feature flag da Sprint V6.
+- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona), Sprint V3 (instrumentação de observabilidade), Sprint V4 (compliance backend), Sprint V5 (alinhamento frontend + testes de compliance/auditoria) e Sprint V6 (gate de rollout controlado por tenant/perfil no backend).
+- O que está parcialmente concluído: validação E2E integral em staging compartilhado com provider real, coleta de baseline diária e dashboards oficiais de observabilidade.
+- O que ainda não começou: Sprint V7 (camada de evolução comercial e rotina de aprendizado por conversão).
 
 ### 2. Pendências carregadas
-- Pendência 1: executar bateria E2E integral em staging (`191.252.181.168`) cobrindo sucesso, timeout, falha de provider, asset expirado, retry e publicação final.
+- Pendência 1: executar bateria E2E integral em staging (`191.252.181.168`) com tenant/perfil piloto habilitado no rollout, cobrindo sucesso, timeout, falha de provider, asset expirado, retry e publicação final.
 - Pendência 2: publicar dashboards no ambiente de observabilidade compartilhado (Prometheus/Grafana) com recortes de bloqueio de compliance.
-- Pendência 3: calibrar limiares de alerta com baseline real por provider/tenant.
+- Pendência 3: calibrar limiares de alerta com baseline real por provider/tenant após coleta diária do ciclo piloto.
 
 ### 3. Riscos abertos
 - Risco 1: divergência entre status externo do provider e estado canônico interno (`SalesVideoStatus`) ainda depende de validação E2E contínua.
@@ -581,16 +598,17 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 - Decisão 4: manter contrato de falha com `retryable` e `retryReason` alinhado ao Swagger canônico.
 - Decisão 5: tornar `executionMode` explícito no frontend para reduzir ambiguidade operacional entre render de teste e render produtivo.
 - Decisão 6: centralizar atualização de compliance no endpoint canônico do backend, sem estado paralelo no frontend.
+- Decisão 7: bloquear render `PRODUCTION` por feature flag de rollout (tenant/perfil) no backend como controle primário de liberação gradual.
 
 ### 5. Contratos/artefatos afetados
 - Endpoint: `/api/sales-videos/profiles/{profileId}/compliance` (consumido pelo frontend administrativo).
 - Endpoint: `/api/sales-videos/profiles/{profileId}/request-render` (payload com `executionMode` explícito).
 - DTO/schema: `SalesVideoProfileDto`, `SalesVideoJobDto`, `RequestVideoRenderRequest`, `UpdateSalesVideoComplianceRequest`.
 - Artefatos: `avatar.salesVideoComplianceRecord.v1` e `avatar.salesVideoRenderJob.v1` (snapshot auditável em render produtivo).
-- Flags: pendente para Sprint V6 (rollout por tenant/feature flag).
+- Flags: implementadas na Sprint V6 (`sales-video.rollout.enabled`, `sales-video.rollout.allowed-tenants`, `sales-video.rollout.allowed-profile-ids`).
 
 ### 6. Instruções para o próximo ciclo do Codex
-- Prioridade imediata: Sprint V6 com rollout controlado por tenant/feature flag, após rodar E2E integral em staging.
+- Prioridade imediata: iniciar Sprint V7 após validar rollout piloto em staging e consolidar baseline operacional do ciclo V6.
 - O que não deve ser refeito: checklist de compliance backend/frontend, tipagens de `executionMode` e testes de snapshot auditável já implementados.
 - Onde continuar: `video-management-service` (E2E staging), `backend/ads-service` (readiness + rollout flags) e documentação operacional de rollout.
 

@@ -38,19 +38,22 @@ public class SalesVideoProfileService {
     private final SalesVideoScriptRepository scriptRepository;
     private final SalesVideoJobRepository jobRepository;
     private final SalesVideoJobService jobService;
+    private final SalesVideoRolloutService rolloutService;
 
     public SalesVideoProfileService(SalesVideoProfileRepository profileRepository,
                                     ProductRepository productRepository,
                                     LandingPageRepository landingPageRepository,
                                     SalesVideoScriptRepository scriptRepository,
                                     SalesVideoJobRepository jobRepository,
-                                    SalesVideoJobService jobService) {
+                                    SalesVideoJobService jobService,
+                                    SalesVideoRolloutService rolloutService) {
         this.profileRepository = profileRepository;
         this.productRepository = productRepository;
         this.landingPageRepository = landingPageRepository;
         this.scriptRepository = scriptRepository;
         this.jobRepository = jobRepository;
         this.jobService = jobService;
+        this.rolloutService = rolloutService;
     }
 
     @Transactional
@@ -149,9 +152,9 @@ public class SalesVideoProfileService {
                 .findFirstByProfileIdAndStatusOrderByVersionDesc(profileId, SalesVideoScriptStatus.APPROVED)
                 .orElseThrow(() -> VideoModuleException.badRequest(VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
-        SalesVideoExecutionMode executionMode = Optional.ofNullable(request.getExecutionMode())
-                .orElse(SalesVideoExecutionMode.PRODUCTION);
+        SalesVideoExecutionMode executionMode = rolloutService.normalizeExecutionMode(request.getExecutionMode());
         if (executionMode == SalesVideoExecutionMode.PRODUCTION) {
+            rolloutService.assertProductionRolloutAllowed(profile);
             ensureProductionCompliance(profile);
         }
         SalesVideoProviderFamily family = Optional.ofNullable(request.getProviderFamily())
@@ -220,6 +223,18 @@ public class SalesVideoProfileService {
                 .stream()
                 .map(SalesVideoMapper::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SalesVideoRolloutStatusDto getRolloutStatus(Long profileId) {
+        SalesVideoProfile profile = loadProfile(profileId);
+        return rolloutService.evaluate(profile.getId(), profile.getTenantId());
+    }
+
+    @Transactional(readOnly = true)
+    public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
+        String tenantId = TenantContextHolder.requireTenant();
+        return rolloutService.evaluate(null, tenantId);
     }
 
     private SalesVideoProfile loadProfile(Long profileId) {

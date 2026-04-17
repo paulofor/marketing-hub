@@ -63,4 +63,14 @@ public class SalesVideoProfileController {
                                                  @RequestBody UpdateSalesVideoComplianceRequest request) {
         return profileService.updateCompliance(profileId, request);
     }
+
+    @GetMapping("/sales-videos/rollout/status")
+    public SalesVideoRolloutStatusDto getTenantRolloutStatus() {
+        return profileService.getTenantRolloutStatus();
+    }
+
+    @GetMapping("/sales-videos/profiles/{profileId}/rollout-status")
+    public SalesVideoRolloutStatusDto getProfileRolloutStatus(@PathVariable Long profileId) {
+        return profileService.getRolloutStatus(profileId);
+    }
 }

@@ -11,6 +11,7 @@ import com.marketinghub.videomanagement.client.payload.JobHeartbeatPayload;
 import com.marketinghub.videomanagement.client.payload.JobProgressPayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
+import com.marketinghub.videomanagement.service.VideoJobObservabilityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -35,13 +36,16 @@ public class BackendVideoClient {
     private final Logger log = LoggerFactory.getLogger(BackendVideoClient.class);
     private final WebClient webClient;
     private final VideoManagementProperties properties;
+    private final VideoJobObservabilityService observabilityService;
 
     public BackendVideoClient(WebClient.Builder builder,
-                              VideoManagementProperties properties) {
+                              VideoManagementProperties properties,
+                              VideoJobObservabilityService observabilityService) {
         this.webClient = builder
                 .baseUrl(properties.getBackendBaseUrl().toString())
                 .build();
         this.properties = properties;
+        this.observabilityService = observabilityService;
     }
 
     public List<SalesVideoJob> fetchPendingJobs(int limit) {
@@ -205,6 +209,7 @@ public class BackendVideoClient {
                 if (!shouldRetry(ex.getStatusCode()) || attempt == maxAttempts) {
                     throw ex;
                 }
+                observabilityService.incrementBackendRetry(operation, ex.getStatusCode());
                 log.warn("Tentativa {}/{} falhou em {} (status={}): {}",
                         attempt, maxAttempts, operation, ex.getStatusCode(), ex.getMessage());
                 sleep(backoffMs);
@@ -215,6 +220,7 @@ public class BackendVideoClient {
                 if (!shouldRetry(ex.getStatusCode().value()) || attempt == maxAttempts) {
                     throw lastError;
                 }
+                observabilityService.incrementBackendRetry(operation, ex.getStatusCode().value());
                 log.warn("Tentativa {}/{} falhou em {} (status={}): {}",
                         attempt, maxAttempts, operation, ex.getStatusCode().value(), ex.getMessage());
                 sleep(backoffMs);
@@ -223,6 +229,7 @@ public class BackendVideoClient {
                 if (attempt == maxAttempts) {
                     throw lastError;
                 }
+                observabilityService.incrementBackendRetry(operation, null);
                 log.warn("Tentativa {}/{} falhou em {}: {}", attempt, maxAttempts, operation, ex.getMessage());
                 sleep(backoffMs);
             }

@@ -31,8 +31,12 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
+
+logging:
+  pattern:
+    level: "%5p [jobId:%X{jobId:-na} profileId:%X{profileId:-na} provider:%X{provider:-na} providerJobId:%X{providerJobId:-na} tenant:%X{tenant:-na}]"

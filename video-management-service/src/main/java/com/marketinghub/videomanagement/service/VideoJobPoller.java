@@ -18,13 +18,16 @@ public class VideoJobPoller {
     private final VideoManagementProperties properties;
     private final BackendVideoClient backendClient;
     private final VideoJobDispatcher dispatcher;
+    private final VideoJobObservabilityService observabilityService;
 
     public VideoJobPoller(VideoManagementProperties properties,
                           BackendVideoClient backendClient,
-                          VideoJobDispatcher dispatcher) {
+                          VideoJobDispatcher dispatcher,
+                          VideoJobObservabilityService observabilityService) {
         this.properties = properties;
         this.backendClient = backendClient;
         this.dispatcher = dispatcher;
+        this.observabilityService = observabilityService;
     }
 
     @Scheduled(initialDelay = 5000,
@@ -35,6 +38,7 @@ public class VideoJobPoller {
         }
         try {
             List<SalesVideoJob> jobs = backendClient.fetchPendingJobs(properties.getJobs().getBatchSize());
+            observabilityService.setBacklogRequested(jobs.size());
             if (!jobs.isEmpty()) {
                 log.info("Encontrados {} jobs pendentes", jobs.size());
                 jobs.forEach(dispatcher::dispatch);
@@ -50,6 +54,7 @@ public class VideoJobPoller {
     private void recoverOrphanJobs() {
         List<SalesVideoJob> processingJobs = backendClient.fetchJobsByStatus(
                 SalesVideoStatus.VIDEO_PROCESSING, properties.getJobs().getBatchSize());
+        observabilityService.setBacklogProcessing(processingJobs.size());
         if (processingJobs.isEmpty()) {
             return;
         }
@@ -63,6 +68,9 @@ public class VideoJobPoller {
         }
         log.warn("Recuperação automática encontrou {} jobs órfãos/candidatos (threshold={}s)",
                 orphanCandidates.size(), properties.getJobs().getOrphanThreshold().toSeconds());
-        orphanCandidates.forEach(dispatcher::dispatch);
+        orphanCandidates.forEach(job -> {
+            observabilityService.incrementOrphanRecovered(job.providerName());
+            dispatcher.dispatch(job);
+        });
     }
 }

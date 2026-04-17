@@ -262,28 +262,49 @@ Dar visibilidade operacional real ao módulo para permitir monitoramento e respo
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (instrumentação e padrão operacional implementados; configuração de dashboards/alertas em stack de observabilidade externa ainda pendente)
 
 ### Métricas adicionadas
-- 
+- `video_jobs_dispatched_total` por provider.
+- `video_jobs_completed_total` por provider.
+- `video_jobs_failed_total` por provider e `failure_code`.
+- `video_render_latency_seconds` (latência total do render).
+- `video_jobs_backlog{status=VIDEO_REQUESTED|VIDEO_PROCESSING}` via gauge no poller.
+- `video_backend_retry_total` por operação e status HTTP.
+- `video_jobs_claim_conflict_total`, `video_jobs_orphan_recovery_total`, `video_jobs_asset_expired_total`.
 
 ### Logs/correlation fields adicionados
-- 
+- inclusão de MDC no `VideoJobProcessor` com os campos:
+  - `jobId`
+  - `profileId`
+  - `provider`
+  - `providerJobId`
+  - `tenant`
+- padronização do padrão de log em `application.yml` para emissão explícita desses campos.
 
 ### Dashboards configurados
-- 
+- documentação de baseline no `README` do `video-management-service` para painéis de backlog, confiabilidade e latência.
+- endpoints e métricas expostos para integração com Prometheus/Grafana (`/actuator/prometheus`).
 
 ### Alertas configurados
-- 
+- definição documentada de alertas mínimos:
+  - backlog `VIDEO_REQUESTED` acima de limiar operacional;
+  - aumento anormal de falhas por provider;
+  - crescimento de retries técnicos (`429/5xx`) no backend.
 
 ### Limitações restantes
-- 
+- dashboards e regras de alertas ainda precisam ser materializados na stack de observabilidade do ambiente staging/produção.
+- sem validação E2E em staging dos alertas disparando em cenário de degradação real.
 
 ### Pendências carregadas para a Sprint V4
-- 
+- integrar as métricas do módulo ao dashboard oficial do time em staging.
+- calibrar limiares de alerta por tenant/provider após baseline de operação contínua.
+- validar alarmística com carga concorrente e cenários de falha real do provider.
 
 ### Evidências/testes executados
-- 
+- suíte de testes do `video-management-service` (incluindo ajustes de contrato de falha com `retryable/retryReason`).
+- build local do módulo com instrumentação de métricas e endpoint Prometheus habilitado.
+- revisão de consistência entre código, Swagger de integração e documentação de observabilidade.
 
 ---
 
@@ -510,38 +531,37 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 ## Handoff para a próxima sprint
 
 ### 1. Resumo factual do estado atual
-- O que está concluído: Sprint V1 (adapter real inicial) + Sprint V2 (deduplicação de claim, retry técnico de backend e recuperação de órfãos).
-- O que está parcialmente concluído: validação E2E em staging do provider real com cenários de falha/expiração sob carga concorrente.
-- O que ainda não começou: observabilidade operacional estruturada (métricas, dashboards, alertas) e rollout controlado.
+- O que está concluído: Sprint V1 (adapter real inicial), Sprint V2 (robustez assíncrona) e Sprint V3 (instrumentação de observabilidade no `video-management-service`).
+- O que está parcialmente concluído: materialização de dashboards/alertas na stack oficial de monitoramento de staging.
+- O que ainda não começou: bloqueios de compliance e governança operacional da Sprint V4.
 
 ### 2. Pendências carregadas
-- Pendência 1: instrumentar métricas de `retry`, `claim_conflict` e `orphan_recovery`.
-- Pendência 2: configurar dashboards/alertas para latência total e acúmulo de backlog.
-- Pendência 3: executar bateria E2E em staging com cenários de sucesso/falha/expiração/concorrência.
+- Pendência 1: publicar dashboards no ambiente de observabilidade compartilhado (Prometheus/Grafana).
+- Pendência 2: calibrar limiares de alerta com baseline real por provider/tenant.
+- Pendência 3: executar bateria E2E em staging com cenários de alerta e degradação para validar alarmística.
 
 ### 3. Riscos abertos
-- Risco 1: divergência entre estado externo do provider e estado canônico interno (`SalesVideoStatus`).
-- Risco 2: falhas intermitentes do provider causarem backlog sem reprocessamento automático seguro.
-- Risco 3: aumento de latência sem métricas mínimas em tempo real dificultar operação.
+- Risco 1: divergência entre status externo do provider e estado canônico interno (`SalesVideoStatus`) ainda depende de validação E2E contínua.
+- Risco 2: sem calibração de limiar, alertas podem gerar ruído (falso positivo) ou atraso de detecção (falso negativo).
+- Risco 3: compliance de consentimento ainda não bloqueia workflow produtivo (escopo Sprint V4).
 
 ### 4. Decisões tomadas nesta sprint
 - Decisão 1: manter backend como única fonte de verdade para estado e persistência do módulo.
-- Decisão 2: formalizar o contrato de integração em OpenAPI dentro do diretório canônico do módulo.
-- Decisão 3: tratar `claim` concorrente como condição esperada (skip seguro), sem marcar falha funcional no job.
-- Decisão 4: adotar retry técnico com backoff apenas para falhas transitórias (`429/5xx`).
-- Decisão 5: ativar recuperação automática de jobs órfãos por idade de `updatedAt` em `VIDEO_PROCESSING`.
+- Decisão 2: expor métricas via Actuator/Prometheus no próprio `video-management-service`.
+- Decisão 3: padronizar logs correlacionáveis por MDC com chaves de rastreio de job/provider/tenant.
+- Decisão 4: manter contrato de falha com `retryable` e `retryReason` alinhado ao Swagger canônico.
 
 ### 5. Contratos/artefatos afetados
-- Endpoint: `/internal/video/jobs/*` e `/api/sales-videos/profiles/{profileId}`.
-- DTO/schema: `SalesVideoJobDto`, `SalesVideoProfileDto`, `JobClaimRequest`, `JobProgressRequest`, `JobCompletionRequest`, `JobFailureRequest`, `JobHeartbeatRequest`, `JobExpirationRequest`.
+- Endpoint: `/internal/video/jobs/*` e `/api/sales-videos/profiles/{profileId}` (sem mudança de rota, com alinhamento de payload de falha).
+- DTO/schema: `JobFailureRequest`/`JobFailurePayload` com `retryable` e `retryReason`.
 - Eventos: atualizações de progresso/conclusão/falha/expiração reportadas pelo módulo assíncrono ao backend.
-- Métricas: pendente para Sprint V3 (ainda não implementadas).
+- Métricas: `video_jobs_*`, `video_render_latency_seconds`, `video_backend_retry_total`, `video_jobs_backlog`.
 - Flags: pendente para Sprint V6 (rollout por tenant/feature flag).
 
 ### 6. Instruções para o próximo ciclo do Codex
-- Prioridade imediata: Sprint V3 com foco em observabilidade (métricas, logs correlacionáveis, dashboards e alertas).
-- O que não deve ser refeito: regras de claim deduplicado, retry técnico transitório e recuperação de órfãos implementadas na Sprint V2.
-- Onde continuar: `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobPoller.java`, `.../BackendVideoClient.java` e documentação canônica de observabilidade do módulo.
+- Prioridade imediata: Sprint V4 com foco em compliance/consentimento e trilha auditável de publicação.
+- O que não deve ser refeito: instrumentação de métricas, MDC de correlação e políticas de retry/claim/orphan já implementadas até V3.
+- Onde continuar: backend (`ads-service`) para regras de bloqueio de workflow e documentação canônica de compliance do módulo.
 
 ---
 

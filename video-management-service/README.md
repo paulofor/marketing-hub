@@ -39,6 +39,38 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `video.providers.real.poll-interval` | Intervalo de polling do status no provider. | `PT5S` |
 | `video.providers.real.max-poll-attempts` | Máximo de tentativas de polling antes de timeout técnico. | `120` |
 
+## Observabilidade (Sprint V3)
+
+O módulo expõe métricas em `/actuator/prometheus` com os principais indicadores operacionais:
+
+- `video_jobs_dispatched_total`
+- `video_jobs_completed_total`
+- `video_jobs_failed_total` (tag `failure_code`)
+- `video_render_latency_seconds`
+- `video_jobs_backlog` (tag `status=VIDEO_REQUESTED|VIDEO_PROCESSING`)
+- `video_backend_retry_total` (tags `operation` e `status`)
+- `video_jobs_claim_conflict_total`
+- `video_jobs_orphan_recovery_total`
+- `video_jobs_asset_expired_total`
+
+Os logs também passam a incluir correlação por MDC com:
+
+- `jobId`
+- `profileId`
+- `provider`
+- `providerJobId`
+- `tenant`
+
+### Dashboards/alertas mínimos recomendados
+
+- **Backlog**: painel com `video_jobs_backlog` por status.
+- **Confiabilidade**: taxa de falhas e retries por provider.
+- **Latência**: p95/p99 de `video_render_latency_seconds`.
+- **Alertas**:
+  - backlog `VIDEO_REQUESTED` acima do limiar operacional;
+  - aumento de `video_jobs_failed_total`;
+  - elevação de `video_backend_retry_total` por 5xx/429.
+
 ### Staging atual
 
 - Backend de staging configurado para `http://191.252.181.168:8000`.

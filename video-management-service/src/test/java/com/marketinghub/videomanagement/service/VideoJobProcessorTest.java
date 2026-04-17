@@ -54,6 +54,9 @@ class VideoJobProcessorTest {
     @Mock
     private VideoProvider videoProvider;
 
+    @Mock
+    private VideoJobObservabilityService observabilityService;
+
     @Captor
     private ArgumentCaptor<JobCompletionPayload> completionCaptor;
 
@@ -66,7 +69,13 @@ class VideoJobProcessorTest {
     void setUp() {
         VideoManagementProperties properties = new VideoManagementProperties();
         properties.setWorkerId("worker-test");
-        processor = new VideoJobProcessor(backendClient, providerRegistry, assetUploader, properties, new ObjectMapper());
+        processor = new VideoJobProcessor(
+                backendClient,
+                providerRegistry,
+                assetUploader,
+                observabilityService,
+                properties,
+                new ObjectMapper());
     }
 
     @Test
@@ -102,6 +111,8 @@ class VideoJobProcessorTest {
 
         verify(backendClient).failJob(any(), failureCaptor.capture());
         assertThat(failureCaptor.getValue().failureCode()).isEqualTo("VIDEO_PROVIDER_ERROR");
+        assertThat(failureCaptor.getValue().retryable()).isFalse();
+        assertThat(failureCaptor.getValue().retryReason()).isEqualTo("OTHER");
     }
 
     @Test

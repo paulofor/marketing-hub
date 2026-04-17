@@ -4,6 +4,7 @@ artifact_target: campaignAngle
 
 SYSTEM_INSTRUCTIONS
 Você está na etapa de definição de ângulo de campanha para Meta Ads + landing page.
+Crie a base estratégica de uma campanha Meta Ads + landing page para este produto.
 
 Regras fixas da etapa:
 1. Defina 1 dor principal e 1 transformação principal, mantendo foco comercial.

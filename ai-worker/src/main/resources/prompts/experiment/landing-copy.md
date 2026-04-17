@@ -23,6 +23,7 @@ Responda em JSON válido e estritamente aderente ao artefato `landingPageCopy`.
 Campos obrigatórios:
 - pageGoal
 - messageMatchSource
+- messageMatchSource,
 - messageMatchNotes
 - primaryCTA
 - hero { eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy, ctaLabel, ctaUrl, ctaMatchNotes }

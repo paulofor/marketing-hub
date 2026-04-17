@@ -64,11 +64,11 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("primaryPromise,");
-        assertThat(userPrompt).contains("proofSummary,");
-        assertThat(userPrompt).contains("singleMindedPromise,");
-        assertThat(userPrompt).contains("primaryCTA,");
-        assertThat(userPrompt).contains("landingMatchLine,");
+        assertThat(userPrompt).contains("- primaryPromise");
+        assertThat(userPrompt).contains("- proofSummary");
+        assertThat(userPrompt).contains("- singleMindedPromise");
+        assertThat(userPrompt).contains("- primaryCTA");
+        assertThat(userPrompt).contains("- landingMatchLine");
     }
 
     @Test

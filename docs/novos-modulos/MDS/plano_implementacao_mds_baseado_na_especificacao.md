@@ -801,19 +801,42 @@ Estabilizar a V1 para que ela seja operável no ecossistema do Marketing Hub.
 - dashboards operacionais.
 
 ### Registro do Codex ao final da sprint
-**Status:** `NAO_INICIADA`
+**Status:** `CONCLUIDO`
 
 **O que foi concluído:**
-- 
+- Implementados retries controlados por fonte no `SearchExecutionService`, com tentativas configuráveis e backoff para falhas transitórias.
+- Implementados timeouts por fonte no `PubmedSearchClient` e `CrossrefSearchClient` via propriedades do módulo (`mds.search.timeout-ms`), reduzindo risco de bloqueio indefinido em integrações externas.
+- Implementada classificação operacional de falhas recuperáveis vs não recuperáveis no `MdsLoopRunner`, publicando `failureStage` coerente (`recoverable_external`, `non_recoverable_pipeline` ou `pipeline`) ao backend.
+- Adicionada observabilidade de pipeline no `MechanismDiscoveryPipelineService` com:
+  - log de resumo operacional por request contendo os campos mínimos exigidos (requestId, market, problem, desiredOutcome, searchSources, selectedEvidenceCount, mechanismCandidateCount, chosenMechanismId, confidenceLevel);
+  - métricas por etapa (`mds.pipeline.stage.duration`, `mds.pipeline.stage.success`, `mds.pipeline.stage.failure`) e métrica global (`mds.pipeline.duration`).
+- Exposição de endpoint de métricas no Actuator (`management.endpoints.web.exposure.include` inclui `metrics`) mantendo healthcheck já disponível em `/internal/mechanism-discovery/actuator/health`.
+- Ampliação da cobertura de testes com novo teste de falha de fonte externa e retries (`SearchExecutionServiceTest`) e ajuste do teste de pipeline (`MechanismDiscoveryPipelineServiceTest`) para validar execução com instrumentação de métricas.
 
 **O que ficou pendente para a próxima sprint ou fase:**
-- 
+- Dashboards operacionais dedicados (visualização externa das métricas desta sprint).
+- Ampliação de testes de integração end-to-end com ambientes reais de fontes externas.
+- Estratégia de retry/backoff adaptativa por tipo de erro HTTP (atualmente a política é uniforme por fonte).
 
 **Riscos / observações:**
-- 
+- O retry atual prioriza previsibilidade operacional e simplicidade; cenários de throttling com janelas variáveis podem exigir política adaptativa futura.
+- O pipeline segue em modo fail-fast quando todas as fontes configuradas falham na etapa de busca; isso melhora diagnóstico, mas pode reduzir throughput em janelas de indisponibilidade externa.
+- A classificação de falhas no loop depende do tipo de exceção propagada; novas integrações de fonte devem preservar essa convenção para manter consistência operacional.
 
 **Arquivos alterados/criados:**
-- 
+- mds/src/main/java/com/marketinghub/mds/config/MdsProperties.java
+- mds/src/main/java/com/marketinghub/mds/search/SearchExecutionService.java
+- mds/src/main/java/com/marketinghub/mds/search/PubmedSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/CrossrefSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/RecoverableSourceException.java
+- mds/src/main/java/com/marketinghub/mds/search/NonRecoverablePipelineException.java
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/main/java/com/marketinghub/mds/service/MdsLoopRunner.java
+- mds/src/main/resources/application.yml
+- mds/src/test/java/com/marketinghub/mds/search/SearchExecutionServiceTest.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
 
 ---
 

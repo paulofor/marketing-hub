@@ -4,10 +4,10 @@ import com.marketinghub.mds.client.BackendMdsClient;
 import com.marketinghub.mds.dto.BackendArtifactPublishBatchResponseDto;
 import com.marketinghub.mds.dto.BackendMdsRequestDto;
 import com.marketinghub.mds.search.*;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,8 +42,24 @@ class MechanismDiscoveryPipelineServiceTest {
     @Mock
     private DiscoveryReportBuilder discoveryReportBuilder;
 
-    @InjectMocks
     private MechanismDiscoveryPipelineService service;
+
+    private MechanismDiscoveryPipelineService newService() {
+        return new MechanismDiscoveryPipelineService(
+                backendMdsClient,
+                mechanismQuestionBuilder,
+                searchQueryPlanBuilder,
+                searchExecutionService,
+                sourceDedupService,
+                evidenceScreeningService,
+                evidenceConfidenceService,
+                evidenceItemBuilder,
+                mechanismCandidateBuilder,
+                practicalKnowledgePackBuilder,
+                discoveryReportBuilder,
+                new SimpleMeterRegistry()
+        );
+    }
 
     @Test
     void shouldPublishSourceDocumentsAndEvidenceItemsWithLineage() {
@@ -138,7 +154,7 @@ class MechanismDiscoveryPipelineServiceTest {
                 .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(105L)))
                 .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(106L)));
 
-        service.execute(request);
+        newService().execute(request);
 
         ArgumentCaptor<com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto> batchCaptor =
                 ArgumentCaptor.forClass(com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto.class);

@@ -1,8 +1,10 @@
 package com.marketinghub.mds.search;
 
+import com.marketinghub.mds.config.MdsProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +17,12 @@ public class PubmedSearchClient implements EvidenceSearchClient {
 
     private final RestClient restClient;
 
-    public PubmedSearchClient() {
-        this.restClient = RestClient.builder().build();
+    public PubmedSearchClient(MdsProperties properties) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        int timeoutMs = Math.max(500, properties.getSearch().getTimeoutMs());
+        factory.setConnectTimeout(timeoutMs);
+        factory.setReadTimeout(timeoutMs);
+        this.restClient = RestClient.builder().requestFactory(factory).build();
     }
 
     @Override
@@ -86,7 +92,7 @@ public class PubmedSearchClient implements EvidenceSearchClient {
             }
             return hits;
         } catch (Exception ex) {
-            return List.of();
+            throw new RecoverableSourceException("pubmed source call failed", ex);
         }
     }
 }

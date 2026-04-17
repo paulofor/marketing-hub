@@ -1,8 +1,10 @@
 package com.marketinghub.mds.search;
 
+import com.marketinghub.mds.config.MdsProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +15,12 @@ public class CrossrefSearchClient implements EvidenceSearchClient {
 
     private final RestClient restClient;
 
-    public CrossrefSearchClient() {
-        this.restClient = RestClient.builder().build();
+    public CrossrefSearchClient(MdsProperties properties) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        int timeoutMs = Math.max(500, properties.getSearch().getTimeoutMs());
+        factory.setConnectTimeout(timeoutMs);
+        factory.setReadTimeout(timeoutMs);
+        this.restClient = RestClient.builder().requestFactory(factory).build();
     }
 
     @Override
@@ -74,7 +80,7 @@ public class CrossrefSearchClient implements EvidenceSearchClient {
 
             return hits;
         } catch (Exception ex) {
-            return List.of();
+            throw new RecoverableSourceException("crossref source call failed", ex);
         }
     }
 }

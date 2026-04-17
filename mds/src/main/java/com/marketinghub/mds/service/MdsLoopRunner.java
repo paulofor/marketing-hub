@@ -3,6 +3,8 @@ package com.marketinghub.mds.service;
 import com.marketinghub.mds.client.BackendMdsClient;
 import com.marketinghub.mds.config.MdsProperties;
 import com.marketinghub.mds.dto.*;
+import com.marketinghub.mds.search.NonRecoverablePipelineException;
+import com.marketinghub.mds.search.RecoverableSourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -50,12 +52,23 @@ public class MdsLoopRunner {
             backendMdsClient.complete(request.id(), new BackendCompleteRequestDto("mds pipeline finished"));
             log.info("mds-request-complete requestId={} correlationId={}", request.id(), request.correlationId());
         } catch (Exception ex) {
-            log.error("mds-request-failed requestId={} error={}", request.id(), ex.getMessage(), ex);
+            String failureType = resolveFailureType(ex);
+            log.error("mds-request-failed requestId={} failureType={} error={}", request.id(), failureType, ex.getMessage(), ex);
             backendMdsClient.fail(request.id(), new BackendFailRequestDto(
                     ex.getMessage(),
-                    "pipeline",
-                    "processing failed"
+                    failureType,
+                    failureType.equals("recoverable_external") ? "processing failed with recoverable source error" : "processing failed"
             ));
         }
+    }
+
+    private String resolveFailureType(Exception ex) {
+        if (ex instanceof RecoverableSourceException) {
+            return "recoverable_external";
+        }
+        if (ex instanceof NonRecoverablePipelineException) {
+            return "non_recoverable_pipeline";
+        }
+        return "pipeline";
     }
 }

@@ -582,40 +582,30 @@ Transformar resultados brutos de busca em evidência utilizável para construç�
 **Status:** `CONCLUIDO`
 
 **O que foi concluído:**
-- Implementada formulação de pergunta de mecanismo (`MechanismQuestionBuilder`) e planejamento de queries por fonte (`SearchQueryPlanBuilder`) no módulo `mds/`.
-- Implementados clientes reais de busca estruturada para PubMed/NCBI E-utilities e Crossref, com execução via `SearchExecutionService`.
-- Pipeline do MDS passou a publicar `mechanismEvidenceSearch` e `sourceDocument` com query rastreável, metadados normalizados e classificação inicial de acesso/permissão.
-- Backend recebeu suporte explícito para persistência de `source_access_record` por lote via endpoint interno dedicado (`/api/internal/mds/source-access/publish-batch`).
-- Contratos de teste foram atualizados no backend e no módulo `mds/` para cobrir o fluxo novo de Sprint 3.
+- Implementado `SourceDedupService` no módulo `mds/` com deduplicação por DOI, PMID, PMCID, título normalizado e URL canônica, priorizando o registro mais completo.
+- Implementado `EvidenceScreeningService` para triagem mínima por relevância e aplicabilidade ao nicho, com priorização de evidências para publicação.
+- Implementado `EvidenceConfidenceService` com classificação de confiança em quatro níveis (`alta`, `moderada`, `baixa`, `muito_baixa`).
+- Implementado `EvidenceItemBuilder` e publicação de artefatos `evidenceItem` no backend com lineage explícito para o `sourceDocument` de origem.
+- Pipeline do MDS atualizado para registrar eventos por etapa via heartbeat (`dedup-normalize`, `screening`, `evidence-analysis`) e publicar `mechanismEvidenceSearch` com contadores de deduplicação/triagem.
+- Testes do pipeline atualizados e novo teste unitário de deduplicação adicionado no módulo `mds/`.
 
 **O que ficou pendente para a próxima sprint:**
-- Deduplicação avançada de `sourceDocument` por DOI/PMID/PMCID/título/URL canônica.
-- Triagem científica estruturada com critérios de elegibilidade e priorização.
-- Construção e persistência de `evidenceItem` com classificação de confiança.
+- Extração robusta de componentes ativos para construção de `mechanismCandidate`.
+- Agrupamento semântico de componentes recorrentes e regra de seleção final de mecanismo recomendado.
 
 **Riscos / observações:**
-- Os clientes externos de busca dependem de disponibilidade e limites das APIs públicas (NCBI e Crossref), podendo reduzir volume em execuções reais sem fallback adicional.
-- A classificação `accessClass` / `permissionState` nesta sprint é inicial e heurística, devendo ser refinada na Sprint 4 junto com triagem.
+- Triagem e confiança ainda são heurísticas iniciais baseadas em metadados e texto (sem avaliação científica profunda por desenho de estudo).
+- A deduplicação cobre os identificadores principais, mas pode exigir refinamentos para fontes heterogêneas adicionais nas próximas sprints.
 
 **Arquivos alterados/criados:**
 - mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
-- mds/src/main/java/com/marketinghub/mds/client/BackendMdsClient.java
-- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchRequestDto.java
-- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchResponseDto.java
-- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestion.java
-- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestionBuilder.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlan.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlanBuilder.java
-- mds/src/main/java/com/marketinghub/mds/search/SearchExecutionService.java
-- mds/src/main/java/com/marketinghub/mds/search/EvidenceSearchClient.java
-- mds/src/main/java/com/marketinghub/mds/search/PubmedSearchClient.java
-- mds/src/main/java/com/marketinghub/mds/search/CrossrefSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/SourceDedupService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceScreeningService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceConfidenceService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceItemBuilder.java
+- mds/src/main/java/com/marketinghub/mds/search/ScreenedEvidence.java
 - mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsSourceAccessService.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchRequest.java
-- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchResponse.java
-- backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
+- mds/src/test/java/com/marketinghub/mds/search/SourceDedupServiceTest.java
 - docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
 - docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
 

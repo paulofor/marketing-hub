@@ -66,7 +66,8 @@ public class ExperimentPipelineGenerationService {
     private static final Pattern FORM_DATA_PATTERN = Pattern.compile("(?is)new\\s+FormData\\s*\\(\\s*form\\s*\\)");
     private static final Pattern SUBMIT_DISABLE_PATTERN = Pattern.compile("(?is)submitButton\\.disabled\\s*=\\s*true");
     private static final Pattern SUBMIT_ENABLE_PATTERN = Pattern.compile("(?is)submitButton\\.disabled\\s*=\\s*false");
-    private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)\\s*=\\s*([\"'])(.*?)\\2");
+    private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile(
+            "(?is)([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?:\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s\"'=<>`]+)))?");
     private static final Pattern OPENING_TAG_PATTERN = Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
     private static final String DEFAULT_MODEL = "gpt-5.2";
@@ -2411,7 +2412,14 @@ public class ExperimentPipelineGenerationService {
         Map<String, String> attrs = new LinkedHashMap<>();
         Matcher matcher = ATTRIBUTE_PATTERN.matcher(tag);
         while (matcher.find()) {
-            attrs.put(matcher.group(1).toLowerCase(Locale.ROOT), matcher.group(3));
+            String value = matcher.group(2);
+            if (value == null) {
+                value = matcher.group(3);
+            }
+            if (value == null) {
+                value = matcher.group(4);
+            }
+            attrs.put(matcher.group(1).toLowerCase(Locale.ROOT), value == null ? "" : value);
         }
         return attrs;
     }

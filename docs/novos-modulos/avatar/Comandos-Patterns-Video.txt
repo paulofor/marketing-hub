@@ -1,0 +1,85 @@
+Vamos trabalhar na continuação do desenvolvimento do modulo de vídeo no Marketing Hub
+
+Leia o documento : docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
+
+Vamos implementar a Sprint V1 
+
+
+
+Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
+
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+
+Obs: IP do backend: 191.252.181.168
+
+Ao final atualize o documento avatar-sales-video-restart-plan.md com as pendencias da próxima Sprint
+
+--------------------------------------------------------------------------------------------------------------
+
+Vamos trabalhar na continuação do desenvolvimento do modulo de vídeo no Marketing Hub
+
+Leia o documento : docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
+
+Já implementamos a Sprint V1
+
+Agora vamos implementar a Sprint V2 
+
+Implemente o que ficou pendente das Sprints passadas. Veja em docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
+
+
+Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
+
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+
+Obs: IP do backend: 191.252.181.168
+
+Ao final atualize o documento avatar-sales-video-restart-plan.md com as pendencias da próxima Sprint
+
+-------------------------------------------------------------------------------------------------------------------------
+
+Vamos trabalhar na continuação do desenvolvimento do modulo de vídeo no Marketing Hub
+
+Leia o documento : docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
+
+Já implementamos a Sprint V1 , V2 , V3 , V4 , V5 e V6
+
+Agora vamos implementar a Sprint V7
+
+Implemente o que ficou pendente das Sprints passadas. Veja em docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
+
+
+Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
+
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+
+Obs: IP do backend: 191.252.181.168
+
+Ao final atualize o documento avatar-sales-video-restart-plan.md com as pendencias da próxima Sprint
+
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+Estamos com um erro no build
+
+Leia o documento : docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md
+
+Mantenha registros conforme :docs/novos-modulos/avatar/avatar-sales-video-implementation-history-protocol.md
+
+Leia para seguir e manter os canônicos de regras: docs/canonical/system-governance-canon.v2.md 
+
+Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
+
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+

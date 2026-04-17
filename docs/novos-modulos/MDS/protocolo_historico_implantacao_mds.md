@@ -774,3 +774,74 @@ Requests com evidência priorizada agora geram `mechanismCandidate`, escolhem um
 **Próximo passo sugerido:**
 
 Implementar a Sprint 6 para publicação de `practicalKnowledgePack`, relatório final e fechamento completo do pacote de saída do MDS.
+
+## [2026-04-17] — Etapa: sprint 6 - practicalKnowledgePack, relatório final e publicação completa
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+A Sprint 6 foi implementada com publicação completa dos artefatos finais (`practicalKnowledgePack` e `mechanismDiscoveryReport`) e com os endpoints de consulta de relatório/listagem de artefatos no backend.
+
+**Objetivo da etapa:**
+
+Fechar o fluxo V1 do MDS com saída reutilizável por outros módulos, relatório final consultável e contratos de leitura alinhados ao plano da sprint.
+
+**O que foi implementado:**
+
+- criação de `PracticalKnowledgePackBuilder` para gerar as quatro variantes exigidas na sprint (técnica, executiva, prática para design de produto e simplificada para consumidor final);
+- criação de `DiscoveryReportBuilder` para consolidar status final, métricas operacionais e referências dos artefatos de saída;
+- atualização do `MechanismDiscoveryPipelineService` para publicar `mechanismSpec`, `practicalKnowledgePack` e `mechanismDiscoveryReport` em sequência, com heartbeat de `pack-building` e `reporting`;
+- criação do endpoint `GET /api/internal/mds/reports/{id}` para recuperar relatório final por request;
+- criação do endpoint `GET /api/internal/mds/requests/{id}/artifacts` para listar artefatos publicados da request;
+- atualização dos testes de contrato e de pipeline para cobrir o fluxo completo da Sprint 6.
+
+**Arquivos alterados/criados:**
+
+- mds/src/main/java/com/marketinghub/mds/search/PracticalKnowledgePackBuilder.java
+- mds/src/main/java/com/marketinghub/mds/search/DiscoveryReportBuilder.java
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsArtifactService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/repository/MdsArtifactRecordRepository.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsReportResponse.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsArtifactSummaryResponse.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- artifact_record (novos tipos persistidos: `practicalKnowledgePack` e `mechanismDiscoveryReport`)
+- artifact_lineage_edge (lineage adicional entre `evidenceItem`, `mechanismSpec`, `practicalKnowledgePack` e `mechanismDiscoveryReport`)
+
+**APIs / endpoints / contratos afetados:**
+
+- `POST /api/internal/mds/artifacts/publish-batch` (uso expandido para artefatos finais da Sprint 6)
+- `GET /api/internal/mds/reports/{id}` (novo endpoint)
+- `GET /api/internal/mds/requests/{id}/artifacts` (novo endpoint)
+
+**Artefatos / schemas impactados:**
+
+- mds.practicalKnowledgePack.v1
+- mds.mechanismDiscoveryReport.v1
+- mds.mechanismSpec.v1
+
+**Testes executados:**
+
+- `cd mds && mvn test -Dtest=MechanismDiscoveryPipelineServiceTest`
+- `cd backend/ads-service && mvn test -Dtest=MdsInternalControllerContractTest`
+
+**Resultado observado:**
+
+Requests com mecanismo recomendado passam a produzir pacote prático e relatório final persistidos no backend, com leitura por endpoint e listagem dos artefatos por request.
+
+**Limitações / pendências:**
+
+- composição textual do `practicalKnowledgePack` permanece heurística e pode evoluir em qualidade semântica na próxima sprint;
+- observabilidade avançada, retries sofisticados e hardening operacional seguem pendentes para Sprint 7.
+
+**Próximo passo sugerido:**
+
+Executar Sprint 7 com foco em observabilidade, hardening operacional e ampliação de testes de integração.

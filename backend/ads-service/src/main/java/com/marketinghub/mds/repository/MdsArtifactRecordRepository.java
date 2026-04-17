@@ -8,4 +8,6 @@ public interface MdsArtifactRecordRepository extends JpaRepository<MdsArtifactRe
             Long requestId,
             String artifactType
     );
+
+    java.util.List<MdsArtifactRecord> findByRequestIdOrderByCreatedAtAscIdAsc(Long requestId);
 }

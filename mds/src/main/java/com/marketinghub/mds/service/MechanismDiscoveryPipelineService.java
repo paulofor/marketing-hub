@@ -8,9 +8,11 @@ import com.marketinghub.mds.dto.BackendSourceAccessPublishBatchRequestDto;
 import com.marketinghub.mds.search.EvidenceConfidenceService;
 import com.marketinghub.mds.search.EvidenceItemBuilder;
 import com.marketinghub.mds.search.EvidenceScreeningService;
+import com.marketinghub.mds.search.DiscoveryReportBuilder;
 import com.marketinghub.mds.search.MechanismQuestion;
 import com.marketinghub.mds.search.MechanismQuestionBuilder;
 import com.marketinghub.mds.search.MechanismCandidateBuilder;
+import com.marketinghub.mds.search.PracticalKnowledgePackBuilder;
 import com.marketinghub.mds.search.ScreenedEvidence;
 import com.marketinghub.mds.search.SearchExecutionService;
 import com.marketinghub.mds.search.SearchQueryPlan;
@@ -35,6 +37,8 @@ public class MechanismDiscoveryPipelineService {
     private final EvidenceConfidenceService evidenceConfidenceService;
     private final EvidenceItemBuilder evidenceItemBuilder;
     private final MechanismCandidateBuilder mechanismCandidateBuilder;
+    private final PracticalKnowledgePackBuilder practicalKnowledgePackBuilder;
+    private final DiscoveryReportBuilder discoveryReportBuilder;
 
     public MechanismDiscoveryPipelineService(BackendMdsClient backendMdsClient,
                                              MechanismQuestionBuilder mechanismQuestionBuilder,
@@ -44,7 +48,9 @@ public class MechanismDiscoveryPipelineService {
                                              EvidenceScreeningService evidenceScreeningService,
                                              EvidenceConfidenceService evidenceConfidenceService,
                                              EvidenceItemBuilder evidenceItemBuilder,
-                                             MechanismCandidateBuilder mechanismCandidateBuilder) {
+                                             MechanismCandidateBuilder mechanismCandidateBuilder,
+                                             PracticalKnowledgePackBuilder practicalKnowledgePackBuilder,
+                                             DiscoveryReportBuilder discoveryReportBuilder) {
         this.backendMdsClient = backendMdsClient;
         this.mechanismQuestionBuilder = mechanismQuestionBuilder;
         this.searchQueryPlanBuilder = searchQueryPlanBuilder;
@@ -54,6 +60,8 @@ public class MechanismDiscoveryPipelineService {
         this.evidenceConfidenceService = evidenceConfidenceService;
         this.evidenceItemBuilder = evidenceItemBuilder;
         this.mechanismCandidateBuilder = mechanismCandidateBuilder;
+        this.practicalKnowledgePackBuilder = practicalKnowledgePackBuilder;
+        this.discoveryReportBuilder = discoveryReportBuilder;
     }
 
     public void execute(BackendMdsRequestDto request) {
@@ -183,6 +191,8 @@ public class MechanismDiscoveryPipelineService {
                 confidenceBySourceDocumentId,
                 evidenceArtifactIdsBySourceDocumentId
         );
+        Long mechanismSpecArtifactId = null;
+        Long practicalKnowledgePackArtifactId = null;
         if (!mechanismBuild.candidateArtifacts().isEmpty()) {
             var candidatePublishResponse = backendMdsClient.publishBatch(
                     new BackendArtifactPublishBatchRequestDto(request.id(), mechanismBuild.candidateArtifacts())
@@ -197,15 +207,61 @@ public class MechanismDiscoveryPipelineService {
                     mechanismBuild.supportingEvidenceArtifactIds()
             );
             if (mechanismSpec != null) {
-                backendMdsClient.publishBatch(new BackendArtifactPublishBatchRequestDto(request.id(), List.of(mechanismSpec)));
+                var mechanismSpecResponse = backendMdsClient.publishBatch(
+                        new BackendArtifactPublishBatchRequestDto(request.id(), List.of(mechanismSpec))
+                );
+                if (!mechanismSpecResponse.artifactIds().isEmpty()) {
+                    mechanismSpecArtifactId = mechanismSpecResponse.artifactIds().get(0);
+                }
+
+                List<Long> practicalPackParents = new ArrayList<>(mechanismBuild.supportingEvidenceArtifactIds());
+                if (mechanismSpecArtifactId != null) {
+                    practicalPackParents.add(mechanismSpecArtifactId);
+                }
+                ArtifactPayloadDto practicalKnowledgePack = practicalKnowledgePackBuilder.build(
+                        request.id(),
+                        mechanismBuild.mechanismSpecDraft(),
+                        practicalPackParents
+                );
+                var practicalKnowledgePackResponse = backendMdsClient.publishBatch(
+                        new BackendArtifactPublishBatchRequestDto(request.id(), List.of(practicalKnowledgePack))
+                );
+                if (!practicalKnowledgePackResponse.artifactIds().isEmpty()) {
+                    practicalKnowledgePackArtifactId = practicalKnowledgePackResponse.artifactIds().get(0);
+                }
             }
         }
 
         backendMdsClient.heartbeat(request.id(), new com.marketinghub.mds.dto.BackendHeartbeatRequestDto(
-                "mechanism-building",
-                "mechanism candidates and mechanism spec published",
+                "pack-building",
+                "mechanism spec and practical knowledge pack published",
                 Map.of("mechanismCandidateCount", mechanismBuild.candidateArtifacts().size())
         ));
+
+        if (mechanismSpecArtifactId != null && practicalKnowledgePackArtifactId != null) {
+            List<Long> reportParents = new ArrayList<>(mechanismBuild.supportingEvidenceArtifactIds());
+            reportParents.add(mechanismSpecArtifactId);
+            reportParents.add(practicalKnowledgePackArtifactId);
+
+            ArtifactPayloadDto discoveryReport = discoveryReportBuilder.build(
+                    request.id(),
+                    question.text(),
+                    rawHits.size(),
+                    dedupedHits.size(),
+                    prioritized.size(),
+                    evidenceItems.size(),
+                    mechanismBuild.candidateArtifacts().size(),
+                    mechanismSpecArtifactId,
+                    practicalKnowledgePackArtifactId,
+                    reportParents
+            );
+            backendMdsClient.publishBatch(new BackendArtifactPublishBatchRequestDto(request.id(), List.of(discoveryReport)));
+            backendMdsClient.heartbeat(request.id(), new com.marketinghub.mds.dto.BackendHeartbeatRequestDto(
+                    "reporting",
+                    "mechanism discovery report published",
+                    Map.of("reportPublished", true)
+            ));
+        }
     }
 
     private String resolveAccessClass(SourceSearchHit hit) {

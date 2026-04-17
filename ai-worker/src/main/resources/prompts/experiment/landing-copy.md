@@ -2,37 +2,25 @@ template_id: landing-copy
 template_version: v1
 artifact_target: landingPageCopy
 
-Variáveis disponíveis:
-- NICHE_NAME: {{NICHE_NAME}}
-- PERSONA_NAME: {{PERSONA_NAME}}
-- HYPOTHESIS_TITLE: {{HYPOTHESIS_TITLE}}
-- PRIMARY_PAIN_SUMMARY: {{PRIMARY_PAIN_SUMMARY}}
-- PRIMARY_PROMISE_SUMMARY: {{PRIMARY_PROMISE_SUMMARY}}
-- MECHANISM_SUMMARY: {{MECHANISM_SUMMARY}}
-- PROOF_SUMMARY: {{PROOF_SUMMARY}}
-- OFFER_NAME: {{OFFER_NAME}}
-- PRIMARY_CTA_ACTION: {{PRIMARY_CTA_ACTION}}
-- PRIMARY_CTA_LABEL: {{PRIMARY_CTA_LABEL}}
-- PRODUCT_ENVELOPE: {{PRODUCT_ENVELOPE}}
-- DELIVERABLES_JSON: {{DELIVERABLES_JSON}}
-- PROOF_ASSET_JSON: {{PROOF_ASSET_JSON}}
-- CASE_NOTES: {{CASE_NOTES}}
+SYSTEM_INSTRUCTIONS
+Você está na etapa de copy da landing page.
 
-Objetivo da landing:
-Continuar exatamente a promessa do anúncio clicado e levar o usuário ao mesmo CTA declarado no anúncio.
+Regras fixas da etapa:
+1. Continue exatamente a promessa do anúncio clicado e preserve o message match.
+2. `messageMatchSource` deve apontar a fonte da promessa no anúncio, e `messageMatchNotes` deve explicar a continuidade.
+3. `hero.ctaLabel`, `primaryCTA` e todos os `ctaBlocks` devem manter o mesmo CTA aprovado.
+4. `bodySections` deve ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta.
+5. `faq` deve conter no mínimo três perguntas com `objectionTag`.
+6. `consistencyChecks` deve incluir CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES.
+7. `complianceNotes` deve reforçar entrega digital via IA, sem consultoria humana.
+8. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
-Regras:
-1. Repita a mesma promessa no hero (hero.headline + hero.promise) e em pageGoal.
-2. messageMatchSource deve citar qual headline do anúncio está sendo espelhada e messageMatchNotes precisa explicar a continuidade.
-3. hero.ctaLabel, primaryCTA e todos os ctaBlocks devem usar exatamente o mesmo texto do CTA aprovado.
-4. bodySections precisa ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta.
-5. ctaBlocks deve mapear onde cada CTA aparece (hero, mid, final, sticky ou inline).
-6. faq precisa trazer pelo menos três perguntas com objectionTag.
-7. consistencyChecks deve listar no mínimo CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES.
-8. complianceNotes deve reforçar entrega 100% digital (gerada por IA) e sem consultoria.
-9. Não fixar contexto: use apenas informações do caso recebido.
+CASE_DATA
+{{CASE_DATA_BLOCK}}
 
-Formato obrigatório (JSON):
+OUTPUT_CONTRACT
+Responda em JSON válido e estritamente aderente ao artefato `landingPageCopy`.
+Campos obrigatórios:
 - pageGoal
 - messageMatchSource
 - messageMatchNotes

@@ -2,35 +2,23 @@ template_id: campaign-angle
 template_version: v1
 artifact_target: campaignAngle
 
-Variáveis disponíveis:
-- NICHE_NAME: {{NICHE_NAME}}
-- PERSONA_NAME: {{PERSONA_NAME}}
-- HYPOTHESIS_TITLE: {{HYPOTHESIS_TITLE}}
-- PRIMARY_PAIN_SUMMARY: {{PRIMARY_PAIN_SUMMARY}}
-- PRIMARY_PROMISE_SUMMARY: {{PRIMARY_PROMISE_SUMMARY}}
-- MECHANISM_SUMMARY: {{MECHANISM_SUMMARY}}
-- PROOF_SUMMARY: {{PROOF_SUMMARY}}
-- OFFER_NAME: {{OFFER_NAME}}
-- PRIMARY_CTA_ACTION: {{PRIMARY_CTA_ACTION}}
-- PRIMARY_CTA_LABEL: {{PRIMARY_CTA_LABEL}}
-- PRODUCT_ENVELOPE: {{PRODUCT_ENVELOPE}}
-- DELIVERABLES_JSON: {{DELIVERABLES_JSON}}
-- PROOF_ASSET_JSON: {{PROOF_ASSET_JSON}}
-- CASE_NOTES: {{CASE_NOTES}}
+SYSTEM_INSTRUCTIONS
+Você está na etapa de definição de ângulo de campanha para Meta Ads + landing page.
 
-Objetivo:
-Criar a base estratégica de uma campanha Meta Ads + landing page mantendo coerência entre anúncio e página.
+Regras fixas da etapa:
+1. Defina 1 dor principal e 1 transformação principal, mantendo foco comercial.
+2. A promessa central deve ser simples, direta e fácil de entender em poucos segundos.
+3. O anúncio deve abrir por dor ou resultado, e a landing deve aprofundar o mesmo ângulo.
+4. O CTA precisa ser compatível com execução automatizada e alta escala.
+5. Não proponha nada fora do envelope real do produto.
+6. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
-Regras:
-1. Escolha 1 dor principal e 1 transformação principal.
-2. A promessa central deve ser simples e rápida de entender.
-3. O anúncio deve abrir pela dor ou pelo resultado.
-4. A landing deve aprofundar a mesma promessa, sem mudar o ângulo.
-5. O CTA precisa ser compatível com escala e execução automatizada.
-6. Não proponha nada fora do envelope do produto.
-7. Não incluir nicho, persona, mecanismo, promessa, oferta ou entregáveis fixos; usar sempre o contexto recebido.
+CASE_DATA
+{{CASE_DATA_BLOCK}}
 
-Formato esperado (JSON):
+OUTPUT_CONTRACT
+Responda em JSON válido e estritamente aderente ao artefato `campaignAngle`.
+Campos obrigatórios:
 - primaryPromise
 - primaryPain
 - mechanismSummary

@@ -2,40 +2,27 @@ template_id: landing-wireframe
 template_version: v1
 artifact_target: landingPageWireframe
 
-Variáveis disponíveis:
-- NICHE_NAME: {{NICHE_NAME}}
-- PERSONA_NAME: {{PERSONA_NAME}}
-- HYPOTHESIS_TITLE: {{HYPOTHESIS_TITLE}}
-- PRIMARY_PAIN_SUMMARY: {{PRIMARY_PAIN_SUMMARY}}
-- PRIMARY_PROMISE_SUMMARY: {{PRIMARY_PROMISE_SUMMARY}}
-- MECHANISM_SUMMARY: {{MECHANISM_SUMMARY}}
-- PROOF_SUMMARY: {{PROOF_SUMMARY}}
-- OFFER_NAME: {{OFFER_NAME}}
-- PRIMARY_CTA_ACTION: {{PRIMARY_CTA_ACTION}}
-- PRIMARY_CTA_LABEL: {{PRIMARY_CTA_LABEL}}
-- PRODUCT_ENVELOPE: {{PRODUCT_ENVELOPE}}
-- DELIVERABLES_JSON: {{DELIVERABLES_JSON}}
-- PROOF_ASSET_JSON: {{PROOF_ASSET_JSON}}
-- CASE_NOTES: {{CASE_NOTES}}
+SYSTEM_INSTRUCTIONS
+Você está na etapa de wireframe textual (sem HTML final), mobile-first.
 
-Objetivo:
-Converter o copy aprovado em wireframe textual, mobile-first e com message match obrigatório.
+Regras fixas da etapa:
+1. `pageGoal` deve explicitar a ação principal esperada da página.
+2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
+3. `sectionOrder` deve mapear ordem, objetivo e dependências de message match por seção.
+4. Cada seção deve incluir `mobilePriorityScore`, `dropOffRisk`, `mediaSlot` e `compositionNotes`.
+5. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
+6. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
+7. `consistencyChecks` deve incluir CTA_MATCH e EXPERIENCE_CONTINUITY.
+8. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
+9. Não converter para HTML final nesta etapa.
+10. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
-Regras:
-1. pageGoal precisa deixar explícito qual ação a página deve gerar.
-2. variantLayoutId deve ser form-first, proof-first ou story-first.
-3. sectionOrder deve mapear cada bloco com sectionId, sectionName, objective, contentType, copySource, uiNotes, messageMatchDependency e sectionDependsOn.
-4. Cada bloco precisa informar mobilePriorityScore (1 a 10), dropOffRisk, mediaSlot e compositionNotes.
-5. Se houver CTA no bloco, preencher ctaSlot com hasCta=true, ctaLabel, ctaVariant, matchAdCta e notes.
-6. formPlacementNotes deve informar em quantos scrolls o formulário aparece e se há versão sticky.
-7. ctaPlacementNotes garante repetição literal do CTA aprovado.
-8. consistencyChecks precisa incluir CTA_MATCH e EXPERIENCE_CONTINUITY.
-9. Cada bloco deve preencher surfaceSpec com surfaceToken, style, contrastMode e notes.
-10. Definir formSpec como contrato do formulário com campos, obrigatoriedade, consent e successState.
-11. Não transformar o layout em HTML final; esta etapa define apenas ordem, hierarquia e slots de mídia.
-12. Não fixar nicho, promessa, oferta ou entregáveis no template.
+CASE_DATA
+{{CASE_DATA_BLOCK}}
 
-Formato obrigatório (JSON):
+OUTPUT_CONTRACT
+Responda em JSON válido e estritamente aderente ao artefato `landingPageWireframe`.
+Campos obrigatórios:
 - pageGoal
 - variantLayoutId
 - messageMatchSummary

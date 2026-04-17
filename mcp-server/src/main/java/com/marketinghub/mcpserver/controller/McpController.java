@@ -79,7 +79,8 @@ public class McpController {
             return error(id, -32602, "Invalid params");
         }
 
-        String toolName = String.valueOf(params.getOrDefault("name", ""));
+        Object toolNameValue = params.get("name");
+        String toolName = toolNameValue == null ? "" : String.valueOf(toolNameValue);
         if (!"db_health".equals(toolName)) {
             return error(id, -32602, "Unknown tool: " + toolName);
         }

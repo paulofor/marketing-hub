@@ -79,6 +79,7 @@ public class ExperimentPipelineOpenAiClient {
             "DELIVERABLES_JSON",
             "PROOF_ASSET_JSON",
             "CASE_NOTES");
+    private static final String CASE_DATA_BLOCK_KEY = "CASE_DATA_BLOCK";
 
     private static final Pattern FORM_FIELD_BLOCK_PATTERN = Pattern.compile(
             "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
@@ -502,7 +503,21 @@ public class ExperimentPipelineOpenAiClient {
         for (String key : TEMPLATE_VARIABLE_KEYS) {
             variables.put(key, readTemplateVariable(job, key));
         }
+        variables.put(CASE_DATA_BLOCK_KEY, buildCaseDataBlock(variables));
         return variables;
+    }
+
+    private String buildCaseDataBlock(Map<String, String> variables) {
+        StringBuilder builder = new StringBuilder("[CASE_DATA_BEGIN]\n");
+        for (String key : TEMPLATE_VARIABLE_KEYS) {
+            String value = variables.get(key);
+            builder.append(key)
+                    .append(": ")
+                    .append(StringUtils.hasText(value) ? value.trim() : "")
+                    .append('\n');
+        }
+        builder.append("[CASE_DATA_END]");
+        return builder.toString();
     }
 
     private String readTemplateVariable(ExperimentPipelineJobDto job, String key) {

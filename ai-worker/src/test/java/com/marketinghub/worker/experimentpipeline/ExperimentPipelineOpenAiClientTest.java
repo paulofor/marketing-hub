@@ -60,7 +60,10 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(1).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt original de angulo");
-        assertThat(userPrompt).contains("Crie a base estratégica de uma campanha Meta Ads + landing page para este produto.");
+        assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
+        assertThat(userPrompt).contains("CASE_DATA");
+        assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
+        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
         assertThat(userPrompt).contains("primaryPromise,");
         assertThat(userPrompt).contains("proofSummary,");
         assertThat(userPrompt).contains("singleMindedPromise,");
@@ -137,7 +140,9 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt da landing");
-        assertThat(userPrompt).contains("Continuar exatamente a promessa do anúncio clicado");
+        assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
+        assertThat(userPrompt).contains("CASE_DATA");
+        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
         assertThat(userPrompt).contains("messageMatchSource,");
         assertThat(userPrompt).contains("hero {");
         assertThat(userPrompt).contains("bodySections[]");
@@ -179,18 +184,60 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt do wireframe");
+        assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
+        assertThat(userPrompt).contains("CASE_DATA");
+        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
         assertThat(userPrompt).contains("variantLayoutId");
         assertThat(userPrompt).contains("form-first");
         assertThat(userPrompt).contains("proof-first");
         assertThat(userPrompt).contains("mobilePriorityScore");
         assertThat(userPrompt).contains("dropOffRisk");
-        assertThat(userPrompt).contains("sectionDependsOn");
+        assertThat(userPrompt).contains("sectionOrder");
         assertThat(userPrompt).contains("messageMatchSummary");
         assertThat(userPrompt).contains("ctaSlot");
-        assertThat(userPrompt).contains("variação intencional de cores de fundo entre seções");
-        assertThat(userPrompt).contains("equilíbrio visual entre texto e imagem");
         assertThat(userPrompt).contains("backgroundColorStrategy");
         assertThat(userPrompt).contains("textImageBalanceNotes");
+    }
+
+    @Test
+    void injectsStructuredCaseDataBlockIntoSectionTemplate() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                121L,
+                "campaign-angle",
+                "gpt-5.2",
+                """
+                        NICHE_NAME: E-commerce
+                        PRIMARY_CTA_LABEL: Quero minha análise
+                        """,
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt com variaveis"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).contains("CASE_DATA");
+        assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
+        assertThat(userPrompt).contains("NICHE_NAME: E-commerce");
+        assertThat(userPrompt).contains("PRIMARY_CTA_LABEL: Quero minha análise");
+        assertThat(userPrompt).contains("[CASE_DATA_END]");
     }
 
     @Test

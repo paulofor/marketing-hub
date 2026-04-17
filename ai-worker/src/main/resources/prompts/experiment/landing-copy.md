@@ -11,7 +11,7 @@ Regras fixas da etapa:
 3. `hero.ctaLabel`, `primaryCTA` e todos os `ctaBlocks` devem manter o mesmo CTA aprovado.
 4. `bodySections` deve ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta.
 5. `faq` deve conter no mínimo três perguntas com `objectionTag`.
-6. `consistencyChecks` deve incluir CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES.
+6. `consistencyChecks` deve incluir CTA_MATCH, PROMISE_MATCH, GOOGLE_LANDING_BEST_PRACTICES, DELIVERABLE_CLARITY, DELIVERABLE_TO_OUTCOME_LINK e CTA_SPECIFICITY.
 7. `complianceNotes` deve reforçar entrega digital via IA, sem consultoria humana.
 8. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 

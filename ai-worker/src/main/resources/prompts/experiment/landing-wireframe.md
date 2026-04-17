@@ -12,7 +12,7 @@ Regras fixas da etapa:
 4. Cada seção deve incluir `mobilePriorityScore`, `dropOffRisk`, `mediaSlot` e `compositionNotes`.
 5. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
 6. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
-7. `consistencyChecks` deve incluir CTA_MATCH e EXPERIENCE_CONTINUITY.
+7. `consistencyChecks` deve incluir CTA_MATCH, EXPERIENCE_CONTINUITY e SECTION_THEME_VARIATION.
 8. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
 9. `backgroundColorStrategy` deve orientar variação intencional de cores de fundo entre seções para melhorar escaneabilidade.
 10. Não converter para HTML final nesta etapa.

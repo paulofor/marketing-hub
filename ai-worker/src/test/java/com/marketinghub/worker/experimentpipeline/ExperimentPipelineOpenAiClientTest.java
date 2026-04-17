@@ -744,8 +744,198 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).doesNotContain("artifact_target:");
     }
 
+    @Test
+    void computesPhase4ChecksWithFailForGenericOfferAndVagueCta() throws Exception {
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageCopy", Map.of(
+                        "pageGoal", "Capturar lead",
+                        "messageMatchSource", "anuncio",
+                        "messageMatchNotes", "continuidade simples",
+                        "primaryCTA", "Saiba mais",
+                        "complianceNotes", "Entrega digital",
+                        "hero", Map.of("headline", "Receba um kit", "ctaLabel", "Saiba mais"),
+                        "bodySections", List.of(Map.of(
+                                "sectionId", "offer-1",
+                                "title", "Kit completo",
+                                "summary", "ativos digitais",
+                                "copy", "Receba um kit com ativos digitais")),
+                        "ctaBlocks", List.of(Map.of("ctaLabel", "Saiba mais")),
+                        "faq", List.of(),
+                        "consistencyChecks", List.of()
+                )));
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                30L,
+                "landing-page-copy",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [{"role": "user", "content": "Prompt copy"}]
+                        }
+                        """,
+                Instant.now()));
+
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> copy = (Map<String, Object>) content.get("landingPageCopy");
+        assertThat(readCheckStatus(copy, "DELIVERABLE_CLARITY")).isEqualTo("FAIL");
+        assertThat(readCheckStatus(copy, "CTA_SPECIFICITY")).isEqualTo("FAIL");
+        assertThat(readCheckStatus(copy, "ARTIFACT_SCHEMA_COMPATIBILITY")).isEqualTo("WARN");
+    }
+
+    @Test
+    void computesPhase4ChecksWithPassForConcreteCopy() throws Exception {
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageCopy", Map.of(
+                        "pageGoal", "Gerar leads com preview",
+                        "messageMatchSource", "headline anuncio",
+                        "messageMatchNotes", "os templates ajudam a reduzir retrabalho e aumentar conversão",
+                        "primaryCTA", "Quero receber a prévia do checklist",
+                        "complianceNotes", "Entrega 100% digital",
+                        "hero", Map.of("headline", "Checklist + template", "ctaLabel", "Quero receber a prévia do checklist"),
+                        "bodySections", List.of(Map.of(
+                                "sectionId", "offer-1",
+                                "title", "O que você recebe",
+                                "summary", "Checklist, template e roteiro para aumentar conversão",
+                                "copy", "Você recebe checklist, template e roteiro para reduzir erros e aumentar conversão.",
+                                "bullets", List.of("Checklist de oferta", "Template de anúncio", "Roteiro de revisão"))),
+                        "ctaBlocks", List.of(Map.of("ctaLabel", "Quero receber a prévia do checklist")),
+                        "faq", List.of(Map.of("question", "?", "answer", "!", "objectionTag", "tempo")),
+                        "consistencyChecks", List.of()
+                )));
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                31L,
+                "landing-page-copy",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [{"role": "user", "content": "Prompt copy"}]
+                        }
+                        """,
+                Instant.now()));
+
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> copy = (Map<String, Object>) content.get("landingPageCopy");
+        assertThat(readCheckStatus(copy, "DELIVERABLE_CLARITY")).isEqualTo("PASS");
+        assertThat(readCheckStatus(copy, "DELIVERABLE_TO_OUTCOME_LINK")).isEqualTo("PASS");
+        assertThat(readCheckStatus(copy, "CTA_SPECIFICITY")).isEqualTo("PASS");
+    }
+
+    @Test
+    void computesPhase4ChecksWithWarnAndFailAcrossWireframeImagePlanningAndHtml() throws Exception {
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageWireframe", Map.of(
+                        "pageGoal", "captura",
+                        "variantLayoutId", "form-first",
+                        "sectionOrder", List.of(
+                                Map.of("sectionId", "hero", "surfaceSpec", Map.of("surfaceToken", "base", "style", "solid", "contrastMode", "normal")),
+                                Map.of("sectionId", "proof", "surfaceSpec", Map.of("surfaceToken", "base", "style", "solid", "contrastMode", "normal")),
+                                Map.of("sectionId", "cta", "surfaceSpec", Map.of("surfaceToken", "base", "style", "solid", "contrastMode", "normal"))),
+                        "consistencyChecks", List.of()
+                )));
+        ExperimentPipelineOpenAiClient wireframeClient = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+        ExperimentPipelineJobCompletionPayload wireframePayload = wireframeClient.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 32L, "landing-page-wireframe", "gpt-5.2", "prompt",
+                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
+        Map<String, Object> wireframeContent = MAPPER.readValue(wireframePayload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> wireframe = (Map<String, Object>) wireframeContent.get("landingPageWireframe");
+        assertThat(readCheckStatus(wireframe, "SECTION_THEME_VARIATION")).isEqualTo("FAIL");
+
+        String imageText = MAPPER.writeValueAsString(Map.of(
+                "landingPageImagePlanning", Map.of(
+                        "pageGoal", "preview",
+                        "images", List.of(Map.of(
+                                "sectionId", "proof",
+                                "sectionName", "Prova",
+                                "imageRole", "preview",
+                                "conversionRole", "proof",
+                                "imagePrompt", "imagem simples",
+                                "supportingElements", List.of())),
+                        "consistencyChecks", List.of()
+                )));
+        ExperimentPipelineOpenAiClient imageClient = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), imageText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+        ExperimentPipelineJobCompletionPayload imagePayload = imageClient.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 33L, "landing-page-image-planning", "gpt-5.2", "prompt",
+                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
+        Map<String, Object> imageContent = MAPPER.readValue(imagePayload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> imagePlanning = (Map<String, Object>) imageContent.get("landingPageImagePlanning");
+        assertThat(readCheckStatus(imagePlanning, "PREVIEW_CONCRETENESS")).isEqualTo("FAIL");
+
+        String htmlText = MAPPER.writeValueAsString(Map.of(
+                "landingPageHtml", Map.of(
+                        "htmlDocument", """
+                                <html><body>
+                                  <section class="surface-base" data-surface-token="base"></section>
+                                  <section class="surface-base" data-surface-token="base"></section>
+                                  <form id="lead-capture-primary"></form>
+                                </body></html>
+                                """,
+                        "summary", "ok",
+                        "formSpec", Map.of("formId", "lead-capture-primary"),
+                        "imagePlacementContract", Map.of("requiredDataAttributes", List.of()),
+                        "consistencyChecks", List.of()
+                )));
+        ExperimentPipelineOpenAiClient htmlClient = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+        ExperimentPipelineJobCompletionPayload htmlPayload = htmlClient.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 34L, "landing-page-html", "gpt-5.2", "prompt",
+                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
+        Map<String, Object> htmlContent = MAPPER.readValue(htmlPayload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
+        assertThat(readCheckStatus(html, "SECTION_THEME_VARIATION")).isEqualTo("FAIL");
+        assertThat(readCheckStatus(html, "PREVIEW_CONCRETENESS")).isEqualTo("WARN");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return capturePayloadExchange(payloadRef, "{\"content\":\"ok\"}");
+    }
+
+    @SuppressWarnings("unchecked")
+    private String readCheckStatus(Map<String, Object> artifact, String checkName) {
+        Object checksNode = artifact.get("consistencyChecks");
+        if (!(checksNode instanceof List<?> checks)) {
+            return "";
+        }
+        for (Object check : checks) {
+            if (check instanceof Map<?, ?> map && checkName.equals(String.valueOf(map.get("check")))) {
+                return String.valueOf(map.get("status"));
+            }
+        }
+        return "";
     }
 
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef,

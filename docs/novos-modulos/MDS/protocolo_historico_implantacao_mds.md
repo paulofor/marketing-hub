@@ -494,3 +494,67 @@ O MDS passa a existir como serviço executável independente em JAR/Container, i
 **Próximo passo sugerido:**
 
 Implementar as etapas de discovery real (formulação de perguntas, busca em fontes externas, deduplicação e análise de evidência) mantendo persistência exclusivamente via backend.
+
+## [2026-04-17] — Etapa: sprint 2 concluída com bootstrap do módulo MDS e loop básico
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+A Sprint 2 foi finalizada com o módulo `mds/` operacional no fluxo mínimo de orquestração com backend, incluindo ajustes de lifecycle e testes iniciais de contrato.
+
+**Objetivo da etapa:**
+
+Concluir a integração básica MDS ↔ backend para consumo de requests pendentes com claim/heartbeat/complete/fail, sem antecipar o pipeline científico da Sprint 3.
+
+**O que foi implementado:**
+
+- Endurecimento do lifecycle no backend: `heartbeat`, `complete` e `fail` restritos a requests em `IN_PROGRESS`.
+- Testes de serviço no backend cobrindo transições de estado válidas e rejeição de transição inválida.
+- Contract tests iniciais no controller interno do backend cobrindo contratos de `claim`, `lineage` e `publish-batch`.
+- Testes de loop no módulo MDS validando fluxo de sucesso (claim + heartbeat + execute + complete) e fluxo de falha controlada (claim + heartbeat + fail).
+
+**Arquivos alterados/criados:**
+
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsRequestService.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/service/MdsRequestServiceTest.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
+- mds/src/test/java/com/marketinghub/mds/service/MdsLoopRunnerTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- `nenhuma`
+
+**APIs / endpoints / contratos afetados:**
+
+- `POST /api/internal/mds/requests/{id}/claim`
+- `POST /api/internal/mds/requests/{id}/heartbeat`
+- `POST /api/internal/mds/requests/{id}/complete`
+- `POST /api/internal/mds/requests/{id}/fail`
+- `POST /api/internal/mds/artifacts/publish-batch`
+- `POST /api/internal/mds/artifacts/{id}/lineage`
+
+**Artefatos / schemas impactados:**
+
+- `nenhum`
+
+**Testes executados:**
+
+- `cd backend/ads-service && mvn -Dtest=MdsRequestServiceTest,MdsInternalControllerContractTest test`
+- `cd mds && mvn test`
+
+**Resultado observado:**
+
+O módulo MDS processa requests pendentes no ciclo mínimo de orquestração e o backend aplica transições de estado mais seguras para o lifecycle do request.
+
+**Limitações / pendências:**
+
+- Sem implementação de discovery real (question builder, busca externa, deduplicação, triagem e análise de evidências).
+- Sem persistência operacional de `mechanismEvidenceSearch` e `sourceDocument`.
+- Sem hardening de observabilidade/retries avançados.
+
+**Próximo passo sugerido:**
+
+Iniciar Sprint 3 com formulação de perguntas de mecanismo e busca estruturada em fontes externas permitidas, mantendo persistência exclusivamente via backend.

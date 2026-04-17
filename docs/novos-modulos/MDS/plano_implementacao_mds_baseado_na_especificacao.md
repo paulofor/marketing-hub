@@ -429,29 +429,30 @@ Criar o módulo `mds/` e conectá-lo ao backend para consumir requests reais.
 - ainda sem fontes externas operacionais.
 
 ### Registro do Codex ao final da sprint
-**Status:** `PARCIAL`
+**Status:** `CONCLUIDO`
 
-**O que foi concluído:**
-- Criação do módulo independente `mds/` na raiz do repositório com projeto Maven Spring Boot completo (`pom.xml`, `Dockerfile`, `README.md`, `application.yml`, código e testes).
-- Bootstrap do serviço (`MdsApplication`), configuração (`MdsProperties`, `BackendClientConfig`) e health endpoint em `/internal/mechanism-discovery/actuator/health`.
-- Implementação de cliente HTTP para backend interno e loop básico de processamento com polling de pendências + claim + heartbeat + complete/fail.
+**Concluído:**
+- Módulo `mds/` bootstrapado como serviço Spring Boot independente com `pom.xml`, `Dockerfile`, `README.md`, `application.yml`, health endpoint e cliente HTTP para o backend interno.
+- Loop básico de processamento ativo com polling de pendências, `claim`, `heartbeat`, execução de pipeline mínimo e finalização com `complete` ou `fail` controlado.
+- Ajuste fino no backend para lifecycle de requests: `heartbeat`, `complete` e `fail` agora exigem status `IN_PROGRESS` para evitar transições inválidas.
+- Contract tests iniciais adicionados para endpoints internos do backend (`claim`, `lineage`, `publish-batch`) e testes de loop no módulo MDS para o fluxo claim/heartbeat/complete/fail.
 
-**O que ficou pendente para a próxima sprint:**
-- Discovery real (question builder, busca em fontes externas, deduplicação, screening e análise de evidências).
-- Implementação completa dos componentes de pipeline científico previstos no plano.
-- Hardening de observabilidade e retries avançados.
+**Pendências para a próxima sprint:**
+- Discovery real (formulação de pergunta, busca estruturada, normalização de `sourceDocument`, classificação de acesso e permissões).
+- Persistência operacional de `mechanismEvidenceSearch` e `sourceDocument` em fluxo real.
+- Hardening de observabilidade, retries avançados e métricas de pipeline científico.
 
 **Riscos / observações:**
-- O loop atual publica artefatos stub para validar o acoplamento com o backend sem acesso direto ao banco.
-- Contratos HTTP dependem dos endpoints internos do backend para persistência e lifecycle.
+- O pipeline do Sprint 2 continua stubado para artefatos (sem busca científica real), intencionalmente limitado ao contrato de orquestração.
+- A estabilidade do loop depende da disponibilidade dos endpoints internos do backend para lifecycle e publicação.
 
-**Arquivos alterados/criados:**
-- mds/pom.xml
-- mds/Dockerfile
-- mds/README.md
-- mds/src/main/resources/application.yml
-- mds/src/main/java/com/marketinghub/mds/*
-- mds/src/test/java/com/marketinghub/mds/*
+**Arquivos alterados:**
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsRequestService.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/service/MdsRequestServiceTest.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
+- mds/src/test/java/com/marketinghub/mds/service/MdsLoopRunnerTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
 
 ---
 

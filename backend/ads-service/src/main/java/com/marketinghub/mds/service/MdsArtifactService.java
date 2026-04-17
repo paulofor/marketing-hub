@@ -10,6 +10,7 @@ import com.marketinghub.mds.dto.MdsArtifactPublishBatchRequest;
 import com.marketinghub.mds.dto.MdsArtifactPublishBatchResponse;
 import com.marketinghub.mds.dto.MdsLineageCreateRequest;
 import com.marketinghub.mds.dto.MdsLineageResponse;
+import com.marketinghub.mds.dto.MdsRecommendedMechanismResponse;
 import com.marketinghub.mds.repository.MdsArtifactLineageEdgeRepository;
 import com.marketinghub.mds.repository.MdsArtifactRecordRepository;
 import com.marketinghub.mds.repository.MdsRequestRepository;
@@ -24,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MdsArtifactService {
@@ -79,6 +81,23 @@ public class MdsArtifactService {
         return createLineage(request.parentArtifactId(), request.childArtifactId(), request.relationType());
     }
 
+    @Transactional(readOnly = true)
+    public MdsRecommendedMechanismResponse getRecommendedMechanismByRequest(Long requestId) {
+        MdsArtifactRecord record = artifactRecordRepository
+                .findFirstByRequestIdAndArtifactTypeOrderByCreatedAtDescIdDesc(requestId, "mechanismSpec")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "recommended mechanism not found"));
+
+        return new MdsRecommendedMechanismResponse(
+                requestId,
+                record.getId(),
+                record.getArtifactType(),
+                record.getSchemaVersion(),
+                record.getVersion(),
+                record.getStatus().name(),
+                readContent(record.getContentJson())
+        );
+    }
+
     private MdsLineageResponse createLineage(Long parentArtifactId, Long childArtifactId, String relationType) {
         MdsArtifactRecord parent = artifactRecordRepository.findById(parentArtifactId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "parent artifact not found"));
@@ -127,6 +146,15 @@ public class MdsArtifactService {
             return HexFormat.of().formatHex(raw);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 algorithm unavailable", e);
+        }
+    }
+
+    private Map<String, Object> readContent(String contentJson) {
+        try {
+            return objectMapper.readValue(contentJson, new com.fasterxml.jackson.core.type.TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "invalid artifact content json");
         }
     }
 }

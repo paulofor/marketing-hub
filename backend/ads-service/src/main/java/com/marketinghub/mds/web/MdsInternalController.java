@@ -88,6 +88,11 @@ public class MdsInternalController {
         return artifactService.createLineage(request);
     }
 
+    @GetMapping("/requests/{id}/recommended-mechanism")
+    public MdsRecommendedMechanismResponse getRecommendedMechanism(@PathVariable Long id) {
+        return artifactService.getRecommendedMechanismByRequest(id);
+    }
+
     @GetMapping("/health")
     public Map<String, String> health() {
         return Map.of("status", "ok", "module", "mds-backend-orchestration");

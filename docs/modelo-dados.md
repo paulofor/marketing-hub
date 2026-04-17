@@ -243,9 +243,6 @@ experiment|deliverables_to_generate|int(11)|YES|NULL||
 experiment|creative_approved|bit(1)|NO|NULL||
 experiment|facebook_page_id|bigint(20)|YES|NULL|MUL|
 experiment|facebook_instant_form_id|bigint(20)|YES|NULL|MUL|
-experiment|facebook_pixel_id|varchar(64)|YES|NULL||
-experiment|facebook_pixel_code|longtext|YES|NULL||
-experiment|facebook_pixel_created_at|timestamp|YES|NULL||
 experiment|facebook_release_requested_at|datetime|YES|NULL||
 experiment|instagram_account_id|bigint(20)|YES|NULL|MUL|
 experiment|follow_up_action_url|varchar(512)|YES|NULL||
@@ -808,6 +805,9 @@ market_niche|cost|decimal(10,2)|YES|NULL||
 market_niche|expense|decimal(10,2)|YES|NULL||
 market_niche|total_cost|decimal(12,2)|YES|NULL||
 market_niche|total_revenue|decimal(12,2)|YES|NULL||
+market_niche|facebook_pixel_id|varchar(64)|YES|NULL||
+market_niche|facebook_pixel_code|longtext|YES|NULL||
+market_niche|facebook_pixel_created_at|timestamp|YES|NULL||
 market_niche|detailed_descriptions_to_generate|int(11)|YES|NULL||
 market_niche|detailed_description_model|varchar(191)|YES|NULL||
 market_niche|hypothesis_detailed_description_id|bigint(20)|YES|NULL|MUL|
@@ -1219,9 +1219,9 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
   - `creative_approved`: Campo usado para armazenar informações de **creative approved**. (tipo `bit(1)`; obrigatório).
   - `facebook_page_id`: Chave de referência para o registro relacionado de **facebook_page**. (tipo `bigint(20)`; opcional; chave `MUL`).
   - `facebook_instant_form_id`: Chave de referência para o registro relacionado de **facebook_instant_form**. (tipo `bigint(20)`; opcional; chave `MUL`).
-  - `facebook_pixel_id`: Chave de referência para o registro relacionado de **facebook_pixel**. (tipo `varchar(64)`; opcional).
-  - `facebook_pixel_code`: Campo usado para armazenar informações de **facebook pixel code**. (tipo `longtext`; opcional).
-  - `facebook_pixel_created_at`: Campo usado para armazenar informações de **facebook pixel created at**. (tipo `timestamp`; opcional).
+  - `facebook_pixel_id`: Identificador do pixel compartilhado pelo nicho nos experimentos associados. (tipo `varchar(64)`; opcional).
+  - `facebook_pixel_code`: Último snippet retornado pela Meta para o pixel do nicho. (tipo `longtext`; opcional).
+  - `facebook_pixel_created_at`: Momento em que o pixel do nicho foi registrado junto à Meta. (tipo `timestamp`; opcional).
   - `facebook_release_requested_at`: Instante em que o operador liberou o experimento para o Facebook Ads Worker. (tipo `datetime`; opcional).
   - `instagram_account_id`: Chave de referência para o registro relacionado de **instagram_account**. (tipo `bigint(20)`; opcional; chave `MUL`).
   - `follow_up_action_url`: Campo usado para armazenar informações de **follow up ação url**. (tipo `varchar(512)`; opcional).

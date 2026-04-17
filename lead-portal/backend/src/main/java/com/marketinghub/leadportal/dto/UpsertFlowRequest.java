@@ -6,6 +6,7 @@ import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.util.StringUtils;
@@ -18,6 +19,12 @@ public class UpsertFlowRequest {
     private String description;
 
     private String customFormHtml;
+
+    private String facebookPixelId;
+
+    private String facebookPixelCode;
+
+    private Instant facebookPixelCreatedAt;
 
     private String model;
 
@@ -65,6 +72,30 @@ public class UpsertFlowRequest {
 
     public void setCustomFormHtml(String customFormHtml) {
         this.customFormHtml = customFormHtml;
+    }
+
+    public String getFacebookPixelId() {
+        return facebookPixelId;
+    }
+
+    public void setFacebookPixelId(String facebookPixelId) {
+        this.facebookPixelId = facebookPixelId;
+    }
+
+    public String getFacebookPixelCode() {
+        return facebookPixelCode;
+    }
+
+    public void setFacebookPixelCode(String facebookPixelCode) {
+        this.facebookPixelCode = facebookPixelCode;
+    }
+
+    public Instant getFacebookPixelCreatedAt() {
+        return facebookPixelCreatedAt;
+    }
+
+    public void setFacebookPixelCreatedAt(Instant facebookPixelCreatedAt) {
+        this.facebookPixelCreatedAt = facebookPixelCreatedAt;
     }
 
     public String getModel() {

@@ -74,7 +74,7 @@ class ExperimentRepositoryTest {
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         java.time.Instant releaseTime = java.time.Instant.now();
 
-        Experiment planned = repository.save(Experiment.builder()
+        repository.save(Experiment.builder()
                 .niche(niche)
                 .hypothesisRef(hyp)
                 .name("Pixel planned")
@@ -85,7 +85,7 @@ class ExperimentRepositoryTest {
                 .facebookReleaseRequestedAt(releaseTime)
                 .build());
 
-        Experiment running = repository.save(Experiment.builder()
+        repository.save(Experiment.builder()
                 .niche(niche)
                 .hypothesisRef(hyp)
                 .name("Pixel running")
@@ -106,28 +106,16 @@ class ExperimentRepositoryTest {
                 .creativeApproved(true)
                 .build());
 
-        repository.save(Experiment.builder()
-                .niche(niche)
-                .hypothesisRef(hyp)
-                .name("With pixel")
-                .journeyTemplate(template)
-                .platform(ExperimentPlatform.FACEBOOK)
-                .status(ExperimentStatus.PLANNED)
-                .creativeApproved(true)
-                .facebookReleaseRequestedAt(releaseTime)
-                .facebookPixelId("12345")
-                .build());
-
         entityManager.flush();
         entityManager.clear();
 
-        java.util.List<Experiment> result = repository.findReadyForPixel(
+        java.util.List<MarketNiche> result = nicheRepository.findReadyForPixel(
                 java.util.List.of(ExperimentStatus.PLANNED, ExperimentStatus.RUNNING, ExperimentStatus.PAUSED),
                 ExperimentPlatform.FACEBOOK
         );
 
         assertThat(result)
-                .extracting(Experiment::getId)
-                .containsExactlyInAnyOrder(planned.getId(), running.getId());
+                .extracting(MarketNiche::getId)
+                .containsExactly(niche.getId());
     }
 }

@@ -12,6 +12,9 @@ public class MarketNicheDto {
     private Long id;
     private String name;
     private String description;
+    private String facebookPixelId;
+    private String facebookPixelCode;
+    private Instant facebookPixelCreatedAt;
     private String interestCategory;
     private String roleCategory;
     private String demandVolume;

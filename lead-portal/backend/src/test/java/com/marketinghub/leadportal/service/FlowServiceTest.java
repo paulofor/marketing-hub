@@ -95,7 +95,7 @@ class FlowServiceTest {
                 entity.getImagePromptTemplate(),
                 entity.getImageBatchSize(),
                 List.of(optimizedQuestion),
-                null);
+                null, null, null, null);
 
         when(flowRepository.findById("legacy-flow")).thenReturn(Optional.of(entity));
         when(flowAssetService.optimizeAssets(any(Flow.class))).thenReturn(optimizedFlow);

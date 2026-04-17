@@ -32,15 +32,16 @@ public class FacebookPixelConversionService {
                     p.created_at,
                     exp.id AS experiment_id,
                     exp.name AS experiment_name,
-                    exp.facebook_pixel_id
+                    mn.facebook_pixel_id AS niche_pixel_id
                 FROM lead_portal_purchase p
                 JOIN flow_submission_image_package pack ON pack.payment_purchase_id = p.id
                 JOIN flow_submissions sub ON sub.id = pack.submission_id
                 JOIN lead_portal_flow flow ON flow.slug = sub.flow_slug
                 JOIN experiment exp ON exp.lead_portal_flow_id = flow.id
+                JOIN market_niche mn ON mn.id = exp.niche_id
                 WHERE p.status = 'APPROVED'
                   AND p.pixel_conversion_recorded_at IS NULL
-                  AND exp.facebook_pixel_id IS NOT NULL
+                  AND mn.facebook_pixel_id IS NOT NULL
                 ORDER BY p.created_at ASC
                 LIMIT ?
                 """;
@@ -59,7 +60,7 @@ public class FacebookPixelConversionService {
                 rs.getLong("purchase_id"),
                 (Long) rs.getObject("experiment_id"),
                 rs.getString("experiment_name"),
-                rs.getString("facebook_pixel_id"),
+                rs.getString("niche_pixel_id"),
                 rs.getString("mp_payment_id"),
                 rs.getBigDecimal("amount"),
                 rs.getString("currency"),

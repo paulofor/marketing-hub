@@ -162,6 +162,9 @@ aggregate many associated application ideas.
 - `offers` LONGTEXT
 - `cost` DECIMAL(10,2)
 - `expense` DECIMAL(10,2)
+- `facebook_pixel_id` VARCHAR(64)
+- `facebook_pixel_code` LONGTEXT
+- `facebook_pixel_created_at` TIMESTAMP
 - `hypotheses_to_generate` INT
 - `audiences_to_generate` INT
 - `base_segmentation` LONGTEXT
@@ -279,9 +282,6 @@ triggering ad set generation.
 - `hypothesis` VARCHAR(255)
 - `facebook_page_id` BIGINT
 - `facebook_instant_form_id` BIGINT
-- `facebook_pixel_id` VARCHAR(64)
-- `facebook_pixel_code` LONGTEXT
-- `facebook_pixel_created_at` TIMESTAMP
 - `facebook_release_requested_at` DATETIME
 - `funnel_reset_at` DATETIME(6)
 - `follow_up_action_url` VARCHAR(512)

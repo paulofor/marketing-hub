@@ -6,6 +6,7 @@ import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowQuestion;
 import com.marketinghub.leadportal.model.FlowQuestionType;
 import com.marketinghub.leadportal.model.SimpleFormStyleDefinition;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.util.StringUtils;
@@ -18,7 +19,10 @@ public record FlowResponse(
         @JsonInclude(JsonInclude.Include.NON_NULL)
         CustomFormRenderMode customFormRenderMode,
         List<QuestionResponse> questions,
-        SimpleFormStyleResponse simpleFormStyle) {
+        SimpleFormStyleResponse simpleFormStyle,
+        String facebookPixelId,
+        String facebookPixelCode,
+        Instant facebookPixelCreatedAt) {
 
     public static FlowResponse from(Flow flow) {
         List<QuestionResponse> questions = flow.questions() == null
@@ -37,7 +41,10 @@ public record FlowResponse(
                 flow.customFormHtml(),
                 determineCustomFormRenderMode(flow),
                 questions,
-                style);
+                style,
+                flow.facebookPixelId(),
+                flow.facebookPixelCode(),
+                flow.facebookPixelCreatedAt());
     }
 
     private static CustomFormRenderMode determineCustomFormRenderMode(Flow flow) {

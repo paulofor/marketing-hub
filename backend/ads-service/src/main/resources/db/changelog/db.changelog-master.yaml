@@ -72,6 +72,9 @@ databaseChangeLog:
       file: changesets/2037-03-15-proof-offer-normalization.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2037-04-18-niche-facebook-pixel.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-03-20-lead-portal-checkout-tracking.yaml
       relativeToChangelogFile: true
   - include:

@@ -1,0 +1,92 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2037-04-18-01-niche-facebook-pixel
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+      changes:
+        - addColumn:
+            tableName: market_niche
+            columns:
+              - column:
+                  name: facebook_pixel_id
+                  type: VARCHAR(64)
+              - column:
+                  name: facebook_pixel_code
+                  type: LONGTEXT
+              - column:
+                  name: facebook_pixel_created_at
+                  type: TIMESTAMP
+        - sql:
+            comment: "backfill facebook pixel data from experiments"
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE market_niche mn
+              JOIN experiment e ON e.niche_id = mn.id
+              SET
+                  mn.facebook_pixel_id = e.facebook_pixel_id,
+                  mn.facebook_pixel_code = e.facebook_pixel_code,
+                  mn.facebook_pixel_created_at = e.facebook_pixel_created_at
+              WHERE mn.facebook_pixel_id IS NULL
+                AND e.facebook_pixel_id IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1 FROM experiment newer
+                    WHERE newer.niche_id = e.niche_id
+                      AND newer.facebook_pixel_id IS NOT NULL
+                      AND (
+                          COALESCE(newer.facebook_pixel_created_at, '1970-01-01 00:00:00') > COALESCE(e.facebook_pixel_created_at, '1970-01-01 00:00:00')
+                          OR (
+                              COALESCE(newer.facebook_pixel_created_at, '1970-01-01 00:00:00') = COALESCE(e.facebook_pixel_created_at, '1970-01-01 00:00:00')
+                              AND newer.id > e.id
+                          )
+                      )
+                );
+  - changeSet:
+      id: 2037-04-18-02-niche-facebook-pixel-drop-code
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        columnExists:
+          tableName: experiment
+          columnName: facebook_pixel_code
+      changes:
+        - dropColumn:
+            columnName: facebook_pixel_code
+            tableName: experiment
+  - changeSet:
+      id: 2037-04-18-03-niche-facebook-pixel-drop-created-at
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        columnExists:
+          tableName: experiment
+          columnName: facebook_pixel_created_at
+      changes:
+        - dropColumn:
+            columnName: facebook_pixel_created_at
+            tableName: experiment
+  - changeSet:
+      id: 2037-04-18-04-niche-facebook-pixel-drop-id
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        dbms:
+          type: mysql
+        columnExists:
+          tableName: experiment
+          columnName: facebook_pixel_id
+      changes:
+        - dropColumn:
+            columnName: facebook_pixel_id
+            tableName: experiment

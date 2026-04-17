@@ -41,6 +41,17 @@ public class MarketNiche {
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
+    @Column(name = "facebook_pixel_id", length = 64)
+    private String facebookPixelId;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "facebook_pixel_code", columnDefinition = "LONGTEXT")
+    private String facebookPixelCode;
+
+    @Column(name = "facebook_pixel_created_at")
+    private Instant facebookPixelCreatedAt;
+
     /** Categoria principal de interesse associada ao nicho. */
     private String interestCategory;
 

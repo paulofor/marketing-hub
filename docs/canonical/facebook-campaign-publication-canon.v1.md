@@ -25,7 +25,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | Regra | Dono | Consumidores |
 | --- | --- | --- |
 | Invariantes de prontidão (`creative`, `lead_portal_flow`, `targeting_element`) | Backend `ads-service` + domínio de experimentos | Frontend (cartão checklist), `facebook-ads-worker`, `ai-worker` |
-| Fluxo de liberação (`facebook_release_requested_at`, `status`, `facebook_pixel_id`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
+| Fluxo de liberação (`facebook_release_requested_at`, `status`, `market_niche.facebook_pixel_id`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
 | Funil de 9 etapas (`experiment_campaign_metric`, eventos do Lead Portal e checkout) | Backend `ads-service` + `lead-portal` | Frontend (aba Funil), operadores, times de mídia |
 
 ## 4. Entidades e fontes de verdade
@@ -35,7 +35,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | `experiment.creative_approved`, `creative.status` | Tabelas do schema `marketinghubdb` | Ao menos um `creative` do experimento precisa estar em `READY` ou `IN_PRODUCTION` após aprovação. |
 | `lead_portal_flow.experiment_id` | `marketinghubdb.lead_portal_flow` | O fluxo precisa estar vinculado ao experimento ativo para liberar o portal em `https://oportunidadebrasil.shop/flows/{slug}` (domínio apontado para 191.252.120.96). |
 | `targeting_element` (interest, job_title, behavior) | `marketinghubdb.targeting_element` | Deve haver pelo menos um elemento `APPROVED` de cada tipo **ou** o playbook de ad sets precisa estar concluído. |
-| `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
+| `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
 | `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher o funil e o custo por etapa. |
 
 ## 5. Bloqueios canônicos de publicação (diagnóstico do worker)
@@ -67,7 +67,7 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 2. **Fila de publicação** – o worker consome `/api/facebook-campaigns/experiments-ready` apenas para experimentos com `status='PLANNED'` **e** `facebook_release_requested_at` preenchido. Alterar o status manualmente não substitui o botão.
 3. **Reprocessamentos** – apertar o botão novamente gera novo carimbo, limpa o funil e recoloca o experimento na fila (útil após reset de campanhas).
 4. **Persistência do carimbo** – `facebook_release_requested_at` permanece preenchido quando o status muda para `RUNNING` ou `PAUSED`, preservando o filtro do funil. Só muda no próximo clique.
-5. **Pixel worker** – a mesma liberação coloca o experimento na fila de criação de pixel enquanto `facebook_pixel_id` estiver vazio. O worker consulta apenas experimentos com `facebook_release_requested_at` definido, `creative_approved=true`, `status IN ('PLANNED','RUNNING','PAUSED')` e `facebook_pixel_id IS NULL`, chamando `/api/facebook-pixels` até registrar o ID.
+5. **Pixel worker** – a mesma liberação coloca o nicho na fila de criação de pixel enquanto `market_niche.facebook_pixel_id` estiver vazio. O worker consulta `/api/facebook-pixels/niches-ready` e só considera nichos com experimentos liberados (`facebook_release_requested_at` definido, `creative_approved=true`, `status IN ('PLANNED','RUNNING','PAUSED')` e plataforma Facebook). Ao registrar o pixel do nicho, todos os experimentos herdam o mesmo ID/HTML.
 6. **Execução registrada** – cada anúncio publicado referencia o valor de rastreamento (`utm_campaign`) exibido na UI junto com as conversões atribuídas.
 
 ## 8. Funil e telemetria operacional
@@ -87,5 +87,5 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 
 - `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.
-- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels`, `/api/experiments/{experimentId}/funnel/diagnostics`.
+- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels/niches-ready`, `/api/experiments/{experimentId}/funnel/diagnostics`.
 - Tabelas do schema `marketinghubdb`: `experiment`, `creative`, `lead_portal_flow`, `targeting_element`, `experiment_campaign_metric`.

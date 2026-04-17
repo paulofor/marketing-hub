@@ -91,7 +91,8 @@ public class ExperimentPipelineOpenAiClient {
     private static final List<String> CONCRETE_DELIVERABLE_TERMS = List.of(
             "checklist", "template", "roteiro", "guia", "planilha", "pdf", "video", "vídeo", "análise", "analise", "exemplo", "script", "modelo");
     private static final List<String> OUTCOME_TERMS = List.of(
-            "resultado", "reduz", "aumenta", "convers", "econom", "evita", "ganha", "melhor", "cresce", "escala");
+            "resultado", "reduz", "reduzir", "aumenta", "aumentar", "convers", "conversão", "conversao",
+            "econom", "evita", "ganha", "melhor", "cresce", "escala");
     private static final List<String> LINK_TERMS = List.of(
             "para", "assim", "isso", "porque", "com isso", "de forma", "ajuda");
     private static final Set<String> VAGUE_CTA_LABELS = Set.of(

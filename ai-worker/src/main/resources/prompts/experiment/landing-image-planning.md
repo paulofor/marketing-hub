@@ -15,7 +15,7 @@ Regras fixas da etapa:
 7. Inclua `layoutBinding` completo com `preferredDesktopPlacement` e `preferredMobilePlacement`.
 8. Inclua `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion` e `formRelationNotes`.
 9. Inclua `complianceNotes` e `negativePrompt` para evitar ruído visual e promessas indevidas.
-10. `consistencyChecks` deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
+10. `consistencyChecks` deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY, CTA_CONTINUITY e PREVIEW_CONCRETENESS.
 11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA

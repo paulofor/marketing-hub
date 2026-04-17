@@ -114,7 +114,27 @@ recalcular os seguintes itens e incluir no array `consistencyChecks`:
 Cada check deve registrar `PASS`, `WARN` ou `FAIL` acompanhado de `details` com a
 fonte da verificação (ex.: "CTA hero ≠ CTA anúncio").
 
-## 7. Metadados de experimento
+## 7. Checks mínimos da Fase 4 (anti-regressão prática)
+
+Sem criar nova infraestrutura de eval, o worker também recalcula checks simples
+baseados no conteúdo retornado e sobrescreve o mesmo `check` em
+`consistencyChecks[]` quando existir:
+
+- **DELIVERABLE_CLARITY** (`landingPageCopy`): detecta oferta genérica sem
+  composição concreta de entregáveis.
+- **DELIVERABLE_TO_OUTCOME_LINK** (`landingPageCopy`): valida se entregáveis
+  são conectados à dor/resultado prometido (e não apenas listados).
+- **CTA_SPECIFICITY** (`landingPageCopy`): identifica CTA vaga sem próximo passo
+  claro.
+- **PREVIEW_CONCRETENESS** (`landingPageImagePlanning` e `landingPageHtml`):
+  valida se existe preview/prova visual concreta e vinculada.
+- **SECTION_THEME_VARIATION** (`landingPageWireframe` e `landingPageHtml`):
+  detecta homogeneidade excessiva de `surfaceSpec`/binding visual entre seções.
+- **ARTIFACT_SCHEMA_COMPATIBILITY** (`landingPageCopy`, `landingPageWireframe`,
+  `landingPageImagePlanning`, `landingPageHtml`): confirma campos mínimos do
+  modelo canônico em `docs/modelo-canonico-artefatos-pipeline-experimento.md`.
+
+## 8. Metadados de experimento
 
 Todo payload deve incluir `experimentMetadata` com `primary_variable`,
 `variant_id`, `stage`, `control_or_treatment` e `asset_role`. Esses campos são

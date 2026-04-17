@@ -7,11 +7,13 @@ import com.marketinghub.worker.openai.OpenAiResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -83,6 +85,21 @@ public class ExperimentPipelineOpenAiClient {
 
     private static final Pattern FORM_FIELD_BLOCK_PATTERN = Pattern.compile(
             "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
+    private static final Pattern HTML_SECTION_PATTERN = Pattern.compile("(?is)<section\\b[^>]*>");
+    private static final Pattern HTML_ATTRIBUTE_PATTERN = Pattern.compile("(?i)(data-surface-token|class)\\s*=\\s*['\"]([^'\"]+)['\"]");
+    private static final List<String> GENERIC_DELIVERABLE_TERMS = List.of("kit", "prévia", "previa", "ativos digitais", "material", "pacote");
+    private static final List<String> CONCRETE_DELIVERABLE_TERMS = List.of(
+            "checklist", "template", "roteiro", "guia", "planilha", "pdf", "video", "vídeo", "análise", "analise", "exemplo", "script", "modelo");
+    private static final List<String> OUTCOME_TERMS = List.of(
+            "resultado", "reduz", "aumenta", "convers", "econom", "evita", "ganha", "melhor", "cresce", "escala");
+    private static final List<String> LINK_TERMS = List.of(
+            "para", "assim", "isso", "porque", "com isso", "de forma", "ajuda");
+    private static final Set<String> VAGUE_CTA_LABELS = Set.of(
+            "saiba mais", "clique aqui", "continuar", "ver mais", "acessar", "prosseguir", "enviar");
+    private static final List<String> CTA_NEXT_STEP_TERMS = List.of(
+            "prévia", "previa", "kit", "plano", "checklist", "acesso", "amostra", "análise", "analise", "diagnóstico", "diagnostico", "template");
+    private static final List<String> PREVIEW_TERMS = List.of(
+            "preview", "prévia", "previa", "prova", "amostra", "entreg", "antes", "depois");
     private static final String STATIC_FORM_FIELDS_HTML = """
             <div class="field">
               <label for="field_nome">Nome</label>
@@ -246,6 +263,7 @@ public class ExperimentPipelineOpenAiClient {
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
             ensureLandingHtmlHasStaticFormContract(parsed, job);
+            enrichConsistencyChecks(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
@@ -374,6 +392,406 @@ public class ExperimentPipelineOpenAiClient {
             return htmlDocument.substring(0, bodyClose) + STATIC_FORM_SUBMIT_SCRIPT + "\n" + htmlDocument.substring(bodyClose);
         }
         return htmlDocument + "\n" + STATIC_FORM_SUBMIT_SCRIPT;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void enrichConsistencyChecks(Map<String, Object> parsed, ExperimentPipelineJobDto job) {
+        if (parsed == null || job == null) {
+            return;
+        }
+        if (isLandingCopySection(job)) {
+            Map<String, Object> copy = parsed.get("landingPageCopy") instanceof Map<?, ?> nested
+                    ? (Map<String, Object>) nested
+                    : parsed;
+            List<Map<String, Object>> checks = readConsistencyChecks(copy);
+            upsertCheck(checks, evaluateDeliverableClarity(copy));
+            upsertCheck(checks, evaluateDeliverableToOutcomeLink(copy));
+            upsertCheck(checks, evaluateCtaSpecificity(copy));
+            upsertCheck(checks, evaluateArtifactSchemaCompatibility("landingPageCopy", copy,
+                    List.of("pageGoal", "primaryCTA", "hero", "bodySections", "ctaBlocks")));
+            copy.put("consistencyChecks", checks);
+            return;
+        }
+        if (isLandingLayoutSection(job)) {
+            Map<String, Object> wireframe = parsed.get("landingPageWireframe") instanceof Map<?, ?> nested
+                    ? (Map<String, Object>) nested
+                    : parsed;
+            List<Map<String, Object>> checks = readConsistencyChecks(wireframe);
+            upsertCheck(checks, evaluateSectionThemeVariationFromWireframe(wireframe));
+            upsertCheck(checks, evaluateArtifactSchemaCompatibility("landingPageWireframe", wireframe,
+                    List.of("pageGoal", "variantLayoutId", "sectionOrder")));
+            wireframe.put("consistencyChecks", checks);
+            return;
+        }
+        if (isLandingImagePlanningSection(job)) {
+            Map<String, Object> imagePlanning = parsed.get("landingPageImagePlanning") instanceof Map<?, ?> nested
+                    ? (Map<String, Object>) nested
+                    : parsed;
+            List<Map<String, Object>> checks = readConsistencyChecks(imagePlanning);
+            upsertCheck(checks, evaluatePreviewConcreteness(imagePlanning));
+            upsertCheck(checks, evaluateArtifactSchemaCompatibility("landingPageImagePlanning", imagePlanning,
+                    List.of("pageGoal", "images")));
+            imagePlanning.put("consistencyChecks", checks);
+            return;
+        }
+        if (isLandingHtmlSection(job)) {
+            Map<String, Object> html = parsed.get("landingPageHtml") instanceof Map<?, ?> nested
+                    ? (Map<String, Object>) nested
+                    : parsed;
+            List<Map<String, Object>> checks = readConsistencyChecks(html);
+            upsertCheck(checks, evaluateSectionThemeVariationFromHtml(html));
+            upsertCheck(checks, evaluatePreviewConcretenessFromHtml(html));
+            upsertCheck(checks, evaluateArtifactSchemaCompatibility("landingPageHtml", html,
+                    List.of("htmlDocument", "formSpec", "summary", "imagePlacementContract")));
+            html.put("consistencyChecks", checks);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> readConsistencyChecks(Map<String, Object> artifact) {
+        if (artifact == null) {
+            return new ArrayList<>();
+        }
+        Object checksNode = artifact.get("consistencyChecks");
+        if (!(checksNode instanceof List<?> checks)) {
+            return new ArrayList<>();
+        }
+        List<Map<String, Object>> normalized = new ArrayList<>();
+        for (Object check : checks) {
+            if (check instanceof Map<?, ?> map) {
+                normalized.add(new LinkedHashMap<>((Map<String, Object>) map));
+            }
+        }
+        return normalized;
+    }
+
+    private void upsertCheck(List<Map<String, Object>> checks, Map<String, Object> computed) {
+        if (checks == null || computed == null || !StringUtils.hasText((String) computed.get("check"))) {
+            return;
+        }
+        String target = String.valueOf(computed.get("check"));
+        checks.removeIf(item -> Objects.equals(String.valueOf(item.get("check")), target));
+        checks.add(computed);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> evaluateDeliverableClarity(Map<String, Object> copy) {
+        String corpus = collectCopyText(copy);
+        int genericHits = countHits(corpus, GENERIC_DELIVERABLE_TERMS);
+        int concreteHits = countHits(corpus, CONCRETE_DELIVERABLE_TERMS);
+        if (genericHits > 0 && concreteHits == 0) {
+            return check("DELIVERABLE_CLARITY", "FAIL",
+                    "Oferta usa termos genéricos sem composição concreta suficiente.");
+        }
+        if (genericHits > 0 && concreteHits < 2) {
+            return check("DELIVERABLE_CLARITY", "WARN",
+                    "Oferta ainda depende de termos genéricos; detalhe melhor os entregáveis.");
+        }
+        return check("DELIVERABLE_CLARITY", "PASS", "Oferta descreve entregáveis com detalhes concretos.");
+    }
+
+    private Map<String, Object> evaluateDeliverableToOutcomeLink(Map<String, Object> copy) {
+        String corpus = collectCopyText(copy);
+        int deliverableHits = countHits(corpus, GENERIC_DELIVERABLE_TERMS) + countHits(corpus, CONCRETE_DELIVERABLE_TERMS);
+        int outcomeHits = countHits(corpus, OUTCOME_TERMS);
+        int linkHits = countHits(corpus, LINK_TERMS);
+        if (deliverableHits > 0 && outcomeHits == 0) {
+            return check("DELIVERABLE_TO_OUTCOME_LINK", "FAIL",
+                    "A landing lista entregáveis sem conectar explicitamente com resultado esperado.");
+        }
+        if (deliverableHits > 0 && (outcomeHits < 2 || linkHits < 2)) {
+            return check("DELIVERABLE_TO_OUTCOME_LINK", "WARN",
+                    "A conexão entre entregáveis e resultado existe, mas ainda está fraca.");
+        }
+        return check("DELIVERABLE_TO_OUTCOME_LINK", "PASS", "Entregáveis estão conectados à dor/resultado prometido.");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> evaluateCtaSpecificity(Map<String, Object> copy) {
+        List<String> labels = new ArrayList<>();
+        labels.add(readString(copy, "primaryCTA"));
+        Object heroNode = copy != null ? copy.get("hero") : null;
+        if (heroNode instanceof Map<?, ?> hero) {
+            labels.add(readString((Map<String, Object>) hero, "ctaLabel"));
+        }
+        Object ctaBlocksNode = copy != null ? copy.get("ctaBlocks") : null;
+        if (ctaBlocksNode instanceof List<?> blocks) {
+            for (Object block : blocks) {
+                if (block instanceof Map<?, ?> map) {
+                    labels.add(readString((Map<String, Object>) map, "ctaLabel"));
+                }
+            }
+        }
+        labels = labels.stream().filter(StringUtils::hasText).map(String::trim).toList();
+        if (labels.isEmpty()) {
+            return check("CTA_SPECIFICITY", "FAIL", "CTA principal ausente.");
+        }
+        long vagueCount = labels.stream().filter(this::isVagueCta).count();
+        long explicitNextStep = labels.stream().filter(this::hasExplicitNextStep).count();
+        if (vagueCount == labels.size() && explicitNextStep == 0) {
+            return check("CTA_SPECIFICITY", "FAIL", "CTA está vaga e não explicita próximo passo.");
+        }
+        if (vagueCount > 0 || explicitNextStep == 0) {
+            return check("CTA_SPECIFICITY", "WARN", "CTA precisa deixar mais claro o próximo passo.");
+        }
+        return check("CTA_SPECIFICITY", "PASS", "CTA principal está específica e orientada à ação.");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> evaluatePreviewConcreteness(Map<String, Object> imagePlanning) {
+        Object imagesNode = imagePlanning != null ? imagePlanning.get("images") : null;
+        if (!(imagesNode instanceof List<?> images) || images.isEmpty()) {
+            return check("PREVIEW_CONCRETENESS", "FAIL", "Plano de imagens sem itens para provar preview visual.");
+        }
+        int previewCandidates = 0;
+        int concretePreviews = 0;
+        for (Object image : images) {
+            if (!(image instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Map<String, Object> item = (Map<String, Object>) map;
+            String scope = (readString(item, "imageRole") + " " + readString(item, "conversionRole") + " " + readString(item, "sectionName")).toLowerCase(Locale.ROOT);
+            boolean isPreviewCandidate = containsAny(scope, PREVIEW_TERMS);
+            if (isPreviewCandidate) {
+                previewCandidates++;
+                String prompt = readString(item, "imagePrompt");
+                int supportingCount = readStringList(item, "supportingElements").size();
+                if (prompt.length() >= 40 && supportingCount > 0) {
+                    concretePreviews++;
+                }
+            }
+        }
+        if (previewCandidates == 0) {
+            return check("PREVIEW_CONCRETENESS", "WARN", "Não há imagem explicitamente ligada à prova/preview.");
+        }
+        if (concretePreviews == 0) {
+            return check("PREVIEW_CONCRETENESS", "FAIL", "Preview prometido sem descrição visual concreta.");
+        }
+        if (concretePreviews < previewCandidates) {
+            return check("PREVIEW_CONCRETENESS", "WARN", "Parte das imagens de preview ainda está genérica.");
+        }
+        return check("PREVIEW_CONCRETENESS", "PASS", "Preview visual descrito de forma concreta.");
+    }
+
+    private Map<String, Object> evaluatePreviewConcretenessFromHtml(Map<String, Object> html) {
+        String document = readString(html, "htmlDocument").toLowerCase(Locale.ROOT);
+        if (!StringUtils.hasText(document)) {
+            return check("PREVIEW_CONCRETENESS", "FAIL", "HTML sem conteúdo para comprovar preview.");
+        }
+        boolean hasPreviewHints = containsAny(document, PREVIEW_TERMS);
+        boolean hasBoundImage = document.contains("data-image-section-id=") || document.contains("data-image-binding-key=");
+        if (hasPreviewHints && !hasBoundImage) {
+            return check("PREVIEW_CONCRETENESS", "FAIL", "Landing promete preview, mas não vincula imagem concreta.");
+        }
+        if (!hasPreviewHints && !hasBoundImage) {
+            return check("PREVIEW_CONCRETENESS", "WARN", "HTML não evidencia preview visual concreto.");
+        }
+        return check("PREVIEW_CONCRETENESS", "PASS", "HTML contém sinais concretos de preview visual.");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> evaluateSectionThemeVariationFromWireframe(Map<String, Object> wireframe) {
+        Object sectionsNode = wireframe != null ? wireframe.get("sectionOrder") : null;
+        if (!(sectionsNode instanceof List<?> sections) || sections.isEmpty()) {
+            return check("SECTION_THEME_VARIATION", "FAIL", "Wireframe sem seções para validar variação visual.");
+        }
+        Set<String> surfaceSignatures = new LinkedHashSet<>();
+        for (Object section : sections) {
+            if (!(section instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Object surfaceNode = ((Map<String, Object>) map).get("surfaceSpec");
+            if (surfaceNode instanceof Map<?, ?> surface) {
+                String signature = readString((Map<String, Object>) surface, "surfaceToken") + "|"
+                        + readString((Map<String, Object>) surface, "style") + "|"
+                        + readString((Map<String, Object>) surface, "contrastMode");
+                if (StringUtils.hasText(signature.replace("|", ""))) {
+                    surfaceSignatures.add(signature);
+                }
+            }
+        }
+        if (surfaceSignatures.size() <= 1 && sections.size() >= 3) {
+            return check("SECTION_THEME_VARIATION", "FAIL", "Wireframe homogêneo: pouca variação de surfaceSpec por seção.");
+        }
+        if (surfaceSignatures.size() <= 2 && sections.size() >= 4) {
+            return check("SECTION_THEME_VARIATION", "WARN", "Wireframe com variação visual limitada entre seções.");
+        }
+        return check("SECTION_THEME_VARIATION", "PASS", "Wireframe apresenta variação visual razoável por seção.");
+    }
+
+    private Map<String, Object> evaluateSectionThemeVariationFromHtml(Map<String, Object> html) {
+        String document = readString(html, "htmlDocument");
+        if (!StringUtils.hasText(document)) {
+            return check("SECTION_THEME_VARIATION", "WARN", "HTML vazio; não foi possível avaliar variação visual.");
+        }
+        Set<String> signatures = new LinkedHashSet<>();
+        Matcher sectionMatcher = HTML_SECTION_PATTERN.matcher(document);
+        while (sectionMatcher.find()) {
+            String openTag = sectionMatcher.group();
+            Matcher attrMatcher = HTML_ATTRIBUTE_PATTERN.matcher(openTag);
+            StringBuilder signature = new StringBuilder();
+            while (attrMatcher.find()) {
+                signature.append(attrMatcher.group(1).toLowerCase(Locale.ROOT))
+                        .append("=")
+                        .append(attrMatcher.group(2).toLowerCase(Locale.ROOT))
+                        .append(";");
+            }
+            if (signature.length() > 0) {
+                signatures.add(signature.toString());
+            }
+        }
+        if (signatures.size() <= 1 && signatures.size() > 0) {
+            return check("SECTION_THEME_VARIATION", "FAIL", "HTML com binding visual homogêneo entre seções.");
+        }
+        if (signatures.isEmpty()) {
+            return check("SECTION_THEME_VARIATION", "WARN", "HTML sem marcações suficientes para avaliar variação visual.");
+        }
+        return check("SECTION_THEME_VARIATION", "PASS", "HTML preserva variação visual entre seções.");
+    }
+
+    private Map<String, Object> evaluateArtifactSchemaCompatibility(String artifactName,
+                                                                    Map<String, Object> artifact,
+                                                                    List<String> requiredFields) {
+        if (artifact == null) {
+            return check("ARTIFACT_SCHEMA_COMPATIBILITY", "FAIL",
+                    "Artefato " + artifactName + " ausente no payload.");
+        }
+        List<String> missing = new ArrayList<>();
+        for (String field : requiredFields) {
+            Object value = artifact.get(field);
+            if (value == null || (value instanceof String text && !StringUtils.hasText(text))) {
+                missing.add(field);
+            }
+        }
+        if (!missing.isEmpty()) {
+            return check("ARTIFACT_SCHEMA_COMPATIBILITY", "FAIL",
+                    "Artefato " + artifactName + " incompatível com campos obrigatórios: " + String.join(", ", missing) + ".");
+        }
+        boolean hasEmptyCollection = requiredFields.stream()
+                .map(artifact::get)
+                .anyMatch(value -> value instanceof List<?> list && list.isEmpty());
+        if (hasEmptyCollection) {
+            return check("ARTIFACT_SCHEMA_COMPATIBILITY", "WARN",
+                    "Artefato " + artifactName + " respeita schema mínimo, mas possui coleções vazias.");
+        }
+        return check("ARTIFACT_SCHEMA_COMPATIBILITY", "PASS",
+                "Artefato " + artifactName + " compatível com o modelo canônico.");
+    }
+
+    private Map<String, Object> check(String name, String status, String details) {
+        Map<String, Object> check = new LinkedHashMap<>();
+        check.put("check", name);
+        check.put("status", status);
+        check.put("details", details);
+        return check;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String collectCopyText(Map<String, Object> copy) {
+        if (copy == null) {
+            return "";
+        }
+        StringBuilder buffer = new StringBuilder();
+        appendIfText(buffer, readString(copy, "pageGoal"));
+        appendIfText(buffer, readString(copy, "messageMatchNotes"));
+        appendIfText(buffer, readString(copy, "complianceNotes"));
+        appendIfText(buffer, readString(copy, "primaryCTA"));
+        Object heroNode = copy.get("hero");
+        if (heroNode instanceof Map<?, ?> hero) {
+            for (String key : List.of("headline", "subheadline", "promise", "supportingCopy", "proofBadge", "ctaLabel")) {
+                appendIfText(buffer, readString((Map<String, Object>) hero, key));
+            }
+        }
+        Object bodySectionsNode = copy.get("bodySections");
+        if (bodySectionsNode instanceof List<?> sections) {
+            for (Object section : sections) {
+                if (section instanceof Map<?, ?> map) {
+                    Map<String, Object> sectionMap = (Map<String, Object>) map;
+                    for (String key : List.of("title", "summary", "copy", "ctaSupport", "messageMatchNotes")) {
+                        appendIfText(buffer, readString(sectionMap, key));
+                    }
+                    for (String bullet : readStringList(sectionMap, "bullets")) {
+                        appendIfText(buffer, bullet);
+                    }
+                }
+            }
+        }
+        return buffer.toString().toLowerCase(Locale.ROOT);
+    }
+
+    private void appendIfText(StringBuilder buffer, String value) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+        buffer.append(value.trim()).append(' ');
+    }
+
+    private int countHits(String text, List<String> terms) {
+        if (!StringUtils.hasText(text) || terms == null || terms.isEmpty()) {
+            return 0;
+        }
+        int hits = 0;
+        String normalizedText = text.toLowerCase(Locale.ROOT);
+        for (String term : terms) {
+            if (containsWord(normalizedText, term.toLowerCase(Locale.ROOT))) {
+                hits++;
+            }
+        }
+        return hits;
+    }
+
+    private boolean containsAny(String text, List<String> terms) {
+        return countHits(text, terms) > 0;
+    }
+
+    private boolean containsWord(String text, String word) {
+        Pattern pattern = Pattern.compile("(?iu)(^|\\W)" + Pattern.quote(word) + "(\\W|$)");
+        return pattern.matcher(text).find();
+    }
+
+    private boolean isVagueCta(String label) {
+        String normalized = label == null ? "" : label.trim().toLowerCase(Locale.ROOT);
+        if (!StringUtils.hasText(normalized)) {
+            return true;
+        }
+        if (VAGUE_CTA_LABELS.contains(normalized)) {
+            return true;
+        }
+        return normalized.split("\\s+").length <= 2 && !hasExplicitNextStep(normalized);
+    }
+
+    private boolean hasExplicitNextStep(String label) {
+        if (!StringUtils.hasText(label)) {
+            return false;
+        }
+        String normalized = label.toLowerCase(Locale.ROOT);
+        return containsAny(normalized, CTA_NEXT_STEP_TERMS) || normalized.split("\\s+").length >= 3;
+    }
+
+    private String readString(Map<String, Object> source, String key) {
+        if (source == null || !StringUtils.hasText(key)) {
+            return "";
+        }
+        Object value = source.get(key);
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> readStringList(Map<String, Object> source, String key) {
+        if (source == null || !StringUtils.hasText(key)) {
+            return Collections.emptyList();
+        }
+        Object node = source.get(key);
+        if (!(node instanceof List<?> list)) {
+            return Collections.emptyList();
+        }
+        List<String> values = new ArrayList<>();
+        for (Object item : list) {
+            if (item != null && StringUtils.hasText(String.valueOf(item))) {
+                values.add(String.valueOf(item).trim());
+            }
+        }
+        return values;
     }
 
 

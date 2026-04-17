@@ -558,3 +558,81 @@ O módulo MDS processa requests pendentes no ciclo mínimo de orquestração e o
 **Próximo passo sugerido:**
 
 Iniciar Sprint 3 com formulação de perguntas de mecanismo e busca estruturada em fontes externas permitidas, mantendo persistência exclusivamente via backend.
+
+## [2026-04-17] — Etapa: sprint 3 - formulação de pergunta e busca estruturada
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+A Sprint 3 implementou o pipeline inicial de descoberta real no módulo `mds`, com formulação de pergunta, planejamento de busca por fontes científicas, execução em APIs externas e persistência via backend de `mechanismEvidenceSearch`, `sourceDocument` e `source_access_record`.
+
+**Objetivo da etapa:**
+
+Sair do pipeline stubado da Sprint 2 e estabelecer a primeira trilha rastreável de descoberta com busca estruturada e persistência dos resultados normalizados sem acesso direto ao MySQL pelo MDS.
+
+**O que foi implementado:**
+
+- criação de `MechanismQuestionBuilder` e `SearchQueryPlanBuilder` para gerar pergunta de mecanismo e queries rastreáveis;
+- criação de clientes reais de busca (`PubmedSearchClient` e `CrossrefSearchClient`) e execução agregada no `SearchExecutionService`;
+- atualização do `MechanismDiscoveryPipelineService` para publicar `mechanismEvidenceSearch` e `sourceDocument`;
+- classificação inicial de acesso (`open_access`, `metadata_only`, `restricted`) e permissão (`can_download`, `can_text_mine`, `link_only`);
+- novo contrato backend para gravação em lote de `source_access_record` com endpoint interno específico;
+- cobertura de testes de contrato/backend e testes de serviço no módulo `mds`.
+
+**Arquivos alterados/criados:**
+
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/main/java/com/marketinghub/mds/client/BackendMdsClient.java
+- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchRequestDto.java
+- mds/src/main/java/com/marketinghub/mds/dto/BackendSourceAccessPublishBatchResponseDto.java
+- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestion.java
+- mds/src/main/java/com/marketinghub/mds/search/MechanismQuestionBuilder.java
+- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlan.java
+- mds/src/main/java/com/marketinghub/mds/search/SearchQueryPlanBuilder.java
+- mds/src/main/java/com/marketinghub/mds/search/SearchExecutionService.java
+- mds/src/main/java/com/marketinghub/mds/search/EvidenceSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/PubmedSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/CrossrefSearchClient.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/web/MdsInternalController.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/service/MdsSourceAccessService.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchRequest.java
+- backend/ads-service/src/main/java/com/marketinghub/mds/dto/MdsSourceAccessPublishBatchResponse.java
+- backend/ads-service/src/test/java/com/marketinghub/mds/web/MdsInternalControllerContractTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- artifact_record (novos tipos persistidos: `mechanismEvidenceSearch`, `sourceDocument`)
+- source_access_record (persistência em lote adicionada)
+
+**APIs / endpoints / contratos afetados:**
+
+- POST /api/internal/mds/artifacts/publish-batch (uso expandido para novos artefatos da Sprint 3)
+- POST /api/internal/mds/source-access/publish-batch (novo endpoint interno para `source_access_record`)
+
+**Artefatos / schemas impactados:**
+
+- mds.mechanismEvidenceSearch.v1
+- mds.sourceDocument.v1
+
+**Testes executados:**
+
+- mds: `mvn test`
+- backend/ads-service: `mvn -Dtest=MdsInternalControllerContractTest test`
+
+**Resultado observado:**
+
+O MDS agora executa busca estruturada em fontes científicas, registra a estratégia de busca e publica documentos normalizados com classificação inicial de acesso/permissão, mantendo a governança de persistência via backend.
+
+**Limitações / pendências:**
+
+- deduplicação ainda não implementada com regras completas por DOI/PMID/PMCID/título/URL;
+- triagem e confiança científica ainda não transformam resultados em `evidenceItem`;
+- classificação de acesso/permissão ainda depende de heurísticas simples por metadados.
+
+**Próximo passo sugerido:**
+
+Implementar a Sprint 4 com deduplicação, triagem estruturada, `EvidenceConfidenceService` e persistência de `evidenceItem`.

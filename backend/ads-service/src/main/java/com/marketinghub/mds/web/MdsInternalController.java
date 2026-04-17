@@ -3,6 +3,7 @@ package com.marketinghub.mds.web;
 import com.marketinghub.mds.dto.*;
 import com.marketinghub.mds.service.MdsArtifactService;
 import com.marketinghub.mds.service.MdsRequestService;
+import com.marketinghub.mds.service.MdsSourceAccessService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +15,14 @@ import java.util.Map;
 public class MdsInternalController {
     private final MdsRequestService requestService;
     private final MdsArtifactService artifactService;
+    private final MdsSourceAccessService sourceAccessService;
 
-    public MdsInternalController(MdsRequestService requestService, MdsArtifactService artifactService) {
+    public MdsInternalController(MdsRequestService requestService,
+                                 MdsArtifactService artifactService,
+                                 MdsSourceAccessService sourceAccessService) {
         this.requestService = requestService;
         this.artifactService = artifactService;
+        this.sourceAccessService = sourceAccessService;
     }
 
     @PostMapping("/requests")
@@ -62,6 +67,13 @@ public class MdsInternalController {
     @PostMapping("/artifacts/publish-batch")
     public MdsArtifactPublishBatchResponse publishBatch(@Valid @RequestBody MdsArtifactPublishBatchRequest request) {
         return artifactService.publishBatch(request);
+    }
+
+    @PostMapping("/source-access/publish-batch")
+    public MdsSourceAccessPublishBatchResponse publishSourceAccessBatch(
+            @Valid @RequestBody MdsSourceAccessPublishBatchRequest request
+    ) {
+        return sourceAccessService.publishBatch(request);
     }
 
     @PostMapping("/artifacts/{id}/lineage")

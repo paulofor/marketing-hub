@@ -5,8 +5,10 @@ import com.marketinghub.mds.dto.MdsArtifactPublishBatchResponse;
 import com.marketinghub.mds.dto.MdsLineageCreateRequest;
 import com.marketinghub.mds.dto.MdsLineageResponse;
 import com.marketinghub.mds.dto.MdsRequestStatusResponse;
+import com.marketinghub.mds.dto.MdsSourceAccessPublishBatchResponse;
 import com.marketinghub.mds.service.MdsArtifactService;
 import com.marketinghub.mds.service.MdsRequestService;
+import com.marketinghub.mds.service.MdsSourceAccessService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -39,6 +41,9 @@ class MdsInternalControllerContractTest {
 
     @MockBean
     private MdsArtifactService artifactService;
+
+    @MockBean
+    private MdsSourceAccessService sourceAccessService;
 
     @Test
     void shouldClaimRequestWithExpectedContract() throws Exception {
@@ -114,6 +119,30 @@ class MdsInternalControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestId").value(12))
                 .andExpect(jsonPath("$.publishedCount").value(1));
+    }
+
+    @Test
+    void shouldPublishSourceAccessRecordsWithExpectedContract() throws Exception {
+        when(sourceAccessService.publishBatch(any()))
+                .thenReturn(new MdsSourceAccessPublishBatchResponse(1, java.util.List.of(301L)));
+
+        mockMvc.perform(post("/api/internal/mds/source-access/publish-batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "records": [
+                                    {
+                                      "sourceDocumentId": "pubmed:123",
+                                      "accessClass": "open_access",
+                                      "permissionState": "can_download",
+                                      "licenseText": "CC-BY",
+                                      "accessUrl": "https://pubmed.ncbi.nlm.nih.gov/123/"
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.savedCount").value(1));
     }
 
     private MdsRequestStatusResponse response(MdsRequestStatus status) {

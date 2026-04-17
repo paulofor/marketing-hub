@@ -62,4 +62,12 @@ public class BackendMdsClient {
                 .retrieve()
                 .body(BackendArtifactPublishBatchResponseDto.class);
     }
+
+    public BackendSourceAccessPublishBatchResponseDto publishSourceAccessBatch(BackendSourceAccessPublishBatchRequestDto requestDto) {
+        return restClient.post()
+                .uri("/api/internal/mds/source-access/publish-batch")
+                .body(requestDto)
+                .retrieve()
+                .body(BackendSourceAccessPublishBatchResponseDto.class);
+    }
 }

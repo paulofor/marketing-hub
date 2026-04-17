@@ -10,6 +10,10 @@ import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.targeting.service.TargetingElementSyncService;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -136,7 +140,7 @@ public class MarketNicheService {
 
     private java.util.List<String> normalizeStringList(java.util.List<String> values) {
         if (values == null) {
-            return java.util.List.of();
+            return List.of();
         }
         return values.stream()
                 .filter(item -> item != null && !item.isBlank())
@@ -239,5 +243,27 @@ public class MarketNicheService {
 
     public Iterable<MarketNiche> list() {
         return repository.findAll();
+    }
+
+    public List<MarketNiche> listReadyForPixel() {
+        List<ExperimentStatus> statuses = List.of(
+                ExperimentStatus.PLANNED,
+                ExperimentStatus.RUNNING,
+                ExperimentStatus.PAUSED
+        );
+        return repository.findReadyForPixel(statuses, ExperimentPlatform.FACEBOOK);
+    }
+
+    @Transactional
+    public MarketNiche attachFacebookPixel(Long nicheId, String pixelId, String pixelCode, Instant createdAt) {
+        if (pixelId == null || pixelId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pixelId is required");
+        }
+        MarketNiche niche = repository.findById(nicheId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Market niche not found: " + nicheId));
+        niche.setFacebookPixelId(pixelId.trim());
+        niche.setFacebookPixelCode(pixelCode);
+        niche.setFacebookPixelCreatedAt(createdAt != null ? createdAt : Instant.now());
+        return niche;
     }
 }

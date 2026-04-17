@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -70,8 +70,6 @@ export default function ExperimentDetailPage() {
   );
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
-  const [shouldScrollToPixel, setShouldScrollToPixel] = useState(false);
-  const pixelSectionRef = useRef<HTMLDivElement | null>(null);
   const [journeyError, setJourneyError] = useState<string | null>(null);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
@@ -128,16 +126,6 @@ export default function ExperimentDetailPage() {
     }
   }, [tab, hasInstantFormSteps, hasEmailSteps]);
 
-  useEffect(() => {
-    if (!shouldScrollToPixel || tab !== "overview") {
-      return;
-    }
-    pixelSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-    setShouldScrollToPixel(false);
-  }, [shouldScrollToPixel, tab]);
   const assignmentsWithSteps = useMemo(() => {
     const assignments = journeyAssignments?.assignments ?? [];
     if (assignments.length === 0) {
@@ -276,7 +264,7 @@ export default function ExperimentDetailPage() {
   const hasLeadPortalFlow =
     readinessSummary?.hasLeadPortalFlow ??
     Boolean(data.leadPortalFlowId ?? data.leadPortalFlowName);
-  const hasFacebookPixelRegistered = Boolean(data.facebookPixelId);
+  const hasFacebookPixelRegistered = Boolean(niche?.facebookPixelId);
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
@@ -455,20 +443,17 @@ export default function ExperimentDetailPage() {
     },
     {
       id: "facebook-pixel",
-      title: "Pixel do Facebook",
+      title: "Pixel do nicho",
       isMet: hasFacebookPixelRegistered,
       hint: hasFacebookPixelRegistered
-        ? `Pixel ${data.facebookPixelId} já registrado para este experimento.`
-        : data.status === "PLANNED"
-          ? "O worker está criando o pixel automaticamente; isso pode levar alguns minutos."
-          : "O pixel será criado automaticamente assim que você liberar o experimento para o worker.",
+        ? niche?.facebookPixelId
+          ? `Pixel ${niche.facebookPixelId} disponível para este nicho.`
+          : "Pixel disponível."
+        : "Abra o nicho para acompanhar quando o worker gerar o pixel automaticamente.",
       action: hasFacebookPixelRegistered
         ? undefined
-        : () => {
-            setShouldScrollToPixel(true);
-            setTab("overview");
-          },
-      actionLabel: hasFacebookPixelRegistered ? undefined : "Ver Pixel",
+        : () => navigate(`/niches/${data.nicheId}#niche-facebook-pixel`),
+      actionLabel: hasFacebookPixelRegistered ? undefined : "Ver pixel do nicho",
     },
   ];
   const checklistGroups = [
@@ -1257,50 +1242,6 @@ export default function ExperimentDetailPage() {
             </div>
             <ExperimentLearningPanel experimentId={expId} />
             <ExperimentReportPanel experimentId={expId} />
-            <div className="card" ref={pixelSectionRef}>
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <h5 className="card-title mb-1">Pixel do Facebook</h5>
-                    <p className="text-muted mb-0">
-                      Geramos um pixel por experimento para rastrear conversões
-                      do checkout.
-                    </p>
-                  </div>
-                  {data.facebookPixelCreatedAt ? (
-                    <span className="text-muted small">
-                      Criado em{" "}
-                      {formatDateTimeValue(data.facebookPixelCreatedAt)}
-                    </span>
-                  ) : null}
-                </div>
-                {data.facebookPixelId ? (
-                  <>
-                    <div className="mb-2">
-                      <strong>ID:</strong> {data.facebookPixelId}
-                    </div>
-                    {data.facebookPixelCode ? (
-                      <textarea
-                        readOnly
-                        className="form-control font-monospace"
-                        value={data.facebookPixelCode}
-                        rows={6}
-                      />
-                    ) : (
-                      <div className="alert alert-info mb-0">
-                        Pixel criado, aguardando retorno do código completo pelo
-                        Facebook.
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="alert alert-warning mb-0">
-                    Pixel ainda não criado. Ele será criado automaticamente
-                    quando o experimento estiver pronto e aprovado.
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </Tabs.Content>
         <Tabs.Content value="funnel" asChild>

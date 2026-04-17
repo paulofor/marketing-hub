@@ -66,7 +66,10 @@ public class FlowAssetService {
                 flow.imagePromptTemplate(),
                 flow.imageBatchSize(),
                 optimizedQuestions,
-                optimizedStyle);
+                optimizedStyle,
+                flow.facebookPixelId(),
+                flow.facebookPixelCode(),
+                flow.facebookPixelCreatedAt());
     }
 
     private SimpleFormStyle optimizeStyle(SimpleFormStyle style, String slug) {

@@ -29,6 +29,15 @@ public class FlowEntity {
     @Column(name = "custom_form_html", columnDefinition = "LONGTEXT")
     private String customFormHtml;
 
+    @Column(name = "facebook_pixel_id", length = 64)
+    private String facebookPixelId;
+
+    @Column(name = "facebook_pixel_code", columnDefinition = "LONGTEXT")
+    private String facebookPixelCode;
+
+    @Column(name = "facebook_pixel_created_at")
+    private java.time.Instant facebookPixelCreatedAt;
+
     private String model;
 
     @Column(columnDefinition = "TEXT")
@@ -98,6 +107,30 @@ public class FlowEntity {
 
     public void setCustomFormHtml(String customFormHtml) {
         this.customFormHtml = customFormHtml;
+    }
+
+    public String getFacebookPixelId() {
+        return facebookPixelId;
+    }
+
+    public void setFacebookPixelId(String facebookPixelId) {
+        this.facebookPixelId = facebookPixelId;
+    }
+
+    public String getFacebookPixelCode() {
+        return facebookPixelCode;
+    }
+
+    public void setFacebookPixelCode(String facebookPixelCode) {
+        this.facebookPixelCode = facebookPixelCode;
+    }
+
+    public java.time.Instant getFacebookPixelCreatedAt() {
+        return facebookPixelCreatedAt;
+    }
+
+    public void setFacebookPixelCreatedAt(java.time.Instant facebookPixelCreatedAt) {
+        this.facebookPixelCreatedAt = facebookPixelCreatedAt;
     }
 
     public String getPrompt() {
@@ -178,6 +211,9 @@ public class FlowEntity {
         entity.setName(flow.name());
         entity.setDescription(flow.description());
         entity.setCustomFormHtml(flow.customFormHtml());
+        entity.setFacebookPixelId(flow.facebookPixelId());
+        entity.setFacebookPixelCode(flow.facebookPixelCode());
+        entity.setFacebookPixelCreatedAt(flow.facebookPixelCreatedAt());
         entity.setModel(flow.model());
         entity.setPrompt(flow.prompt());
         entity.setImagePromptModel(flow.imagePromptModel());
@@ -201,6 +237,6 @@ public class FlowEntity {
         if (simpleFormStyleSlug != null || simpleFormStyleName != null || simpleFormStyleDefinition != null) {
             style = new SimpleFormStyle(simpleFormStyleSlug, simpleFormStyleName, simpleFormStyleDefinition);
         }
-        return new Flow(slug, name, description, customFormHtml, model, prompt, imagePromptModel, imagePromptTemplate, imageBatchSize, questions, style);
+        return new Flow(slug, name, description, customFormHtml, model, prompt, imagePromptModel, imagePromptTemplate, imageBatchSize, questions, style, facebookPixelId, facebookPixelCode, facebookPixelCreatedAt);
     }
 }

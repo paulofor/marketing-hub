@@ -77,7 +77,10 @@ public class SimpleFlowCatalog {
                                 FlowQuestionType.TEXTAREA,
                                 false),
                         question("Email", "email", FlowQuestionType.TEXT, true)),
-                defaultStyle());
+                defaultStyle(),
+                null,
+                null,
+                null);
     }
 
     private SimpleFormStyle defaultStyle() {

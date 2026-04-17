@@ -83,6 +83,9 @@ export interface LeadPortalFlow {
   engagementContract?: LeadPortalEngagementContract | null;
   questions: FlowQuestion[];
   simpleFormStyle?: LeadPortalSimpleFormStyle | null;
+  facebookPixelId?: string | null;
+  facebookPixelCode?: string | null;
+  facebookPixelCreatedAt?: string | null;
 }
 
 export interface LeadPortalEngagementContract {

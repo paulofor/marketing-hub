@@ -154,7 +154,10 @@ public class FlowService {
                 flow.imagePromptTemplate(),
                 flow.imageBatchSize(),
                 flow.questions(),
-                enrichedStyle);
+                enrichedStyle,
+                flow.facebookPixelId(),
+                flow.facebookPixelCode(),
+                flow.facebookPixelCreatedAt());
     }
 
     private Flow normalizeCustomFormHtml(Flow flow) {
@@ -176,7 +179,10 @@ public class FlowService {
                 flow.imagePromptTemplate(),
                 flow.imageBatchSize(),
                 flow.questions(),
-                flow.simpleFormStyle());
+                flow.simpleFormStyle(),
+                flow.facebookPixelId(),
+                flow.facebookPixelCode(),
+                flow.facebookPixelCreatedAt());
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

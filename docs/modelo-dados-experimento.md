@@ -23,6 +23,9 @@ erDiagram
       LONGTEXT interest_list
       LONGTEXT role_list
       LONGTEXT behavior_list
+      VARCHAR facebook_pixel_id
+      LONGTEXT facebook_pixel_code
+      TIMESTAMP facebook_pixel_created_at
     }
 
     HYPOTHESIS {

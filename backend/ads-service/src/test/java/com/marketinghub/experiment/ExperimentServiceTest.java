@@ -603,7 +603,8 @@ class ExperimentServiceTest {
         Experiment released = service.releaseForFacebook(experiment.getId());
 
         assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
-        assertThat(released.getFacebookPixelId()).isNull();
+        MarketNiche refreshed = nicheRepository.findById(niche.getId()).orElseThrow();
+        assertThat(refreshed.getFacebookPixelId()).isNull();
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
     }
 

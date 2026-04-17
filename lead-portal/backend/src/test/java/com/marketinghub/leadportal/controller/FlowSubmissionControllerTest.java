@@ -126,7 +126,7 @@ class FlowSubmissionControllerTest {
                                 FlowQuestionType.IMAGE_UPLOAD,
                                 true,
                                 "", null,
-                                List.of())), null);
+                                List.of())), null, null, null, null);
 
         flowService.save(flow);
     }
@@ -329,7 +329,7 @@ class FlowSubmissionControllerTest {
                                 true,
                                 "",
                                 null,
-                                List.of())), null);
+                                List.of())), null, null, null, null);
 
         flowService.save(flowWithNullType);
 
@@ -378,7 +378,7 @@ class FlowSubmissionControllerTest {
                                 "",
                                 null,
                                 List.of("Musculação", "Cardio"))),
-                null);
+                null, null, null, null);
 
         flowService.save(customTemplateFlow);
 

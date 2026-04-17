@@ -73,11 +73,11 @@ public class FacebookPixelService {
             return;
         }
 
-        createPixelsForReadyExperiments(config);
+        createPixelsForReadyNiches(config);
         sendConversions();
     }
 
-    private void createPixelsForReadyExperiments(FacebookWorkerConfiguration config) {
+    private void createPixelsForReadyNiches(FacebookWorkerConfiguration config) {
         if (!StringUtils.hasText(config.adAccountId())) {
             LOGGER.warn("Facebook ad account id is not configured; skipping pixel creation");
             return;
@@ -92,13 +92,13 @@ public class FacebookPixelService {
             return;
         }
         String pixelOwnerBusinessId = config.pixelOwnerBusinessId().trim();
-        List<ExperimentPixel> experiments = fetchExperimentsReadyForPixel();
-        if (experiments.isEmpty()) {
+        List<NichePixel> niches = fetchNichesReadyForPixel();
+        if (niches.isEmpty()) {
             return;
         }
-        for (ExperimentPixel exp : experiments) {
+        for (NichePixel niche : niches) {
             try {
-                String pixelName = buildPixelName(exp);
+                String pixelName = buildPixelName(niche);
                 String pixelId = facebookAdsService.createPixel(
                     config.adAccountId(),
                     pixelName,
@@ -106,12 +106,12 @@ public class FacebookPixelService {
                     systemUserToken
                 );
                 String pixelCode = facebookAdsService.fetchPixelCode(pixelId, systemUserToken);
-                registerPixel(exp.experimentId(), pixelId, pixelCode);
+                registerPixel(niche.nicheId(), pixelId, pixelCode);
             } catch (Exception ex) {
                 LOGGER.error(
-                    "Failed to create pixel for experiment {} ({}): {}",
-                    exp.experimentId(),
-                    exp.experimentName(),
+                    "Failed to create pixel for niche {} ({}): {}",
+                    niche.nicheId(),
+                    niche.nicheName(),
                     ex.getMessage(),
                     ex
                 );
@@ -149,32 +149,32 @@ public class FacebookPixelService {
         }
     }
 
-    private List<ExperimentPixel> fetchExperimentsReadyForPixel() {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/experiments-ready");
+    private List<NichePixel> fetchNichesReadyForPixel() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/niches-ready");
         LOGGER.info(
-            "Requesting experiments ready for pixel creation: url==>{}, params={}",
+            "Requesting niches ready for pixel creation: url==>{}, params={}",
             url,
             JsonLogFormatter.wrap(Collections.emptyMap())
         );
         try {
-            List<ExperimentPixel> experiments = backendClient
+            List<NichePixel> niches = backendClient
                 .get()
                 .uri(url)
                 .retrieve()
-                .bodyToFlux(ExperimentPixel.class)
+                .bodyToFlux(NichePixel.class)
                 .collectList()
                 .block();
             LOGGER.info(
-                "Received experiments for pixel creation: url<=={}, response={}",
+                "Received niches for pixel creation: url<=={}, response={}",
                 url,
-                JsonLogFormatter.wrap(objectMapper, experiments)
+                JsonLogFormatter.wrap(objectMapper, niches)
             );
-            return experiments != null ? experiments : List.of();
+            return niches != null ? niches : List.of();
         } catch (WebClientRequestException ex) {
-            LOGGER.warn("Failed to fetch experiments ready for pixel creation: url==>{}", url, ex);
+            LOGGER.warn("Failed to fetch niches ready for pixel creation: url==>{}", url, ex);
         } catch (WebClientResponseException ex) {
             LOGGER.error(
-                "Backend responded with error when fetching experiments ready for pixel creation: status={}, body={}",
+                "Backend responded with error when fetching niches ready for pixel creation: status={}, body={}",
                 ex.getRawStatusCode(),
                 ex.getResponseBodyAsString(),
                 ex
@@ -183,9 +183,9 @@ public class FacebookPixelService {
         return List.of();
     }
 
-    private void registerPixel(long experimentId, String pixelId, String pixelCode) {
+    private void registerPixel(long nicheId, String pixelId, String pixelCode) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels");
-        PixelCreationRequest request = new PixelCreationRequest(experimentId, pixelId, pixelCode, Instant.now());
+        PixelCreationRequest request = new PixelCreationRequest(nicheId, pixelId, pixelCode, Instant.now());
         LOGGER.info(
             "Registering Facebook pixel in backend: url==>{}, body={}",
             url,
@@ -201,25 +201,25 @@ public class FacebookPixelService {
                 .bodyToMono(Void.class)
                 .block();
             LOGGER.info(
-                "Backend acknowledged Facebook pixel creation: url<=={}, experimentId={}, pixelId={}",
+                "Backend acknowledged Facebook pixel creation: url<=={}, nicheId={}, pixelId={}",
                 url,
-                experimentId,
+                nicheId,
                 pixelId
             );
         } catch (WebClientRequestException ex) {
             LOGGER.warn(
-                "Failed to register Facebook pixel in backend: url==>{}, experimentId={}, pixelId={}",
+                "Failed to register Facebook pixel in backend: url==>{}, nicheId={}, pixelId={}",
                 url,
-                experimentId,
+                nicheId,
                 pixelId,
                 ex
             );
         } catch (WebClientResponseException ex) {
             LOGGER.error(
-                "Backend returned error while registering pixel: status={}, body={}, experimentId={}, pixelId={}",
+                "Backend returned error while registering pixel: status={}, body={}, nicheId={}, pixelId={}",
                 ex.getRawStatusCode(),
                 ex.getResponseBodyAsString(),
-                experimentId,
+                nicheId,
                 pixelId,
                 ex
             );
@@ -281,16 +281,16 @@ public class FacebookPixelService {
         }
     }
 
-    private String buildPixelName(ExperimentPixel exp) {
-        if (StringUtils.hasText(exp.experimentName())) {
-            return "Pixel - " + exp.experimentName();
+    private String buildPixelName(NichePixel niche) {
+        if (StringUtils.hasText(niche.nicheName())) {
+            return "Pixel - " + niche.nicheName();
         }
-        return "Pixel - Experiment " + exp.experimentId();
+        return "Pixel - Niche " + niche.nicheId();
     }
 
-    public record ExperimentPixel(long experimentId, String experimentName) {}
+    public record NichePixel(long nicheId, String nicheName) {}
 
-    public record PixelCreationRequest(long experimentId, String pixelId, String pixelCode, Instant createdAt) {}
+    public record PixelCreationRequest(long nicheId, String pixelId, String pixelCode, Instant createdAt) {}
 
     public record PixelConversion(
         long purchaseId,

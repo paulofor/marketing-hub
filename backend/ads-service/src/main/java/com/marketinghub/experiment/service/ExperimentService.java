@@ -357,14 +357,6 @@ public class ExperimentService {
                 .toList();
     }
 
-    public java.util.List<Experiment> listReadyForPixel() {
-        java.util.List<ExperimentStatus> eligibleStatuses = java.util.List.of(
-                ExperimentStatus.PLANNED,
-                ExperimentStatus.RUNNING,
-                ExperimentStatus.PAUSED
-        );
-        return repository.findReadyForPixel(eligibleStatuses, ExperimentPlatform.FACEBOOK);
-    }
 
     @Transactional
     public Experiment duplicate(Long id) {
@@ -416,19 +408,6 @@ public class ExperimentService {
                 .followUpActionUrl(original.getFollowUpActionUrl())
                 .build();
         return repository.save(copy);
-    }
-
-    @Transactional
-    public Experiment attachFacebookPixel(Long id, String pixelId, String pixelCode, java.time.Instant createdAt) {
-        if (pixelId == null || pixelId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pixelId is required");
-        }
-        Experiment exp = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experiment not found: " + id));
-        exp.setFacebookPixelId(pixelId.trim());
-        exp.setFacebookPixelCode(pixelCode);
-        exp.setFacebookPixelCreatedAt(createdAt != null ? createdAt : java.time.Instant.now());
-        return exp;
     }
 
 

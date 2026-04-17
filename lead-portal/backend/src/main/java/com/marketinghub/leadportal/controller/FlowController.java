@@ -51,7 +51,10 @@ public class FlowController {
                 request.getImagePromptTemplate(),
                 request.getImageBatchSize(),
                 questionRequests.stream().map(this::toQuestion).toList(),
-                mapStyle(request.getSimpleFormStyle()));
+                mapStyle(request.getSimpleFormStyle()),
+                request.getFacebookPixelId(),
+                request.getFacebookPixelCode(),
+                request.getFacebookPixelCreatedAt());
         return FlowResponse.from(flowService.save(flow));
     }
 

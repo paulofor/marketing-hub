@@ -195,6 +195,11 @@ export default function NicheDetailPage() {
     [normalizedNicheId],
   );
   const { data, isLoading, isFetching } = useNiche(id);
+  const facebookPixelId = data?.facebookPixelId ?? null;
+  const facebookPixelCode = data?.facebookPixelCode ?? null;
+  const facebookPixelCreatedAtLabel = data?.facebookPixelCreatedAt
+    ? formatDateTime(data.facebookPixelCreatedAt)
+    : null;
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: targetingElements, isFetching: isFetchingTargeting } =
@@ -634,6 +639,13 @@ export default function NicheDetailPage() {
       targetId: "niche-deliverables",
     },
     {
+      icon: Sparkles,
+      label: "Pixel do Facebook",
+      value: facebookPixelId ? "Ativo" : "Pendente",
+      helper: facebookPixelId ?? "Gerado automaticamente quando um experimento é liberado",
+      targetId: "niche-facebook-pixel",
+    },
+    {
       icon: Clock3,
       label: "Atualizado em",
       value: updatedAtLabel ?? "-",
@@ -1008,6 +1020,55 @@ export default function NicheDetailPage() {
             </article>
           ))}
         </div>
+      </section>
+      <section
+        className="niche-section"
+        aria-labelledby="niche-facebook-pixel-title"
+        id="niche-facebook-pixel"
+      >
+        <div className="niche-section__header">
+          <div>
+            <h2 className="niche-section__title" id="niche-facebook-pixel-title">
+              Pixel do Facebook
+            </h2>
+            <p className="niche-section__subtitle">
+              Compartilhado por todos os experimentos deste nicho.
+            </p>
+            <p className="niche-section__status">
+              {facebookPixelId
+                ? `Pixel ${facebookPixelId} disponível para embutir nas landings.`
+                : "Nenhum pixel gerado ainda para este nicho."}
+            </p>
+          </div>
+          {facebookPixelCreatedAtLabel ? (
+            <span className="text-muted small">
+              Criado em {facebookPixelCreatedAtLabel}
+            </span>
+          ) : null}
+        </div>
+        {facebookPixelId ? (
+          <div className="d-flex flex-column gap-3">
+            <div>
+              <strong>ID:</strong> {facebookPixelId}
+            </div>
+            {facebookPixelCode ? (
+              <textarea
+                className="form-control font-monospace"
+                value={facebookPixelCode ?? ""}
+                readOnly
+                rows={6}
+              />
+            ) : (
+              <div className="alert alert-info mb-0">
+                Pixel registrado. Aguarde o retorno do código completo pela Meta.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="alert alert-warning mb-0">
+            Libere um experimento pronto para que o worker gere o pixel automaticamente.
+          </div>
+        )}
       </section>
       <NicheLearningDictionaryCard nicheId={normalizedNicheId} />
       <NicheBacklogRecommendationsCard nicheId={normalizedNicheId} />

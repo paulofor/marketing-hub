@@ -9,6 +9,7 @@ import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
 import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -32,7 +33,10 @@ public record LeadPortalFlowPublicationRequest(
         String imagePromptTemplate,
         Integer imagePromptBatchSize,
         List<Question> questions,
-        SimpleFormStylePayload simpleFormStyle) {
+        SimpleFormStylePayload simpleFormStyle,
+        String facebookPixelId,
+        String facebookPixelCode,
+        java.time.Instant facebookPixelCreatedAt) {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Pattern IMAGE_SRC_PATTERN = Pattern.compile("<img[^>]+src=[\"']([^\"']+)[\"']",
@@ -52,6 +56,9 @@ public record LeadPortalFlowPublicationRequest(
                 style.getName(),
                 mergeDefinitionWithExperimentImage(style.getDefinition(), experimentHeroImageUrl),
                 style.getPreviewImageUrl());
+        String facebookPixelId = flow.getMarketNiche() != null ? flow.getMarketNiche().getFacebookPixelId() : null;
+        String facebookPixelCode = flow.getMarketNiche() != null ? flow.getMarketNiche().getFacebookPixelCode() : null;
+        Instant facebookPixelCreatedAt = flow.getMarketNiche() != null ? flow.getMarketNiche().getFacebookPixelCreatedAt() : null;
         return new LeadPortalFlowPublicationRequest(
                 flow.getSlug(),
                 flow.getName(),
@@ -69,7 +76,10 @@ public record LeadPortalFlowPublicationRequest(
                 flow.getImagePromptTemplate(),
                 flow.getImagePromptBatchSize(),
                 flow.getQuestions().stream().map(LeadPortalFlowPublicationRequest::toQuestion).toList(),
-                stylePayload);
+                stylePayload,
+                facebookPixelId,
+                facebookPixelCode,
+                facebookPixelCreatedAt);
     }
 
     private static String resolveRenderMode(LeadPortalFlow flow) {

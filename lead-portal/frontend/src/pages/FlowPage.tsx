@@ -137,6 +137,13 @@ export default function FlowPage() {
           ...flow,
           questions: formQuestions,
         };
+
+  useEffect(() => {
+    if (!flow?.facebookPixelId) {
+      return;
+    }
+    initializeMetaPixel(flow.facebookPixelId);
+  }, [flow?.facebookPixelId]);
   if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
     if (shouldRenderStandaloneTemplate) {
@@ -1223,4 +1230,75 @@ function extractSimpleFormMetadata(questions: FlowQuestion[]): SimpleFormMetadat
     bullets,
     formQuestions,
   };
+}
+
+type FbqFunction = ((...args: any[]) => void) & {
+  callMethod?: (...args: any[]) => void;
+  queue: unknown[];
+  push?: FbqFunction;
+  loaded?: boolean;
+  version?: string;
+};
+
+declare global {
+  interface Window {
+    fbq?: FbqFunction;
+    _fbq?: FbqFunction;
+    __mhFacebookPixels?: Set<string>;
+  }
+}
+
+function initializeMetaPixel(pixelId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const normalized = pixelId.trim();
+  if (!normalized) {
+    return;
+  }
+  const fbq = ensureMetaPixelBase();
+  const w = window as Window & { __mhFacebookPixels?: Set<string> };
+  if (!w.__mhFacebookPixels) {
+    w.__mhFacebookPixels = new Set();
+  }
+  if (!w.__mhFacebookPixels.has(normalized)) {
+    fbq("init", normalized);
+    w.__mhFacebookPixels.add(normalized);
+  }
+  fbq("track", "PageView");
+}
+
+function ensureMetaPixelBase(): FbqFunction {
+  if (typeof window === "undefined") {
+    return (() => undefined) as FbqFunction;
+  }
+  const w = window as Window & { __mhFacebookPixels?: Set<string> };
+  if (w.fbq) {
+    return w.fbq;
+  }
+  const fbq: FbqFunction = function (...args: any[]) {
+    if (fbq.callMethod) {
+      fbq.callMethod.apply(fbq, args);
+    } else {
+      fbq.queue.push(args);
+    }
+  } as FbqFunction;
+  fbq.push = fbq;
+  fbq.loaded = true;
+  fbq.version = "2.0";
+  fbq.queue = [];
+  if (!w._fbq) {
+    w._fbq = fbq;
+  }
+  w.fbq = fbq;
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = "https://connect.facebook.net/en_US/fbevents.js";
+  const firstScript = document.getElementsByTagName("script")[0];
+  if (firstScript?.parentNode) {
+    firstScript.parentNode.insertBefore(script, firstScript);
+  } else {
+    document.head?.appendChild(script);
+  }
+  return fbq;
 }

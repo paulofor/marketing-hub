@@ -30,7 +30,7 @@ class FlowImagePromptServiceTest {
                 null,
                 null,
                 List.of(),
-                null);
+                null, null, null, null);
 
         Map<String, Object> answers = Map.of(
                 "nome", "Ana",
@@ -77,7 +77,7 @@ class FlowImagePromptServiceTest {
                 "Cliente: {{nome}} | Insta: {{resposta.instagram}} | Especialidade: {{resposta.especialidade}}",
                 null,
                 List.of(),
-                null);
+                null, null, null, null);
 
         Map<String, Object> answers = Map.of(
                 "nome", "Paulo",
@@ -118,7 +118,7 @@ class FlowImagePromptServiceTest {
                 "Cliente: {{nome}} | Insta: {{resposta.instagram}} | Serviços: {{servicos}}",
                 8,
                 List.of(),
-                null);
+                null, null, null, null);
 
         Map<String, Object> answers = Map.of(
                 "nome", "Carla",
@@ -159,7 +159,7 @@ class FlowImagePromptServiceTest {
                 "Template: {{nome}}",
                 null,
                 List.of(),
-                null);
+                null, null, null, null);
 
         FlowSubmission submission = new FlowSubmission(
                 UUID.randomUUID(),

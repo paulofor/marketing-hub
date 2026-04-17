@@ -50,15 +50,6 @@ public class Experiment {
     @JoinColumn(name = "facebook_instant_form_id")
     private FacebookInstantForm facebookInstantForm;
 
-    @Column(name = "facebook_pixel_id", length = 64)
-    private String facebookPixelId;
-
-    @Column(name = "facebook_pixel_code", columnDefinition = "LONGTEXT")
-    private String facebookPixelCode;
-
-    @Column(name = "facebook_pixel_created_at")
-    private Instant facebookPixelCreatedAt;
-
     @Column(name = "facebook_release_requested_at")
     private Instant facebookReleaseRequestedAt;
 

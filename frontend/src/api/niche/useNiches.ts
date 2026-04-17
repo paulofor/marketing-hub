@@ -7,6 +7,9 @@ export interface MarketNiche {
   description: string;
   interestCategory: string;
   roleCategory: string;
+  facebookPixelId?: string | null;
+  facebookPixelCode?: string | null;
+  facebookPixelCreatedAt?: string | null;
   interestList?: string[];
   roleList?: string[];
   behaviorList?: string[];

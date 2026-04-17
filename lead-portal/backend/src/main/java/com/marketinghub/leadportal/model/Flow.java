@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.model;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -16,5 +17,8 @@ public record Flow(
         String imagePromptTemplate,
         Integer imageBatchSize,
         List<FlowQuestion> questions,
-        SimpleFormStyle simpleFormStyle) {
+        SimpleFormStyle simpleFormStyle,
+        String facebookPixelId,
+        String facebookPixelCode,
+        Instant facebookPixelCreatedAt) {
 }

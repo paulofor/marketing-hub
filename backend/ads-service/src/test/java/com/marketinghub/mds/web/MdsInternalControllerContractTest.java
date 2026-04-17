@@ -170,6 +170,41 @@ class MdsInternalControllerContractTest {
                 .andExpect(jsonPath("$.content.recommendedMechanismCandidateKey").value("mc-1"));
     }
 
+    @Test
+    void shouldGetDiscoveryReportByRequest() throws Exception {
+        when(artifactService.getReportByRequest(12L))
+                .thenReturn(new com.marketinghub.mds.dto.MdsReportResponse(
+                        12L,
+                        501L,
+                        "mechanismDiscoveryReport",
+                        "v1",
+                        "v1",
+                        "DRAFT",
+                        java.util.Map.of("status", "SUCCESS")
+                ));
+
+        mockMvc.perform(get("/api/internal/mds/reports/12"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestId").value(12))
+                .andExpect(jsonPath("$.artifactId").value(501))
+                .andExpect(jsonPath("$.artifactType").value("mechanismDiscoveryReport"))
+                .andExpect(jsonPath("$.content.status").value("SUCCESS"));
+    }
+
+    @Test
+    void shouldListArtifactsByRequest() throws Exception {
+        when(artifactService.listArtifactsByRequest(12L))
+                .thenReturn(java.util.List.of(
+                        new com.marketinghub.mds.dto.MdsArtifactSummaryResponse(401L, "mechanismSpec", "v1", "v1", "DRAFT"),
+                        new com.marketinghub.mds.dto.MdsArtifactSummaryResponse(402L, "practicalKnowledgePack", "v1", "v1", "DRAFT")
+                ));
+
+        mockMvc.perform(get("/api/internal/mds/requests/12/artifacts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].artifactId").value(401))
+                .andExpect(jsonPath("$[1].artifactType").value("practicalKnowledgePack"));
+    }
+
     private MdsRequestStatusResponse response(MdsRequestStatus status) {
         return new MdsRequestStatusResponse(
                 7L,

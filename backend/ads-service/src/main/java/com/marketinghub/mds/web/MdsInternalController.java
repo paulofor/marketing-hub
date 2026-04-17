@@ -93,6 +93,16 @@ public class MdsInternalController {
         return artifactService.getRecommendedMechanismByRequest(id);
     }
 
+    @GetMapping("/reports/{id}")
+    public MdsReportResponse getReport(@PathVariable Long id) {
+        return artifactService.getReportByRequest(id);
+    }
+
+    @GetMapping("/requests/{id}/artifacts")
+    public List<MdsArtifactSummaryResponse> listArtifactsByRequest(@PathVariable Long id) {
+        return artifactService.listArtifactsByRequest(id);
+    }
+
     @GetMapping("/health")
     public Map<String, String> health() {
         return Map.of("status", "ok", "module", "mds-backend-orchestration");

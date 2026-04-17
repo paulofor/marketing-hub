@@ -8,9 +8,11 @@ import com.marketinghub.mds.MdsArtifactStatus;
 import com.marketinghub.mds.MdsRequest;
 import com.marketinghub.mds.dto.MdsArtifactPublishBatchRequest;
 import com.marketinghub.mds.dto.MdsArtifactPublishBatchResponse;
+import com.marketinghub.mds.dto.MdsArtifactSummaryResponse;
 import com.marketinghub.mds.dto.MdsLineageCreateRequest;
 import com.marketinghub.mds.dto.MdsLineageResponse;
 import com.marketinghub.mds.dto.MdsRecommendedMechanismResponse;
+import com.marketinghub.mds.dto.MdsReportResponse;
 import com.marketinghub.mds.repository.MdsArtifactLineageEdgeRepository;
 import com.marketinghub.mds.repository.MdsArtifactRecordRepository;
 import com.marketinghub.mds.repository.MdsRequestRepository;
@@ -96,6 +98,39 @@ public class MdsArtifactService {
                 record.getStatus().name(),
                 readContent(record.getContentJson())
         );
+    }
+
+    @Transactional(readOnly = true)
+    public MdsReportResponse getReportByRequest(Long requestId) {
+        MdsArtifactRecord record = artifactRecordRepository
+                .findFirstByRequestIdAndArtifactTypeOrderByCreatedAtDescIdDesc(requestId, "mechanismDiscoveryReport")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "mechanism discovery report not found"));
+
+        return new MdsReportResponse(
+                requestId,
+                record.getId(),
+                record.getArtifactType(),
+                record.getSchemaVersion(),
+                record.getVersion(),
+                record.getStatus().name(),
+                readContent(record.getContentJson())
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<MdsArtifactSummaryResponse> listArtifactsByRequest(Long requestId) {
+        if (!requestRepository.existsById(requestId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "mds request not found");
+        }
+        return artifactRecordRepository.findByRequestIdOrderByCreatedAtAscIdAsc(requestId).stream()
+                .map(record -> new MdsArtifactSummaryResponse(
+                        record.getId(),
+                        record.getArtifactType(),
+                        record.getSchemaVersion(),
+                        record.getVersion(),
+                        record.getStatus().name()
+                ))
+                .toList();
     }
 
     private MdsLineageResponse createLineage(Long parentArtifactId, Long childArtifactId, String relationType) {

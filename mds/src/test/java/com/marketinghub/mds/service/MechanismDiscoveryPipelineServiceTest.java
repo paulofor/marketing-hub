@@ -37,6 +37,10 @@ class MechanismDiscoveryPipelineServiceTest {
     private EvidenceItemBuilder evidenceItemBuilder;
     @Mock
     private MechanismCandidateBuilder mechanismCandidateBuilder;
+    @Mock
+    private PracticalKnowledgePackBuilder practicalKnowledgePackBuilder;
+    @Mock
+    private DiscoveryReportBuilder discoveryReportBuilder;
 
     @InjectMocks
     private MechanismDiscoveryPipelineService service;
@@ -100,6 +104,12 @@ class MechanismDiscoveryPipelineServiceTest {
         var mechanismSpec = new com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto.ArtifactPayloadDto(
                 "mechanismSpec", "v1", "v1", "DRAFT", "mds", "mds", java.util.Map.of("id", "ms-1"), null, List.of(103L, 102L)
         );
+        var practicalKnowledgePack = new com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto.ArtifactPayloadDto(
+                "practicalKnowledgePack", "v1", "v1", "DRAFT", "mds", "mds", java.util.Map.of("id", "pk-1"), null, List.of(103L, 102L)
+        );
+        var mechanismDiscoveryReport = new com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto.ArtifactPayloadDto(
+                "mechanismDiscoveryReport", "v1", "v1", "DRAFT", "mds", "mds", java.util.Map.of("id", "rp-1"), null, List.of(103L, 104L, 102L)
+        );
         when(mechanismCandidateBuilder.build(eq(10L), eq(List.of(screenedEvidence)), any(), eq(java.util.Map.of("pubmed:1", 102L))))
                 .thenReturn(new MechanismCandidateBuilder.MechanismBuildResult(
                         List.of(mechanismCandidate),
@@ -116,18 +126,23 @@ class MechanismDiscoveryPipelineServiceTest {
                 ));
         when(mechanismCandidateBuilder.buildMechanismSpec(any(), eq(103L), eq(List.of(102L))))
                 .thenReturn(mechanismSpec);
+        when(practicalKnowledgePackBuilder.build(eq(10L), any(), any())).thenReturn(practicalKnowledgePack);
+        when(discoveryReportBuilder.build(eq(10L), eq("q1"), eq(1), eq(1), eq(1), eq(1), eq(1), any(), any(), any()))
+                .thenReturn(mechanismDiscoveryReport);
 
         when(backendMdsClient.publishBatch(any()))
                 .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 2, List.of(100L, 101L)))
                 .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(102L)))
                 .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(103L)))
-                .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(104L)));
+                .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(104L)))
+                .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(105L)))
+                .thenReturn(new BackendArtifactPublishBatchResponseDto(10L, 1, List.of(106L)));
 
         service.execute(request);
 
         ArgumentCaptor<com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto> batchCaptor =
                 ArgumentCaptor.forClass(com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto.class);
-        verify(backendMdsClient, times(4)).publishBatch(batchCaptor.capture());
+        verify(backendMdsClient, times(6)).publishBatch(batchCaptor.capture());
 
         List<com.marketinghub.mds.dto.BackendArtifactPublishBatchRequestDto> batches = batchCaptor.getAllValues();
         assertThat(batches.get(0).artifacts()).extracting(a -> a.artifactType())
@@ -138,12 +153,16 @@ class MechanismDiscoveryPipelineServiceTest {
                 .containsExactly("mechanismCandidate");
         assertThat(batches.get(3).artifacts()).extracting(a -> a.artifactType())
                 .containsExactly("mechanismSpec");
+        assertThat(batches.get(4).artifacts()).extracting(a -> a.artifactType())
+                .containsExactly("practicalKnowledgePack");
+        assertThat(batches.get(5).artifacts()).extracting(a -> a.artifactType())
+                .containsExactly("mechanismDiscoveryReport");
 
         ArgumentCaptor<com.marketinghub.mds.dto.BackendSourceAccessPublishBatchRequestDto> sourceAccessCaptor =
                 ArgumentCaptor.forClass(com.marketinghub.mds.dto.BackendSourceAccessPublishBatchRequestDto.class);
         verify(backendMdsClient).publishSourceAccessBatch(sourceAccessCaptor.capture());
         assertThat(sourceAccessCaptor.getValue().records()).hasSize(1);
 
-        verify(backendMdsClient, times(4)).heartbeat(eq(10L), any());
+        verify(backendMdsClient, times(5)).heartbeat(eq(10L), any());
     }
 }

@@ -845,3 +845,76 @@ Requests com mecanismo recomendado passam a produzir pacote prático e relatóri
 **Próximo passo sugerido:**
 
 Executar Sprint 7 com foco em observabilidade, hardening operacional e ampliação de testes de integração.
+
+## [2026-04-17] — Etapa: sprint 7 - testes, observabilidade e hardening operacional
+
+**Status:** `CONCLUIDO`
+
+**Resumo:**
+
+A Sprint 7 foi implementada no módulo `mds/` com hardening operacional na busca de fontes externas (timeouts + retries), classificação explícita de falhas recuperáveis/não recuperáveis, instrumentação de métricas por etapa e ampliação da suíte de testes de falha/retry.
+
+**Objetivo da etapa:**
+
+Estabilizar a V1 do MDS para operação previsível no ecossistema do Marketing Hub, melhorando diagnósticos, comportamento em falhas transitórias e cobertura de testes alinhada ao plano da sprint.
+
+**O que foi implementado:**
+
+- configuração de busca adicionada em `MdsProperties` (`timeoutMs`, `retryMaxAttempts`, `retryBackoffMs`) com variáveis de ambiente no `application.yml`;
+- implementação de retries controlados no `SearchExecutionService`, com erro previsível (`RecoverableSourceException`) quando todas as fontes falham;
+- implementação de timeout por fonte em `PubmedSearchClient` e `CrossrefSearchClient` usando `SimpleClientHttpRequestFactory`;
+- criação das exceções `RecoverableSourceException` e `NonRecoverablePipelineException` para separar falhas recuperáveis externas de falhas internas não recuperáveis;
+- atualização do `MdsLoopRunner` para classificar e propagar `failureStage` coerente (`recoverable_external`, `non_recoverable_pipeline`, `pipeline`);
+- instrumentação no `MechanismDiscoveryPipelineService` com métricas por etapa (`success/failure/duration`) e log de resumo operacional com os campos mandatórios da sprint;
+- inclusão do endpoint Actuator de métricas (`/actuator/metrics`) na configuração exposta;
+- criação de `SearchExecutionServiceTest` cobrindo retry bem-sucedido e falha previsível quando todas as fontes externas falham;
+- ajuste de `MechanismDiscoveryPipelineServiceTest` para manter validação do pipeline completo com `MeterRegistry` ativo.
+
+**Arquivos alterados/criados:**
+
+- mds/src/main/java/com/marketinghub/mds/config/MdsProperties.java
+- mds/src/main/java/com/marketinghub/mds/search/SearchExecutionService.java
+- mds/src/main/java/com/marketinghub/mds/search/PubmedSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/CrossrefSearchClient.java
+- mds/src/main/java/com/marketinghub/mds/search/RecoverableSourceException.java
+- mds/src/main/java/com/marketinghub/mds/search/NonRecoverablePipelineException.java
+- mds/src/main/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineService.java
+- mds/src/main/java/com/marketinghub/mds/service/MdsLoopRunner.java
+- mds/src/main/resources/application.yml
+- mds/src/test/java/com/marketinghub/mds/search/SearchExecutionServiceTest.java
+- mds/src/test/java/com/marketinghub/mds/service/MechanismDiscoveryPipelineServiceTest.java
+- docs/novos-modulos/MDS/plano_implementacao_mds_baseado_na_especificacao.md
+- docs/novos-modulos/MDS/protocolo_historico_implantacao_mds.md
+
+**Tabelas / persistência afetadas:**
+
+- `nenhuma`
+
+**APIs / endpoints / contratos afetados:**
+
+- `GET /internal/mechanism-discovery/actuator/health` (mantido)
+- `GET /actuator/metrics` (passa a estar exposto para observabilidade)
+- contrato backend ↔ MDS sem breaking change estrutural; sem alteração de payloads persistidos.
+
+**Artefatos / schemas impactados:**
+
+- `nenhum` (sem mudança de schema de artefatos canônicos nesta sprint)
+
+**Testes executados:**
+
+- `cd mds && mvn test`
+- `cd backend/ads-service && mvn -Dtest=MdsInternalControllerContractTest test`
+
+**Resultado observado:**
+
+O pipeline do MDS passou a reagir de forma previsível a falhas transitórias de fonte externa, com tentativas controladas e classificação explícita de erro, ao mesmo tempo em que fornece telemetria mínima por etapa e logs de diagnóstico operacional consistentes.
+
+**Limitações / pendências:**
+
+- dashboards operacionais não foram implementados nesta sprint (apenas emissão de métricas e logs);
+- política de retry/backoff ainda é uniforme por fonte/tipo de erro;
+- cobertura de integração real com indisponibilidade intermitente de provedores externos ainda depende de ambiente controlado de teste.
+
+**Próximo passo sugerido:**
+
+Abrir a próxima fase fora da Sprint 7 para evolução de dashboards, política adaptativa de retry por tipo de erro e testes end-to-end com cenários reais de indisponibilidade externa.

@@ -9,12 +9,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
 
 mds:
   loop-enabled: true
   loop-interval-ms: 15000
   poll-limit: 5
+  search:
+    timeout-ms: ${MDS_SEARCH_TIMEOUT_MS:5000}
+    retry-max-attempts: ${MDS_SEARCH_RETRY_MAX_ATTEMPTS:2}
+    retry-backoff-ms: ${MDS_SEARCH_RETRY_BACKOFF_MS:250}
   backend:
     base-url: ${MDS_BACKEND_BASE_URL:http://localhost:8080}
     worker-id: ${MDS_WORKER_ID:mds-worker-local}

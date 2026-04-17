@@ -7,6 +7,7 @@ public class MdsProperties {
     private boolean loopEnabled = true;
     private int pollLimit = 5;
     private Backend backend = new Backend();
+    private Search search = new Search();
 
     public boolean isLoopEnabled() {
         return loopEnabled;
@@ -32,6 +33,14 @@ public class MdsProperties {
         this.backend = backend;
     }
 
+    public Search getSearch() {
+        return search;
+    }
+
+    public void setSearch(Search search) {
+        this.search = search;
+    }
+
     public static class Backend {
         private String baseUrl = "http://localhost:8080";
         private String workerId = "mds-worker-local";
@@ -50,6 +59,36 @@ public class MdsProperties {
 
         public void setWorkerId(String workerId) {
             this.workerId = workerId;
+        }
+    }
+
+    public static class Search {
+        private int timeoutMs = 5000;
+        private int retryMaxAttempts = 2;
+        private int retryBackoffMs = 250;
+
+        public int getTimeoutMs() {
+            return timeoutMs;
+        }
+
+        public void setTimeoutMs(int timeoutMs) {
+            this.timeoutMs = timeoutMs;
+        }
+
+        public int getRetryMaxAttempts() {
+            return retryMaxAttempts;
+        }
+
+        public void setRetryMaxAttempts(int retryMaxAttempts) {
+            this.retryMaxAttempts = retryMaxAttempts;
+        }
+
+        public int getRetryBackoffMs() {
+            return retryBackoffMs;
+        }
+
+        public void setRetryBackoffMs(int retryBackoffMs) {
+            this.retryBackoffMs = retryBackoffMs;
         }
     }
 }

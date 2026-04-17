@@ -58,7 +58,7 @@ public class ExperimentPipelineOpenAiClient {
     private static final String LANDING_IMAGE_PLANNING_TEMPLATE_PATH = "prompts/experiment/landing-image-planning.md";
     private static final String LANDING_HTML_TEMPLATE_PATH = "prompts/experiment/landing-html.md";
 
-    private static final String CAMPAIGN_ANGLE_MARKER = "primaryPromise,";
+    private static final String CAMPAIGN_ANGLE_MARKER = "- primaryPromise";
     private static final String LANDING_COPY_MARKER = "messageMatchSource,";
     private static final String LANDING_WIREFRAME_MARKER = "variantLayoutId";
     private static final String LANDING_IMAGE_PLANNING_MARKER = "visualDirectionSummary";

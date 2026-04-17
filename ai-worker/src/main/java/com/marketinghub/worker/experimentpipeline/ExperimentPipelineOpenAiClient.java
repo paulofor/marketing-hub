@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -15,10 +18,12 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -47,173 +52,34 @@ public class ExperimentPipelineOpenAiClient {
             10. A landing deve aprofundar a promessa e reduzir ceticismo.
 
             """;
-    private static final String CAMPAIGN_ANGLE_PROMPT_SUFFIX = """
-            Contexto do nicho: {nicho}
+    private static final String CAMPAIGN_ANGLE_TEMPLATE_PATH = "prompts/experiment/campaign-angle.md";
+    private static final String LANDING_COPY_TEMPLATE_PATH = "prompts/experiment/landing-copy.md";
+    private static final String LANDING_WIREFRAME_TEMPLATE_PATH = "prompts/experiment/landing-wireframe.md";
+    private static final String LANDING_IMAGE_PLANNING_TEMPLATE_PATH = "prompts/experiment/landing-image-planning.md";
+    private static final String LANDING_HTML_TEMPLATE_PATH = "prompts/experiment/landing-html.md";
 
-            Dor consolidada:
-            {dor_resumida}
+    private static final String CAMPAIGN_ANGLE_MARKER = "primaryPromise,";
+    private static final String LANDING_COPY_MARKER = "messageMatchSource,";
+    private static final String LANDING_WIREFRAME_MARKER = "variantLayoutId";
+    private static final String LANDING_IMAGE_PLANNING_MARKER = "visualDirectionSummary";
+    private static final String LANDING_HTML_MARKER = "htmlDocument";
 
-            Resultado consolidado:
-            {resultado_resumido}
+    private static final List<String> TEMPLATE_VARIABLE_KEYS = List.of(
+            "NICHE_NAME",
+            "PERSONA_NAME",
+            "HYPOTHESIS_TITLE",
+            "PRIMARY_PAIN_SUMMARY",
+            "PRIMARY_PROMISE_SUMMARY",
+            "MECHANISM_SUMMARY",
+            "PROOF_SUMMARY",
+            "OFFER_NAME",
+            "PRIMARY_CTA_ACTION",
+            "PRIMARY_CTA_LABEL",
+            "PRODUCT_ENVELOPE",
+            "DELIVERABLES_JSON",
+            "PROOF_ASSET_JSON",
+            "CASE_NOTES");
 
-            Mecanismo consolidado:
-            {mecanismo_resumido}
-
-            Prova consolidada:
-            {prova_resumida}
-
-            Envelope do produto:
-            {envelope_produto}
-
-            Tarefa:
-            Crie a base estratégica de uma campanha Meta Ads + landing page para este produto.
-
-            Regras:
-            1. Escolha 1 dor principal e 1 transformação principal.
-            2. A promessa central deve ser simples e rápida de entender.
-            3. O anúncio deve abrir pela dor ou pelo resultado.
-            4. A landing deve aprofundar a mesma promessa, sem mudar o ângulo.
-            5. O CTA deve ser compatível com escala, por exemplo:
-               - gerar amostra
-               - preencher briefing
-               - receber prévia
-               - desbloquear kit
-            6. Não proponha nada fora do envelope do produto.
-
-            Formato esperado:
-            JSON com:
-            primaryPromise,
-            primaryPain,
-            mechanismSummary,
-            proofSummary,
-            cta,
-            singleMindedPromise,
-            primaryCTA,
-            landingMatchLine,
-            funnelStage,
-            tone
-            """;
-    private static final String LANDING_COPY_PROMPT_SUFFIX = """
-            Objetivo da landing:
-            Continuar exatamente a promessa do anúncio clicado e levar o usuário ao mesmo CTA declarado no anúncio.
-
-            Contexto mínimo disponível no prompt:
-            - Ângulo completo do experimento
-            - Headline do anúncio clicado
-            - CTA aprovado para o anúncio/landing
-            - landingMatchLine com a frase de continuidade
-
-            Regras:
-            1. Repita a mesma promessa no hero (hero.headline + hero.promise) e em pageGoal.
-            2. messageMatchSource deve citar qual headline do anúncio está sendo espelhada e messageMatchNotes precisa explicar como cada seção mantém essa continuidade.
-            3. hero.ctaLabel, primaryCTA e todos os ctaBlocks devem usar exatamente o mesmo texto do CTA do anúncio.
-            4. bodySections precisa ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta; cada bloco deve preencher sectionType e sectionDependsOn (primaryPromise, mechanismSummary, proofSummary ou primaryCTA).
-            5. ctaBlocks deve mapear onde cada CTA aparece (hero, mid, final, sticky ou inline) especificando ctaVariant, matchAdCta e messageMatchNotes.
-            6. faq precisa trazer pelo menos três perguntas com objectionTag deixando claro qual objeção está sendo tratada.
-            7. consistencyChecks deve listar no mínimo CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES com status PASS/WARN/FAIL e detalhes.
-            8. complianceNotes sempre reforça que a entrega é 100% digital (gerada por IA) e sem consultoria ou ligações.
-            9. Texto direto, escaneável e sem jargão de tráfego.
-
-            Formato obrigatório (JSON):
-            - pageGoal,
-            - messageMatchSource,
-            - messageMatchNotes
-            - primaryCTA
-            - hero { eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy, ctaLabel, ctaUrl, ctaMatchNotes }
-            - bodySections[] com sectionId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
-            - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
-            - faq[] com question, answer, objectionTag
-            - consistencyChecks[] com check, status (PASS/WARN/FAIL), details
-            - complianceNotes
-            """;
-
-    private static final String LANDING_LAYOUT_PROMPT_SUFFIX = """
-            Objetivo:
-            Converter o copy aprovado em um wireframe textual, mobile-first e com message match obrigatório entre anúncio e landing.
-
-            Insumos garantidos:
-            - Promessa central (primaryPromise) + landingMatchLine
-            - CTA aprovado (primaryCTA)
-            - Hero/headline e seções principais já redigidas
-
-            Regras:
-            1. A estrutura deve deixar claro, logo no primeiro bloco, para qual nicho a página foi feita.
-            2. pageGoal precisa deixar explícito qual ação a página deve gerar.
-            3. variantLayoutId deve ser form-first, proof-first ou story-first.
-            4. sectionOrder deve mapear cada bloco com sectionId, sectionName, objective, contentType (hero, form, split, proof, timeline, faq, cta), copySource, uiNotes, messageMatchDependency e sectionDependsOn.
-            5. Cada bloco precisa informar mobilePriorityScore (1 a 10) e dropOffRisk (baixo, medio ou alto).
-            6. Se houver CTA no bloco, preencher ctaSlot com hasCta=true, ctaLabel, ctaVariant (hero, mid, final, sticky ou inline), matchAdCta e notes.
-            7. formPlacementNotes deve informar em quantos scrolls o formulário aparece e se há versão sticky.
-            8. ctaPlacementNotes garante repetição literal do CTA aprovado em posições estratégicas.
-            9. mobilePriorityNotes destaca o que aparece antes da rolagem.
-            10. consistencyChecks precisa incluir CTA_MATCH e EXPERIENCE_CONTINUITY com status PASS/WARN/FAIL e detalhes.
-            11. Cada bloco deve preencher mediaSlot com: none, image, illustration, chart, icon-set ou video-thumb.
-            12. Cada bloco deve preencher compositionNotes detalhando hierarquia, ritmo de leitura e composição mobile-first.
-            13. Não transformar o layout em HTML final; esta etapa define apenas ordem, hierarquia e slots de mídia.
-            14. Não usar linguagem de consultoria e não criar estrutura genérica para qualquer mercado.
-            15. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para o nicho informado.
-            16. Cada bloco deve preencher surfaceSpec com surfaceToken, style, contrastMode e notes para contrato explícito de superfície visual por seção.
-            17. Alternar surfaceToken entre surface-base e surface-alt-* para reforçar escaneabilidade e hierarquia visual entre seções consecutivas.
-            18. Garantir variação intencional de cores de fundo entre seções, explicando a estratégia em backgroundColorStrategy.
-            19. Garantir equilíbrio visual entre texto e imagem em cada bloco, explicando como mediaSlot e copy dividem atenção sem competir entre si e detalhando em textImageBalanceNotes.
-            20. Definir formSpec como contrato único do formulário com:
-                - formId: lead-capture-primary
-                - title: Receber a prévia do Kit (IA)
-                - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)
-                - submitTarget: #desbloquear
-                - fields exatamente nesta ordem:
-                  1) nome (type=text, required=true, placeholder=Seu nome)
-                  2) email (type=email, required=true, placeholder=voce@exemplo.com)
-                  3) whatsapp (type=tel, required=false, placeholder=(DDD) 9XXXX-XXXX)
-                - consent.enabled=true, consent.required=false e consent.label preenchido
-                - successState com title e message.
-
-            Formato obrigatório (JSON):
-            - pageGoal,
-            - variantLayoutId
-            - messageMatchSummary
-            - sectionOrder[] conforme regras acima
-            - mobilePriorityNotes
-            - ctaPlacementNotes
-            - formPlacementNotes
-            - backgroundColorStrategy
-            - textImageBalanceNotes
-            - formSpec
-            - consistencyChecks[]
-            """;
-    private static final String LANDING_HTML_PROMPT_SUFFIX = """
-            Objetivo:
-            Unificar a copy, o wireframe e o planejamento de imagens aprovados em uma landing final pronta para uso no formulário do experimento.
-
-            Regras:
-            1. Entregar documento HTML completo com CSS e JavaScript embutidos.
-            2. O CTA principal deve ser idêntico ao CTA aprovado nas etapas anteriores.
-            3. O formulário deve ser mobile-first e renderizado exatamente a partir de wireframe.formSpec (sem inventar/remover/renomear/trocar required).
-            4. Incluir validação de campos obrigatórios no JavaScript.
-            5. Incluir bloco de compliance reforçando entrega digital via IA e sem consultoria.
-            6. Consumir explicitamente os artefatos anteriores:
-               - copy da landing para narrativa e message match;
-               - wireframe para ordem/hierarquia e mediaSlot;
-               - planejamento de imagens para imageRole, conversionRole, layoutBinding, placement e altText;
-               - wireframe.formSpec para contrato de campos e obrigatoriedade do formulário.
-            7. Cada seção renderizada deve incluir data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec usando data-surface-token, data-surface-style e data-surface-contrast.
-            8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
-            9. Não usar bibliotecas externas.
-            10. Renderizar imagens somente para itens listados em landingPageImagePlanning.images[].
-            11. É proibido adicionar qualquer tag <img> fora dessa lista, mesmo que o wireframe sugira mídia visual em outras seções.
-            12. Se uma seção tiver contentType=split e não existir imagem correspondente em landingPageImagePlanning.images[], renderizar o bloco sem <img>.
-            13. Toda tag <img> permitida deve usar src absoluto válido (https://... ou data:image/...) e reutilizar altText do planejamento de imagens.
-            14. Cada <img> deve declarar data-image-section-id e data-image-binding-key como binding canônico obrigatório do plano de imagens.
-            15. Cada <img> também deve declarar data-image-role (semântico), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.
-            16. Aplicar posicionamento de imagem determinístico por layoutBinding: cada bloco com imagem deve renderizar data-image-desktop-placement e data-image-mobile-placement com os valores de layoutBinding, além de classes CSS explícitas para cada variação (left/right/center/background e above-copy/below-copy/inline/background).
-            17. No mobile (<=768px), respeitar sempre preferredMobilePlacement e impedir overlap de texto/imagem.
-            18. Após envio bem-sucedido do formulário, exibir mensagem clara orientando o usuário a aguardar o e-mail com a prévia.
-
-            Formato obrigatório (JSON):
-            - htmlDocument
-            - summary
-            - consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY
-            """;
     private static final Pattern FORM_FIELD_BLOCK_PATTERN = Pattern.compile(
             "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
     private static final String STATIC_FORM_FIELDS_HTML = """
@@ -324,43 +190,10 @@ public class ExperimentPipelineOpenAiClient {
             </script>
             """;
 
-    private static final String LANDING_IMAGE_PLANNING_PROMPT_SUFFIX = """
-            Objetivo:
-            Planejar as imagens da landing antes da geração final do HTML, usando o ângulo da campanha, os textos da landing e o layout já aprovado.
-
-            Insumos garantidos:
-            - Ângulo da campanha (dor, promessa, mecanismo, prova)
-            - Texto da landing aprovado
-            - Wireframe/layout da landing aprovado
-            - CTA principal já validado
-
-            Regras:
-            1. Entregar images[] com no mínimo 4 itens ligados a sectionId/sectionName reais do wireframe.
-            2. Cada item deve incluir imageBindingKey (curto/canônico), objective, placement, priority, hierarchyLevel, imagePrompt, messageMatchNotes, imageRole, conversionRole, emotionalJob e sectionVisualGoal.
-            3. imagePrompt deve ser específico para o contexto da seção (não genérico).
-            4. Definir dimensions.desktop e dimensions.mobile para orientar implementação responsiva.
-            5. Incluir safeMargins e textOverlayGuidance quando houver texto sobre imagem.
-            6. Sempre incluir altText descritivo para cada imagem planejada.
-            7. Incluir layoutBinding com preferredDesktopPlacement, preferredMobilePlacement, desktopAspectRatio, mobileAspectRatio, allowCrop e safeCropZones(top/right/bottom/left).
-            8. Incluir attentionPriority, visualWeight, distanceToCTA, supportsFormConversion e formRelationNotes para ligar a imagem ao objetivo de lead.
-            9. Incluir complianceNotes e negativePrompt para evitar ruído visual e promessas indevidas.
-            10. ctaIntegrationNotes deve explicar onde o CTA aparece junto das imagens sem competir com o conteúdo.
-            11. sequencingNotes deve explicar a ordem narrativa das imagens ao longo da página.
-            12. consistencyChecks precisa incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
-
-            Formato obrigatório (JSON):
-            - pageGoal
-            - visualDirectionSummary
-            - sequencingNotes
-            - ctaIntegrationNotes
-            - images[]
-            - consistencyChecks[]
-            """;
-
-
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
     private final boolean enabled;
+    private final Map<String, String> promptTemplates;
 
     public ExperimentPipelineOpenAiClient(WebClient.Builder builder,
                                           ObjectMapper objectMapper,
@@ -368,6 +201,7 @@ public class ExperimentPipelineOpenAiClient {
                                           @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl) {
         this.objectMapper = objectMapper;
         this.enabled = StringUtils.hasText(apiKey);
+        this.promptTemplates = loadPromptTemplates();
         WebClient.Builder clientBuilder = builder.clone().baseUrl(baseUrl);
         if (enabled) {
             clientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.trim());
@@ -636,22 +470,90 @@ public class ExperimentPipelineOpenAiClient {
         String base = prompt != null && prompt.startsWith(PIPELINE_PROMPT_PREFIX)
                 ? prompt
                 : PIPELINE_PROMPT_PREFIX + (prompt != null ? prompt : "");
-        if (isCampaignAngleSection(job) && !base.contains("proofSummary,")) {
-            return base + "\n\n" + CAMPAIGN_ANGLE_PROMPT_SUFFIX;
+        if (isCampaignAngleSection(job) && !base.contains(CAMPAIGN_ANGLE_MARKER)) {
+            return appendSectionTemplate(base, CAMPAIGN_ANGLE_TEMPLATE_PATH, job);
         }
-        if (isLandingCopySection(job) && !base.contains("messageMatchSource,")) {
-            return base + "\n\n" + LANDING_COPY_PROMPT_SUFFIX;
+        if (isLandingCopySection(job) && !base.contains(LANDING_COPY_MARKER)) {
+            return appendSectionTemplate(base, LANDING_COPY_TEMPLATE_PATH, job);
         }
-        if (isLandingLayoutSection(job) && !base.contains("pageGoal,")) {
-            return base + "\n\n" + LANDING_LAYOUT_PROMPT_SUFFIX;
+        if (isLandingLayoutSection(job) && !base.contains(LANDING_WIREFRAME_MARKER)) {
+            return appendSectionTemplate(base, LANDING_WIREFRAME_TEMPLATE_PATH, job);
         }
-        if (isLandingImagePlanningSection(job) && !base.contains("visualDirectionSummary")) {
-            return base + "\n\n" + LANDING_IMAGE_PLANNING_PROMPT_SUFFIX;
+        if (isLandingImagePlanningSection(job) && !base.contains(LANDING_IMAGE_PLANNING_MARKER)) {
+            return appendSectionTemplate(base, LANDING_IMAGE_PLANNING_TEMPLATE_PATH, job);
         }
-        if (isLandingHtmlSection(job) && !base.contains("htmlDocument")) {
-            return base + "\n\n" + LANDING_HTML_PROMPT_SUFFIX;
+        if (isLandingHtmlSection(job) && !base.contains(LANDING_HTML_MARKER)) {
+            return appendSectionTemplate(base, LANDING_HTML_TEMPLATE_PATH, job);
         }
         return base;
+    }
+
+    private String appendSectionTemplate(String basePrompt, String templatePath, ExperimentPipelineJobDto job) {
+        String template = promptTemplates.get(templatePath);
+        if (!StringUtils.hasText(template)) {
+            return basePrompt;
+        }
+        return basePrompt + "\n\n" + applyTemplateVariables(template, templateVariables(job));
+    }
+
+    private Map<String, String> templateVariables(ExperimentPipelineJobDto job) {
+        Map<String, String> variables = new LinkedHashMap<>();
+        for (String key : TEMPLATE_VARIABLE_KEYS) {
+            variables.put(key, readTemplateVariable(job, key));
+        }
+        return variables;
+    }
+
+    private String readTemplateVariable(ExperimentPipelineJobDto job, String key) {
+        if (job == null || !StringUtils.hasText(job.prompt())) {
+            return "";
+        }
+        Pattern pattern = Pattern.compile("(?im)^\\s*" + Pattern.quote(key) + "\\s*:\\s*(.+)$");
+        Matcher matcher = pattern.matcher(job.prompt());
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+        return "";
+    }
+
+    private String applyTemplateVariables(String template, Map<String, String> variables) {
+        if (!StringUtils.hasText(template) || variables == null || variables.isEmpty()) {
+            return template;
+        }
+        String resolved = template;
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            String value = StringUtils.hasText(entry.getValue()) ? entry.getValue().trim() : "";
+            resolved = resolved.replace("{{" + entry.getKey() + "}}", value);
+        }
+        return resolved;
+    }
+
+    private Map<String, String> loadPromptTemplates() {
+        Map<String, String> templates = new LinkedHashMap<>();
+        List<String> paths = List.of(
+                CAMPAIGN_ANGLE_TEMPLATE_PATH,
+                LANDING_COPY_TEMPLATE_PATH,
+                LANDING_WIREFRAME_TEMPLATE_PATH,
+                LANDING_IMAGE_PLANNING_TEMPLATE_PATH,
+                LANDING_HTML_TEMPLATE_PATH);
+        for (String path : paths) {
+            templates.put(path, readPromptTemplate(path));
+        }
+        return Map.copyOf(templates);
+    }
+
+    private String readPromptTemplate(String path) {
+        ClassPathResource resource = new ClassPathResource(path);
+        try {
+            if (!resource.exists()) {
+                log.warn("Template de prompt não encontrado no classpath: {}", path);
+                return "";
+            }
+            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
+        } catch (IOException ex) {
+            log.warn("Falha ao carregar template de prompt {}: {}", path, ex.getMessage());
+            return "";
+        }
     }
 
     @SuppressWarnings("unchecked")

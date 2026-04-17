@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.dto;
 
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -14,4 +15,5 @@ public class RequestVideoRenderRequest {
 
     private SalesVideoProviderFamily providerFamily;
     private String providerName;
+    private SalesVideoExecutionMode executionMode;
 }

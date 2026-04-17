@@ -342,25 +342,37 @@ Fechar os pré-requisitos mínimos de governança para uso produtivo de avatar f
 ## Fechamento da sprint — preencher pelo Codex
 
 ### Status
-- 
+- concluída com pendências (compliance mínimo e bloqueios produtivos implementados no backend; UI administrativa e validação E2E ainda pendentes)
 
 ### Regras de compliance implementadas
-- 
+- checklist mínimo no `SalesVideoProfile` com campos de consentimento auditável (`requiresConsent`, ator/data/evidência) e revisão humana (`humanReviewApprovedBy/humanReviewApprovedAt`).
+- render em modo `PRODUCTION` passa a exigir pré-condições de compliance no backend; falta de consentimento (quando obrigatório) ou falta de revisão humana bloqueia workflow com erro de domínio explícito.
+- publicação de slot na landing também valida compliance antes de permitir `PUBLISHED`, reforçando governança na etapa de exposição pública.
 
 ### Campos/contratos adicionados
-- 
+- `SalesVideoExecutionMode` (`TEST` | `PRODUCTION`) no job de render.
+- `auditSnapshotJson` no `sales_video_job` para congelar trilha auditável de script/provider/model/prompt/consentimento no momento da solicitação produtiva.
+- endpoint `PATCH /api/sales-videos/profiles/{profileId}/compliance` para atualização do checklist de compliance.
+- expansão do `SalesVideoProfileDto` e `SalesVideoJobDto` com campos de governança/compliance para auditoria e integração.
 
 ### Bloqueios de workflow implementados
-- 
+- bloqueio de `request-render` em `PRODUCTION` sem checklist mínimo completo.
+- bloqueio de publicação de slot (`landing_video_slot`) sem revisão humana aprovada.
+- bloqueio de publicação de avatar com `requiresConsent=true` sem evidência auditável de consentimento.
 
 ### Limitações restantes
-- 
+- frontend administrativo ainda não possui formulário dedicado para atualizar o checklist de compliance.
+- política de consentimento ainda não distingue tipos de evidência por jurisdição (documento, termo assinado, hash de arquivo etc.).
+- sem validação E2E em staging com backend `191.252.181.168` para provar bloqueios em cenários concorrentes.
 
 ### Pendências carregadas para a Sprint V5
-- 
+- validar E2E em staging os cenários: render `TEST`, render `PRODUCTION` bloqueado, render `PRODUCTION` liberado após compliance completo e publicação em landing.
+- adicionar cobertura de testes de integração/contrato para endpoint de compliance e snapshots de auditoria.
+- materializar painel operacional com métricas de bloqueio de compliance e taxa de aprovação por tenant/provider.
 
 ### Evidências/testes executados
-- 
+- testes unitários do módulo backend (`SalesVideoJobServiceTest`, `LandingVideoSlotServiceTest`) com build local do `ads-service`.
+- revisão de contrato OpenAPI (`avatar-sales-video-integration-swagger.yaml`) alinhando novos campos e endpoint de compliance.
 
 ---
 

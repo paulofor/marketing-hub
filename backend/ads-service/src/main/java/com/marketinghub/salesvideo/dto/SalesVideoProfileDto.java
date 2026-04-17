@@ -23,6 +23,13 @@ public class SalesVideoProfileDto {
     private String voiceStyle;
     private String language;
     private Integer targetDurationSeconds;
+    private boolean requiresConsent;
+    private String consentRecordedBy;
+    private Instant consentRecordedAt;
+    private String consentEvidenceUrl;
+    private String humanReviewApprovedBy;
+    private Instant humanReviewApprovedAt;
+    private String complianceNotes;
     private SalesVideoStatus status;
     private Instant createdAt;
     private Instant updatedAt;

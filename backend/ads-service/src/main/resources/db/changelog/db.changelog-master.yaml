@@ -63,6 +63,9 @@ databaseChangeLog:
       file: changesets/2037-02-15-sales-video-hardening.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2037-04-17-sales-video-compliance-governance.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2037-03-15-proof-offer-normalization.yaml
       relativeToChangelogFile: true
   - include:

@@ -60,7 +60,7 @@ export default function LeadPortalFlowTab({
     });
   };
 
-  const handleAssignFlow = async (flowId: number | null) => {
+  const handleAssignFlow = async (flow: LeadPortalFlow | null) => {
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
     if (kpiTargetValue == null || experiment.metricPresetId == null) {
       setFeedback({
@@ -70,6 +70,8 @@ export default function LeadPortalFlowTab({
       });
       return;
     }
+    const flowId = flow?.id ?? null;
+    const followUpActionUrl = flow ? buildStandaloneFlowUrl(flow) : null;
     setPendingAssignmentId(flowId ?? 0);
     setFeedback(null);
     try {
@@ -92,7 +94,7 @@ export default function LeadPortalFlowTab({
         facebookPageId: experiment.facebookPage?.id ?? null,
         facebookInstantFormId: experiment.facebookInstantForm?.id ?? null,
         instagramAccountId: experiment.instagramAccount?.id ?? null,
-        followUpActionUrl: experiment.followUpActionUrl ?? null,
+        followUpActionUrl,
         leadPortalFlowId: flowId,
       });
       setFeedback({
@@ -276,7 +278,7 @@ export default function LeadPortalFlowTab({
                       <button
                         type="button"
                         className="btn btn-primary btn-sm"
-                        onClick={() => handleAssignFlow(flow.id)}
+                        onClick={() => handleAssignFlow(flow)}
                         disabled={isAssigning || updateExperiment.isPending}
                       >
                         {isAssigning || updateExperiment.isPending ? (

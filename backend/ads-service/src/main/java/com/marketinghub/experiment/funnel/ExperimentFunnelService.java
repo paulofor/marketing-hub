@@ -190,10 +190,7 @@ public class ExperimentFunnelService {
     }
 
     private void applyManualEvents(Long experimentId, Instant baseline, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
-        for (StageAggregation agg : eventRepository.aggregateByExperiment(
-                experimentId,
-                ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,
-                baseline)) {
+        for (StageAggregation agg : eventRepository.aggregateManualByExperiment(experimentId, baseline)) {
             ExperimentFunnelStageDto dto = stages.get(agg.getStage());
             if (dto == null) {
                 continue;

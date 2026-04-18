@@ -67,7 +67,8 @@ export default function FlowPage() {
   const customTemplateFormSpec = customTemplatePayload?.formSpec;
   const hasCustomTemplate = Boolean(customTemplateHtml);
   const shouldRenderStandaloneTemplate =
-    hasCustomTemplate && Boolean(customTemplateHtml) && flow?.customFormRenderMode === "STANDALONE_PAGE";
+    hasCustomTemplate &&
+    shouldRenderCustomTemplateAsStandalone(flow?.customFormRenderMode, customTemplateHtml);
   const customTemplateVariables = useMemo(() => {
     if (!hasCustomTemplate || !flow) {
       return null;
@@ -308,6 +309,23 @@ interface CustomFlowTemplateProps {
 }
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g;
+const STANDALONE_HTML_HINT = /^\s*(?:<!doctype|<html|<body)/i;
+
+function shouldRenderCustomTemplateAsStandalone(
+  customFormRenderMode?: "IFRAME" | "STANDALONE_PAGE" | null,
+  html?: string | null,
+): boolean {
+  if (customFormRenderMode === "STANDALONE_PAGE") {
+    return true;
+  }
+  if (customFormRenderMode === "IFRAME") {
+    return false;
+  }
+  if (!html) {
+    return false;
+  }
+  return STANDALONE_HTML_HINT.test(html);
+}
 
 function CustomFlowTemplate({
   html,

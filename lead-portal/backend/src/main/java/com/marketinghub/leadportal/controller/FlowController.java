@@ -9,8 +9,11 @@ import com.marketinghub.leadportal.model.SimpleFormStyle;
 import com.marketinghub.leadportal.service.FlowService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -64,6 +67,23 @@ public class FlowController {
         return FlowResponse.from(flowService.getAndTrackAccess(slug, accessMetadata));
     }
 
+    @GetMapping(value = "/{slug}/page", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> getStandaloneFlowPage(
+            @PathVariable("slug") String slug,
+            HttpServletRequest request) {
+        FlowAccessMetadata accessMetadata = FlowAccessMetadata.from(request);
+        Flow flow = flowService.getAndTrackAccess(slug, accessMetadata);
+        String html = flow.customFormHtml();
+        if (!isStandaloneHtmlDocument(html)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body("Fluxo não possui HTML standalone.");
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
+    }
+
     @DeleteMapping("/{slug}")
     public ResponseEntity<Void> deleteFlow(@PathVariable("slug") String slug) {
         flowService.delete(slug);
@@ -89,5 +109,15 @@ public class FlowController {
                 request.getDescription(),
                 request.getPlaceholder(),
                 options);
+    }
+
+    private boolean isStandaloneHtmlDocument(String html) {
+        if (html == null) {
+            return false;
+        }
+        String normalized = html.trim().toLowerCase(Locale.ROOT);
+        return normalized.startsWith("<!doctype")
+                || normalized.startsWith("<html")
+                || normalized.startsWith("<body");
     }
 }

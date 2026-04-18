@@ -29,13 +29,12 @@ public interface ExperimentFunnelEventRepository extends JpaRepository<Experimen
                    max(e.occurredAt) as lastEvent
             from ExperimentFunnelEvent e
             where e.experiment.id = :experimentId
-              and (e.source is null or e.source <> :excludedSource)
+              and (e.source is null or lower(trim(e.source)) = 'manual')
               and (:baseline is null or e.occurredAt > :baseline)
             group by e.stage
             """)
-    List<StageAggregation> aggregateByExperiment(@Param("experimentId") Long experimentId,
-                                                 @Param("excludedSource") String excludedSource,
-                                                 @Param("baseline") Instant baseline);
+    List<StageAggregation> aggregateManualByExperiment(@Param("experimentId") Long experimentId,
+                                                       @Param("baseline") Instant baseline);
 
     @Modifying
     @Query("delete from ExperimentFunnelEvent e where e.experiment.id = :experimentId")

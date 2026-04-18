@@ -186,9 +186,8 @@ export default function ExperimentFunnelTab({
           <div>
             <h5 className="card-title mb-1">Funil de vendas do experimento</h5>
             <p className="text-muted small mb-0">
-              Cada etapa consolida dados automáticos (Facebook Ads, Lead Portal e
-              e-mails) e eventos manuais, para dar visibilidade ao avanço das
-              leads no experimento.
+              Cada etapa consolida os eventos da jornada (anúncios, Lead Portal e
+              e-mails) para dar visibilidade ao avanço das leads no experimento.
             </p>
           </div>
           <button

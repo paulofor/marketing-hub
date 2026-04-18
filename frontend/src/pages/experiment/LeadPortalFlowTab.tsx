@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Experiment } from "../../api/experiment/useExperiments";
-import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
+import {
+  useLeadPortalFlows,
+  type LeadPortalFlow,
+} from "../../api/leadPortal/useLeadPortalFlows";
 import { useUpdateLeadPortalFlowApproval } from "../../api/leadPortal/useUpdateLeadPortalFlowApproval";
 import { useRequestLeadPortalFlows } from "../../api/experiment/useRequestLeadPortalFlows";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
@@ -189,6 +192,7 @@ export default function LeadPortalFlowTab({
               pendingAssignmentId === flow.id ||
               (pendingAssignmentId === 0 && flow.id === assignedFlowId);
             const activeViewport = previewViewportByFlow[flow.id] ?? "desktop";
+            const standaloneFlowUrl = buildStandaloneFlowUrl(flow);
             return (
               <div key={flow.id} className="card border-0 shadow-sm">
                 <div className="card-body">
@@ -227,6 +231,18 @@ export default function LeadPortalFlowTab({
                             rel="noopener noreferrer"
                           >
                             {flow.publicUrl}
+                          </a>
+                        </p>
+                      ) : null}
+                      {standaloneFlowUrl ? (
+                        <p className="text-muted small mt-1 mb-0">
+                          URL standalone (sem fetch no frontend):{" "}
+                          <a
+                            href={standaloneFlowUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {standaloneFlowUrl}
                           </a>
                         </p>
                       ) : null}
@@ -520,6 +536,28 @@ function renderPreviewField(
         />
       );
   }
+}
+
+function buildStandaloneFlowUrl(flow: LeadPortalFlow): string | null {
+  const slug = flow.slug?.trim();
+  if (!slug) {
+    return null;
+  }
+
+  if (flow.publicUrl) {
+    try {
+      const parsed = new URL(flow.publicUrl);
+      return `${parsed.origin}/api/flows/${encodeURIComponent(slug)}/page`;
+    } catch {
+      // fallback para ambiente local ou URL parcial
+    }
+  }
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/api/flows/${encodeURIComponent(slug)}/page`;
+  }
+
+  return null;
 }
 
 function formatDate(value?: string | null) {

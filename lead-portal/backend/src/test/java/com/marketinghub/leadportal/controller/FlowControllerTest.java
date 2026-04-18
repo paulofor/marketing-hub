@@ -240,6 +240,38 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"));
     }
 
+    @Test
+    void getStandaloneFlowPageReturnsHtmlDocumentWithoutJsonFetch() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("{\"landingPageHtml\":{\"htmlDocument\":\"<!doctype html><html><body>Landing direta</body></html>\"}}");
+
+        mockMvc.perform(put("/api/flows/landing-direta")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/landing-direta/page"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andExpect(content().string(containsString("<body>Landing direta</body>")));
+    }
+
+    @Test
+    void getStandaloneFlowPageReturnsConflictWhenFlowUsesIframeHtml() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("<section>Flow em iframe</section>");
+
+        mockMvc.perform(put("/api/flows/flow-iframe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/flow-iframe/page"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
+                .andExpect(content().string(containsString("HTML standalone")));
+    }
+
     private UpsertFlowRequest buildRequest() {
         FlowQuestionRequest question = new FlowQuestionRequest();
         question.setTitle("Qual o seu nome?");

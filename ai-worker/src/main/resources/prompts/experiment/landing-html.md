@@ -16,11 +16,12 @@ Regras fixas da etapa:
 8. Não invente estrutura visual fora de wireframe/plano de imagens sem justificar em `consistencyChecks`.
 9. Não use bibliotecas externas.
 10. Renderize imagens apenas para itens listados em `landingPageImagePlanning.images[]`.
-11. Toda tag `<img>` deve usar `src` absoluto válido e `alt` descritivo derivado de `sectionName + imageRole + sectionVisualGoal` do planejamento.
+11. Não dependa de `altText` do planejamento: toda tag `<img>` deve ter `alt` descritivo derivado de `sectionName + imageRole + sectionVisualGoal`.
 12. No mobile (<=768px), respeite `preferredMobilePlacement` e evite overlap de texto/imagem.
 13. Após envio do formulário, exiba mensagem clara orientando o usuário a aguardar e-mail com a prévia.
 14. Garanta continuidade comercial: promessa, prova visível e CTA devem permanecer consistentes do topo ao fechamento da página.
-15. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+15. Em `consistencyChecks`, use somente checks canônicos da etapa `landingPageHtml`: CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.
+16. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

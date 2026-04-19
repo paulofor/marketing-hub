@@ -11,7 +11,7 @@ Regras fixas da etapa:
 3. `imagePrompt` deve ser específico para a seção e coerente com o ângulo/copy aprovados.
 4. Defina `dimensions.desktop` e `dimensions.mobile`.
 5. Inclua `safeMargins` e `textOverlayGuidance` quando houver texto sobre imagem.
-6. Não incluir `altText` no output: este campo não faz parte do artefato canônico atual.
+6. Não incluir `altText` no output: este campo não faz parte do artefato canônico atual de `landingPageImagePlanning`.
 7. Inclua `layoutBinding` completo com `preferredDesktopPlacement` e `preferredMobilePlacement`.
 8. Inclua `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion` e `formRelationNotes`.
 9. Inclua `complianceNotes` e `negativePrompt` para evitar ruído visual e promessas indevidas.

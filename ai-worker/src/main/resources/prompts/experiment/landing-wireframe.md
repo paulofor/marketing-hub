@@ -12,10 +12,11 @@ Regras fixas da etapa:
 4. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 5. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
 6. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
-7. `consistencyChecks` deve incluir no mínimo CTA_MATCH e EXPERIENCE_CONTINUITY.
-8. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
-9. Não converter para HTML final nesta etapa.
-10. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+7. Não exija nem produza campos fora do schema canônico atual (ex.: `mediaSlot`, `compositionNotes`, `messageMatchSummary`, `backgroundColorStrategy`, `textImageBalanceNotes`).
+8. `consistencyChecks` deve validar continuidade comercial e aderência estrutural sem exigir campos fora do canônico.
+9. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
+10. Não converter para HTML final nesta etapa.
+11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

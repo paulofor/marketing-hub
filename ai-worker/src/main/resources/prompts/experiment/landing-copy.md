@@ -7,7 +7,7 @@ Você está na etapa de copy da landing page.
 
 Regras fixas da etapa:
 1. Continue exatamente a promessa do anúncio clicado e preserve o message match.
-2. `messageMatchSource` deve apontar a fonte da promessa no anúncio, e `messageMatchNotes` deve explicar a continuidade.
+2. `messageMatchSource` deve apontar a fonte da promessa no anúncio (sem duplicar este campo no contrato), e `messageMatchNotes` deve explicar a continuidade.
 3. `hero.ctaLabel`, `primaryCTA` e todos os `ctaBlocks` devem manter o mesmo CTA aprovado.
 4. `bodySections` deve ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta.
 5. `faq` deve conter no mínimo três perguntas com `objectionTag`.

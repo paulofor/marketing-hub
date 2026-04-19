@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import type { HypothesisFramework } from "../api/hypothesis/types";
 import { normalizeFramework } from "../api/hypothesis/types";
@@ -64,6 +65,12 @@ interface FrameworkGenerationReportRecord extends AiGenerationRecord {
     generationTypeLabel: string;
     generationOrder: number;
   };
+}
+
+interface SectionSummaryGenerationMetadata {
+  createdAt?: string;
+  prompt?: string;
+  isSummary: boolean;
 }
 
 const REPORT_SECTION_ORDER: HypothesisFrameworkSection[] = [
@@ -251,6 +258,23 @@ export function HypothesisFrameworkTabsView({
   >(SECTION_REQUEST_INITIAL_STATE);
   const jobsQuery = useFrameworkGenerationJobs(hypothesisId);
   const generate = useGenerateFrameworkSection(hypothesisId, nicheId);
+  const generationsQuery = useQuery({
+    queryKey: ["hypothesis-framework-generations", hypothesisId],
+    enabled: Boolean(hypothesisId),
+    queryFn: async () => {
+      if (!hypothesisId) return [] as AiGenerationRecord[];
+      const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
+        "/api/ai/generations",
+        {
+          params: {
+            referenceId: hypothesisId,
+            size: 100,
+          },
+        },
+      );
+      return response.content ?? [];
+    },
+  });
 
   const requestsFromBackendByKind = useMemo(() => {
     const grouped: Record<
@@ -313,6 +337,49 @@ export function HypothesisFrameworkTabsView({
   );
 
   const summaryRequestsBySection = requestsFromBackendByKind.SUMMARY;
+
+  const summaryGenerationMetadataBySection = useMemo(
+    () =>
+      (generationsQuery.data ?? []).reduce<
+        Partial<
+          Record<HypothesisFrameworkSection, SectionSummaryGenerationMetadata>
+        >
+      >((acc, generation) => {
+        const domain = generation.domain ?? "";
+        if (!domain.startsWith("hypothesis.framework.")) {
+          return acc;
+        }
+
+        const suffix = domain.replace("hypothesis.framework.", "");
+        const isSummaryDomain = suffix.endsWith(".summary");
+        const sectionKey = (isSummaryDomain
+          ? suffix.replace(".summary", "")
+          : suffix) as HypothesisFrameworkSection;
+        if (!SECTIONS.some((section) => section.id === sectionKey)) {
+          return acc;
+        }
+
+        const currentTimestamp = parseTimestamp(generation.createdAt) ?? 0;
+        const previousTimestamp =
+          parseTimestamp(acc[sectionKey]?.createdAt) ?? -1;
+        const shouldPrioritizeExistingSummary =
+          Boolean(acc[sectionKey]?.isSummary) && !isSummaryDomain;
+        if (shouldPrioritizeExistingSummary) {
+          return acc;
+        }
+        if (currentTimestamp < previousTimestamp) {
+          return acc;
+        }
+
+        acc[sectionKey] = {
+          createdAt: generation.createdAt,
+          prompt: generation.prompt,
+          isSummary: isSummaryDomain,
+        };
+        return acc;
+      }, {}),
+    [generationsQuery.data],
+  );
 
   const invalidationBySection = useMemo(() => {
     const bySection: Partial<
@@ -699,6 +766,19 @@ export function HypothesisFrameworkTabsView({
                   {getSummaryLabel(section.id)}
                 </div>
                 <div>{getSummary(section.id)?.trim() || "-"}</div>
+                <div className="small text-body-secondary mt-2 d-flex flex-column gap-1">
+                  <span>
+                    <strong>Data/hora da geração:</strong>{" "}
+                    {formatDateTime(
+                      summaryGenerationMetadataBySection[section.id]?.createdAt,
+                    )}
+                  </span>
+                  <span>
+                    <strong>Prompt usado:</strong>{" "}
+                    {summaryGenerationMetadataBySection[section.id]?.prompt?.trim() ||
+                      "Sem prompt registrado."}
+                  </span>
+                </div>
               </div>
               <div className="d-flex flex-column flex-md-row gap-2 mt-3">
                 <textarea

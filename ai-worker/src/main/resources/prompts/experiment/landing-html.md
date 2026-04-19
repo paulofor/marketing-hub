@@ -16,10 +16,11 @@ Regras fixas da etapa:
 8. Não invente estrutura visual fora de wireframe/plano de imagens sem justificar em `consistencyChecks`.
 9. Não use bibliotecas externas.
 10. Renderize imagens apenas para itens listados em `landingPageImagePlanning.images[]`.
-11. Toda tag `<img>` deve usar `src` absoluto válido e `altText` do planejamento.
+11. Toda tag `<img>` deve usar `src` absoluto válido e `alt` descritivo derivado de `sectionName + imageRole + sectionVisualGoal` do planejamento.
 12. No mobile (<=768px), respeite `preferredMobilePlacement` e evite overlap de texto/imagem.
 13. Após envio do formulário, exiba mensagem clara orientando o usuário a aguardar e-mail com a prévia.
-14. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+14. Garanta continuidade comercial: promessa, prova visível e CTA devem permanecer consistentes do topo ao fechamento da página.
+15. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -28,5 +29,7 @@ OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato `landingPageHtml`.
 Campos obrigatórios:
 - htmlDocument
+- formSpec
 - summary
-- consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING, FORM_USABILITY, SECTION_THEME_VARIATION, PREVIEW_CONCRETENESS e ARTIFACT_SCHEMA_COMPATIBILITY
+- imagePlacementContract
+- consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY

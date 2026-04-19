@@ -855,7 +855,7 @@ public class HypothesisFrameworkGenerationService {
         Map<String, String> placeholders = new LinkedHashMap<>();
         placeholders.put("NICHE_NAME", hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A");
         placeholders.put("HYPOTHESIS_TITLE", nonNull(hypothesis.getTitle()));
-        placeholders.put("SECTION_NAME", section.path());
+        placeholders.put("SECTION_NAME", section.name());
         placeholders.put("SECTION_SNAPSHOT", sectionSnapshot(snapshot, section));
         placeholders.put("CUSTOM_INSTRUCTIONS", StringUtils.hasText(customInstructions) ? customInstructions.trim() : "-");
         placeholders.put("PAIN_JSON", toJson(snapshot.getPain()));

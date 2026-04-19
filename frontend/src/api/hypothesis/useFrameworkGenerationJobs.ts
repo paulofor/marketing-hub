@@ -8,6 +8,7 @@ export interface FrameworkGenerationJob {
   section: HypothesisFrameworkSection;
   status: string;
   stage: string;
+  requestBodyJson?: string;
   customInstructions?: string;
   errorMessage?: string;
   createdAt?: string;

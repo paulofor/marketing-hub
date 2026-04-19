@@ -153,17 +153,6 @@ const SECTION_REQUEST_INITIAL_STATE: Record<
   {} as Record<ContentGenerationSectionKey, SectionRequestState>,
 );
 
-const SECTION_DEFAULT_INSTRUCTIONS: Record<
-  ContentGenerationSectionKey,
-  string
-> = CONTENT_GENERATION_SECTIONS.reduce(
-  (acc, section) => ({
-    ...acc,
-    [section.key]: `Quantidade sugerida: ${section.defaultQuantity}`,
-  }),
-  {} as Record<ContentGenerationSectionKey, string>,
-);
-
 const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
   CAMPAIGN_ANGLE: "campaign-angle",
   AD_COPY: "ad-copy",
@@ -1051,10 +1040,6 @@ function getSectionLabel(sectionKey: ContentGenerationSectionKey) {
   return SECTION_LABEL_BY_KEY[sectionKey] ?? sectionKey;
 }
 
-function getDefaultInstructions(sectionKey: ContentGenerationSectionKey) {
-  return SECTION_DEFAULT_INSTRUCTIONS[sectionKey];
-}
-
 function normalizeJobSection(
   value?: string,
 ): ContentGenerationSectionKey | undefined {
@@ -1154,22 +1139,6 @@ export default function ExperimentContentGenerationTab({
       "landing-image-planning": false,
       "landing-html": false,
     });
-  const [isRequestingBySection, setIsRequestingBySection] = useState<
-    Record<ContentGenerationSectionKey, boolean>
-  >(() =>
-    CONTENT_GENERATION_SECTIONS.reduce(
-      (acc, section) => ({ ...acc, [section.key]: false }),
-      {} as Record<ContentGenerationSectionKey, boolean>,
-    ),
-  );
-  const [instructions, setInstructions] = useState<
-    Record<ContentGenerationSectionKey, string>
-  >(() =>
-    CONTENT_GENERATION_SECTIONS.reduce(
-      (acc, section) => ({ ...acc, [section.key]: "" }),
-      {} as Record<ContentGenerationSectionKey, string>,
-    ),
-  );
   const [requestsBySection, setRequestsBySection] = useState<
     Record<ContentGenerationSectionKey, SectionRequestState>
   >(() => ({ ...SECTION_REQUEST_INITIAL_STATE }));
@@ -1583,60 +1552,6 @@ export default function ExperimentContentGenerationTab({
     void loadAdCopy();
   }, [experimentId]);
 
-  const handleRequest = async (sectionKey: ContentGenerationSectionKey) => {
-    const requestedAt = new Date().toISOString();
-    const defaultInstructions = getDefaultInstructions(sectionKey);
-    const trimmedInstructions = instructions[sectionKey]?.trim();
-    const customInstructions = trimmedInstructions || defaultInstructions;
-
-    setIsRequestingBySection((previous) => ({
-      ...previous,
-      [sectionKey]: true,
-    }));
-    setRequestsBySection((previous) => ({
-      ...previous,
-      [sectionKey]: {
-        status: "PROCESSING",
-        requestedAt,
-        startedAt: undefined,
-        completedAt: undefined,
-        customInstructions,
-        errorMessage: undefined,
-        stageLabel: undefined,
-      },
-    }));
-
-    try {
-      const sectionPath = SECTION_API_PATHS[sectionKey];
-      await axios.post(
-        `/api/experiments/${experimentId}/pipeline/${sectionPath}/generate`,
-        {
-          customInstructions,
-        },
-      );
-
-      toast.success(
-        `Solicitação enviada para ${getSectionLabel(sectionKey)}. O Worker IA assumirá assim que possível.`,
-      );
-    } catch (error) {
-      const message = getErrorMessage(error);
-      setRequestsBySection((previous) => ({
-        ...previous,
-        [sectionKey]: {
-          ...previous[sectionKey],
-          status: "FAILED",
-          errorMessage: message,
-        },
-      }));
-      toast.error(message);
-    } finally {
-      setIsRequestingBySection((previous) => ({
-        ...previous,
-        [sectionKey]: false,
-      }));
-    }
-  };
-
   const handleDownloadReport = async () => {
     try {
       setIsDownloadingReport(true);
@@ -1901,43 +1816,6 @@ export default function ExperimentContentGenerationTab({
                   </div>
                 </div>
 
-                <div className="d-flex flex-column flex-lg-row gap-2 mt-4">
-                  <textarea
-                    className="form-control"
-                    rows={2}
-                    placeholder="Instruções extras para o Worker IA (opcional)"
-                    value={instructions[section.key]}
-                    onChange={(event) =>
-                      setInstructions((prev) => ({
-                        ...prev,
-                        [section.key]: event.target.value,
-                      }))
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={() => handleRequest(section.key)}
-                    disabled={isRequestingBySection[section.key]}
-                  >
-                    {isRequestingBySection[section.key] ? (
-                      <span className="d-inline-flex align-items-center gap-1">
-                        <span
-                          className="spinner-border spinner-border-sm"
-                          role="status"
-                          aria-hidden="true"
-                        />
-                        Enviando...
-                      </span>
-                    ) : (
-                      "Solicitar geração por IA"
-                    )}
-                  </button>
-                </div>
-                <small className="text-muted">
-                  Caso deixe em branco enviaremos:{" "}
-                  {getDefaultInstructions(section.key)}.
-                </small>
               </div>
             </section>
           </Tabs.Content>

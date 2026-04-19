@@ -436,6 +436,9 @@ export function HypothesisFrameworkTabsView({
     }
   };
 
+  const getSectionLabel = (section: HypothesisFrameworkSection) =>
+    SECTIONS.find((item) => item.id === section)?.label ?? section;
+
   const renderRows = (
     rows: Array<{ label: string; value?: string | null }>,
   ) => (
@@ -697,14 +700,14 @@ export function HypothesisFrameworkTabsView({
                   className="btn btn-outline-primary align-self-start"
                   onClick={() => handleGenerate(section.id)}
                   disabled={generate.isPending}
-                  title="Gera os campos completos desta aba usando o Worker IA."
+                  title={`Gera os campos completos de ${getSectionLabel(section.id)} usando o Worker IA.`}
                 >
                   {pendingSection === section.id && generate.isPending ? (
                     <span className="d-inline-flex align-items-center gap-1">
                       <Loader2 className="icon icon-sm spin" /> Gerando...
                     </span>
                   ) : (
-                    "Gerar com IA"
+                    `Gerar ${getSectionLabel(section.id)} com IA`
                   )}
                 </button>
                 <button
@@ -712,14 +715,14 @@ export function HypothesisFrameworkTabsView({
                   className="btn btn-outline-secondary align-self-start"
                   onClick={() => handleGenerateSummary(section.id)}
                   disabled={generate.isPending}
-                  title="Gera somente o resumo operacional desta aba com o mesmo modelo do framework."
+                  title={`Gera somente o resumo de ${getSectionLabel(section.id)} com o mesmo modelo do framework.`}
                 >
                   {pendingSummarySection === section.id && generate.isPending ? (
                     <span className="d-inline-flex align-items-center gap-1">
                       <Loader2 className="icon icon-sm spin" /> Gerando resumo...
                     </span>
                   ) : (
-                    "Gerar resumo com IA"
+                    `Gerar resumo de ${getSectionLabel(section.id)}`
                   )}
                 </button>
               </div>

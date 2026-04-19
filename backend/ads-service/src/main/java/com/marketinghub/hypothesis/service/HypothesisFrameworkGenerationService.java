@@ -21,10 +21,14 @@ import com.marketinghub.hypothesis.repository.HypothesisFrameworkGenerationJobRe
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
 import com.marketinghub.openai.OpenAiCostEstimator;
 import com.marketinghub.openai.OpenAiResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -43,31 +47,8 @@ public class HypothesisFrameworkGenerationService {
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
-    private static final String SUMMARY_PROMPT = """
-            Você está resumindo um framework comercial para uso em experimentos de anúncio e landing page.
-
-            Objetivo:
-            Transformar textos completos do framework em resumos operacionais curtos, claros e consistentes, que serão usados em prompts downstream.
-
-            Regras:
-            1. Preserve apenas o que é mais importante para a execução do experimento.
-            2. Remova detalhes redundantes, explicações longas e justificativas excessivas.
-            3. Mantenha foco em clareza comercial.
-            4. Não invente nada que não esteja no texto original.
-            5. Não troque o sentido estratégico do campo.
-            6. Escreva em linguagem simples e direta.
-            7. O resumo deve ser curto o suficiente para caber em prompts de anúncio e landing, mas forte o suficiente para manter o enquadramento correto.
-            8. Priorize transformação percebida, não ferramenta.
-            9. Não use jargão desnecessário.
-            10. Preserve restrições críticas do produto quando aparecerem.
-
-            Formato esperado:
-            JSON válido com as chaves:
-            item resumido
-
-            Critérios de tamanho:
-            - até 400 caracteres
-            """;
+    private static final String SUMMARY_PROMPTS_ROOT = "prompts/hypothesis-framework/summary";
+    private static final String SUMMARY_SYSTEM_TEMPLATE = SUMMARY_PROMPTS_ROOT + "/shared/system.md";
     private static final String RESEARCH_DIRECTIVE = "Sempre que possível, pesquise em sites especializados do nicho"
             + " usando a ferramenta de web_search antes de responder. Use os achados para justificar cada campo do JSON"
             + " e cite as principais referências consultadas.";
@@ -312,7 +293,7 @@ public class HypothesisFrameworkGenerationService {
                 case PAIN -> {
                     if (summaryOnly) {
                         HypothesisFrameworkDto.Pain generated = new HypothesisFrameworkDto.Pain();
-                        generated.setSummary(parseSummaryValue(jsonContent));
+                        generated.setSummary(parseSummaryValue(section, jsonContent));
                         snapshot.setPain(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().pain(generated).build()).getPain());
                         partial.setPain(generated);
                     } else {
@@ -324,7 +305,7 @@ public class HypothesisFrameworkGenerationService {
                 case RESULT -> {
                     if (summaryOnly) {
                         HypothesisFrameworkDto.Result generated = new HypothesisFrameworkDto.Result();
-                        generated.setSummary(parseSummaryValue(jsonContent));
+                        generated.setSummary(parseSummaryValue(section, jsonContent));
                         snapshot.setResult(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().result(generated).build()).getResult());
                         partial.setResult(generated);
                     } else {
@@ -336,7 +317,7 @@ public class HypothesisFrameworkGenerationService {
                 case MECHANISM -> {
                     if (summaryOnly) {
                         HypothesisFrameworkDto.Mechanism generated = new HypothesisFrameworkDto.Mechanism();
-                        generated.setSummary(parseSummaryValue(jsonContent));
+                        generated.setSummary(parseSummaryValue(section, jsonContent));
                         snapshot.setMechanism(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().mechanism(generated).build())
                                 .getMechanism());
                         partial.setMechanism(generated);
@@ -350,7 +331,7 @@ public class HypothesisFrameworkGenerationService {
                 case PROOF -> {
                     if (summaryOnly) {
                         HypothesisFrameworkDto.Proof generated = new HypothesisFrameworkDto.Proof();
-                        generated.setSummary(parseSummaryValue(jsonContent));
+                        generated.setSummary(parseSummaryValue(section, jsonContent));
                         snapshot.setProof(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().proof(generated).build()).getProof());
                         partial.setProof(generated);
                     } else {
@@ -362,7 +343,7 @@ public class HypothesisFrameworkGenerationService {
                 case OFFER -> {
                     if (summaryOnly) {
                         HypothesisFrameworkDto.Offer generated = new HypothesisFrameworkDto.Offer();
-                        generated.setSummary(parseSummaryValue(jsonContent));
+                        generated.setSummary(parseSummaryValue(section, jsonContent));
                         snapshot.setOffer(frameworkSupport.merge(snapshot, HypothesisFrameworkDto.builder().offer(generated).build()).getOffer());
                         partial.setOffer(generated);
                     } else {
@@ -417,9 +398,34 @@ public class HypothesisFrameworkGenerationService {
 
     private Map<String, Object> buildSchema(HypothesisFrameworkSection section, boolean summaryOnly) {
         if (summaryOnly) {
-            return schema(Map.of(
-                    "item resumido", stringField("Resumo operacional final com no máximo 400 caracteres")
-            ), List.of("item resumido"));
+            return switch (section) {
+                case PAIN -> schema(Map.of(
+                        "coreProblem", stringField("Problema central da seção PAIN em linguagem comercial objetiva"),
+                        "commercialConsequence", stringField("Principal consequência comercial da dor"),
+                        "urgency", stringField("Urgência percebida para agir agora")
+                ), List.of("coreProblem", "commercialConsequence", "urgency"));
+                case RESULT -> schema(Map.of(
+                        "desiredTransformation", stringField("Transformação final desejada pela persona"),
+                        "businessOutcome", stringField("Impacto de negócio esperado"),
+                        "successMarker", stringField("Marcador simples e objetivo de sucesso")
+                ), List.of("desiredTransformation", "businessOutcome", "successMarker"));
+                case MECHANISM -> schema(Map.of(
+                        "coreMechanism", stringField("Mecanismo central em linguagem simples"),
+                        "visibleBeforePurchase", stringField("Elemento visível/validável antes da compra"),
+                        "reasonToBelieve", stringField("Principal razão para acreditar que funciona")
+                ), List.of("coreMechanism", "visibleBeforePurchase", "reasonToBelieve"));
+                case PROOF -> schema(Map.of(
+                        "proofType", stringField("Tipo de prova que mais reduz ceticismo"),
+                        "proofAsset", stringField("Ativo/formato de prova recomendado"),
+                        "proofMessage", stringField("Mensagem principal da prova")
+                ), List.of("proofType", "proofAsset", "proofMessage"));
+                case OFFER -> schema(Map.of(
+                        "primaryAction", stringField("Ação principal esperada do lead"),
+                        "proofAsset", stringField("Ativo de prova associado à oferta"),
+                        "topDeliverables", stringField("Entregáveis prioritários em linguagem curta"),
+                        "preferredCta", stringField("CTA preferencial da oferta")
+                ), List.of("primaryAction", "proofAsset", "topDeliverables", "preferredCta"));
+            };
         }
         return switch (section) {
             case PAIN -> schema(Map.of(
@@ -477,7 +483,7 @@ public class HypothesisFrameworkGenerationService {
 
     private String buildSystemPrompt(HypothesisFrameworkSection section, boolean summaryOnly) {
         if (summaryOnly) {
-            return "Você resume cada seção do framework comercial em formato operacional para uso em prompts downstream.";
+            return loadPromptTemplate(SUMMARY_SYSTEM_TEMPLATE);
         }
         return switch (section) {
             case PAIN -> "Você é um estrategista focado em mapear a dor de um nicho para campanhas de aquisição."
@@ -846,18 +852,19 @@ public class HypothesisFrameworkGenerationService {
                                       HypothesisFrameworkDto snapshot,
                                       HypothesisFrameworkSection section,
                                       String customInstructions) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(SUMMARY_PROMPT).append("\n");
-        builder.append("Seção alvo: ").append(section.path()).append('\n');
-        builder.append("Nicho: ")
-                .append(hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A")
-                .append('\n');
-        builder.append("Hipótese: ").append(nonNull(hypothesis.getTitle())).append('\n');
-        builder.append("Conteúdo completo da seção:\n").append(sectionSnapshot(snapshot, section)).append('\n');
-        if (StringUtils.hasText(customInstructions)) {
-            builder.append("\nInstruções extras do usuário:\n").append(customInstructions.trim()).append('\n');
-        }
-        return builder.toString();
+        Map<String, String> placeholders = new LinkedHashMap<>();
+        placeholders.put("NICHE_NAME", hypothesis.getMarketNiche() != null ? hypothesis.getMarketNiche().getName() : "N/A");
+        placeholders.put("HYPOTHESIS_TITLE", nonNull(hypothesis.getTitle()));
+        placeholders.put("SECTION_NAME", section.path());
+        placeholders.put("SECTION_SNAPSHOT", sectionSnapshot(snapshot, section));
+        placeholders.put("CUSTOM_INSTRUCTIONS", StringUtils.hasText(customInstructions) ? customInstructions.trim() : "-");
+        placeholders.put("PAIN_JSON", toJson(snapshot.getPain()));
+        placeholders.put("RESULT_JSON", toJson(snapshot.getResult()));
+        placeholders.put("MECHANISM_JSON", toJson(snapshot.getMechanism()));
+        placeholders.put("PROOF_JSON", toJson(snapshot.getProof()));
+        placeholders.put("OFFER_JSON", toJson(snapshot.getOffer()));
+        String sectionTemplate = loadPromptTemplate(summaryUserTemplatePath(section));
+        return renderTemplate(sectionTemplate, placeholders);
     }
 
     private String sectionSnapshot(HypothesisFrameworkDto snapshot, HypothesisFrameworkSection section) {
@@ -935,9 +942,85 @@ public class HypothesisFrameworkGenerationService {
                 && job.getRequestBodyJson().contains("_summary");
     }
 
-    private String parseSummaryValue(String jsonContent) throws JsonProcessingException {
+    private String parseSummaryValue(HypothesisFrameworkSection section, String jsonContent) throws JsonProcessingException {
         JsonNode root = objectMapper.readTree(jsonContent);
-        return firstText(root, "item resumido", "itemResumido", "item_resumido", "resumo", "summary");
+        String fallback = firstText(root, "item resumido", "itemResumido", "item_resumido", "resumo", "summary");
+        if (StringUtils.hasText(fallback)) {
+            return fallback;
+        }
+        List<String> chunks = new ArrayList<>();
+        switch (section) {
+            case PAIN -> {
+                appendSummaryChunk(chunks, firstText(root, "coreProblem"));
+                appendSummaryChunk(chunks, firstText(root, "commercialConsequence"));
+                appendSummaryChunk(chunks, firstText(root, "urgency"));
+            }
+            case RESULT -> {
+                appendSummaryChunk(chunks, firstText(root, "desiredTransformation"));
+                appendSummaryChunk(chunks, firstText(root, "businessOutcome"));
+                appendSummaryChunk(chunks, firstText(root, "successMarker"));
+            }
+            case MECHANISM -> {
+                appendSummaryChunk(chunks, firstText(root, "coreMechanism"));
+                appendSummaryChunk(chunks, firstText(root, "visibleBeforePurchase"));
+                appendSummaryChunk(chunks, firstText(root, "reasonToBelieve"));
+            }
+            case PROOF -> {
+                appendSummaryChunk(chunks, firstText(root, "proofType"));
+                appendSummaryChunk(chunks, firstText(root, "proofAsset"));
+                appendSummaryChunk(chunks, firstText(root, "proofMessage"));
+            }
+            case OFFER -> {
+                appendSummaryChunk(chunks, firstText(root, "primaryAction"));
+                appendSummaryChunk(chunks, firstText(root, "proofAsset"));
+                appendSummaryChunk(chunks, firstText(root, "topDeliverables"));
+                appendSummaryChunk(chunks, firstText(root, "preferredCta"));
+            }
+            default -> {
+                return null;
+            }
+        }
+        return chunks.isEmpty() ? null : String.join(" | ", chunks);
+    }
+
+    private void appendSummaryChunk(List<String> chunks, String value) {
+        if (StringUtils.hasText(value)) {
+            chunks.add(value.trim());
+        }
+    }
+
+    private String summaryUserTemplatePath(HypothesisFrameworkSection section) {
+        return SUMMARY_PROMPTS_ROOT + "/" + section.path().toLowerCase(Locale.ROOT) + "/user.md";
+    }
+
+    private String loadPromptTemplate(String classpathLocation) {
+        try (InputStream stream = getClass().getClassLoader().getResourceAsStream(classpathLocation)) {
+            if (stream == null) {
+                throw new IllegalStateException("Template de prompt não encontrado: " + classpathLocation);
+            }
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Falha ao carregar template de prompt: " + classpathLocation, ex);
+        }
+    }
+
+    private String renderTemplate(String template, Map<String, String> placeholders) {
+        String rendered = template;
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            rendered = rendered.replace("{{" + entry.getKey() + "}}", nonNull(entry.getValue()));
+        }
+        return rendered;
+    }
+
+    private String toJson(Object value) {
+        if (value == null) {
+            return "-";
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            return "-";
+        }
     }
 
     private HypothesisFrameworkDto.Mechanism parseMechanism(String jsonContent) throws JsonProcessingException {

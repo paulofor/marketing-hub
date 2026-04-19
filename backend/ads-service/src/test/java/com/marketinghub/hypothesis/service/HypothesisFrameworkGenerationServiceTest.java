@@ -137,6 +137,76 @@ class HypothesisFrameworkGenerationServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void generateSummaryOnlyUsesSectionTemplateAndStructuredSummarySchema() throws Exception {
+        UUID hypothesisId = UUID.randomUUID();
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(hypothesisId);
+        hypothesis.setTitle("Hipótese de teste");
+
+        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+        when(jobRepository.findByHypothesisIdAndSectionAndStatusInOrderByCreatedAtDesc(
+                eq(hypothesisId), eq(HypothesisFrameworkSection.PAIN), any()))
+                .thenReturn(List.of());
+        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+        when(mapper.toDto(hypothesis)).thenReturn(new HypothesisDto());
+
+        HypothesisFrameworkGenerationRequest request = new HypothesisFrameworkGenerationRequest();
+        service.generate(hypothesisId, HypothesisFrameworkSection.PAIN, request, true);
+
+        verify(jobRepository).save(jobCaptor.capture());
+        HypothesisFrameworkGenerationJob savedJob = jobCaptor.getValue();
+        assertThat(savedJob.getPrompt()).contains("Seção alvo: PAIN");
+        assertThat(savedJob.getPrompt()).contains("Nicho: N/A");
+
+        Map<String, Object> body = objectMapper.readValue(savedJob.getRequestBodyJson(), new TypeReference<>() {
+        });
+        List<Map<String, Object>> input = (List<Map<String, Object>>) body.get("input");
+        assertThat(input.get(0).get("content"))
+                .asString()
+                .contains("Você está resumindo um framework comercial para uso em experimentos de anúncio e landing page.");
+
+        Map<String, Object> text = (Map<String, Object>) body.get("text");
+        Map<String, Object> format = (Map<String, Object>) text.get("format");
+        Map<String, Object> schema = (Map<String, Object>) format.get("schema");
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        assertThat(properties).containsKeys("coreProblem", "commercialConsequence", "urgency");
+    }
+
+    @Test
+    void completeSummaryJobFlattensStructuredSummaryIntoSingleField() {
+        UUID jobId = UUID.randomUUID();
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
+        HypothesisFrameworkGenerationJob job = HypothesisFrameworkGenerationJob.builder()
+                .id(jobId)
+                .hypothesis(hypothesis)
+                .section(HypothesisFrameworkSection.RESULT)
+                .status(HypothesisFrameworkGenerationJobStatus.PROCESSING)
+                .model("gpt-test")
+                .prompt("prompt")
+                .requestBodyJson("{\"text\":{\"format\":{\"name\":\"hypothesis_framework_result_summary\"}}}")
+                .build();
+
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(frameworkSupport.resolve(hypothesis)).thenReturn(new HypothesisFrameworkDto());
+
+        service.completeJob(jobId, new HypothesisFrameworkGenerationJobCompletionRequest(
+                "{\"desiredTransformation\":\"Sai do caos\",\"businessOutcome\":\"Mais previsibilidade\",\"successMarker\":\"Agenda cheia\"}",
+                "{}",
+                "{\"model\":\"gpt-test\"}",
+                10,
+                20,
+                null
+        ));
+
+        ArgumentCaptor<HypothesisFrameworkDto> snapshotCaptor = ArgumentCaptor.forClass(HypothesisFrameworkDto.class);
+        verify(frameworkSupport).storeSnapshot(eq(hypothesis), snapshotCaptor.capture(), any(HypothesisFrameworkDto.class));
+        assertThat(snapshotCaptor.getValue().getResult().getSummary())
+                .isEqualTo("Sai do caos | Mais previsibilidade | Agenda cheia");
+    }
+
+    @Test
     void completeJobParsesWrappedMechanismPayload() {
         UUID jobId = UUID.randomUUID();
         Hypothesis hypothesis = new Hypothesis();

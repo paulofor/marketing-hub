@@ -42,6 +42,8 @@ interface SectionRequestState {
   stageLabel?: string;
 }
 
+type RequestKind = "FULL" | "SUMMARY";
+
 interface AiGenerationRecord {
   id: number;
   domain: string;
@@ -170,6 +172,10 @@ function getWorkerStatus(request: SectionRequestState) {
   };
 }
 
+function isSummaryJob(requestBodyJson?: string) {
+  return requestBodyJson?.includes("_summary") ?? false;
+}
+
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
     const responseMessage =
@@ -246,23 +252,34 @@ export function HypothesisFrameworkTabsView({
   const jobsQuery = useFrameworkGenerationJobs(hypothesisId);
   const generate = useGenerateFrameworkSection(hypothesisId, nicheId);
 
-  const requestsFromBackend = (jobsQuery.data ?? []).reduce<
-    Record<HypothesisFrameworkSection, SectionRequestState>
-  >(
-    (acc, job) => {
+  const requestsFromBackendByKind = useMemo(() => {
+    const grouped: Record<
+      RequestKind,
+      Record<HypothesisFrameworkSection, SectionRequestState>
+    > = {
+      FULL: { ...SECTION_REQUEST_INITIAL_STATE },
+      SUMMARY: { ...SECTION_REQUEST_INITIAL_STATE },
+    };
+
+    (jobsQuery.data ?? []).forEach((job) => {
       const sectionId = normalizeFrameworkSection(job.section as string);
-      if (!sectionId || acc[sectionId]?.requestedAt) {
-        return acc;
+      if (!sectionId) {
+        return;
+      }
+      const kind: RequestKind = isSummaryJob(job.requestBodyJson)
+        ? "SUMMARY"
+        : "FULL";
+      if (grouped[kind][sectionId]?.requestedAt) {
+        return;
       }
       const uiStatus: RequestUiStatus =
         job.status === "COMPLETED"
           ? "COMPLETED"
           : job.status === "FAILED"
             ? "FAILED"
-            : job.status === "PROCESSING"
-              ? "PROCESSING"
-              : "PROCESSING";
-      acc[sectionId] = {
+            : "PROCESSING";
+
+      grouped[kind][sectionId] = {
         status: uiStatus,
         requestedAt: job.createdAt,
         startedAt: job.startedAt,
@@ -273,17 +290,17 @@ export function HypothesisFrameworkTabsView({
           STAGE_LABELS[job.stage] ??
           (job.stage ? job.stage.split("_").join(" ") : undefined),
       };
-      return acc;
-    },
-    { ...SECTION_REQUEST_INITIAL_STATE },
-  );
+    });
 
-  const mergedRequestsBySection = SECTIONS.reduce<
+    return grouped;
+  }, [jobsQuery.data]);
+
+  const mergedFullRequestsBySection = SECTIONS.reduce<
     Record<HypothesisFrameworkSection, SectionRequestState>
   >(
     (acc, section) => {
       const localState = requestsBySection[section.id];
-      const backendState = requestsFromBackend[section.id];
+      const backendState = requestsFromBackendByKind.FULL[section.id];
       acc[section.id] =
         localState.status !== "IDLE" &&
         localState.status !== "COMPLETED" &&
@@ -294,6 +311,8 @@ export function HypothesisFrameworkTabsView({
     },
     { ...SECTION_REQUEST_INITIAL_STATE },
   );
+
+  const summaryRequestsBySection = requestsFromBackendByKind.SUMMARY;
 
   const invalidationBySection = useMemo(() => {
     const bySection: Partial<
@@ -310,7 +329,7 @@ export function HypothesisFrameworkTabsView({
     } | null = null;
 
     SECTIONS.forEach((section, index) => {
-      const currentRequest = mergedRequestsBySection[section.id];
+      const currentRequest = mergedFullRequestsBySection[section.id];
       const currentTimestamp = getReferenceTimestamp(currentRequest);
 
       if (
@@ -342,7 +361,7 @@ export function HypothesisFrameworkTabsView({
     });
 
     return bySection;
-  }, [mergedRequestsBySection]);
+  }, [mergedFullRequestsBySection]);
 
   const handleGenerate = async (section: HypothesisFrameworkSection) => {
     const requestedAt = new Date().toISOString();
@@ -749,7 +768,7 @@ export function HypothesisFrameworkTabsView({
           ) : null}
           <div className="d-flex flex-column gap-2">
             {SECTIONS.map((section) => {
-              const request = mergedRequestsBySection[section.id];
+              const request = mergedFullRequestsBySection[section.id];
               const invalidation = invalidationBySection[section.id];
               const displayStatus: RequestUiStatus =
                 request.status === "PROCESSING"
@@ -818,6 +837,90 @@ export function HypothesisFrameworkTabsView({
                       Dependência alterada em {invalidation.sourceSection} (
                       {formatDateTime(invalidation.sourceAt)}). Gere esta etapa
                       novamente para sincronizar o framework.
+                    </small>
+                  ) : null}
+                  {request.errorMessage ? (
+                    <small className="text-danger">
+                      Erro: {request.errorMessage}
+                    </small>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="border rounded-3 p-3 mt-3">
+          <h4 className="h6 mb-2">Acompanhamento das solicitações de resumo IA</h4>
+          <p className="small text-muted mb-3">
+            Histórico separado das solicitações que geram somente o resumo de
+            cada item do framework.
+          </p>
+          {jobsQuery.isLoading ? (
+            <p className="small text-muted mb-3">
+              Carregando histórico salvo dos resumos...
+            </p>
+          ) : null}
+          {jobsQuery.isError ? (
+            <p className="small text-danger mb-3">
+              Não foi possível carregar o histórico dos resumos salvos.
+            </p>
+          ) : null}
+          <div className="d-flex flex-column gap-2">
+            {SECTIONS.map((section) => {
+              const request = summaryRequestsBySection[section.id];
+              const workerStatus = getWorkerStatus(request);
+
+              return (
+                <div
+                  key={`summary-request-status-${section.id}`}
+                  className="border rounded-2 p-2 d-flex flex-column gap-1"
+                >
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <strong>{section.label}</strong>
+                    <span className={`badge text-bg-${STATUS_BADGES[request.status]}`}>
+                      {STATUS_LABELS[request.status]}
+                    </span>
+                  </div>
+                  <small className="text-muted">
+                    Solicitado em: {formatDateTime(request.requestedAt)} ·
+                    Concluído em: {formatDateTime(request.completedAt)}
+                  </small>
+                  <div className="small d-flex flex-column gap-1">
+                    <div>
+                      <strong>1. Solicitação do usuário:</strong>{" "}
+                      {request.requestedAt
+                        ? `enviada em ${formatDateTime(request.requestedAt)}.`
+                        : "ainda não enviada."}
+                    </div>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                      <strong>2. Atendimento do Worker IA:</strong>
+                      <span className={`badge text-bg-${workerStatus.badge}`}>
+                        {workerStatus.label}
+                      </span>
+                      <span>
+                        {request.startedAt
+                          ? `iniciado em ${formatDateTime(request.startedAt)}`
+                          : "sem início registrado"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong>3. Conclusão:</strong>{" "}
+                      {request.completedAt
+                        ? `finalizada em ${formatDateTime(request.completedAt)}.`
+                        : request.status === "FAILED"
+                          ? "fluxo encerrado com erro."
+                          : "aguardando finalização."}
+                    </div>
+                  </div>
+                  {request.stageLabel ? (
+                    <small className="text-body-secondary">
+                      Etapa atual: {request.stageLabel}
+                    </small>
+                  ) : null}
+                  {request.customInstructions ? (
+                    <small className="text-body-secondary">
+                      Instruções enviadas: {request.customInstructions}
                     </small>
                   ) : null}
                   {request.errorMessage ? (

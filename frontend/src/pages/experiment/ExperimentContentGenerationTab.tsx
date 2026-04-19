@@ -683,6 +683,10 @@ function normalizeImageMatchValue(value?: string) {
   return (value ?? "").trim().toLowerCase();
 }
 
+function normalizePromptFingerprint(value?: string) {
+  return (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 function resolveGeneratedImageUrl(item: FrameworkImageStatusItem) {
   return item.webUrl ?? item.sourceUrl;
 }
@@ -1341,6 +1345,116 @@ export default function ExperimentContentGenerationTab({
 
   const persistedAdCopy = useMemo(() => parseAdCopyPayload(adCopy), [adCopy]);
 
+  const promptVersionsBySection = useMemo(() => {
+    const sources: {
+      key: ContentGenerationSectionKey;
+      label: string;
+      items: SimpleGenerationRow[];
+    }[] = [
+      {
+        key: "campaign-angle",
+        label: getSectionLabel("campaign-angle"),
+        items: campaignAngleGenerations,
+      },
+      {
+        key: "ad-copy",
+        label: getSectionLabel("ad-copy"),
+        items: adCopyGenerations,
+      },
+      {
+        key: "image-prompt",
+        label: getSectionLabel("image-prompt"),
+        items: sectionGenerations["image-prompt"],
+      },
+      {
+        key: "landing-copy",
+        label: getSectionLabel("landing-copy"),
+        items: sectionGenerations["landing-copy"],
+      },
+      {
+        key: "landing-layout",
+        label: getSectionLabel("landing-layout"),
+        items: sectionGenerations["landing-layout"],
+      },
+      {
+        key: "landing-image-planning",
+        label: getSectionLabel("landing-image-planning"),
+        items: sectionGenerations["landing-image-planning"],
+      },
+      {
+        key: "landing-html",
+        label: getSectionLabel("landing-html"),
+        items: sectionGenerations["landing-html"],
+      },
+    ];
+
+    return sources
+      .map((source) => {
+        const byFingerprint = new Map<
+          string,
+          {
+            prompt: string;
+            occurrences: number;
+            latestUsedAt?: string;
+            latestTimestamp: number;
+            models: Set<string>;
+          }
+        >();
+
+        source.items.forEach((item) => {
+          const prompt = item.prompt?.trim();
+          if (!prompt) return;
+          const fingerprint = normalizePromptFingerprint(prompt);
+          if (!fingerprint) return;
+          const parsedTimestamp =
+            parseTimestamp(item.createdAt) ?? Number.MIN_SAFE_INTEGER;
+          const model = item.model?.trim();
+          const current = byFingerprint.get(fingerprint);
+
+          if (!current) {
+            byFingerprint.set(fingerprint, {
+              prompt,
+              occurrences: 1,
+              latestUsedAt: item.createdAt,
+              latestTimestamp: parsedTimestamp,
+              models: new Set(model ? [model] : []),
+            });
+            return;
+          }
+
+          current.occurrences += 1;
+          if (parsedTimestamp >= current.latestTimestamp) {
+            current.latestTimestamp = parsedTimestamp;
+            current.latestUsedAt = item.createdAt;
+          }
+          if (model) {
+            current.models.add(model);
+          }
+        });
+
+        const versions = Array.from(byFingerprint.values())
+          .sort((a, b) => b.latestTimestamp - a.latestTimestamp)
+          .map((version) => ({
+            prompt: version.prompt,
+            occurrences: version.occurrences,
+            latestUsedAt: version.latestUsedAt,
+            models: Array.from(version.models).sort(),
+          }));
+
+        return {
+          key: source.key,
+          label: source.label,
+          versions,
+        };
+      })
+      .filter((section) => section.versions.length > 0);
+  }, [adCopyGenerations, campaignAngleGenerations, sectionGenerations]);
+
+  const isLoadingPromptVersions =
+    isLoadingCampaignAngles ||
+    isLoadingAdCopy ||
+    Object.values(isLoadingSectionGenerations).some(Boolean);
+
   const currentSection =
     CONTENT_GENERATION_SECTIONS.find(
       (section) => section.key === activeSection,
@@ -1676,6 +1790,11 @@ export default function ExperimentContentGenerationTab({
           </div>
         </div>
       </section>
+
+      <PipelinePromptVersionsPanel
+        versionsBySection={promptVersionsBySection}
+        isLoading={isLoadingPromptVersions}
+      />
 
       <Tabs.Root
         value={activeSection}
@@ -2428,6 +2547,85 @@ function PromptUsedDetails({
         </div>
       </div>
     </details>
+  );
+}
+
+interface PromptVersionSummary {
+  key: string;
+  label: string;
+  versions: {
+    prompt: string;
+    occurrences: number;
+    latestUsedAt?: string;
+    models: string[];
+  }[];
+}
+
+function PipelinePromptVersionsPanel({
+  versionsBySection,
+  isLoading,
+}: {
+  versionsBySection: PromptVersionSummary[];
+  isLoading: boolean;
+}) {
+  return (
+    <section className="card">
+      <div className="card-body">
+        <h5 className="card-title mb-1">Versões de prompts do pipeline</h5>
+        <p className="text-muted mb-3">
+          Visão consolidada de todos os prompts usados neste experimento, por
+          seção do pipeline.
+        </p>
+
+        {isLoading ? (
+          <div className="d-flex align-items-center gap-2 text-muted small">
+            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+            Carregando versões de prompts...
+          </div>
+        ) : null}
+
+        {!isLoading && versionsBySection.length === 0 ? (
+          <div className="alert alert-secondary mb-0" role="status">
+            Nenhuma execução com prompt foi encontrada para este experimento.
+          </div>
+        ) : null}
+
+        {!isLoading && versionsBySection.length > 0 ? (
+          <div className="row g-3">
+            {versionsBySection.map((section) => (
+              <div className="col-12 col-xl-6" key={section.key}>
+                <div className="border rounded p-3 h-100 bg-body-tertiary">
+                  <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <h6 className="mb-0">{section.label}</h6>
+                    <span className="badge text-bg-light">
+                      {section.versions.length} versão(ões)
+                    </span>
+                  </div>
+                  <div className="d-flex flex-column gap-2">
+                    {section.versions.map((version, index) => (
+                      <details key={`${section.key}-${index}`} className="border rounded p-2 bg-body">
+                        <summary className="small fw-semibold" role="button">
+                          Versão {index + 1} · {version.occurrences} execução(ões)
+                        </summary>
+                        <p className="small mb-1 mt-2">
+                          <strong>Último uso:</strong> {formatDateTime(version.latestUsedAt)}
+                        </p>
+                        <p className="small mb-2">
+                          <strong>Modelos:</strong> {version.models.join(", ") || "—"}
+                        </p>
+                        <pre className="small bg-body-secondary rounded p-2 mb-0">
+                          {version.prompt}
+                        </pre>
+                      </details>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

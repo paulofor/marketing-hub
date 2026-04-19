@@ -18,6 +18,7 @@ import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGener
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
@@ -465,6 +466,9 @@ public class ExperimentPipelineGenerationService {
         sb.append("- stage: ").append(experiment.getStage() != null ? experiment.getStage().name() : "").append("\n");
         sb.append("- control_or_treatment: treatment\n");
         sb.append("- asset_role: ").append(section.path()).append("\n");
+        if (section == ExperimentPipelineSection.CAMPAIGN_ANGLE) {
+            appendCampaignAngleStructuredContext(sb, experiment);
+        }
         sb.append("\nTarefa alvo: ").append(section.path()).append("\n");
         appendPreviousOutputs(sb, experiment, section);
         appendSectionPrompt(sb, experiment, section);
@@ -1373,6 +1377,122 @@ public class ExperimentPipelineGenerationService {
             }
         }
         return "";
+    }
+
+    private void appendCampaignAngleStructuredContext(StringBuilder sb, Experiment experiment) {
+        if (experiment == null || experiment.getHypothesisRef() == null) {
+            return;
+        }
+        HypothesisFrameworkDto framework = readHypothesisFramework(experiment.getHypothesisRef().getFrameworkJson());
+        if (framework == null) {
+            return;
+        }
+
+        String painSummary = buildPainSummary(framework);
+        String resultSummary = buildResultSummary(framework);
+        String mechanismSummary = buildMechanismSummary(framework);
+        String proofSummary = buildProofSummary(framework);
+        String offerCommercialSummary = buildOfferCommercialSummary(framework);
+
+        sb.append("INSUMOS_ESTRUTURADOS_CAMPAIGN_ANGLE (prioridade alta para esta seção):\n");
+        sb.append("OFFER_COMMERCIAL_SUMMARY: ").append(nonBlank(offerCommercialSummary)).append("\n");
+        sb.append("PROOF_SUMMARY: ").append(nonBlank(proofSummary)).append("\n");
+        sb.append("MECHANISM_SUMMARY: ").append(nonBlank(mechanismSummary)).append("\n");
+        sb.append("RESULT_SUMMARY: ").append(nonBlank(resultSummary)).append("\n");
+        sb.append("PAIN_SUMMARY: ").append(nonBlank(painSummary)).append("\n");
+        sb.append("Regras obrigatórias para o campaign-angle:\n");
+        sb.append("- Se OFFER_COMMERCIAL_SUMMARY tiver CTA concreta, não usar CTA genérica.\n");
+        sb.append("- Se PROOF_SUMMARY trouxer prova pré-venda concreta, refletir no hook, promise e messageMatch.\n");
+        sb.append("- Se OFFER_COMMERCIAL_SUMMARY trouxer entregáveis concretos, evitar rótulos vagos sem necessidade.\n");
+        sb.append("- Preservar continuidade anúncio → landing usando os resumos estruturados acima como fonte principal.\n");
+    }
+
+    private HypothesisFrameworkDto readHypothesisFramework(String frameworkJson) {
+        if (!StringUtils.hasText(frameworkJson)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(frameworkJson, HypothesisFrameworkDto.class);
+        } catch (JsonProcessingException ignored) {
+            return null;
+        }
+    }
+
+    private String buildPainSummary(HypothesisFrameworkDto framework) {
+        if (framework == null || framework.getPain() == null) {
+            return "";
+        }
+        return firstNonBlank(
+                framework.getPain().getSummary(),
+                joinStructuredChunks(
+                        framework.getPain().getRoot(),
+                        framework.getPain().getCost(),
+                        framework.getPain().getEmotional()));
+    }
+
+    private String buildResultSummary(HypothesisFrameworkDto framework) {
+        if (framework == null || framework.getResult() == null) {
+            return "";
+        }
+        return firstNonBlank(
+                framework.getResult().getSummary(),
+                joinStructuredChunks(
+                        framework.getResult().getDesiredResult(),
+                        framework.getResult().getBusinessOutcome(),
+                        framework.getResult().getSuccessSignal()));
+    }
+
+    private String buildMechanismSummary(HypothesisFrameworkDto framework) {
+        if (framework == null || framework.getMechanism() == null) {
+            return "";
+        }
+        return firstNonBlank(
+                framework.getMechanism().getSummary(),
+                joinStructuredChunks(
+                        framework.getMechanism().getCore(),
+                        framework.getMechanism().getVisible(),
+                        framework.getMechanism().getBelievability()));
+    }
+
+    private String buildProofSummary(HypothesisFrameworkDto framework) {
+        if (framework == null || framework.getProof() == null) {
+            return "";
+        }
+        return firstNonBlank(
+                framework.getProof().getSummary(),
+                joinStructuredChunks(
+                        framework.getProof().getType(),
+                        framework.getProof().getAsset(),
+                        framework.getProof().getMessage()));
+    }
+
+    private String buildOfferCommercialSummary(HypothesisFrameworkDto framework) {
+        if (framework == null || framework.getOffer() == null) {
+            return "";
+        }
+        String deliverables = framework.getOffer().getDeliverables();
+        String proofAsset = framework.getProof() != null ? framework.getProof().getAsset() : "";
+        return firstNonBlank(
+                framework.getOffer().getSummary(),
+                joinStructuredChunks(
+                        framework.getOffer().getCta(),
+                        proofAsset,
+                        deliverables,
+                        framework.getOffer().getName(),
+                        framework.getOffer().getCorePromise()));
+    }
+
+    private String joinStructuredChunks(String... values) {
+        if (values == null || values.length == 0) {
+            return "";
+        }
+        List<String> chunks = new ArrayList<>();
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                chunks.add(value.trim());
+            }
+        }
+        return String.join(" | ", chunks);
     }
 
     @SuppressWarnings("unchecked")

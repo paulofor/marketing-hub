@@ -11,12 +11,13 @@ Regras fixas da etapa:
 3. `imagePrompt` deve ser específico para a seção e coerente com o ângulo/copy aprovados.
 4. Defina `dimensions.desktop` e `dimensions.mobile`.
 5. Inclua `safeMargins` e `textOverlayGuidance` quando houver texto sobre imagem.
-6. Sempre preencha `altText` descritivo.
+6. Não incluir `altText` no output: este campo não faz parte do artefato canônico atual.
 7. Inclua `layoutBinding` completo com `preferredDesktopPlacement` e `preferredMobilePlacement`.
 8. Inclua `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion` e `formRelationNotes`.
 9. Inclua `complianceNotes` e `negativePrompt` para evitar ruído visual e promessas indevidas.
-10. `consistencyChecks` deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY, CTA_CONTINUITY e PREVIEW_CONCRETENESS.
-11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+10. `consistencyChecks` deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
+11. Priorize prova visível e continuidade anúncio→landing na direção visual quando disponíveis nos resumos estruturados.
+12. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

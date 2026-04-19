@@ -8,15 +8,14 @@ Você está na etapa de wireframe textual (sem HTML final), mobile-first.
 Regras fixas da etapa:
 1. `pageGoal` deve explicitar a ação principal esperada da página.
 2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
-3. `sectionOrder` deve mapear ordem, objetivo e dependências de message match por seção.
-4. Cada seção deve incluir `mobilePriorityScore`, `dropOffRisk`, `mediaSlot` e `compositionNotes`.
+3. `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` + `uiNotes`.
+4. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 5. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
 6. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
-7. `consistencyChecks` deve incluir CTA_MATCH, EXPERIENCE_CONTINUITY e SECTION_THEME_VARIATION.
+7. `consistencyChecks` deve incluir no mínimo CTA_MATCH e EXPERIENCE_CONTINUITY.
 8. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
-9. `backgroundColorStrategy` deve orientar variação intencional de cores de fundo entre seções para melhorar escaneabilidade.
-10. Não converter para HTML final nesta etapa.
-11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+9. Não converter para HTML final nesta etapa.
+10. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -26,12 +25,9 @@ Responda em JSON válido e estritamente aderente ao artefato `landingPageWirefra
 Campos obrigatórios:
 - pageGoal
 - variantLayoutId
-- messageMatchSummary
-- sectionOrder[]
+- sectionOrder[] com sectionId, sectionName, objective, contentType, copySource, uiNotes, messageMatchDependency, sectionDependsOn, mobilePriorityScore, dropOffRisk, surfaceSpec, ctaSlot
 - mobilePriorityNotes
 - ctaPlacementNotes
 - formPlacementNotes
-- backgroundColorStrategy
-- textImageBalanceNotes
-- formSpec
 - consistencyChecks[]
+- formSpec

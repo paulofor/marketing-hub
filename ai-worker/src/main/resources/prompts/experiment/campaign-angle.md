@@ -13,6 +13,10 @@ Regras fixas da etapa:
 4. O CTA precisa ser compatível com execução automatizada e alta escala.
 5. Não proponha nada fora do envelope real do produto.
 6. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+7. Priorize os insumos na seguinte ordem: OFFER_COMMERCIAL_SUMMARY → PROOF_SUMMARY → MECHANISM_SUMMARY → RESULT_SUMMARY → PAIN_SUMMARY.
+8. Se existir CTA concreta em OFFER_COMMERCIAL_SUMMARY, não use CTA genérica.
+9. Se houver prova pré-venda concreta em PROOF_SUMMARY, reflita essa prova no hook, promise e landingMatchLine.
+10. Se houver entregáveis concretos no contexto comercial, evite reduzir a oferta a rótulos vagos como “plano”, “roteiro” ou “sequência”.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

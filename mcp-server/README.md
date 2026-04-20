@@ -11,6 +11,9 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 ## Ferramentas MCP iniciais
 
 - `db_health`: valida conectividade com o banco e retorna o schema ativo.
+- `db_list_tables`: lista todas as tabelas disponíveis no schema atual.
+- `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
+- `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
 
 ## Executar localmente
 

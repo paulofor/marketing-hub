@@ -20,6 +20,7 @@
 - Em `geo_locations` descarte chaves que não sejam texto e remova `regions` cujos `key` não sejam numéricos para manter a compatibilidade com a Graph API.
 - Quando o destino do experimento for um formulário de leads, ajuste o conjunto de anúncios para `destination_type = ON_AD`, force `optimization_goal = LEAD_GENERATION` e não envie `link` externo no criativo; utilize apenas `call_to_action.value.lead_gen_form_id`.
 - Na criação de ad sets de campanha, manter `targeting_automation.advantage_audience = 0` para garantir o público Advantage+ desabilitado por padrão.
+- Na criação de ad sets de campanha, manter placements exclusivos de Instagram (`publisher_platforms=["instagram"]` e `instagram_positions=["stream","story","reels","explore"]`), removendo placements de Facebook, Audience Network e Messenger.
 - Quando não houver `instagramAccount` no experimento, utilize o `defaultInstagramActorId` configurado ou o identificador vindo do criativo, seguindo sem `instagram_user_id` se nenhum valor estiver disponível.
 - Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.

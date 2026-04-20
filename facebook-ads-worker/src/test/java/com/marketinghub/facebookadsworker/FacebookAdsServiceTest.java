@@ -119,6 +119,14 @@ class FacebookAdsServiceTest {
         assertFalse(body.has("bid_amount"));
         assertEquals("BR", body.get("targeting").get("geo_locations").get("countries").get(0).asText());
         assertEquals(0, body.get("targeting").get("targeting_automation").get("advantage_audience").asInt());
+        assertEquals("instagram", body.get("targeting").get("publisher_platforms").get(0).asText());
+        assertEquals("stream", body.get("targeting").get("instagram_positions").get(0).asText());
+        assertEquals("story", body.get("targeting").get("instagram_positions").get(1).asText());
+        assertEquals("reels", body.get("targeting").get("instagram_positions").get(2).asText());
+        assertEquals("explore", body.get("targeting").get("instagram_positions").get(3).asText());
+        assertFalse(body.get("targeting").has("facebook_positions"));
+        assertFalse(body.get("targeting").has("audience_network_positions"));
+        assertFalse(body.get("targeting").has("messenger_positions"));
         assertEquals("42", body.get("promoted_object").get("page_id").asText());
         assertEquals("222", id);
     }
@@ -146,6 +154,38 @@ class FacebookAdsServiceTest {
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         assertEquals("COST_CAP", body.get("bid_strategy").asText());
         assertEquals("200", body.get("bid_amount").asText());
+    }
+
+    @Test
+    void createAdSetForcesInstagramOnlyPlacements() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"777\"}")
+            .addHeader("Content-Type", "application/json"));
+        String targetingJson = "{\"publisher_platforms\":[\"facebook\"],\"facebook_positions\":[\"feed\"],\"instagram_positions\":[\"story\"],\"messenger_positions\":[\"messenger_home\"],\"geo_locations\":{\"countries\":[\"BR\"]}}";
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "LINK_CLICKS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            "200",
+            "42",
+            "BR",
+            targetingJson,
+            Collections.emptyList()
+        );
+
+        service.createAdSet("1", request);
+
+        RecordedRequest recorded = takeRequest("request");
+        JsonNode targeting = objectMapper.readTree(recorded.getBody().inputStream()).get("targeting");
+        assertEquals(1, targeting.get("publisher_platforms").size());
+        assertEquals("instagram", targeting.get("publisher_platforms").get(0).asText());
+        assertEquals(4, targeting.get("instagram_positions").size());
+        assertFalse(targeting.has("facebook_positions"));
+        assertFalse(targeting.has("audience_network_positions"));
+        assertFalse(targeting.has("messenger_positions"));
     }
 
 

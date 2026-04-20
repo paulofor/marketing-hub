@@ -64,7 +64,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("- primaryPromise");
+        assertThat(userPrompt).contains("- visualAngle");
         assertThat(userPrompt).contains("- proofSummary");
         assertThat(userPrompt).contains("- singleMindedPromise");
         assertThat(userPrompt).contains("- primaryCTA");
@@ -143,7 +143,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("messageMatchSource,");
+        assertThat(userPrompt).contains("- messageMatchSource");
         assertThat(userPrompt).contains("hero {");
         assertThat(userPrompt).contains("bodySections[]");
         assertThat(userPrompt).contains("ctaBlocks[]");

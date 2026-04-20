@@ -350,9 +350,22 @@ public class FacebookAdsService {
         }
 
         forceBrazilWideTargeting(targeting);
+        forceInstagramOnlyPlacements(targeting);
         disableAdvantageAudience(targeting);
 
         return targeting;
+    }
+
+    private void forceInstagramOnlyPlacements(Map<String, Object> targeting) {
+        if (targeting == null) {
+            return;
+        }
+
+        targeting.put("publisher_platforms", List.of("instagram"));
+        targeting.put("instagram_positions", List.of("stream", "story", "reels", "explore"));
+        targeting.remove("facebook_positions");
+        targeting.remove("audience_network_positions");
+        targeting.remove("messenger_positions");
     }
 
     private void disableAdvantageAudience(Map<String, Object> targeting) {

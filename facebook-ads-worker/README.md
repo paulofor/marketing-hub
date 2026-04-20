@@ -145,7 +145,12 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    campo `instagramAccount` retornado pelo backend ou o `defaultInstagramActorId`
    configurado na conta e popula `instagram_user_id` quando disponível. Caso
    nenhum identificador esteja disponível, o worker registra o aviso e segue
-   sem `instagram_user_id`, permitindo veiculação apenas no Facebook.
+   sem `instagram_user_id`, mantendo a criação do criativo para preservar
+   compatibilidade de conta.
+   O conjunto de anúncios é sempre normalizado para veiculação exclusiva no
+   Instagram (`publisher_platforms=["instagram"]` e
+   `instagram_positions=["stream","story","reels","explore"]`), removendo
+   placements de Facebook, Audience Network e Messenger.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
    criativo. A imagem é sempre veiculada via `link_data.picture` — não há hash
    salvo na biblioteca —, garantindo que o anúncio utilize exatamente o ativo
@@ -406,8 +411,9 @@ de [códigos de erro da Marketing API](https://developers.facebook.com/docs/mark
 para confirmar os requisitos de permissão. Quando o erro vem acompanhado do
 `error_subcode = 1815199` ("A conta de anúncios não tem acesso a esta conta do
 Instagram"), o worker tenta novamente criar o criativo sem enviar o
-`instagram_user_id`, permitindo que a campanha prossiga apenas com o Facebook
-quando a conta não possui acesso ao Instagram informado pelo backend. Caso o
+`instagram_user_id` para reduzir falhas de permissão no nível do criativo.
+Mesmo nesse fallback, os conjuntos seguem com placements exclusivos de
+Instagram. Caso o
 Facebook ainda rejeite a requisição — seja por outras permissões ausentes ou
 por continuar exigindo o Instagram — o worker marca automaticamente o
 experimento como `FAILED` via

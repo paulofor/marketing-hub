@@ -10,13 +10,6 @@ mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
 mkdir -p ./volumes/mcp/certbot/www ./volumes/mcp/certbot/conf
 
-CERT_DIR=./volumes/mcp/certbot/conf/live/mcpserverdigi.shop
-if [[ -f "${CERT_DIR}/fullchain.pem" && -f "${CERT_DIR}/privkey.pem" ]]; then
-  cp ./nginx/mcp/default.https.conf ./nginx/mcp/default.conf
-else
-  cp ./nginx/mcp/default.http.conf ./nginx/mcp/default.conf
-fi
-
 if [[ -f "${MCP_TAR}" ]]; then
   docker load -i "${MCP_TAR}"
 fi

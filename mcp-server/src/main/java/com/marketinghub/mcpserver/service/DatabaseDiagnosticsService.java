@@ -32,7 +32,7 @@ public class DatabaseDiagnosticsService {
                 """
                         SELECT TABLE_NAME
                         FROM INFORMATION_SCHEMA.TABLES
-                        WHERE UPPER(TABLE_SCHEMA) = UPPER(DATABASE())
+                        WHERE UPPER(TABLE_SCHEMA) = UPPER(SCHEMA())
                           AND TABLE_TYPE = 'BASE TABLE'
                         ORDER BY TABLE_NAME
                         """,

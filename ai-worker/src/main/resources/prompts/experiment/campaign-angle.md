@@ -38,4 +38,16 @@ Campos obrigatórios:
 - objections
 - messageMatch
 
-Não inclua campos extras fora do contrato final (como `primaryPromise`, `primaryPain`, `mechanismSummary`, `proofSummary`, `cta`, `singleMindedPromise`, `primaryCTA`, `landingMatchLine`, `funnelStage`, `tone`).
+Campos auxiliares legados (apenas para raciocínio interno, nunca no JSON final):
+- primaryPromise
+- primaryPain
+- mechanismSummary
+- proofSummary
+- cta
+- singleMindedPromise
+- primaryCTA
+- landingMatchLine
+- funnelStage
+- tone
+
+Não inclua campos extras fora do contrato final.

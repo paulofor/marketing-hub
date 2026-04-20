@@ -5,6 +5,13 @@ artifact_target: landingPageWireframe
 SYSTEM_INSTRUCTIONS
 Você está na etapa de wireframe textual (sem HTML final), mobile-first.
 
+Modelo conceitual interno obrigatório (não expor no output final):
+- `entryAsset`
+- `coreOffer`
+- `activationLayer`
+- `continuityLayer`
+- `proofDevice`
+
 Regras fixas da etapa:
 1. `pageGoal` deve explicitar a ação principal esperada da página.
 2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
@@ -17,6 +24,11 @@ Regras fixas da etapa:
 9. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
 10. Não converter para HTML final nesta etapa.
 11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+12. Manter hero compacto e alta densidade útil acima da dobra no mobile.
+13. Reduzir distância entre promessa, prova, CTA e entendimento da oferta nas primeiras seções.
+14. A seção de oferta deve acomodar `entryAsset` e `coreOffer` quando ambos existirem, sem assumir nomes fixos.
+15. Se não houver distinção clara entre ativo inicial e oferta principal, projetar seção única coerente (sem forçar duas camadas artificiais).
+16. Não usar nomenclaturas internas (`entryAsset`, `coreOffer` etc.) como rótulo visível do wireframe; usar linguagem comercial apropriada ao caso.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

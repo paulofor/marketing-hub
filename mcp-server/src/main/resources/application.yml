@@ -26,3 +26,9 @@ mcp:
   server-name: ${MCP_SERVER_NAME:marketing-hub-mcp}
   server-version: ${MCP_SERVER_VERSION:1.0.0}
   api-key: ${MCP_API_KEY:}
+  logs:
+    backend-path: ${MCP_LOG_BACKEND_PATH:/app/logs/marketinghub-backend.log}
+    ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:/var/log/ai-worker/application.log}
+    lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:/app/data/logs/lead-portal-backend.log}
+    facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:/var/log/facebook-ads-worker/application.log}
+    max-lines: ${MCP_LOG_MAX_LINES:500}

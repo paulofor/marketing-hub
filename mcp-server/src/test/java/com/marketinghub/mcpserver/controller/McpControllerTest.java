@@ -11,6 +11,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class McpControllerTest {
+
+    private static final Path TEST_LOG_DIR = Path.of("target/test-logs");
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,14 +38,24 @@ class McpControllerTest {
         registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
         registry.add("spring.datasource.username", () -> "sa");
         registry.add("spring.datasource.password", () -> "");
+        registry.add("mcp.logs.backend-path", () -> TEST_LOG_DIR.resolve("backend.log").toString());
+        registry.add("mcp.logs.ai-worker-path", () -> TEST_LOG_DIR.resolve("ai-worker.log").toString());
+        registry.add("mcp.logs.lead-portal-path", () -> TEST_LOG_DIR.resolve("lead-portal.log").toString());
+        registry.add("mcp.logs.facebook-ads-path", () -> TEST_LOG_DIR.resolve("facebook-ads.log").toString());
+        registry.add("mcp.logs.max-lines", () -> "500");
     }
 
     @BeforeEach
-    void setupDatabase() {
+    void setupDatabase() throws Exception {
         jdbcTemplate.execute("DROP TABLE IF EXISTS leads");
         jdbcTemplate.execute("CREATE TABLE leads (id BIGINT PRIMARY KEY, name VARCHAR(100), email VARCHAR(150))");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 1L, "Ana", "ana@example.com");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 2L, "Bruno", "bruno@example.com");
+
+        Files.createDirectories(TEST_LOG_DIR);
+        Files.writeString(TEST_LOG_DIR.resolve("backend.log"),
+                "line-1\nline-2\nline-3\n",
+                StandardCharsets.UTF_8);
     }
 
     @Test
@@ -132,11 +148,39 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message").value("only SELECT queries are allowed"));
     }
+
+    @Test
+    void shouldReadJavaModuleLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"backend","lines":2}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.module").value("backend"))
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(2))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("line-2"))
+                .andExpect(jsonPath("$.result.structuredContent.lines[1]").value("line-3"));
+    }
+
+    @Test
+    void shouldRejectInvalidJavaModuleName() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"unknown"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message").value("module must be one of: backend, ai-worker, lead-portal, facebook-ads"));
+    }
 }
 
 @SpringBootTest(properties = "mcp.api-key=super-secret")
 @AutoConfigureMockMvc
 class McpControllerApiKeyEnabledTest {
+
+    private static final Path TEST_LOG_DIR = Path.of("target/test-logs-api-key");
 
     @Autowired
     private MockMvc mockMvc;
@@ -147,6 +191,11 @@ class McpControllerApiKeyEnabledTest {
         registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
         registry.add("spring.datasource.username", () -> "sa");
         registry.add("spring.datasource.password", () -> "");
+        registry.add("mcp.logs.backend-path", () -> TEST_LOG_DIR.resolve("backend.log").toString());
+        registry.add("mcp.logs.ai-worker-path", () -> TEST_LOG_DIR.resolve("ai-worker.log").toString());
+        registry.add("mcp.logs.lead-portal-path", () -> TEST_LOG_DIR.resolve("lead-portal.log").toString());
+        registry.add("mcp.logs.facebook-ads-path", () -> TEST_LOG_DIR.resolve("facebook-ads.log").toString());
+        registry.add("mcp.logs.max-lines", () -> "500");
     }
 
     @Test

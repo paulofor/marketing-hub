@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
@@ -1142,6 +1142,9 @@ export default function ExperimentContentGenerationTab({
   const [requestsBySection, setRequestsBySection] = useState<
     Record<ContentGenerationSectionKey, SectionRequestState>
   >(() => ({ ...SECTION_REQUEST_INITIAL_STATE }));
+  const [isGeneratingSection, setIsGeneratingSection] = useState(false);
+  const [pendingGenerationSection, setPendingGenerationSection] =
+    useState<ContentGenerationSectionKey | null>(null);
 
   const jobsQuery = useExperimentPipelineJobs(experimentId);
   const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
@@ -1429,51 +1432,40 @@ export default function ExperimentContentGenerationTab({
       (section) => section.key === activeSection,
     ) ?? CONTENT_GENERATION_SECTIONS[0];
 
-  useEffect(() => {
-    const loadCampaignAngles = async () => {
-      try {
-        setIsLoadingCampaignAngles(true);
-        const { data: response } = await axios.get<
-          PageResponse<AiGenerationRecord>
-        >("/api/ai/generations", {
+  const loadCampaignAngles = useCallback(async () => {
+    try {
+      setIsLoadingCampaignAngles(true);
+      const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
+        "/api/ai/generations",
+        {
           params: {
             referenceId: experimentId,
             domain: "experiment.pipeline.campaign-angle",
             size: 20,
           },
-        });
+        },
+      );
 
-        const orderedByLatest = [...(response.content ?? [])]
-          .map((generation) => ({
-            ...generation,
-            fields: parseCampaignAnglePayload(generation.rawResponse),
-          }))
-          .sort(
-            (a, b) =>
-              (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
-              (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
-          );
-        setCampaignAngleGenerations(orderedByLatest);
-      } catch {
-        toast.error("Não foi possível carregar os ângulos da campanha agora.");
-      } finally {
-        setIsLoadingCampaignAngles(false);
-      }
-    };
-
-    void loadCampaignAngles();
+      const orderedByLatest = [...(response.content ?? [])]
+        .map((generation) => ({
+          ...generation,
+          fields: parseCampaignAnglePayload(generation.rawResponse),
+        }))
+        .sort(
+          (a, b) =>
+            (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+            (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+        );
+      setCampaignAngleGenerations(orderedByLatest);
+    } catch {
+      toast.error("Não foi possível carregar os ângulos da campanha agora.");
+    } finally {
+      setIsLoadingCampaignAngles(false);
+    }
   }, [experimentId]);
 
-  useEffect(() => {
-    const sectionsToLoad: HistorySectionKey[] = [
-      "image-prompt",
-      "landing-copy",
-      "landing-layout",
-      "landing-image-planning",
-      "landing-html",
-    ];
-
-    const loadSection = async (sectionKey: HistorySectionKey) => {
+  const loadSection = useCallback(
+    async (sectionKey: HistorySectionKey) => {
       try {
         setIsLoadingSectionGenerations((previous) => ({
           ...previous,
@@ -1509,48 +1501,112 @@ export default function ExperimentContentGenerationTab({
           [sectionKey]: false,
         }));
       }
-    };
+    },
+    [experimentId],
+  );
 
-    void Promise.all(
-      sectionsToLoad.map((sectionKey) => loadSection(sectionKey)),
-    );
-  }, [experimentId]);
-
-  useEffect(() => {
-    const loadAdCopy = async () => {
-      try {
-        setIsLoadingAdCopy(true);
-        const { data: response } = await axios.get<
-          PageResponse<AiGenerationRecord>
-        >("/api/ai/generations", {
+  const loadAdCopy = useCallback(async () => {
+    try {
+      setIsLoadingAdCopy(true);
+      const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
+        "/api/ai/generations",
+        {
           params: {
             referenceId: experimentId,
             domain: "experiment.pipeline.ad-copy",
             size: 20,
           },
-        });
+        },
+      );
 
-        const orderedByLatest = [...(response.content ?? [])]
-          .map((generation) => ({
-            ...generation,
-            fields: parseAdCopyPayload(generation.rawResponse),
-          }))
-          .sort(
-            (a, b) =>
-              (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
-              (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
-          );
+      const orderedByLatest = [...(response.content ?? [])]
+        .map((generation) => ({
+          ...generation,
+          fields: parseAdCopyPayload(generation.rawResponse),
+        }))
+        .sort(
+          (a, b) =>
+            (parseTimestamp(b.createdAt) ?? Number.MIN_SAFE_INTEGER) -
+            (parseTimestamp(a.createdAt) ?? Number.MIN_SAFE_INTEGER),
+        );
 
-        setAdCopyGenerations(orderedByLatest);
-      } catch {
-        toast.error("Não foi possível carregar os textos do anúncio agora.");
-      } finally {
-        setIsLoadingAdCopy(false);
-      }
-    };
-
-    void loadAdCopy();
+      setAdCopyGenerations(orderedByLatest);
+    } catch {
+      toast.error("Não foi possível carregar os textos do anúncio agora.");
+    } finally {
+      setIsLoadingAdCopy(false);
+    }
   }, [experimentId]);
+
+  useEffect(() => {
+    void loadCampaignAngles();
+  }, [loadCampaignAngles]);
+
+  useEffect(() => {
+    const sectionsToLoad: HistorySectionKey[] = [
+      "image-prompt",
+      "landing-copy",
+      "landing-layout",
+      "landing-image-planning",
+      "landing-html",
+    ];
+
+    void Promise.all(
+      sectionsToLoad.map((sectionKey) => loadSection(sectionKey)),
+    );
+  }, [loadSection]);
+
+  useEffect(() => {
+    void loadAdCopy();
+  }, [loadAdCopy]);
+
+  const handleGenerateSection = async (section: ContentGenerationSection) => {
+    const nowIso = new Date().toISOString();
+    setPendingGenerationSection(section.key);
+    setIsGeneratingSection(true);
+    setRequestsBySection((previous) => ({
+      ...previous,
+      [section.key]: {
+        status: "PROCESSING",
+        requestedAt: nowIso,
+      },
+    }));
+
+    try {
+      await axios.post(
+        `/api/experiments/${experimentId}/pipeline/${SECTION_API_PATHS[section.key]}/generate`,
+        {
+          quantity: section.defaultQuantity,
+          promptTemplate: SECTION_PROMPT_DEFAULTS[section.key],
+        },
+      );
+      toast.success(
+        `Solicitação de ${section.label.toLowerCase()} enviada para o Worker IA.`,
+      );
+      await jobsQuery.refetch();
+
+      if (section.key === "campaign-angle") {
+        await loadCampaignAngles();
+      } else if (section.key === "ad-copy") {
+        await loadAdCopy();
+      } else {
+        await loadSection(section.key);
+      }
+    } catch (error) {
+      setRequestsBySection((previous) => ({
+        ...previous,
+        [section.key]: {
+          status: "FAILED",
+          requestedAt: nowIso,
+          errorMessage: getErrorMessage(error),
+        },
+      }));
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsGeneratingSection(false);
+      setPendingGenerationSection(null);
+    }
+  };
 
   const handleDownloadReport = async () => {
     try {
@@ -1742,9 +1798,32 @@ export default function ExperimentContentGenerationTab({
                     <h5 className="card-title mb-1">{section.label}</h5>
                     <p className="text-muted mb-0">{section.description}</p>
                   </div>
-                  <span className="badge text-bg-light">
-                    Estrutura pronta para prompt
-                  </span>
+                  <div className="d-flex align-items-start flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={() => void handleGenerateSection(section)}
+                      disabled={isGeneratingSection}
+                      title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
+                    >
+                      {isGeneratingSection &&
+                      pendingGenerationSection === section.key ? (
+                        <span className="d-inline-flex align-items-center gap-1">
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Gerando com IA...
+                        </span>
+                      ) : (
+                        "Gerar com IA"
+                      )}
+                    </button>
+                    <span className="badge text-bg-light">
+                      Estrutura pronta para prompt
+                    </span>
+                  </div>
                 </div>
 
                 <div className="row g-3 mt-1">

@@ -73,7 +73,15 @@ curl -i http://mcpserverdigi.shop/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
-Quando o certificado estiver pronto, basta ajustar o Nginx para `443` e redirecionar `80 -> 443`.
+Por padrão, o compose sobe com `default.http.conf` (sem TLS obrigatório), evitando crash quando o certificado ainda não foi emitido.
+
+Para habilitar HTTPS após a emissão do certificado, use:
+
+```bash
+MCP_NGINX_CONF=default.conf docker compose up -d nginx
+```
+
+No deploy (`deploy/docker-compose.yml`), use a mesma variável de ambiente `MCP_NGINX_CONF` (por exemplo, `default.conf` ou `default.https.conf`).
 
 ## Configuração no Codex Cloud (Plugin MCP)
 

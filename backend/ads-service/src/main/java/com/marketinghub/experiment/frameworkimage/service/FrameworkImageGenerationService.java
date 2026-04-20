@@ -216,6 +216,29 @@ public class FrameworkImageGenerationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public boolean allPlanningImagesCompleted(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
+        List<PlanningItem> items = parsePlanningItems(experiment).stream()
+                .filter(item -> StringUtils.hasText(item.prompt()))
+                .toList();
+        if (items.isEmpty()) {
+            return true;
+        }
+        Map<String, FrameworkImageGenerationJob> latestByItem = new LinkedHashMap<>();
+        for (FrameworkImageGenerationJob job : jobRepository.findByExperimentIdOrderByCreatedAtDesc(experimentId)) {
+            latestByItem.putIfAbsent(job.getPlanningItemKey(), job);
+        }
+        for (PlanningItem item : items) {
+            FrameworkImageGenerationJob latest = latestByItem.get(item.planningItemKey());
+            if (latest == null || latest.getStatus() != FrameworkImageGenerationJobStatus.COMPLETED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Transactional
     public int failStaleProcessingJobs(Instant staleBefore, int limit, String staleReason) {
         List<FrameworkImageGenerationJob> staleJobs = jobRepository.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(

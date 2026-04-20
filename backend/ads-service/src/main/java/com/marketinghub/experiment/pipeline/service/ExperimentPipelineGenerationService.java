@@ -16,6 +16,7 @@ import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobS
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
+import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
@@ -101,6 +102,7 @@ public class ExperimentPipelineGenerationService {
     private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ObjectMapper objectMapper;
     private final LandingPageImageInjector landingPageImageInjector;
+    private final FrameworkImageGenerationService frameworkImageGenerationService;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
@@ -109,7 +111,8 @@ public class ExperimentPipelineGenerationService {
                                                LeadPortalFlowRepository leadPortalFlowRepository,
                                                LeadPortalFlowPublisher leadPortalFlowPublisher,
                                                ObjectMapper objectMapper,
-                                               LandingPageImageInjector landingPageImageInjector) {
+                                               LandingPageImageInjector landingPageImageInjector,
+                                               FrameworkImageGenerationService frameworkImageGenerationService) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
@@ -118,6 +121,7 @@ public class ExperimentPipelineGenerationService {
         this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.objectMapper = objectMapper;
         this.landingPageImageInjector = landingPageImageInjector;
+        this.frameworkImageGenerationService = frameworkImageGenerationService;
     }
 
     @Transactional
@@ -359,6 +363,8 @@ public class ExperimentPipelineGenerationService {
         job.setCostUsd(estimatedCost);
         job.setErrorMessage(null);
         job.setFinishedAt(Instant.now());
+
+        enqueueNextAutomaticStep(job, request);
     }
 
     @Transactional
@@ -419,6 +425,42 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "A seção " + section.path() + " depende da seção " + predecessor.path() + " já concluída");
         }
+        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML
+                && !frameworkImageGenerationService.allPlanningImagesCompleted(experiment.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A seção landing-page-html depende da geração completa das imagens planejadas da landing");
+        }
+    }
+
+    private void enqueueNextAutomaticStep(ExperimentPipelineGenerationJob job,
+                                          ExperimentPipelineGenerationJobCompletionRequest request) {
+        if (job == null || job.getExperiment() == null || job.getExperiment().getId() == null) {
+            return;
+        }
+        Long experimentId = job.getExperiment().getId();
+        ExperimentPipelineSection section = job.getSection();
+
+        if (section == ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING) {
+            frameworkImageGenerationService.enqueueJobsForExperiment(experimentId);
+            if (frameworkImageGenerationService.allPlanningImagesCompleted(experimentId)) {
+                enqueueJob(job.getExperiment(), ExperimentPipelineSection.LANDING_PAGE_HTML, deriveFollowUpRequest(request));
+            }
+            return;
+        }
+
+        ExperimentPipelineSection successor = section.successor();
+        if (successor == null) {
+            return;
+        }
+        enqueueJob(job.getExperiment(), successor, deriveFollowUpRequest(request));
+    }
+
+    private ExperimentPipelineGenerationRequest deriveFollowUpRequest(ExperimentPipelineGenerationJobCompletionRequest request) {
+        ExperimentPipelineGenerationRequest followUp = new ExperimentPipelineGenerationRequest();
+        if (request != null && StringUtils.hasText(request.rawResponse())) {
+            followUp.setCustomInstructions("Continuação automática do pipeline.");
+        }
+        return followUp;
     }
 
     private boolean markStaleJobsAsFailed(List<ExperimentPipelineGenerationJob> activeJobs) {

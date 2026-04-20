@@ -10,6 +10,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatu
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
+import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.argThat;
 
 @ExtendWith(MockitoExtension.class)
 class ExperimentPipelineGenerationServiceTest {
@@ -57,6 +59,8 @@ class ExperimentPipelineGenerationServiceTest {
     private LeadPortalFlowPublisher leadPortalFlowPublisher;
     @Mock
     private LandingPageImageInjector landingPageImageInjector;
+    @Mock
+    private FrameworkImageGenerationService frameworkImageGenerationService;
 
     private ExperimentPipelineGenerationService service;
 
@@ -70,7 +74,8 @@ class ExperimentPipelineGenerationServiceTest {
                 leadPortalFlowRepository,
                 leadPortalFlowPublisher,
                 new ObjectMapper(),
-                landingPageImageInjector);
+                landingPageImageInjector,
+                frameworkImageGenerationService);
     }
 
     @Test
@@ -353,6 +358,52 @@ class ExperimentPipelineGenerationServiceTest {
                 """));
 
         assertNotNull(experiment.getLandingPageHtml());
+    }
+
+    @Test
+    void completeJobAutomaticallyEnqueuesSuccessorSection() {
+        Experiment experiment = new Experiment();
+        experiment.setId(301L);
+
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.AD_COPY)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        service.completeJob(jobId, new ExperimentPipelineGenerationJobCompletionRequest(
+                "{\"adCopy\":{\"headline\":\"teste\"}}",
+                "{\"id\":\"resp_copy\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                40,
+                20,
+                null));
+
+        verify(jobRepository).save(argThat(saved ->
+                saved.getSection() == ExperimentPipelineSection.AD_IMAGE_BRIEFING
+                        && saved.getExperiment() == experiment
+                        && saved.getStatus() == ExperimentPipelineGenerationJobStatus.PENDING));
+    }
+
+    @Test
+    void generateLandingHtmlFailsWhenPlannedImagesAreNotFullyGenerated() {
+        Experiment experiment = new Experiment();
+        experiment.setId(302L);
+        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[{\"sectionId\":\"hero\",\"imagePrompt\":\"x\"}]}}");
+
+        when(experimentRepository.findById(302L)).thenReturn(Optional.of(experiment));
+        when(frameworkImageGenerationService.allPlanningImagesCompleted(302L)).thenReturn(false);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.generate(302L, ExperimentPipelineSection.LANDING_PAGE_HTML, new com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest()));
+
+        assertTrue(ex.getReason().contains("geração completa das imagens"));
     }
 
     @Test

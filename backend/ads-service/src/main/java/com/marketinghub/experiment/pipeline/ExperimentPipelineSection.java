@@ -27,6 +27,15 @@ public enum ExperimentPipelineSection {
         return predecessor;
     }
 
+    public ExperimentPipelineSection successor() {
+        for (ExperimentPipelineSection section : values()) {
+            if (section.predecessor == this) {
+                return section;
+            }
+        }
+        return null;
+    }
+
     public static ExperimentPipelineSection fromPath(String raw) {
         if (!StringUtils.hasText(raw)) {
             throw new IllegalArgumentException("Section is required");

@@ -2,6 +2,7 @@ package com.marketinghub.mcpserver.controller;
 
 import com.marketinghub.mcpserver.config.McpProperties;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
+import com.marketinghub.mcpserver.service.ModuleLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +28,14 @@ public class McpController {
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
+    private final ModuleLogService moduleLogService;
 
-    public McpController(McpProperties properties, DatabaseDiagnosticsService databaseDiagnosticsService) {
+    public McpController(McpProperties properties,
+                         DatabaseDiagnosticsService databaseDiagnosticsService,
+                         ModuleLogService moduleLogService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
+        this.moduleLogService = moduleLogService;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -105,6 +110,21 @@ public class McpController {
                                                     "description", "Limite de linhas quando a query não tiver LIMIT. Padrão: 100.")),
                                     "required", List.of("query"),
                                     "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "java_module_logs",
+                            "description", "Retorna as últimas linhas de logs dos módulos Java (backend, ai-worker, lead-portal, facebook-ads).",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "module", Map.of("type", "string",
+                                                    "enum", List.of("backend", "ai-worker", "lead-portal", "facebook-ads"),
+                                                    "description", "Módulo Java para consultar logs."),
+                                            "lines", Map.of("type", "integer", "minimum", 1,
+                                                    "maximum", moduleLogService.maxLines(),
+                                                    "description", "Quantidade de linhas do final do arquivo de log. Padrão: 200.")),
+                                    "required", List.of("module"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -140,6 +160,7 @@ public class McpController {
                         "Database tables");
                 case "db_read_table" -> callReadTable(id, arguments);
                 case "db_query" -> callQueryTool(id, arguments);
+                case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
@@ -190,6 +211,21 @@ public class McpController {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
             return error(id, -32603, "Failed to execute query: " + ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> callJavaModuleLogsTool(Object id, Map<String, Object> arguments) {
+        String module = stringArgument(arguments, "module");
+        Integer lines = intArgument(arguments, "lines");
+
+        try {
+            Map<String, Object> result = moduleLogService.readModuleLogs(module, lines);
+            return successToolResult(id, result,
+                    "Read " + result.get("returnedLines") + " log lines from module " + result.get("module"));
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to read module logs: " + ex.getMessage());
         }
     }
 

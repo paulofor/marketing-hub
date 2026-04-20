@@ -9,6 +9,12 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
     password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:}}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      initialization-fail-timeout: -1
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:5000}
+      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:3000}
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:10}
+      minimum-idle: ${DB_MIN_IDLE:0}
 
 management:
   endpoints:

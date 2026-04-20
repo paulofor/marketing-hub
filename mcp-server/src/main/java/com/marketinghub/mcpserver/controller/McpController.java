@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +31,17 @@ public class McpController {
     public McpController(McpProperties properties, DatabaseDiagnosticsService databaseDiagnosticsService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
+    }
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> describeEndpoint() {
+        return ResponseEntity.ok(Map.of(
+                "name", properties.serverName(),
+                "version", properties.serverVersion(),
+                "endpoint", "/mcp",
+                "protocol", "json-rpc-2.0",
+                "hint", "Use HTTP POST with JSON-RPC methods initialize, tools/list, tools/call"
+        ));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

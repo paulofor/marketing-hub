@@ -11,6 +11,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,6 +51,14 @@ class McpControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.serverInfo.name").value("marketing-hub-mcp"));
+    }
+
+    @Test
+    void shouldExposeGetEndpointForReachabilityChecks() throws Exception {
+        mockMvc.perform(get("/mcp"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.endpoint").value("/mcp"))
+                .andExpect(jsonPath("$.protocol").value("json-rpc-2.0"));
     }
 
     @Test

@@ -24,6 +24,7 @@ mvn -s settings.xml spring-boot:run
 ## Endpoints
 
 - `POST /mcp`: endpoint MCP via JSON-RPC (métodos `initialize`, `tools/list`, `tools/call`).
+- `GET /mcp`: endpoint de reachability (retorna metadados simples para smoke tests de rede/proxy).
 - `GET /actuator/health`: health-check para orquestração.
 
 ## Segurança
@@ -51,6 +52,12 @@ O `docker-compose.yml` deste diretório sobe dois containers:
 
 - `mcp-server` (interno, exposto apenas na rede Docker em `8096`);
 - `nginx` (público, escutando na porta `80` e fazendo proxy para o MCP).
+
+O compose aguarda o health-check do `mcp-server` (`/actuator/health`) antes de subir o Nginx, reduzindo erros de timeout durante boot.
+
+### Tolerância a indisponibilidade temporária do banco
+
+O MCP foi configurado para iniciar mesmo quando o MySQL está temporariamente indisponível. Assim, chamadas `initialize` e `tools/list` continuam respondendo enquanto a infraestrutura de banco é estabilizada.
 
 ```bash
 cd mcp-server

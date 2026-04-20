@@ -20,6 +20,8 @@ public class McpController {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final int DEFAULT_LIMIT = 50;
+    private static final int MAX_LIMIT = 200;
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -56,6 +58,28 @@ public class McpController {
                                     "type", "object",
                                     "properties", Map.of(),
                                     "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "db_list_tables",
+                            "description", "Lista todas as tabelas disponíveis no schema atual do MySQL.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "db_read_table",
+                            "description", "Lê dados de uma tabela do schema atual com paginação.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "table", Map.of("type", "string", "description", "Nome da tabela."),
+                                            "limit", Map.of("type", "integer", "minimum", 1, "maximum", MAX_LIMIT,
+                                                    "description", "Número de linhas retornadas. Padrão: 50."),
+                                            "offset", Map.of("type", "integer", "minimum", 0,
+                                                    "description", "Deslocamento para paginação. Padrão: 0.")),
+                                    "required", List.of("table"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -81,17 +105,92 @@ public class McpController {
 
         Object toolNameValue = params.get("name");
         String toolName = toolNameValue == null ? "" : String.valueOf(toolNameValue);
-        if (!"db_health".equals(toolName)) {
-            return error(id, -32602, "Unknown tool: " + toolName);
+
+        try {
+            Map<String, Object> arguments = extractArguments(params);
+            return switch (toolName) {
+                case "db_health" -> successToolResult(id, databaseDiagnosticsService.checkConnection(),
+                        "Database connectivity status");
+                case "db_list_tables" -> successToolResult(id, databaseDiagnosticsService.listTables(),
+                        "Database tables");
+                case "db_read_table" -> callReadTable(id, arguments);
+                default -> error(id, -32602, "Unknown tool: " + toolName);
+            };
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> callReadTable(Object id, Map<String, Object> arguments) {
+        String table = stringArgument(arguments, "table");
+
+        Integer limitArg = intArgument(arguments, "limit");
+        int limit = limitArg == null ? DEFAULT_LIMIT : limitArg;
+        if (limit < 1 || limit > MAX_LIMIT) {
+            return error(id, -32602, "limit must be between 1 and " + MAX_LIMIT);
         }
 
-        Map<String, Object> diagnostics = databaseDiagnosticsService.checkConnection();
+        Integer offsetArg = intArgument(arguments, "offset");
+        int offset = offsetArg == null ? 0 : offsetArg;
+        if (offset < 0) {
+            return error(id, -32602, "offset must be greater than or equal to 0");
+        }
+
+        try {
+            Map<String, Object> result = databaseDiagnosticsService.readTable(table, limit, offset);
+            return successToolResult(id, result,
+                    "Read " + result.get("returnedRows") + " rows from table " + table);
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to read table: " + ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> extractArguments(Map<?, ?> params) {
+        Object argumentsObject = params.get("arguments");
+        if (argumentsObject == null) {
+            return Map.of();
+        }
+
+        if (!(argumentsObject instanceof Map<?, ?> rawArguments)) {
+            throw new IllegalArgumentException("Invalid arguments");
+        }
+
+        return rawArguments.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        entry -> String.valueOf(entry.getKey()),
+                        Map.Entry::getValue));
+    }
+
+    private String stringArgument(Map<String, Object> arguments, String name) {
+        Object value = arguments.get(name);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private Integer intArgument(Map<String, Object> arguments, String name) {
+        Object value = arguments.get(name);
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException(name + " must be an integer");
+        }
+    }
+
+    private Map<String, Object> successToolResult(Object id, Map<String, Object> data, String text) {
         return success(id, Map.of(
                 "content", List.of(Map.of(
                         "type", "text",
-                        "text", "Database connectivity status: " + diagnostics.get("status")
-                                + " (database=" + diagnostics.get("database") + ")")),
-                "structuredContent", diagnostics
+                        "text", text)),
+                "structuredContent", data
         ));
     }
 

@@ -16,6 +16,7 @@ Regras fixas da etapa:
 8. `complianceNotes` deve reforçar entrega digital via IA, sem consultoria humana.
 9. Priorize concretude comercial: manter nome de entregáveis, prova visível e CTA tangível quando disponíveis nos resumos estruturados.
 10. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+11. Não retornar campos legados fora do contrato (ex.: `messageMatchSummary`).
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

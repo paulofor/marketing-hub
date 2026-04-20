@@ -8,6 +8,14 @@ IMAGE_TAG=${IMAGE_TAG:-latest}
 
 mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
+mkdir -p ./volumes/mcp/certbot/www ./volumes/mcp/certbot/conf
+
+CERT_DIR=./volumes/mcp/certbot/conf/live/mcpserverdigi.shop
+if [[ -f "${CERT_DIR}/fullchain.pem" && -f "${CERT_DIR}/privkey.pem" ]]; then
+  cp ./nginx/mcp/default.https.conf ./nginx/mcp/default.conf
+else
+  cp ./nginx/mcp/default.http.conf ./nginx/mcp/default.conf
+fi
 
 if [[ -f "${MCP_TAR}" ]]; then
   docker load -i "${MCP_TAR}"
@@ -30,10 +38,10 @@ cleanup_previous_tags() {
     | xargs -r docker image rm >/dev/null 2>&1 || true
 }
 
-# Atualiza somente o MCP Server sem reiniciar outros serviços.
+# Atualiza somente o MCP Server e o Nginx dedicado do MCP sem reiniciar outros serviços.
 MCP_SERVER_IMAGE="${MCP_IMAGE}" \
 MCP_SERVER_IMAGE_TAG=latest \
-docker compose up -d --no-deps mcp-server
+docker compose up -d --no-deps mcp-server mcp-nginx
 
 cleanup_previous_tags "${MCP_IMAGE}" "latest"
 

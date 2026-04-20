@@ -99,6 +99,30 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602));
     }
+
+    @Test
+    void shouldExecuteReadOnlyQueryTool() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"db_query","arguments":{"query":"SELECT id, name FROM leads ORDER BY id","limit":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.returnedRows").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.rows[0].NAME").value("Ana"));
+    }
+
+    @Test
+    void shouldRejectNonSelectQuery() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"db_query","arguments":{"query":"UPDATE leads SET name='X'"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message").value("only SELECT queries are allowed"));
+    }
 }
 
 @SpringBootTest(properties = "mcp.api-key=super-secret")

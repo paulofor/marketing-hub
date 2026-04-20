@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -65,6 +66,19 @@ public class DatabaseDiagnosticsService {
         return response;
     }
 
+    public Map<String, Object> query(String sql, int limit) {
+        String normalizedSql = normalizeAndValidateReadOnlySql(sql);
+        String sqlWithLimit = ensureLimit(normalizedSql, limit);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sqlWithLimit);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("query", normalizedSql);
+        response.put("appliedLimit", limit);
+        response.put("returnedRows", rows.size());
+        response.put("rows", rows);
+        return response;
+    }
+
     private void validateTableName(String tableName) {
         if (tableName == null || tableName.isBlank()) {
             throw new IllegalArgumentException("table is required");
@@ -73,5 +87,35 @@ public class DatabaseDiagnosticsService {
         if (!tableName.matches("[A-Za-z0-9_]+")) {
             throw new IllegalArgumentException("table contains invalid characters");
         }
+    }
+
+    private String normalizeAndValidateReadOnlySql(String sql) {
+        if (sql == null || sql.isBlank()) {
+            throw new IllegalArgumentException("query is required");
+        }
+
+        String normalized = sql.trim();
+        if (normalized.endsWith(";")) {
+            normalized = normalized.substring(0, normalized.length() - 1).trim();
+        }
+
+        if (normalized.contains(";")) {
+            throw new IllegalArgumentException("only one SQL statement is allowed");
+        }
+
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if (!(lower.startsWith("select ") || lower.startsWith("with "))) {
+            throw new IllegalArgumentException("only SELECT queries are allowed");
+        }
+
+        return normalized;
+    }
+
+    private String ensureLimit(String sql, int limit) {
+        String lower = sql.toLowerCase(Locale.ROOT);
+        if (lower.contains(" limit ")) {
+            return sql;
+        }
+        return sql + " LIMIT " + limit;
     }
 }

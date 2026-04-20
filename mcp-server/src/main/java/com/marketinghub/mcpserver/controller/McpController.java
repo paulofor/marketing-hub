@@ -22,6 +22,7 @@ public class McpController {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final int DEFAULT_LIMIT = 50;
     private static final int MAX_LIMIT = 200;
+    private static final int MAX_QUERY_LIMIT = 500;
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -80,6 +81,18 @@ public class McpController {
                                                     "description", "Deslocamento para paginação. Padrão: 0.")),
                                     "required", List.of("table"),
                                     "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "db_query",
+                            "description", "Executa consulta SQL somente leitura (apenas SELECT/WITH).",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "query", Map.of("type", "string", "description", "SQL SELECT/WITH."),
+                                            "limit", Map.of("type", "integer", "minimum", 1, "maximum", MAX_QUERY_LIMIT,
+                                                    "description", "Limite de linhas quando a query não tiver LIMIT. Padrão: 100.")),
+                                    "required", List.of("query"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -114,6 +127,7 @@ public class McpController {
                 case "db_list_tables" -> successToolResult(id, databaseDiagnosticsService.listTables(),
                         "Database tables");
                 case "db_read_table" -> callReadTable(id, arguments);
+                case "db_query" -> callQueryTool(id, arguments);
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
@@ -144,6 +158,26 @@ public class McpController {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
             return error(id, -32603, "Failed to read table: " + ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> callQueryTool(Object id, Map<String, Object> arguments) {
+        String query = stringArgument(arguments, "query");
+
+        Integer limitArg = intArgument(arguments, "limit");
+        int limit = limitArg == null ? 100 : limitArg;
+        if (limit < 1 || limit > MAX_QUERY_LIMIT) {
+            return error(id, -32602, "limit must be between 1 and " + MAX_QUERY_LIMIT);
+        }
+
+        try {
+            Map<String, Object> result = databaseDiagnosticsService.query(query, limit);
+            return successToolResult(id, result,
+                    "Query executed with " + result.get("returnedRows") + " rows returned");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to execute query: " + ex.getMessage());
         }
     }
 

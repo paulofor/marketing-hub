@@ -1,4 +1,11 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "react-toastify";
 import * as Tabs from "@radix-ui/react-tabs";
 import axios from "axios";
@@ -145,6 +152,12 @@ interface SectionInvalidationState {
   sourceTimestamp: number;
 }
 
+interface AutoQueueState {
+  isActive: boolean;
+  waitingFor?: ContentGenerationSectionKey;
+  pending: ContentGenerationSectionKey[];
+}
+
 const SECTION_REQUEST_INITIAL_STATE: Record<
   ContentGenerationSectionKey,
   SectionRequestState
@@ -152,6 +165,11 @@ const SECTION_REQUEST_INITIAL_STATE: Record<
   (acc, section) => ({ ...acc, [section.key]: { status: "IDLE" } }),
   {} as Record<ContentGenerationSectionKey, SectionRequestState>,
 );
+
+const AUTO_QUEUE_INITIAL_STATE: AutoQueueState = {
+  isActive: false,
+  pending: [],
+};
 
 const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
   CAMPAIGN_ANGLE: "campaign-angle",
@@ -1145,6 +1163,11 @@ export default function ExperimentContentGenerationTab({
   const [isGeneratingSection, setIsGeneratingSection] = useState(false);
   const [pendingGenerationSection, setPendingGenerationSection] =
     useState<ContentGenerationSectionKey | null>(null);
+  const [autoQueue, setAutoQueue] = useState<AutoQueueState>(
+    AUTO_QUEUE_INITIAL_STATE,
+  );
+  const [isAutoQueueRunning, setIsAutoQueueRunning] = useState(false);
+  const lastCompletedLandingPlanningRef = useRef<number | null>(null);
 
   const jobsQuery = useExperimentPipelineJobs(experimentId);
   const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
@@ -1432,6 +1455,17 @@ export default function ExperimentContentGenerationTab({
       (section) => section.key === activeSection,
     ) ?? CONTENT_GENERATION_SECTIONS[0];
 
+  const sectionByKey = useMemo(
+    () =>
+      CONTENT_GENERATION_SECTIONS.reduce<
+        Record<ContentGenerationSectionKey, ContentGenerationSection>
+      >((acc, section) => {
+        acc[section.key] = section;
+        return acc;
+      }, {} as Record<ContentGenerationSectionKey, ContentGenerationSection>),
+    [],
+  );
+
   const loadCampaignAngles = useCallback(async () => {
     try {
       setIsLoadingCampaignAngles(true);
@@ -1560,7 +1594,103 @@ export default function ExperimentContentGenerationTab({
     void loadAdCopy();
   }, [loadAdCopy]);
 
-  const handleGenerateSection = async (section: ContentGenerationSection) => {
+  useEffect(() => {
+    if (lastCompletedLandingPlanningRef.current !== null) {
+      return;
+    }
+    const existingCompletedAt =
+      mergedRequestsBySection["landing-image-planning"].completedAt;
+    if (!existingCompletedAt) {
+      return;
+    }
+    const completedTimestamp = parseTimestamp(existingCompletedAt);
+    if (completedTimestamp !== undefined) {
+      lastCompletedLandingPlanningRef.current = completedTimestamp;
+    }
+  }, [mergedRequestsBySection]);
+
+  useEffect(() => {
+    const request = mergedRequestsBySection["landing-image-planning"];
+    const completedTimestamp = parseTimestamp(request.completedAt);
+    if (request.status !== "COMPLETED" || completedTimestamp === undefined) {
+      return;
+    }
+    if (
+      lastCompletedLandingPlanningRef.current !== null &&
+      completedTimestamp <= lastCompletedLandingPlanningRef.current
+    ) {
+      return;
+    }
+
+    lastCompletedLandingPlanningRef.current = completedTimestamp;
+    void (async () => {
+      try {
+        await generateFrameworkImages.mutateAsync();
+        toast.success(
+          "Planejamento de imagens concluído. Solicitação de geração das imagens enviada automaticamente.",
+        );
+      } catch (error) {
+        toast.error(
+          `Planejamento concluído, mas não foi possível solicitar as imagens automaticamente: ${getErrorMessage(error)}`,
+        );
+      }
+    })();
+  }, [generateFrameworkImages, mergedRequestsBySection]);
+
+  useEffect(() => {
+    if (!autoQueue.isActive || !autoQueue.waitingFor || isAutoQueueRunning) {
+      return;
+    }
+
+    const waitingRequest = mergedRequestsBySection[autoQueue.waitingFor];
+    if (waitingRequest.status === "FAILED") {
+      setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
+      toast.error(
+        `Fila automática interrompida: ${getSectionLabel(autoQueue.waitingFor)} finalizou com erro.`,
+      );
+      return;
+    }
+
+    if (waitingRequest.status !== "COMPLETED") {
+      return;
+    }
+
+    if (autoQueue.pending.length === 0) {
+      setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
+      toast.success("Fila automática finalizada. Todas as etapas foram solicitadas.");
+      return;
+    }
+
+    const [nextSectionKey, ...remaining] = autoQueue.pending;
+    const nextSection = sectionByKey[nextSectionKey];
+    if (!nextSection) {
+      setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
+      return;
+    }
+
+    setIsAutoQueueRunning(true);
+    void (async () => {
+      const started = await requestSectionGeneration(nextSection);
+      if (!started) {
+        setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
+      } else {
+        setAutoQueue({
+          isActive: true,
+          waitingFor: nextSectionKey,
+          pending: remaining,
+        });
+      }
+      setIsAutoQueueRunning(false);
+    })();
+  }, [
+    autoQueue,
+    isAutoQueueRunning,
+    mergedRequestsBySection,
+    requestSectionGeneration,
+    sectionByKey,
+  ]);
+
+  async function requestSectionGeneration(section: ContentGenerationSection) {
     const nowIso = new Date().toISOString();
     setPendingGenerationSection(section.key);
     setIsGeneratingSection(true);
@@ -1592,6 +1722,7 @@ export default function ExperimentContentGenerationTab({
       } else {
         await loadSection(section.key);
       }
+      return true;
     } catch (error) {
       setRequestsBySection((previous) => ({
         ...previous,
@@ -1602,11 +1733,39 @@ export default function ExperimentContentGenerationTab({
         },
       }));
       toast.error(getErrorMessage(error));
+      return false;
     } finally {
       setIsGeneratingSection(false);
       setPendingGenerationSection(null);
     }
-  };
+  }
+
+  const handleGenerateSection = useCallback(
+    async (section: ContentGenerationSection) => {
+      const sectionIndex = CONTENT_GENERATION_SECTIONS.findIndex(
+        (item) => item.key === section.key,
+      );
+      const queuedSections = CONTENT_GENERATION_SECTIONS.slice(
+        sectionIndex + 1,
+      ).map((item) => item.key);
+
+      setAutoQueue({
+        isActive: queuedSections.length > 0,
+        waitingFor: section.key,
+        pending: queuedSections,
+      });
+
+      const started = await requestSectionGeneration(section);
+      if (!started) {
+        setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
+      } else if (queuedSections.length > 0) {
+        toast.info(
+          `Fila automática iniciada. As próximas etapas serão solicitadas em sequência (${queuedSections.length} pendente(s)).`,
+        );
+      }
+    },
+    [requestSectionGeneration],
+  );
 
   const handleDownloadReport = async () => {
     try {
@@ -1767,6 +1926,21 @@ export default function ExperimentContentGenerationTab({
         isLoading={isLoadingPromptVersions}
       />
 
+      {autoQueue.isActive && autoQueue.waitingFor ? (
+        <div className="alert alert-info py-2 px-3 mb-3" role="status">
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <strong>Fila automática ativa:</strong>
+            <span>
+              aguardando conclusão de{" "}
+              <strong>{getSectionLabel(autoQueue.waitingFor)}</strong>.
+            </span>
+            <span className="badge text-bg-light">
+              Próximas: {autoQueue.pending.length}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <Tabs.Root
         value={activeSection}
         onValueChange={(value) =>
@@ -1803,7 +1977,7 @@ export default function ExperimentContentGenerationTab({
                       type="button"
                       className="btn btn-outline-primary btn-sm"
                       onClick={() => void handleGenerateSection(section)}
-                      disabled={isGeneratingSection}
+                      disabled={isGeneratingSection || autoQueue.isActive}
                       title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
                     >
                       {isGeneratingSection &&
@@ -1815,6 +1989,15 @@ export default function ExperimentContentGenerationTab({
                             aria-hidden="true"
                           />
                           Gerando com IA...
+                        </span>
+                      ) : autoQueue.isActive ? (
+                        <span className="d-inline-flex align-items-center gap-1">
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Fila em execução...
                         </span>
                       ) : (
                         "Gerar com IA"

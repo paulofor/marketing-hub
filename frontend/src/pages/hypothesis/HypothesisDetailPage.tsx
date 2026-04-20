@@ -126,6 +126,24 @@ export default function HypothesisDetailPage() {
     { label: "Entrega", value: data.entrega },
   ];
 
+  const framework = data.framework;
+
+  const buildFrameworkSectionMarkdown = (
+    title: string,
+    fields: Array<{ label: string; value?: string | number | null }>,
+    summary?: string,
+  ) => {
+    const fieldsMd = fields
+      .map(({ label, value }) => `- **${label}:** ${value ?? ""}`)
+      .join("\n");
+
+    return (
+      `## ${title}\n\n` +
+      `${fieldsMd}\n\n` +
+      `**Resumo do item:**\n${summary ?? ""}\n`
+    );
+  };
+
   const handleSaveMarkdown = () => {
     const nicheMd =
       `# Nicho: ${niche?.name ?? ""}\n\n` +
@@ -181,7 +199,100 @@ ${data.uniqueMechanism ?? ""}
       `**Entrega:**
 ${data.entrega ?? ""}
 `;
-    const md = `${nicheMd}\n\n${hypothesisMd}`;
+
+    const frameworkMd =
+      `# Framework da hipótese\n\n` +
+      buildFrameworkSectionMarkdown(
+        "Dor",
+        [
+          { label: "Dor superficial", value: framework?.pain?.surface },
+          { label: "Dor raiz", value: framework?.pain?.root },
+          { label: "Dor emocional", value: framework?.pain?.emotional },
+          { label: "Dor social", value: framework?.pain?.social },
+          { label: "Custo da inação", value: framework?.pain?.cost },
+        ],
+        framework?.pain?.summary,
+      ) +
+      "\n" +
+      buildFrameworkSectionMarkdown(
+        "Resultado",
+        [
+          {
+            label: "Resultado desejado",
+            value: framework?.result?.desiredResult,
+          },
+          {
+            label: "Identidade desejada",
+            value: framework?.result?.desiredIdentity,
+          },
+          {
+            label: "Resultado de negócio",
+            value: framework?.result?.businessOutcome,
+          },
+          {
+            label: "Sinal de sucesso",
+            value: framework?.result?.successSignal,
+          },
+        ],
+        framework?.result?.summary,
+      ) +
+      "\n" +
+      buildFrameworkSectionMarkdown(
+        "Mecanismo",
+        [
+          { label: "Mecanismo central", value: framework?.mechanism?.core },
+          { label: "Mecanismo único", value: framework?.mechanism?.unique },
+          { label: "Evidência visível", value: framework?.mechanism?.visible },
+          {
+            label: "Fator de credibilidade",
+            value: framework?.mechanism?.believability,
+          },
+        ],
+        framework?.mechanism?.summary,
+      ) +
+      "\n" +
+      buildFrameworkSectionMarkdown(
+        "Prova",
+        [
+          { label: "Tipo de prova", value: framework?.proof?.type },
+          { label: "Ativo de prova", value: framework?.proof?.asset },
+          { label: "Mensagem", value: framework?.proof?.message },
+          {
+            label: "Estágio de entrega",
+            value: framework?.proof?.deliveryStage,
+          },
+        ],
+        framework?.proof?.summary,
+      ) +
+      "\n" +
+      buildFrameworkSectionMarkdown(
+        "Oferta",
+        [
+          { label: "Nome da oferta", value: framework?.offer?.name },
+          {
+            label: "Promessa central",
+            value: framework?.offer?.corePromise,
+          },
+          {
+            label: "Entregáveis",
+            value: framework?.offer?.deliverables,
+          },
+          {
+            label: "Reversão de risco",
+            value: framework?.offer?.riskReversal,
+          },
+          {
+            label: "Lógica de preço",
+            value: framework?.offer?.priceLogic,
+          },
+          { label: "Preço", value: framework?.offer?.priceAmount },
+          { label: "Tipo da oferta", value: framework?.offer?.offerType },
+          { label: "Call to action", value: framework?.offer?.cta },
+        ],
+        framework?.offer?.summary,
+      );
+
+    const md = `${nicheMd}\n\n${hypothesisMd}\n\n${frameworkMd}`;
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

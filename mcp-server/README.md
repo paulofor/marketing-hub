@@ -101,6 +101,49 @@ MCP_NGINX_CONF=default.conf docker compose up -d nginx
 
 No deploy (`deploy/docker-compose.yml`), use a mesma variável de ambiente `MCP_NGINX_CONF` (por exemplo, `default.http.conf` ou `default.conf`).
 
+
+### Reemissão do certificado (fluxo mais seguro)
+
+Existem **dois fluxos** dependendo de onde você está executando:
+
+1. **No repositório `mcp-server`** (desenvolvimento/local):
+
+```bash
+cd mcp-server
+EMAIL=paulofore@gmail.com ./scripts/issue-letsencrypt-cert.sh
+```
+
+2. **No host de deploy** (`/opt/marketinghub/containers`):
+
+```bash
+cd /opt/marketinghub/containers
+EMAIL=paulofore@gmail.com ./bin/issue-mcp-letsencrypt-cert.sh
+```
+
+> Se o host não tiver o script em `./bin`, copie `deploy/bin/issue-mcp-letsencrypt-cert.sh` para `/opt/marketinghub/containers/bin/` e dê permissão de execução.
+
+Esses scripts adicionam hardening importante:
+
+- `--non-interactive` e parâmetros explícitos (menos chance de erro humano);
+- `--keep-until-expiring` (evita reemissões desnecessárias e rate-limit);
+- chave ECDSA (`secp384r1`), mais moderna e menor que RSA 4096;
+- `umask 077` + ajuste de permissões (`privkey.pem` com `600`);
+- suporte a staging com `USE_STAGING=true` para validar antes da emissão real.
+
+Teste em staging antes da emissão final:
+
+```bash
+cd /opt/marketinghub/containers
+EMAIL=paulofore@gmail.com USE_STAGING=true ./bin/issue-mcp-letsencrypt-cert.sh
+```
+
+Depois da emissão, ative TLS no Nginx:
+
+```bash
+cd /opt/marketinghub/containers
+MCP_NGINX_CONF=default.conf docker compose up -d --no-deps mcp-nginx
+```
+
 ### Erro comum: `cannot load certificate ... fullchain.pem`
 
 Se o Nginx falhar com esse erro, quase sempre é porque o volume montado em `/etc/letsencrypt` não contém os arquivos esperados pelo `ssl_certificate`.

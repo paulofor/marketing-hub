@@ -50,12 +50,20 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
 
-## 4. Dominios
+
+## 4. Framework central do Marketing Hub:
+
+**Dor → Resultado → Mecanismo → Prova → Oferta**
+
+Ao alterar qualquer módulo, preserve esse eixo como referência principal de descoberta, modelagem, validação e empacotamento de valor.
+
+
+## 5. Dominios
 
 - **oportunidadebrasil.shop** : apontando para 191.252.120.96
 - **pagamentopalf.site** : apontando para  191.252.102.54 
 
-## 5. Segurança e secrets
+## 6. Segurança e secrets
 
 - Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.

@@ -8,11 +8,15 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
+import java.util.regex.Pattern;
 
 @Component
 public class DatabaseConnectionAttemptLogger {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseConnectionAttemptLogger.class);
+    private static final Pattern JDBC_CREDENTIALS_PATTERN = Pattern.compile(
+            "(?i)(jdbc:[^:]+://)([^:@/]+):([^@/]+)@"
+    );
 
     private final String datasourceUrl;
     private final String datasourceUsername;
@@ -28,12 +32,21 @@ public class DatabaseConnectionAttemptLogger {
     @EventListener(ApplicationStartedEvent.class)
     public void logConnectionTarget() {
         DatabaseTarget databaseTarget = parseDatabaseTarget(datasourceUrl);
+        String sanitizedDatasourceUrl = sanitizeJdbcUrl(datasourceUrl);
         logger.info(
-                "Tentando conexão com banco de dados host='{}' port='{}' user='{}'",
+                "Tentando conexão com banco de dados jdbcUrl='{}' host='{}' port='{}' user='{}'",
+                sanitizedDatasourceUrl,
                 databaseTarget.host(),
                 databaseTarget.port(),
                 datasourceUsername
         );
+    }
+
+    private String sanitizeJdbcUrl(String jdbcUrl) {
+        if (jdbcUrl == null || jdbcUrl.isBlank()) {
+            return "unknown";
+        }
+        return JDBC_CREDENTIALS_PATTERN.matcher(jdbcUrl).replaceAll("$1$2:***@");
     }
 
     private DatabaseTarget parseDatabaseTarget(String jdbcUrl) {

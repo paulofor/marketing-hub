@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -70,6 +70,7 @@ export default function ExperimentDetailPage() {
   );
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
+  const tabsSectionRef = useRef<HTMLDivElement | null>(null);
   const [journeyError, setJourneyError] = useState<string | null>(null);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
@@ -332,6 +333,15 @@ export default function ExperimentDetailPage() {
     isReadyForFacebook && data.platform === "FACEBOOK";
   const releaseButtonDisabled =
     releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
+  const openInstantFormActions = () => {
+    setTab("instant-form");
+    window.requestAnimationFrame(() => {
+      tabsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
 
   const configurationChecklist: ChecklistItem[] = [
     {
@@ -416,8 +426,8 @@ export default function ExperimentDetailPage() {
             action: experimentInstantForm
               ? instantFormReadyForCampaign
                 ? undefined
-                : () => setTab("instant-form")
-              : () => setTab("instant-form"),
+                : openInstantFormActions
+              : openInstantFormActions,
             actionLabel:
               experimentInstantForm && instantFormReadyForCampaign
                 ? undefined
@@ -1190,7 +1200,8 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       ) : null}
-      <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
+      <div ref={tabsSectionRef}>
+        <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
         <Tabs.List className="nav nav-tabs">
           <Tabs.Trigger value="overview" className="nav-link">
             Overview
@@ -1312,7 +1323,8 @@ export default function ExperimentDetailPage() {
             adCopy={data?.adCopy}
           />
         </Tabs.Content>
-      </Tabs.Root>
+        </Tabs.Root>
+      </div>
       {isResetModalOpen ? (
         <div
           className="modal d-block"

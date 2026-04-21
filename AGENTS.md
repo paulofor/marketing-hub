@@ -34,6 +34,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host.
 - **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
 - **Logs**: os logs dos modulos Java Spring Boot podem ser acessados pelo MCP Server.
+- **Testes Unitários**: os testes unitários precisam sempre estar em concordancia com as regras dos documentos canonicos.
 
 ## 3. Framework central do Marketing Hub:
 

@@ -85,7 +85,7 @@ public class FacebookAdSetExperimentService {
         Map<TargetingElementType, List<TargetingElementDto>> mapped = new EnumMap<>(TargetingElementType.class);
         for (TargetingElementType type : TargetingElementType.values()) {
             List<TargetingElementDto> dtos = mapElements(nicheId, hypothesisId, type);
-            if (dtos.isEmpty()) {
+            if (type == TargetingElementType.JOB_TITLE && dtos.isEmpty()) {
                 return null;
             }
             mapped.put(type, dtos);

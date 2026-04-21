@@ -1,5 +1,6 @@
 package com.marketinghub.experiment;
 
+import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
@@ -7,6 +8,9 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
+import com.marketinghub.targeting.TargetingElementType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,5 +121,95 @@ class ExperimentRepositoryTest {
         assertThat(result)
                 .extracting(MarketNiche::getId)
                 .containsExactly(niche.getId());
+    }
+
+    @Test
+    void readyQueriesAcceptExperimentWithOnlyApprovedJobTitle() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche JT").build());
+        Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hyp JT")
+                .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        InstagramAccount instagram = entityManager.merge(InstagramAccount.builder()
+                .name("IG")
+                .handle("job-title-only")
+                .code("ig-1")
+                .build());
+
+        Experiment experiment11 = repository.save(Experiment.builder()
+                .name("Experiment 11")
+                .niche(niche)
+                .hypothesisRef(hypothesis)
+                .journeyTemplate(template)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .status(ExperimentStatus.PLANNED)
+                .creativeApproved(true)
+                .instagramAccount(instagram)
+                .build());
+
+        entityManager.persist(TargetingElement.builder()
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("CMO")
+                .status(TargetingElementStatus.APPROVED)
+                .build());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Experiment> campaignReady = repository.findReadyForCampaign(
+                ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+        List<Experiment> adSetReady = repository.findAllReadyForAdSets(
+                ExperimentPlatform.FACEBOOK, List.of(ExperimentStatus.PLANNED));
+
+        assertThat(campaignReady).extracting(Experiment::getId).contains(experiment11.getId());
+        assertThat(adSetReady).extracting(Experiment::getId).contains(experiment11.getId());
+    }
+
+    @Test
+    void readyQueriesRejectExperimentWithoutApprovedJobTitle() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche no JT").build());
+        Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hypothesis")
+                .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        InstagramAccount instagram = entityManager.merge(InstagramAccount.builder()
+                .name("IG")
+                .handle("missing-job-title")
+                .code("ig-2")
+                .build());
+
+        Experiment experiment = repository.save(Experiment.builder()
+                .name("Missing JT")
+                .niche(niche)
+                .hypothesisRef(hypothesis)
+                .journeyTemplate(template)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .status(ExperimentStatus.PLANNED)
+                .creativeApproved(true)
+                .instagramAccount(instagram)
+                .build());
+
+        entityManager.persist(TargetingElement.builder()
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.INTEREST)
+                .term("Remarketing")
+                .status(TargetingElementStatus.APPROVED)
+                .build());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Experiment> campaignReady = repository.findReadyForCampaign(
+                ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK);
+        List<Experiment> adSetReady = repository.findAllReadyForAdSets(
+                ExperimentPlatform.FACEBOOK, List.of(ExperimentStatus.PLANNED));
+
+        assertThat(campaignReady).extracting(Experiment::getId).doesNotContain(experiment.getId());
+        assertThat(adSetReady).extracting(Experiment::getId).doesNotContain(experiment.getId());
     }
 }

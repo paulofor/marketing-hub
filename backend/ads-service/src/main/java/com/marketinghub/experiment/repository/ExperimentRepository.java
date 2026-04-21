@@ -46,21 +46,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.INTEREST
-                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
-                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
-              )
-              and exists (
-                    select 1 from TargetingElement te
-                    where te.niche = e.niche
                       and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
-                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
-                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
-              )
-              and exists (
-                    select 1 from TargetingElement te
-                    where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.BEHAVIOR
                       and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
                       and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )
@@ -126,21 +112,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.INTEREST
-                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
-                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
-              )
-              and exists (
-                    select 1 from TargetingElement te
-                    where te.niche = e.niche
                       and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
-                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
-                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
-              )
-              and exists (
-                    select 1 from TargetingElement te
-                    where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.BEHAVIOR
                       and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
                       and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )

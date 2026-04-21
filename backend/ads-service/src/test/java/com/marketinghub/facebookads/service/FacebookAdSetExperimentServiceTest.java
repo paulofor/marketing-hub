@@ -169,4 +169,81 @@ class FacebookAdSetExperimentServiceTest {
         assertThat(dto.getTargeting().getBehaviors()).extracting(TargetingElementDto::getTerm)
                 .containsExactly("Engaged Shoppers");
     }
+
+    @Test
+    void listExperimentsReadyAcceptsOnlyApprovedJobTitle() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(5L);
+
+        UUID hypothesisId = UUID.randomUUID();
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(hypothesisId);
+        hypothesis.setMarketNiche(niche);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(11L);
+        experiment.setName("Job title only");
+        experiment.setNiche(niche);
+        experiment.setHypothesisRef(hypothesis);
+        experiment.setStatus(ExperimentStatus.PLANNED);
+        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+        experiment.setCreativeApproved(true);
+
+        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+                .thenReturn(List.of(experiment));
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
+                .thenReturn(List.of());
+
+        TargetingElement jobTitle = TargetingElement.builder()
+                .id(2L)
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("CMO")
+                .build();
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
+                .thenReturn(List.of(jobTitle));
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.BEHAVIOR, hypothesisId))
+                .thenReturn(List.of());
+
+        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+
+        assertThat(result).hasSize(1);
+        ExperimentReadyForAdSetDto dto = result.getFirst();
+        assertThat(dto.getExperiment().getId()).isEqualTo(11L);
+        assertThat(dto.getTargeting().getInterests()).isEmpty();
+        assertThat(dto.getTargeting().getJobTitles()).extracting(TargetingElementDto::getTerm)
+                .containsExactly("CMO");
+        assertThat(dto.getTargeting().getBehaviors()).isEmpty();
+    }
+
+    @Test
+    void listExperimentsReadySkipsWhenApprovedJobTitleIsMissing() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(5L);
+
+        UUID hypothesisId = UUID.randomUUID();
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(hypothesisId);
+        hypothesis.setMarketNiche(niche);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(12L);
+        experiment.setNiche(niche);
+        experiment.setHypothesisRef(hypothesis);
+        experiment.setStatus(ExperimentStatus.PLANNED);
+        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+        experiment.setCreativeApproved(true);
+
+        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+                .thenReturn(List.of(experiment));
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
+                .thenReturn(List.of());
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
+                .thenReturn(List.of());
+
+        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+
+        assertThat(result).isEmpty();
+    }
 }

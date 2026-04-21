@@ -14,6 +14,7 @@ import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowR
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,7 +84,7 @@ public class ExperimentReadinessService {
                     ExperimentReadinessIssueType.TARGETING,
                     "Público não selecionado",
                     "Ainda não há nenhuma segmentação salva para este experimento.",
-                    "Acesse a aba Segmentação, marque ao menos um interesse, cargo ou comportamento com ID oficial da Meta e salve o público.",
+                    "Acesse a aba Segmentação, marque ao menos um cargo com ID oficial da Meta e salve o público.",
                     List.copyOf(missingTypes)
             ));
         }
@@ -155,9 +156,7 @@ public class ExperimentReadinessService {
             return List.of();
         }
         return List.of(
-                TargetingElementType.INTEREST,
-                TargetingElementType.JOB_TITLE,
-                TargetingElementType.BEHAVIOR
+                TargetingElementType.JOB_TITLE
         );
     }
 
@@ -173,7 +172,8 @@ public class ExperimentReadinessService {
         if (experimentId == null) {
             return false;
         }
-        return targetingSelectionRepository.countByExperimentId(experimentId) > 0;
+        return targetingSelectionRepository.countByExperimentIdAndCandidateType(
+                experimentId, TargetingCandidateType.WORK_POSITION) > 0;
     }
 
     private boolean hasReadyAdSetSpecs(Long experimentId) {

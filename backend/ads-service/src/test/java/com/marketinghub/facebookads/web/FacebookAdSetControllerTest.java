@@ -93,5 +93,43 @@ class FacebookAdSetControllerTest {
                 .andExpect(jsonPath("$[0].hypothesis.id").value(hypothesisId.toString()))
                 .andExpect(jsonPath("$[0].targeting.interests[0].term").value("Remarketing"));
     }
-}
 
+    @Test
+    void experimentsReadySupportsPayloadWithOnlyJobTitleTargeting() throws Exception {
+        ExperimentDto experiment = new ExperimentDto();
+        experiment.setId(11L);
+        experiment.setName("Job title only");
+
+        MarketNicheDto niche = new MarketNicheDto();
+        niche.setId(7L);
+        niche.setName("Health");
+
+        HypothesisDto hypothesis = new HypothesisDto();
+        UUID hypothesisId = UUID.randomUUID();
+        hypothesis.setId(hypothesisId);
+        hypothesis.setTitle("Title");
+
+        TargetingElementDto jobTitle = TargetingElementDto.builder()
+                .id(2L)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("CMO")
+                .marketNicheId(7L)
+                .hypothesisId(hypothesisId)
+                .build();
+
+        ExperimentReadyForAdSetDto dto = new ExperimentReadyForAdSetDto(
+                experiment,
+                niche,
+                hypothesis,
+                new TargetingPackageDto(List.of(), List.of(jobTitle), List.of()));
+
+        when(experimentService.listExperimentsReadyForAdSets()).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/api/facebook-adsets/experiments-ready"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].experiment.id").value(11))
+                .andExpect(jsonPath("$[0].targeting.interests").isEmpty())
+                .andExpect(jsonPath("$[0].targeting.jobTitles[0].term").value("CMO"))
+                .andExpect(jsonPath("$[0].targeting.behaviors").isEmpty());
+    }
+}

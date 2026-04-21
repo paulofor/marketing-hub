@@ -4,6 +4,8 @@
 > - consolida o checklist de publicação do Facebook Ads Worker em formato canônico
 > - referencia fontes de verdade (tabelas `experiment`, `creative`, `lead_portal_flow`, `targeting_element` e métricas do funil)
 > - descreve o contrato de liberação, monitoramento do funil e dependências externas
+> - esclarece que para o público manual do experimento, 1 cargo (`JOB_TITLE`) aprovado já atende o mínimo operacional
+> - esclarece que o formulário de captação do experimento é do fluxo interno do Marketing Hub (não é o Instant Form nativo da Meta)
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -33,8 +35,8 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | Entidade / Campo | Fonte | Observações |
 | --- | --- | --- |
 | `experiment.creative_approved`, `creative.status` | Tabelas do schema `marketinghubdb` | Ao menos um `creative` do experimento precisa estar em `READY` ou `IN_PRODUCTION` após aprovação. |
-| `lead_portal_flow.experiment_id` | `marketinghubdb.lead_portal_flow` | O fluxo precisa estar vinculado ao experimento ativo para liberar o portal em `https://oportunidadebrasil.shop/flows/{slug}` (domínio apontado para 191.252.120.96). |
-| `targeting_element` (interest, job_title, behavior) | `marketinghubdb.targeting_element` | Deve haver pelo menos um elemento `APPROVED` de cada tipo **ou** o playbook de ad sets precisa estar concluído. |
+| `lead_portal_flow.experiment_id` + `lead_portal_flow.slug` | `marketinghubdb.lead_portal_flow` | O fluxo precisa estar vinculado ao experimento ativo para liberar o portal em `https://oportunidadebrasil.shop/api/flows/{slug}/page` (ex.: experimento 11 usa `slug='exp-11-landing'`). |
+| `targeting_element` (job_title) | `marketinghubdb.targeting_element` | Para publicação manual, pelo menos **1** elemento `JOB_TITLE` com `status='APPROVED'`. |
 | `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
 | `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher o funil e o custo por etapa. |
 
@@ -48,8 +50,11 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
 2. **Fluxo do Portal do Lead**
    - O experimento precisa ter um `lead_portal_flow` associado e ativo, servindo páginas pelo domínio `oportunidadebrasil.shop`.
+   - O link de campanha deve apontar para `https://oportunidadebrasil.shop/api/flows/{slug}/page` (exemplo atual do experimento 11: `https://oportunidadebrasil.shop/api/flows/exp-11-landing/page`).
+   - A página de formulário precisa carregar o pixel do Facebook do nicho (`market_niche.facebook_pixel_id`) antes da publicação.
 3. **Público completo**
-   - Ao menos um interesse, um cargo (job title) e um comportamento com `status='APPROVED'` em `targeting_element`, **ou** o playbook de ad sets finalizado.
+   - Para seleção manual de público, o mínimo de liberação é ter pelo menos **1 cargo (`JOB_TITLE`) aprovado** em `targeting_element`.
+   - Como alternativa, o playbook de ad sets finalizado também atende o requisito de público.
 
 Se qualquer bloqueio falhar o worker interrompe a publicação e retorna a lista de pendências no alerta cinza da UI.
 
@@ -60,6 +65,8 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 - **Conta do Facebook Ads conectada** – exposta pelo hook `useFacebookConfigurationStatus` e validada no backend.
 - **Página do Facebook** e **Conta do Instagram** – precisam existir no hub e permanecer válidas para evitar erros de publicação.
 - **Orçamento diário** – `experiment.daily_budget` deve estar preenchido para refletir a automação de mídia.
+- **Formulário de captação** – quando existir link válido de formulário no fluxo do experimento, ele é tratado como publicado para operação do Marketing Hub.
+- **Importante**: o formulário usado neste checklist é o formulário interno do fluxo do Marketing Hub (Lead Portal/fluxo), **não** o Instant Form nativo do Facebook Ads.
 
 ## 7. Contrato de liberação para o Facebook Ads Worker
 

@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
     username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:${MYSQL_PASSWORD:}}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:}}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       initialization-fail-timeout: -1

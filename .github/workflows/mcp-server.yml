@@ -77,6 +77,8 @@ jobs:
         run: |
           ssh ${VPS_USER}@${MCP_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
           rsync -az --delete deploy/ ${VPS_USER}@${MCP_VPS_IP}:${DEPLOY_DIR}/
+          ssh ${VPS_USER}@${MCP_VPS_IP} "mkdir -p ${DEPLOY_DIR}/nginx/mcp"
+          rsync -az --delete mcp-server/nginx/ ${VPS_USER}@${MCP_VPS_IP}:${DEPLOY_DIR}/nginx/mcp/
 
       - name: Upload MCP image to VPS
         run: scp artifacts/mcp-server-image.tar ${VPS_USER}@${MCP_VPS_IP}:/tmp/mcp-server-image.tar

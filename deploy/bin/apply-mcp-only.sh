@@ -10,6 +10,21 @@ mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
 mkdir -p ./volumes/mcp/certbot/www ./volumes/mcp/certbot/conf
 
+resolve_mcp_nginx_conf() {
+  if [[ -n "${MCP_NGINX_CONF:-}" ]]; then
+    echo "${MCP_NGINX_CONF}"
+    return
+  fi
+
+  if [[ -f "./volumes/mcp/certbot/conf/live/mcpserverdigi.shop/fullchain.pem" \
+     && -f "./volumes/mcp/certbot/conf/live/mcpserverdigi.shop/privkey.pem" ]]; then
+    echo "default.conf"
+    return
+  fi
+
+  echo "default.http.conf"
+}
+
 if [[ -f "${MCP_TAR}" ]]; then
   docker load -i "${MCP_TAR}"
 fi
@@ -32,8 +47,12 @@ cleanup_previous_tags() {
 }
 
 # Atualiza somente o MCP Server e o Nginx dedicado do MCP sem reiniciar outros serviços.
+MCP_NGINX_CONF_RESOLVED="$(resolve_mcp_nginx_conf)"
+echo "[apply-mcp-only.sh] Usando MCP_NGINX_CONF=${MCP_NGINX_CONF_RESOLVED}"
+
 MCP_SERVER_IMAGE="${MCP_IMAGE}" \
 MCP_SERVER_IMAGE_TAG=latest \
+MCP_NGINX_CONF="${MCP_NGINX_CONF_RESOLVED}" \
 docker compose up -d --no-deps mcp-server mcp-nginx
 
 cleanup_previous_tags "${MCP_IMAGE}" "latest"

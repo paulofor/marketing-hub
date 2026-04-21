@@ -98,7 +98,12 @@ Se você estiver no host e receber erro como `./scripts/issue-letsencrypt-cert.s
    cd /opt/marketinghub/containers
    EMAIL=paulofore@gmail.com ./bin/issue-mcp-letsencrypt-cert.sh
    ```
-4. Ative HTTPS no Nginx do MCP:
+4. Aplique o stack do MCP (o script escolhe `default.conf` automaticamente quando os arquivos `fullchain.pem` e `privkey.pem` existem):
+   ```bash
+   cd /opt/marketinghub/containers
+   ./bin/apply-mcp-only.sh
+   ```
+5. (Opcional) Forçar manualmente HTTPS no Nginx do MCP:
    ```bash
    cd /opt/marketinghub/containers
    MCP_NGINX_CONF=default.conf docker compose up -d --no-deps mcp-nginx

@@ -19,6 +19,7 @@ ALT_DOMAIN="${ALT_DOMAIN:-www.mcpserverdigi.shop}"
 EMAIL="${EMAIL:-}"
 CERTBOT_IMAGE="${CERTBOT_IMAGE:-certbot/certbot:latest}"
 USE_STAGING="${USE_STAGING:-false}"
+SWITCH_TO_HTTPS="${SWITCH_TO_HTTPS:-true}"
 
 # Diretório padrão local do módulo mcp-server.
 # Em produção, pode apontar para: /opt/marketinghub/containers/volumes/mcp/certbot
@@ -70,3 +71,36 @@ find "${CONF_DIR}" -type f ! -name 'privkey.pem' -exec chmod 644 {} \; || true
 
 echo "[OK] Processo finalizado."
 echo "[OK] Arquivos esperados em: ${CONF_DIR}/live/${DOMAIN}/"
+
+if [[ "${SWITCH_TO_HTTPS}" != "true" ]]; then
+  echo "[INFO] SWITCH_TO_HTTPS=false, mantendo Nginx no modo atual."
+  exit 0
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[WARN] Docker não encontrado no PATH. Ative HTTPS manualmente com:"
+  echo "       MCP_NGINX_CONF=default.conf docker compose up -d nginx"
+  exit 0
+fi
+
+if [[ ! -f "${MCP_DIR}/docker-compose.yml" ]]; then
+  echo "[WARN] docker-compose.yml não encontrado em ${MCP_DIR}."
+  echo "       Ative HTTPS manualmente com:"
+  echo "       MCP_NGINX_CONF=default.conf docker compose up -d nginx"
+  exit 0
+fi
+
+if [[ ! -f "${CONF_DIR}/live/${DOMAIN}/fullchain.pem" || ! -f "${CONF_DIR}/live/${DOMAIN}/privkey.pem" ]]; then
+  echo "[ERRO] Certificado emitido, mas arquivos esperados não foram encontrados em:"
+  echo "       ${CONF_DIR}/live/${DOMAIN}/"
+  exit 1
+fi
+
+echo "[INFO] Ativando Nginx com TLS (MCP_NGINX_CONF=default.conf)..."
+(
+  cd "${MCP_DIR}"
+  MCP_NGINX_CONF=default.conf docker compose up -d --force-recreate --no-deps nginx
+  MCP_NGINX_CONF=default.conf docker compose exec nginx nginx -t
+)
+
+echo "[OK] HTTPS ativado no Nginx."

@@ -118,12 +118,20 @@ Esse script adiciona hardening importante:
 - chave ECDSA (`secp384r1`), mais moderna e menor que RSA 4096;
 - `umask 077` + ajuste de permissões (`privkey.pem` com `600`);
 - suporta staging com `USE_STAGING=true` para validar antes da emissão real.
+- após emitir com sucesso, ativa automaticamente o Nginx com `MCP_NGINX_CONF=default.conf`.
 
 Teste em staging antes da emissão final:
 
 ```bash
 cd mcp-server
 EMAIL=paulofore@gmail.com USE_STAGING=true ./scripts/issue-letsencrypt-cert.sh
+```
+
+Se quiser emitir sem alternar o Nginx automaticamente para TLS:
+
+```bash
+cd mcp-server
+EMAIL=paulofore@gmail.com SWITCH_TO_HTTPS=false ./scripts/issue-letsencrypt-cert.sh
 ```
 
 Para ambiente de deploy em `/opt/marketinghub/containers`, preserve os volumes corretos:

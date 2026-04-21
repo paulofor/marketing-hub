@@ -17,7 +17,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `db_list_tables`: lista todas as tabelas disponíveis no schema atual.
 - `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
 - `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
-- `java_module_logs`: retorna tail de logs dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`).
+- `java_module_logs`: retorna tail de logs do Spring Boot dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`).
 
 ## Executar localmente
 
@@ -36,9 +36,9 @@ mvn -s settings.xml spring-boot:run
 - Se `MCP_API_KEY` estiver definido, o endpoint `/mcp` exige `Authorization: Bearer <MCP_API_KEY>`.
 - Se `MCP_API_KEY` estiver vazio, o endpoint permanece aberto (apenas para ambientes internos/controlados).
 
-## Logs dos módulos Java
+## Logs de Spring Boot dos módulos Java
 
-O tool `java_module_logs` lê os arquivos configurados em:
+O tool `java_module_logs` lê os arquivos de log do Spring Boot configurados em:
 
 - `MCP_LOG_BACKEND_PATH` (default `/app/logs/marketinghub-backend.log`);
 - `MCP_LOG_AI_WORKER_PATH` (default `/var/log/ai-worker/application.log`);

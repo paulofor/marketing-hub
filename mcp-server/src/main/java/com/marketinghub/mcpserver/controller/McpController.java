@@ -114,7 +114,7 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "java_module_logs",
-                            "description", "Retorna as últimas linhas de logs dos módulos Java (backend, ai-worker, lead-portal, facebook-ads).",
+                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java (backend, ai-worker, lead-portal, facebook-ads).",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(

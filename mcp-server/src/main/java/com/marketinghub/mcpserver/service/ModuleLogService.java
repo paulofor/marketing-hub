@@ -5,9 +5,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,11 +22,16 @@ import java.util.stream.Stream;
 public class ModuleLogService {
 
     private static final int DEFAULT_LINES = 200;
+    private static final Duration LOG_FETCH_TIMEOUT = Duration.ofSeconds(10);
 
     private final McpProperties properties;
+    private final HttpClient httpClient;
 
     public ModuleLogService(McpProperties properties) {
         this.properties = properties;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(LOG_FETCH_TIMEOUT)
+                .build();
     }
 
     public int maxLines() {
@@ -37,10 +47,14 @@ public class ModuleLogService {
             throw new IllegalArgumentException("No log path configured for module: " + normalizedModule);
         }
 
-        Path path = Path.of(configuredPath);
-
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("module", normalizedModule);
+
+        if (isHttpUrl(configuredPath)) {
+            return readLogsFromUrl(configuredPath, lines, response);
+        }
+
+        Path path = Path.of(configuredPath);
         response.put("path", path.toString());
 
         if (!Files.exists(path)) {
@@ -65,6 +79,45 @@ public class ModuleLogService {
         } catch (IOException ex) {
             throw new IllegalArgumentException("Failed to read log file: " + ex.getMessage());
         }
+    }
+
+    private Map<String, Object> readLogsFromUrl(String configuredUrl, int lines, Map<String, Object> response) {
+        response.put("path", configuredUrl);
+        response.put("source", "http");
+
+        HttpRequest request = HttpRequest.newBuilder(URI.create(configuredUrl))
+                .timeout(LOG_FETCH_TIMEOUT)
+                .GET()
+                .build();
+
+        try {
+            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            response.put("httpStatus", httpResponse.statusCode());
+
+            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                throw new IllegalArgumentException("Failed to read log stream URL: HTTP " + httpResponse.statusCode());
+            }
+
+            List<String> allLines = httpResponse.body().lines().toList();
+            int startIndex = Math.max(0, allLines.size() - lines);
+            List<String> tailLines = allLines.subList(startIndex, allLines.size());
+
+            response.put("exists", true);
+            response.put("requestedLines", lines);
+            response.put("returnedLines", tailLines.size());
+            response.put("lines", tailLines);
+            return response;
+        } catch (IOException | InterruptedException ex) {
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            throw new IllegalArgumentException("Failed to read log stream URL: " + ex.getMessage());
+        }
+    }
+
+    private boolean isHttpUrl(String value) {
+        String normalized = value.trim().toLowerCase();
+        return normalized.startsWith("http://") || normalized.startsWith("https://");
     }
 
     private long countLines(Path path) throws IOException {

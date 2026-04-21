@@ -32,6 +32,6 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/${MCP_NGINX_CONF:-default.http.conf}:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/${MCP_NGINX_CONF:-default.conf}:/etc/nginx/conf.d/default.conf:ro
       - ./certbot/www:/var/www/certbot:ro
       - ./certbot/conf:/etc/letsencrypt:ro

@@ -21,6 +21,9 @@ import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
@@ -82,6 +85,8 @@ class FacebookAdsCampaignControllerTest {
     AdSetRepository experimentAdSetRepository;
     @MockBean
     ExperimentTargetingSelectionRepository targetingSelectionRepository;
+    @MockBean
+    CreativeRepository creativeRepository;
 
     @MockBean
     LeadPortalMetricsService leadPortalMetricsService;
@@ -116,6 +121,12 @@ class FacebookAdsCampaignControllerTest {
                 .pageId("84")
                 .name("Estúdio")
                 .build();
+        var leadPortalFlow = LeadPortalFlow.builder()
+                .id(33L)
+                .name("Fluxo principal")
+                .slug("fluxo-principal")
+                .approved(true)
+                .build();
         var exp = Experiment.builder()
                 .id(1L)
                 .niche(niche)
@@ -131,7 +142,9 @@ class FacebookAdsCampaignControllerTest {
                 .journeyTemplate(journeyTemplate)
                 .facebookPage(page)
                 .instagramAccount(instagramAccount)
+                .leadPortalFlow(leadPortalFlow)
                 .build();
+        when(creativeRepository.existsByExperimentIdAndStatus(1L, CreativeStatus.READY)).thenReturn(true);
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(1L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,

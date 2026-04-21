@@ -79,3 +79,29 @@ Quando for necessário atualizar **somente** o serviço `oprm-worker` no host `1
    ```
 
 Esse fluxo atualiza só o container `marketinghub-oprm`, preservando os demais serviços já em execução.
+
+## Reemissão de certificado TLS do MCP (Let's Encrypt)
+
+Se você estiver no host e receber erro como `./scripts/issue-letsencrypt-cert.sh: No such file or directory`, use o script de deploy (caminho correto é `bin/`, não `scripts/`).
+
+1. Garanta que o script existe no host e está atualizado:
+   ```bash
+   ls -la /opt/marketinghub/containers/bin/issue-mcp-letsencrypt-cert.sh
+   head -n 25 /opt/marketinghub/containers/bin/issue-mcp-letsencrypt-cert.sh | grep SCRIPT_VERSION
+   ```
+2. Emita em staging (teste):
+   ```bash
+   cd /opt/marketinghub/containers
+   EMAIL=paulofore@gmail.com USE_STAGING=true ./bin/issue-mcp-letsencrypt-cert.sh
+   ```
+   O script força recriação do `mcp-nginx` em `default.http.conf` (`--force-recreate`) e executa um **preflight ACME** (cria um token em `volumes/mcp/certbot/www/.well-known/acme-challenge` e valida via `http://dominio/.well-known/...`). Se o preflight falhar, o Certbot é abortado antes da emissão.
+3. Emita o certificado real:
+   ```bash
+   cd /opt/marketinghub/containers
+   EMAIL=paulofore@gmail.com ./bin/issue-mcp-letsencrypt-cert.sh
+   ```
+4. Ative HTTPS no Nginx do MCP:
+   ```bash
+   cd /opt/marketinghub/containers
+   MCP_NGINX_CONF=default.conf docker compose up -d --no-deps mcp-nginx
+   ```

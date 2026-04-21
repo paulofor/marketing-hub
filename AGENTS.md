@@ -30,7 +30,8 @@
 - **Image Watermark Service**: gera marcas-d'água para prévias.
 - **Image Zipper Service**: monta e distribui pacotes de produtos/amostras.
 - **MCP Server**: servidor de mcp, fica na pasta /mcp-server
-- **OPRM** : responsavel por obter a rotina de uma determinada ocupação.
+- **OPRM** : responsavel por obter a rotina de uma determinada ocupação, importante para entender de forma clara e precisa as dificuldade e dores de um determinado mercado, através da busca concreta em acesso a sites especializados direcionados para o nicho.
+- **MDS** : modulo que vai buscar na internet artigos e informações cientificas de ponta e de credibilidade para dar apoio na construção de mecanismos eficazes que vão resolver de fato os problemas do mercado em relação a uma dor. Com esse mecanismo o Marketing Hub usa como base para criar produtos digitais transformadores de fato.
 
 Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
 

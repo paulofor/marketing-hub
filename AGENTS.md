@@ -31,7 +31,9 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Fluxo entre containers**: nada de chamadas diretas entre serviços (frontend, workers, lead-portal etc). Todo tráfego passa pelo backend principal; apenas o backend fala com o banco.
 - **Novos endpoints**: verifique se o contrato já existe; caso contrário, defina-o no backend, atualize a documentação e adicione testes.
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.
-- **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host
+- **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host.
+- **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
+- **Logs**: os logs dos modulos Java Spring Boot podem ser acessados pelo MCP Server.
 
 ## 3. Framework central do Marketing Hub:
 

@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -47,6 +48,13 @@ public class LegacyAssetClient {
                     : null;
             String filename = extractFileName(url, response);
             return Optional.of(new DownloadedAsset(response.getBody(), contentType, filename));
+        } catch (HttpClientErrorException ex) {
+            if (ex.getStatusCode().value() == 404) {
+                log.info("Legacy asset not found (404), skipping migration for '{}'", url);
+                return Optional.empty();
+            }
+            log.warn("Legacy asset '{}' returned client error {}", url, ex.getStatusCode());
+            return Optional.empty();
         } catch (RestClientException ex) {
             log.warn("Failed to download legacy asset '{}'", url, ex);
             return Optional.empty();

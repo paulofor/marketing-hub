@@ -41,6 +41,9 @@ public record LeadPortalFlowPublicationRequest(
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Pattern IMAGE_SRC_PATTERN = Pattern.compile("<img[^>]+src=[\"']([^\"']+)[\"']",
             Pattern.CASE_INSENSITIVE);
+    private static final Pattern PIXEL_MARKER_PATTERN = Pattern.compile(
+            "fbq\\s*\\(|fbevents\\.js|connect\\.facebook\\.net",
+            Pattern.CASE_INSENSITIVE);
 
     public static LeadPortalFlowPublicationRequest from(LeadPortalFlow flow) {
         return from(flow, null);
@@ -59,12 +62,13 @@ public record LeadPortalFlowPublicationRequest(
         String facebookPixelId = flow.getMarketNiche() != null ? flow.getMarketNiche().getFacebookPixelId() : null;
         String facebookPixelCode = flow.getMarketNiche() != null ? flow.getMarketNiche().getFacebookPixelCode() : null;
         Instant facebookPixelCreatedAt = flow.getMarketNiche() != null ? flow.getMarketNiche().getFacebookPixelCreatedAt() : null;
+        String htmlWithPixel = injectFacebookPixelWhenEligible(flow, flow.getCustomFormHtml(), facebookPixelId);
         return new LeadPortalFlowPublicationRequest(
                 flow.getSlug(),
                 flow.getName(),
                 flow.getDescription(),
-                flow.getCustomFormHtml(),
-                flow.getCustomFormHtml(),
+                htmlWithPixel,
+                htmlWithPixel,
                 resolveRenderMode(flow),
                 new FormSpec(flow.getQuestions().stream()
                         .map(LeadPortalFlowPublicationRequest::toQuestion)
@@ -80,6 +84,66 @@ public record LeadPortalFlowPublicationRequest(
                 facebookPixelId,
                 facebookPixelCode,
                 facebookPixelCreatedAt);
+    }
+
+    private static String injectFacebookPixelWhenEligible(LeadPortalFlow flow, String customFormHtml, String facebookPixelId) {
+        if (!isEligibleForNichePixelInjection(flow)) {
+            return customFormHtml;
+        }
+        if (!StringUtils.hasText(customFormHtml) || !StringUtils.hasText(facebookPixelId)) {
+            return customFormHtml;
+        }
+        if (PIXEL_MARKER_PATTERN.matcher(customFormHtml).find()) {
+            return customFormHtml;
+        }
+        String pixelSnippet = buildPixelSnippet(facebookPixelId);
+        if (containsIgnoreCase(customFormHtml, "</head>")) {
+            return replaceFirstIgnoreCase(customFormHtml, "</head>", pixelSnippet + "\n</head>");
+        }
+        if (containsIgnoreCase(customFormHtml, "<body")) {
+            return replaceFirstIgnoreCase(customFormHtml, "<body", pixelSnippet + "\n<body");
+        }
+        return pixelSnippet + "\n" + customFormHtml;
+    }
+
+    private static boolean isEligibleForNichePixelInjection(LeadPortalFlow flow) {
+        return flow != null
+                && flow.isApproved()
+                && flow.getExperiment() != null;
+    }
+
+    private static String buildPixelSnippet(String facebookPixelId) {
+        String escapedPixelId = escapeEcmaScript(facebookPixelId.trim());
+        return """
+                <!-- Meta Pixel Code -->
+                <script>
+                  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+                  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+                  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script',
+                  'https://connect.facebook.net/en_US/fbevents.js');
+                  fbq('init', '%s');
+                  fbq('track', 'PageView');
+                </script>
+                <noscript><img height="1" width="1" style="display:none"
+                  src="https://www.facebook.com/tr?id=%s&ev=PageView&noscript=1"
+                /></noscript>
+                <!-- End Meta Pixel Code -->
+                """.formatted(escapedPixelId, escapedPixelId).trim();
+    }
+
+    private static String escapeEcmaScript(String rawValue) {
+        return rawValue
+                .replace("\\", "\\\\")
+                .replace("'", "\\'");
+    }
+
+    private static boolean containsIgnoreCase(String source, String token) {
+        return source.toLowerCase().contains(token.toLowerCase());
+    }
+
+    private static String replaceFirstIgnoreCase(String source, String target, String replacement) {
+        return source.replaceFirst("(?i)" + Pattern.quote(target), Matcher.quoteReplacement(replacement));
     }
 
     private static String resolveRenderMode(LeadPortalFlow flow) {

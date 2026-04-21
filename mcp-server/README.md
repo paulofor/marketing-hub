@@ -85,7 +85,7 @@ curl -i http://mcpserverdigi.shop/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
-Por padrão, o compose sobe com `default.conf` (HTTPS habilitado).
+Por padrão, o compose sobe com `default.http.conf` (somente HTTP), para evitar loop de restart do Nginx quando os arquivos de certificado ainda não existem.
 
 Se precisar subir sem TLS temporariamente (por exemplo, antes da emissão do certificado), use:
 
@@ -93,7 +93,63 @@ Se precisar subir sem TLS temporariamente (por exemplo, antes da emissão do cer
 MCP_NGINX_CONF=default.http.conf docker compose up -d nginx
 ```
 
-No deploy (`deploy/docker-compose.yml`), use a mesma variável de ambiente `MCP_NGINX_CONF` (por exemplo, `default.conf` ou `default.https.conf`).
+Depois que os certificados forem emitidos e os arquivos existirem em `certbot/conf/live/mcpserverdigi.shop/`, habilite HTTPS explicitamente:
+
+```bash
+MCP_NGINX_CONF=default.conf docker compose up -d nginx
+```
+
+No deploy (`deploy/docker-compose.yml`), use a mesma variável de ambiente `MCP_NGINX_CONF` (por exemplo, `default.http.conf` ou `default.conf`).
+
+### Erro comum: `cannot load certificate ... fullchain.pem`
+
+Se o Nginx falhar com esse erro, quase sempre é porque o volume montado em `/etc/letsencrypt` não contém os arquivos esperados pelo `ssl_certificate`.
+
+Checklist rápido:
+
+1. Gere os certificados no mesmo diretório usado no `docker-compose.yml` do ambiente atual.
+2. Confirme no host:
+
+```bash
+ls -la certbot/conf/live/mcpserverdigi.shop/
+```
+
+3. Valide presença de `fullchain.pem` e `privkey.pem`.
+4. Só então suba o Nginx com `MCP_NGINX_CONF=default.conf`.
+
+### Como localizar os certificados no host
+
+Se você suspeita que os arquivos se perderam no host, procure por `fullchain.pem` e `privkey.pem` antes de subir o Nginx em HTTPS:
+
+```bash
+# dentro do diretório mcp-server
+find certbot -type f \( -name 'fullchain.pem' -o -name 'privkey.pem' \) 2>/dev/null
+```
+
+No deploy (raiz `deploy/`), o volume aponta para `volumes/mcp/certbot/conf`, então:
+
+```bash
+# dentro do diretório deploy
+find volumes/mcp/certbot/conf -type f \( -name 'fullchain.pem' -o -name 'privkey.pem' \) 2>/dev/null
+```
+
+Se nada for encontrado, reemita o certificado e valide novamente o caminho `live/mcpserverdigi.shop/` antes de ativar `default.conf`.
+
+> Dica importante: os comandos acima são **relativos ao diretório**.  
+> Se você rodar em `~` (home) e não dentro do projeto, o `find` pode retornar vazio mesmo com certificado existente em outro caminho.
+
+Exemplo com caminho absoluto (ajuste conforme seu host):
+
+```bash
+find /opt/marketinghub/containers/volumes/mcp/certbot/conf \
+  -type f \( -name 'fullchain.pem' -o -name 'privkey.pem' \) 2>/dev/null
+```
+
+Também vale validar se o volume que o Nginx monta é o mesmo em que o Certbot gravou:
+
+```bash
+docker compose -f /opt/marketinghub/containers/deploy/docker-compose.yml config | grep -n "/etc/letsencrypt"
+```
 
 ## Configuração no Codex Cloud (Plugin MCP)
 

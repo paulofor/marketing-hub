@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.repository.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
@@ -11,8 +12,6 @@ import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
-import com.marketinghub.journey.model.JourneyStep;
-import com.marketinghub.journey.model.JourneyStimulusType;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -51,9 +49,9 @@ public class ExperimentReadinessService {
     public ExperimentReadinessSummaryDto summarize(Long experimentId) {
         Experiment experiment = experimentService.get(experimentId);
         long creativeCount = creativeRepository.countByExperimentId(experimentId);
-        boolean hasCreatives = creativeCount > 0;
+        boolean hasCreatives = hasApprovedCreative(experiment);
 
-        long leadPortalFlowCount = experiment.getLeadPortalFlow() != null ? 1L : 0L;
+        long leadPortalFlowCount = hasReadyLeadPortalFlow(experiment) ? 1L : 0L;
         boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
 
         List<String> missingConfiguration = computeMissingConfiguration(experiment);
@@ -106,44 +104,11 @@ public class ExperimentReadinessService {
 
     public List<String> computeMissingConfiguration(Experiment experiment) {
         List<String> missing = new ArrayList<>();
-        if (!experiment.isCreativeApproved()) {
+        if (!hasApprovedCreative(experiment)) {
             missing.add("creativeApproval");
         }
-        if (experiment.getKpiTargetCpl() == null) {
-            missing.add("kpiTargetCpl");
-        }
-        if (experiment.getStopLossCpl() == null) {
-            missing.add("stopLossCpl");
-        }
-        if (experiment.getSampleSize() == null) {
-            missing.add("sampleSize");
-        }
-        if (experiment.getStartDate() == null) {
-            missing.add("startDate");
-        }
-        if (experiment.getEndDate() == null) {
-            missing.add("endDate");
-        }
-        if (experiment.getJourneyTemplate() == null) {
-            missing.add("journeyTemplate");
-        }
-        if (!StringUtils.hasText(resolveExperimentPageId(experiment))) {
-            missing.add("pageId");
-        }
-        if (experiment.getInstagramAccount() == null) {
-            missing.add("instagramAccount");
-        }
-        if (isNextStepInstantForm(experiment)) {
-            if (experiment.getFacebookInstantForm() == null) {
-                missing.add("facebookInstantForm");
-            } else {
-                if (!experiment.getFacebookInstantForm().isApproved()) {
-                    missing.add("facebookInstantFormApproval");
-                }
-                if (!experiment.getFacebookInstantForm().isPublished()) {
-                    missing.add("facebookInstantFormPublication");
-                }
-            }
+        if (!hasReadyLeadPortalFlow(experiment)) {
+            missing.add("leadPortalFlow");
         }
         if (!hasConfiguredTargeting(experiment)) {
             missing.add("targetingSelections");
@@ -166,6 +131,20 @@ public class ExperimentReadinessService {
             return false;
         }
         return hasReadyAdSetSpecs(experiment.getId()) || hasSelectedTargeting(experiment.getId());
+    }
+
+    private boolean hasApprovedCreative(Experiment experiment) {
+        if (experiment == null || experiment.getId() == null) {
+            return false;
+        }
+        return experiment.isCreativeApproved()
+                && creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY);
+    }
+
+    private boolean hasReadyLeadPortalFlow(Experiment experiment) {
+        return experiment != null
+                && experiment.getLeadPortalFlow() != null
+                && experiment.getLeadPortalFlow().isApproved();
     }
 
     private boolean hasSelectedTargeting(Long experimentId) {
@@ -206,34 +185,6 @@ public class ExperimentReadinessService {
         }
         String validation = spec.getValidationStatus();
         return !StringUtils.hasText(validation) || "VALID".equalsIgnoreCase(validation.trim());
-    }
-
-    private String resolveExperimentPageId(Experiment experiment) {
-        if (experiment.getFacebookPage() == null) {
-            return null;
-        }
-        return experiment.getFacebookPage().getPageId();
-    }
-
-    private boolean isNextStepInstantForm(Experiment experiment) {
-        if (experiment.getJourneyTemplate() == null) {
-            return false;
-        }
-        List<JourneyStep> steps = experiment.getJourneyTemplate().getSteps();
-        if (steps == null || steps.isEmpty()) {
-            return false;
-        }
-        List<JourneyStep> ordered = steps.stream()
-                .sorted(Comparator.comparingInt(step -> step.getPosition() != null ? step.getPosition() : Integer.MAX_VALUE))
-                .toList();
-        JourneyStep previous = null;
-        for (JourneyStep step : ordered) {
-            if (previous != null && previous.getStimulusType() == JourneyStimulusType.AD) {
-                return step.getStimulusType() == JourneyStimulusType.INSTANT_FORM;
-            }
-            previous = step;
-        }
-        return false;
     }
 
 }

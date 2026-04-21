@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
@@ -54,6 +55,7 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(false);
         when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
                 .thenReturn(0L);
@@ -77,10 +79,13 @@ class ExperimentReadinessServiceTest {
     void shouldReturnNoIssuesWhenEverythingIsReady() {
         Long experimentId = 8L;
         Experiment experiment = buildExperiment(experimentId, 18L);
-        experiment.setLeadPortalFlow(new LeadPortalFlow());
+        LeadPortalFlow flow = new LeadPortalFlow();
+        flow.setApproved(true);
+        experiment.setLeadPortalFlow(flow);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
                 .thenReturn(1L);
 
@@ -97,10 +102,13 @@ class ExperimentReadinessServiceTest {
     void shouldReportTargetingIssueWhenThereIsNoApprovedJobTitleSelection() {
         Long experimentId = 11L;
         Experiment experiment = buildExperiment(experimentId, 19L);
-        experiment.setLeadPortalFlow(new LeadPortalFlow());
+        LeadPortalFlow flow = new LeadPortalFlow();
+        flow.setApproved(true);
+        experiment.setLeadPortalFlow(flow);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
         when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
                 .thenReturn(0L);
@@ -117,10 +125,13 @@ class ExperimentReadinessServiceTest {
     void shouldTreatReadyAdSetSpecsAsCompleteTargeting() {
         Long experimentId = 9L;
         Experiment experiment = buildExperiment(experimentId, 20L);
-        experiment.setLeadPortalFlow(new LeadPortalFlow());
+        LeadPortalFlow flow = new LeadPortalFlow();
+        flow.setApproved(true);
+        experiment.setLeadPortalFlow(flow);
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
 
         ExperimentAdSetWorkflow workflow = ExperimentAdSetWorkflow.builder()
                 .id(42L)
@@ -155,6 +166,7 @@ class ExperimentReadinessServiceTest {
         experiment.setId(experimentId);
         experiment.setNiche(niche);
         experiment.setHypothesisRef(hypothesis);
+        experiment.setCreativeApproved(true);
         return experiment;
     }
 

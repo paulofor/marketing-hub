@@ -5,10 +5,20 @@ DEPLOY_DIR=${DEPLOY_DIR:-/opt/marketinghub/containers}
 MCP_TAR=${MCP_TAR:-/tmp/mcp-server-image.tar}
 MCP_IMAGE=${MCP_IMAGE:-marketinghub-mcp-server}
 IMAGE_TAG=${IMAGE_TAG:-latest}
+DOMAIN=${DOMAIN:-mcpserverdigi.shop}
+ALT_DOMAIN=${ALT_DOMAIN:-www.mcpserverdigi.shop}
+EMAIL=${EMAIL:-}
+CERTBOT_IMAGE=${CERTBOT_IMAGE:-certbot/certbot:latest}
+USE_STAGING=${USE_STAGING:-false}
 
 mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
 mkdir -p ./volumes/mcp/certbot/www ./volumes/mcp/certbot/conf
+
+certificate_exists() {
+  [[ -f "./volumes/mcp/certbot/conf/live/${DOMAIN}/fullchain.pem" \
+    && -f "./volumes/mcp/certbot/conf/live/${DOMAIN}/privkey.pem" ]]
+}
 
 resolve_mcp_nginx_conf() {
   if [[ -n "${MCP_NGINX_CONF:-}" ]]; then
@@ -16,13 +26,64 @@ resolve_mcp_nginx_conf() {
     return
   fi
 
-  if [[ -f "./volumes/mcp/certbot/conf/live/mcpserverdigi.shop/fullchain.pem" \
-     && -f "./volumes/mcp/certbot/conf/live/mcpserverdigi.shop/privkey.pem" ]]; then
+  if certificate_exists; then
     echo "default.conf"
     return
   fi
 
   echo "default.http.conf"
+}
+
+run_mcp_compose() {
+  local nginx_conf="$1"
+
+  MCP_SERVER_IMAGE="${MCP_IMAGE}" \
+  MCP_SERVER_IMAGE_TAG=latest \
+  MCP_NGINX_CONF="${nginx_conf}" \
+  docker compose up -d --no-deps mcp-server mcp-nginx
+}
+
+issue_certificate_if_needed() {
+  if certificate_exists; then
+    return
+  fi
+
+  if [[ -z "${EMAIL}" ]]; then
+    echo "[apply-mcp-only.sh] Aviso: certificado ausente e EMAIL não informado. Mantendo HTTP até nova execução com EMAIL." >&2
+    return
+  fi
+
+  local staging_flags=()
+  if [[ "${USE_STAGING}" == "true" ]]; then
+    staging_flags+=("--test-cert")
+  fi
+
+  echo "[apply-mcp-only.sh] Certificado ausente. Solicitando Let's Encrypt via HTTP-01 para ${DOMAIN} (${ALT_DOMAIN})."
+  docker run --rm \
+    -v "./volumes/mcp/certbot/www:/var/www/certbot" \
+    -v "./volumes/mcp/certbot/conf:/etc/letsencrypt" \
+    "${CERTBOT_IMAGE}" certonly --webroot \
+    -w /var/www/certbot \
+    -d "${DOMAIN}" -d "${ALT_DOMAIN}" \
+    --email "${EMAIL}" \
+    --agree-tos \
+    --no-eff-email \
+    --non-interactive \
+    --keep-until-expiring \
+    --preferred-challenges http-01 \
+    --key-type ecdsa \
+    --elliptic-curve secp384r1 \
+    "${staging_flags[@]}"
+
+  if certificate_exists; then
+    echo "[apply-mcp-only.sh] Certificado encontrado após emissão. Reiniciando MCP Nginx em HTTPS."
+    MCP_SERVER_IMAGE="${MCP_IMAGE}" \
+    MCP_SERVER_IMAGE_TAG=latest \
+    MCP_NGINX_CONF=default.conf \
+    docker compose up -d --force-recreate --no-deps mcp-nginx
+  else
+    echo "[apply-mcp-only.sh] Aviso: emissão finalizada sem certificado detectado. Mantendo HTTP." >&2
+  fi
 }
 
 if [[ -f "${MCP_TAR}" ]]; then
@@ -49,11 +110,11 @@ cleanup_previous_tags() {
 # Atualiza somente o MCP Server e o Nginx dedicado do MCP sem reiniciar outros serviços.
 MCP_NGINX_CONF_RESOLVED="$(resolve_mcp_nginx_conf)"
 echo "[apply-mcp-only.sh] Usando MCP_NGINX_CONF=${MCP_NGINX_CONF_RESOLVED}"
+run_mcp_compose "${MCP_NGINX_CONF_RESOLVED}"
 
-MCP_SERVER_IMAGE="${MCP_IMAGE}" \
-MCP_SERVER_IMAGE_TAG=latest \
-MCP_NGINX_CONF="${MCP_NGINX_CONF_RESOLVED}" \
-docker compose up -d --no-deps mcp-server mcp-nginx
+if [[ -z "${MCP_NGINX_CONF:-}" ]]; then
+  issue_certificate_if_needed
+fi
 
 cleanup_previous_tags "${MCP_IMAGE}" "latest"
 

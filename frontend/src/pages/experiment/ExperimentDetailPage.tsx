@@ -254,6 +254,10 @@ export default function ExperimentDetailPage() {
   const experimentPage = data.facebookPage;
   const hasExperimentPage = Boolean(experimentPage?.pageId);
   const experimentInstantForm = data.facebookInstantForm;
+  const instantFormApproved = Boolean(experimentInstantForm?.approved);
+  const instantFormPublished = Boolean(experimentInstantForm?.published);
+  const instantFormReadyForCampaign =
+    Boolean(experimentInstantForm) && instantFormApproved && instantFormPublished;
   const instagramAccount = data.instagramAccount;
   const hasInstagramAccount = Boolean(instagramAccount);
   const facebookWorker = facebookConfig?.worker;
@@ -402,17 +406,22 @@ export default function ExperimentDetailPage() {
       ? [
           {
             id: "instant-form",
-            title: "Instant form vinculado",
-            isMet: Boolean(experimentInstantForm),
+            title: "Instant form aprovado e publicado",
+            isMet: instantFormReadyForCampaign,
             hint: experimentInstantForm
-              ? `O formulário ${experimentInstantForm.name}${experimentInstantForm.facebookFormId ? ` (${experimentInstantForm.facebookFormId})` : ""} será usado na captura.`
+              ? instantFormReadyForCampaign
+                ? `O formulário ${experimentInstantForm.name}${experimentInstantForm.facebookFormId ? ` (${experimentInstantForm.facebookFormId})` : ""} está aprovado e publicado para a campanha.`
+                : `O formulário ${experimentInstantForm.name} está vinculado, mas ainda precisa ${instantFormApproved ? "" : "de aprovação"}${!instantFormApproved && !instantFormPublished ? " e " : ""}${instantFormPublished ? "" : "de publicação na Meta"} para liberar a campanha.`
               : "Associe um instant form compatível na aba Instant Forms para destravar a etapa de captura.",
             action: experimentInstantForm
-              ? undefined
+              ? instantFormReadyForCampaign
+                ? undefined
+                : () => setTab("instant-form")
               : () => setTab("instant-form"),
-            actionLabel: experimentInstantForm
-              ? undefined
-              : "Ir para Instant Forms",
+            actionLabel:
+              experimentInstantForm && instantFormReadyForCampaign
+                ? undefined
+                : "Ir para Instant Forms",
           },
         ]
       : []),

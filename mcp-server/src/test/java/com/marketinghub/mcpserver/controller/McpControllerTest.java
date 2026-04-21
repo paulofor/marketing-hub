@@ -174,6 +174,19 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message").value("module must be one of: backend, ai-worker, lead-portal, facebook-ads"));
     }
+
+    @Test
+    void shouldHandleErrorResponseWhenRequestIdIsNull() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","method":"unknown_method","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jsonrpc").value("2.0"))
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.error.code").value(-32601));
+    }
 }
 
 @SpringBootTest(properties = "mcp.api-key=super-secret")

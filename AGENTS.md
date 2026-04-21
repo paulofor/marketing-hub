@@ -16,6 +16,7 @@
 - **Fluxo entre containers**: nada de chamadas diretas entre serviços (frontend, workers, lead-portal etc). Todo tráfego passa pelo backend principal; apenas o backend fala com o banco.
 - **Novos endpoints**: verifique se o contrato já existe; caso contrário, defina-o no backend, atualize a documentação e adicione testes.
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.
+- **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host
 
 
 ## 3. Módulos e responsabilidades
@@ -28,6 +29,9 @@
 - **Email Service**: envio transacional integrado ao Amazon SES.
 - **Image Watermark Service**: gera marcas-d'água para prévias.
 - **Image Zipper Service**: monta e distribui pacotes de produtos/amostras.
+- **MCP Server**: servidor de mcp, fica na pasta /mcp-server
+- **OPRM** : responsavel por obter a rotina de uma determinada ocupação.
+  
 
 Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
 

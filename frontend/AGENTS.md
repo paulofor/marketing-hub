@@ -9,3 +9,6 @@
 - Ele possui largura de 288px quando está expandido, revelando rótulos e ícones completos.
 - No estado recolhido, o menu mostra apenas ícones para preservar o espaço do conteúdo.
 - A transição entre os estados aberto e fechado deve ser suave, mantendo o foco no conteúdo principal.
+
+** Novas Funcionalidades
+- Sempre que for trabalhadas novas funcionalidades é necessario criar os endpoints de apoio no backend.

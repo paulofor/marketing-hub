@@ -88,6 +88,9 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
   }, [availableForms, experiment.facebookInstantForm, selectedFormId]);
 
   const hasForms = availableForms.length > 0;
+  const metaInstantFormsUrl = selectedForm?.facebookPageExternalId
+    ? `https://business.facebook.com/latest/instant_forms/?page_id=${selectedForm.facebookPageExternalId}`
+    : "https://business.facebook.com/latest/instant_forms/";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -343,6 +346,27 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
           <div className="alert alert-warning small py-2 px-3 mb-3" role="alert">
             Para liberar campanhas, o instant form precisa estar <strong>aprovado</strong> e{" "}
             <strong>publicado</strong> na Meta.
+          </div>
+        ) : null}
+        {(!form.approved || !form.published) ? (
+          <div className="border rounded-3 p-3 mb-3 bg-light">
+            <p className="fw-semibold mb-2">Ações pendentes para destravar a campanha</p>
+            <div className="d-flex flex-wrap gap-2">
+              <Link
+                to={`/experiments/${experiment.id}/instant-forms/${form.id}`}
+                className="btn btn-primary"
+              >
+                1) Aprovar no Marketing Hub
+              </Link>
+              <a
+                href={metaInstantFormsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-outline-primary"
+              >
+                2) Publicar no Meta Instant Forms
+              </a>
+            </div>
           </div>
         ) : null}
         <dl className="row mb-0">

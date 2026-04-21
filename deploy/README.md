@@ -22,6 +22,8 @@ O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys est
 | `VIDEO_MANAGEMENT_PORT` | Porta exposta externamente | `8095` |
 
 > **Importante:** por padrão o poller fica desativado até que o backend esteja totalmente pronto para entregar jobs reais. Basta exportar `VIDEO_JOBS_POLLING_ENABLED=true` antes de rodar `apply.sh` para habilitar.
+>
+> **Nota operacional (MCP/VPS):** mantenha o arquivo de ambiente em `${DEPLOY_DIR}/.env` no servidor. O pipeline de deploy do MCP sincroniza `deploy/` com `rsync --delete`, mas preserva explicitamente o `.env` remoto para não apagar segredos locais.
 
 Esse fluxo (`apply.sh`) permanece para atualizar somente backend/frontend no host principal.
 

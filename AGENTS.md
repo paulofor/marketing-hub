@@ -37,6 +37,7 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 ## 4. Dominios
 
 - **oportunidadebrasil.shop** : apontando para 191.252.120.96
+- **pagamentopalf.site** : apontando para  191.252.102.54 
 
 ## 5. Segurança e secrets
 

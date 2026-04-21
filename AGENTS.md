@@ -33,8 +33,15 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.
 - **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host
 
+## 3. Framework central do Marketing Hub:
 
-## 3. Módulos e responsabilidades
+**Dor → Resultado → Mecanismo → Prova → Oferta**
+
+Ao alterar qualquer módulo, preserve esse eixo como referência principal de descoberta, modelagem, validação e empacotamento de valor.
+
+
+
+## 4. Módulos e responsabilidades
 
 - **MarketingHub Backend / Frontend**: camada administrativa e UI principal do sistema.
 - **Facebook Ads Worker**: integração com a API da Meta para campanhas e públicos.
@@ -49,13 +56,6 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **MDS** : modulo que vai buscar na internet artigos e informações cientificas de ponta e de credibilidade para dar apoio na construção de mecanismos eficazes que vão resolver de fato os problemas do mercado em relação a uma dor. Com esse mecanismo o Marketing Hub usa como base para criar produtos digitais transformadores de fato.
 
 Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
-
-
-## 4. Framework central do Marketing Hub:
-
-**Dor → Resultado → Mecanismo → Prova → Oferta**
-
-Ao alterar qualquer módulo, preserve esse eixo como referência principal de descoberta, modelagem, validação e empacotamento de valor.
 
 
 ## 5. Dominios

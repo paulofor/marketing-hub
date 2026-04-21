@@ -36,6 +36,8 @@ export interface FacebookInstantFormSummary {
   prompt?: string | null;
   approved?: boolean;
   approvedAt?: string | null;
+  published?: boolean;
+  publishedAt?: string | null;
 }
 
 export interface ExperimentCampaignMetric {

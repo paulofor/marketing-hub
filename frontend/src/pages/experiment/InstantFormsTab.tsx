@@ -338,53 +338,70 @@ export default function InstantFormsTab({ experiment, steps }: InstantFormsTabPr
     }
 
     return (
-      <dl className="row mb-0">
-        <dt className="col-sm-4">Formulário</dt>
-        <dd className="col-sm-8">{form.name}</dd>
-        <dt className="col-sm-4">ID Meta</dt>
-        <dd className="col-sm-8">{form.facebookFormId ?? "—"}</dd>
-        <dt className="col-sm-4">Página</dt>
-        <dd className="col-sm-8">{form.facebookPageName}</dd>
-        <dt className="col-sm-4">Status</dt>
-        <dd className="col-sm-8">{describeStatus(form.status)}</dd>
-        <dt className="col-sm-4">Idioma</dt>
-        <dd className="col-sm-8">{form.locale ?? "—"}</dd>
-        <dt className="col-sm-4">Links</dt>
-        <dd className="col-sm-8">
-          <div className="d-flex flex-column gap-1">
-            {form.followUpActionUrl ? (
-              <div className="d-flex flex-column gap-1">
-                <a href={form.followUpActionUrl} target="_blank" rel="noreferrer" className="small">
-                  Página de agradecimento
-                </a>
-                <span className="text-muted small text-break">{form.followUpActionUrl}</span>
-              </div>
-            ) : null}
-            {form.privacyPolicyUrl ? (
-              <div className="d-flex flex-column gap-1">
-                <a href={form.privacyPolicyUrl} target="_blank" rel="noreferrer" className="small">
-                  Política de privacidade
-                </a>
-                <span className="text-muted small text-break">{form.privacyPolicyUrl}</span>
-              </div>
-            ) : null}
+      <>
+        {(!form.approved || !form.published) ? (
+          <div className="alert alert-warning small py-2 px-3 mb-3" role="alert">
+            Para liberar campanhas, o instant form precisa estar <strong>aprovado</strong> e{" "}
+            <strong>publicado</strong> na Meta.
           </div>
-        </dd>
-        <dt className="col-sm-4">Aprovação</dt>
-        <dd className="col-sm-8">
-          <span className={`badge ${form.approved ? "text-bg-success" : "text-bg-secondary"}`}>
-            {form.approved ? "Aprovado" : "Pendente"}
-          </span>
-          {form.approvedAt ? (
-            <span className="text-muted small ms-2">{formatDatetime(form.approvedAt)}</span>
-          ) : null}
-          <div>
-            <Link to={`/experiments/${experiment.id}/instant-forms/${form.id}`} className="btn btn-link btn-sm px-0">
-              Abrir detalhamento
-            </Link>
-          </div>
-        </dd>
-      </dl>
+        ) : null}
+        <dl className="row mb-0">
+          <dt className="col-sm-4">Formulário</dt>
+          <dd className="col-sm-8">{form.name}</dd>
+          <dt className="col-sm-4">ID Meta</dt>
+          <dd className="col-sm-8">{form.facebookFormId ?? "—"}</dd>
+          <dt className="col-sm-4">Página</dt>
+          <dd className="col-sm-8">{form.facebookPageName}</dd>
+          <dt className="col-sm-4">Status</dt>
+          <dd className="col-sm-8">{describeStatus(form.status)}</dd>
+          <dt className="col-sm-4">Idioma</dt>
+          <dd className="col-sm-8">{form.locale ?? "—"}</dd>
+          <dt className="col-sm-4">Links</dt>
+          <dd className="col-sm-8">
+            <div className="d-flex flex-column gap-1">
+              {form.followUpActionUrl ? (
+                <div className="d-flex flex-column gap-1">
+                  <a href={form.followUpActionUrl} target="_blank" rel="noreferrer" className="small">
+                    Página de agradecimento
+                  </a>
+                  <span className="text-muted small text-break">{form.followUpActionUrl}</span>
+                </div>
+              ) : null}
+              {form.privacyPolicyUrl ? (
+                <div className="d-flex flex-column gap-1">
+                  <a href={form.privacyPolicyUrl} target="_blank" rel="noreferrer" className="small">
+                    Política de privacidade
+                  </a>
+                  <span className="text-muted small text-break">{form.privacyPolicyUrl}</span>
+                </div>
+              ) : null}
+            </div>
+          </dd>
+          <dt className="col-sm-4">Aprovação</dt>
+          <dd className="col-sm-8">
+            <span className={`badge ${form.approved ? "text-bg-success" : "text-bg-secondary"}`}>
+              {form.approved ? "Aprovado" : "Pendente"}
+            </span>
+            {form.approvedAt ? (
+              <span className="text-muted small ms-2">{formatDatetime(form.approvedAt)}</span>
+            ) : null}
+          </dd>
+          <dt className="col-sm-4">Publicação</dt>
+          <dd className="col-sm-8">
+            <span className={`badge ${form.published ? "text-bg-success" : "text-bg-secondary"}`}>
+              {form.published ? "Publicado" : "Pendente"}
+            </span>
+            {form.publishedAt ? (
+              <span className="text-muted small ms-2">{formatDatetime(form.publishedAt)}</span>
+            ) : null}
+            <div>
+              <Link to={`/experiments/${experiment.id}/instant-forms/${form.id}`} className="btn btn-link btn-sm px-0">
+                Abrir detalhamento
+              </Link>
+            </div>
+          </dd>
+        </dl>
+      </>
     );
   };
 

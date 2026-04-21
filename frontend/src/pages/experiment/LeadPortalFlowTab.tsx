@@ -204,19 +204,22 @@ export default function LeadPortalFlowTab({
                         {flow.name}
                         {isSelected ? (
                           <span className="badge text-bg-primary">
-                            Selecionado
+                            Fluxo selecionado
                           </span>
                         ) : null}
                         {flow.approved ? (
                           <span className="badge text-bg-success">
-                            Aprovado
+                            Fluxo aprovado
                           </span>
                         ) : (
                           <span className="badge text-bg-secondary">
-                            Pendente
+                            Aprovação pendente
                           </span>
                         )}
                       </h5>
+                      <p className="text-muted small mb-1">
+                        Estes status são do <strong>Fluxo do Portal do Lead</strong> e não do Instant Form usado nas campanhas do Facebook Ads.
+                      </p>
                       <p className="text-muted small mb-0">Slug: {flow.slug}</p>
                       {flow.simpleFormStyle ? (
                         <p className="text-muted small mt-1 mb-0">

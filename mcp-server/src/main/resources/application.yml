@@ -5,8 +5,8 @@ spring:
   application:
     name: mcp-server
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
-    username: ${SPRING_DATASOURCE_USERNAME:marketing_hub_user}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:d555d.vps-kinghost.net}:${DB_PORT:3306}/${DB_NAME:marketinghubdb}?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:marketing_hub_user}}
     password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASS:}}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:

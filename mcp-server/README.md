@@ -5,10 +5,10 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 ## Objetivo
 
 - Rodar no mesmo VPS do backend.
-- Usar conexão MySQL fixa do ambiente produtivo:
-  - URL: `jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC`
-  - usuário: `marketing_hub_user`
-  - senha via `MYSQL_PASS` carregada do `.env` do host em `/opt/marketinghub/containers/.env`.
+- Usar conexão MySQL via variáveis de ambiente (com defaults de produção):
+  - URL via `SPRING_DATASOURCE_URL` (ou composição por `DB_HOST`/`DB_PORT`/`DB_NAME`).
+  - usuário via `SPRING_DATASOURCE_USERNAME` (ou `DB_USERNAME`).
+  - senha via `SPRING_DATASOURCE_PASSWORD`/`MYSQL_PASS` carregada do `.env` do host em `/opt/marketinghub/containers/.env`.
 - Expor ferramentas iniciais para diagnóstico e expansão futura.
 
 ## Ferramentas MCP iniciais
@@ -110,6 +110,12 @@ O `mcp-server` foi configurado para usar `MYSQL_PASS` do arquivo `.env` no host:
 
 - caminho: `/opt/marketinghub/containers/.env`
 - variável obrigatória: `MYSQL_PASS=...`
+- variáveis opcionais para ajustar host/porta/schema sem rebuild:
+  - `DB_HOST=...`
+  - `DB_PORT=3306`
+  - `DB_NAME=marketinghubdb`
+  - `DB_USERNAME=marketing_hub_user`
+  - (ou defina diretamente `SPRING_DATASOURCE_URL` / `SPRING_DATASOURCE_USERNAME`)
 
 Esse `.env` é exclusivo do servidor e **não deve ser propagado, versionado ou injetado no processo do GitHub Actions**.
 

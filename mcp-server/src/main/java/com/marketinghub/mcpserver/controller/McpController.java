@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -277,20 +278,22 @@ public class McpController {
     }
 
     private Map<String, Object> success(Object id, Map<String, Object> result) {
-        return Map.of(
-                "jsonrpc", "2.0",
-                "id", id,
-                "result", result
-        );
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("jsonrpc", "2.0");
+        response.put("id", id);
+        response.put("result", result);
+        return response;
     }
 
     private Map<String, Object> error(Object id, int code, String message) {
-        return Map.of(
-                "jsonrpc", "2.0",
-                "id", id,
-                "error", Map.of(
-                        "code", code,
-                        "message", message)
-        );
+        Map<String, Object> errorPayload = new LinkedHashMap<>();
+        errorPayload.put("code", code);
+        errorPayload.put("message", message == null ? "Unexpected error" : message);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("jsonrpc", "2.0");
+        response.put("id", id);
+        response.put("error", errorPayload);
+        return response;
     }
 }

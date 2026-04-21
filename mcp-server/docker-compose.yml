@@ -9,7 +9,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-marketing_hub_user}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${MYSQL_PASS:-}}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${MYSQL_PASS:-${MYSQL_PASSWORD:-}}}
       MCP_SERVER_NAME: ${MCP_SERVER_NAME:-marketing-hub-mcp}
       MCP_SERVER_VERSION: ${MCP_SERVER_VERSION:-1.0.0}
     expose:

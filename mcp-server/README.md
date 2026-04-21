@@ -42,7 +42,7 @@ O tool `java_module_logs` lê os arquivos de log do Spring Boot configurados em:
 
 - `MCP_LOG_BACKEND_PATH` (default `http://191.252.181.168:8000/ops-mh-observability-v2/backend-log-stream-x9k`);
 - `MCP_LOG_AI_WORKER_PATH` (default `/var/log/ai-worker/application.log`);
-- `MCP_LOG_LEAD_PORTAL_PATH` (default `/app/data/logs/lead-portal-backend.log`);
+- `MCP_LOG_LEAD_PORTAL_PATH` (default `https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile`);
 - `MCP_LOG_FACEBOOK_ADS_PATH` (default `/var/log/facebook-ads-worker/application.log`).
 
 Limite máximo por chamada: `MCP_LOG_MAX_LINES` (default `500`).

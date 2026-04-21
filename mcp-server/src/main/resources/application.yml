@@ -29,6 +29,6 @@ mcp:
   logs:
     backend-path: ${MCP_LOG_BACKEND_PATH:http://191.252.181.168:8000/ops-mh-observability-v2/backend-log-stream-x9k}
     ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:/var/log/ai-worker/application.log}
-    lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:/app/data/logs/lead-portal-backend.log}
+    lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile}
     facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:/var/log/facebook-ads-worker/application.log}
     max-lines: ${MCP_LOG_MAX_LINES:500}

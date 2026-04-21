@@ -25,6 +25,7 @@ import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.experiment.repository.AdSetRepository;
+import com.marketinghub.targeting.TargetingCandidateType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -131,7 +132,7 @@ class FacebookAdsCampaignControllerTest {
                 .facebookPage(page)
                 .instagramAccount(instagramAccount)
                 .build();
-        when(targetingSelectionRepository.countByExperimentId(1L)).thenReturn(1L);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(1L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
                 com.marketinghub.experiment.ExperimentPlatform.FACEBOOK))

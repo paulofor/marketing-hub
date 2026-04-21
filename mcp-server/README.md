@@ -47,6 +47,15 @@ O tool `java_module_logs` lê os arquivos de log do Spring Boot configurados em:
 
 Limite máximo por chamada: `MCP_LOG_MAX_LINES` (default `500`).
 
+### Troubleshooting de conexão com MySQL
+
+Se aparecer erro como `Access denied for user 'marketing_hub_user'@'interface.vps-kinghost.net'`, o host configurado está incorreto.
+
+- Host **inválido**: `interface.vps-kinghost.net`
+- Host **correto**: `d555d.vps-kinghost.net`
+
+Garanta que `SPRING_DATASOURCE_URL` use o host correto. O `mcp-server` agora também falha no startup quando detecta o host inválido para evitar deploy com configuração incorreta.
+
 ## Docker
 
 ### Apenas o container do MCP (desenvolvimento/local)

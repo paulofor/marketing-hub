@@ -18,6 +18,7 @@ env:
   VPS_USER: root
   DEPLOY_DIR: /opt/marketinghub/containers
   MCP_IMAGE: marketinghub-mcp-server
+  MCP_CERTBOT_EMAIL: paulofore@gmail.com
 
 permissions:
   contents: read
@@ -76,7 +77,7 @@ jobs:
       - name: Copy deployment descriptors
         run: |
           ssh ${VPS_USER}@${MCP_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
-          rsync -az --delete deploy/ ${VPS_USER}@${MCP_VPS_IP}:${DEPLOY_DIR}/
+          rsync -az --delete --exclude 'volumes/' deploy/ ${VPS_USER}@${MCP_VPS_IP}:${DEPLOY_DIR}/
           ssh ${VPS_USER}@${MCP_VPS_IP} "mkdir -p ${DEPLOY_DIR}/nginx/mcp"
           rsync -az --delete mcp-server/nginx/ ${VPS_USER}@${MCP_VPS_IP}:${DEPLOY_DIR}/nginx/mcp/
 
@@ -89,4 +90,4 @@ jobs:
         run: |
           ssh ${VPS_USER}@${MCP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
           ssh ${VPS_USER}@${MCP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} MCP_TAR=/tmp/mcp-server-image.tar MCP_IMAGE=${MCP_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} MCP_NGINX_CONF=default.conf /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
+            "IMAGE_TAG=${GIT_SHA} MCP_TAR=/tmp/mcp-server-image.tar MCP_IMAGE=${MCP_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} EMAIL=${MCP_CERTBOT_EMAIL} /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"

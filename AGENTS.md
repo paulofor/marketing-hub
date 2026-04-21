@@ -1,5 +1,20 @@
 # AGNETS.md — Contrato operacional
 
+## Missão do sistema
+
+A missão do Marketing Hub é criar produtos digitais que realmente transformem a vida das pessoas, resolvendo necessidades reais com melhoria prática, percebida e aplicável.
+
+O objetivo comercial do sistema é identificar necessidades relevantes de mercado, entender onde existe oportunidade concreta de transformação, pesquisar como essa melhoria pode ser alcançada de forma plausível e convertê-la em produtos digitais produzidos com apoio de IA e com viabilidade comercial.
+
+Toda decisão de arquitetura, dados, prompts, automações, integrações e artefatos deve reforçar esta missão:
+- descobrir necessidades reais, não inventar demandas artificiais;
+- buscar mecanismos e melhorias com potencial de gerar resultado concreto;
+- transformar conhecimento em produto digital claro, útil, escalável e vendável;
+- usar IA como meio de produção, estruturação e aceleração, sem perder aderência à realidade do usuário e do mercado;
+- priorizar soluções que combinem transformação real para o cliente com sustentabilidade econômica para o negócio.
+
+
+
 ## 1. Fontes de verdade
 
 - **Regras**: docs/canonical/system-governance-canon.v2.md sempre leia e atualize se necessário.

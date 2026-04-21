@@ -31,9 +31,12 @@
 - **Image Zipper Service**: monta e distribui pacotes de produtos/amostras.
 - **MCP Server**: servidor de mcp, fica na pasta /mcp-server
 - **OPRM** : responsavel por obter a rotina de uma determinada ocupação.
-  
 
 Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
+
+## 4. Dominios
+
+- **oportunidadebrasil.shop** : apontando para 191.252.120.96
 
 ## 5. Segurança e secrets
 

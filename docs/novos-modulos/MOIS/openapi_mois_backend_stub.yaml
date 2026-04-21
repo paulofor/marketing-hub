@@ -1,0 +1,446 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - MOIS Backend Stub
+  version: 0.1.0
+  description: >-
+    Stub inicial da API do MOIS (Market Offer Intelligence Service).
+    Este arquivo define somente o contrato-base para orientar a implementação pelo Codex.
+servers:
+  - url: /api/v1
+paths:
+  /mois/discovery-requests:
+    post:
+      summary: Cria uma solicitação de descoberta de ofertas de mercado
+      operationId: createMoisDiscoveryRequest
+      tags: [MOIS]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDiscoveryRequest'
+      responses:
+        '202':
+          description: Solicitação aceita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRequestAcceptedResponse'
+    get:
+      summary: Lista solicitações de descoberta
+      operationId: listMoisDiscoveryRequests
+      tags: [MOIS]
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: nicheName
+          schema:
+            type: string
+        - in: query
+          name: marketTheme
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de solicitações
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRequestListResponse'
+
+  /mois/discovery-requests/{requestId}:
+    get:
+      summary: Obtém uma solicitação de descoberta
+      operationId: getMoisDiscoveryRequest
+      tags: [MOIS]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Solicitação encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRequestDetailResponse'
+        '404':
+          description: Solicitação não encontrada
+
+  /mois/discovery-requests/{requestId}/run:
+    post:
+      summary: Dispara a execução da solicitação
+      operationId: runMoisDiscoveryRequest
+      tags: [MOIS]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '202':
+          description: Execução disparada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncAcceptedResponse'
+
+  /mois/offers:
+    get:
+      summary: Lista ofertas estruturadas pelo MOIS
+      operationId: listMoisOffers
+      tags: [MOIS]
+      parameters:
+        - in: query
+          name: requestId
+          schema:
+            type: string
+        - in: query
+          name: nicheName
+          schema:
+            type: string
+        - in: query
+          name: sellerOrBrand
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de ofertas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferCardListResponse'
+
+  /mois/offers/{offerId}:
+    get:
+      summary: Obtém um cartão de oferta estruturado
+      operationId: getMoisOffer
+      tags: [MOIS]
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+      responses:
+        '200':
+          description: Oferta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfferCardResponse'
+        '404':
+          description: Oferta não encontrada
+
+  /mois/insight-reports:
+    get:
+      summary: Lista relatórios consolidados do MOIS
+      operationId: listMoisInsightReports
+      tags: [MOIS]
+      parameters:
+        - in: query
+          name: requestId
+          schema:
+            type: string
+        - in: query
+          name: nicheName
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de relatórios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsightReportListResponse'
+
+  /mois/insight-reports/{reportId}:
+    get:
+      summary: Obtém um relatório consolidado
+      operationId: getMoisInsightReport
+      tags: [MOIS]
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Relatório encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsightReportResponse'
+        '404':
+          description: Relatório não encontrado
+
+  /mois/artifacts/{artifactId}:
+    get:
+      summary: Obtém um artefato canônico do MOIS por id
+      operationId: getMoisArtifact
+      tags: [MOIS]
+      parameters:
+        - $ref: '#/components/parameters/ArtifactId'
+      responses:
+        '200':
+          description: Artefato encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoisArtifactEnvelope'
+        '404':
+          description: Artefato não encontrado
+
+components:
+  parameters:
+    RequestId:
+      in: path
+      name: requestId
+      required: true
+      schema:
+        type: string
+    OfferId:
+      in: path
+      name: offerId
+      required: true
+      schema:
+        type: string
+    ReportId:
+      in: path
+      name: reportId
+      required: true
+      schema:
+        type: string
+    ArtifactId:
+      in: path
+      name: artifactId
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    CreateDiscoveryRequest:
+      type: object
+      required:
+        - nicheName
+        - marketTheme
+      properties:
+        nicheName:
+          type: string
+        marketTheme:
+          type: string
+        painOrOutcomeFocus:
+          type: string
+        seedQueries:
+          type: array
+          items:
+            type: string
+        seedUrls:
+          type: array
+          items:
+            type: string
+        channels:
+          type: array
+          items:
+            type: string
+        country:
+          type: string
+        language:
+          type: string
+        discoveryPolicy:
+          type: object
+          additionalProperties: true
+
+    DiscoveryRequestAcceptedResponse:
+      type: object
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          example: ACCEPTED
+
+    AsyncAcceptedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ACCEPTED
+        correlationId:
+          type: string
+
+    DiscoveryRequestListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscoveryRequestSummary'
+
+    DiscoveryRequestDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/DiscoveryRequestSummary'
+        - type: object
+          properties:
+            artifacts:
+              type: array
+              items:
+                $ref: '#/components/schemas/ArtifactRef'
+
+    DiscoveryRequestSummary:
+      type: object
+      properties:
+        requestId:
+          type: string
+        nicheName:
+          type: string
+        marketTheme:
+          type: string
+        painOrOutcomeFocus:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    OfferCardListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfferCardSummary'
+
+    OfferCardResponse:
+      allOf:
+        - $ref: '#/components/schemas/OfferCardSummary'
+        - type: object
+          properties:
+            deliverables:
+              type: array
+              items:
+                type: string
+            pricePoints:
+              type: array
+              items:
+                type: string
+            proofSummary:
+              type: string
+            mechanismClaimSummary:
+              type: string
+            funnelPatternSummary:
+              type: string
+            sourceArtifacts:
+              type: array
+              items:
+                $ref: '#/components/schemas/ArtifactRef'
+
+    OfferCardSummary:
+      type: object
+      properties:
+        offerId:
+          type: string
+        requestId:
+          type: string
+        nicheName:
+          type: string
+        offerName:
+          type: string
+        sellerOrBrand:
+          type: string
+        corePromise:
+          type: string
+        primaryOfferType:
+          type: string
+        mainPrice:
+          type: string
+        confidence:
+          type: number
+          format: double
+
+    InsightReportListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InsightReportSummary'
+
+    InsightReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/InsightReportSummary'
+        - type: object
+          properties:
+            repeatedPromises:
+              type: array
+              items:
+                type: string
+            repeatedProofPatterns:
+              type: array
+              items:
+                type: string
+            pricingPatterns:
+              type: array
+              items:
+                type: string
+            funnelPatterns:
+              type: array
+              items:
+                type: string
+            gapOpportunities:
+              type: array
+              items:
+                type: string
+            recommendedNextActions:
+              type: array
+              items:
+                type: string
+
+    InsightReportSummary:
+      type: object
+      properties:
+        reportId:
+          type: string
+        requestId:
+          type: string
+        nicheName:
+          type: string
+        marketTheme:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ArtifactRef:
+      type: object
+      properties:
+        artifactId:
+          type: string
+        artifactType:
+          type: string
+        schemaVersion:
+          type: string
+
+    MoisArtifactEnvelope:
+      type: object
+      properties:
+        artifactId:
+          type: string
+        artifactType:
+          type: string
+        schemaVersion:
+          type: string
+        status:
+          type: string
+        module:
+          type: string
+          example: MOIS
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lineage:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+        content:
+          type: object
+          additionalProperties: true

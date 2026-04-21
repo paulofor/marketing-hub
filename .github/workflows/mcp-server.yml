@@ -89,4 +89,4 @@ jobs:
         run: |
           ssh ${VPS_USER}@${MCP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
           ssh ${VPS_USER}@${MCP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} MCP_TAR=/tmp/mcp-server-image.tar MCP_IMAGE=${MCP_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
+            "IMAGE_TAG=${GIT_SHA} MCP_TAR=/tmp/mcp-server-image.tar MCP_IMAGE=${MCP_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} MCP_NGINX_CONF=default.conf /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"

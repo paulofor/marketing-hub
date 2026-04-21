@@ -85,12 +85,12 @@ curl -i http://mcpserverdigi.shop/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
-Por padrão, o compose sobe com `default.http.conf` (sem TLS obrigatório), evitando crash quando o certificado ainda não foi emitido.
+Por padrão, o compose sobe com `default.conf` (HTTPS habilitado).
 
-Para habilitar HTTPS após a emissão do certificado, use:
+Se precisar subir sem TLS temporariamente (por exemplo, antes da emissão do certificado), use:
 
 ```bash
-MCP_NGINX_CONF=default.conf docker compose up -d nginx
+MCP_NGINX_CONF=default.http.conf docker compose up -d nginx
 ```
 
 No deploy (`deploy/docker-compose.yml`), use a mesma variável de ambiente `MCP_NGINX_CONF` (por exemplo, `default.conf` ou `default.https.conf`).

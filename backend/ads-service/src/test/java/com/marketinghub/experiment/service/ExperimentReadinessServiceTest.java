@@ -14,6 +14,7 @@ import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowR
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
 import org.junit.jupiter.api.Test;
@@ -54,14 +55,15 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
         when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
-        when(targetingSelectionRepository.countByExperimentId(experimentId)).thenReturn(0L);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
+                .thenReturn(0L);
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCreatives()).isFalse();
         assertThat(summary.hasLeadPortalFlow()).isFalse();
         assertThat(summary.hasCompleteTargeting()).isFalse();
-        assertThat(summary.missingTargetingTypes()).containsExactlyInAnyOrder(TargetingElementType.values());
+        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
         assertThat(summary.issues()).hasSize(3);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .containsExactlyInAnyOrder(
@@ -79,7 +81,8 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
-        when(targetingSelectionRepository.countByExperimentId(experimentId)).thenReturn(2L);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
+                .thenReturn(1L);
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -88,6 +91,26 @@ class ExperimentReadinessServiceTest {
         assertThat(summary.hasCompleteTargeting()).isTrue();
         assertThat(summary.missingTargetingTypes()).isEmpty();
         assertThat(summary.issues()).isEmpty();
+    }
+
+    @Test
+    void shouldReportTargetingIssueWhenThereIsNoApprovedJobTitleSelection() {
+        Long experimentId = 11L;
+        Experiment experiment = buildExperiment(experimentId, 19L);
+        experiment.setLeadPortalFlow(new LeadPortalFlow());
+
+        when(experimentService.get(experimentId)).thenReturn(experiment);
+        when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(adSetWorkflowRepository.findByExperimentId(experimentId)).thenReturn(Optional.empty());
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
+                .thenReturn(0L);
+
+        ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+        assertThat(summary.hasCompleteTargeting()).isFalse();
+        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
+        assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
+                .contains(ExperimentReadinessIssueType.TARGETING);
     }
 
     @Test

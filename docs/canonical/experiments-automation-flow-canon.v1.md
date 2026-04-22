@@ -113,6 +113,7 @@ Regras mandatórias:
 - campos legados, snapshots antigos, cache em memória, retries e retomadas não podem “vazar” conteúdo de outro experimento;
 - qualquer tentativa de processar etapa com contexto de `experimentId` diferente deve ser tratada como erro de domínio e bloqueio (`BLOCKED`);
 - frontend, backend e workers devem preservar o mesmo escopo de isolamento por `experimentId` em toda transição de estado.
+- a classificação de exclusividade de artefatos deve seguir a regra global descrita em `system-governance-canon.v2.md`.
 
 Critério de conformidade:
 

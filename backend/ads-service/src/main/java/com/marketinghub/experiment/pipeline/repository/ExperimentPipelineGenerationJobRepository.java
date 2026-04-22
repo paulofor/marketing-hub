@@ -19,6 +19,10 @@ public interface ExperimentPipelineGenerationJobRepository extends JpaRepository
             ExperimentPipelineSection section,
             Collection<ExperimentPipelineGenerationJobStatus> statuses);
 
+    List<ExperimentPipelineGenerationJob> findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+            Long experimentId,
+            Collection<ExperimentPipelineGenerationJobStatus> statuses);
+
     List<ExperimentPipelineGenerationJob> findByStatusOrderByCreatedAtAsc(ExperimentPipelineGenerationJobStatus status,
                                                                           Pageable pageable);
 

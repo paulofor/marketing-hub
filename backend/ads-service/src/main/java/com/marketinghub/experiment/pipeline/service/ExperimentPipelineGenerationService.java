@@ -76,6 +76,9 @@ public class ExperimentPipelineGenerationService {
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
+    private static final Set<ExperimentPipelineGenerationJobStatus> ACTIVE_JOB_STATUSES = Set.of(
+            ExperimentPipelineGenerationJobStatus.PENDING,
+            ExperimentPipelineGenerationJobStatus.PROCESSING);
     private static final String COMMON_CAMPAIGN_ASSET_RULES = """
             Você cria ativos de campanha para o Marketing Hub.
 
@@ -135,14 +138,22 @@ public class ExperimentPipelineGenerationService {
         validatePredecessor(experiment, section);
 
         List<ExperimentPipelineGenerationJob> activeJobs = jobRepository
-                .findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
-                        experimentId,
-                        section,
-                        Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING));
+                .findByExperimentIdAndStatusInOrderByCreatedAtDesc(experimentId, ACTIVE_JOB_STATUSES);
         boolean hasActiveJob = markStaleJobsAsFailed(activeJobs);
-        if (!hasActiveJob) {
-            enqueueJob(experiment, section, request);
+        if (hasActiveJob) {
+            ExperimentPipelineGenerationJob activeJob = activeJobs.stream()
+                    .filter(candidate -> candidate.getStatus() == ExperimentPipelineGenerationJobStatus.PENDING
+                            || candidate.getStatus() == ExperimentPipelineGenerationJobStatus.PROCESSING)
+                    .findFirst()
+                    .orElse(null);
+            String activeSection = activeJob != null && activeJob.getSection() != null
+                    ? activeJob.getSection().path()
+                    : "desconhecida";
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Já existe etapa em execução para este experimento (" + activeSection + "). "
+                            + "A fila automática deve seguir ordem sequencial.");
         }
+        enqueueJob(experiment, section, request);
         return experimentMapper.toDto(experiment);
     }
 

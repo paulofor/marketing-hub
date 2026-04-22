@@ -67,16 +67,8 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 - **oportunidadebrasil.shop** : apontando para 191.252.120.96
 - **pagamentopalf.site** : apontando para  191.252.102.54
 
-## 6. Logs dos Modulos Java
-Alguns logs do Spring Boot estão disponiveis para acesso por url pública:
-- ** Backend ** : http://191.252.181.168:8000/ops-mh-observability-v2/backend-log-stream-x9k
-- ** AI Worker ** : http://191.252.120.96:4567/worker-observability/logfile
-- ** Facebook Ads Worker ** : http://191.252.120.96:8082/public/runtime-logs/tail?lines=300
-- ** Lead Portal ** : https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile
-- ** Email Service ** : http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log
-- ** Lead Portal Pagamento ** : http://191.252.102.54:8092/api/v1/logs/runtime?lines=200
 
-## 7. Segurança e secrets
+## 6. Segurança e secrets
 
 - Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.

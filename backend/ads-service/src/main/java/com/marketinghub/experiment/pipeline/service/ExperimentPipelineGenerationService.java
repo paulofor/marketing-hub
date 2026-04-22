@@ -534,7 +534,11 @@ public class ExperimentPipelineGenerationService {
         if (StringUtils.hasText(customInstructions)) {
             sb.append("\nInstruções extras do usuário:\n").append(customInstructions.trim()).append("\n");
         }
-        sb.append("\nResponda exclusivamente em JSON válido e siga estritamente o schema da seção.");
+        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
+            sb.append("\nResponda exclusivamente com HTML puro (sem markdown, sem JSON, sem texto adicional).");
+        } else {
+            sb.append("\nResponda exclusivamente em JSON válido e siga estritamente o schema da seção.");
+        }
         return sb.toString();
     }
 
@@ -547,15 +551,20 @@ public class ExperimentPipelineGenerationService {
                 Map.of("role", "system", "content", buildSystemPrompt(section)),
                 Map.of("role", "user", "content", userPrompt)
         ));
-        body.put("text", Map.of(
-                "format", Map.of(
-                        "type", "json_schema",
-                        "name", "experiment_pipeline_" + section.path().replace("-", "_"),
-                        "strict", true,
-                        "schema", sectionSchema(section)
-                )
-        ));
+        body.put("text", Map.of("format", buildResponseFormat(section)));
         return body;
+    }
+
+    private Map<String, Object> buildResponseFormat(ExperimentPipelineSection section) {
+        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
+            return Map.of("type", "text");
+        }
+        return Map.of(
+                "type", "json_schema",
+                "name", "experiment_pipeline_" + section.path().replace("-", "_"),
+                "strict", true,
+                "schema", sectionSchema(section)
+        );
     }
 
     private String buildSystemPrompt(ExperimentPipelineSection section) {
@@ -888,10 +897,9 @@ public class ExperimentPipelineGenerationService {
             sb.append("14. Também preencher data-image-role (semântico/humano), data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n\n");
             appendImageBindingSummary(sb, experiment);
             sb.append("Formato obrigatório:\n");
-            sb.append("- htmlDocument: string com o documento completo final.\n");
-            sb.append("- formSpec: contrato explícito do formulário contendo fields/required e metadados de CTA para runtime oficial.\n");
-            sb.append("- summary: resumo curto das decisões de implementação.\n");
-            sb.append("- consistencyChecks: checks com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY.\n");
+            sb.append("- Entregar somente o HTML final completo como texto puro.\n");
+            sb.append("- Não retornar JSON, Markdown, blocos ``` ou explicações.\n");
+            sb.append("- O HTML precisa conter doctype, <html>, <head> e <body>.\n");
             return;
         }
     }
@@ -1030,30 +1038,26 @@ public class ExperimentPipelineGenerationService {
 
     @SuppressWarnings("unchecked")
     private void validateLandingHtmlSubmissionRuntime(Experiment experiment, String landingHtmlContent) {
-        if (!StringUtils.hasText(landingHtmlContent)) {
+        if (!StringUtils.hasText(landingHtmlContent) || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
             return;
         }
 
-        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
-        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
-        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
-        if (!StringUtils.hasText(htmlDocument)) {
-            return;
-        }
-
-        if (!(htmlPayload.get("formSpec") instanceof Map<?, ?> rawFormSpec)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.formSpec não encontrado");
+        Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+        if (!(wireframePayload.get("formSpec") instanceof Map<?, ?> rawFormSpec)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem formSpec estruturado");
         }
         Map<String, Object> formSpec = (Map<String, Object>) rawFormSpec;
         String expectedFormId = asTrimmedString(formSpec.get("formId"));
         String expectedSubmitTarget = asTrimmedString(formSpec.get("submitTarget"));
+        String htmlDocument = landingHtmlContent.trim();
 
         Document document = Jsoup.parse(htmlDocument);
         Element formElement = StringUtils.hasText(expectedFormId)
                 ? document.getElementById(expectedFormId)
                 : document.selectFirst("form");
         if (formElement == null) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing sem <form> compatível com formSpec.formId");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing sem <form> compatível com wireframe.formSpec.formId");
         }
 
         String method = formElement.attr("method");
@@ -1177,7 +1181,6 @@ public class ExperimentPipelineGenerationService {
             return rawContent;
         }
         try {
-            Map<String, Object> root = readObject(rawContent, "Payload da landing HTML inválido");
             Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
             Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
             if (!(wireframePayload.get("formSpec") instanceof Map<?, ?> rawFormSpec)) {
@@ -1191,20 +1194,15 @@ public class ExperimentPipelineGenerationService {
             if (!StringUtils.hasText(submitLabel)) {
                 return rawContent;
             }
-            Map<String, Object> htmlPayload = unwrapSectionPayload(root, "landingPageHtml");
-            String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+            String htmlDocument = rawContent.trim();
             if (!StringUtils.hasText(htmlDocument)) {
                 return rawContent;
             }
             String normalizedHtml = rebuildFormFromSpec(htmlDocument, formFields, (Map<String, Object>) rawFormSpec);
-            htmlPayload.put("htmlDocument", normalizedHtml);
-            htmlPayload.put("formSpec", buildLandingHtmlFormSpec((Map<String, Object>) rawFormSpec));
-            htmlPayload.put("summary", summarizeNormalizedForm(formFields, submitLabel));
-            htmlPayload.put("consistencyChecks", buildLandingHtmlConsistencyChecks(formFields, submitLabel));
             log.info("Normalização determinística de formulário aplicada no LANDING_PAGE_HTML (experimentId={}, fields={})",
                     experiment.getId(),
                     summarizeFormFields(formFields));
-            return objectMapper.writeValueAsString(root);
+            return normalizedHtml;
         } catch (ResponseStatusException ex) {
             return rawContent;
         } catch (Exception ex) {
@@ -2295,12 +2293,10 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem campos em formSpec.fields");
         }
 
-        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
-        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
-        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        String htmlDocument = landingHtmlContent.trim();
         if (!StringUtils.hasText(htmlDocument)) {
             log.warn("Validação landing HTML (experimentId={}): htmlDocument ausente no payload", experiment.getId());
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing vazio");
         }
 
         List<FormFieldContract> actualFields = extractFieldsFromHtmlDocument(htmlDocument);
@@ -2382,12 +2378,10 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem sectionOrder.surfaceSpec estruturado");
         }
 
-        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
-        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
-        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        String htmlDocument = landingHtmlContent.trim();
         if (!StringUtils.hasText(htmlDocument)) {
             log.warn("Validação landing HTML (experimentId={}): htmlDocument ausente para validação de surfaceSpec", experiment.getId());
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing vazio");
         }
 
         List<SectionSurfaceContract> actualSurfaces = extractSectionSurfacesFromHtmlDocument(htmlDocument);
@@ -2471,12 +2465,10 @@ public class ExperimentPipelineGenerationService {
             return;
         }
 
-        Map<String, Object> htmlRoot = readObject(landingHtmlContent, "Payload da landing HTML inválido");
-        Map<String, Object> htmlPayload = unwrapSectionPayload(htmlRoot, "landingPageHtml");
-        String htmlDocument = asTrimmedString(htmlPayload.get("htmlDocument"));
+        String htmlDocument = landingHtmlContent.trim();
         if (!StringUtils.hasText(htmlDocument)) {
             log.warn("Validação landing HTML (experimentId={}): htmlDocument ausente para validação de image plan", experiment.getId());
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "landingPageHtml.htmlDocument não encontrado");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing vazio");
         }
 
         List<ImagePlanBindingContract> actualBindings = extractImagePlanBindingsFromHtmlDocument(htmlDocument);

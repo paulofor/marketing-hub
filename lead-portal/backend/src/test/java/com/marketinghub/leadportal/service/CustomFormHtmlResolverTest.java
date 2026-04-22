@@ -1,13 +1,13 @@
 package com.marketinghub.leadportal.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 class CustomFormHtmlResolverTest {
 
-    private final CustomFormHtmlResolver resolver = new CustomFormHtmlResolver(new ObjectMapper());
+    private final CustomFormHtmlResolver resolver = new CustomFormHtmlResolver();
 
     @Test
     void normalizeReturnsHtmlWhenPayloadAlreadyFormatted() {
@@ -16,22 +16,18 @@ class CustomFormHtmlResolverTest {
     }
 
     @Test
-    void normalizeExtractsHtmlDocumentFromLandingPagePayload() {
+    void normalizeRejectsJsonPayload() {
         String payload = "{\"experimentMetadata\":{\"variant_id\":\"variant-10\"},\"landingPageHtml\":{\"htmlDocument\":\"<html><body><p>Payload</p></body></html>\",\"summary\":\"Resumo\"}}";
-        assertThat(resolver.normalize(payload))
-                .contains("<p>Payload</p>")
-                .startsWith("<html>");
+        assertThatThrownBy(() -> resolver.normalize(payload))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("HTML puro");
     }
 
     @Test
-    void normalizeExtractsHtmlDocumentFromNestedString() {
-        String payload = """
-                {"artifact": {
-                    "content": {
-                        "htmlDocument": "{\\"htmlDocument\\":\\"<html><body>Nested</body></html>\\"}"
-                    }
-                }}
-                """;
-        assertThat(resolver.normalize(payload)).contains("Nested");
+    void normalizeRejectsNestedJsonString() {
+        String payload = "{\"htmlDocument\":\"{\\\"htmlDocument\\\":\\\"<html><body>Nested</body></html>\\\"}\"}";
+        assertThatThrownBy(() -> resolver.normalize(payload))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("HTML puro");
     }
 }

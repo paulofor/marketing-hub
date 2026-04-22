@@ -366,15 +366,7 @@ class ExperimentPipelineGenerationServiceTest {
 
         ExperimentPipelineGenerationJobCompletionRequest request = new ExperimentPipelineGenerationJobCompletionRequest(
                 """
-                        {
-                          "landingPageHtml": {
-                            "htmlDocument": "<!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'><form id='lead-capture-primary'><div class='field'><input type='text' name='nome' required /></div><div class='field'><select name='objetivo'><option>a</option></select></div></form><button type='submit'>Desbloquear o Kit (receber a prévia gerada por IA)</button></section></body></html>",
-                            "summary": "form antigo com objetivo principal",
-                            "consistencyChecks": [
-                              {"check":"FORM_USABILITY","status":"PASS","details":"objetivo principal obrigatório"}
-                            ]
-                          }
-                        }
+                        <!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'><form id='lead-capture-primary'><div class='field'><input type='text' name='nome' required /></div><div class='field'><select name='objetivo'><option>a</option></select></div></form><button type='submit'>Desbloquear o Kit (receber a prévia gerada por IA)</button></section></body></html>
                         """,
                 "{\"id\":\"resp_77\"}",
                 "{\"model\":\"gpt-5.2\"}",
@@ -384,15 +376,7 @@ class ExperimentPipelineGenerationServiceTest {
 
         service.completeJob(jobId, request);
 
-        ObjectMapper mapper = new ObjectMapper();
-        @SuppressWarnings("unchecked")
-        java.util.Map<String, Object> persisted = mapper.readValue(experiment.getLandingPageHtml(), java.util.Map.class);
-        @SuppressWarnings("unchecked")
-        java.util.Map<String, Object> landingPageHtml = (java.util.Map<String, Object>) persisted.get("landingPageHtml");
-        String html = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
-        String summary = String.valueOf(landingPageHtml.get("summary")).toLowerCase();
-        @SuppressWarnings("unchecked")
-        java.util.List<java.util.Map<String, Object>> checks = (java.util.List<java.util.Map<String, Object>>) landingPageHtml.get("consistencyChecks");
+        String html = experiment.getLandingPageHtml().toLowerCase();
 
         assertTrue(html.contains("name=\"nome\""));
         assertTrue(html.contains("name=\"email\""));
@@ -400,8 +384,6 @@ class ExperimentPipelineGenerationServiceTest {
         assertTrue(html.contains("button type=\"submit\" form=\"lead-capture-primary\""));
         assertFalse(html.contains("name=\"objetivo\""));
         assertFalse(html.contains("objetivo principal"));
-        assertTrue(summary.contains("wireframe.formspec"));
-        assertTrue(checks.stream().anyMatch(check -> "FORM_USABILITY".equals(check.get("check"))));
     }
 
     @Test
@@ -772,29 +754,11 @@ class ExperimentPipelineGenerationServiceTest {
 
     private ExperimentPipelineGenerationJobCompletionRequest landingHtmlCompletionRequest(String htmlDocument) {
         return new ExperimentPipelineGenerationJobCompletionRequest(
-                """
-                        {
-                          "landingPageHtml": {
-                            "htmlDocument": %s,
-                            "summary": "ok",
-                            "consistencyChecks": [
-                              {"check":"FORM_USABILITY","status":"PASS","details":"ok"}
-                            ]
-                          }
-                        }
-                        """.formatted(quoteJsonString(htmlDocument)),
+                htmlDocument,
                 "{\"id\":\"resp_html\"}",
                 "{\"model\":\"gpt-5.2\"}",
                 120,
                 80,
                 null);
-    }
-
-    private String quoteJsonString(String value) {
-        return "\"" + value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r") + "\"";
     }
 }

@@ -58,49 +58,52 @@ O Codex **não deve** pular para sprints futuras sem registrar explicitamente o 
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Implementado gateway de integração do MOIS com `market-research-service` com configuração por ambiente (`integrations.mois.market-research.*`) para permitir reuso controlado da infraestrutura de pesquisa.
+- Fluxo de execução (`POST /api/v1/mois/discovery-requests/{requestId}/run`) evoluído para descoberta real de fontes, captura HTTP, normalização de conteúdo e persistência de snapshots derivados da coleta.
+- Tratamento operacional básico implementado para indisponibilidade/timeout/conteúdo vazio, com registro rastreável no `mois_source_snapshot` e transição de status da request para `COLLECTED` ou `FAILED`.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchProperties.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint já existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com execução real de descoberta/captura.
+- Artefato `mois.marketOfferSourceSnapshot.v1` passou a refletir snapshots de fontes reais e também eventos operacionais básicos de erro.
+- `mois.marketOfferCard.v1` continua compatível, agora sendo semeado a partir de snapshot coletado em execução real.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Cobertura de status `COLLECTED` com captura real simulada via gateway mockado.
+- Cobertura de falha operacional com transição para status `FAILED` e sem criação de offer card.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Não há deduplicação de snapshots por `sourceUrl + contentHash` em execuções repetidas da mesma request.
+- Extração semântica profunda de promessa/prova/mecanismo ainda não implementada (escopo da Sprint 4).
+- Estratégia avançada de retries/circuit-breaker para integração externa ainda não implementada.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 3 prioriza descoberta/captura real e previsibilidade operacional básica, sem antecipar interpretação semântica.
+- Deduplicação e controles avançados de resiliência aumentam escopo e risco para esta etapa incremental.
+- O plano separa explicitamente extração estruturada para a sprint seguinte.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Execuções repetidas podem gerar snapshots redundantes para a mesma fonte.
+- Offer cards ainda representam semeadura inicial baseada em coleta, sem inteligência semântica de alto valor.
+- Falhas transientes externas podem consumir mais tentativas manuais em cenários de instabilidade.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar extração estruturada de promessa, prova, mecanismo alegado e padrão de oferta a partir do `rawExcerpt`/texto normalizado dos snapshots coletados.
+- Evoluir `marketOfferCard` e/ou novos artefatos semânticos com score de confiança por campo extraído e lineage explícito para snapshot de origem.
+- Introduzir regras de deduplicação mínima por fonte e evolução de resiliência operacional sem quebrar contratos já publicados.
 ```
 
 ---
@@ -300,49 +303,52 @@ A sprint termina quando o MOIS conseguir iniciar uma descoberta, obter fontes re
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Implementado gateway de integração do MOIS com `market-research-service` com configuração por ambiente (`integrations.mois.market-research.*`) para permitir reuso controlado da infraestrutura de pesquisa.
+- Fluxo de execução (`POST /api/v1/mois/discovery-requests/{requestId}/run`) evoluído para descoberta real de fontes, captura HTTP, normalização de conteúdo e persistência de snapshots derivados da coleta.
+- Tratamento operacional básico implementado para indisponibilidade/timeout/conteúdo vazio, com registro rastreável no `mois_source_snapshot` e transição de status da request para `COLLECTED` ou `FAILED`.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchProperties.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint já existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com execução real de descoberta/captura.
+- Artefato `mois.marketOfferSourceSnapshot.v1` passou a refletir snapshots de fontes reais e também eventos operacionais básicos de erro.
+- `mois.marketOfferCard.v1` continua compatível, agora sendo semeado a partir de snapshot coletado em execução real.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Cobertura de status `COLLECTED` com captura real simulada via gateway mockado.
+- Cobertura de falha operacional com transição para status `FAILED` e sem criação de offer card.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Não há deduplicação de snapshots por `sourceUrl + contentHash` em execuções repetidas da mesma request.
+- Extração semântica profunda de promessa/prova/mecanismo ainda não implementada (escopo da Sprint 4).
+- Estratégia avançada de retries/circuit-breaker para integração externa ainda não implementada.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 3 prioriza descoberta/captura real e previsibilidade operacional básica, sem antecipar interpretação semântica.
+- Deduplicação e controles avançados de resiliência aumentam escopo e risco para esta etapa incremental.
+- O plano separa explicitamente extração estruturada para a sprint seguinte.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Execuções repetidas podem gerar snapshots redundantes para a mesma fonte.
+- Offer cards ainda representam semeadura inicial baseada em coleta, sem inteligência semântica de alto valor.
+- Falhas transientes externas podem consumir mais tentativas manuais em cenários de instabilidade.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar extração estruturada de promessa, prova, mecanismo alegado e padrão de oferta a partir do `rawExcerpt`/texto normalizado dos snapshots coletados.
+- Evoluir `marketOfferCard` e/ou novos artefatos semânticos com score de confiança por campo extraído e lineage explícito para snapshot de origem.
+- Introduzir regras de deduplicação mínima por fonte e evolução de resiliência operacional sem quebrar contratos já publicados.
 
 ---
 
@@ -451,49 +457,52 @@ A sprint termina quando o MOIS conseguir devolver uma leitura consolidada e úti
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Implementado gateway de integração do MOIS com `market-research-service` com configuração por ambiente (`integrations.mois.market-research.*`) para permitir reuso controlado da infraestrutura de pesquisa.
+- Fluxo de execução (`POST /api/v1/mois/discovery-requests/{requestId}/run`) evoluído para descoberta real de fontes, captura HTTP, normalização de conteúdo e persistência de snapshots derivados da coleta.
+- Tratamento operacional básico implementado para indisponibilidade/timeout/conteúdo vazio, com registro rastreável no `mois_source_snapshot` e transição de status da request para `COLLECTED` ou `FAILED`.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchProperties.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint já existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com execução real de descoberta/captura.
+- Artefato `mois.marketOfferSourceSnapshot.v1` passou a refletir snapshots de fontes reais e também eventos operacionais básicos de erro.
+- `mois.marketOfferCard.v1` continua compatível, agora sendo semeado a partir de snapshot coletado em execução real.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Cobertura de status `COLLECTED` com captura real simulada via gateway mockado.
+- Cobertura de falha operacional com transição para status `FAILED` e sem criação de offer card.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Não há deduplicação de snapshots por `sourceUrl + contentHash` em execuções repetidas da mesma request.
+- Extração semântica profunda de promessa/prova/mecanismo ainda não implementada (escopo da Sprint 4).
+- Estratégia avançada de retries/circuit-breaker para integração externa ainda não implementada.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 3 prioriza descoberta/captura real e previsibilidade operacional básica, sem antecipar interpretação semântica.
+- Deduplicação e controles avançados de resiliência aumentam escopo e risco para esta etapa incremental.
+- O plano separa explicitamente extração estruturada para a sprint seguinte.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Execuções repetidas podem gerar snapshots redundantes para a mesma fonte.
+- Offer cards ainda representam semeadura inicial baseada em coleta, sem inteligência semântica de alto valor.
+- Falhas transientes externas podem consumir mais tentativas manuais em cenários de instabilidade.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar extração estruturada de promessa, prova, mecanismo alegado e padrão de oferta a partir do `rawExcerpt`/texto normalizado dos snapshots coletados.
+- Evoluir `marketOfferCard` e/ou novos artefatos semânticos com score de confiança por campo extraído e lineage explícito para snapshot de origem.
+- Introduzir regras de deduplicação mínima por fonte e evolução de resiliência operacional sem quebrar contratos já publicados.
 
 ---
 
@@ -525,49 +534,52 @@ A sprint termina quando o MOIS puder ser consumido por pelo menos um fluxo real 
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Implementado gateway de integração do MOIS com `market-research-service` com configuração por ambiente (`integrations.mois.market-research.*`) para permitir reuso controlado da infraestrutura de pesquisa.
+- Fluxo de execução (`POST /api/v1/mois/discovery-requests/{requestId}/run`) evoluído para descoberta real de fontes, captura HTTP, normalização de conteúdo e persistência de snapshots derivados da coleta.
+- Tratamento operacional básico implementado para indisponibilidade/timeout/conteúdo vazio, com registro rastreável no `mois_source_snapshot` e transição de status da request para `COLLECTED` ou `FAILED`.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchProperties.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint já existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com execução real de descoberta/captura.
+- Artefato `mois.marketOfferSourceSnapshot.v1` passou a refletir snapshots de fontes reais e também eventos operacionais básicos de erro.
+- `mois.marketOfferCard.v1` continua compatível, agora sendo semeado a partir de snapshot coletado em execução real.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Cobertura de status `COLLECTED` com captura real simulada via gateway mockado.
+- Cobertura de falha operacional com transição para status `FAILED` e sem criação de offer card.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Não há deduplicação de snapshots por `sourceUrl + contentHash` em execuções repetidas da mesma request.
+- Extração semântica profunda de promessa/prova/mecanismo ainda não implementada (escopo da Sprint 4).
+- Estratégia avançada de retries/circuit-breaker para integração externa ainda não implementada.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 3 prioriza descoberta/captura real e previsibilidade operacional básica, sem antecipar interpretação semântica.
+- Deduplicação e controles avançados de resiliência aumentam escopo e risco para esta etapa incremental.
+- O plano separa explicitamente extração estruturada para a sprint seguinte.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Execuções repetidas podem gerar snapshots redundantes para a mesma fonte.
+- Offer cards ainda representam semeadura inicial baseada em coleta, sem inteligência semântica de alto valor.
+- Falhas transientes externas podem consumir mais tentativas manuais em cenários de instabilidade.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar extração estruturada de promessa, prova, mecanismo alegado e padrão de oferta a partir do `rawExcerpt`/texto normalizado dos snapshots coletados.
+- Evoluir `marketOfferCard` e/ou novos artefatos semânticos com score de confiança por campo extraído e lineage explícito para snapshot de origem.
+- Introduzir regras de deduplicação mínima por fonte e evolução de resiliência operacional sem quebrar contratos já publicados.
 
 ---
 
@@ -601,49 +613,52 @@ A sprint termina quando o MOIS estiver operacionalmente mais previsível, com co
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Implementado gateway de integração do MOIS com `market-research-service` com configuração por ambiente (`integrations.mois.market-research.*`) para permitir reuso controlado da infraestrutura de pesquisa.
+- Fluxo de execução (`POST /api/v1/mois/discovery-requests/{requestId}/run`) evoluído para descoberta real de fontes, captura HTTP, normalização de conteúdo e persistência de snapshots derivados da coleta.
+- Tratamento operacional básico implementado para indisponibilidade/timeout/conteúdo vazio, com registro rastreável no `mois_source_snapshot` e transição de status da request para `COLLECTED` ou `FAILED`.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchProperties.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint já existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com execução real de descoberta/captura.
+- Artefato `mois.marketOfferSourceSnapshot.v1` passou a refletir snapshots de fontes reais e também eventos operacionais básicos de erro.
+- `mois.marketOfferCard.v1` continua compatível, agora sendo semeado a partir de snapshot coletado em execução real.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Cobertura de status `COLLECTED` com captura real simulada via gateway mockado.
+- Cobertura de falha operacional com transição para status `FAILED` e sem criação de offer card.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Não há deduplicação de snapshots por `sourceUrl + contentHash` em execuções repetidas da mesma request.
+- Extração semântica profunda de promessa/prova/mecanismo ainda não implementada (escopo da Sprint 4).
+- Estratégia avançada de retries/circuit-breaker para integração externa ainda não implementada.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 3 prioriza descoberta/captura real e previsibilidade operacional básica, sem antecipar interpretação semântica.
+- Deduplicação e controles avançados de resiliência aumentam escopo e risco para esta etapa incremental.
+- O plano separa explicitamente extração estruturada para a sprint seguinte.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Execuções repetidas podem gerar snapshots redundantes para a mesma fonte.
+- Offer cards ainda representam semeadura inicial baseada em coleta, sem inteligência semântica de alto valor.
+- Falhas transientes externas podem consumir mais tentativas manuais em cenários de instabilidade.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar extração estruturada de promessa, prova, mecanismo alegado e padrão de oferta a partir do `rawExcerpt`/texto normalizado dos snapshots coletados.
+- Evoluir `marketOfferCard` e/ou novos artefatos semânticos com score de confiança por campo extraído e lineage explícito para snapshot de origem.
+- Introduzir regras de deduplicação mínima por fonte e evolução de resiliência operacional sem quebrar contratos já publicados.
 
 ---
 
@@ -675,49 +690,52 @@ A sprint termina quando houver clareza suficiente para operar o MOIS, evoluí-lo
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Implementado gateway de integração do MOIS com `market-research-service` com configuração por ambiente (`integrations.mois.market-research.*`) para permitir reuso controlado da infraestrutura de pesquisa.
+- Fluxo de execução (`POST /api/v1/mois/discovery-requests/{requestId}/run`) evoluído para descoberta real de fontes, captura HTTP, normalização de conteúdo e persistência de snapshots derivados da coleta.
+- Tratamento operacional básico implementado para indisponibilidade/timeout/conteúdo vazio, com registro rastreável no `mois_source_snapshot` e transição de status da request para `COLLECTED` ou `FAILED`.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisMarketResearchProperties.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint já existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com execução real de descoberta/captura.
+- Artefato `mois.marketOfferSourceSnapshot.v1` passou a refletir snapshots de fontes reais e também eventos operacionais básicos de erro.
+- `mois.marketOfferCard.v1` continua compatível, agora sendo semeado a partir de snapshot coletado em execução real.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Cobertura de status `COLLECTED` com captura real simulada via gateway mockado.
+- Cobertura de falha operacional com transição para status `FAILED` e sem criação de offer card.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Não há deduplicação de snapshots por `sourceUrl + contentHash` em execuções repetidas da mesma request.
+- Extração semântica profunda de promessa/prova/mecanismo ainda não implementada (escopo da Sprint 4).
+- Estratégia avançada de retries/circuit-breaker para integração externa ainda não implementada.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 3 prioriza descoberta/captura real e previsibilidade operacional básica, sem antecipar interpretação semântica.
+- Deduplicação e controles avançados de resiliência aumentam escopo e risco para esta etapa incremental.
+- O plano separa explicitamente extração estruturada para a sprint seguinte.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Execuções repetidas podem gerar snapshots redundantes para a mesma fonte.
+- Offer cards ainda representam semeadura inicial baseada em coleta, sem inteligência semântica de alto valor.
+- Falhas transientes externas podem consumir mais tentativas manuais em cenários de instabilidade.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar extração estruturada de promessa, prova, mecanismo alegado e padrão de oferta a partir do `rawExcerpt`/texto normalizado dos snapshots coletados.
+- Evoluir `marketOfferCard` e/ou novos artefatos semânticos com score de confiança por campo extraído e lineage explícito para snapshot de origem.
+- Introduzir regras de deduplicação mínima por fonte e evolução de resiliência operacional sem quebrar contratos já publicados.
 
 ---
 

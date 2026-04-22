@@ -11,11 +11,14 @@ import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.repository.MoisDiscoveryRequestRepository;
 import com.marketinghub.mois.repository.MoisOfferCardRepository;
 import com.marketinghub.mois.repository.MoisSourceSnapshotRepository;
+import com.marketinghub.mois.service.MoisResearchGateway.MoisDiscoveredSource;
+import com.marketinghub.mois.service.MoisResearchGateway.MoisResearchResult;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
@@ -34,17 +37,20 @@ public class MoisApiStubService {
     private final MoisSourceSnapshotRepository sourceSnapshotRepository;
     private final MoisOfferCardRepository offerCardRepository;
     private final ObjectMapper objectMapper;
+    private final MoisResearchGateway researchGateway;
 
     public MoisApiStubService(
             MoisDiscoveryRequestRepository discoveryRequestRepository,
             MoisSourceSnapshotRepository sourceSnapshotRepository,
             MoisOfferCardRepository offerCardRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            MoisResearchGateway researchGateway
     ) {
         this.discoveryRequestRepository = discoveryRequestRepository;
         this.sourceSnapshotRepository = sourceSnapshotRepository;
         this.offerCardRepository = offerCardRepository;
         this.objectMapper = objectMapper;
+        this.researchGateway = researchGateway;
     }
 
     @Transactional
@@ -67,8 +73,6 @@ public class MoisApiStubService {
                 .build();
 
         MoisDiscoveryRequest savedRequest = discoveryRequestRepository.save(entity);
-        seedMinimumLineage(savedRequest);
-
         return new MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse(savedRequest.getRequestId(), "ACCEPTED");
     }
 
@@ -117,11 +121,13 @@ public class MoisApiStubService {
     public MoisDiscoveryDtos.AsyncAcceptedResponse runDiscoveryRequest(String requestId) {
         MoisDiscoveryRequest request = discoveryRequestRepository.findByRequestId(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "discovery request not found"));
-        request.setStatus(MoisDiscoveryRequestStatus.COLLECTED);
-        if (sourceSnapshotRepository.countByRequest_RequestId(requestId) == 0
-                || offerCardRepository.countByRequest_RequestId(requestId) == 0) {
-            seedMinimumLineage(request);
-        }
+        List<String> seedUrls = readStringList(request.getSeedUrlsJson());
+        List<String> seedQueries = readStringList(request.getSeedQueriesJson());
+        MoisResearchResult discovery = researchGateway.discoverSources(request, seedUrls, seedQueries);
+
+        int collectedCount = persistDiscoveredSources(request, discovery);
+        request.setStatus(collectedCount > 0 ? MoisDiscoveryRequestStatus.COLLECTED : MoisDiscoveryRequestStatus.FAILED);
+
         return new MoisDiscoveryDtos.AsyncAcceptedResponse("ACCEPTED", "mois-run-" + requestId);
     }
 
@@ -301,49 +307,68 @@ public class MoisApiStubService {
         ));
     }
 
-    private void seedMinimumLineage(MoisDiscoveryRequest request) {
-        if (sourceSnapshotRepository.countByRequest_RequestId(request.getRequestId()) > 0
-                && offerCardRepository.countByRequest_RequestId(request.getRequestId()) > 0) {
-            return;
+    private int persistDiscoveredSources(MoisDiscoveryRequest request, MoisResearchResult discovery) {
+        int collected = 0;
+        for (MoisDiscoveredSource source : discovery.sources()) {
+            String normalizedText = defaultText(source.normalizedText(), "");
+            boolean collectedSource = source.success() && !normalizedText.isBlank();
+            MoisSourceSnapshot snapshot = MoisSourceSnapshot.builder()
+                    .request(request)
+                    .artifactId("mois-art-src-" + UUID.randomUUID())
+                    .status(collectedSource ? MoisArtifactStatus.COLLECTED : MoisArtifactStatus.DRAFT)
+                    .sourceUrl(source.sourceUrl())
+                    .sourceTitle(defaultText(source.sourceTitle(), "Fonte sem título"))
+                    .sourceKind(defaultText(source.sourceKind(), "landing-page"))
+                    .capturedAt(Instant.now())
+                    .httpStatus(source.httpStatus())
+                    .contentHash(collectedSource ? Integer.toHexString(Objects.hash(normalizedText)) : null)
+                    .rawExcerpt(limitText(normalizedText, 2000))
+                    .normalizedTextRef(collectedSource ? "mois://snapshots/" + request.getRequestId() + "/" + UUID.randomUUID() : null)
+                    .captureNotes(source.captureNotes())
+                    .build();
+            MoisSourceSnapshot savedSnapshot = sourceSnapshotRepository.save(snapshot);
+            if (collectedSource) {
+                collected++;
+                offerCardRepository.save(buildOfferFromSnapshot(request, savedSnapshot));
+            }
         }
 
-        MoisSourceSnapshot snapshot = MoisSourceSnapshot.builder()
-                .request(request)
-                .artifactId("mois-art-src-" + UUID.randomUUID())
-                .status(MoisArtifactStatus.COLLECTED)
-                .sourceUrl("https://example.com/oferta/" + request.getRequestId())
-                .sourceTitle("Oferta observada para " + request.getNicheName())
-                .sourceKind("landing-page")
-                .capturedAt(Instant.now())
-                .httpStatus(200)
-                .contentHash(UUID.randomUUID().toString().replace("-", ""))
-                .rawExcerpt("Oferta de exemplo persistida para garantir lineage mínimo da Sprint 2.")
-                .normalizedTextRef("mois://snapshots/" + request.getRequestId())
-                .captureNotes("Snapshot inicial criado automaticamente no backend")
-                .build();
-        MoisSourceSnapshot savedSnapshot = sourceSnapshotRepository.save(snapshot);
+        for (String operationalError : discovery.operationalErrors()) {
+            sourceSnapshotRepository.save(MoisSourceSnapshot.builder()
+                    .request(request)
+                    .artifactId("mois-art-src-" + UUID.randomUUID())
+                    .status(MoisArtifactStatus.DRAFT)
+                    .sourceUrl("mois://operational-error")
+                    .sourceTitle("Operational error")
+                    .sourceKind("system")
+                    .capturedAt(Instant.now())
+                    .captureNotes(operationalError)
+                    .build());
+        }
+        return collected;
+    }
 
-        MoisOfferCard offer = MoisOfferCard.builder()
+    private MoisOfferCard buildOfferFromSnapshot(MoisDiscoveryRequest request, MoisSourceSnapshot savedSnapshot) {
+        return MoisOfferCard.builder()
                 .request(request)
                 .sourceSnapshot(savedSnapshot)
                 .artifactId("mois-offer-" + UUID.randomUUID())
                 .status(MoisArtifactStatus.DRAFT)
-                .offerName("Oferta inicial " + request.getNicheName())
-                .sellerOrBrand("Mercado observado")
-                .channel("landing")
+                .offerName(defaultText(savedSnapshot.getSourceTitle(), "Oferta observada"))
+                .sellerOrBrand("Market source")
+                .channel(defaultText(savedSnapshot.getSourceKind(), "landing"))
                 .targetAudienceHypothesis("Público buscando " + request.getMarketTheme())
                 .corePromise(defaultText(request.getPainOrOutcomeFocus(), "Melhoria prática percebida"))
-                .primaryOfferType("mentoria")
+                .primaryOfferType("unknown")
                 .mainPrice("não identificado")
-                .confidence(0.55)
-                .deliverablesJson(toJson(List.of("diagnóstico inicial", "plano de ação")))
+                .confidence(0.4)
+                .deliverablesJson(toJson(List.of("conteúdo a extrair na sprint 4")))
                 .pricePointsJson(toJson(List.of("não identificado")))
-                .proofSummary("Prova ainda não consolidada")
-                .mechanismClaimSummary("Mecanismo em observação")
-                .positioningSummary("Posicionamento preliminar")
-                .funnelPatternSummary("captura por landing")
+                .proofSummary("Prova pendente de extração")
+                .mechanismClaimSummary("Mecanismo alegado pendente de extração")
+                .positioningSummary("Posicionamento preliminar de fonte real")
+                .funnelPatternSummary("captura por descoberta real")
                 .build();
-        offerCardRepository.save(offer);
     }
 
     private List<MoisDiscoveryDtos.ArtifactRefResponse> buildRequestArtifacts(String requestId) {
@@ -464,5 +489,15 @@ public class MoisApiStubService {
 
     private String defaultText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private String limitText(String value, int maxLength) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
     }
 }

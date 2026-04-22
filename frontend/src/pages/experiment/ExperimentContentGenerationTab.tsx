@@ -1168,10 +1168,29 @@ export default function ExperimentContentGenerationTab({
   );
   const [isAutoQueueRunning, setIsAutoQueueRunning] = useState(false);
   const lastCompletedLandingPlanningRef = useRef<number | null>(null);
+  const imageGenerationWaitToastRef = useRef<string | null>(null);
 
   const jobsQuery = useExperimentPipelineJobs(experimentId);
   const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
   const generateFrameworkImages = useGenerateFrameworkImages(experimentId);
+  const frameworkImageStatuses = frameworkImageStatusQuery.data ?? [];
+  const hasFrameworkImages = frameworkImageStatuses.length > 0;
+  const hasFrameworkImagesInFlight = frameworkImageStatuses.some((item) =>
+    isFrameworkImageStatusInFlight(item.status),
+  );
+  const hasFrameworkImageFailure = frameworkImageStatuses.some(
+    (item) => item.status?.toUpperCase() === "FAILED",
+  );
+  const hasFrameworkImageReady = frameworkImageStatuses.some(
+    (item) => item.status?.toUpperCase() === "COMPLETED",
+  );
+  const shouldWaitLandingHtmlForImages =
+    autoQueue.isActive &&
+    autoQueue.waitingFor === "landing-image-planning" &&
+    autoQueue.pending[0] === "landing-html" &&
+    (frameworkImageStatusQuery.isLoading ||
+      !hasFrameworkImages ||
+      hasFrameworkImagesInFlight);
 
   const requestsFromBackend = useMemo(
     () =>
@@ -1639,6 +1658,7 @@ export default function ExperimentContentGenerationTab({
 
   useEffect(() => {
     if (!autoQueue.isActive || !autoQueue.waitingFor || isAutoQueueRunning) {
+      imageGenerationWaitToastRef.current = null;
       return;
     }
 
@@ -1657,11 +1677,39 @@ export default function ExperimentContentGenerationTab({
 
     if (autoQueue.pending.length === 0) {
       setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
+      imageGenerationWaitToastRef.current = null;
       toast.success("Fila automática finalizada. Todas as etapas foram solicitadas.");
       return;
     }
 
     const [nextSectionKey, ...remaining] = autoQueue.pending;
+    if (
+      autoQueue.waitingFor === "landing-image-planning" &&
+      nextSectionKey === "landing-html"
+    ) {
+      const stillLoadingImageStatuses =
+        frameworkImageStatusQuery.isLoading || frameworkImageStatusQuery.isFetching;
+      const mustWaitForImages =
+        stillLoadingImageStatuses ||
+        !hasFrameworkImages ||
+        hasFrameworkImagesInFlight;
+
+      if (mustWaitForImages) {
+        if (!imageGenerationWaitToastRef.current) {
+          imageGenerationWaitToastRef.current = toast.info(
+            "Planejamento concluído. Aguardando geração das imagens para continuar com o HTML da landing.",
+            { autoClose: 6000 },
+          ) as unknown as string;
+        }
+        return;
+      }
+
+      imageGenerationWaitToastRef.current = null;
+      if (!hasFrameworkImageReady && !hasFrameworkImageFailure) {
+        return;
+      }
+    }
+
     const nextSection = sectionByKey[nextSectionKey];
     if (!nextSection) {
       setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
@@ -1684,6 +1732,12 @@ export default function ExperimentContentGenerationTab({
     })();
   }, [
     autoQueue,
+    frameworkImageStatusQuery.isFetching,
+    frameworkImageStatusQuery.isLoading,
+    hasFrameworkImageFailure,
+    hasFrameworkImageReady,
+    hasFrameworkImages,
+    hasFrameworkImagesInFlight,
     isAutoQueueRunning,
     mergedRequestsBySection,
     requestSectionGeneration,
@@ -1934,6 +1988,12 @@ export default function ExperimentContentGenerationTab({
               aguardando conclusão de{" "}
               <strong>{getSectionLabel(autoQueue.waitingFor)}</strong>.
             </span>
+            {shouldWaitLandingHtmlForImages ? (
+              <span className="text-warning-emphasis">
+                Desvio controlado: gerando imagens da landing antes do HTML
+                final.
+              </span>
+            ) : null}
             <span className="badge text-bg-light">
               Próximas: {autoQueue.pending.length}
             </span>
@@ -1965,6 +2025,12 @@ export default function ExperimentContentGenerationTab({
 
         {CONTENT_GENERATION_SECTIONS.map((section) => (
           <Tabs.Content key={section.key} value={section.key} className="mt-3">
+            {(() => {
+              const isLandingHtmlBlockedByImageGeneration =
+                section.key === "landing-html" &&
+                (frameworkImageStatusQuery.isLoading ||
+                  hasFrameworkImagesInFlight);
+              return (
             <section className="card">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -1977,7 +2043,11 @@ export default function ExperimentContentGenerationTab({
                       type="button"
                       className="btn btn-outline-primary btn-sm"
                       onClick={() => void handleGenerateSection(section)}
-                      disabled={isGeneratingSection || autoQueue.isActive}
+                      disabled={
+                        isGeneratingSection ||
+                        autoQueue.isActive ||
+                        isLandingHtmlBlockedByImageGeneration
+                      }
                       title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
                     >
                       {isGeneratingSection &&
@@ -1998,6 +2068,15 @@ export default function ExperimentContentGenerationTab({
                             aria-hidden="true"
                           />
                           Fila em execução...
+                        </span>
+                      ) : isLandingHtmlBlockedByImageGeneration ? (
+                        <span className="d-inline-flex align-items-center gap-1">
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Gerando imagens...
                         </span>
                       ) : (
                         "Gerar com IA"
@@ -2080,6 +2159,8 @@ export default function ExperimentContentGenerationTab({
 
               </div>
             </section>
+              );
+            })()}
           </Tabs.Content>
         ))}
       </Tabs.Root>
@@ -2174,6 +2255,13 @@ export default function ExperimentContentGenerationTab({
                   {request.customInstructions ? (
                     <small className="text-body-secondary">
                       Instruções enviadas: {request.customInstructions}
+                    </small>
+                  ) : null}
+                  {section.key === "landing-html" &&
+                  shouldWaitLandingHtmlForImages ? (
+                    <small className="text-warning-emphasis">
+                      Fluxo em desvio controlado: estamos gerando as imagens da
+                      landing para retomar automaticamente esta etapa ao final.
                     </small>
                   ) : null}
                   {invalidation ? (
@@ -2811,6 +2899,15 @@ const FRAMEWORK_IMAGE_STAGE_LABEL: Record<string, string> = {
   WEB_READY: "Versão web pronta",
   FAILED: "Falhou",
 };
+
+function isFrameworkImageStatusInFlight(status?: string) {
+  const normalized = status?.toUpperCase();
+  return (
+    normalized === "PLANNED" ||
+    normalized === "PENDING" ||
+    normalized === "PROCESSING"
+  );
+}
 
 function FrameworkImageGenerationPanel({
   statuses,

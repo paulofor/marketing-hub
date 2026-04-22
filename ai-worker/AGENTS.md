@@ -1,5 +1,6 @@
 # AGENTS.md — AI Worker
 
+- Sempre que precisar trabalhar com OpenAI API, ChatGPT Apps SDK, Codex ou documentação oficial relacionada, use o servidor MCP de documentação da OpenAI (`https://developers.openai.com/mcp`) antes de assumir detalhes técnicos não confirmados.
 - Este projeto utiliza o modelo de dados definido no **backend**.
 - Não duplique ou mantenha modelo de dados aqui; importe-o do backend.
 - Em produção utilizamos **MySql 5**.

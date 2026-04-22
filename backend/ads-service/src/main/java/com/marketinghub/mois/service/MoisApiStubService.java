@@ -1,167 +1,468 @@
 package com.marketinghub.mois.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.mois.*;
 import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.repository.MoisDiscoveryRequestRepository;
+import com.marketinghub.mois.repository.MoisOfferCardRepository;
+import com.marketinghub.mois.repository.MoisSourceSnapshotRepository;
+import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class MoisApiStubService {
 
-    private static final MoisDiscoveryDtos.ArtifactRefResponse SAMPLE_ARTIFACT_REF =
-            new MoisDiscoveryDtos.ArtifactRefResponse(
-                    "mois-art-001",
-                    "mois.marketOfferDiscoveryRequest.v1",
-                    "v1"
-            );
+    private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {
+    };
 
+    private final MoisDiscoveryRequestRepository discoveryRequestRepository;
+    private final MoisSourceSnapshotRepository sourceSnapshotRepository;
+    private final MoisOfferCardRepository offerCardRepository;
+    private final ObjectMapper objectMapper;
+
+    public MoisApiStubService(
+            MoisDiscoveryRequestRepository discoveryRequestRepository,
+            MoisSourceSnapshotRepository sourceSnapshotRepository,
+            MoisOfferCardRepository offerCardRepository,
+            ObjectMapper objectMapper
+    ) {
+        this.discoveryRequestRepository = discoveryRequestRepository;
+        this.sourceSnapshotRepository = sourceSnapshotRepository;
+        this.offerCardRepository = offerCardRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    @Transactional
     public MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse createDiscoveryRequest(
             MoisDiscoveryDtos.CreateDiscoveryRequest request
     ) {
-        return new MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse(
-                UUID.randomUUID().toString(),
-                "ACCEPTED"
-        );
+        String requestId = "mois-req-" + UUID.randomUUID();
+        MoisDiscoveryRequest entity = MoisDiscoveryRequest.builder()
+                .requestId(requestId)
+                .status(MoisDiscoveryRequestStatus.DRAFT)
+                .nicheName(request.nicheName())
+                .marketTheme(request.marketTheme())
+                .painOrOutcomeFocus(request.painOrOutcomeFocus())
+                .seedQueriesJson(toJson(defaultList(request.seedQueries())))
+                .seedUrlsJson(toJson(defaultList(request.seedUrls())))
+                .channelsJson(toJson(defaultList(request.channels())))
+                .country(request.country())
+                .language(request.language())
+                .discoveryPolicyJson(toJson(defaultMap(request.discoveryPolicy())))
+                .build();
+
+        MoisDiscoveryRequest savedRequest = discoveryRequestRepository.save(entity);
+        seedMinimumLineage(savedRequest);
+
+        return new MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse(savedRequest.getRequestId(), "ACCEPTED");
     }
 
+    @Transactional(readOnly = true)
     public MoisDiscoveryDtos.DiscoveryRequestListResponse listDiscoveryRequests(
             String status,
             String nicheName,
             String marketTheme
     ) {
-        return new MoisDiscoveryDtos.DiscoveryRequestListResponse(List.of(sampleDiscoverySummary()));
+        List<MoisDiscoveryRequest> requests = discoveryRequestRepository.findAll((Specification<MoisDiscoveryRequest>) (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"), parseStatus(status)));
+            }
+            if (nicheName != null && !nicheName.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("nicheName")), nicheName.toLowerCase()));
+            }
+            if (marketTheme != null && !marketTheme.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("marketTheme")), marketTheme.toLowerCase()));
+            }
+            query.orderBy(cb.desc(root.get("createdAt")));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+
+        List<MoisDiscoveryDtos.DiscoveryRequestSummaryResponse> items = requests.stream()
+                .map(this::toSummaryResponse)
+                .toList();
+        return new MoisDiscoveryDtos.DiscoveryRequestListResponse(items);
     }
 
+    @Transactional(readOnly = true)
     public Optional<MoisDiscoveryDtos.DiscoveryRequestDetailResponse> getDiscoveryRequest(String requestId) {
-        if (!"mois-req-001".equals(requestId)) {
-            return Optional.empty();
-        }
-        return Optional.of(new MoisDiscoveryDtos.DiscoveryRequestDetailResponse(
-                "mois-req-001",
-                "personal trainer",
-                "retencao de alunos",
-                "agenda previsivel sem desconto",
-                "DRAFT",
-                Instant.parse("2026-04-22T00:00:00Z"),
-                List.of(SAMPLE_ARTIFACT_REF)
-        ));
+        return discoveryRequestRepository.findByRequestId(requestId)
+                .map(request -> new MoisDiscoveryDtos.DiscoveryRequestDetailResponse(
+                        request.getRequestId(),
+                        request.getNicheName(),
+                        request.getMarketTheme(),
+                        request.getPainOrOutcomeFocus(),
+                        request.getStatus().name(),
+                        request.getCreatedAt(),
+                        buildRequestArtifacts(request.getRequestId())
+                ));
     }
 
+    @Transactional
     public MoisDiscoveryDtos.AsyncAcceptedResponse runDiscoveryRequest(String requestId) {
+        MoisDiscoveryRequest request = discoveryRequestRepository.findByRequestId(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "discovery request not found"));
+        request.setStatus(MoisDiscoveryRequestStatus.COLLECTED);
+        if (sourceSnapshotRepository.countByRequest_RequestId(requestId) == 0
+                || offerCardRepository.countByRequest_RequestId(requestId) == 0) {
+            seedMinimumLineage(request);
+        }
         return new MoisDiscoveryDtos.AsyncAcceptedResponse("ACCEPTED", "mois-run-" + requestId);
     }
 
+    @Transactional(readOnly = true)
     public MoisOfferDtos.OfferCardListResponse listOffers(String requestId, String nicheName, String sellerOrBrand) {
-        return new MoisOfferDtos.OfferCardListResponse(List.of(sampleOfferSummary()));
+        List<MoisOfferCard> offers = offerCardRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (requestId != null && !requestId.isBlank()) {
+                predicates.add(cb.equal(root.get("request").get("requestId"), requestId));
+            }
+            if (nicheName != null && !nicheName.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("request").get("nicheName")), nicheName.toLowerCase()));
+            }
+            if (sellerOrBrand != null && !sellerOrBrand.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("sellerOrBrand")), "%" + sellerOrBrand.toLowerCase() + "%"));
+            }
+            query.orderBy(cb.desc(root.get("createdAt")));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+
+        return new MoisOfferDtos.OfferCardListResponse(offers.stream().map(this::toOfferSummary).toList());
     }
 
+    @Transactional(readOnly = true)
     public Optional<MoisOfferDtos.OfferCardResponse> getOffer(String offerId) {
-        if (!"mois-offer-001".equals(offerId)) {
-            return Optional.empty();
-        }
-
-        return Optional.of(new MoisOfferDtos.OfferCardResponse(
-                "mois-offer-001",
-                "mois-req-001",
-                "personal trainer",
-                "Agenda Cheia Sem Desconto",
-                "Studio Exemplo",
-                "Agenda previsivel com onboarding estruturado",
-                "mentoria",
-                "R$ 1.497",
-                0.79,
-                List.of("diagnostico inicial", "check-ins semanais"),
-                List.of("R$ 1.497 a vista", "12x R$ 149"),
-                "Provas com depoimentos e antes/depois",
-                "Mecanismo alegado de ciclo guiado de 8 semanas",
-                "Captura por landing + WhatsApp",
-                List.of(SAMPLE_ARTIFACT_REF)
-        ));
+        return offerCardRepository.findByArtifactId(offerId)
+                .map(offer -> new MoisOfferDtos.OfferCardResponse(
+                        offer.getArtifactId(),
+                        offer.getRequest().getRequestId(),
+                        offer.getRequest().getNicheName(),
+                        offer.getOfferName(),
+                        offer.getSellerOrBrand(),
+                        offer.getCorePromise(),
+                        offer.getPrimaryOfferType(),
+                        offer.getMainPrice(),
+                        offer.getConfidence(),
+                        readStringList(offer.getDeliverablesJson()),
+                        readStringList(offer.getPricePointsJson()),
+                        offer.getProofSummary(),
+                        offer.getMechanismClaimSummary(),
+                        offer.getFunnelPatternSummary(),
+                        buildOfferSourceArtifacts(offer)
+                ));
     }
 
+    @Transactional(readOnly = true)
     public MoisInsightDtos.InsightReportListResponse listInsightReports(String requestId, String nicheName) {
-        return new MoisInsightDtos.InsightReportListResponse(List.of(sampleInsightSummary()));
+        List<MoisDiscoveryDtos.DiscoveryRequestSummaryResponse> requests = listDiscoveryRequests("COLLECTED", nicheName, null).items();
+        List<MoisInsightDtos.InsightReportSummaryResponse> items = requests.stream()
+                .filter(request -> requestId == null || requestId.isBlank() || request.requestId().equals(requestId))
+                .map(request -> new MoisInsightDtos.InsightReportSummaryResponse(
+                        "mois-report-" + request.requestId(),
+                        request.requestId(),
+                        request.nicheName(),
+                        request.marketTheme(),
+                        "DRAFT",
+                        request.createdAt()
+                ))
+                .toList();
+        return new MoisInsightDtos.InsightReportListResponse(items);
     }
 
+    @Transactional(readOnly = true)
     public Optional<MoisInsightDtos.InsightReportResponse> getInsightReport(String reportId) {
-        if (!"mois-report-001".equals(reportId)) {
+        String prefix = "mois-report-";
+        if (!reportId.startsWith(prefix)) {
+            return Optional.empty();
+        }
+        String requestId = reportId.substring(prefix.length());
+        Optional<MoisDiscoveryRequest> request = discoveryRequestRepository.findByRequestId(requestId);
+        if (request.isEmpty()) {
             return Optional.empty();
         }
 
+        List<MoisOfferCard> offers = offerCardRepository.findByRequest_RequestIdOrderByCreatedAtDesc(requestId);
         return Optional.of(new MoisInsightDtos.InsightReportResponse(
-                "mois-report-001",
-                "mois-req-001",
-                "personal trainer",
-                "retencao de alunos",
+                reportId,
+                requestId,
+                request.get().getNicheName(),
+                request.get().getMarketTheme(),
                 "DRAFT",
-                Instant.parse("2026-04-22T00:10:00Z"),
-                List.of("resultado em 8 semanas"),
-                List.of("depoimentos com antes/depois"),
-                List.of("ticket medio entre R$ 1.200 e R$ 1.800"),
-                List.of("lead capture via landing e follow-up no WhatsApp"),
-                List.of("lacuna de oferta para onboarding de primeira semana"),
-                List.of("validar diferencial de onboarding no proximo experimento")
+                request.get().getCreatedAt(),
+                offers.stream().map(MoisOfferCard::getCorePromise).distinct().toList(),
+                offers.stream().map(MoisOfferCard::getProofSummary).filter(s -> s != null && !s.isBlank()).distinct().toList(),
+                offers.stream().map(MoisOfferCard::getMainPrice).filter(s -> s != null && !s.isBlank()).distinct().toList(),
+                offers.stream().map(MoisOfferCard::getFunnelPatternSummary).filter(s -> s != null && !s.isBlank()).distinct().toList(),
+                List.of("Mapear lacunas de prova para próxima coleta"),
+                List.of("Executar Sprint 3 com descoberta real de fontes")
         ));
     }
 
+    @Transactional(readOnly = true)
     public Optional<MoisArtifactDtos.ArtifactEnvelopeResponse> getArtifact(String artifactId) {
-        if (!"mois-art-001".equals(artifactId)) {
-            return Optional.empty();
+        Optional<MoisDiscoveryRequest> requestArtifact = discoveryRequestRepository.findByRequestId(artifactId);
+        if (requestArtifact.isPresent()) {
+            MoisDiscoveryRequest request = requestArtifact.get();
+            return Optional.of(new MoisArtifactDtos.ArtifactEnvelopeResponse(
+                    request.getRequestId(),
+                    "mois.marketOfferDiscoveryRequest.v1",
+                    "v1",
+                    request.getStatus().name(),
+                    "MOIS",
+                    request.getCreatedAt(),
+                    request.getUpdatedAt(),
+                    Map.of("requestId", request.getRequestId(), "parentArtifactIds", List.of()),
+                    Map.of("nicheName", request.getNicheName(), "marketTheme", request.getMarketTheme()),
+                    Map.ofEntries(
+                            Map.entry("nicheName", request.getNicheName()),
+                            Map.entry("marketTheme", request.getMarketTheme()),
+                            Map.entry("painOrOutcomeFocus", request.getPainOrOutcomeFocus()),
+                            Map.entry("seedQueries", readStringList(request.getSeedQueriesJson())),
+                            Map.entry("seedUrls", readStringList(request.getSeedUrlsJson())),
+                            Map.entry("channels", readStringList(request.getChannelsJson())),
+                            Map.entry("country", request.getCountry()),
+                            Map.entry("language", request.getLanguage()),
+                            Map.entry("discoveryPolicy", readMap(request.getDiscoveryPolicyJson()))
+                    )
+            ));
         }
 
-        return Optional.of(new MoisArtifactDtos.ArtifactEnvelopeResponse(
-                "mois-art-001",
-                "mois.marketOfferDiscoveryRequest.v1",
+        Optional<MoisSourceSnapshot> snapshotArtifact = sourceSnapshotRepository.findByArtifactId(artifactId);
+        if (snapshotArtifact.isPresent()) {
+            MoisSourceSnapshot snapshot = snapshotArtifact.get();
+            return Optional.of(new MoisArtifactDtos.ArtifactEnvelopeResponse(
+                    snapshot.getArtifactId(),
+                    "mois.marketOfferSourceSnapshot.v1",
+                    "v1",
+                    snapshot.getStatus().name(),
+                    "MOIS",
+                    snapshot.getCreatedAt(),
+                    snapshot.getUpdatedAt(),
+                    Map.of("requestId", snapshot.getRequest().getRequestId(), "parentArtifactIds", List.of(snapshot.getRequest().getRequestId())),
+                    Map.of("sourceKind", defaultText(snapshot.getSourceKind(), "unknown")),
+                    Map.of(
+                            "sourceUrl", snapshot.getSourceUrl(),
+                            "sourceTitle", snapshot.getSourceTitle(),
+                            "sourceKind", snapshot.getSourceKind(),
+                            "capturedAt", snapshot.getCapturedAt(),
+                            "httpStatus", snapshot.getHttpStatus(),
+                            "contentHash", snapshot.getContentHash(),
+                            "rawExcerpt", snapshot.getRawExcerpt(),
+                            "normalizedTextRef", snapshot.getNormalizedTextRef(),
+                            "captureNotes", snapshot.getCaptureNotes()
+                    )
+            ));
+        }
+
+        return offerCardRepository.findByArtifactId(artifactId).map(offer -> new MoisArtifactDtos.ArtifactEnvelopeResponse(
+                offer.getArtifactId(),
+                "mois.marketOfferCard.v1",
                 "v1",
-                "DRAFT",
+                offer.getStatus().name(),
                 "MOIS",
-                Instant.parse("2026-04-22T00:00:00Z"),
-                Instant.parse("2026-04-22T00:00:00Z"),
-                Map.of("requestId", "mois-req-001"),
-                Map.of("source", "stub"),
-                Map.of("nicheName", "personal trainer", "marketTheme", "retencao de alunos")
+                offer.getCreatedAt(),
+                offer.getUpdatedAt(),
+                Map.of(
+                        "requestId", offer.getRequest().getRequestId(),
+                        "parentArtifactIds", offer.getSourceSnapshot() == null
+                                ? List.of(offer.getRequest().getRequestId())
+                                : List.of(offer.getRequest().getRequestId(), offer.getSourceSnapshot().getArtifactId())
+                ),
+                Map.of("channel", defaultText(offer.getChannel(), "unknown")),
+                Map.ofEntries(
+                        Map.entry("offerName", offer.getOfferName()),
+                        Map.entry("sellerOrBrand", offer.getSellerOrBrand()),
+                        Map.entry("channel", offer.getChannel()),
+                        Map.entry("targetAudienceHypothesis", offer.getTargetAudienceHypothesis()),
+                        Map.entry("corePromise", offer.getCorePromise()),
+                        Map.entry("primaryOfferType", offer.getPrimaryOfferType()),
+                        Map.entry("deliverables", readStringList(offer.getDeliverablesJson())),
+                        Map.entry("pricePoints", readStringList(offer.getPricePointsJson())),
+                        Map.entry("mainPrice", offer.getMainPrice()),
+                        Map.entry("mechanismClaimSummary", offer.getMechanismClaimSummary()),
+                        Map.entry("proofSummary", offer.getProofSummary()),
+                        Map.entry("positioningSummary", offer.getPositioningSummary())
+                )
         ));
     }
 
-    private MoisDiscoveryDtos.DiscoveryRequestSummaryResponse sampleDiscoverySummary() {
+    private void seedMinimumLineage(MoisDiscoveryRequest request) {
+        if (sourceSnapshotRepository.countByRequest_RequestId(request.getRequestId()) > 0
+                && offerCardRepository.countByRequest_RequestId(request.getRequestId()) > 0) {
+            return;
+        }
+
+        MoisSourceSnapshot snapshot = MoisSourceSnapshot.builder()
+                .request(request)
+                .artifactId("mois-art-src-" + UUID.randomUUID())
+                .status(MoisArtifactStatus.COLLECTED)
+                .sourceUrl("https://example.com/oferta/" + request.getRequestId())
+                .sourceTitle("Oferta observada para " + request.getNicheName())
+                .sourceKind("landing-page")
+                .capturedAt(Instant.now())
+                .httpStatus(200)
+                .contentHash(UUID.randomUUID().toString().replace("-", ""))
+                .rawExcerpt("Oferta de exemplo persistida para garantir lineage mínimo da Sprint 2.")
+                .normalizedTextRef("mois://snapshots/" + request.getRequestId())
+                .captureNotes("Snapshot inicial criado automaticamente no backend")
+                .build();
+        MoisSourceSnapshot savedSnapshot = sourceSnapshotRepository.save(snapshot);
+
+        MoisOfferCard offer = MoisOfferCard.builder()
+                .request(request)
+                .sourceSnapshot(savedSnapshot)
+                .artifactId("mois-offer-" + UUID.randomUUID())
+                .status(MoisArtifactStatus.DRAFT)
+                .offerName("Oferta inicial " + request.getNicheName())
+                .sellerOrBrand("Mercado observado")
+                .channel("landing")
+                .targetAudienceHypothesis("Público buscando " + request.getMarketTheme())
+                .corePromise(defaultText(request.getPainOrOutcomeFocus(), "Melhoria prática percebida"))
+                .primaryOfferType("mentoria")
+                .mainPrice("não identificado")
+                .confidence(0.55)
+                .deliverablesJson(toJson(List.of("diagnóstico inicial", "plano de ação")))
+                .pricePointsJson(toJson(List.of("não identificado")))
+                .proofSummary("Prova ainda não consolidada")
+                .mechanismClaimSummary("Mecanismo em observação")
+                .positioningSummary("Posicionamento preliminar")
+                .funnelPatternSummary("captura por landing")
+                .build();
+        offerCardRepository.save(offer);
+    }
+
+    private List<MoisDiscoveryDtos.ArtifactRefResponse> buildRequestArtifacts(String requestId) {
+        List<MoisDiscoveryDtos.ArtifactRefResponse> refs = new ArrayList<>();
+        refs.add(new MoisDiscoveryDtos.ArtifactRefResponse(requestId, "mois.marketOfferDiscoveryRequest.v1", "v1"));
+        refs.addAll(sourceSnapshotRepository.findByRequest_RequestIdOrderByCreatedAtAsc(requestId)
+                .stream()
+                .map(snapshot -> new MoisDiscoveryDtos.ArtifactRefResponse(
+                        snapshot.getArtifactId(),
+                        "mois.marketOfferSourceSnapshot.v1",
+                        "v1"
+                ))
+                .toList());
+        refs.addAll(offerCardRepository.findByRequest_RequestIdOrderByCreatedAtDesc(requestId)
+                .stream()
+                .map(offer -> new MoisDiscoveryDtos.ArtifactRefResponse(
+                        offer.getArtifactId(),
+                        "mois.marketOfferCard.v1",
+                        "v1"
+                ))
+                .toList());
+        return refs;
+    }
+
+    private List<MoisDiscoveryDtos.ArtifactRefResponse> buildOfferSourceArtifacts(MoisOfferCard offer) {
+        if (offer.getSourceSnapshot() == null) {
+            return List.of(new MoisDiscoveryDtos.ArtifactRefResponse(
+                    offer.getRequest().getRequestId(),
+                    "mois.marketOfferDiscoveryRequest.v1",
+                    "v1"
+            ));
+        }
+        return List.of(
+                new MoisDiscoveryDtos.ArtifactRefResponse(
+                        offer.getSourceSnapshot().getArtifactId(),
+                        "mois.marketOfferSourceSnapshot.v1",
+                        "v1"
+                ),
+                new MoisDiscoveryDtos.ArtifactRefResponse(
+                        offer.getRequest().getRequestId(),
+                        "mois.marketOfferDiscoveryRequest.v1",
+                        "v1"
+                )
+        );
+    }
+
+    private MoisDiscoveryDtos.DiscoveryRequestSummaryResponse toSummaryResponse(MoisDiscoveryRequest request) {
         return new MoisDiscoveryDtos.DiscoveryRequestSummaryResponse(
-                "mois-req-001",
-                "personal trainer",
-                "retencao de alunos",
-                "agenda previsivel sem desconto",
-                "DRAFT",
-                Instant.parse("2026-04-22T00:00:00Z")
+                request.getRequestId(),
+                request.getNicheName(),
+                request.getMarketTheme(),
+                request.getPainOrOutcomeFocus(),
+                request.getStatus().name(),
+                request.getCreatedAt()
         );
     }
 
-    private MoisOfferDtos.OfferCardSummaryResponse sampleOfferSummary() {
+    private MoisOfferDtos.OfferCardSummaryResponse toOfferSummary(MoisOfferCard offer) {
         return new MoisOfferDtos.OfferCardSummaryResponse(
-                "mois-offer-001",
-                "mois-req-001",
-                "personal trainer",
-                "Agenda Cheia Sem Desconto",
-                "Studio Exemplo",
-                "Agenda previsivel com onboarding estruturado",
-                "mentoria",
-                "R$ 1.497",
-                0.79
+                offer.getArtifactId(),
+                offer.getRequest().getRequestId(),
+                offer.getRequest().getNicheName(),
+                offer.getOfferName(),
+                offer.getSellerOrBrand(),
+                offer.getCorePromise(),
+                offer.getPrimaryOfferType(),
+                offer.getMainPrice(),
+                offer.getConfidence()
         );
     }
 
-    private MoisInsightDtos.InsightReportSummaryResponse sampleInsightSummary() {
-        return new MoisInsightDtos.InsightReportSummaryResponse(
-                "mois-report-001",
-                "mois-req-001",
-                "personal trainer",
-                "retencao de alunos",
-                "DRAFT",
-                Instant.parse("2026-04-22T00:10:00Z")
-        );
+    private List<String> defaultList(List<String> values) {
+        return values == null ? List.of() : values;
+    }
+
+    private Map<String, Object> defaultMap(Map<String, Object> value) {
+        return value == null ? Map.of() : value;
+    }
+
+    private MoisDiscoveryRequestStatus parseStatus(String status) {
+        try {
+            return MoisDiscoveryRequestStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid status");
+        }
+    }
+
+    private List<String> readStringList(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, STRING_LIST);
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "invalid persisted mois json list");
+        }
+    }
+
+    private Map<String, Object> readMap(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "invalid persisted mois json map");
+        }
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "invalid mois payload");
+        }
+    }
+
+    private String defaultText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }

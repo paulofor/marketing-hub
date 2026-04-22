@@ -1,0 +1,40 @@
+Implemente a Sprint [NUMERO_DA_SPRINT] do plano do módulo MOIS no repositório Marketing Hub.
+
+Siga estas regras:
+- leia primeiro os documentos do MOIS e o plano de implementação da sprint;
+- respeite o system-governance-canon.v2.md e os contratos canônicos do sistema;
+- faça apenas o escopo da Sprint [NUMERO_DA_SPRINT], sem adiantar itens de outras sprints, exceto ajustes pequenos estritamente necessários;
+- toda integração com banco deve seguir a arquitetura do projeto e passar pelo backend responsável;
+- preserve compatibilidade com o que já existe no repositório;
+- documente claramente o que foi implementado, o que ficou pendente e o que deve continuar na sprint seguinte.
+
+Ao executar:
+1. identifique o objetivo da Sprint [NUMERO_DA_SPRINT];
+2. implemente o código, contratos, docs, testes e ajustes necessários para concluir essa sprint;
+3. atualize a documentação mínima afetada;
+4. ao final, preencha o fechamento da sprint no próprio documento de plano.
+
+No fim, responda obrigatoriamente com esta estrutura:
+
+## Sprint [NUMERO_DA_SPRINT] — Resultado
+- status: concluída parcialmente | concluída | bloqueada
+- resumo do que foi feito
+
+## Arquivos alterados
+- liste os arquivos criados, modificados e removidos
+
+## Contratos e artefatos afetados
+- liste APIs, schemas, artefatos, jobs, tabelas, filas, eventos ou integrações afetadas
+
+## Testes executados
+- liste testes executados e resultado
+- se não executou algum teste importante, diga explicitamente
+
+## Pendências desta sprint
+- liste tudo que ficou incompleto, limitado ou bloqueado
+
+## Orientação para a próxima sprint
+- descreva exatamente o que deve ser continuado na Sprint [NUMERO_DA_SPRINT + 1]
+- destaque riscos, dívidas técnicas e cuidados de continuidade
+
+Se encontrar conflito entre implementação existente e documento canônico, priorize o contrato canônico, explique a divergência e faça a correção mais segura e incremental possível.

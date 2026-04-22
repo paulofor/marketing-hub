@@ -79,6 +79,22 @@ Se algum critério falhar:
 - fila vai para `BLOCKED`;
 - próxima etapa não inicia.
 
+## 6.1 Regra canônica de isolamento entre experimentos (obrigatória)
+
+No pipeline de experimento, **as informações de um experimento não podem, em hipótese alguma, influenciar outro experimento**.
+
+Regras mandatórias:
+
+- toda leitura de artefato para compor prompt, contexto, validação ou retomada deve ser filtrada por `experimentId`;
+- outputs de etapas anteriores só podem ser reaproveitados quando forem fatos persistidos do **mesmo** `experimentId`;
+- campos legados, snapshots antigos, cache em memória, retries e retomadas não podem “vazar” conteúdo de outro experimento;
+- qualquer tentativa de processar etapa com contexto de `experimentId` diferente deve ser tratada como erro de domínio e bloqueio (`BLOCKED`);
+- frontend, backend e workers devem preservar o mesmo escopo de isolamento por `experimentId` em toda transição de estado.
+
+Critério de conformidade:
+
+- se não houver artefato predecessor concluído no mesmo `experimentId`, o pipeline deve operar sem esse contexto (nunca buscar em outro experimento).
+
 ## 7. Critérios de retomada
 
 Uma fila em `BLOCKED` só pode voltar para `RUNNING` quando:

@@ -1240,7 +1240,7 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
   - `expense`: Campo usado para armazenar informações de **expense**. (tipo `decimal(10,2)`; opcional).
   - `total_cost`: Campo usado para armazenar informações de **total custo**. (tipo `decimal(12,2)`; opcional).
   - `lead_portal_flow_model`: Campo usado para armazenar informações de **lead portal flow model**. (tipo `varchar(191)`; opcional).
-  - `status`: Status atual do registro no fluxo de negócio. (tipo `enum('PLANNED','RUNNING','PAUSED','VALIDATED','INVALIDATED','INCONCLUSIVE','FINISHED','FAILED')`; opcional).
+  - `status`: Status atual do registro no fluxo de negócio. (tipo `enum('PLANNED','RUNNING','PAUSED','VALIDATED','INVALIDATED','INCONCLUSIVE','FINISHED','FAILED','USER_STOPPED')` ou `varchar(32)` em ambientes já migrados; opcional).
 
 ### `experiment_adset_job`
 - **Finalidade da tabela:** Armazena informações operacionais e analíticas associadas ao ciclo de experimentos.

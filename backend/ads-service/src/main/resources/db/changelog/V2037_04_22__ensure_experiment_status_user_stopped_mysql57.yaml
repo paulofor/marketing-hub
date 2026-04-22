@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2037-04-22-ensure-experiment-status-user-stopped-mysql57
+      author: assistant
+      preConditions:
+        onFail: MARK_RAN
+        dbms:
+          type: mysql
+        sqlCheck:
+          expectedResult: "1"
+          sql: |
+            SELECT CASE
+                     WHEN EXISTS (
+                       SELECT 1
+                       FROM information_schema.columns
+                       WHERE table_schema = DATABASE()
+                         AND table_name = 'experiment'
+                         AND column_name = 'status'
+                         AND data_type = 'enum'
+                         AND column_type NOT LIKE '%''USER_STOPPED''%'
+                     ) THEN 1
+                     ELSE 0
+                   END;
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                MODIFY COLUMN status ENUM(
+                  'PLANNED',
+                  'RUNNING',
+                  'PAUSED',
+                  'VALIDATED',
+                  'INVALIDATED',
+                  'INCONCLUSIVE',
+                  'FINISHED',
+                  'FAILED',
+                  'USER_STOPPED'
+                ) NULL;

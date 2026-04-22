@@ -15,6 +15,9 @@ databaseChangeLog:
       file: changesets/2037-04-15-facebook-campaign-stop.yaml
       relativeToChangelogFile: true
   - include:
+      file: V2037_04_22__ensure_experiment_status_user_stopped_mysql57.yaml
+      relativeToChangelogFile: true
+  - include:
       file: V2037_04_09__lead_portal_flow_prompt_email_requirement.sql
       relativeToChangelogFile: true
   - include:

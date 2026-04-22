@@ -37,7 +37,12 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Testes Unitários**: os testes unitários precisam sempre estar em concordancia com as regras dos documentos canonicos.
 - **Telas do Usuario**: as telas de usuario, ou frontend precisam sempre estar dando as informações mais importantes e precisas para  o usuario e ofereçendo so comandos necessários para o direcionamento dos fluxo de processos mantidos pelo sistema. Evite informações contraditórias, em excesso e desorganizadas. Mantenha sempre a conformidade com os documentos canonicos.
 
-## 3. Framework central do Marketing Hub:
+## 3. Orientações Práticas:
+
+- ** Erros 422 ** : Esse erro normalmente esta relacionado a uma divergencia entre o que o modelo da open ai gerou e o que a especificação do artefato definia. O melhor caminho para ajustar é usar o MCP Server para ler o log do AI Worker vendo qual saida o modelo gerou batendo com a especificação e com o log do backend ( pode ser acessado também pelo MCP Server ).
+
+
+## 4. Framework central do Marketing Hub:
 
 **Dor → Resultado → Mecanismo → Prova → Oferta**
 
@@ -45,7 +50,7 @@ Ao alterar qualquer módulo, preserve esse eixo como referência principal de de
 
 
 
-## 4. Módulos e responsabilidades
+## 5. Módulos e responsabilidades
 
 - **MarketingHub Backend / Frontend**: camada administrativa e UI principal do sistema.
 - **Facebook Ads Worker**: integração com a API da Meta para campanhas e públicos.
@@ -62,13 +67,13 @@ Ao alterar qualquer módulo, preserve esse eixo como referência principal de de
 Documente qualquer alteração cross-módulo no cânone correspondente e sincronize contratos antes de integrar.
 
 
-## 5. Dominios
+## 6. Dominios
 
 - **oportunidadebrasil.shop** : apontando para 191.252.120.96
 - **pagamentopalf.site** : apontando para  191.252.102.54
 
 
-## 6. Segurança e secrets
+## 7. Segurança e secrets
 
 - Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.

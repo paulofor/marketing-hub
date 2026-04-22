@@ -38,6 +38,29 @@ Regra canônica:
 - uma etapa só pode iniciar quando a etapa anterior estiver em `COMPLETED`.
 - avanço fora de ordem é drift e deve ser bloqueado no backend.
 
+### 3.1 Desvio controlado obrigatório entre planejamento e HTML
+
+Entre as etapas `landingPageImagePlanning` e `landingPageHtml`, existe um
+**desvio controlado obrigatório** para geração das imagens finais da landing.
+
+Fluxo canônico:
+
+1. `landingPageImagePlanning` conclui em `COMPLETED`;
+2. sistema dispara a geração de imagens planejadas (`framework images`);
+3. fila entra em `WAITING_DEPENDENCY` enquanto houver item em `PLANNED`,
+   `PENDING` ou `PROCESSING`;
+4. após concluir (ou consolidar erro tratável) os itens de imagem, a fila
+   retorna ao trilho principal e só então libera `landingPageHtml`.
+
+Regras mandatórias:
+
+- `landingPageHtml` não pode iniciar enquanto a geração de imagens estiver em
+  andamento.
+- o retorno ao trilho principal deve ser automático (sem exigir ação manual
+  quando não houver bloqueio).
+- se houver falha na geração de imagens, a UI deve apresentar causa e ação
+  recomendada antes de permitir retomada.
+
 ## 4. Estados da fila automática
 
 Estados permitidos para execução da fila:
@@ -115,6 +138,9 @@ A UI deve exibir, no mínimo:
 - etapa atual, próximas etapas e etapa concluída mais recente;
 - mensagem de progresso em linguagem clara (`message`);
 - orientação objetiva de ação/inação (`userGuidance`), por exemplo: “aguarde a conclusão desta etapa”.
+- quando houver desvio controlado para geração de imagens, explicitar que o
+  fluxo saiu temporariamente de `landingPageImagePlanning`, está gerando imagens
+  e retornará automaticamente para `landingPageHtml`.
 
 ### 8.2 Bloqueios obrigatórios de ação
 

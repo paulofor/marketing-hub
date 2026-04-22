@@ -2746,9 +2746,28 @@ public class ExperimentPipelineGenerationService {
             return "";
         }
         String normalized = value.trim();
+        normalized = normalizeEscapedAttributeArtifacts(normalized);
         normalized = decodeCommonHtmlEntities(normalized);
+        normalized = normalizeEscapedAttributeArtifacts(normalized);
         normalized = stripWrappingQuotes(normalized);
         return normalized.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeEscapedAttributeArtifacts(String value) {
+        return value
+                .replace("\\n", " ")
+                .replace("\\r", " ")
+                .replace("\\t", " ")
+                .replace("\\&quot;", "&quot;")
+                .replace("\\&#34;", "&#34;")
+                .replace("\\&#x22;", "&#x22;")
+                .replace("\\&#X22;", "&#X22;")
+                .replace("\\&apos;", "&apos;")
+                .replace("\\&#39;", "&#39;")
+                .replace("\\&#x27;", "&#x27;")
+                .replace("\\&#X27;", "&#X27;")
+                .replace("\\\"", "\"")
+                .replace("\\'", "'");
     }
 
     private String decodeCommonHtmlEntities(String value) {
@@ -2785,8 +2804,12 @@ public class ExperimentPipelineGenerationService {
         }
         String lower = value.toLowerCase(Locale.ROOT);
         return lower.contains("&quot;")
+                || lower.contains("\\&quot;")
                 || lower.contains("&#34;")
-                || lower.contains("&#x22;");
+                || lower.contains("\\&#34;")
+                || lower.contains("&#x22;")
+                || lower.contains("\\&#x22;")
+                || lower.contains("\\\"");
     }
 
     private record FormFieldContract(String name, String type, boolean required) {

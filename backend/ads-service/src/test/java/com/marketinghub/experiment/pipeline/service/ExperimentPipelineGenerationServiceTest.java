@@ -551,6 +551,30 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void completeJobSucceedsWhenBindingKeyContainsEscapedQuoteArtifacts() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(205L);
+        ExperimentPipelineGenerationJob job = createLandingHtmlJob(experiment);
+
+        service.completeJob(job.getId(), landingHtmlCompletionRequest("""
+                <!doctype html><html><body>
+                <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='band' data-surface-contrast='normal'>
+                  <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                       data-image-section-id='hero'
+                       data-image-binding-key='\\&quot;hero_pain_anchor\\&quot;\\n'
+                       data-image-role='Hero Pain Anchor'
+                       data-conversion-role='grab-attention'
+                       data-attention-priority='high'
+                       data-visual-weight='primary'
+                       data-distance-to-cta='near'
+                       data-supports-form-conversion='true' />
+                  <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                </section></body></html>
+                """));
+
+        assertNotNull(experiment.getLandingPageHtml());
+    }
+
+    @Test
     void completeJobAutomaticallyEnqueuesSuccessorSection() {
         Experiment experiment = new Experiment();
         experiment.setId(301L);

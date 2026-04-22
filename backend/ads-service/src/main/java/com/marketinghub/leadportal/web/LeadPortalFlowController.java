@@ -34,10 +34,10 @@ public class LeadPortalFlowController {
     public List<LeadPortalFlowDto> list(@RequestParam(value = "experimentId", required = false) Long experimentId,
                                             @RequestParam(value = "nicheId", required = false) Long nicheId) {
         List<LeadPortalFlow> flows;
-        if (nicheId != null) {
-            flows = service.listByMarketNiche(nicheId);
-        } else if (experimentId != null) {
+        if (experimentId != null) {
             flows = service.listByExperiment(experimentId);
+        } else if (nicheId != null) {
+            flows = service.listByMarketNiche(nicheId);
         } else {
             flows = service.listAll();
         }

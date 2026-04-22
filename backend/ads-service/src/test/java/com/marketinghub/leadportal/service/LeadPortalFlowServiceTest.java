@@ -7,6 +7,7 @@ import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.niche.repository.MarketNicheRepository;
 import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
@@ -58,8 +59,8 @@ class LeadPortalFlowServiceTest {
                 .slug("fluxo")
                 .questions(new ArrayList<>())
                 .build();
-        when(repository.findById(1L)).thenReturn(Optional.of(flow));
-        when(repository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(repository.findById(1L)).thenReturn(Optional.of(flow));
+        lenient().when(repository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
 
@@ -111,5 +112,19 @@ class LeadPortalFlowServiceTest {
         verify(flowPublisher).publish(flow);
         verify(flowPublisher, never()).remove(anyString());
         assertThat(updated.isApproved()).isTrue();
+    }
+
+    @Test
+    void listByExperimentFiltersByExperimentId() {
+        Experiment experiment = Experiment.builder().id(10L).build();
+        List<LeadPortalFlow> expected = List.of(flow);
+        when(experimentRepository.findById(10L)).thenReturn(Optional.of(experiment));
+        when(repository.findAllByExperimentIdOrderByCreatedAtDesc(10L)).thenReturn(expected);
+
+        List<LeadPortalFlow> result = service.listByExperiment(10L);
+
+        assertThat(result).isSameAs(expected);
+        verify(repository).findAllByExperimentIdOrderByCreatedAtDesc(10L);
+        verify(repository, never()).findAllByMarketNicheIdOrderByCreatedAtDesc(anyLong());
     }
 }

@@ -156,9 +156,8 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setLandingPageCopy("{\"landingPageCopy\":\"predecessor-ready\"}");
 
         when(experimentRepository.findById(12L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
                 12L,
-                ExperimentPipelineSection.LANDING_PAGE_WIREFRAME,
                 Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
                 .thenReturn(List.of());
         when(jobRepository.findLatestCompletedPerSectionByExperimentId(12L, null))
@@ -196,9 +195,8 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":\"persisted\"}");
 
         when(experimentRepository.findById(13L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
                 13L,
-                ExperimentPipelineSection.LANDING_PAGE_WIREFRAME,
                 Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
                 .thenReturn(List.of());
         when(jobRepository.findLatestCompletedPerSectionByExperimentId(13L, null)).thenReturn(List.of());
@@ -214,6 +212,34 @@ class ExperimentPipelineGenerationServiceTest {
                     && !prompt.contains("Wireframe da landing:")
                     && !prompt.contains("Planejamento de imagens da landing:");
         }));
+    }
+
+    @Test
+    void generateRejectsNewStageWhenAnotherStageIsAlreadyActiveForExperiment() {
+        Experiment experiment = new Experiment();
+        experiment.setId(14L);
+        experiment.setCampaignAngle("{\"campaignAngle\":\"ok\"}");
+
+        ExperimentPipelineGenerationJob activeJob = ExperimentPipelineGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.CAMPAIGN_ANGLE)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .build();
+
+        when(experimentRepository.findById(14L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                14L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of(activeJob));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.generate(14L, ExperimentPipelineSection.AD_COPY, new ExperimentPipelineGenerationRequest()));
+
+        assertEquals(409, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("ordem sequencial"));
+        verify(jobRepository, never()).save(any(ExperimentPipelineGenerationJob.class));
     }
 
     private ExperimentPipelineGenerationJob completedJob(Experiment experiment,

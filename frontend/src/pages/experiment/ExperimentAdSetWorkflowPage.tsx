@@ -162,6 +162,14 @@ export default function ExperimentAdSetWorkflowPage() {
   if (!data) return <p>Workflow não encontrado.</p>;
 
   const statusVariant = STATUS_VARIANT[data.status] ?? "secondary";
+  const experimentStatus = (data.experimentStatus ?? "").toUpperCase();
+  const validationLocked =
+    experimentStatus === "USER_STOPPED" ||
+    experimentStatus === "INVALIDATED" ||
+    experimentStatus === "FINISHED" ||
+    experimentStatus === "FAILED" ||
+    experimentStatus === "VALIDATED" ||
+    experimentStatus === "INCONCLUSIVE";
   const canStart = data.status === "NOT_STARTED";
   const canRestart = data.status === "FAILED" || data.status === "COMPLETED";
   const buttonLabel = canStart ? "Iniciar roteiro" : "Reiniciar roteiro";
@@ -189,6 +197,7 @@ export default function ExperimentAdSetWorkflowPage() {
             className="btn btn-primary"
             disabled={
               startWorkflow.isPending ||
+              validationLocked ||
               (!canStart && !canRestart) ||
               data.status === "RUNNING"
             }
@@ -198,6 +207,13 @@ export default function ExperimentAdSetWorkflowPage() {
           </button>
         </div>
       </div>
+
+      {validationLocked ? (
+        <div className="alert alert-secondary" role="status">
+          Este experimento está com status <strong>{experimentStatus || "N/A"}</strong>.
+          A validação de públicos fica bloqueada para evitar novas execuções.
+        </div>
+      ) : null}
 
       <PipelineDocExplainer />
 

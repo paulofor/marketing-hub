@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
+import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExperimentPipelineJobs";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useMemo, useState } from "react";
 import { getExperimentStageLabel } from "./stageLabels";
+import { toast } from "react-toastify";
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -17,10 +19,12 @@ export default function ExperimentListPage() {
   const { data, isLoading } = useExperiments();
   const { data: niches } = useNiches();
   const updateStatus = useUpdateExperimentStatus();
+  const closePipelineJobs = useCloseExperimentPipelineJobs();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
   const [stoppingExperimentId, setStoppingExperimentId] = useState<string | null>(null);
+  const stoppableStatuses = new Set(["PLANNED", "RUNNING", "PAUSED"]);
   const experiments = Array.isArray(data) ? data : [];
 
   const filtered = useMemo(() => {
@@ -44,6 +48,13 @@ export default function ExperimentListPage() {
     setStoppingExperimentId(experimentId);
     try {
       await updateStatus.mutateAsync({ id: experimentId, status: "USER_STOPPED" });
+      await closePipelineJobs.mutateAsync({
+        experimentId,
+        reason: "Encerrado pela ação de parada do usuário na tela de experimentos",
+      });
+      toast.success("Experimento encerrado e jobs de pipeline abertos foram finalizados.");
+    } catch {
+      toast.error("Não foi possível concluir a parada do usuário.");
     } finally {
       setStoppingExperimentId(null);
     }
@@ -104,46 +115,45 @@ export default function ExperimentListPage() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((e) => (
-              <tr key={e.id}>
-                <td>{e.name}</td>
-                <td>{niches?.find((n) => n.id === e.nicheId)?.name}</td>
-                <td>{getExperimentStageLabel(e.stage)}</td>
-                <td>{e.primaryVariable || "—"}</td>
-                <td>{e.kpiTarget}</td>
-                <td>{e.status}</td>
-                <td>{e.startDate}</td>
-                <td>
-                  <Link
-                    className="btn btn-sm btn-outline-primary"
-                    to={`/experiments/${e.id}`}
-                  >
-                    Visualizar
-                  </Link>
-                  <Link
-                    className="btn btn-sm btn-outline-secondary ms-1"
-                    to={`/experiments/${e.id}`}
-                  >
-                    Duplicar
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-warning ms-1"
-                    disabled={stoppingExperimentId === String(e.id)}
-                    onClick={() => handleUserStop(String(e.id))}
-                  >
-                    {stoppingExperimentId === String(e.id) && (
-                      <span
-                        className="spinner-border spinner-border-sm me-1"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                    )}
-                    Parada do usuário
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {sorted.map((e) => {
+              const canStop = stoppableStatuses.has(e.status);
+              const isStopping = stoppingExperimentId === String(e.id);
+              return (
+                <tr key={e.id}>
+                  <td>{e.name}</td>
+                  <td>{niches?.find((n) => n.id === e.nicheId)?.name}</td>
+                  <td>{getExperimentStageLabel(e.stage)}</td>
+                  <td>{e.primaryVariable || "—"}</td>
+                  <td>{e.kpiTarget}</td>
+                  <td>{e.status}</td>
+                  <td>{e.startDate}</td>
+                  <td>
+                    <Link className="btn btn-sm btn-outline-primary" to={`/experiments/${e.id}`}>
+                      Visualizar
+                    </Link>
+                    <Link className="btn btn-sm btn-outline-secondary ms-1" to={`/experiments/${e.id}`}>
+                      Duplicar
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-warning ms-1"
+                      disabled={!canStop || isStopping}
+                      onClick={() => handleUserStop(String(e.id))}
+                      title={!canStop ? "Disponível apenas para PLANNED, RUNNING e PAUSED." : undefined}
+                    >
+                      {isStopping && (
+                        <span
+                          className="spinner-border spinner-border-sm me-1"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                      )}
+                      Parada do usuário
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

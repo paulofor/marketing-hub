@@ -1,6 +1,7 @@
 package com.marketinghub.facebookads.playbook.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJob;
 import com.marketinghub.facebookads.playbook.ExperimentAdSetJobApiLog;
@@ -19,10 +20,13 @@ import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepos
 import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +34,10 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ExperimentAdSetWorkflowService {
+    private static final Set<ExperimentStatus> VALIDATION_ELIGIBLE_STATUSES = Set.of(
+            ExperimentStatus.PLANNED,
+            ExperimentStatus.RUNNING,
+            ExperimentStatus.PAUSED);
 
     private final ExperimentRepository experimentRepository;
     private final ExperimentAdSetWorkflowRepository workflowRepository;
@@ -55,6 +63,7 @@ public class ExperimentAdSetWorkflowService {
     @Transactional
     public ExperimentAdSetWorkflowDto start(Long experimentId, StartExperimentAdSetWorkflowRequest request) {
         ExperimentAdSetWorkflow workflow = getOrCreateWorkflow(experimentId);
+        validateExperimentStatusForValidation(workflow.getExperiment());
         boolean restart = request != null && request.restart();
         if (restart) {
             jobRepository.deleteByWorkflowId(workflow.getId());
@@ -106,6 +115,7 @@ public class ExperimentAdSetWorkflowService {
     }
 
     private ExperimentAdSetWorkflowDto buildDto(ExperimentAdSetWorkflow workflow) {
+        Experiment experiment = workflow.getExperiment();
         List<ExperimentAdSetJob> jobs = jobRepository.findByWorkflowId(workflow.getId());
         List<ExperimentAdSetSpec> specs = specRepository.findByWorkflowId(workflow.getId());
         List<ExperimentAdSetJobDto> jobDtos = jobs.stream()
@@ -133,7 +143,8 @@ public class ExperimentAdSetWorkflowService {
                 .toList();
         return new ExperimentAdSetWorkflowDto(
                 workflow.getId(),
-                workflow.getExperiment() != null ? workflow.getExperiment().getId() : null,
+                experiment != null ? experiment.getId() : null,
+                experiment != null ? experiment.getStatus() : null,
                 workflow.getStatus(),
                 workflow.getSeedKeyword(),
                 workflow.getSeedLocale(),
@@ -149,6 +160,18 @@ public class ExperimentAdSetWorkflowService {
                 jobDtos,
                 specDtos
         );
+    }
+
+    private void validateExperimentStatusForValidation(Experiment experiment) {
+        if (experiment == null || experiment.getStatus() == null) {
+            return;
+        }
+        if (VALIDATION_ELIGIBLE_STATUSES.contains(experiment.getStatus())) {
+            return;
+        }
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Workflow de validação indisponível para experimento com status " + experiment.getStatus());
     }
 
     private ExperimentAdSetJobDto toJobDto(ExperimentAdSetJob job) {

@@ -2,6 +2,7 @@ package com.marketinghub.experiment.pipeline.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ExperimentPipelineGenerationServiceTest {
@@ -268,6 +270,75 @@ class ExperimentPipelineGenerationServiceTest {
         assertEquals(409, error.getStatusCode().value());
         assertTrue(error.getReason().contains("ordem sequencial"));
         verify(jobRepository, never()).save(any(ExperimentPipelineGenerationJob.class));
+    }
+
+    @Test
+    void listPendingJobsReturnsOnlyEligibleExperimentStatuses() {
+        Experiment plannedExperiment = new Experiment();
+        plannedExperiment.setId(31L);
+        plannedExperiment.setStatus(ExperimentStatus.PLANNED);
+        ExperimentPipelineGenerationJob pendingFromPlanned = ExperimentPipelineGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(plannedExperiment)
+                .section(ExperimentPipelineSection.CAMPAIGN_ANGLE)
+                .status(ExperimentPipelineGenerationJobStatus.PENDING)
+                .build();
+
+        when(jobRepository.findByStatusAndExperimentStatusInOrderByCreatedAtAsc(
+                ExperimentPipelineGenerationJobStatus.PENDING,
+                Set.of(ExperimentStatus.PLANNED, ExperimentStatus.RUNNING, ExperimentStatus.PAUSED),
+                org.springframework.data.domain.PageRequest.of(0, 50)))
+                .thenReturn(List.of(pendingFromPlanned));
+
+        List<com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto> result =
+                service.listPendingJobs(99);
+
+        assertEquals(1, result.size());
+        assertEquals(pendingFromPlanned.getId(), result.get(0).id());
+    }
+
+    @Test
+    void closeOpenJobsMarksPendingAndProcessingAsFailed() {
+        Experiment experiment = new Experiment();
+        experiment.setId(55L);
+        experiment.setStatus(ExperimentStatus.FINISHED);
+
+        ExperimentPipelineGenerationJob pendingJob = ExperimentPipelineGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.CAMPAIGN_ANGLE)
+                .status(ExperimentPipelineGenerationJobStatus.PENDING)
+                .stage(ExperimentPipelineGenerationJobStage.WAITING_AI_WORKER)
+                .build();
+        ExperimentPipelineGenerationJob processingJob = ExperimentPipelineGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.LANDING_PAGE_HTML)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.WAITING_OPENAI)
+                .build();
+
+        when(experimentRepository.findById(55L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                55L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of(pendingJob, processingJob));
+
+        int closed = service.closeOpenJobs(55L, "Encerrado manualmente");
+
+        assertEquals(2, closed);
+        assertEquals(ExperimentPipelineGenerationJobStatus.FAILED, pendingJob.getStatus());
+        assertEquals(ExperimentPipelineGenerationJobStage.FAILED, pendingJob.getStage());
+        assertEquals("Encerrado manualmente", pendingJob.getErrorMessage());
+        assertNotNull(pendingJob.getFinishedAt());
+
+        assertEquals(ExperimentPipelineGenerationJobStatus.FAILED, processingJob.getStatus());
+        assertEquals(ExperimentPipelineGenerationJobStage.FAILED, processingJob.getStage());
+        assertEquals("Encerrado manualmente", processingJob.getErrorMessage());
+        assertNotNull(processingJob.getFinishedAt());
+        verify(jobRepository, times(1)).findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                55L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING));
     }
 
     private ExperimentPipelineGenerationJob completedJob(Experiment experiment,

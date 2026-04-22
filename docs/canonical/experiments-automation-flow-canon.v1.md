@@ -183,6 +183,24 @@ Logs de bloqueio devem incluir também:
 - `blockingReasonCode`;
 - `userImpact` (mensagem curta para orientar a UI).
 
+### 9.1 Regra canônica para quebra de contrato de saída de modelo (AI Worker)
+
+Quando o Worker IA identificar quebra de contrato no output esperado do modelo
+(por exemplo: seção que exige `HTML puro` e retorna payload incompatível, JSON
+inválido, ou ausência de campo obrigatório no artefato), é obrigatório registrar
+no log do Spring:
+
+- `experimentId`;
+- `section`/`stepKey`;
+- motivo explícito da quebra do contrato;
+- resposta retornada pelo modelo (texto bruto, com truncamento seguro quando necessário).
+
+Regras mandatórias:
+
+- o log deve ocorrer **antes** do job ser marcado como falho;
+- o motivo precisa permitir diagnóstico operacional sem depender de reprodução manual;
+- toda falha por contrato de schema/formato deve manter a resposta do modelo auditável nos logs.
+
 ## 10. Referências normativas
 
 - `docs/canonical/system-governance-canon.v2.md`

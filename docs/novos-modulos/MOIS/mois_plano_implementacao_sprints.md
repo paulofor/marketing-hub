@@ -136,49 +136,52 @@ A sprint termina quando o módulo existir de forma clara no repositório, conseg
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Estrutura inicial do módulo MOIS no backend (`com.marketinghub.mois`) com separação em `dto`, `service` e `web`.
+- Stub de endpoints REST do MOIS implementado em `/api/v1/mois` com contratos iniciais de discovery, offers, reports e artifacts.
+- DTOs de request/response alinhados ao OpenAPI stub e teste de contrato web cobrindo cenários principais (aceite, validação e 404).
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/dto/*`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/web/MoisControllerContractTest.java`
+- `docs/novos-modulos/MOIS/mois_backend_sprint1_execucao.md`
+- `docs/novos-modulos/MOIS/ini.md`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Contrato HTTP inicial do módulo MOIS conforme `openapi_mois_backend_stub.yaml`.
+- Endpoints de stub disponibilizados em `/api/v1/mois/*` para discovery, offers, insight-reports e artifacts.
+- Artefatos canônicos ainda em modo representacional (stub), sem persistência de banco nesta sprint.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisControllerContractTest test` (backend/ads-service) cobrindo contrato mínimo do controller MOIS.
+- Validação de build limitada ao escopo do módulo MOIS (não foi executada suíte completa do backend nesta sprint).
+- Sem testes de persistência, pois banco/migrations são escopo da Sprint 2.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Persistência real de `marketOfferDiscoveryRequest`, snapshots e `marketOfferCard`.
+- Lineage mínimo persistido entre request, snapshot e artefatos derivados.
+- Migrations Liquibase e entidades/repositórios JPA do domínio MOIS.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Esses itens pertencem explicitamente ao escopo da Sprint 2 no plano.
+- Sprint 1 tem foco em fundação, contrato e bootstrap do módulo.
+- Evitou-se antecipar decisões de dados para manter incrementalidade e baixo risco.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Módulo disponível apenas como stub contratual, sem estado persistido.
+- Ainda não há histórico consultável real de execuções/discovery.
+- Integrações posteriores dependem da Sprint 2 para dados confiáveis em banco.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar persistência mínima de request/snapshot/card com IDs, status e timestamps.
+- Criar lineage mínimo consultável e validar contrato de leitura com dados reais.
+- Adicionar migrations Liquibase MySQL 5.7 e testes de serviço/repositório do MOIS.
 
 ---
 

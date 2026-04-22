@@ -1,6 +1,7 @@
 package com.marketinghub.worker.experimentpipeline;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -265,7 +266,7 @@ public class ExperimentPipelineOpenAiClient {
                 throw new IllegalStateException("Resposta da OpenAI sem conteúdo JSON");
             }
             log.info("OpenAI content for job {}: {}", job.id(), content);
-            Map<String, Object> parsed = objectMapper.readValue(content, new TypeReference<>() {});
+            Map<String, Object> parsed = parseResponseContent(content, job);
             ensureLandingHtmlHasStaticFormContract(parsed, job);
             enrichConsistencyChecks(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
@@ -284,6 +285,16 @@ public class ExperimentPipelineOpenAiClient {
         }
     }
 
+
+    private Map<String, Object> parseResponseContent(String content, ExperimentPipelineJobDto job) throws JsonProcessingException {
+        String trimmedContent = content != null ? content.trim() : "";
+        if (isSection(job, "landing-page-html", "landing-html") && trimmedContent.startsWith("<")) {
+            Map<String, Object> landingPageHtml = new LinkedHashMap<>();
+            landingPageHtml.put("htmlDocument", content);
+            return new LinkedHashMap<>(Map.of("landingPageHtml", landingPageHtml));
+        }
+        return objectMapper.readValue(content, new TypeReference<>() {});
+    }
 
     @SuppressWarnings("unchecked")
     private void ensureLandingHtmlHasStaticFormContract(Map<String, Object> parsed, ExperimentPipelineJobDto job) {

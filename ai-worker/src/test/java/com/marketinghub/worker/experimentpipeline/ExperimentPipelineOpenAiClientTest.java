@@ -642,6 +642,55 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void acceptsRawHtmlResponseForLandingPageHtmlSection() throws Exception {
+        String openAiText = """
+                <!doctype html>
+                <html lang="pt-BR">
+                <body>
+                  <form id="lead-capture-primary">
+                    <div class="field"><label>Nome</label><input type="text" name="nome" required /></div>
+                    <div class="field"><label>Objetivo principal</label><select name="objetivo"><option>A</option></select></div>
+                  </form>
+                </body>
+                </html>
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                21L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(job);
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> landingPageHtml = (Map<String, Object>) content.get("landingPageHtml");
+        String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
+
+        assertThat(htmlDocument).contains("name=\"nome\"");
+        assertThat(htmlDocument).contains("name=\"email\"");
+        assertThat(htmlDocument).contains("name=\"whatsapp\"");
+        assertThat(htmlDocument).doesNotContain("name=\"objetivo\"");
+        assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
+    }
+
+    @Test
     void enforcesGpt52ModelForEveryPipelineCall() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

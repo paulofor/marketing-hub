@@ -120,6 +120,7 @@ Regra prática:
 docs/canonical/
 ├─ system-governance-canon.v2.md              # documento-mãe
 ├─ experiments-canon.v1.md                    # estados e contratos do pipeline de experimentos
+├─ experiments-automation-flow-canon.v1.md    # ordem e estados da fila automática do pipeline
 ├─ experiments-decision-schema.v1.json        # schema machine-readable para validações automáticas
 ├─ lead-capture-canon.v1.md                   # fluxos do Lead Portal, packages e payments
 ├─ media-packages-canon.v1.md                 # lifecycle watermark → zip → email → entrega

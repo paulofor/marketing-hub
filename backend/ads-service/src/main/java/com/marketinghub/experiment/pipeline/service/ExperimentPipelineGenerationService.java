@@ -2677,11 +2677,11 @@ public class ExperimentPipelineGenerationService {
     }
 
     private String resolveBindingKeyFromHtmlAttrs(Map<String, String> attrs) {
-        String bindingKey = slugifyBindingKey(attrs.get("data-image-binding-key"));
+        String bindingKey = slugifyBindingKey(normalizeHtmlAttr(attrs.get("data-image-binding-key")));
         if (StringUtils.hasText(bindingKey)) {
             return bindingKey;
         }
-        return slugifyBindingKey(attrs.get("data-image-role"));
+        return slugifyBindingKey(normalizeHtmlAttr(attrs.get("data-image-role")));
     }
 
     private String summarizeImageBindingPairs(List<ImagePlanBindingContract> bindings) {

@@ -34,6 +34,11 @@ Ele não substitui o OPRM nem o MDS:
    - contrato-base para o backend e consumidores internos
    - serve como ponto de partida para implementação pelo Codex
 
+5. `mois_backend_sprint1_execucao.md`
+   - nota técnica da execução da Sprint 1 no backend
+   - lista endpoints stub e decisões de escopo
+   - registra pendências que devem seguir para a Sprint 2
+
 ## Direção arquitetural resumida
 
 - O **backend/domínio** continua sendo a fonte de verdade das regras e contratos.

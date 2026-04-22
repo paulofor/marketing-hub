@@ -1,0 +1,57 @@
+O MOIS foi implementado de forma arquiteturalmente incorreta até a Sprint 4.
+
+Problema:
+O código do MOIS acabou sendo colocado dentro de `backend/ads-service`, mas o MOIS deve ser um módulo/serviço separado no repositório Marketing Hub, com diretório próprio, projeto próprio, container próprio, host próprio e ciclo operacional próprio, no mesmo espírito arquitetural já adotado para módulos especializados do sistema.
+
+Sua tarefa agora NÃO é continuar a Sprint [NUMERO].
+Sua tarefa é executar uma correção arquitetural incremental antes de seguir adiante.
+
+Objetivo da correção:
+- criar o módulo `mois/` como serviço separado;
+- mapear tudo que foi implementado indevidamente no backend;
+- extrair gradualmente o domínio do MOIS para o novo serviço;
+- deixar no backend apenas o que for papel de integração/orquestração/consumo institucional;
+- preservar compatibilidade incremental e baixo risco de quebra.
+
+Regras obrigatórias:
+- respeite `docs/canonical/system-governance-canon.v2.md`;
+- trate o MOIS como bounded context/módulo separado;
+- não continue expandindo o domínio do MOIS dentro do backend;
+- não faça migração destrutiva sem antes criar compatibilidade transitória;
+- documente claramente o que fica no backend e o que deve ir para o serviço MOIS;
+- se houver dúvida entre rapidez e coerência arquitetural, priorize a coerência arquitetural.
+
+Execute nesta ordem:
+1. inventarie tudo que hoje existe de MOIS dentro de `backend/ads-service`;
+2. proponha a divisão alvo entre backend e novo serviço `mois/`;
+3. crie a estrutura mínima do novo módulo `mois/`;
+4. mova ou replique inicialmente apenas o necessário para estabelecer a nova arquitetura;
+5. crie integração explícita backend ↔ MOIS;
+6. registre pendências de extração que ficaram para a próxima etapa.
+
+No fim, responda obrigatoriamente com esta estrutura:
+
+## Diagnóstico do desvio arquitetural
+- o que foi implementado no lugar errado
+- por que está errado
+- risco de manter como está
+
+## Arquitetura alvo
+- o que fica no backend
+- o que vai para o módulo `mois/`
+- como será a integração entre ambos
+
+## O que foi implementado nesta correção
+- detalhe objetivo do que foi criado, movido, adaptado ou preservado
+
+## Arquivos alterados
+- liste arquivos criados, modificados e removidos
+
+## Compatibilidade transitória
+- explique como o sistema continua funcionando durante a migração
+
+## Pendências remanescentes
+- liste o que ainda precisa ser extraído/refatorado
+
+## Próximo passo recomendado
+- diga exatamente qual deve ser a próxima sprint corretiva

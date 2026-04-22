@@ -20,6 +20,8 @@ public record McpProperties(
             @NotBlank String aiWorkerPath,
             @NotBlank String leadPortalPath,
             @NotBlank String facebookAdsPath,
+            @NotBlank String emailServicePath,
+            @NotBlank String leadPortalPaymentPath,
             @Positive int maxLines
     ) {
     }

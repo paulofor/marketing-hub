@@ -39,7 +39,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 3. Orientações Práticas:
 
-- ** Erros 422 ** : Esse erro normalmente esta relacionado a uma divergencia entre o que o modelo da open ai gerou e o que a especificação do artefato definia. O melhor caminho para ajustar é usar o MCP Server para ler o log do AI Worker vendo qual saida o modelo gerou batendo com a especificação e com o log do backend ( pode ser acessado também pelo MCP Server ).
+- **Erros 422** : Esse erro normalmente esta relacionado a uma divergencia entre o que o modelo da open ai gerou e o que a especificação do artefato definia. O melhor caminho para ajustar é usar o MCP Server para ler o log do AI Worker vendo qual saida o modelo gerou batendo com a especificação e com o log do backend ( pode ser acessado também pelo MCP Server ).
 
 
 ## 4. Framework central do Marketing Hub:

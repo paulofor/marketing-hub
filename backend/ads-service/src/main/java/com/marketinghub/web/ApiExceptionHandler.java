@@ -36,6 +36,14 @@ public class ApiExceptionHandler {
         ResponseStatusException exception,
         HttpServletRequest request
     ) {
+        LOGGER.warn(
+            "ResponseStatusException tratado. status={}, method={}, uri={}, query={}, reason={}",
+            exception.getStatusCode().value(),
+            request.getMethod(),
+            request.getRequestURI(),
+            request.getQueryString(),
+            exception.getReason()
+        );
         return buildResponse(exception.getStatusCode(), exception.getReason(), request, null);
     }
 

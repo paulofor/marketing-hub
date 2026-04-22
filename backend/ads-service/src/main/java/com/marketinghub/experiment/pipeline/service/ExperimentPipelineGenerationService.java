@@ -370,7 +370,19 @@ public class ExperimentPipelineGenerationService {
                 experiment != null ? experiment.getId() : null,
                 job.getSection(),
                 summarizePayloadKeys(request.responseContent()));
-        applySectionContent(experiment, job.getSection(), request.responseContent());
+        try {
+            applySectionContent(experiment, job.getSection(), request.responseContent());
+        } catch (ResponseStatusException ex) {
+            log.warn("Rejeição de output do modelo no completeJob (jobId={}, experimentId={}, section={}, status={}, reason={}, responseKeys={}, rejectedModelOutput={})",
+                    job.getId(),
+                    experiment != null ? experiment.getId() : null,
+                    job.getSection(),
+                    ex.getStatusCode().value(),
+                    ex.getReason(),
+                    summarizePayloadKeys(request.responseContent()),
+                    summarizeRejectedModelOutput(request.responseContent(), request.rawResponse()));
+            throw ex;
+        }
         if (job.getSection() == ExperimentPipelineSection.AD_COPY
                 || job.getSection() == ExperimentPipelineSection.AD_IMAGE_BRIEFING) {
             generationService.deleteByDomainAndReferenceId(
@@ -1388,6 +1400,15 @@ public class ExperimentPipelineGenerationService {
         } catch (Exception ignored) {
             return "[unparseable]";
         }
+    }
+
+    private String summarizeRejectedModelOutput(String responseContent, String rawResponse) {
+        String candidate = StringUtils.hasText(responseContent) ? responseContent : rawResponse;
+        if (!StringUtils.hasText(candidate)) {
+            return "[empty]";
+        }
+        String compact = candidate.replaceAll("\\s+", " ").trim();
+        return compact.length() > 4000 ? compact.substring(0, 4000) + "...(truncated)" : compact;
     }
 
     private String summarizeFormFields(List<FormFieldContract> fields) {

@@ -401,3 +401,17 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
   }
 }
 ```
+
+## Fluxo automático do pipeline (referência normativa)
+
+Este documento define o **schema canônico dos artefatos**.
+
+A orquestração da fila automática (ordem de etapas, estados, progressão, bloqueios e retomada)
+fica definida no documento:
+
+- `docs/canonical/experiments-automation-flow-canon.v1.md`
+
+Regra prática:
+
+- este arquivo responde a "qual artefato e qual estrutura";
+- o cânone de automação responde a "em qual ordem, com quais estados e com quais gatilhos".

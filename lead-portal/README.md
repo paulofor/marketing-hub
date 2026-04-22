@@ -42,8 +42,8 @@ O ambiente dockerizado levanta três serviços:
 
 ### Observabilidade e logs
 
-- `GET /api/actuator/logfile`: retorna o conteúdo do arquivo configurado em `LOGGING_FILE_NAME`, permitindo baixar os logs recentes sem acessar o host.
-- `GET /api/actuator/loggers`: lista (e permite ajustar via `POST`) os níveis de log das classes gerenciadas pelo Spring Boot.
+- `GET /api/ops-lp-observability-v2/logfile`: retorna o conteúdo do arquivo configurado em `LOGGING_FILE_NAME`, permitindo baixar os logs recentes sem acessar o host.
+- `GET /api/ops-lp-observability-v2/loggers`: lista (e permite ajustar via `POST`) os níveis de log das classes gerenciadas pelo Spring Boot.
 
 Certifique-se de que o caminho informado em `LOGGING_FILE_NAME` pertença a um volume persistente (por exemplo, `/app/data/logs/lead-portal-backend.log` no Docker) para que o conteúdo sobreviva a recriações do container.
 

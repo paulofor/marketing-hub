@@ -56,6 +56,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.core.NestedExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -233,8 +234,12 @@ public class ExperimentPipelineGenerationService {
             try {
                 leadPortalFlowPublisher.publish(saved);
             } catch (LeadPortalPublicationException ex) {
+                String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
+                String message = StringUtils.hasText(rootCauseMessage)
+                        ? "Falha ao publicar fluxo com o novo HTML da landing: " + rootCauseMessage
+                        : "Falha ao publicar fluxo com o novo HTML da landing";
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "Falha ao publicar fluxo com o novo HTML da landing", ex);
+                        message, ex);
             }
         }
         return experimentMapper.toDto(experiment);

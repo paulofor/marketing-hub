@@ -15,6 +15,7 @@ import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerati
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
+import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
@@ -43,6 +44,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class ExperimentPipelineGenerationServiceTest {
@@ -146,6 +148,32 @@ class ExperimentPipelineGenerationServiceTest {
         verify(experimentRepository, never()).save(any());
         verify(leadPortalFlowPublisher, never()).publish(any());
         assertEquals("<section>ok</section>", linkedFlow.getCustomFormHtml());
+    }
+
+    @Test
+    void applyLandingHtmlToLeadPortalFormReturnsRootCauseWhenPublicationFails() {
+        LeadPortalFlow linkedFlow = new LeadPortalFlow();
+        linkedFlow.setId(901L);
+        linkedFlow.setSlug("existing-flow");
+        linkedFlow.setApproved(true);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(15L);
+        experiment.setLandingPageHtml("<section>ok</section>");
+        experiment.setLeadPortalFlow(linkedFlow);
+
+        when(experimentRepository.findById(15L)).thenReturn(Optional.of(experiment));
+        when(leadPortalFlowRepository.findById(901L)).thenReturn(Optional.of(linkedFlow));
+        when(leadPortalFlowRepository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(landingPageImageInjector.injectImages(15L, "<section>ok</section>")).thenReturn("<section>ok</section>");
+        doThrow(new LeadPortalPublicationException("failed", new RuntimeException("Connection refused")))
+                .when(leadPortalFlowPublisher).publish(any(LeadPortalFlow.class));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.applyLandingHtmlToLeadPortalForm(15L));
+
+        assertEquals(502, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("Connection refused"));
     }
 
     @Test

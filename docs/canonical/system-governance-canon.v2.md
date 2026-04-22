@@ -29,6 +29,12 @@
 5. **Contratos entre módulos são explícitos e versionados.** Nenhum módulo pode depender de campos implícitos, estados informais ou convenções não registradas.
 6. **Mudanças relevantes exigem teste e documentação correspondente.** Regra operacional sem teste e sem contrato atualizado é candidata imediata a drift.
 
+## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
+
+- Todo artefato gerado direta ou indiretamente por fluxos oficiais do sistema é **exclusivo do contexto de origem** (por exemplo `experimentId`, `leadId`, `campaignId` ou equivalente canônico do domínio).
+- Para um artefato ser classificado como **não exclusivo**, ele não pode ter sido produzido em nenhuma etapa de pipeline/fluxo oficial vinculada a um contexto específico.
+- Reuso de artefatos entre contextos distintos só é permitido quando houver contrato canônico explícito de compartilhamento no domínio correspondente.
+
 ## 4. Precedência Canônica
 
 Em caso de conflito, a precedência deve ser:

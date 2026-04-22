@@ -2415,7 +2415,7 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing vazio");
         }
 
-        List<SectionSurfaceContract> actualSurfaces = extractSectionSurfacesFromHtmlDocument(htmlDocument);
+        List<SectionSurfaceContract> actualSurfaces = extractSectionSurfacesFromHtmlDocument(experiment.getId(), htmlDocument);
         List<SectionSurfaceContract> expectedSorted = expectedSurfaces.stream()
                 .sorted(Comparator.comparing(SectionSurfaceContract::sectionId))
                 .toList();
@@ -2462,19 +2462,34 @@ public class ExperimentPipelineGenerationService {
         return surfaces;
     }
 
-    private List<SectionSurfaceContract> extractSectionSurfacesFromHtmlDocument(String htmlDocument) {
+    private List<SectionSurfaceContract> extractSectionSurfacesFromHtmlDocument(Long experimentId, String htmlDocument) {
         Map<String, SectionSurfaceContract> contractsBySectionId = new LinkedHashMap<>();
         Matcher tagMatcher = OPENING_TAG_PATTERN.matcher(htmlDocument);
         while (tagMatcher.find()) {
             String tag = tagMatcher.group();
             Map<String, String> attrs = parseHtmlAttributes(tag);
-            String sectionId = normalizeHtmlAttr(attrs.get("data-section-id"));
+            String rawSectionId = attrs.get("data-section-id");
+            String rawSurfaceToken = attrs.get("data-surface-token");
+            String rawStyle = attrs.get("data-surface-style");
+            String rawContrastMode = attrs.get("data-surface-contrast");
+            if (containsEncodedQuoteArtifact(rawSectionId)
+                    || containsEncodedQuoteArtifact(rawSurfaceToken)
+                    || containsEncodedQuoteArtifact(rawStyle)
+                    || containsEncodedQuoteArtifact(rawContrastMode)) {
+                log.warn("Validação landing HTML (experimentId={}): detectado valor de superfície com aspas codificadas; normalizando atributos. sectionIdRaw={}, surfaceTokenRaw={}, styleRaw={}, contrastRaw={}",
+                        experimentId,
+                        rawSectionId,
+                        rawSurfaceToken,
+                        rawStyle,
+                        rawContrastMode);
+            }
+            String sectionId = normalizeHtmlAttr(rawSectionId);
             if (!StringUtils.hasText(sectionId)) {
                 continue;
             }
-            String surfaceToken = normalizeHtmlAttr(attrs.get("data-surface-token"));
-            String style = normalizeHtmlAttr(attrs.get("data-surface-style"));
-            String contrastMode = normalizeHtmlAttr(attrs.get("data-surface-contrast"));
+            String surfaceToken = normalizeHtmlAttr(rawSurfaceToken);
+            String style = normalizeHtmlAttr(rawStyle);
+            String contrastMode = normalizeHtmlAttr(rawContrastMode);
             if (!StringUtils.hasText(surfaceToken) || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
                 continue;
             }
@@ -2706,7 +2721,51 @@ public class ExperimentPipelineGenerationService {
     }
 
     private String normalizeHtmlAttr(String value) {
-        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = value.trim();
+        normalized = decodeCommonHtmlEntities(normalized);
+        normalized = stripWrappingQuotes(normalized);
+        return normalized.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String decodeCommonHtmlEntities(String value) {
+        return value
+                .replace("&quot;", "\"")
+                .replace("&#34;", "\"")
+                .replace("&#x22;", "\"")
+                .replace("&#X22;", "\"")
+                .replace("&apos;", "'")
+                .replace("&#39;", "'")
+                .replace("&#x27;", "'")
+                .replace("&#X27;", "'")
+                .replace("&amp;", "&");
+    }
+
+    private String stripWrappingQuotes(String value) {
+        String current = value;
+        boolean changed = true;
+        while (changed && StringUtils.hasText(current)) {
+            changed = false;
+            String trimmed = current.trim();
+            if (trimmed.length() >= 2 && ((trimmed.startsWith("\"") && trimmed.endsWith("\""))
+                    || (trimmed.startsWith("'") && trimmed.endsWith("'")))) {
+                current = trimmed.substring(1, trimmed.length() - 1).trim();
+                changed = true;
+            }
+        }
+        return current;
+    }
+
+    private boolean containsEncodedQuoteArtifact(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        return lower.contains("&quot;")
+                || lower.contains("&#34;")
+                || lower.contains("&#x22;");
     }
 
     private record FormFieldContract(String name, String type, boolean required) {

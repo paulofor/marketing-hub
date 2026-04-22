@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-04-22-mois-sprint4-signals.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-04-22-mois-sprint2-persistence.yaml
       relativeToChangelogFile: true
   - include:

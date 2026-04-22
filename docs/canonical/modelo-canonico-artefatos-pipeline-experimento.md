@@ -305,7 +305,7 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 > - a resposta do modelo para a etapa `landingPageHtml` deve ser **HTML puro** (documento final completo);
 > - é proibido retornar envelope JSON, markdown, bloco ``` ou campo textual contendo JSON serializado;
 > - o backend do Lead Portal **não** deve tentar “desempacotar” HTML de payload misto/JSON: entradas fora de HTML puro devem ser rejeitadas.
-> - para atributos canônicos de binding/superfície no HTML (`data-section-id`, `data-surface-token`, `data-surface-style`, `data-surface-contrast`), o backend normaliza artefatos de aspas codificadas (`&quot;`, `&#34;`, `&#x22;`) antes da validação estrita e registra warning operacional para correção no worker/prompt.
+> - para atributos canônicos de binding/superfície no HTML (`data-section-id`, `data-surface-token`, `data-surface-style`, `data-surface-contrast`), o backend normaliza artefatos de serialização antes da validação estrita: aspas codificadas (`&quot;`, `&#34;`, `&#x22;`), versões escapadas com barra invertida (ex.: `\\&quot;`) e tokens de quebra de linha escapados (`\\n`, `\\r`, `\\t`). O warning operacional deve permanecer para correção definitiva no worker/prompt.
 
 ```json
 {

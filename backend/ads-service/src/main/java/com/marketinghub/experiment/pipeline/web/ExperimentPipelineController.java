@@ -80,6 +80,12 @@ public class ExperimentPipelineController {
         return generationService.getJobDetail(id, jobId);
     }
 
+    @PostMapping("/jobs/close-open")
+    public int closeOpenJobs(@PathVariable Long id,
+                             @RequestParam(value = "reason", required = false) String reason) {
+        return generationService.closeOpenJobs(id, reason);
+    }
+
     private ExperimentPipelineSection parseSection(String section) {
         if (section == null || section.isBlank()) {
             return null;

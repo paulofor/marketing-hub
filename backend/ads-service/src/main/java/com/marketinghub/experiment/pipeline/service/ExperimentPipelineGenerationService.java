@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
@@ -80,6 +81,10 @@ public class ExperimentPipelineGenerationService {
     private static final Set<ExperimentPipelineGenerationJobStatus> ACTIVE_JOB_STATUSES = Set.of(
             ExperimentPipelineGenerationJobStatus.PENDING,
             ExperimentPipelineGenerationJobStatus.PROCESSING);
+    private static final Set<ExperimentStatus> PIPELINE_ELIGIBLE_EXPERIMENT_STATUSES = Set.of(
+            ExperimentStatus.PLANNED,
+            ExperimentStatus.RUNNING,
+            ExperimentStatus.PAUSED);
     private static final String COMMON_CAMPAIGN_ASSET_RULES = """
             Você cria ativos de campanha para o Marketing Hub.
 
@@ -158,13 +163,39 @@ public class ExperimentPipelineGenerationService {
         return experimentMapper.toDto(experiment);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ExperimentPipelineGenerationJobDto> listPendingJobs(int limit) {
-        return jobRepository.findByStatusOrderByCreatedAtAsc(ExperimentPipelineGenerationJobStatus.PENDING,
+        return jobRepository.findByStatusAndExperimentStatusInOrderByCreatedAtAsc(
+                        ExperimentPipelineGenerationJobStatus.PENDING,
+                        PIPELINE_ELIGIBLE_EXPERIMENT_STATUSES,
                         PageRequest.of(0, Math.max(1, Math.min(limit, 50))))
                 .stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Transactional
+    public int closeOpenJobs(Long experimentId, String reason) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
+        List<ExperimentPipelineGenerationJob> openJobs = jobRepository
+                .findByExperimentIdAndStatusInOrderByCreatedAtDesc(experimentId, ACTIVE_JOB_STATUSES);
+        if (openJobs.isEmpty()) {
+            return 0;
+        }
+        Instant now = Instant.now();
+        String normalizedReason = StringUtils.hasText(reason)
+                ? reason.trim()
+                : "Pipeline encerrado manualmente para o experimento " + experimentId;
+        for (ExperimentPipelineGenerationJob job : openJobs) {
+            job.setStatus(ExperimentPipelineGenerationJobStatus.FAILED);
+            job.setStage(ExperimentPipelineGenerationJobStage.FAILED);
+            job.setErrorMessage(normalizedReason);
+            job.setFinishedAt(now);
+        }
+        log.info("Encerrados {} job(s) abertos do pipeline para experimento {} (status={}, motivo={})",
+                openJobs.size(), experimentId, experiment.getStatus(), normalizedReason);
+        return openJobs.size();
     }
 
     @Transactional(readOnly = true)

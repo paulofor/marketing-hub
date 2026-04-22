@@ -3,6 +3,7 @@ package com.marketinghub.experiment.pipeline.repository;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.experiment.ExperimentStatus;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
@@ -25,6 +26,11 @@ public interface ExperimentPipelineGenerationJobRepository extends JpaRepository
 
     List<ExperimentPipelineGenerationJob> findByStatusOrderByCreatedAtAsc(ExperimentPipelineGenerationJobStatus status,
                                                                           Pageable pageable);
+
+    List<ExperimentPipelineGenerationJob> findByStatusAndExperimentStatusInOrderByCreatedAtAsc(
+            ExperimentPipelineGenerationJobStatus status,
+            Collection<ExperimentStatus> experimentStatuses,
+            Pageable pageable);
 
     List<ExperimentPipelineGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId, Pageable pageable);
 

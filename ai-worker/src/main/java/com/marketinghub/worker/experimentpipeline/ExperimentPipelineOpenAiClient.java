@@ -91,6 +91,7 @@ public class ExperimentPipelineOpenAiClient {
             "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
     private static final Pattern HTML_SECTION_PATTERN = Pattern.compile("(?is)<section\\b[^>]*>");
     private static final Pattern HTML_ATTRIBUTE_PATTERN = Pattern.compile("(?i)(data-surface-token|class)\\s*=\\s*['\"]([^'\"]+)['\"]");
+    private static final Pattern MARKDOWN_CODE_BLOCK_PATTERN = Pattern.compile("(?is)^```(?:html|htm)?\\s*(.*?)\\s*```$");
     private static final List<String> GENERIC_DELIVERABLE_TERMS = List.of("kit", "prévia", "previa", "ativos digitais", "material", "pacote");
     private static final List<String> CONCRETE_DELIVERABLE_TERMS = List.of(
             "checklist", "template", "roteiro", "guia", "planilha", "pdf", "video", "vídeo", "análise", "analise", "exemplo", "script", "modelo");
@@ -267,6 +268,7 @@ public class ExperimentPipelineOpenAiClient {
             }
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = parseResponseContent(content, job);
+            validateExpectedResponseContract(parsed, content, job);
             ensureLandingHtmlHasStaticFormContract(parsed, job);
             enrichConsistencyChecks(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
@@ -288,12 +290,109 @@ public class ExperimentPipelineOpenAiClient {
 
     private Map<String, Object> parseResponseContent(String content, ExperimentPipelineJobDto job) throws JsonProcessingException {
         String trimmedContent = content != null ? content.trim() : "";
-        if (isSection(job, "landing-page-html", "landing-html") && trimmedContent.startsWith("<")) {
-            Map<String, Object> landingPageHtml = new LinkedHashMap<>();
-            landingPageHtml.put("htmlDocument", content);
-            return new LinkedHashMap<>(Map.of("landingPageHtml", landingPageHtml));
+        if (isSection(job, "landing-page-html", "landing-html")) {
+            String htmlDocument = extractLandingHtmlDocument(trimmedContent, job);
+            if (StringUtils.hasText(htmlDocument)) {
+                Map<String, Object> landingPageHtml = new LinkedHashMap<>();
+                landingPageHtml.put("htmlDocument", htmlDocument);
+                return new LinkedHashMap<>(Map.of("landingPageHtml", landingPageHtml));
+            }
         }
         return objectMapper.readValue(content, new TypeReference<>() {});
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateExpectedResponseContract(Map<String, Object> parsed,
+                                                  String rawContent,
+                                                  ExperimentPipelineJobDto job) {
+        if (!isSection(job, "landing-page-html", "landing-html")) {
+            return;
+        }
+        Object payload = parsed != null ? parsed.get("landingPageHtml") : null;
+        Map<String, Object> landingPayload =
+                payload instanceof Map<?, ?> ? (Map<String, Object>) payload : parsed;
+        String htmlDocument = landingPayload != null ? readString(landingPayload, LANDING_HTML_MARKER) : "";
+        if (StringUtils.hasText(htmlDocument)) {
+            return;
+        }
+        String reason = "Quebra de contrato: LANDING_PAGE_HTML sem campo htmlDocument válido.";
+        logContractBreak(job, reason, rawContent, null);
+        throw new IllegalStateException(reason);
+    }
+
+    private String extractLandingHtmlDocument(String trimmedContent, ExperimentPipelineJobDto job) {
+        if (!StringUtils.hasText(trimmedContent)) {
+            return null;
+        }
+        if (trimmedContent.startsWith("<")) {
+            return trimmedContent;
+        }
+        Matcher codeBlockMatcher = MARKDOWN_CODE_BLOCK_PATTERN.matcher(trimmedContent);
+        if (codeBlockMatcher.matches()) {
+            String codeBlockPayload = codeBlockMatcher.group(1);
+            if (StringUtils.hasText(codeBlockPayload) && codeBlockPayload.trim().startsWith("<")) {
+                return codeBlockPayload.trim();
+            }
+        }
+        try {
+            Map<String, Object> parsed = objectMapper.readValue(trimmedContent, new TypeReference<>() {});
+            String jsonHtml = extractHtmlDocumentFromPayload(parsed);
+            if (StringUtils.hasText(jsonHtml)) {
+                return jsonHtml.trim();
+            }
+        } catch (JsonProcessingException ignored) {
+            logContractBreak(
+                    job,
+                    "Quebra de contrato: LANDING_PAGE_HTML não veio em HTML puro e também não é JSON válido.",
+                    trimmedContent,
+                    ignored);
+            // fallback: conteúdo seguirá para parser JSON original
+        }
+        return null;
+    }
+
+    private void logContractBreak(ExperimentPipelineJobDto job, String reason, String modelResponse, Exception ex) {
+        String section = job != null ? String.valueOf(job.section()) : "unknown";
+        Long experimentId = job != null ? job.experimentId() : null;
+        String preview = modelResponse == null ? "" : modelResponse.trim();
+        if (preview.length() > 4000) {
+            preview = preview.substring(0, 4000) + "...(truncated)";
+        }
+        if (ex != null) {
+            log.error(
+                    "Contrato de resposta quebrado (experimento={}, seção={}): {}. Resposta do modelo: {}",
+                    experimentId,
+                    section,
+                    reason,
+                    preview,
+                    ex);
+            return;
+        }
+        log.error(
+                "Contrato de resposta quebrado (experimento={}, seção={}): {}. Resposta do modelo: {}",
+                experimentId,
+                section,
+                reason,
+                preview);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractHtmlDocumentFromPayload(Map<String, Object> parsed) {
+        if (parsed == null || parsed.isEmpty()) {
+            return null;
+        }
+        Object directHtml = parsed.get(LANDING_HTML_MARKER);
+        if (directHtml instanceof String htmlDocument && StringUtils.hasText(htmlDocument)) {
+            return htmlDocument;
+        }
+        Object nestedPayload = parsed.get("landingPageHtml");
+        if (nestedPayload instanceof Map<?, ?> nestedMap) {
+            Object nestedHtml = ((Map<String, Object>) nestedMap).get(LANDING_HTML_MARKER);
+            if (nestedHtml instanceof String htmlDocument && StringUtils.hasText(htmlDocument)) {
+                return htmlDocument;
+            }
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

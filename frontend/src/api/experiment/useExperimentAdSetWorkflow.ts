@@ -37,6 +37,7 @@ export interface ExperimentAdSetSpec {
 export interface ExperimentAdSetWorkflowDto {
   workflowId: number;
   experimentId: number;
+  experimentStatus?: string | null;
   status: string;
   seedKeyword?: string | null;
   seedLocale?: string | null;

@@ -1,6 +1,7 @@
 package com.marketinghub.worker.experimentpipeline;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -688,6 +689,95 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("name=\"whatsapp\"");
         assertThat(htmlDocument).doesNotContain("name=\"objetivo\"");
         assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
+    }
+
+    @Test
+    void acceptsMarkdownHtmlCodeBlockForLandingPageHtmlSection() throws Exception {
+        String openAiText = """
+                ```html
+                <!doctype html>
+                <html lang="pt-BR">
+                <body>
+                  <form id="lead-capture-primary">
+                    <div class="field"><label>Nome</label><input type="text" name="nome" required /></div>
+                  </form>
+                </body>
+                </html>
+                ```
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                22L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(job);
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> landingPageHtml = (Map<String, Object>) content.get("landingPageHtml");
+        String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
+
+        assertThat(htmlDocument).contains("<!doctype html>");
+        assertThat(htmlDocument).contains("name=\"email\"");
+        assertThat(htmlDocument).contains("name=\"whatsapp\"");
+    }
+
+    @Test
+    void failsWhenLandingPageHtmlContractIsBrokenWithoutHtmlDocument() throws Exception {
+        String openAiText = """
+                {
+                  "landingPageHtml": {
+                    "summary": "sem html"
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                23L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        Throwable error = catchThrowable(() -> client.generate(job));
+
+        assertThat(error).isInstanceOf(IllegalStateException.class);
+        assertThat(error).hasMessageContaining("Falha ao gerar seção LANDING_PAGE_HTML do experimento 23");
+        assertThat(error.getCause())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("LANDING_PAGE_HTML sem campo htmlDocument válido");
     }
 
     @Test

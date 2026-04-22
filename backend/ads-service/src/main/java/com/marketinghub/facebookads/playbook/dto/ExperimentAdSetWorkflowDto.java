@@ -1,6 +1,7 @@
 package com.marketinghub.facebookads.playbook.dto;
 
 import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
+import com.marketinghub.experiment.ExperimentStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 public record ExperimentAdSetWorkflowDto(
         Long workflowId,
         Long experimentId,
+        ExperimentStatus experimentStatus,
         ExperimentAdSetWorkflowStatus status,
         String seedKeyword,
         String seedLocale,

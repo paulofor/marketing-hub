@@ -381,6 +381,11 @@ erDiagram
 - O Facebook Ads Worker consome `/api/facebook-campaigns/stop-requests`, chama a Graph API para aplicar `status=PAUSED` e confirma via `/api/facebook-campaigns/{id}/stop-results`.
 - `stop_completed_at` registra quando a pausa efetiva foi confirmada e evita que o pedido volte para a fila.
 
+### Parada manual por decisão do usuário
+
+- Quando o operador decide interromper uma campanha por escolha própria na listagem de experimentos, o backend registra `experiment.status = USER_STOPPED`.
+- `USER_STOPPED` representa encerramento manual no Hub (distinto de `INVALIDATED`, que é auto-stop estatístico) e não entra na fila `/api/facebook-campaigns/experiments-ready` sem nova liberação explícita.
+
 ## Observações de implementação
 
 - Cada registro de `EXPERIMENT` guarda agora `stage`, `primary_variable` e `primary_metric`.

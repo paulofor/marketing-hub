@@ -7,6 +7,7 @@ public enum ExperimentStatus {
     PLANNED,
     RUNNING,
     PAUSED,
+    USER_STOPPED,
     VALIDATED,
     INVALIDATED,
     INCONCLUSIVE,

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
+import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useMemo, useState } from "react";
@@ -15,9 +16,11 @@ function parseDate(date?: string | null) {
 export default function ExperimentListPage() {
   const { data, isLoading } = useExperiments();
   const { data: niches } = useNiches();
+  const updateStatus = useUpdateExperimentStatus();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
+  const [stoppingExperimentId, setStoppingExperimentId] = useState<string | null>(null);
   const experiments = Array.isArray(data) ? data : [];
 
   const filtered = useMemo(() => {
@@ -36,6 +39,15 @@ export default function ExperimentListPage() {
       return bDate - aDate;
     });
   }, [filtered]);
+
+  async function handleUserStop(experimentId: string) {
+    setStoppingExperimentId(experimentId);
+    try {
+      await updateStatus.mutateAsync({ id: experimentId, status: "USER_STOPPED" });
+    } finally {
+      setStoppingExperimentId(null);
+    }
+  }
 
   if (isLoading) return <p>Carregando...</p>;
 
@@ -71,6 +83,7 @@ export default function ExperimentListPage() {
             <option value="PLANNED">PLANNED</option>
             <option value="RUNNING">RUNNING</option>
             <option value="PAUSED">PAUSED</option>
+            <option value="USER_STOPPED">USER_STOPPED</option>
             <option value="FINISHED">FINISHED</option>
             <option value="FAILED">FAILED</option>
           </select>
@@ -113,6 +126,21 @@ export default function ExperimentListPage() {
                   >
                     Duplicar
                   </Link>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-warning ms-1"
+                    disabled={stoppingExperimentId === String(e.id)}
+                    onClick={() => handleUserStop(String(e.id))}
+                  >
+                    {stoppingExperimentId === String(e.id) && (
+                      <span
+                        className="spinner-border spinner-border-sm me-1"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                    )}
+                    Parada do usuário
+                  </button>
                 </td>
               </tr>
             ))}

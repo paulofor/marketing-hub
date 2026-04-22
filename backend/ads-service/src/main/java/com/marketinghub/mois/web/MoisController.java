@@ -92,6 +92,6 @@ public class MoisController {
 
     @GetMapping("/health")
     public Map<String, String> health() {
-        return Map.of("status", "ok", "module", "mois-backend-stub");
+        return Map.of("status", "ok", "module", "mois-backend");
     }
 }

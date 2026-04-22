@@ -50,6 +50,23 @@ Regras operacionais associadas:
 - resumo comercial (`performance-summary`) é projeção derivada dos fatos persistidos em `sales_video_conversion_event`;
 - comparação por variação técnica usa, no mínimo, o eixo `scriptId + providerName` para iniciar rotina de aprendizado.
 
+## Atualização incremental — MOIS Sprint 2 (artefatos, persistência e lineage mínimo)
+
+Entidades/tabelas adicionadas no backend (`ads-service`) para o início persistente do Market Offer Intelligence Service:
+
+- `mois_discovery_request`
+  - request canônica de descoberta de oferta com `request_id`, `status`, contexto de mercado (`niche_name`, `market_theme`, `pain_or_outcome_focus`) e payloads JSON (`seed_queries_json`, `seed_urls_json`, `channels_json`, `discovery_policy_json`).
+- `mois_source_snapshot`
+  - snapshot de fonte observada com vínculo obrigatório ao request (`request_pk`) e `artifact_id` único para exposição em endpoints de artefato.
+- `mois_offer_card`
+  - cartão estruturado de oferta com vínculo ao request e vínculo opcional ao snapshot de origem (`source_snapshot_pk`), preservando lineage mínimo entre requisição, coleta e derivação.
+
+Regras operacionais associadas:
+
+- requests do MOIS agora deixam de ser apenas stub em memória e passam a ser persistidas no backend principal;
+- toda criação de request gera ao menos um snapshot e um offer card inicial para cumprir o critério de lineage mínimo da Sprint 2;
+- leitura de artefatos (`/api/v1/mois/artifacts/{artifactId}`) passa a materializar envelope canônico v1 para discovery request, source snapshot e offer card.
+
 ## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
 
 Entidades/tabelas adicionadas no backend (`ads-service`) para suportar o início do Mechanism Discovery Service:

@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-22-mois-sprint2-persistence
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: mois_discovery_request
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_discovery_request (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                request_id VARCHAR(64) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                niche_name VARCHAR(191) NOT NULL,
+                market_theme VARCHAR(191) NOT NULL,
+                pain_or_outcome_focus LONGTEXT NULL,
+                seed_queries_json LONGTEXT NOT NULL,
+                seed_urls_json LONGTEXT NOT NULL,
+                channels_json LONGTEXT NOT NULL,
+                country VARCHAR(64) NULL,
+                language VARCHAR(32) NULL,
+                discovery_policy_json LONGTEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_discovery_request_request_id (request_id),
+                KEY idx_mois_discovery_request_status_created_at (status, created_at),
+                KEY idx_mois_discovery_request_niche_theme (niche_name, market_theme)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE mois_source_snapshot (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                request_pk BIGINT NOT NULL,
+                artifact_id VARCHAR(64) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                source_url VARCHAR(1024) NOT NULL,
+                source_title VARCHAR(255) NULL,
+                source_kind VARCHAR(64) NULL,
+                captured_at TIMESTAMP NOT NULL,
+                http_status INT NULL,
+                content_hash VARCHAR(128) NULL,
+                raw_excerpt LONGTEXT NULL,
+                normalized_text_ref VARCHAR(255) NULL,
+                capture_notes LONGTEXT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_source_snapshot_artifact_id (artifact_id),
+                KEY idx_mois_source_snapshot_request_created (request_pk, created_at),
+                CONSTRAINT fk_mois_source_snapshot_request FOREIGN KEY (request_pk) REFERENCES mois_discovery_request (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE mois_offer_card (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                request_pk BIGINT NOT NULL,
+                source_snapshot_pk BIGINT NULL,
+                artifact_id VARCHAR(64) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                offer_name VARCHAR(255) NOT NULL,
+                seller_or_brand VARCHAR(255) NULL,
+                channel VARCHAR(64) NULL,
+                target_audience_hypothesis LONGTEXT NULL,
+                core_promise LONGTEXT NOT NULL,
+                primary_offer_type VARCHAR(128) NULL,
+                main_price VARCHAR(128) NULL,
+                confidence DECIMAL(5,4) NULL,
+                deliverables_json LONGTEXT NOT NULL,
+                price_points_json LONGTEXT NOT NULL,
+                proof_summary LONGTEXT NULL,
+                mechanism_claim_summary LONGTEXT NULL,
+                positioning_summary LONGTEXT NULL,
+                funnel_pattern_summary LONGTEXT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_offer_card_artifact_id (artifact_id),
+                KEY idx_mois_offer_card_request_created (request_pk, created_at),
+                KEY idx_mois_offer_card_seller (seller_or_brand),
+                CONSTRAINT fk_mois_offer_card_request FOREIGN KEY (request_pk) REFERENCES mois_discovery_request (id),
+                CONSTRAINT fk_mois_offer_card_snapshot FOREIGN KEY (source_snapshot_pk) REFERENCES mois_source_snapshot (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -216,49 +216,57 @@ A sprint termina quando o MOIS conseguir receber uma requisição, persistir o r
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Persistência inicial do domínio MOIS no backend com entidades/repositórios para `marketOfferDiscoveryRequest`, `marketOfferSourceSnapshot` e `marketOfferCard`.
+- Fluxo de criação de discovery request atualizado para gravar request e semear snapshot + offer card inicial com lineage mínimo rastreável.
+- Endpoint de artefato (`/api/v1/mois/artifacts/{artifactId}`) passou a resolver artefatos reais persistidos com envelope canônico (`artifactType`, `schemaVersion`, `status`, `lineage`, `content`).
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisDiscoveryRequest.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisSourceSnapshot.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisOfferCard.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisDiscoveryRequestStatus.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisArtifactStatus.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/repository/*`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-22-mois-sprint2-persistence.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
+- `docs/modelo-dados-experimento.md`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoints existentes de discovery/offers/artifacts em `/api/v1/mois/*` mantidos compatíveis, agora servindo dados persistidos.
+- Artefatos mínimos canônicos operacionais nesta sprint: `mois.marketOfferDiscoveryRequest.v1`, `mois.marketOfferSourceSnapshot.v1`, `mois.marketOfferCard.v1`.
+- Lineage mínimo consultável entre request e derivados exposto via `lineage.parentArtifactIds` no envelope de artefato.
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisControllerContractTest,MoisApiStubServiceTest test` (backend/ads-service).
+- Cobertura de contrato HTTP básica preservada para controller MOIS.
+- Cobertura de persistência/lineage validada para criação de request MOIS.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Persistência dedicada de `marketOfferInsightReport` (relatório segue derivado em leitura com status `DRAFT`).
+- Lineage em tabela de edges explícitas (atualmente representada por vínculos relacionais e projeção no envelope).
+- Coleta real de fontes externas (Sprint 3), ainda sem integração ativa com infraestrutura de pesquisa.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 2 foi limitada ao núcleo de persistência e lineage mínimo para request/snapshot/card.
+- Relatório consolidado e pipeline de descoberta real fazem parte de escopo posterior no plano.
+- Foi priorizada implementação incremental segura sem antecipar acoplamento com OPRM/MDS.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- MOIS já possui estado persistente e artefatos mínimos consultáveis, mas relatório ainda não representa consolidação analítica final.
+- Ausência de edges explícitas reduz granularidade de auditoria de lineage para fluxos futuros mais complexos.
+- Descoberta de mercado real ainda depende da Sprint 3 para sair do modo seed inicial.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar pipeline de descoberta real com reuso controlado do `market-research-service` conforme documento de reuso.
+- Persistir snapshots vindos de coleta real mantendo contrato canônico dos artefatos e filtros no backend.
+- Evoluir lineage para suportar múltiplas fontes por card e preparar base para relatório consolidado da Sprint 5.
 
 ---
 

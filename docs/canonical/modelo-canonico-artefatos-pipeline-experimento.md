@@ -300,6 +300,11 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 > Os principais atributos são `data-image-section-id` (mapeia o `planning_item_key`), `data-image-binding-key` (chave semântica)
 > e `data-image-role`/`data-conversion-role` (indicam o papel do ativo). Esses marcadores permitem que o pipeline substitua
 > placeholders genéricos por imagens aprovadas automaticamente durante a publicação das landings.
+>
+> **Contrato operacional (vigente a partir de 2026-04-22):**
+> - a resposta do modelo para a etapa `landingPageHtml` deve ser **HTML puro** (documento final completo);
+> - é proibido retornar envelope JSON, markdown, bloco ``` ou campo textual contendo JSON serializado;
+> - o backend do Lead Portal **não** deve tentar “desempacotar” HTML de payload misto/JSON: entradas fora de HTML puro devem ser rejeitadas.
 
 ```json
 {

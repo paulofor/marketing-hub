@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -922,24 +923,72 @@ public class ExperimentPipelineGenerationService {
         if (section.predecessor() == null) {
             return;
         }
-        if (StringUtils.hasText(experiment.getCampaignAngle())) {
-            sb.append("\nÂngulo da campanha:\n").append(experiment.getCampaignAngle().trim()).append("\n");
+        Map<ExperimentPipelineSection, String> completedOutputs = loadLatestCompletedOutputs(experiment);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.CAMPAIGN_ANGLE, "Ângulo da campanha", completedOutputs);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.AD_COPY, "Texto do anúncio", completedOutputs);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.AD_IMAGE_BRIEFING, "Briefing da imagem", completedOutputs);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_COPY, "Textos da landing", completedOutputs);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, "Wireframe da landing", completedOutputs);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING, "Planejamento de imagens da landing", completedOutputs);
+    }
+
+    private boolean shouldIncludeSectionOutput(ExperimentPipelineSection targetSection,
+                                               ExperimentPipelineSection outputSection) {
+        if (targetSection == null || outputSection == null) {
+            return false;
         }
-        if (StringUtils.hasText(experiment.getAdCopy())) {
-            sb.append("\nTexto do anúncio:\n").append(experiment.getAdCopy().trim()).append("\n");
+        ExperimentPipelineSection cursor = targetSection.predecessor();
+        while (cursor != null) {
+            if (cursor == outputSection) {
+                return true;
+            }
+            cursor = cursor.predecessor();
         }
-        if (StringUtils.hasText(experiment.getAdImageBriefing())) {
-            sb.append("\nBriefing da imagem:\n").append(experiment.getAdImageBriefing().trim()).append("\n");
+        return false;
+    }
+
+    private void appendSectionOutputIfEligible(StringBuilder sb,
+                                               ExperimentPipelineSection targetSection,
+                                               ExperimentPipelineSection outputSection,
+                                               String label,
+                                               Map<ExperimentPipelineSection, String> completedOutputs) {
+        if (!shouldIncludeSectionOutput(targetSection, outputSection)) {
+            return;
         }
-        if (StringUtils.hasText(experiment.getLandingPageCopy())) {
-            sb.append("\nTextos da landing:\n").append(experiment.getLandingPageCopy().trim()).append("\n");
+        String content = completedOutputs.get(outputSection);
+        if (!StringUtils.hasText(content)) {
+            return;
         }
-        if (StringUtils.hasText(experiment.getLandingPageWireframe())) {
-            sb.append("\nWireframe da landing:\n").append(experiment.getLandingPageWireframe().trim()).append("\n");
+        sb.append("\n").append(label).append(":\n").append(content.trim()).append("\n");
+    }
+
+    private Map<ExperimentPipelineSection, String> loadLatestCompletedOutputs(Experiment experiment) {
+        if (experiment == null || experiment.getId() == null) {
+            return Map.of();
         }
-        if (StringUtils.hasText(experiment.getLandingPageImagePlanning())) {
-            sb.append("\nPlanejamento de imagens da landing:\n").append(experiment.getLandingPageImagePlanning().trim()).append("\n");
+        List<ExperimentPipelineGenerationJob> completedJobs =
+                jobRepository.findLatestCompletedPerSectionByExperimentId(experiment.getId(), null);
+        if (completedJobs == null || completedJobs.isEmpty()) {
+            return Map.of();
         }
+        Map<ExperimentPipelineSection, String> bySection = new EnumMap<>(ExperimentPipelineSection.class);
+        for (ExperimentPipelineGenerationJob completedJob : completedJobs) {
+            if (completedJob == null || completedJob.getSection() == null) {
+                continue;
+            }
+            String sectionContent = extractCompletedSectionContent(completedJob);
+            if (StringUtils.hasText(sectionContent)) {
+                bySection.put(completedJob.getSection(), sectionContent.trim());
+            }
+        }
+        return bySection;
+    }
+
+    private String extractCompletedSectionContent(ExperimentPipelineGenerationJob completedJob) {
+        if (completedJob == null) {
+            return "";
+        }
+        return firstNonBlank(completedJob.getResponseContent(), completedJob.getRawResponse());
     }
 
     private void applySectionContent(Experiment experiment,

@@ -8,6 +8,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStage;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
@@ -29,6 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -144,6 +146,87 @@ class ExperimentPipelineGenerationServiceTest {
         verify(experimentRepository, never()).save(any());
         verify(leadPortalFlowPublisher, never()).publish(any());
         assertEquals("<section>ok</section>", linkedFlow.getCustomFormHtml());
+    }
+
+    @Test
+    void generateWireframeKeepsPromptScopedToPredecessorChain() {
+        Experiment experiment = new Experiment();
+        experiment.setId(12L);
+        experiment.setName("Experimento 12");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":\"predecessor-ready\"}");
+
+        when(experimentRepository.findById(12L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
+                12L,
+                ExperimentPipelineSection.LANDING_PAGE_WIREFRAME,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(jobRepository.findLatestCompletedPerSectionByExperimentId(12L, null))
+                .thenReturn(List.of(
+                        completedJob(experiment, ExperimentPipelineSection.CAMPAIGN_ANGLE, "{\"campaignAngle\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.AD_COPY, "{\"adCopy\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.AD_IMAGE_BRIEFING, "{\"adImageBriefing\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_COPY, "{\"landingPageCopy\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, "{\"landingPageWireframe\":\"legacy\"}"),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING, "{\"landingPageImagePlanning\":\"legacy\"}")));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(12L, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, new ExperimentPipelineGenerationRequest());
+
+        verify(jobRepository).save(argThat(job -> {
+            String prompt = job.getPrompt();
+            return prompt != null
+                    && prompt.contains("Ângulo da campanha:")
+                    && prompt.contains("Texto do anúncio:")
+                    && prompt.contains("Briefing da imagem:")
+                    && prompt.contains("Textos da landing:")
+                    && !prompt.contains("Wireframe da landing:")
+                    && !prompt.contains("Planejamento de imagens da landing:");
+        }));
+    }
+
+    @Test
+    void generateWireframeDoesNotReusePersistedExperimentArtifactsWithoutCompletedJobs() {
+        Experiment experiment = new Experiment();
+        experiment.setId(13L);
+        experiment.setName("Experimento 13");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":\"persisted\"}");
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":\"persisted\"}");
+        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":\"persisted\"}");
+
+        when(experimentRepository.findById(13L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
+                13L,
+                ExperimentPipelineSection.LANDING_PAGE_WIREFRAME,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(jobRepository.findLatestCompletedPerSectionByExperimentId(13L, null)).thenReturn(List.of());
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(13L, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, new ExperimentPipelineGenerationRequest());
+
+        verify(jobRepository).save(argThat(job -> {
+            String prompt = job.getPrompt();
+            return prompt != null
+                    && !prompt.contains("Textos da landing:")
+                    && !prompt.contains("Wireframe da landing:")
+                    && !prompt.contains("Planejamento de imagens da landing:");
+        }));
+    }
+
+    private ExperimentPipelineGenerationJob completedJob(Experiment experiment,
+                                                         ExperimentPipelineSection section,
+                                                         String responseContent) {
+        return ExperimentPipelineGenerationJob.builder()
+                .id(UUID.randomUUID())
+                .experiment(experiment)
+                .section(section)
+                .status(ExperimentPipelineGenerationJobStatus.COMPLETED)
+                .stage(ExperimentPipelineGenerationJobStage.COMPLETED)
+                .responseContent(responseContent)
+                .build();
     }
 
     @Test

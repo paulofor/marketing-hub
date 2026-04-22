@@ -2,17 +2,22 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type { Experiment } from "./useExperiments";
 
-export function useUpdateExperimentStatus(id: string) {
+interface UpdateExperimentStatusInput {
+  id: string;
+  status: string;
+}
+
+export function useUpdateExperimentStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (status: string) => {
+    mutationFn: async ({ id, status }: UpdateExperimentStatusInput) => {
       const { data } = await axios.patch<Experiment>(`/api/experiments/${id}/status`, null, {
         params: { status },
       });
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["experiment", id] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["experiment", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["experiments"] });
     },
   });

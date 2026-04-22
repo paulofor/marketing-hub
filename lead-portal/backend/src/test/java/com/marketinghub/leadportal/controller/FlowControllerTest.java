@@ -225,30 +225,30 @@ class FlowControllerTest {
 
 
     @Test
-    void getFlowConvertsLandingPagePayloadIntoHtmlDocument() throws Exception {
+    void upsertFlowRejectsJsonWrappedLandingPagePayload() throws Exception {
         UpsertFlowRequest request = buildRequest();
         request.setCustomFormHtml("{\"landingPageHtml\":{\"htmlDocument\":\"<html><body>Landing</body></html>\"}}");
 
         mockMvc.perform(put("/api/flows/landing-preview")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/flows/landing-preview"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.customFormHtml").value(containsString("<body>Landing</body>")))
-                .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"));
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("customFormHtml deve ser HTML puro")));
     }
 
     @Test
     void getStandaloneFlowPageReturnsHtmlDocumentWithoutJsonFetch() throws Exception {
         UpsertFlowRequest request = buildRequest();
-        request.setCustomFormHtml("{\"landingPageHtml\":{\"htmlDocument\":\"<!doctype html><html><body>Landing direta</body></html>\"}}");
+        request.setCustomFormHtml("<!doctype html><html><body>Landing direta</body></html>");
 
         mockMvc.perform(put("/api/flows/landing-direta")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/landing-direta"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"));
 
         mockMvc.perform(get("/api/flows/landing-direta/page"))
                 .andExpect(status().isOk())

@@ -24,7 +24,9 @@ type PreviewViewport = "desktop" | "mobile";
 export default function LeadPortalFlowTab({
   experiment,
 }: LeadPortalFlowTabProps) {
-  const { data: flows, isLoading, isError } = useLeadPortalFlows({ nicheId: experiment.nicheId });
+  const { data: flows, isLoading, isError } = useLeadPortalFlows({
+    experimentId: experiment.id,
+  });
   const requestFlows = useRequestLeadPortalFlows(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
   const updateApproval = useUpdateLeadPortalFlowApproval();

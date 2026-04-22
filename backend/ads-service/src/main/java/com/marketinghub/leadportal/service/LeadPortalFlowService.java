@@ -64,12 +64,8 @@ public class LeadPortalFlowService {
         if (experimentId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
         }
-        Experiment experiment = attachExperiment(experimentId);
-        Long nicheId = experiment.getNiche() != null ? experiment.getNiche().getId() : null;
-        if (nicheId == null) {
-            return List.of();
-        }
-        return repository.findAllByMarketNicheIdOrderByCreatedAtDesc(nicheId);
+        attachExperiment(experimentId);
+        return repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId);
     }
 
     public List<LeadPortalFlow> listByMarketNiche(Long marketNicheId) {

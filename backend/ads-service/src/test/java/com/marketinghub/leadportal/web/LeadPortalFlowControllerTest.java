@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -256,8 +257,37 @@ class LeadPortalFlowControllerTest {
                         "fluxo-novo".equals(updatedFlow.getSlug())));
     }
 
+    @Test
+    void listByExperimentReturnsOnlyFlowsFromRequestedExperiment() throws Exception {
+        Experiment experimentA = createExperiment();
+        Experiment experimentB = createExperimentInNiche(experimentA.getNiche(), "Experimento Secundário");
+
+        repository.save(LeadPortalFlow.builder()
+                .name("Fluxo A")
+                .slug("fluxo-a")
+                .marketNiche(experimentA.getNiche())
+                .experiment(experimentA)
+                .build());
+        repository.save(LeadPortalFlow.builder()
+                .name("Fluxo B")
+                .slug("fluxo-b")
+                .marketNiche(experimentB.getNiche())
+                .experiment(experimentB)
+                .build());
+
+        mockMvc.perform(get("/api/lead-portal-flows")
+                        .param("experimentId", String.valueOf(experimentA.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].slug").value("fluxo-a"));
+    }
+
     private Experiment createExperiment() {
         MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
+        return createExperimentInNiche(niche, "Experimento Lead Portal");
+    }
+
+    private Experiment createExperimentInNiche(MarketNiche niche, String experimentName) {
         Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
                 .title("Hipótese Teste")
                 .marketNiche(niche)
@@ -267,7 +297,7 @@ class LeadPortalFlowControllerTest {
                 .build());
         Experiment experiment = Experiment.builder()
                 .niche(niche)
-                .name("Experimento Lead Portal")
+                .name(experimentName)
                 .hypothesis("Resumo")
                 .hypothesisRef(hypothesis)
                 .journeyTemplate(template)

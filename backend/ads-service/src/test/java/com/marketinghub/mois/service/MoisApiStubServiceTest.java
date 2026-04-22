@@ -4,6 +4,10 @@ import com.marketinghub.mois.MoisDiscoveryRequestStatus;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.repository.MoisDiscoveryRequestRepository;
 import com.marketinghub.mois.repository.MoisOfferCardRepository;
+import com.marketinghub.mois.repository.MoisOfferFunnelPatternRepository;
+import com.marketinghub.mois.repository.MoisOfferMechanismClaimRepository;
+import com.marketinghub.mois.repository.MoisOfferProofSignalRepository;
+import com.marketinghub.mois.repository.MoisOfferPromiseSignalRepository;
 import com.marketinghub.mois.repository.MoisSourceSnapshotRepository;
 import com.marketinghub.mois.service.MoisResearchGateway.MoisDiscoveredSource;
 import com.marketinghub.mois.service.MoisResearchGateway.MoisResearchResult;
@@ -35,6 +39,18 @@ class MoisApiStubServiceTest {
 
     @Autowired
     private MoisOfferCardRepository offerCardRepository;
+
+    @Autowired
+    private MoisOfferPromiseSignalRepository promiseSignalRepository;
+
+    @Autowired
+    private MoisOfferProofSignalRepository proofSignalRepository;
+
+    @Autowired
+    private MoisOfferMechanismClaimRepository mechanismClaimRepository;
+
+    @Autowired
+    private MoisOfferFunnelPatternRepository funnelPatternRepository;
 
     @MockBean
     private MoisResearchGateway researchGateway;
@@ -73,6 +89,10 @@ class MoisApiStubServiceTest {
         assertThat(discoveryRequestRepository.findByRequestId(accepted.requestId())).isPresent();
         assertThat(sourceSnapshotRepository.countByRequest_RequestId(accepted.requestId())).isEqualTo(1);
         assertThat(offerCardRepository.countByRequest_RequestId(accepted.requestId())).isEqualTo(1);
+        assertThat(promiseSignalRepository.countByRequest_RequestId(accepted.requestId())).isEqualTo(1);
+        assertThat(proofSignalRepository.countByRequest_RequestId(accepted.requestId())).isEqualTo(1);
+        assertThat(mechanismClaimRepository.countByRequest_RequestId(accepted.requestId())).isEqualTo(1);
+        assertThat(funnelPatternRepository.countByRequest_RequestId(accepted.requestId())).isEqualTo(1);
 
         var persistedRequest = discoveryRequestRepository.findByRequestId(accepted.requestId()).orElseThrow();
         assertThat(persistedRequest.getStatus()).isEqualTo(MoisDiscoveryRequestStatus.COLLECTED);
@@ -80,7 +100,15 @@ class MoisApiStubServiceTest {
         var detail = service.getDiscoveryRequest(accepted.requestId());
         assertThat(detail).isPresent();
         assertThat(detail.get().artifacts()).extracting(MoisDiscoveryDtos.ArtifactRefResponse::artifactType)
-                .contains("mois.marketOfferDiscoveryRequest.v1", "mois.marketOfferSourceSnapshot.v1", "mois.marketOfferCard.v1");
+                .contains(
+                        "mois.marketOfferDiscoveryRequest.v1",
+                        "mois.marketOfferSourceSnapshot.v1",
+                        "mois.marketOfferCard.v1",
+                        "mois.marketOfferPromiseSignal.v1",
+                        "mois.marketOfferProofSignal.v1",
+                        "mois.marketOfferMechanismClaim.v1",
+                        "mois.marketOfferFunnelPattern.v1"
+                );
     }
 
     @Test

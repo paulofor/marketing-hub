@@ -67,6 +67,25 @@ Regras operacionais associadas:
 - toda criação de request gera ao menos um snapshot e um offer card inicial para cumprir o critério de lineage mínimo da Sprint 2;
 - leitura de artefatos (`/api/v1/mois/artifacts/{artifactId}`) passa a materializar envelope canônico v1 para discovery request, source snapshot e offer card.
 
+## Atualização incremental — MOIS Sprint 4 (extração estruturada de sinais)
+
+Entidades/tabelas adicionadas no backend (`ads-service`) para transformar snapshot bruto em sinais estruturados de oferta:
+
+- `mois_offer_promise_signal`
+  - sinal de promessa central da oferta (`promise_text`, `promise_type`, `intensity`, `timeframe_claim`, `target_outcome`, `confidence`), sempre ligado ao `request`, `offer_card` e opcionalmente ao `source_snapshot`.
+- `mois_offer_proof_signal`
+  - sinal de prova observada (`proof_type`, `proof_text`, `proof_strength_hypothesis`, `proof_location`, `confidence`) com lineage explícito para request/oferta/fonte.
+- `mois_offer_mechanism_claim`
+  - alegação de mecanismo (`claim_text`, `claim_category`, `claim_specificity`, `claim_risk_level`, `confidence`) mantendo distinção entre alegação e mecanismo validado.
+- `mois_offer_funnel_pattern`
+  - padrão de funil inicial (`entry_asset_type`, `lead_capture_fields_json`, `cta_style`, `next_step_hypothesis`, `delivery_format`, `upsell_visible`, `retention_hint`, `confidence`).
+
+Regras operacionais associadas:
+
+- execução de `POST /api/v1/mois/discovery-requests/{requestId}/run` passa a derivar sinais semânticos básicos (heurísticos) a partir do `raw_excerpt` coletado;
+- `marketOfferCard` é enriquecido com os campos extraídos na própria Sprint 4 (promessa/prova/mecanismo/funil) mantendo compatibilidade do contrato de leitura já existente;
+- endpoint de artefato (`/api/v1/mois/artifacts/{artifactId}`) passa a resolver também os novos tipos canônicos `mois.marketOfferPromiseSignal.v1`, `mois.marketOfferProofSignal.v1`, `mois.marketOfferMechanismClaim.v1` e `mois.marketOfferFunnelPattern.v1`.
+
 ## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
 
 Entidades/tabelas adicionadas no backend (`ads-service`) para suportar o início do Mechanism Discovery Service:

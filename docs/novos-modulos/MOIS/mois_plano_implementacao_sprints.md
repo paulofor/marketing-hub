@@ -382,49 +382,59 @@ A sprint termina quando o sistema conseguir transformar pelo menos parte do cont
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Pipeline inicial de extração heurística a partir do `rawExcerpt` para derivar promessa, prova, mecanismo alegado e padrão de funil sem quebrar o contrato existente do MOIS.
+- Persistência dos artefatos semânticos canônicos (`marketOfferPromiseSignal`, `marketOfferProofSignal`, `marketOfferMechanismClaim`, `marketOfferFunnelPattern`) com lineage para `request`, `sourceSnapshot` e `offerCard`.
+- Enriquecimento do `marketOfferCard` com os sinais extraídos (promessa/prova/mecanismo/funil, confiança e preço detectado) e ampliação do endpoint de artefatos para resolver os novos tipos.
 
 **Arquivos criados ou alterados:**
-- 
-- 
-- 
+- `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisApiStubService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisOfferPromiseSignal.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisOfferProofSignal.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisOfferMechanismClaim.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/MoisOfferFunnelPattern.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/repository/MoisOfferPromiseSignalRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/repository/MoisOfferProofSignalRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/repository/MoisOfferMechanismClaimRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/repository/MoisOfferFunnelPatternRepository.java`
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-04-22-mois-sprint4-signals.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/service/MoisApiStubServiceTest.java`
+- `docs/modelo-dados-experimento.md`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
-- 
-- 
+- Endpoint existente `POST /api/v1/mois/discovery-requests/{requestId}/run` mantido e compatível, agora com derivação e persistência dos sinais estruturados da Sprint 4.
+- Endpoint existente `GET /api/v1/mois/artifacts/{artifactId}` ampliado para suportar os artefatos `mois.marketOfferPromiseSignal.v1`, `mois.marketOfferProofSignal.v1`, `mois.marketOfferMechanismClaim.v1` e `mois.marketOfferFunnelPattern.v1`.
+- `mois.marketOfferCard.v1` permanece o mesmo tipo canônico, porém enriquecido com conteúdo extraído (promessa/prova/mecanismo/funil/preço/confiança).
 
 **Testes executados:**
-- 
-- 
-- 
+- `mvn -Dtest=MoisApiStubServiceTest,MoisControllerContractTest test` (backend/ads-service).
+- Validação de persistência de snapshots + offer cards + quatro sinais semânticos derivados na execução de `run`.
+- Validação de transição para `FAILED` sem criação de offer card/sinais quando não há fonte coletada com sucesso.
 
 **Pendências que ficaram abertas:**
-- 
-- 
-- 
+- Heurísticas de extração ainda são léxicas e não cobrem variações semânticas profundas (multilíngue, ironia, estrutura de copy complexa).
+- Não há deduplicação entre sinais em execuções repetidas da mesma request (`sourceUrl + contentHash + tipo de sinal`).
+- Não há normalizador robusto para preço/parcelamento múltiplo ou moeda diferente de BRL.
 
 **Motivo das pendências:**
-- 
-- 
-- 
+- Sprint 4 priorizou entregar o pipeline estruturado mínimo com persistência canônica e baixo risco incremental sobre o backend já existente.
+- Deduplicação semântica e NLP robusto exigem ciclo próprio de modelagem/validação para evitar regressão de qualidade em dados canônicos.
+- Parsing monetário avançado depende de escopo analítico adicional e possivelmente de enriquecimento por modelo/worker.
 
 **Impacto das pendências no sistema:**
-- 
-- 
-- 
+- Em alguns nichos, os sinais extraídos podem ficar genéricos e exigir revisão humana antes de consumo estratégico.
+- Execuções repetidas podem acumular sinais redundantes para a mesma fonte/oferta.
+- Relatórios consolidados futuros (Sprint 5) precisarão tratar normalização de preço com regras de fallback.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Consolidar os sinais persistidos em agregações de domínio para gerar `marketOfferInsightReport` acionável.
+- Introduzir política de deduplicação e/ou versionamento de sinais por snapshot/oferta antes de expandir volume de coleta.
+- Evoluir regras de confiança e normalização de preço/prova/mecanismo para reduzir ruído nos relatórios estratégicos.
 
 ---
 

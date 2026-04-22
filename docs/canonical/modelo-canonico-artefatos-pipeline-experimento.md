@@ -2,6 +2,12 @@
 
 Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 
+## Observação importante — independência dos experimentos
+
+- Cada experimento deve ser tratado de forma independente, sem reutilização implícita de artefatos entre experimentos.
+- **Critério canônico de exclusividade**: todo artefato gerado direta **ou** indiretamente pelo pipeline de um experimento é considerado **exclusivo daquele experimento**.
+- Portanto, para um artefato ser classificado como "não exclusivo", ele não pode ter sido produzido em nenhuma etapa do pipeline do experimento (incluindo derivações, transformações, consolidações ou enriquecimentos).
+
 ## Convenção de envelope (`artifact`)
 
 ```json

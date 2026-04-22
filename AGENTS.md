@@ -39,7 +39,22 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 3. Orientações Práticas:
 
-- **Erro 422** : Esse erro normalmente esta relacionado a uma divergencia entre o que o modelo da open ai gerou e o que a especificação do artefato definia. Pesquisa nos logs usando o MCP Server o real motivo dessa divergencia o que veio do modelo e que o backend rejeitou
+- **Erro 422 (Procedimento Obrigatório / SOP)**: Trate toda ocorrência de `422 Unprocessable Entity` como divergência entre payload gerado pelo modelo e contrato/validação do backend até prova em contrário.
+  - **Fluxo obrigatório (sempre nesta ordem):**
+    1. Acessar logs do backend via MCP Server (`https://mcpserverdigi.shop/mcp`, JSON-RPC).
+    2. Localizar a requisição que falhou e extrair o payload enviado pelo modelo (campos e valores relevantes).
+    3. Comparar o payload com a especificação oficial do artefato em `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`.
+    4. Comparar o payload com as validações ativas no backend (DTOs, validators, regras de domínio e contratos de API).
+    5. Identificar e reportar **exatamente** qual trecho (campo/estrutura/valor) gerado pelo modelo foi rejeitado.
+    6. Informar a causa raiz e a correção proposta (ajuste de prompt, mapeamento, contrato ou validação).
+  - **Formato mínimo obrigatório da resposta de diagnóstico:**
+    - `timestamp` da falha
+    - `endpoint` afetado
+    - trecho do payload do modelo que foi rejeitado
+    - regra/validação violada
+    - evidência no log
+    - ação corretiva recomendada
+  - Não encerrar análise de 422 sem apontar explicitamente o trecho rejeitado e a validação correspondente.
 
 
 ## 4. Framework central do Marketing Hub:

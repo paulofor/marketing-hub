@@ -35,14 +35,11 @@ class MetaToolsServiceTest {
                 new McpProperties.Logs("a", "b", "c", "d", "e", "f", 500),
                 new McpProperties.Meta(
                         true,
-                        List.of("developers.facebook.com"),
                         "https://graph.facebook.com",
                         "v22.0",
                         "system-token",
-                        "app-id",
-                        "app-secret",
-                        10000,
-                        2000
+                        "system-token",
+                        List.of("developers.facebook.com")
                 )
         );
         service = new MetaToolsService(properties, restTemplate, new ObjectMapper());

@@ -20,6 +20,7 @@ public class MetaToolsService {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
     };
+    private static final int DEFAULT_MAX_RESPONSE_CHARS = 12_000;
 
     private final McpProperties properties;
     private final RestTemplate restTemplate;
@@ -40,7 +41,7 @@ public class MetaToolsService {
         String body = Objects.requireNonNullElse(response.getBody(), "");
         String excerpt = toPlainText(body);
 
-        int maxChars = properties.meta().maxResponseChars();
+        int maxChars = DEFAULT_MAX_RESPONSE_CHARS;
         boolean truncated = excerpt.length() > maxChars;
         String content = truncated ? excerpt.substring(0, maxChars) : excerpt;
 
@@ -58,8 +59,8 @@ public class MetaToolsService {
         String normalizedPath = normalizePath(path);
 
         UriComponentsBuilder builder = UriComponentsBuilder
-                .fromHttpUrl(properties.meta().graphApiBaseUrl())
-                .pathSegment(properties.meta().graphApiVersion())
+                .fromHttpUrl(properties.meta().graphBaseUrl())
+                .pathSegment(properties.meta().graphVersion())
                 .pathSegment(normalizedPath.split("/"));
 
         if (queryParams != null) {
@@ -85,14 +86,16 @@ public class MetaToolsService {
 
     public Map<String, Object> debugToken(String inputToken) {
         ensureMetaEnabled();
-        String appId = requiredText(properties.meta().appId(), "mcp.meta.app-id");
-        String appSecret = requiredText(properties.meta().appSecret(), "mcp.meta.app-secret");
+        String debugAccessToken = requiredText(
+                properties.meta().debugAccessToken(),
+                "mcp.meta.debug-access-token"
+        );
 
         URI uri = UriComponentsBuilder
-                .fromHttpUrl(properties.meta().graphApiBaseUrl())
-                .pathSegment(properties.meta().graphApiVersion(), "debug_token")
+                .fromHttpUrl(properties.meta().graphBaseUrl())
+                .pathSegment(properties.meta().graphVersion(), "debug_token")
                 .queryParam("input_token", requiredText(inputToken, "input_token"))
-                .queryParam("access_token", appId + "|" + appSecret)
+                .queryParam("access_token", debugAccessToken)
                 .build(true)
                 .toUri();
 
@@ -114,7 +117,7 @@ public class MetaToolsService {
 
     private void validateAllowedHost(URI uri) {
         String host = Objects.requireNonNullElse(uri.getHost(), "").toLowerCase(Locale.ROOT);
-        boolean allowed = properties.meta().docsAllowlistHosts().stream()
+        boolean allowed = properties.meta().docsAllowedHosts().stream()
                 .map(value -> value.toLowerCase(Locale.ROOT))
                 .anyMatch(allowedHost -> host.equals(allowedHost) || host.endsWith("." + allowedHost));
         if (!allowed) {

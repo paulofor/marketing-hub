@@ -3,7 +3,7 @@
 ## Objetivo usado como critério
 1. Criar personagem compatível com o nicho.
 2. Fazer o personagem falar com o público para vender produto ou ser o próprio conteúdo.
-3. Garantir criação orientada por IA com base responsável (ciência + ética), especialmente integrável ao MDIS.
+3. Garantir criação orientada por IA com base responsável (ciência + ética), especialmente integrável ao MDS.
 
 ## Resultado da triagem (documento por documento)
 
@@ -47,5 +47,5 @@
 - Núcleo comercial de personagem, diálogo, objeções e medição de conversão.
 - Modelo de dados para sustentação operacional.
 
-## Observação sobre MDIS (ciência + ética)
-Os documentos movidos criam uma base forte de personagem, roteiro e operação. Como próximo passo, recomenda-se adicionar um documento dedicado de **policy de evidências MDIS** (fonte científica mínima, score de credibilidade e critérios éticos de bloqueio de afirmações) para fechar totalmente o seu objetivo.
+## Observação sobre MDS (ciência + ética)
+Os documentos movidos criam uma base forte de personagem, roteiro e operação. Como próximo passo, recomenda-se adicionar um documento dedicado de **policy de evidências MDS** (fonte científica mínima, score de credibilidade e critérios éticos de bloqueio de afirmações) para fechar totalmente o seu objetivo.

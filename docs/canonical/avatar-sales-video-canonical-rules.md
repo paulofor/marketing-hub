@@ -13,7 +13,9 @@ Este documento estabelece as regras oficiais para o módulo **Avatar Sales Video
 
 1. criar personagem compatível com o nicho de trabalho;
 2. permitir avatar falando com o público para vender produto ou ser o próprio conteúdo;
-3. garantir geração por IA com responsabilidade científica e ética, orientada por insumos do MDIS.
+3. garantir geração por IA com responsabilidade científica e ética, orientada por insumos do MDS.
+
+**Definição operacional do MDS (Mechanism Discovery Service):** módulo especializado em busca estruturada de evidências, análise de confiança e tradução de ciência em mecanismo aplicável; ele não acessa banco diretamente e publica artefatos via backend.
 
 Toda decisão deve respeitar o eixo do Marketing Hub:
 
@@ -38,7 +40,7 @@ Toda decisão deve respeitar o eixo do Marketing Hub:
 
 ## 2.3 IA com base científica e ética
 
-- A construção de mecanismo e argumentos de eficácia deve usar evidências do MDIS.
+- A construção de mecanismo e argumentos de eficácia deve usar evidências do MDS.
 - Evidência sem fonte rastreável não pode sustentar promessa principal.
 - Quando houver incerteza científica, a resposta deve declarar limitação de evidência.
 
@@ -63,7 +65,13 @@ Se qualquer um dos 5 blocos estiver ausente, o material deve ficar com status `D
 
 ---
 
-## 4. Regras de evidência (MDIS)
+## 4. Regras de evidência (MDS)
+
+## 4.0 Integração mínima com MDS
+
+- O fluxo de vídeo deve consumir artefatos do MDS por contrato publicado no backend, nunca por acoplamento ao modelo interno do MDS.
+- Toda evidência usada no script deve manter lineage para artefatos de origem (`sourceDocument`, `evidenceItem`, `mechanismSpec` ou equivalentes versionados).
+- Se o MDS sinalizar baixa confiança ou limitação forte, o script deve reduzir assertividade e incluir linguagem de cautela.
 
 ## 4.1 Estrutura mínima de evidência por afirmação crítica
 

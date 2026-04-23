@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  mois:
+    build: .
+    container_name: mois-service
+    ports:
+      - "8094:8094"
+    environment:
+      - MOIS_PORT=8094
+      - SPRING_PROFILES_ACTIVE=default

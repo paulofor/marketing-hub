@@ -89,3 +89,4 @@
 - Os testes de campanha devem considerar a sequência de backend com `/api/experiments/{id}/adset-playbook` antes do fallback em `/api/adsets?experimentId={id}` e possíveis POSTs em `/api/experiments/{id}/facebook-api-logs` entre as etapas de criação.
 
 - Em testes com `FailFastMockWebServer`, mantenha stubs explícitos para o fluxo principal e use respostas condicionais de fallback apenas para chamadas auxiliares (logs/status/publicação), para evitar flakiness por ordem de requisição.
+- Nos cenários de criação de campanha, lembre que o worker realiza `POST /adimages` antes de `POST /campaigns` e finaliza com `POST /ads`; enfileire respostas para essas chamadas para não deslocar os stubs esperados de campanha/ad set/criativo.

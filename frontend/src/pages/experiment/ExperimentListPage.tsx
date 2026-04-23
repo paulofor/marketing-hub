@@ -25,6 +25,21 @@ function formatCurrency(value?: number | null) {
   }).format(value);
 }
 
+function resolveExperimentCost(experiment: {
+  cost?: number | null;
+  totalCost?: number | null;
+  expense?: number | null;
+  campaignMetric?: { spend?: number | null } | null;
+}) {
+  return (
+    experiment.cost ??
+    experiment.totalCost ??
+    experiment.expense ??
+    experiment.campaignMetric?.spend ??
+    null
+  );
+}
+
 export default function ExperimentListPage() {
   const { data, isLoading } = useExperiments();
   const { data: niches } = useNiches();
@@ -160,7 +175,7 @@ export default function ExperimentListPage() {
                   <td>{e.name}</td>
                   <td>{e.hypothesis || "—"}</td>
                   <td>{e.primaryVariable || "—"}</td>
-                  <td>{formatCurrency(e.cost)}</td>
+                  <td>{formatCurrency(resolveExperimentCost(e))}</td>
                   <td>{e.status}</td>
                   <td>{e.startDate}</td>
                   <td>

@@ -4,7 +4,7 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
-import com.marketinghub.mois.service.MoisApiStubService;
+import com.marketinghub.mois.service.MoisModuleGateway;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +24,14 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class MoisController {
 
-    private final MoisApiStubService service;
+    private final MoisModuleGateway gateway;
 
     @PostMapping("/discovery-requests")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse createDiscoveryRequest(
             @Valid @RequestBody MoisDiscoveryDtos.CreateDiscoveryRequest request
     ) {
-        return service.createDiscoveryRequest(request);
+        return gateway.createDiscoveryRequest(request);
     }
 
     @GetMapping("/discovery-requests")
@@ -40,19 +40,19 @@ public class MoisController {
             @RequestParam(required = false) String nicheName,
             @RequestParam(required = false) String marketTheme
     ) {
-        return service.listDiscoveryRequests(status, nicheName, marketTheme);
+        return gateway.listDiscoveryRequests(status, nicheName, marketTheme);
     }
 
     @GetMapping("/discovery-requests/{requestId}")
     public MoisDiscoveryDtos.DiscoveryRequestDetailResponse getDiscoveryRequest(@PathVariable String requestId) {
-        return service.getDiscoveryRequest(requestId)
+        return gateway.getDiscoveryRequest(requestId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "discovery request not found"));
     }
 
     @PostMapping("/discovery-requests/{requestId}/run")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisDiscoveryDtos.AsyncAcceptedResponse runDiscoveryRequest(@PathVariable String requestId) {
-        return service.runDiscoveryRequest(requestId);
+        return gateway.runDiscoveryRequest(requestId);
     }
 
     @GetMapping("/offers")
@@ -61,12 +61,12 @@ public class MoisController {
             @RequestParam(required = false) String nicheName,
             @RequestParam(required = false) String sellerOrBrand
     ) {
-        return service.listOffers(requestId, nicheName, sellerOrBrand);
+        return gateway.listOffers(requestId, nicheName, sellerOrBrand);
     }
 
     @GetMapping("/offers/{offerId}")
     public MoisOfferDtos.OfferCardResponse getOffer(@PathVariable String offerId) {
-        return service.getOffer(offerId)
+        return gateway.getOffer(offerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "offer not found"));
     }
 
@@ -75,23 +75,23 @@ public class MoisController {
             @RequestParam(required = false) String requestId,
             @RequestParam(required = false) String nicheName
     ) {
-        return service.listInsightReports(requestId, nicheName);
+        return gateway.listInsightReports(requestId, nicheName);
     }
 
     @GetMapping("/insight-reports/{reportId}")
     public MoisInsightDtos.InsightReportResponse getInsightReport(@PathVariable String reportId) {
-        return service.getInsightReport(reportId)
+        return gateway.getInsightReport(reportId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
     }
 
     @GetMapping("/artifacts/{artifactId}")
     public MoisArtifactDtos.ArtifactEnvelopeResponse getArtifact(@PathVariable String artifactId) {
-        return service.getArtifact(artifactId)
+        return gateway.getArtifact(artifactId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "artifact not found"));
     }
 
     @GetMapping("/health")
     public Map<String, String> health() {
-        return Map.of("status", "ok", "module", "mois-backend");
+        return gateway.health();
     }
 }

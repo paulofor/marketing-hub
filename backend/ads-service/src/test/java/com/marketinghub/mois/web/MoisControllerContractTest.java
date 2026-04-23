@@ -2,7 +2,7 @@ package com.marketinghub.mois.web;
 
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
-import com.marketinghub.mois.service.MoisApiStubService;
+import com.marketinghub.mois.service.MoisModuleGateway;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -33,11 +33,11 @@ class MoisControllerContractTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private MoisApiStubService service;
+    private MoisModuleGateway gateway;
 
     @Test
     void shouldAcceptDiscoveryRequest() throws Exception {
-        when(service.createDiscoveryRequest(any(MoisDiscoveryDtos.CreateDiscoveryRequest.class)))
+        when(gateway.createDiscoveryRequest(any(MoisDiscoveryDtos.CreateDiscoveryRequest.class)))
                 .thenReturn(new MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse("mois-req-123", "ACCEPTED"));
 
         mockMvc.perform(post("/api/v1/mois/discovery-requests")
@@ -63,7 +63,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldReturnDiscoveryRequestDetail() throws Exception {
-        when(service.getDiscoveryRequest(eq("mois-req-001")))
+        when(gateway.getDiscoveryRequest(eq("mois-req-001")))
                 .thenReturn(Optional.of(new MoisDiscoveryDtos.DiscoveryRequestDetailResponse(
                         "mois-req-001",
                         "personal trainer",
@@ -82,7 +82,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldReturn404WhenOfferDoesNotExist() throws Exception {
-        when(service.getOffer(eq("unknown-offer"))).thenReturn(Optional.empty());
+        when(gateway.getOffer(eq("unknown-offer"))).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/mois/offers/unknown-offer"))
                 .andExpect(status().isNotFound());
@@ -90,7 +90,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldReturnOfferListContract() throws Exception {
-        when(service.listOffers(any(), any(), any()))
+        when(gateway.listOffers(any(), any(), any()))
                 .thenReturn(new MoisOfferDtos.OfferCardListResponse(List.of(
                         new MoisOfferDtos.OfferCardSummaryResponse(
                                 "mois-offer-001",

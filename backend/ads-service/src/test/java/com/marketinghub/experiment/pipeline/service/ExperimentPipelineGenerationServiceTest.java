@@ -19,6 +19,7 @@ import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,6 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +70,8 @@ class ExperimentPipelineGenerationServiceTest {
     private LandingPageImageInjector landingPageImageInjector;
     @Mock
     private FrameworkImageGenerationService frameworkImageGenerationService;
+    @Mock
+    private OpenAiPricingService openAiPricingService;
 
     private ExperimentPipelineGenerationService service;
 
@@ -81,7 +86,9 @@ class ExperimentPipelineGenerationServiceTest {
                 leadPortalFlowPublisher,
                 new ObjectMapper(),
                 landingPageImageInjector,
-                frameworkImageGenerationService);
+                frameworkImageGenerationService,
+                openAiPricingService);
+        lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
     }
 
     @Test

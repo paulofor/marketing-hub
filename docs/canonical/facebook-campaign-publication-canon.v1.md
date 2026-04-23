@@ -92,10 +92,12 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
    - `custo_texto_usd = (tokens_totais / 1_000_000) * preco_usd_por_milhao_tokens`;
    - `custo_producao_textos_brl = custo_texto_usd * 5`;
    - taxa fixa vigente neste cânone: **`1 USD = 5 BRL`**.
-5. **Regra de consistência de moeda** – `custo_total_experimento_brl` deve ser persistido/exibido em BRL. Campos operacionais em USD podem existir para auditoria, porém não substituem o total consolidado em BRL.
-6. **Zerar contagens** – o botão atualiza `experiment.funnel_reset_at`, e somente eventos com `occurred_at >= funnel_reset_at` permanecem visíveis. Use quando testes internos poluírem o funil sem necessidade de liberar novamente o worker.
-7. **Execução registrada por anúncio** – cada criativo listado traz sua referência de rastreio e a tabela de conversões para as etapas 3 a 9, permitindo diagnosticar rapidamente qual anúncio sustentou o restante do funil.
-8. **Diagnóstico estatístico por etapa** – o backend expõe `GET /api/experiments/{experimentId}/funnel/diagnostics` com status por transição prioritária, separando explicitamente risco estatístico (`INSUFFICIENT_DATA`, `WEAK_SIGNAL`, `STATISTICALLY_FAILED`) de suspeita técnica (`TECHNICAL_ISSUE_SUSPECTED`). A UI consome o diagnóstico e não replica regras críticas.
+5. **Fonte canônica de preço por modelo** – `preco_usd_por_milhao_tokens` deve vir do catálogo interno `openai_model` (backend, chave por `code` do modelo), respeitando o modo da execução (standard/batch). É proibido usar tabela hardcoded de preços como fonte primária para custo de experimento.
+6. **Regra de consistência de unidade** – os preços de `openai_model` são expressos em **USD por 1 milhão de tokens**; qualquer cálculo operacional deve manter esta unidade (divisor `1_000_000`) para evitar drift financeiro.
+7. **Regra de consistência de moeda** – `custo_total_experimento_brl` deve ser persistido/exibido em BRL. Campos operacionais em USD podem existir para auditoria, porém não substituem o total consolidado em BRL.
+8. **Zerar contagens** – o botão atualiza `experiment.funnel_reset_at`, e somente eventos com `occurred_at >= funnel_reset_at` permanecem visíveis. Use quando testes internos poluírem o funil sem necessidade de liberar novamente o worker.
+9. **Execução registrada por anúncio** – cada criativo listado traz sua referência de rastreio e a tabela de conversões para as etapas 3 a 9, permitindo diagnosticar rapidamente qual anúncio sustentou o restante do funil.
+10. **Diagnóstico estatístico por etapa** – o backend expõe `GET /api/experiments/{experimentId}/funnel/diagnostics` com status por transição prioritária, separando explicitamente risco estatístico (`INSUFFICIENT_DATA`, `WEAK_SIGNAL`, `STATISTICALLY_FAILED`) de suspeita técnica (`TECHNICAL_ISSUE_SUSPECTED`). A UI consome o diagnóstico e não replica regras críticas.
 
 ## 9. Dependências externas e domínio publicado
 

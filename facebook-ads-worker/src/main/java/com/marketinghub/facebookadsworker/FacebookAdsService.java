@@ -13,10 +13,16 @@ import com.marketinghub.facebookadsworker.util.JsonLogFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -46,6 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 import static org.springframework.util.StringUtils.hasText;
 
@@ -2056,18 +2063,39 @@ private FacebookInterest searchInterest(String interestName, String locale) {
 
         String path = buildVersionedPath("/act_" + adAccountId + "/adimages");
         JsonNode response = executePost(path, body);
-        JsonNode imagesNode = response.path("images");
-        if (imagesNode.isMissingNode() || imagesNode.isNull()) {
-            throw new IllegalStateException("Facebook did not return any image hash");
-        }
+        return extractAdImageHash(response);
+    }
 
-        for (JsonNode value : imagesNode) {
-            String hash = value.path("hash").asText(null);
-            if (hasText(hash)) {
-                return hash;
-            }
+    public String uploadAdImageFromBytes(String adAccountId,
+                                         byte[] imageBytes,
+                                         String fileName,
+                                         String contentType) {
+        Objects.requireNonNull(adAccountId, "adAccountId");
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("imageBytes must not be empty");
         }
-        throw new IllegalStateException("Facebook image upload response did not contain a hash");
+        String resolvedFileName = hasText(fileName) ? fileName.trim() : "creative-" + UUID.randomUUID() + ".jpg";
+        String resolvedContentType = hasText(contentType)
+                ? contentType.trim()
+                : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("access_token", requireAccessToken());
+        builder.part("filename", resolvedFileName);
+        builder.part("source", new ByteArrayResource(imageBytes) {
+            @Override
+            public String getFilename() {
+                return resolvedFileName;
+            }
+        }).header(HttpHeaders.CONTENT_TYPE, resolvedContentType);
+
+        Map<String, Object> debugBody = new HashMap<>();
+        debugBody.put("filename", resolvedFileName);
+        debugBody.put("parts", List.of("source(bytes)", "filename", "access_token"));
+
+        String path = buildVersionedPath("/act_" + adAccountId + "/adimages");
+        JsonNode response = executeMultipartPost(path, builder.build(), debugBody);
+        return extractAdImageHash(response);
     }
 
     public String createAd(String adAccountId, AdRequest request) {
@@ -2343,6 +2371,103 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 "POST",
                 path,
                 toJsonString(body),
+                null,
+                null,
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            throw ex;
+        }
+    }
+
+
+    private JsonNode executeMultipartPost(String path,
+                                          MultiValueMap<String, HttpEntity<?>> parts,
+                                          Map<String, Object> debugBody) {
+        Instant startedAt = Instant.now();
+        String maskedPath = maskAccessTokenInPath(path);
+        LOGGER.info(
+            "Sending multipart POST request to Facebook API: path==>{}, body={}",
+            maskedPath,
+            JsonLogFormatter.wrap(objectMapper, debugBody)
+        );
+        try {
+            FacebookApiResponse apiResponse = webClient
+                .post()
+                .uri(path)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(parts))
+                .exchangeToMono(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException().flatMap(Mono::error);
+                    }
+                    return response.bodyToMono(JsonNode.class)
+                        .defaultIfEmpty(objectMapper.nullNode())
+                        .map(bodyNode -> new FacebookApiResponse(
+                            response.statusCode(),
+                            response.headers().asHttpHeaders(),
+                            bodyNode
+                        ));
+                })
+                .block();
+            FacebookApiResponse nonNullResponse = apiResponse != null
+                ? apiResponse
+                : new FacebookApiResponse(null, HttpHeaders.EMPTY, objectMapper.nullNode());
+            logSuccessfulResponse("POST", maskedPath, nonNullResponse);
+            recordApiCallDebugInfo(
+                "POST",
+                path,
+                toJsonString(debugBody),
+                toJsonString(nonNullResponse.body()),
+                nonNullResponse.statusCode() != null ? nonNullResponse.statusCode().value() : null,
+                null,
+                startedAt,
+                Instant.now()
+            );
+            return nonNullResponse.body();
+        } catch (WebClientResponseException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            ObjectNode errorDetails = extractErrorDetails(responseBody);
+            LOGGER.error(
+                "Facebook API multipart POST request failed: path<=={}, status={}, responseBody={}, errorDetails={}, headers={}",
+                maskedPath,
+                ex.getRawStatusCode(),
+                maskAccessToken(responseBody),
+                errorDetails,
+                JsonLogFormatter.wrap(objectMapper, sanitizeHeaders(ex.getHeaders())),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "POST",
+                path,
+                toJsonString(debugBody),
+                responseBody,
+                ex.getRawStatusCode(),
+                ex.getMessage(),
+                startedAt,
+                Instant.now()
+            );
+            if (isAccessTokenExpired(errorDetails)) {
+                throw new FacebookAccessTokenExpiredException(resolveAccessTokenExpiredMessage(errorDetails), errorDetails, ex);
+            }
+            if (isPermissionError(errorDetails)) {
+                throw new FacebookPermissionException(resolvePermissionMessage(errorDetails), errorDetails, ex);
+            }
+            throw ex;
+        } catch (WebClientRequestException ex) {
+            LOGGER.error(
+                "Facebook API multipart POST request failed (transport error): path<=={}, message={}, request={}, parts={}",
+                maskedPath,
+                ex.getMessage(),
+                JsonLogFormatter.wrap(objectMapper, debugBody),
+                parts.keySet(),
+                ex
+            );
+            recordApiCallDebugInfo(
+                "POST",
+                path,
+                toJsonString(debugBody),
                 null,
                 null,
                 ex.getMessage(),
@@ -2714,6 +2839,24 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             return "***";
         }
         return token.substring(0, 3) + "..." + token.substring(token.length() - 3);
+    }
+
+
+    private String extractAdImageHash(JsonNode response) {
+        if (response == null) {
+            throw new IllegalStateException("Facebook image upload response was empty");
+        }
+        JsonNode imagesNode = response.path("images");
+        if (imagesNode.isMissingNode() || imagesNode.isNull()) {
+            throw new IllegalStateException("Facebook did not return any image hash");
+        }
+        for (JsonNode value : imagesNode) {
+            String hash = value.path("hash").asText(null);
+            if (hasText(hash)) {
+                return hash.trim();
+            }
+        }
+        throw new IllegalStateException("Facebook image upload response did not contain a hash");
     }
 
     private String maskAccessTokenInPath(String path) {

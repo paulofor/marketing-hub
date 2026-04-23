@@ -25,6 +25,7 @@ import com.marketinghub.facebookadsworker.util.UrlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -35,8 +36,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -61,6 +67,9 @@ public class FacebookCampaignService {
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS = 3;
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE = 3858258;
 
+    private static final Duration CREATIVE_IMAGE_DOWNLOAD_TIMEOUT = Duration.ofSeconds(20);
+    private static final long CREATIVE_IMAGE_MAX_BYTES = 10 * 1024 * 1024L;
+
     private final FacebookAdsService facebookAdsService;
     private final WebClient backendClient;
     private final String backendBaseUrl;
@@ -74,6 +83,7 @@ public class FacebookCampaignService {
     private final AtomicBoolean configurationUnavailableWarningLogged;
     private final ObjectMapper objectMapper;
     private final ExperimentFacebookApiLogClient experimentFacebookApiLogClient;
+    private final HttpClient assetDownloadClient;
 
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
@@ -96,6 +106,10 @@ public class FacebookCampaignService {
         this.configurationUnavailableWarningLogged = new AtomicBoolean(false);
         this.objectMapper = objectMapper;
         this.experimentFacebookApiLogClient = experimentFacebookApiLogClient;
+        this.assetDownloadClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
     }
 
     private Optional<FacebookWorkerConfiguration> prepareConfiguration(String contextLabel) {
@@ -1249,6 +1263,97 @@ public class FacebookCampaignService {
         }
     }
 
+
+    private String uploadAdImageWithFallback(String adAccountId, long experimentId, String imageUrl) {
+        try {
+            return facebookAdsService.uploadAdImage(adAccountId, imageUrl);
+        } catch (WebClientResponseException ex) {
+            if (!isCreativeImageDownloadError(ex)) {
+                throw ex;
+            }
+            LOGGER.warn(
+                "Facebook reported an image download error; downloading asset locally before retry: experimentId={}, status={}, message={}",
+                experimentId,
+                ex.getRawStatusCode(),
+                ex.getMessage()
+            );
+            try {
+                DownloadedImage downloaded = downloadCreativeImage(imageUrl);
+                String fileName = resolveImageFileName(imageUrl);
+                return facebookAdsService.uploadAdImageFromBytes(
+                    adAccountId,
+                    downloaded.bytes(),
+                    fileName,
+                    downloaded.contentType()
+                );
+            } catch (Exception downloadEx) {
+                LOGGER.error(
+                    "Failed to download creative image locally after Facebook download error: experimentId={}, message={}",
+                    experimentId,
+                    downloadEx.getMessage(),
+                    downloadEx
+                );
+                throw ex;
+            }
+        }
+    }
+
+    private DownloadedImage downloadCreativeImage(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            throw new IllegalArgumentException("imageUrl must not be blank");
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(imageUrl))
+                .GET()
+                .timeout(CREATIVE_IMAGE_DOWNLOAD_TIMEOUT)
+                .header(HttpHeaders.USER_AGENT, "MarketingHubFacebookAdsWorker/1.0")
+                .build();
+            HttpResponse<byte[]> response = assetDownloadClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            int status = response.statusCode();
+            if (status < 200 || status >= 300) {
+                throw new IllegalStateException("Creative image download failed with status " + status);
+            }
+            byte[] body = response.body();
+            if (body == null || body.length == 0) {
+                throw new IllegalStateException("Creative image download returned an empty body");
+            }
+            if (body.length > CREATIVE_IMAGE_MAX_BYTES) {
+                throw new IllegalStateException("Creative image exceeds max allowed size");
+            }
+            String contentType = response.headers().firstValue(HttpHeaders.CONTENT_TYPE).orElse(null);
+            return new DownloadedImage(body, contentType);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Creative image download interrupted", ex);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to download creative image: " + ex.getMessage(), ex);
+        }
+    }
+
+    private String resolveImageFileName(String imageUrl) {
+        if (!StringUtils.hasText(imageUrl)) {
+            return "creative-" + UUID.randomUUID() + ".jpg";
+        }
+        try {
+            String path = URI.create(imageUrl).getPath();
+            if (StringUtils.hasText(path)) {
+                int idx = path.lastIndexOf('/');
+                if (idx >= 0 && idx + 1 < path.length()) {
+                    String candidate = path.substring(idx + 1);
+                    if (StringUtils.hasText(candidate)) {
+                        return candidate;
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.debug("Failed to extract filename from image URL {}: {}", imageUrl, ex.getMessage());
+        }
+        return "creative-" + UUID.randomUUID() + ".jpg";
+    }
+
+    private record DownloadedImage(byte[] bytes, String contentType) {}
+
     private JsonNode parseJson(String raw) {
         if (!StringUtils.hasText(raw)) {
             return null;
@@ -1382,7 +1487,11 @@ public class FacebookCampaignService {
                 payload.imageUrl()
             );
             try {
-                String uploadedImageHash = facebookAdsService.uploadAdImage(adAccountId, payload.imageUrl());
+                String uploadedImageHash = executeFacebookCallWithLogging(
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> uploadAdImageWithFallback(adAccountId, experimentId, payload.imageUrl())
+                );
                 LOGGER.info(
                     "Creative image preload succeeded and will use image_hash as primary path: experimentId={}, creativeId={}, hash={}",
                     experimentId,
@@ -1432,7 +1541,7 @@ public class FacebookCampaignService {
                         String uploadedImageHash = executeFacebookCallWithLogging(
                             experimentId,
                             ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                            () -> facebookAdsService.uploadAdImage(adAccountId, imageUrlSnapshot)
+                            () -> uploadAdImageWithFallback(adAccountId, experimentId, imageUrlSnapshot)
                         );
                         requestInUse = withImageHashOnly(requestInUse, uploadedImageHash);
                         triedImageLibraryFallback = true;

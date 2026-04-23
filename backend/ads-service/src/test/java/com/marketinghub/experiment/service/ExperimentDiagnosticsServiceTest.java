@@ -7,6 +7,7 @@ import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,8 @@ class ExperimentDiagnosticsServiceTest {
     private FacebookAdsAdSetRepository adSetRepository;
     @Mock
     private FacebookAdsAdRepository adRepository;
+    @Mock
+    private ExperimentFacebookApiLogService facebookApiLogService;
 
     @InjectMocks
     private ExperimentDiagnosticsService service;
@@ -49,6 +52,7 @@ class ExperimentDiagnosticsServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(campaignRepository.findByExperimentId(experimentId)).thenReturn(List.of(campaign));
         when(adSetRepository.findByCampaignIdIn(List.of(campaign.getId()))).thenReturn(List.of());
+        when(facebookApiLogService.findLogs(experimentId, 200)).thenReturn(List.of());
 
         ExperimentDiagnosticsDto diagnostics = service.diagnose(experimentId);
 

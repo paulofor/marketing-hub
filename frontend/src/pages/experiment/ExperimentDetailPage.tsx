@@ -753,6 +753,44 @@ export default function ExperimentDetailPage() {
                 </p>
               ) : null}
               <p className="mb-2">{diagnostics.description}</p>
+              {diagnostics.failureDetails ? (
+                <div className="alert alert-light border small mb-2" role="alert">
+                  <div className="fw-semibold mb-1">
+                    Último erro retornado pelo worker / Meta Ads
+                  </div>
+                  <ul className="mb-0 ps-3">
+                    <li>
+                      <strong>Mensagem:</strong>{" "}
+                      {diagnostics.failureDetails.message ??
+                        "Sem mensagem detalhada no log."}
+                    </li>
+                    <li>
+                      <strong>Endpoint:</strong>{" "}
+                      <code>{diagnostics.failureDetails.endpoint ?? "—"}</code>
+                    </li>
+                    <li>
+                      <strong>Status HTTP:</strong>{" "}
+                      {diagnostics.failureDetails.statusCode ?? "—"}
+                    </li>
+                    <li>
+                      <strong>Origem:</strong>{" "}
+                      {diagnostics.failureDetails.source ?? "—"}
+                    </li>
+                    <li>
+                      <strong>Horário do erro:</strong>{" "}
+                      {diagnostics.failureDetails.occurredAt
+                        ? formatDateTimeValue(diagnostics.failureDetails.occurredAt)
+                        : "—"}
+                    </li>
+                  </ul>
+                  <Link
+                    to="facebook-api-logs"
+                    className="btn btn-sm btn-outline-danger mt-2"
+                  >
+                    Abrir Chamadas Meta com payload completo
+                  </Link>
+                </div>
+              ) : null}
               {diagnostics.resolution ? (
                 <p className="mb-2">
                   <strong>O que deve ser corrigido:</strong>{" "}

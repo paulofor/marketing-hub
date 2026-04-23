@@ -39,6 +39,18 @@ Ele não substitui o OPRM nem o MDS:
    - lista endpoints stub e decisões de escopo
    - registra pendências que devem seguir para a Sprint 2
 
+6. `mois_sprint_corretiva_a_execucao.md`
+   - execução da fundação do serviço separado `mois/`
+   - formaliza diretório, projeto e container próprios do módulo
+
+7. `mois_sprint_corretiva_c_execucao.md`
+   - execução da integração backend ↔ MOIS via gateway HTTP
+   - consolida backend como façade institucional do contrato
+
+8. `mois_sprint_corretiva_d_execucao.md`
+   - hardening final da correção arquitetural pós-Sprint 4
+   - remove legado duplicado no backend e registra ownership explícito
+
 ## Direção arquitetural resumida
 
 - O **backend/domínio** continua sendo a fonte de verdade das regras e contratos.

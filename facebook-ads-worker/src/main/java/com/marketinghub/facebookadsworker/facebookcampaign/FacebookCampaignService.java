@@ -1340,16 +1340,44 @@ public class FacebookCampaignService {
         FacebookAdsService.AdCreativeRequest request
     ) {
         int attempt = 1;
+        boolean triedImageLibraryFallback = false;
+        FacebookAdsService.AdCreativeRequest requestInUse = request;
         while (true) {
             try {
+                FacebookAdsService.AdCreativeRequest requestSnapshot = requestInUse;
                 return executeFacebookCallWithLogging(
                     experimentId,
                     ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                    () -> facebookAdsService.createAdCreative(adAccountId, request)
+                    () -> facebookAdsService.createAdCreative(adAccountId, requestSnapshot)
                 );
             } catch (WebClientResponseException ex) {
                 if (!isCreativeImageDownloadError(ex) || attempt >= AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS) {
                     throw ex;
+                }
+                if (!triedImageLibraryFallback
+                    && StringUtils.hasText(requestInUse.imageUrl())
+                    && !StringUtils.hasText(requestInUse.imageHash())) {
+                    String imageUrlSnapshot = requestInUse.imageUrl();
+                    try {
+                        String uploadedImageHash = executeFacebookCallWithLogging(
+                            experimentId,
+                            ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                            () -> facebookAdsService.uploadAdImage(adAccountId, imageUrlSnapshot)
+                        );
+                        requestInUse = withImageHashOnly(requestInUse, uploadedImageHash);
+                        triedImageLibraryFallback = true;
+                        LOGGER.info(
+                            "Uploaded creative image to Facebook ad library after download error and switched request to image_hash: experimentId={}, hash={}",
+                            experimentId,
+                            uploadedImageHash
+                        );
+                    } catch (Exception uploadEx) {
+                        LOGGER.warn(
+                            "Could not upload image to Facebook ad library after download error; keeping URL fallback: experimentId={}, message={}",
+                            experimentId,
+                            uploadEx.getMessage()
+                        );
+                    }
                 }
                 LOGGER.warn(
                     "Retrying ad creative creation after transient image download error: experimentId={}, attempt={}/{}, status={}, message={}",
@@ -1362,6 +1390,25 @@ public class FacebookCampaignService {
                 attempt++;
             }
         }
+    }
+
+    private FacebookAdsService.AdCreativeRequest withImageHashOnly(
+        FacebookAdsService.AdCreativeRequest request,
+        String imageHash
+    ) {
+        return new FacebookAdsService.AdCreativeRequest(
+            request.name(),
+            request.pageId(),
+            request.instagramActorId(),
+            request.websiteUrl(),
+            request.leadGenFormId(),
+            request.message(),
+            imageHash,
+            null,
+            request.callToActionType(),
+            request.headline(),
+            request.description()
+        );
     }
 
     private boolean isCreativeImageDownloadError(WebClientResponseException ex) {

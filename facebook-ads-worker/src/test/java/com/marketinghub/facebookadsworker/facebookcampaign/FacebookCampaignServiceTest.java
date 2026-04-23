@@ -281,8 +281,7 @@ class FacebookCampaignServiceTest {
             .setBody("{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,\"error_subcode\":3858258,\"error_user_msg\":\"Não foi possível baixar sua imagem\"}}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse()
-            .setResponseCode(400)
-            .setBody("{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,\"error_subcode\":3858258,\"error_user_msg\":\"Não foi possível baixar sua imagem\"}}")
+            .setBody("{\"images\":{\"https://cdn.example/img.jpg\":{\"hash\":\"hash123\"}}}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
@@ -307,10 +306,10 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest creativeAttempt1 = takeFacebookRequest("facebook creative attempt 1");
         assertEquals("/v23.0/act_1/adcreatives", creativeAttempt1.getPath());
+        RecordedRequest uploadImage = takeFacebookRequest("facebook ad image upload");
+        assertEquals("/v23.0/act_1/adimages", uploadImage.getPath());
         RecordedRequest creativeAttempt2 = takeFacebookRequest("facebook creative attempt 2");
         assertEquals("/v23.0/act_1/adcreatives", creativeAttempt2.getPath());
-        RecordedRequest creativeAttempt3 = takeFacebookRequest("facebook creative attempt 3");
-        assertEquals("/v23.0/act_1/adcreatives", creativeAttempt3.getPath());
 
         RecordedRequest postAd = takeFacebookRequest("facebook ad creation");
         assertEquals("/v23.0/act_1/ads", postAd.getPath());

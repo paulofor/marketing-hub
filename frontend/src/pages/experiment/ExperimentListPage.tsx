@@ -6,8 +6,9 @@ import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExp
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useMemo, useState } from "react";
-import { getExperimentStageLabel } from "./stageLabels";
 import { toast } from "react-toastify";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -15,16 +16,40 @@ function parseDate(date?: string | null) {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
+function formatCurrency(value?: number | null) {
+  if (value === null || value === undefined) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(value);
+}
+
 export default function ExperimentListPage() {
   const { data, isLoading } = useExperiments();
   const { data: niches } = useNiches();
   const updateStatus = useUpdateExperimentStatus();
   const closePipelineJobs = useCloseExperimentPipelineJobs();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
   const [stoppingExperimentId, setStoppingExperimentId] = useState<string | null>(null);
-  const stoppableStatuses = new Set(["PLANNED", "RUNNING", "PAUSED"]);
+  const [retryingExperimentId, setRetryingExperimentId] = useState<string | null>(null);
+  const retryRelease = useMutation({
+    mutationFn: async (experimentId: string) => {
+      const { data } = await axios.post(`/api/experiments/${experimentId}/facebook-release`);
+      return data;
+    },
+    onSuccess: async (_, experimentId) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["experiments"] }),
+        queryClient.invalidateQueries({ queryKey: ["experiment", experimentId] }),
+        queryClient.invalidateQueries({ queryKey: ["experiment-readiness", experimentId] }),
+        queryClient.invalidateQueries({ queryKey: ["experiment", experimentId, "funnel"] }),
+      ]);
+    },
+  });
   const experiments = Array.isArray(data) ? data : [];
 
   const filtered = useMemo(() => {
@@ -57,6 +82,18 @@ export default function ExperimentListPage() {
       toast.error("Não foi possível concluir a parada do usuário.");
     } finally {
       setStoppingExperimentId(null);
+    }
+  }
+
+  async function handleRetry(experimentId: string) {
+    setRetryingExperimentId(experimentId);
+    try {
+      await retryRelease.mutateAsync(experimentId);
+      toast.success("Experimento reenviado para a fila do Facebook Ads Worker.");
+    } catch {
+      toast.error("Não foi possível reenviar o experimento para a fila.");
+    } finally {
+      setRetryingExperimentId(null);
     }
   }
 
@@ -105,10 +142,9 @@ export default function ExperimentListPage() {
           <thead>
             <tr>
               <th>Nome</th>
-              <th>Nicho</th>
-              <th>Etapa</th>
+              <th>Hipótese</th>
               <th>Variável</th>
-              <th>KPI alvo</th>
+              <th>Custo</th>
               <th>Status</th>
               <th>Início</th>
               <th>Ações</th>
@@ -116,40 +152,55 @@ export default function ExperimentListPage() {
           </thead>
           <tbody>
             {sorted.map((e) => {
-              const canStop = stoppableStatuses.has(e.status);
+              const canStop = e.status === "RUNNING";
               const isStopping = stoppingExperimentId === String(e.id);
+              const isRetrying = retryingExperimentId === String(e.id);
               return (
                 <tr key={e.id}>
                   <td>{e.name}</td>
-                  <td>{niches?.find((n) => n.id === e.nicheId)?.name}</td>
-                  <td>{getExperimentStageLabel(e.stage)}</td>
+                  <td>{e.hypothesis || "—"}</td>
                   <td>{e.primaryVariable || "—"}</td>
-                  <td>{e.kpiTarget}</td>
+                  <td>{formatCurrency(e.cost)}</td>
                   <td>{e.status}</td>
                   <td>{e.startDate}</td>
                   <td>
                     <Link className="btn btn-sm btn-outline-primary" to={`/experiments/${e.id}`}>
                       Visualizar
                     </Link>
-                    <Link className="btn btn-sm btn-outline-secondary ms-1" to={`/experiments/${e.id}`}>
-                      Duplicar
-                    </Link>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-warning ms-1"
-                      disabled={!canStop || isStopping}
-                      onClick={() => handleUserStop(String(e.id))}
-                      title={!canStop ? "Disponível apenas para PLANNED, RUNNING e PAUSED." : undefined}
-                    >
-                      {isStopping && (
-                        <span
-                          className="spinner-border spinner-border-sm me-1"
-                          role="status"
-                          aria-hidden="true"
-                        />
-                      )}
-                      Parada do usuário
-                    </button>
+                    {canStop && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-warning ms-1"
+                        disabled={isStopping}
+                        onClick={() => handleUserStop(String(e.id))}
+                      >
+                        {isStopping && (
+                          <span
+                            className="spinner-border spinner-border-sm me-1"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                        )}
+                        Parada do usuário
+                      </button>
+                    )}
+                    {e.status === "FAILED" && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger ms-1"
+                        disabled={isRetrying}
+                        onClick={() => handleRetry(String(e.id))}
+                      >
+                        {isRetrying && (
+                          <span
+                            className="spinner-border spinner-border-sm me-1"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                        )}
+                        Retry
+                      </button>
+                    )}
                   </td>
                 </tr>
               );

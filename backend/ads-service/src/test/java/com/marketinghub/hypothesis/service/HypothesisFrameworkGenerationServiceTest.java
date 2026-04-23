@@ -22,6 +22,8 @@ import com.marketinghub.hypothesis.framework.HypothesisFrameworkSection;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.repository.HypothesisFrameworkGenerationJobRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.openai.service.OpenAiPricingService;
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +53,8 @@ class HypothesisFrameworkGenerationServiceTest {
 
     @Mock
     private AiWorkerGenerationService generationService;
+    @Mock
+    private OpenAiPricingService openAiPricingService;
 
     @Captor
     private ArgumentCaptor<HypothesisFrameworkGenerationJob> jobCaptor;
@@ -67,8 +71,10 @@ class HypothesisFrameworkGenerationServiceTest {
                 mapper,
                 frameworkSupport,
                 generationService,
-                objectMapper
+                objectMapper,
+                openAiPricingService
         );
+        lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
 
         lenient().when(frameworkSupport.merge(any(HypothesisFrameworkDto.class), any(HypothesisFrameworkDto.class)))
                 .thenAnswer(invocation -> {

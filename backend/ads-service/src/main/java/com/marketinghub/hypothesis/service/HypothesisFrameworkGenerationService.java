@@ -19,8 +19,8 @@ import com.marketinghub.hypothesis.framework.HypothesisFrameworkSection;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.repository.HypothesisFrameworkGenerationJobRepository;
 import com.marketinghub.hypothesis.repository.HypothesisRepository;
-import com.marketinghub.openai.OpenAiCostEstimator;
 import com.marketinghub.openai.OpenAiResponse;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -59,19 +59,22 @@ public class HypothesisFrameworkGenerationService {
     private final HypothesisFrameworkMapperSupport frameworkSupport;
     private final AiWorkerGenerationService generationService;
     private final ObjectMapper objectMapper;
+    private final OpenAiPricingService openAiPricingService;
 
     public HypothesisFrameworkGenerationService(HypothesisRepository repository,
                                                 HypothesisFrameworkGenerationJobRepository jobRepository,
                                                 HypothesisMapper mapper,
                                                 HypothesisFrameworkMapperSupport frameworkSupport,
                                                 AiWorkerGenerationService generationService,
-                                                ObjectMapper objectMapper) {
+                                                ObjectMapper objectMapper,
+                                                OpenAiPricingService openAiPricingService) {
         this.repository = repository;
         this.jobRepository = jobRepository;
         this.mapper = mapper;
         this.frameworkSupport = frameworkSupport;
         this.generationService = generationService;
         this.objectMapper = objectMapper;
+        this.openAiPricingService = openAiPricingService;
     }
 
     @Transactional
@@ -189,7 +192,7 @@ public class HypothesisFrameworkGenerationService {
                 totalTokens(request.inputTokens(), request.outputTokens()));
         BigDecimal estimatedCost = request.costUsd() != null
                 ? request.costUsd()
-                : OpenAiCostEstimator.estimateUsd(job.getModel(), usage);
+                : openAiPricingService.estimateStandardCost(job.getModel(), usage);
 
         generationService.recordGeneration(AiWorkerGenerationRequest.builder()
                 .domain("hypothesis.framework." + job.getSection().path() + (summaryOnly ? ".summary" : ""))

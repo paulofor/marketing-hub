@@ -25,8 +25,8 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
-import com.marketinghub.openai.OpenAiCostEstimator;
 import com.marketinghub.openai.OpenAiResponse;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Duration;
@@ -113,6 +113,7 @@ public class ExperimentPipelineGenerationService {
     private final ObjectMapper objectMapper;
     private final LandingPageImageInjector landingPageImageInjector;
     private final FrameworkImageGenerationService frameworkImageGenerationService;
+    private final OpenAiPricingService openAiPricingService;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
@@ -122,7 +123,8 @@ public class ExperimentPipelineGenerationService {
                                                LeadPortalFlowPublisher leadPortalFlowPublisher,
                                                ObjectMapper objectMapper,
                                                LandingPageImageInjector landingPageImageInjector,
-                                               FrameworkImageGenerationService frameworkImageGenerationService) {
+                                               FrameworkImageGenerationService frameworkImageGenerationService,
+                                               OpenAiPricingService openAiPricingService) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
@@ -132,6 +134,7 @@ public class ExperimentPipelineGenerationService {
         this.objectMapper = objectMapper;
         this.landingPageImageInjector = landingPageImageInjector;
         this.frameworkImageGenerationService = frameworkImageGenerationService;
+        this.openAiPricingService = openAiPricingService;
     }
 
     @Transactional
@@ -398,7 +401,7 @@ public class ExperimentPipelineGenerationService {
                 totalTokens(request.inputTokens(), request.outputTokens()));
         BigDecimal estimatedCost = request.costUsd() != null
                 ? request.costUsd()
-                : OpenAiCostEstimator.estimateUsd(job.getModel(), usage);
+                : openAiPricingService.estimateStandardCost(job.getModel(), usage);
 
         generationService.recordGeneration(AiWorkerGenerationRequest.builder()
                 .domain("experiment.pipeline." + job.getSection().path())

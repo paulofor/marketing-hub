@@ -84,9 +84,18 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 
 1. **Aba Funil de vendas** – expõe nove etapas da jornada (impressão → download/compra) usando `experiment_campaign_metric` para mídia, eventos do `lead-portal` para engajamentos e eventos de checkout/pagamento para conversões finais.
 2. **Custo por etapa** – o cartão mostra o gasto total sincronizado pela Marketing API do Meta Ads e divide o valor por conversão em cada etapa, permitindo encontrar gargalos sem sair do experimento. (Fonte externa: [Meta Marketing API](https://developers.facebook.com/docs/marketing-api/)).
-3. **Zerar contagens** – o botão atualiza `experiment.funnel_reset_at`, e somente eventos com `occurred_at >= funnel_reset_at` permanecem visíveis. Use quando testes internos poluírem o funil sem necessidade de liberar novamente o worker.
-4. **Execução registrada por anúncio** – cada criativo listado traz sua referência de rastreio e a tabela de conversões para as etapas 3 a 9, permitindo diagnosticar rapidamente qual anúncio sustentou o restante do funil.
-5. **Diagnóstico estatístico por etapa** – o backend expõe `GET /api/experiments/{experimentId}/funnel/diagnostics` com status por transição prioritária, separando explicitamente risco estatístico (`INSUFFICIENT_DATA`, `WEAK_SIGNAL`, `STATISTICALLY_FAILED`) de suspeita técnica (`TECHNICAL_ISSUE_SUSPECTED`). A UI consome o diagnóstico e não replica regras críticas.
+3. **Composição canônica do custo total do experimento** – para qualquer visão consolidada de custo (cards, listagens, relatórios e APIs de resumo), o valor de `custo_total_experimento_brl` deve ser calculado pela soma:
+   - `custo_campanha_brl` (gasto de mídia sincronizado da Meta Ads API);
+   - `custo_producao_imagens_brl` (criativos e imagens de página);
+   - `custo_producao_textos_brl` (todas as execuções do Worker AI usando ChatGPT).
+4. **Conversão cambial canônica (fase atual)** – custos de ChatGPT são apurados em USD por token e convertidos para BRL antes da soma final:
+   - `custo_texto_usd = (tokens_totais / 1_000_000) * preco_usd_por_milhao_tokens`;
+   - `custo_producao_textos_brl = custo_texto_usd * 5`;
+   - taxa fixa vigente neste cânone: **`1 USD = 5 BRL`**.
+5. **Regra de consistência de moeda** – `custo_total_experimento_brl` deve ser persistido/exibido em BRL. Campos operacionais em USD podem existir para auditoria, porém não substituem o total consolidado em BRL.
+6. **Zerar contagens** – o botão atualiza `experiment.funnel_reset_at`, e somente eventos com `occurred_at >= funnel_reset_at` permanecem visíveis. Use quando testes internos poluírem o funil sem necessidade de liberar novamente o worker.
+7. **Execução registrada por anúncio** – cada criativo listado traz sua referência de rastreio e a tabela de conversões para as etapas 3 a 9, permitindo diagnosticar rapidamente qual anúncio sustentou o restante do funil.
+8. **Diagnóstico estatístico por etapa** – o backend expõe `GET /api/experiments/{experimentId}/funnel/diagnostics` com status por transição prioritária, separando explicitamente risco estatístico (`INSUFFICIENT_DATA`, `WEAK_SIGNAL`, `STATISTICALLY_FAILED`) de suspeita técnica (`TECHNICAL_ISSUE_SUSPECTED`). A UI consome o diagnóstico e não replica regras críticas.
 
 ## 9. Dependências externas e domínio publicado
 

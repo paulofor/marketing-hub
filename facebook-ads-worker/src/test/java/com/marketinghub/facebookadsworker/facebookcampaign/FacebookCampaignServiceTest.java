@@ -146,6 +146,14 @@ class FacebookCampaignServiceTest {
                 && "PATCH".equals(request.getMethod()),
             () -> new MockResponse().setBody("{}").addHeader("Content-Type", "application/json")
         );
+        facebook.enqueueConditionalResponse(
+            request -> request.getPath() != null
+                && request.getPath().matches("/v23\\.0/act_[^/]+/adimages")
+                && "POST".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+                .addHeader("Content-Type", "application/json")
+        );
     }
 
     @AfterEach
@@ -163,9 +171,18 @@ class FacebookCampaignServiceTest {
     }
 
     private RecordedRequest takeFacebookRequest(String description) throws InterruptedException {
-        RecordedRequest request = facebook.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(request, "Expected Facebook request (" + description + ") within timeout.");
-        return request;
+        for (int i = 0; i < 10; i++) {
+            RecordedRequest request = facebook.takeRequest(5, TimeUnit.SECONDS);
+            assertNotNull(request, "Expected Facebook request (" + description + ") within timeout.");
+            String path = request.getPath();
+            boolean isAdImageRequest = path != null && path.contains("/adimages");
+            boolean expectsAdImage = description.toLowerCase().contains("ad image");
+            if (isAdImageRequest && !expectsAdImage) {
+                continue;
+            }
+            return request;
+        }
+        throw new AssertionError("Expected Facebook request (" + description + ") within timeout.");
     }
 
     private RecordedRequest takeBackendRequestMatching(String description, Predicate<RecordedRequest> predicate)
@@ -248,8 +265,8 @@ class FacebookCampaignServiceTest {
         assertEquals("SHOP_NOW", linkData.get("call_to_action").get("type").asText());
         assertEquals("HL", linkData.get("name").asText());
         assertEquals("Desc", linkData.get("description").asText());
-        assertEquals("https://cdn.example/img.jpg", linkData.get("picture").asText());
-        assertFalse(linkData.has("image_hash"));
+        assertEquals("hash-preloaded", linkData.get("image_hash").asText());
+        assertFalse(linkData.has("picture"));
 
         RecordedRequest postAd = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/ads", postAd.getPath());
@@ -756,8 +773,8 @@ class FacebookCampaignServiceTest {
         JsonNode cta = linkData.get("call_to_action");
         assertEquals("SIGN_UP", cta.get("type").asText());
         assertEquals("321123321123321", cta.get("value").get("lead_gen_form_id").asText());
-        assertEquals("https://cdn.example/img.jpg", linkData.get("picture").asText());
-        assertFalse(linkData.has("image_hash"));
+        assertEquals("hash-preloaded", linkData.get("image_hash").asText());
+        assertFalse(linkData.has("picture"));
 
         takeBackendRequest("backend request"); // experiments-ready
         takeBackendRequest("backend request"); // creatives fetch
@@ -1131,10 +1148,8 @@ class FacebookCampaignServiceTest {
         RecordedRequest creativeRequest = takeFacebookRequest("facebook request");
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         assertEquals("84", creativePayload.get("object_story_spec").get("page_id").asText());
-        assertEquals("https://cdn.example/img.jpg", creativePayload.get("object_story_spec").get("link_data").get("picture").asText());
-        assertFalse(
-            creativePayload.get("object_story_spec").get("link_data").has("image_hash")
-        );
+        assertEquals("hash-preloaded", creativePayload.get("object_story_spec").get("link_data").get("image_hash").asText());
+        assertFalse(creativePayload.get("object_story_spec").get("link_data").has("picture"));
 
         takeBackendRequest("backend request"); // experiments-ready
         takeBackendRequest("backend request"); // creatives fetch
@@ -1181,11 +1196,8 @@ class FacebookCampaignServiceTest {
         RecordedRequest creativeRequest = takeFacebookRequest("facebook request");
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         assertEquals("84", creativePayload.get("object_story_spec").get("page_id").asText());
-        assertEquals(
-            "https://cdn.example/img.jpg",
-            creativePayload.get("object_story_spec").get("link_data").get("picture").asText()
-        );
-        assertFalse(creativePayload.get("object_story_spec").get("link_data").has("image_hash"));
+        assertEquals("hash-preloaded", creativePayload.get("object_story_spec").get("link_data").get("image_hash").asText());
+        assertFalse(creativePayload.get("object_story_spec").get("link_data").has("picture"));
 
         takeBackendRequest("backend request"); // experiments-ready
         takeBackendRequest("backend request"); // creatives fetch

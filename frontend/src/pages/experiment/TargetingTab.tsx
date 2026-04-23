@@ -130,7 +130,6 @@ export default function TargetingTab({
     useExperimentSimpleFlowStatus(experimentId);
 
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
-  const [jobTitlesConfirmed, setJobTitlesConfirmed] = useState(false);
 
   const list = Array.isArray(targetingElements) ? targetingElements : [];
 
@@ -168,16 +167,6 @@ export default function TargetingTab({
     return map;
   }, [enrichedOptions]);
 
-  const selectedJobTitlesCount = useMemo(() => {
-    return Array.from(selectedTerms)
-      .map((entry) => enrichedOptionsByKey.get(entry))
-      .filter((option): option is EnrichedTargetingOption => option != null)
-      .filter((option) => option.candidateType === "WORK_POSITION")
-      .length;
-  }, [enrichedOptionsByKey, selectedTerms]);
-
-  const requiresJobTitlesConfirmation = selectedJobTitlesCount >= 2;
-
   const selectedOptions = useMemo(() => {
     return Array.from(selectedTerms)
       .map((entry) => enrichedOptionsByKey.get(entry))
@@ -211,7 +200,6 @@ export default function TargetingTab({
   useEffect(() => {
     if (!savedSelections) {
       setSelectedTerms(new Set());
-      setJobTitlesConfirmed(false);
       return;
     }
     const mapped = new Set(
@@ -220,12 +208,7 @@ export default function TargetingTab({
       ),
     );
     setSelectedTerms(mapped);
-    setJobTitlesConfirmed(false);
   }, [savedSelections]);
-
-  useEffect(() => {
-    setJobTitlesConfirmed(false);
-  }, [selectedTerms]);
 
   if (nicheIdAsString == null || !hypothesisId) {
     return (
@@ -278,10 +261,6 @@ export default function TargetingTab({
     await onSave();
     await runSimpleFlow.mutateAsync();
     alert("Fluxo simples executado. A resolução dos IDs no Facebook foi enfileirada.");
-  };
-
-  const onConfirmSelectedJobTitles = () => {
-    setJobTitlesConfirmed(true);
   };
 
   return (
@@ -343,37 +322,21 @@ export default function TargetingTab({
             </>
           )}
           <div className="d-flex gap-2 mt-3">
-            {requiresJobTitlesConfirmation ? (
-              <button
-                className="btn btn-outline-success btn-sm"
-                onClick={onConfirmSelectedJobTitles}
-                disabled={jobTitlesConfirmed}
-              >
-                <span className="ms-1">
-                  {jobTitlesConfirmed
-                    ? "Cargos confirmados para público alvo"
-                    : "Confirmar uso dos cargos selecionados"}
-                </span>
-              </button>
-            ) : null}
-            <button className="btn btn-outline-primary btn-sm" onClick={onSave} disabled={saveSelections.isPending}>
-              {saveSelections.isPending ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" /> : null}
-              <span className="ms-1">Salvar seleção</span>
-            </button>
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-success btn-sm"
               onClick={onRunSimpleFlow}
-              disabled={runSimpleFlow.isPending || saveSelections.isPending || (requiresJobTitlesConfirmation && !jobTitlesConfirmed)}
+              disabled={runSimpleFlow.isPending || saveSelections.isPending || selectedTerms.size === 0}
             >
-              {runSimpleFlow.isPending ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" /> : null}
-              <span className="ms-1">Executar fluxo simples</span>
+              {runSimpleFlow.isPending || saveSelections.isPending ? (
+                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+              ) : null}
+              <span className="ms-1">
+                {runSimpleFlow.isPending || saveSelections.isPending
+                  ? "Aprovando seleção..."
+                  : "Aprovar seleção para o experimento"}
+              </span>
             </button>
           </div>
-          {requiresJobTitlesConfirmation && !jobTitlesConfirmed ? (
-            <p className="text-warning small mt-2 mb-0">
-              Confirme os cargos selecionados para liberar o público alvo escolhido.
-            </p>
-          ) : null}
         </div>
       </section>
 
@@ -467,7 +430,7 @@ export default function TargetingTab({
             </>
           ) : (
             <p className="text-muted mb-0">
-              Nenhuma execução registrada. Salve as segmentações acima e clique em “Executar fluxo simples”.
+              Nenhuma execução registrada. Selecione os itens acima e clique em “Aprovar seleção para o experimento”.
             </p>
           )}
         </div>

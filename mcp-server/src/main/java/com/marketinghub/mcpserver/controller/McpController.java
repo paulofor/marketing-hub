@@ -2,7 +2,7 @@ package com.marketinghub.mcpserver.controller;
 
 import com.marketinghub.mcpserver.config.McpProperties;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
-import com.marketinghub.mcpserver.service.MetaToolsService;
+import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
@@ -31,16 +31,16 @@ public class McpController {
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
-    private final MetaToolsService metaToolsService;
+    private final MetaDiagnosticsService metaDiagnosticsService;
 
     public McpController(McpProperties properties,
                          DatabaseDiagnosticsService databaseDiagnosticsService,
                          ModuleLogService moduleLogService,
-                         MetaToolsService metaToolsService) {
+                         MetaDiagnosticsService metaDiagnosticsService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
-        this.metaToolsService = metaToolsService;
+        this.metaDiagnosticsService = metaDiagnosticsService;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -275,38 +275,48 @@ public class McpController {
 
     private Map<String, Object> callMetaDocsTool(Object id, Map<String, Object> arguments) {
         String url = stringArgument(arguments, "url");
+
         try {
-            Map<String, Object> result = metaToolsService.getDocumentationPage(url);
-            return successToolResult(id, result, "Fetched meta docs page from " + result.get("host"));
+            Map<String, Object> result = metaDiagnosticsService.getDocumentationPage(url);
+            return successToolResult(id, result, "Fetched Meta docs page");
         } catch (IllegalArgumentException ex) {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
-            return error(id, -32603, "Failed to fetch meta docs page: " + ex.getMessage());
+            return error(id, -32603, "Failed to fetch Meta docs page: " + ex.getMessage());
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> callMetaGraphGetTool(Object id, Map<String, Object> arguments) {
         String path = stringArgument(arguments, "path");
-        Map<String, Object> query = mapArgument(arguments, "query");
+        Object queryObj = arguments.get("query");
+        Map<String, Object> query = queryObj instanceof Map<?, ?> queryMap
+                ? queryMap.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        entry -> String.valueOf(entry.getKey()),
+                        Map.Entry::getValue))
+                : Map.of();
+
         try {
-            Map<String, Object> result = metaToolsService.graphGet(path, query);
-            return successToolResult(id, result, "Graph API GET executed");
+            Map<String, Object> result = metaDiagnosticsService.graphGet(path, query);
+            return successToolResult(id, result, "Meta Graph GET executed");
         } catch (IllegalArgumentException ex) {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
-            return error(id, -32603, "Failed to execute Graph API GET: " + ex.getMessage());
+            return error(id, -32603, "Failed to execute Meta Graph GET: " + ex.getMessage());
         }
     }
 
     private Map<String, Object> callMetaGraphDebugTokenTool(Object id, Map<String, Object> arguments) {
         String inputToken = stringArgument(arguments, "input_token");
+
         try {
-            Map<String, Object> result = metaToolsService.debugToken(inputToken);
-            return successToolResult(id, result, "Graph debug_token executed");
+            Map<String, Object> result = metaDiagnosticsService.debugToken(inputToken);
+            return successToolResult(id, result, "Meta debug_token executed");
         } catch (IllegalArgumentException ex) {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
-            return error(id, -32603, "Failed to execute Graph debug_token: " + ex.getMessage());
+            return error(id, -32603, "Failed to execute Meta debug_token: " + ex.getMessage());
         }
     }
 

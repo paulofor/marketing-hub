@@ -35,12 +35,9 @@ mcp:
     lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://191.252.102.54:8092/api/v1/logs/runtime?lines=200}
     max-lines: ${MCP_LOG_MAX_LINES:500}
   meta:
-    enabled: ${MCP_META_ENABLED:false}
-    docs-allowlist-hosts: ${MCP_META_DOCS_ALLOWLIST_HOSTS:developers.facebook.com,www.facebook.com}
-    graph-api-base-url: ${MCP_META_GRAPH_API_BASE_URL:https://graph.facebook.com}
-    graph-api-version: ${MCP_META_GRAPH_API_VERSION:v22.0}
-    access-token: ${MCP_META_ACCESS_TOKEN:}
-    app-id: ${MCP_META_APP_ID:}
-    app-secret: ${MCP_META_APP_SECRET:}
-    request-timeout-millis: ${MCP_META_TIMEOUT_MS:10000}
-    max-response-chars: ${MCP_META_MAX_RESPONSE_CHARS:6000}
+    enabled: ${MCP_META_ENABLED:true}
+    graph-base-url: ${MCP_META_GRAPH_BASE_URL:https://graph.facebook.com}
+    graph-version: ${MCP_META_GRAPH_VERSION:v23.0}
+    access-token: ${MCP_META_GRAPH_ACCESS_TOKEN:}
+    debug-access-token: ${MCP_META_GRAPH_DEBUG_ACCESS_TOKEN:${MCP_META_GRAPH_ACCESS_TOKEN:}}
+    docs-allowed-hosts: ${MCP_META_DOCS_ALLOWED_HOSTS:developers.facebook.com,business.facebook.com,www.facebook.com}

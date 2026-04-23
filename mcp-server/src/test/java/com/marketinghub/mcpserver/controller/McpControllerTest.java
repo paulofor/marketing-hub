@@ -47,11 +47,9 @@ class McpControllerTest {
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.meta.enabled", () -> "false");
-        registry.add("mcp.meta.docs-allowlist-hosts", () -> "developers.facebook.com,www.facebook.com");
-        registry.add("mcp.meta.graph-api-base-url", () -> "https://graph.facebook.com");
-        registry.add("mcp.meta.graph-api-version", () -> "v22.0");
-        registry.add("mcp.meta.request-timeout-millis", () -> "10000");
-        registry.add("mcp.meta.max-response-chars", () -> "2000");
+        registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
+        registry.add("mcp.meta.graph-version", () -> "v23.0");
+        registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
     }
 
     @BeforeEach
@@ -206,13 +204,13 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_docs_get')]").exists())
-                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_graph_get')]").exists())
-                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_graph_debug_token')]").exists());
+                .andExpect(jsonPath("$.result.tools[5].name").value("meta_docs_get"))
+                .andExpect(jsonPath("$.result.tools[6].name").value("meta_graph_get"))
+                .andExpect(jsonPath("$.result.tools[7].name").value("meta_graph_debug_token"));
     }
 
     @Test
-    void shouldRejectMetaToolWhenFeatureIsDisabled() throws Exception {
+    void shouldRejectMetaToolWhenDisabled() throws Exception {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -248,11 +246,9 @@ class McpControllerApiKeyEnabledTest {
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.meta.enabled", () -> "false");
-        registry.add("mcp.meta.docs-allowlist-hosts", () -> "developers.facebook.com,www.facebook.com");
-        registry.add("mcp.meta.graph-api-base-url", () -> "https://graph.facebook.com");
-        registry.add("mcp.meta.graph-api-version", () -> "v22.0");
-        registry.add("mcp.meta.request-timeout-millis", () -> "10000");
-        registry.add("mcp.meta.max-response-chars", () -> "2000");
+        registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
+        registry.add("mcp.meta.graph-version", () -> "v23.0");
+        registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
     }
 
     @Test

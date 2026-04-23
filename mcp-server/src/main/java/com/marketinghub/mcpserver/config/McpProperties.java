@@ -1,6 +1,7 @@
 package com.marketinghub.mcpserver.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -31,14 +32,11 @@ public record McpProperties(
 
     public record Meta(
             boolean enabled,
-            @NotNull List<@NotBlank String> docsAllowlistHosts,
-            @NotBlank String graphApiBaseUrl,
-            @NotBlank String graphApiVersion,
+            @NotBlank String graphBaseUrl,
+            @NotBlank String graphVersion,
             String accessToken,
-            String appId,
-            String appSecret,
-            @Positive int requestTimeoutMillis,
-            @Positive int maxResponseChars
+            String debugAccessToken,
+            @NotEmpty List<@NotBlank String> docsAllowedHosts
     ) {
     }
 }

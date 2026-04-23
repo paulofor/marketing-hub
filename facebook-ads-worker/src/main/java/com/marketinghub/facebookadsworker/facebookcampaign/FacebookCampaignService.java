@@ -287,6 +287,7 @@ public class FacebookCampaignService {
                     coalesce(creative.cta(), config.defaultCallToActionType()),
                     creative.headline(),
                     creative.description(),
+                    null,
                     resolveCreativeImageUrl(creative.imageUrl()),
                     coalesce(creative.instagramUserId(), fallbackInstagramActorId)
                 ))
@@ -328,6 +329,7 @@ public class FacebookCampaignService {
                     exp.id()
                 );
             }
+            creativePayloads = preloadCreativeImagesForExperiment(exp.id(), config.adAccountId(), creativePayloads);
             String resolvedDestinationType = hasLeadFormDestination ? "ON_AD" : config.adSetDestinationType();
             String resolvedOptimizationGoal = hasLeadFormDestination
                 ? "LEAD_GENERATION"
@@ -410,6 +412,7 @@ public class FacebookCampaignService {
                     payload.callToAction(),
                     payload.headline(),
                     payload.description(),
+                    payload.imageHash(),
                     payload.imageUrl()
                 );
                 FacebookAdsService.AdCreativeRequest adCreativeRequest = adCreativeCreation.request();
@@ -1109,9 +1112,25 @@ public class FacebookCampaignService {
         String callToAction,
         String headline,
         String description,
+        String imageHash,
         String imageUrl,
         String instagramActorId
-    ) {}
+    ) {
+        private CreativePublicationPayload withImageHash(String value) {
+            return new CreativePublicationPayload(
+                creative,
+                websiteUrl,
+                leadGenFormId,
+                message,
+                callToAction,
+                headline,
+                description,
+                value,
+                imageUrl,
+                instagramActorId
+            );
+        }
+    }
 
     private List<Creative> resolveCreatives(long experimentId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
@@ -1264,17 +1283,23 @@ public class FacebookCampaignService {
         String callToAction,
         String headline,
         String description,
+        String imageHash,
         String imageUrl
     ) {
-        String imageHash = null;
-        if (!StringUtils.hasText(imageUrl)) {
+        if (StringUtils.hasText(imageHash)) {
+            LOGGER.info(
+                "Using image_hash as primary asset for creative publication: experimentId={}, hash={}",
+                experiment.id(),
+                imageHash
+            );
+        } else if (!StringUtils.hasText(imageUrl)) {
             LOGGER.warn(
-                "Skipping Facebook ad image upload because the creative URL is empty: experimentId={}",
+                "Creating Facebook ad creative without image because URL and image_hash are empty: experimentId={}",
                 experiment.id()
             );
         } else {
-            LOGGER.debug(
-                "Using external image URL for Facebook creative without uploading to the ad library: experimentId={}, url={}",
+            LOGGER.warn(
+                "Falling back to external image URL because image_hash is unavailable: experimentId={}, url={}",
                 experiment.id(),
                 imageUrl
             );
@@ -1332,6 +1357,51 @@ public class FacebookCampaignService {
             );
             return new AdCreativeCreation(creativeId, fallbackRequest);
         }
+    }
+
+    private List<CreativePublicationPayload> preloadCreativeImagesForExperiment(
+        long experimentId,
+        String adAccountId,
+        List<CreativePublicationPayload> creativePayloads
+    ) {
+        List<CreativePublicationPayload> resolvedPayloads = new ArrayList<>(creativePayloads.size());
+        for (CreativePublicationPayload payload : creativePayloads) {
+            if (!StringUtils.hasText(payload.imageUrl())) {
+                LOGGER.warn(
+                    "Creative image preload skipped because image URL is empty: experimentId={}, creativeId={}",
+                    experimentId,
+                    payload.creative().id()
+                );
+                resolvedPayloads.add(payload.withImageHash(null));
+                continue;
+            }
+            LOGGER.info(
+                "Preloading creative image in Facebook ad library before campaign creation: experimentId={}, creativeId={}, imageUrl={}",
+                experimentId,
+                payload.creative().id(),
+                payload.imageUrl()
+            );
+            try {
+                String uploadedImageHash = facebookAdsService.uploadAdImage(adAccountId, payload.imageUrl());
+                LOGGER.info(
+                    "Creative image preload succeeded and will use image_hash as primary path: experimentId={}, creativeId={}, hash={}",
+                    experimentId,
+                    payload.creative().id(),
+                    uploadedImageHash
+                );
+                resolvedPayloads.add(payload.withImageHash(uploadedImageHash));
+            } catch (Exception ex) {
+                LOGGER.warn(
+                    "Creative image preload failed, keeping picture URL fallback: experimentId={}, creativeId={}, imageUrl={}, message={}",
+                    experimentId,
+                    payload.creative().id(),
+                    payload.imageUrl(),
+                    ex.getMessage()
+                );
+                resolvedPayloads.add(payload.withImageHash(null));
+            }
+        }
+        return resolvedPayloads;
     }
 
     private String createAdCreativeWithImageDownloadRetry(

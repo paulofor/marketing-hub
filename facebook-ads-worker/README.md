@@ -129,12 +129,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `dailyBudget` do experimento (em reais), convertido para centavos antes do
    POST; somente na ausência desse valor o worker recorre ao
    `adSetDailyBudget` configurado na conta da Meta.
-4. **Imagem do criativo**: o worker referencia a URL pública retornada pelo
-   backend no campo `object_story_spec.link_data.picture`. Quando o caminho é relativo (por
-   exemplo, `/uploads/arquivo.jpg`), o worker o normaliza para o domínio
-   configurado em `backend.base-url` antes de encaminhá-lo ao Facebook. Essa
-   abordagem é suportada pela Graph API desde que a URL seja acessível pelo
-   crawler da Meta.
+4. **Imagem do criativo (pré-validação)**: antes de enviar a criação da
+   campanha para a Meta, o worker executa uma checagem prévia dos URLs de imagem
+   dos criativos e registra o resultado em log (`success`/`fallback`) para cada
+   peça selecionada no experimento.
 5. **Criativo** (`POST /adcreatives`) baseado em um `object_story_spec`
    contendo o `page_id` definido na conta selecionada no backend. Quando a conta
    não possui `defaultPageId`, o worker utiliza a página vinculada ao
@@ -151,13 +149,13 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `instagram_positions=["stream","story","reels","explore"]`), removendo
    placements de Facebook, Audience Network e Messenger.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
-   criativo. Por padrão a imagem segue via `link_data.picture` com a URL pública
-   do ativo; se a Meta devolver erro transitório de download da imagem
-   (`error_subcode = 3858258`, por exemplo “A imagem não foi baixada”), o worker
-   tenta subir a imagem em `/adimages` para obter `image_hash` e reenviar o
-   criativo com hash (sem `picture`). Em caso de nova falha, o worker mantém as
-   retentativas até 3 tentativas totais antes de marcar a publicação como falha
-   definitiva.
+   criativo. O caminho principal de publicação da imagem agora é
+   `POST /adimages` para obter `image_hash` e enviar o criativo com
+   `link_data.image_hash` (sem `picture`). Se o upload da imagem não retornar
+   hash válido, o worker registra aviso e usa fallback com
+   `link_data.picture` (URL pública). Em caso de erro transitório de download da
+   imagem (`error_subcode = 3858258`), o fluxo mantém retentativas de criação
+   até 3 tentativas totais antes de marcar a publicação como falha definitiva.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.

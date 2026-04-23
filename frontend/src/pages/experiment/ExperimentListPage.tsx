@@ -67,6 +67,16 @@ export default function ExperimentListPage() {
   });
   const experiments = Array.isArray(data) ? data : [];
 
+  const nicheTotalCostMap = useMemo(() => {
+    return experiments.reduce<Record<number, number>>((acc, experiment) => {
+      if (typeof experiment.nicheId !== "number") return acc;
+      const experimentCost = resolveExperimentCost(experiment);
+      if (typeof experimentCost !== "number" || Number.isNaN(experimentCost)) return acc;
+      acc[experiment.nicheId] = (acc[experiment.nicheId] ?? 0) + experimentCost;
+      return acc;
+    }, {});
+  }, [experiments]);
+
   const filtered = useMemo(() => {
     return experiments.filter(
       (e) =>
@@ -135,7 +145,7 @@ export default function ExperimentListPage() {
             {Array.isArray(niches) &&
               niches.map((n) => (
                 <option key={n.id} value={n.id}>
-                  {n.name}
+                  {n.name} ({formatCurrency(nicheTotalCostMap[n.id] ?? 0)})
                 </option>
               ))}
           </select>

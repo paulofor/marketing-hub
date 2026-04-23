@@ -16,8 +16,8 @@ public class McpConfiguration {
     public RestTemplate mcpRestTemplate(RestTemplateBuilder builder, McpProperties properties) {
         Duration timeout = Duration.ofMillis(properties.meta().requestTimeoutMillis());
         return builder
-                .connectTimeout(timeout)
-                .readTimeout(timeout)
+                .setConnectTimeout(timeout)
+                .setReadTimeout(timeout)
                 .build();
     }
 }

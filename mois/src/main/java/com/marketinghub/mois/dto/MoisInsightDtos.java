@@ -14,7 +14,36 @@ public final class MoisInsightDtos {
             String nicheName,
             String marketTheme,
             String status,
-            Instant createdAt
+            Instant createdAt,
+            int offersAnalyzedCount
+    ) {
+    }
+
+    public record InsightReportPatternResponse(
+            String label,
+            long count,
+            double share
+    ) {
+    }
+
+    public record GapOpportunityResponse(
+            String gapType,
+            String gapDescription,
+            String whyItMatters,
+            List<String> supportingOfferRefs,
+            String priority,
+            double confidence
+    ) {
+    }
+
+    public record InsightReportRequestSummary(
+            String requestId,
+            String nicheName,
+            String marketTheme,
+            String painOrOutcomeFocus,
+            String status,
+            Instant createdAt,
+            Instant updatedAt
     ) {
     }
 
@@ -25,11 +54,16 @@ public final class MoisInsightDtos {
             String marketTheme,
             String status,
             Instant createdAt,
-            List<String> repeatedPromises,
-            List<String> repeatedProofPatterns,
-            List<String> pricingPatterns,
-            List<String> funnelPatterns,
-            List<String> gapOpportunities,
+            InsightReportRequestSummary requestSummary,
+            List<String> offersAnalyzed,
+            List<InsightReportPatternResponse> repeatedPromises,
+            List<InsightReportPatternResponse> repeatedProofPatterns,
+            List<InsightReportPatternResponse> pricingPatterns,
+            List<InsightReportPatternResponse> funnelPatterns,
+            List<InsightReportPatternResponse> mechanismClaimPatterns,
+            List<String> saturationNotes,
+            List<GapOpportunityResponse> gapOpportunities,
+            List<String> differentiationSignals,
             List<String> recommendedNextActions
     ) {
     }

@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -57,6 +58,8 @@ import java.util.function.Supplier;
 @Service
 public class FacebookCampaignService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignService.class);
+    private static final int AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS = 3;
+    private static final int AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE = 3858258;
 
     private final FacebookAdsService facebookAdsService;
     private final WebClient backendClient;
@@ -1292,11 +1295,7 @@ public class FacebookCampaignService {
         );
 
         try {
-            String creativeId = executeFacebookCallWithLogging(
-                experiment.id(),
-                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                () -> facebookAdsService.createAdCreative(adAccountId, primaryRequest)
-            );
+            String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.id(), primaryRequest);
             return new AdCreativeCreation(creativeId, primaryRequest);
         } catch (FacebookPermissionException ex) {
             if (!StringUtils.hasText(instagramActorId) || !isInstagramPermissionError(ex)) {
@@ -1325,11 +1324,7 @@ public class FacebookCampaignService {
                 description
             );
 
-            String creativeId = executeFacebookCallWithLogging(
-                experiment.id(),
-                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                () -> facebookAdsService.createAdCreative(adAccountId, fallbackRequest)
-            );
+            String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.id(), fallbackRequest);
             LOGGER.info(
                 "Created Facebook ad creative without Instagram user ID after permission error: experimentId={}, creativeId={}",
                 experiment.id(),
@@ -1337,6 +1332,61 @@ public class FacebookCampaignService {
             );
             return new AdCreativeCreation(creativeId, fallbackRequest);
         }
+    }
+
+    private String createAdCreativeWithImageDownloadRetry(
+        String adAccountId,
+        long experimentId,
+        FacebookAdsService.AdCreativeRequest request
+    ) {
+        int attempt = 1;
+        while (true) {
+            try {
+                return executeFacebookCallWithLogging(
+                    experimentId,
+                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                    () -> facebookAdsService.createAdCreative(adAccountId, request)
+                );
+            } catch (WebClientResponseException ex) {
+                if (!isCreativeImageDownloadError(ex) || attempt >= AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS) {
+                    throw ex;
+                }
+                LOGGER.warn(
+                    "Retrying ad creative creation after transient image download error: experimentId={}, attempt={}/{}, status={}, message={}",
+                    experimentId,
+                    attempt,
+                    AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS,
+                    ex.getRawStatusCode(),
+                    ex.getMessage()
+                );
+                attempt++;
+            }
+        }
+    }
+
+    private boolean isCreativeImageDownloadError(WebClientResponseException ex) {
+        if (ex == null || ex.getRawStatusCode() != 400) {
+            return false;
+        }
+        JsonNode errorNode = parseJson(ex.getResponseBodyAsString());
+        if (errorNode == null) {
+            return false;
+        }
+        JsonNode details = errorNode.path("error");
+        if (details.path("error_subcode").asInt() == AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE) {
+            return true;
+        }
+        String combinedMessage = (
+            details.path("message").asText("")
+                + " "
+                + details.path("error_user_title").asText("")
+                + " "
+                + details.path("error_user_msg").asText("")
+        ).toLowerCase();
+        return combinedMessage.contains("imagem não foi baixada")
+            || combinedMessage.contains("image was not downloaded")
+            || combinedMessage.contains("unable to download")
+            || combinedMessage.contains("não foi possível baixar sua imagem");
     }
 
     private boolean isInstagramPermissionError(FacebookPermissionException ex) {

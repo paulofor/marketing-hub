@@ -154,7 +154,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
    criativo. A imagem é sempre veiculada via `link_data.picture` — não há hash
    salvo na biblioteca —, garantindo que o anúncio utilize exatamente o ativo
-   hospedado pelo backend.
+   hospedado pelo backend. Se a Meta devolver erro transitório de download da
+   imagem (`error_subcode = 3858258`, por exemplo “A imagem não foi baixada”),
+   o worker tenta novamente a criação do criativo até 3 vezes antes de marcar a
+   publicação como falha definitiva.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.

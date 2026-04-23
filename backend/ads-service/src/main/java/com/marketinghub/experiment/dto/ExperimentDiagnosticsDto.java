@@ -8,5 +8,6 @@ public record ExperimentDiagnosticsDto(
         String headline,
         String description,
         String resolution,
-        List<ExperimentPublishingArtifactDto> artifacts
+        List<ExperimentPublishingArtifactDto> artifacts,
+        ExperimentFailureDetailsDto failureDetails
 ) { }

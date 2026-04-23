@@ -4,7 +4,10 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsSeverity;
+import com.marketinghub.experiment.dto.ExperimentFailureDetailsDto;
 import com.marketinghub.experiment.dto.ExperimentPublishingArtifactDto;
+import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
+import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,15 +30,18 @@ public class ExperimentDiagnosticsService {
     private final FacebookAdsCampaignRepository campaignRepository;
     private final FacebookAdsAdSetRepository adSetRepository;
     private final FacebookAdsAdRepository adRepository;
+    private final ExperimentFacebookApiLogService facebookApiLogService;
 
     public ExperimentDiagnosticsService(ExperimentService experimentService,
                                         FacebookAdsCampaignRepository campaignRepository,
                                         FacebookAdsAdSetRepository adSetRepository,
-                                        FacebookAdsAdRepository adRepository) {
+                                        FacebookAdsAdRepository adRepository,
+                                        ExperimentFacebookApiLogService facebookApiLogService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.adSetRepository = adSetRepository;
         this.adRepository = adRepository;
+        this.facebookApiLogService = facebookApiLogService;
     }
 
     @Transactional(readOnly = true)
@@ -57,6 +64,7 @@ public class ExperimentDiagnosticsService {
 
         boolean hasPendingArtifacts = !artifacts.isEmpty();
         boolean statusFailed = experiment.getStatus() == ExperimentStatus.FAILED;
+        ExperimentFailureDetailsDto failureDetails = resolveFailureDetails(experimentId, statusFailed);
 
         ExperimentDiagnosticsSeverity severity;
         String headline;
@@ -87,7 +95,54 @@ public class ExperimentDiagnosticsService {
                     : "Altere o status para Planejado quando quiser liberar uma nova tentativa.";
         }
 
-        return new ExperimentDiagnosticsDto(severity, headline, description, resolution, artifacts);
+        return new ExperimentDiagnosticsDto(severity, headline, description, resolution, artifacts, failureDetails);
+    }
+
+    private ExperimentFailureDetailsDto resolveFailureDetails(Long experimentId, boolean statusFailed) {
+        if (!statusFailed) {
+            return null;
+        }
+        return facebookApiLogService.findLogs(experimentId, 200).stream()
+                .filter(this::isFailureLog)
+                .findFirst()
+                .map(log -> new ExperimentFailureDetailsDto(
+                        log.errorMessage(),
+                        log.endpoint(),
+                        log.statusCode(),
+                        resolveOccurrence(log),
+                        resolveFailureSource(log)
+                ))
+                .orElse(null);
+    }
+
+    private boolean isFailureLog(ExperimentFacebookApiLogDto log) {
+        if (log == null) {
+            return false;
+        }
+        if (StringUtils.hasText(log.errorMessage())) {
+            return true;
+        }
+        return log.statusCode() != null && log.statusCode() >= 400;
+    }
+
+    private Instant resolveOccurrence(ExperimentFacebookApiLogDto log) {
+        if (log.respondedAt() != null) {
+            return log.respondedAt();
+        }
+        if (log.requestedAt() != null) {
+            return log.requestedAt();
+        }
+        return log.createdAt();
+    }
+
+    private String resolveFailureSource(ExperimentFacebookApiLogDto log) {
+        if (log.jobWorker() != null) {
+            return log.jobWorker().name();
+        }
+        if (StringUtils.hasText(log.provider())) {
+            return log.provider();
+        }
+        return "FACEBOOK_API_LOG";
     }
 
     private static boolean hasMetaId(String externalId, String internalId) {

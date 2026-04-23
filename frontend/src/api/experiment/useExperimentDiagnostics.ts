@@ -17,6 +17,13 @@ export interface ExperimentDiagnostics {
   description: string;
   resolution: string | null;
   artifacts: ExperimentPublishingArtifact[];
+  failureDetails: {
+    message: string | null;
+    endpoint: string | null;
+    statusCode: number | null;
+    occurredAt: string | null;
+    source: string | null;
+  } | null;
 }
 
 export function useExperimentDiagnostics(id?: string) {

@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -89,5 +90,24 @@ class LeadPortalPublicFlowControllerTest {
 
         mockMvc.perform(get("/api/flows/exp-10-landing"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getLandingPageBySlugReturnsHtmlDocumentFromStructuredJsonPayload() throws Exception {
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
+        flowRepository.save(LeadPortalFlow.builder()
+                .name("Fluxo Landing")
+                .slug("exp-13-landing")
+                .approved(true)
+                .marketNiche(niche)
+                .customFormHtml("""
+                        {"landingPageHtml":"{\\"htmlDocument\\":\\"<!doctype html><html lang='pt-BR'><body><h1>Pare de vender por preço</h1></body></html>\\"}"}
+                        """)
+                .build());
+
+        mockMvc.perform(get("/api/flows/exp-13-landing/page"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/html;charset=UTF-8"))
+                .andExpect(content().string("<!doctype html><html lang='pt-BR'><body><h1>Pare de vender por preço</h1></body></html>"));
     }
 }

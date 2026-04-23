@@ -164,3 +164,14 @@ services:
       MCP_SERVER_VERSION: ${MCP_SERVER_VERSION:-1.0.0}
     ports:
       - "${MCP_SERVER_PORT:-8096}:8096"
+
+  mois:
+    build:
+      context: ./mois
+      dockerfile: Dockerfile
+    image: marketinghub/mois:latest
+    restart: unless-stopped
+    environment:
+      MOIS_PORT: ${MOIS_PORT:-8094}
+    ports:
+      - "${MOIS_PORT:-8094}:8094"

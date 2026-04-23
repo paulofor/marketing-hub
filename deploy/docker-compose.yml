@@ -57,6 +57,23 @@ services:
       retries: 5
       start_period: 40s
 
+  mois:
+    image: ${MOIS_IMAGE:-marketinghub-mois}:${MOIS_IMAGE_TAG:-2026.04.23}
+    container_name: marketinghub-mois
+    restart: unless-stopped
+    environment:
+      MOIS_PORT: ${MOIS_PORT:-8094}
+      MOIS_PUBLIC_BASE_URL: ${MOIS_PUBLIC_BASE_URL:-http://177.153.62.107:8094}
+      TZ: America/Sao_Paulo
+    ports:
+      - "${MOIS_PUBLIC_BIND_IP:-177.153.62.107}:${MOIS_PORT:-8094}:8094"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8094/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
   mcp-server:
     image: ${MCP_SERVER_IMAGE:-marketinghub-mcp-server}:${MCP_SERVER_IMAGE_TAG:-2026.04.15}
     container_name: marketinghub-mcp-server

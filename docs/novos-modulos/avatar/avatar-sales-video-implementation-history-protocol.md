@@ -22,9 +22,9 @@ Este documento é voltado principalmente para uso do **Codex** e de qualquer out
 Este protocolo deve ser usado em conjunto com:
 
 - `docs/canonical/system-governance-canon.v2.md`
-- `docs/avatar/avatar-sales-video-canonical-rules.md`
-- `docs/avatar/avatar-sales-video-canonical-artifacts-initial.md`
-- `docs/avatar/avatar-sales-video-restart-plan.md`
+- `docs/novos-modulos/avatar/avatar-sales-video-canonical-rules.md`
+- `docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md`
+- `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
 
 ## Regra importante
 
@@ -279,7 +279,7 @@ Isso é coerente com a lógica dos ADRs, que devem preservar a trilha de decisã
 
 Um único arquivo cumulativo, por exemplo:
 
-- `docs/avatar/avatar-sales-video-implementation-history.md`
+- `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 
 ## Estrutura recomendada do arquivo
 

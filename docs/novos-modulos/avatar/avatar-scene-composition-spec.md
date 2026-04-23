@@ -15,7 +15,7 @@ Padronizar como backend e worker devem interpretar e executar composição de ce
 - mapeamento explícito de suporte por provedor e limitações técnicas;
 - exemplos de payload do Job Spec com campos obrigatórios e opcionais.
 
-Este documento complementa a arquitetura canônica definida em `docs/avatar/avatar-module-architecture.md`.
+Este documento complementa a arquitetura canônica definida em `docs/novos-modulos/avatar/avatar-module-architecture.md`.
 
 ---
 

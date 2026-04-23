@@ -1,7 +1,7 @@
 # Avatar Sales Video — Status Atual do Módulo
 
 - **Data de atualização:** 2026-04-16
-- **Escopo:** `docs/avatar/` + estado observado dos módulos `backend/ads-service`, `ai-worker`, `frontend` e `video-management-service`.
+- **Escopo:** `docs/novos-modulos/avatar/` + estado observado dos módulos `backend/ads-service`, `ai-worker`, `frontend` e `video-management-service`.
 - **Objetivo deste documento:** consolidar o que já está implementado, o que está em progresso e os gaps para produção do módulo de vídeo com avatar falando.
 
 ---

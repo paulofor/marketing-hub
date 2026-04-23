@@ -12,12 +12,13 @@ import java.time.Duration;
 @EnableConfigurationProperties(McpProperties.class)
 public class McpConfiguration {
 
+    private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(15);
+
     @Bean
     public RestTemplate mcpRestTemplate(RestTemplateBuilder builder, McpProperties properties) {
-        Duration timeout = Duration.ofMillis(properties.meta().requestTimeoutMillis());
         return builder
-                .setConnectTimeout(timeout)
-                .setReadTimeout(timeout)
+                .setConnectTimeout(DEFAULT_TIMEOUT)
+                .setReadTimeout(DEFAULT_TIMEOUT)
                 .build();
     }
 }

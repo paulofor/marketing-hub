@@ -34,3 +34,10 @@ mcp:
     email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log}
     lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://191.252.102.54:8092/api/v1/logs/runtime?lines=200}
     max-lines: ${MCP_LOG_MAX_LINES:500}
+  meta:
+    enabled: ${MCP_META_ENABLED:true}
+    graph-base-url: ${MCP_META_GRAPH_BASE_URL:https://graph.facebook.com}
+    graph-version: ${MCP_META_GRAPH_VERSION:v23.0}
+    access-token: ${MCP_META_GRAPH_ACCESS_TOKEN:}
+    debug-access-token: ${MCP_META_GRAPH_DEBUG_ACCESS_TOKEN:${MCP_META_GRAPH_ACCESS_TOKEN:}}
+    docs-allowed-hosts: ${MCP_META_DOCS_ALLOWED_HOSTS:developers.facebook.com,business.facebook.com,www.facebook.com}

@@ -46,6 +46,10 @@ class McpControllerTest {
         registry.add("mcp.logs.lead-portal-payment-path",
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
+        registry.add("mcp.meta.enabled", () -> "false");
+        registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
+        registry.add("mcp.meta.graph-version", () -> "v23.0");
+        registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
     }
 
     @BeforeEach
@@ -191,6 +195,31 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value(-32601));
     }
+
+    @Test
+    void shouldListMetaTools() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.tools[5].name").value("meta_docs_get"))
+                .andExpect(jsonPath("$.result.tools[6].name").value("meta_graph_get"))
+                .andExpect(jsonPath("$.result.tools[7].name").value("meta_graph_debug_token"));
+    }
+
+    @Test
+    void shouldRejectMetaToolWhenDisabled() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":13,"method":"tools/call","params":{"name":"meta_graph_get","arguments":{"path":"me"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message").value("meta tools are disabled (set mcp.meta.enabled=true)"));
+    }
 }
 
 @SpringBootTest(properties = "mcp.api-key=super-secret")
@@ -216,6 +245,10 @@ class McpControllerApiKeyEnabledTest {
         registry.add("mcp.logs.lead-portal-payment-path",
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
+        registry.add("mcp.meta.enabled", () -> "false");
+        registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
+        registry.add("mcp.meta.graph-version", () -> "v23.0");
+        registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
     }
 
     @Test

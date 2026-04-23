@@ -2,6 +2,7 @@ package com.marketinghub.mcpserver.controller;
 
 import com.marketinghub.mcpserver.config.McpProperties;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
+import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
@@ -30,13 +31,16 @@ public class McpController {
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
+    private final MetaDiagnosticsService metaDiagnosticsService;
 
     public McpController(McpProperties properties,
                          DatabaseDiagnosticsService databaseDiagnosticsService,
-                         ModuleLogService moduleLogService) {
+                         ModuleLogService moduleLogService,
+                         MetaDiagnosticsService metaDiagnosticsService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
+        this.metaDiagnosticsService = metaDiagnosticsService;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -127,6 +131,41 @@ public class McpController {
                                                     "description", "Quantidade de linhas do final do arquivo de log. Padrão: 200.")),
                                     "required", List.of("module"),
                                     "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "meta_docs_get",
+                            "description", "Busca uma página de documentação da Meta em hosts aprovados e retorna texto simplificado.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "url", Map.of("type", "string",
+                                                    "description", "URL HTTPS da documentação da Meta.")),
+                                    "required", List.of("url"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "meta_graph_get",
+                            "description", "Executa GET na Graph API da Meta usando token configurado no MCP.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "path", Map.of("type", "string",
+                                                    "description", "Path da Graph API, sem versão (ex.: me/adaccounts)."),
+                                            "query", Map.of("type", "object",
+                                                    "description", "Query string adicional enviada na chamada.")),
+                                    "required", List.of("path"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "meta_graph_debug_token",
+                            "description", "Executa debug_token na Graph API para validar um token de usuário/sistema.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "input_token", Map.of("type", "string",
+                                                    "description", "Token a ser validado.")),
+                                    "required", List.of("input_token"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -163,6 +202,9 @@ public class McpController {
                 case "db_read_table" -> callReadTable(id, arguments);
                 case "db_query" -> callQueryTool(id, arguments);
                 case "java_module_logs" -> callJavaModuleLogsTool(id, arguments);
+                case "meta_docs_get" -> callMetaDocsTool(id, arguments);
+                case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
+                case "meta_graph_debug_token" -> callMetaGraphDebugTokenTool(id, arguments);
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
@@ -228,6 +270,53 @@ public class McpController {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
             return error(id, -32603, "Failed to read module logs: " + ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> callMetaDocsTool(Object id, Map<String, Object> arguments) {
+        String url = stringArgument(arguments, "url");
+
+        try {
+            Map<String, Object> result = metaDiagnosticsService.getDocumentationPage(url);
+            return successToolResult(id, result, "Fetched Meta docs page");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to fetch Meta docs page: " + ex.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> callMetaGraphGetTool(Object id, Map<String, Object> arguments) {
+        String path = stringArgument(arguments, "path");
+        Object queryObj = arguments.get("query");
+        Map<String, Object> query = queryObj instanceof Map<?, ?> queryMap
+                ? queryMap.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        entry -> String.valueOf(entry.getKey()),
+                        Map.Entry::getValue))
+                : Map.of();
+
+        try {
+            Map<String, Object> result = metaDiagnosticsService.graphGet(path, query);
+            return successToolResult(id, result, "Meta Graph GET executed");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to execute Meta Graph GET: " + ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> callMetaGraphDebugTokenTool(Object id, Map<String, Object> arguments) {
+        String inputToken = stringArgument(arguments, "input_token");
+
+        try {
+            Map<String, Object> result = metaDiagnosticsService.debugToken(inputToken);
+            return successToolResult(id, result, "Meta debug_token executed");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to execute Meta debug_token: " + ex.getMessage());
         }
     }
 

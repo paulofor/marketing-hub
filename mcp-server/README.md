@@ -18,6 +18,9 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
 - `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
 - `java_module_logs`: retorna tail de logs do Spring Boot dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`).
+- `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
+- `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
+- `meta_graph_debug_token`: executa `debug_token` para validar tokens.
 
 ## Executar localmente
 
@@ -48,6 +51,20 @@ O tool `java_module_logs` lê os arquivos de log do Spring Boot configurados em:
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `http://191.252.102.54:8092/api/v1/logs/runtime?lines=200`).
 
 Limite máximo por chamada: `MCP_LOG_MAX_LINES` (default `500`).
+
+## Ferramentas de diagnóstico Meta
+
+As tools Meta podem ser ativadas/desativadas por configuração:
+
+- `MCP_META_ENABLED` (default `true`);
+- `MCP_META_GRAPH_BASE_URL` (default `https://graph.facebook.com`);
+- `MCP_META_GRAPH_VERSION` (default `v23.0`);
+- `MCP_META_GRAPH_ACCESS_TOKEN` (token usado no `meta_graph_get`);
+- `MCP_META_GRAPH_DEBUG_ACCESS_TOKEN` (token usado no `meta_graph_debug_token`, fallback para `MCP_META_GRAPH_ACCESS_TOKEN`);
+- `MCP_META_DOCS_ALLOWED_HOSTS` (lista CSV de hosts permitidos para `meta_docs_get`).
+
+Quando `MCP_META_ENABLED=false`, as tools `meta_*` continuam aparecendo em `tools/list`, mas `tools/call` retorna:
+`meta tools are disabled (set mcp.meta.enabled=true)`.
 
 ### Troubleshooting de conexão com MySQL
 

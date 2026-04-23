@@ -488,52 +488,67 @@ A sprint termina quando o MOIS, como serviço separado, conseguir devolver uma l
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **Pendências herdadas da sprint anterior absorvidas nesta sprint:**
-- 
-- 
-- 
+- Consolidação de sinais isolados em leitura acionável por request (`marketOfferInsightReport`) no próprio módulo `mois/`.
+- Síntese de padrões recorrentes de promessa, prova, mecanismo, preço e funil com distribuição por frequência/share.
+- Geração de notas de saturação e diferenciação aparente para orientar decisões estratégicas iniciais.
 
 **Pendências herdadas da sprint anterior adiadas:**
-- 
-- 
-- 
+- Deduplicação semântica por `sourceUrl + contentHash + tipo de sinal` em execuções repetidas.
+- Normalização monetária robusta para múltiplas moedas/parcelamentos avançados.
+- Heurísticas semânticas avançadas (NLP mais profundo) para extração de sinais.
 
 **Justificativa da decisão sobre as pendências herdadas:**
-- 
-- 
-- 
+- A Sprint 5 prioriza consolidar domínio e entrega de leitura estratégica no módulo separado, sem expandir escopo de coleta/normalização profunda.
+- Deduplicação e normalização monetária avançada exigem evolução de modelo e regras de persistência próprias, com risco de regressão se antecipadas.
+- O ciclo incremental foi mantido para preservar compatibilidade com contratos já publicados e permitir validação funcional do relatório consolidado.
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Endpoint de relatórios consolidado evoluído com filtro adicional de categoria (`category`) e contagem de ofertas por relatório.
+- `marketOfferInsightReport` implementado com `requestSummary`, `offersAnalyzed`, distribuições de padrões (`repeatedPromises`, `repeatedProofPatterns`, `pricingPatterns`, `funnelPatterns`, `mechanismClaimPatterns`), `saturationNotes`, `gapOpportunities`, `differentiationSignals` e `recommendedNextActions`.
+- Serviço de domínio do MOIS passou a produzir agregações estratégicas no módulo `mois/` (sem reintroduzir lógica central no `backend/ads-service`).
+- Testes unitários adicionados para consolidar comportamento do relatório e filtros de consulta por categoria.
 
 **Arquivos criados ou alterados:**
-- 
+- `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+- `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+- `mois/src/main/java/com/marketinghub/mois/dto/MoisInsightDtos.java`
+- `mois/src/test/java/com/marketinghub/mois/service/MoisDomainServiceTest.java`
+- `mois/src/test/java/com/marketinghub/mois/web/MoisDomainControllerTest.java`
+- `mois/README.md`
+- `docs/novos-modulos/MOIS/mois_plano_implementacao_sprints_revisado.md`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
+- Endpoint `GET /api/v1/mois/insight-reports` mantido e ampliado com filtro `category`.
+- Endpoint `GET /api/v1/mois/insight-reports/{reportId}` mantido e enriquecido com conteúdo consolidado do artefato `mois.marketOfferInsightReport.v1`.
+- Estrutura do DTO de resposta de insight report evoluída para refletir agregação de domínio acionável.
 
 **Testes executados:**
-- 
+- `mvn test` (módulo `mois/`).
 
 **Pendências que ficaram abertas:**
-- 
+- Persistência dedicada do `marketOfferInsightReport` como artefato consultável por ID estável independente de recomputação em memória.
+- Integração do consumo consolidado por backend/UI em fluxo institucional completo.
+- Regras de deduplicação/versionamento dos sinais base e normalização avançada de preço.
 
 **Motivo das pendências:**
-- 
+- Sprint 5 focou em consolidar aplicação de domínio e utilidade estratégica imediata no serviço separado.
+- Persistência dedicada do relatório e integração cross-módulo são etapas naturais de integração operacional da Sprint 6.
+- Deduplicação/versionamento e normalização monetária robusta aumentam escopo de dados e contratos, exigindo ciclo próprio.
 
 **Impacto das pendências no sistema:**
-- 
+- Relatório consolidado está funcional, mas ainda é derivado em memória e pode variar com novas execuções da mesma request.
+- Consumo institucional amplo (pipeline hipótese/oferta e módulos externos) ainda depende de contratos de integração da próxima sprint.
+- Parte dos padrões monetários e semânticos ainda pode apresentar granularidade limitada em cenários de mercado mais heterogêneos.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar integração explícita MOIS → backend/OPRM/MDS com contrato versionado de consumo do relatório consolidado.
+- Evoluir publicação/persistência de `marketOfferInsightReport` para uso downstream previsível (pipeline hipótese/oferta).
+- Endereçar deduplicação/versionamento dos sinais e normalização monetária sem quebrar compatibilidade de artefatos existentes.
 
 
 ## 10. Sprint 6 — Integração com OPRM, MDS e pipeline de hipótese/oferta
@@ -645,52 +660,67 @@ A sprint termina quando o MOIS estiver operacionalmente mais previsível, com co
 ### Fechamento da Sprint pelo Codex
 
 **Status da sprint:**
-- [ ] Concluída integralmente
+- [x] Concluída integralmente
 - [ ] Concluída parcialmente
 - [ ] Não concluída
 
 **Pendências herdadas da sprint anterior absorvidas nesta sprint:**
-- 
-- 
-- 
+- Consolidação de sinais isolados em leitura acionável por request (`marketOfferInsightReport`) no próprio módulo `mois/`.
+- Síntese de padrões recorrentes de promessa, prova, mecanismo, preço e funil com distribuição por frequência/share.
+- Geração de notas de saturação e diferenciação aparente para orientar decisões estratégicas iniciais.
 
 **Pendências herdadas da sprint anterior adiadas:**
-- 
-- 
-- 
+- Deduplicação semântica por `sourceUrl + contentHash + tipo de sinal` em execuções repetidas.
+- Normalização monetária robusta para múltiplas moedas/parcelamentos avançados.
+- Heurísticas semânticas avançadas (NLP mais profundo) para extração de sinais.
 
 **Justificativa da decisão sobre as pendências herdadas:**
-- 
-- 
-- 
+- A Sprint 5 prioriza consolidar domínio e entrega de leitura estratégica no módulo separado, sem expandir escopo de coleta/normalização profunda.
+- Deduplicação e normalização monetária avançada exigem evolução de modelo e regras de persistência próprias, com risco de regressão se antecipadas.
+- O ciclo incremental foi mantido para preservar compatibilidade com contratos já publicados e permitir validação funcional do relatório consolidado.
 
 **O que foi implementado nesta sprint:**
-- 
-- 
-- 
+- Endpoint de relatórios consolidado evoluído com filtro adicional de categoria (`category`) e contagem de ofertas por relatório.
+- `marketOfferInsightReport` implementado com `requestSummary`, `offersAnalyzed`, distribuições de padrões (`repeatedPromises`, `repeatedProofPatterns`, `pricingPatterns`, `funnelPatterns`, `mechanismClaimPatterns`), `saturationNotes`, `gapOpportunities`, `differentiationSignals` e `recommendedNextActions`.
+- Serviço de domínio do MOIS passou a produzir agregações estratégicas no módulo `mois/` (sem reintroduzir lógica central no `backend/ads-service`).
+- Testes unitários adicionados para consolidar comportamento do relatório e filtros de consulta por categoria.
 
 **Arquivos criados ou alterados:**
-- 
+- `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+- `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+- `mois/src/main/java/com/marketinghub/mois/dto/MoisInsightDtos.java`
+- `mois/src/test/java/com/marketinghub/mois/service/MoisDomainServiceTest.java`
+- `mois/src/test/java/com/marketinghub/mois/web/MoisDomainControllerTest.java`
+- `mois/README.md`
+- `docs/novos-modulos/MOIS/mois_plano_implementacao_sprints_revisado.md`
 
 **Contratos, endpoints ou artefatos afetados:**
-- 
+- Endpoint `GET /api/v1/mois/insight-reports` mantido e ampliado com filtro `category`.
+- Endpoint `GET /api/v1/mois/insight-reports/{reportId}` mantido e enriquecido com conteúdo consolidado do artefato `mois.marketOfferInsightReport.v1`.
+- Estrutura do DTO de resposta de insight report evoluída para refletir agregação de domínio acionável.
 
 **Testes executados:**
-- 
+- `mvn test` (módulo `mois/`).
 
 **Pendências que ficaram abertas:**
-- 
+- Persistência dedicada do `marketOfferInsightReport` como artefato consultável por ID estável independente de recomputação em memória.
+- Integração do consumo consolidado por backend/UI em fluxo institucional completo.
+- Regras de deduplicação/versionamento dos sinais base e normalização avançada de preço.
 
 **Motivo das pendências:**
-- 
+- Sprint 5 focou em consolidar aplicação de domínio e utilidade estratégica imediata no serviço separado.
+- Persistência dedicada do relatório e integração cross-módulo são etapas naturais de integração operacional da Sprint 6.
+- Deduplicação/versionamento e normalização monetária robusta aumentam escopo de dados e contratos, exigindo ciclo próprio.
 
 **Impacto das pendências no sistema:**
-- 
+- Relatório consolidado está funcional, mas ainda é derivado em memória e pode variar com novas execuções da mesma request.
+- Consumo institucional amplo (pipeline hipótese/oferta e módulos externos) ainda depende de contratos de integração da próxima sprint.
+- Parte dos padrões monetários e semânticos ainda pode apresentar granularidade limitada em cenários de mercado mais heterogêneos.
 
 **Orientação obrigatória para a sprint seguinte:**
-- 
-- 
-- 
+- Implementar integração explícita MOIS → backend/OPRM/MDS com contrato versionado de consumo do relatório consolidado.
+- Evoluir publicação/persistência de `marketOfferInsightReport` para uso downstream previsível (pipeline hipótese/oferta).
+- Endereçar deduplicação/versionamento dos sinais e normalização monetária sem quebrar compatibilidade de artefatos existentes.
 
 
 ## 12. Sprint 8 — Consolidação, documentação final e preparo para evolução de UI

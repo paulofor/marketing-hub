@@ -358,6 +358,18 @@ public class McpController {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> mapArgument(Map<String, Object> arguments, String name) {
+        Object value = arguments.get(name);
+        if (value == null) {
+            return Map.of();
+        }
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        throw new IllegalArgumentException(name + " must be an object");
+    }
+
     private Map<String, Object> successToolResult(Object id, Map<String, Object> data, String text) {
         return success(id, Map.of(
                 "content", List.of(Map.of(

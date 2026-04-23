@@ -18,3 +18,10 @@ mvn spring-boot:run
 - Porta padrão: `8094` (configurável por `MOIS_PORT`)
 - Base URL local: `http://localhost:8094`
 - Base URL de deploy atual: `http://177.153.62.107:8094`
+
+## Endpoints de domínio disponíveis
+
+- `POST /api/v1/mois/discovery-requests` cria pedido de descoberta.
+- `POST /api/v1/mois/discovery-requests/{requestId}/run` executa coleta simplificada.
+- `GET /api/v1/mois/insight-reports?requestId=&nicheName=&category=` lista relatórios consolidados com filtros básicos da Sprint 5.
+- `GET /api/v1/mois/insight-reports/{reportId}` retorna consolidação acionável (`marketOfferInsightReport`) com padrões, saturação, lacunas e diferenciação.

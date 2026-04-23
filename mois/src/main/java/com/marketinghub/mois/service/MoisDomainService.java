@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -179,11 +180,12 @@ public class MoisDomainService {
                         collectSourceArtifactsForOffer(offer.requestId())));
     }
 
-    public MoisInsightDtos.InsightReportListResponse listInsightReports(String requestId, String nicheName) {
+    public MoisInsightDtos.InsightReportListResponse listInsightReports(String requestId, String nicheName, String category) {
         List<MoisInsightDtos.InsightReportSummaryResponse> items = requests.values().stream()
                 .filter(req -> req.status() == DiscoveryStatus.COLLECTED)
                 .filter(req -> requestId == null || requestId.isBlank() || req.requestId().equals(requestId))
                 .filter(req -> nicheName == null || nicheName.isBlank() || req.nicheName().equalsIgnoreCase(nicheName))
+                .filter(req -> category == null || category.isBlank() || hasCategoryMatch(req.requestId(), category))
                 .sorted(Comparator.comparing(DiscoveryRequest::createdAt).reversed())
                 .map(req -> new MoisInsightDtos.InsightReportSummaryResponse(
                         "mois-report-" + req.requestId(),
@@ -191,7 +193,8 @@ public class MoisDomainService {
                         req.nicheName(),
                         req.marketTheme(),
                         "DRAFT",
-                        req.createdAt()))
+                        req.createdAt(),
+                        listOffersByRequest(req.requestId()).size()))
                 .toList();
 
         return new MoisInsightDtos.InsightReportListResponse(items);
@@ -208,9 +211,19 @@ public class MoisDomainService {
             return Optional.empty();
         }
 
-        List<OfferCard> requestOffers = offers.values().stream()
-                .filter(offer -> offer.requestId().equals(requestId))
-                .toList();
+        List<OfferCard> requestOffers = listOffersByRequest(requestId);
+        int offerCount = requestOffers.size();
+
+        List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises =
+                buildPatternDistribution(requestOffers, OfferCard::corePromise, offerCount);
+        List<MoisInsightDtos.InsightReportPatternResponse> repeatedProofPatterns =
+                buildPatternDistribution(requestOffers, OfferCard::proofSummary, offerCount);
+        List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns =
+                buildPatternDistribution(requestOffers, OfferCard::mainPrice, offerCount);
+        List<MoisInsightDtos.InsightReportPatternResponse> funnelPatterns =
+                buildPatternDistribution(requestOffers, OfferCard::funnelPatternSummary, offerCount);
+        List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns =
+                buildPatternDistribution(requestOffers, OfferCard::mechanismClaimSummary, offerCount);
 
         return Optional.of(new MoisInsightDtos.InsightReportResponse(
                 reportId,
@@ -219,12 +232,24 @@ public class MoisDomainService {
                 request.marketTheme(),
                 "DRAFT",
                 request.createdAt(),
-                requestOffers.stream().map(OfferCard::corePromise).distinct().toList(),
-                requestOffers.stream().map(OfferCard::proofSummary).distinct().toList(),
-                requestOffers.stream().map(OfferCard::mainPrice).distinct().toList(),
-                requestOffers.stream().map(OfferCard::funnelPatternSummary).distinct().toList(),
-                List.of("Refinar evidências para promessas de maior conversão"),
-                List.of("Executar nova rodada com fontes complementares")));
+                new MoisInsightDtos.InsightReportRequestSummary(
+                        request.requestId(),
+                        request.nicheName(),
+                        request.marketTheme(),
+                        request.painOrOutcomeFocus(),
+                        request.status().name(),
+                        request.createdAt(),
+                        request.updatedAt()),
+                requestOffers.stream().map(OfferCard::artifactId).toList(),
+                repeatedPromises,
+                repeatedProofPatterns,
+                pricingPatterns,
+                funnelPatterns,
+                mechanismPatterns,
+                buildSaturationNotes(repeatedPromises, pricingPatterns, offerCount),
+                buildGapOpportunities(requestOffers, repeatedPromises, pricingPatterns),
+                buildDifferentiationSignals(requestOffers, repeatedPromises, mechanismPatterns),
+                buildRecommendedActions(repeatedPromises, pricingPatterns, mechanismPatterns)));
     }
 
     public Optional<MoisArtifactDtos.ArtifactEnvelopeResponse> getArtifact(String artifactId) {
@@ -295,6 +320,157 @@ public class MoisDomainService {
                             "funnelPatternSummary", offer.funnelPatternSummary())));
         }
         return Optional.empty();
+    }
+
+    private List<OfferCard> listOffersByRequest(String requestId) {
+        return offers.values().stream()
+                .filter(offer -> offer.requestId().equals(requestId))
+                .toList();
+    }
+
+    private boolean hasCategoryMatch(String requestId, String category) {
+        String normalizedCategory = category.trim().toLowerCase();
+        return listOffersByRequest(requestId).stream()
+                .anyMatch(offer -> offer.primaryOfferType() != null
+                        && offer.primaryOfferType().toLowerCase().contains(normalizedCategory));
+    }
+
+    private List<MoisInsightDtos.InsightReportPatternResponse> buildPatternDistribution(
+            List<OfferCard> requestOffers,
+            Function<OfferCard, String> extractor,
+            int offerCount
+    ) {
+        if (offerCount == 0) {
+            return List.of();
+        }
+
+        return requestOffers.stream()
+                .map(extractor)
+                .filter(value -> value != null && !value.isBlank())
+                .collect(java.util.stream.Collectors.groupingBy(Function.identity(), java.util.stream.Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(entry -> new MoisInsightDtos.InsightReportPatternResponse(
+                        entry.getKey(),
+                        entry.getValue(),
+                        entry.getValue() / (double) offerCount))
+                .toList();
+    }
+
+    private List<String> buildSaturationNotes(
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises,
+            List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns,
+            int offerCount
+    ) {
+        if (offerCount == 0) {
+            return List.of("Não há ofertas suficientes para inferir saturação.");
+        }
+
+        List<String> notes = new ArrayList<>();
+        repeatedPromises.stream().findFirst().ifPresent(topPromise -> {
+            if (topPromise.share() >= 0.6) {
+                notes.add("Saturação alta de promessa central ('" + topPromise.label() + "') em " + Math.round(topPromise.share() * 100) + "% das ofertas.");
+            }
+        });
+        pricingPatterns.stream().findFirst().ifPresent(topPrice -> {
+            if (topPrice.share() >= 0.6) {
+                notes.add("Faixa de preço dominante em torno de " + topPrice.label() + ", sugerindo baixa diferenciação monetária.");
+            }
+        });
+        if (notes.isEmpty()) {
+            notes.add("Mercado com saturação moderada: sem padrão dominante acima de 60% nas ofertas analisadas.");
+        }
+        return notes;
+    }
+
+    private List<MoisInsightDtos.GapOpportunityResponse> buildGapOpportunities(
+            List<OfferCard> requestOffers,
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises,
+            List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns
+    ) {
+        if (requestOffers.isEmpty()) {
+            return List.of();
+        }
+
+        List<MoisInsightDtos.GapOpportunityResponse> gaps = new ArrayList<>();
+        repeatedPromises.stream().findFirst().ifPresent(topPromise -> {
+            if (topPromise.share() >= 0.7) {
+                gaps.add(new MoisInsightDtos.GapOpportunityResponse(
+                        "PROMISE_DIFFERENTIATION",
+                        "Promessa dominante muito repetida no nicho.",
+                        "Ofertas com promessa alternativa tendem a destacar posicionamento em mercado saturado.",
+                        requestOffers.stream().map(OfferCard::artifactId).toList(),
+                        "HIGH",
+                        0.72));
+            }
+        });
+
+        if (pricingPatterns.size() <= 1) {
+            gaps.add(new MoisInsightDtos.GapOpportunityResponse(
+                    "PRICING_MODEL_VARIETY",
+                    "Baixa variedade aparente de modelo de preço entre as ofertas.",
+                    "Adicionar modelos de ancoragem, parcelamento ou ticket escalonado pode ampliar conversão por perfil.",
+                    requestOffers.stream().map(OfferCard::artifactId).toList(),
+                    "MEDIUM",
+                    0.66));
+        }
+        return gaps;
+    }
+
+    private List<String> buildDifferentiationSignals(
+            List<OfferCard> requestOffers,
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises,
+            List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns
+    ) {
+        if (requestOffers.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> signals = new ArrayList<>();
+        repeatedPromises.stream().findFirst().ifPresent(topPromise -> {
+            if (topPromise.share() < 0.6) {
+                signals.add("Diferenciação de promessa distribuída: nenhuma promessa isolada domina o mercado.");
+            }
+        });
+        mechanismPatterns.stream().findFirst().ifPresent(topMechanism -> {
+            if (topMechanism.share() < 0.6) {
+                signals.add("Mecanismos alegados variados indicam espaço para narrativa proprietária sem ruptura do mercado.");
+            }
+        });
+
+        if (signals.isEmpty()) {
+            signals.add("Diferenciação aparente baixa: recomenda-se buscar nova combinação de mecanismo + prova para romper paridade.");
+        }
+        return signals;
+    }
+
+    private List<String> buildRecommendedActions(
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises,
+            List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns,
+            List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns
+    ) {
+        List<String> actions = new ArrayList<>();
+        repeatedPromises.stream().findFirst().ifPresent(topPromise -> {
+            if (topPromise.share() >= 0.6) {
+                actions.add("Testar promessa com recorte de dor/resultados mais específico que o padrão dominante atual.");
+            }
+        });
+        pricingPatterns.stream().findFirst().ifPresent(topPrice -> {
+            if (topPrice.share() >= 0.6) {
+                actions.add("Explorar estratégia de preço escalonado para reduzir colisão direta com a faixa " + topPrice.label() + ".");
+            }
+        });
+        mechanismPatterns.stream().findFirst().ifPresent(topMechanism -> {
+            if (topMechanism.share() >= 0.6) {
+                actions.add("Elevar prova concreta do mecanismo para evitar percepção de promessa genérica de mercado.");
+            }
+        });
+
+        if (actions.isEmpty()) {
+            actions.add("Executar rodada complementar de coleta com novas fontes para aumentar confiança da consolidação.");
+        }
+        return actions;
     }
 
     private List<MoisDiscoveryDtos.ArtifactRefResponse> collectArtifactsForRequest(String requestId) {

@@ -268,6 +268,54 @@ class FacebookCampaignServiceTest {
         assertTrue(backend.getRequestCount() >= 4);
     }
 
+    @Test
+    void retriesAdCreativeCreationWhenFacebookCannotDownloadImageTemporarily() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,\"error_subcode\":3858258,\"error_user_msg\":\"Não foi possível baixar sua imagem\"}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse()
+            .setResponseCode(400)
+            .setBody("{\"error\":{\"message\":\"Invalid parameter\",\"code\":100,\"error_subcode\":3858258,\"error_user_msg\":\"Não foi possível baixar sua imagem\"}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        RecordedRequest postCampaign = takeFacebookRequest("facebook campaign creation");
+        assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
+
+        RecordedRequest postAdSet = takeFacebookRequest("facebook adset creation");
+        assertEquals("/v23.0/act_1/adsets", postAdSet.getPath());
+
+        RecordedRequest creativeAttempt1 = takeFacebookRequest("facebook creative attempt 1");
+        assertEquals("/v23.0/act_1/adcreatives", creativeAttempt1.getPath());
+        RecordedRequest creativeAttempt2 = takeFacebookRequest("facebook creative attempt 2");
+        assertEquals("/v23.0/act_1/adcreatives", creativeAttempt2.getPath());
+        RecordedRequest creativeAttempt3 = takeFacebookRequest("facebook creative attempt 3");
+        assertEquals("/v23.0/act_1/adcreatives", creativeAttempt3.getPath());
+
+        RecordedRequest postAd = takeFacebookRequest("facebook ad creation");
+        assertEquals("/v23.0/act_1/ads", postAd.getPath());
+    }
+
     
     @Test
     void deletesFacebookCampaignWhenAdSetCreationFails() throws Exception {

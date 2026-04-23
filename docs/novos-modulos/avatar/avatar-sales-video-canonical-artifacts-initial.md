@@ -22,7 +22,7 @@ Ele define o primeiro conjunto canônico de artefatos necessários para operar o
 Este documento deve ser lido em conjunto com:
 
 - `docs/canonical/system-governance-canon.v2.md`
-- `docs/avatar/avatar-sales-video-canonical-rules.md`
+- `docs/novos-modulos/avatar/avatar-sales-video-canonical-rules.md`
 
 ## Regra obrigatória
 

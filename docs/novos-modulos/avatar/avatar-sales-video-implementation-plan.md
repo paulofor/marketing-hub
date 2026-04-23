@@ -753,7 +753,7 @@ O caminho mais forte é começar com **vídeos curtos de benefício na landing**
 
 ## 20) Referências de base usadas neste plano
 
-- Documentação do repositório `Marketing Hub` (`README`, `docs/avatar/avatar-implementation-plan.md`, `docs/ai-worker/README.md`, `docs/data-model.md`, `docs/frontend-navigation.md`).
+- Documentação do repositório `Marketing Hub` (`README`, `docs/novos-modulos/avatar/avatar-implementation-plan.md`, `docs/ai-worker/README.md`, `docs/data-model.md`, `docs/frontend-navigation.md`).
 - web.dev — práticas de performance para vídeo na web.
 - W3C WAI — orientações sobre captions/subtitles.
 - FTC — orientações e enforcement contra alegações enganosas envolvendo IA.

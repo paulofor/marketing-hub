@@ -5,4 +5,4 @@
 - **Autor:** Codex (GPT-5.3-Codex)
 - **Status:** deprecated
 
-> **Nota de obsolescência:** Arquivo sem conteúdo canônico ativo. Consulte os documentos oficiais em `docs/avatar/`.
+> **Nota de obsolescência:** Arquivo sem conteúdo canônico ativo. Consulte os documentos oficiais em `docs/novos-modulos/avatar/`.

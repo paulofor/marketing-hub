@@ -4,14 +4,14 @@
 Criar um módulo separado de **Avatar de Venda** dentro do Marketing Hub para transformar visitantes em compradores de produtos digitais por meio de diálogo orientado à oferta, clareza, prova e CTA.
 
 ## Relação com o módulo de Avatar existente
-O módulo `docs/avatar/` continua responsável por:
+O módulo `docs/novos-modulos/avatar/` continua responsável por:
 - cadastro e gestão do avatar;
 - treino/renderização;
 - composição de cena;
 - integração com providers;
 - armazenamento e observabilidade de mídia.
 
-O módulo `docs/avatar-sales/` passa a ser responsável por:
+O módulo `docs/novos-modulos/avatar/sales/` passa a ser responsável por:
 - estratégia de conversa;
 - entendimento da oferta;
 - qualificação do visitante;

@@ -18,6 +18,25 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
 - `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
 - `java_module_logs`: retorna tail de logs do Spring Boot dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`).
+- `meta_docs_get`: baixa uma URL de documentação da Meta (hosts em allowlist) e retorna um trecho textual simplificado.
+- `meta_graph_get`: executa chamada GET na Graph API usando token configurado no MCP.
+- `meta_graph_debug_token`: valida um token via endpoint `debug_token` da Graph API.
+
+### Configuração dos tools da Meta (MVP)
+
+Defina as variáveis abaixo para habilitar os tools:
+
+- `MCP_META_ENABLED=true`
+- `MCP_META_ACCESS_TOKEN=<token-sistema-ou-usuario-com-permissoes>`
+- `MCP_META_APP_ID=<app-id-meta>` e `MCP_META_APP_SECRET=<app-secret-meta>` (necessários para `meta_graph_debug_token`)
+
+Opcional:
+
+- `MCP_META_DOCS_ALLOWLIST_HOSTS=developers.facebook.com,www.facebook.com`
+- `MCP_META_GRAPH_API_BASE_URL=https://graph.facebook.com`
+- `MCP_META_GRAPH_API_VERSION=v22.0`
+- `MCP_META_TIMEOUT_MS=10000`
+- `MCP_META_MAX_RESPONSE_CHARS=6000`
 
 ## Executar localmente
 

@@ -46,6 +46,12 @@ class McpControllerTest {
         registry.add("mcp.logs.lead-portal-payment-path",
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
+        registry.add("mcp.meta.enabled", () -> "false");
+        registry.add("mcp.meta.docs-allowlist-hosts", () -> "developers.facebook.com,www.facebook.com");
+        registry.add("mcp.meta.graph-api-base-url", () -> "https://graph.facebook.com");
+        registry.add("mcp.meta.graph-api-version", () -> "v22.0");
+        registry.add("mcp.meta.request-timeout-millis", () -> "10000");
+        registry.add("mcp.meta.max-response-chars", () -> "2000");
     }
 
     @BeforeEach
@@ -191,6 +197,31 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value(-32601));
     }
+
+    @Test
+    void shouldListMetaTools() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_docs_get')]").exists())
+                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_graph_get')]").exists())
+                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_graph_debug_token')]").exists());
+    }
+
+    @Test
+    void shouldRejectMetaToolWhenFeatureIsDisabled() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":13,"method":"tools/call","params":{"name":"meta_graph_get","arguments":{"path":"me"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message").value("meta tools are disabled (set mcp.meta.enabled=true)"));
+    }
 }
 
 @SpringBootTest(properties = "mcp.api-key=super-secret")
@@ -216,6 +247,12 @@ class McpControllerApiKeyEnabledTest {
         registry.add("mcp.logs.lead-portal-payment-path",
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
+        registry.add("mcp.meta.enabled", () -> "false");
+        registry.add("mcp.meta.docs-allowlist-hosts", () -> "developers.facebook.com,www.facebook.com");
+        registry.add("mcp.meta.graph-api-base-url", () -> "https://graph.facebook.com");
+        registry.add("mcp.meta.graph-api-version", () -> "v22.0");
+        registry.add("mcp.meta.request-timeout-millis", () -> "10000");
+        registry.add("mcp.meta.max-response-chars", () -> "2000");
     }
 
     @Test

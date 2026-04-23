@@ -47,12 +47,89 @@ public class LeadPortalPublicFlowController {
             return "";
         }
         String trimmedSource = sourceHtml.trim();
-        String lowered = trimmedSource.toLowerCase();
-        if (lowered.startsWith("<html") || lowered.startsWith("<!doctype")) {
-            return sourceHtml;
+        if (looksLikeJsonPayload(trimmedSource)) {
+            String extractedFromJson = tryExtractFromJsonPayload(trimmedSource);
+            if (StringUtils.hasText(extractedFromJson)) {
+                return extractedFromJson;
+            }
+        }
+        String extractedFromHybrid = tryExtractFromHybridHtml(sourceHtml);
+        if (StringUtils.hasText(extractedFromHybrid)) {
+            return extractedFromHybrid;
+        }
+        return sourceHtml;
+    }
+
+    private boolean looksLikeJsonPayload(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        char firstChar = value.charAt(0);
+        return firstChar == '{' || firstChar == '[';
+    }
+
+    private String tryExtractFromHybridHtml(String html) {
+        if (!StringUtils.hasText(html)) {
+            return null;
+        }
+        int cursor = html.indexOf('{');
+        while (cursor >= 0) {
+            String candidate = extractJsonCandidate(html, cursor);
+            if (StringUtils.hasText(candidate) && containsLandingPageSignature(candidate)) {
+                String extracted = tryExtractFromJsonPayload(candidate);
+                if (StringUtils.hasText(extracted)) {
+                    return extracted;
+                }
+            }
+            cursor = html.indexOf('{', cursor + 1);
+        }
+        return null;
+    }
+
+    private boolean containsLandingPageSignature(String candidate) {
+        String lowered = candidate.toLowerCase();
+        return lowered.contains("landingpagehtml") || lowered.contains("htmldocument");
+    }
+
+    private String extractJsonCandidate(String source, int startIndex) {
+        if (startIndex < 0 || startIndex >= source.length() || source.charAt(startIndex) != '{') {
+            return null;
+        }
+        int depth = 0;
+        boolean inString = false;
+        boolean escaping = false;
+        for (int i = startIndex; i < source.length(); i++) {
+            char current = source.charAt(i);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                } else if (current == '\\') {
+                    escaping = true;
+                } else if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (current == '"') {
+                inString = true;
+            } else if (current == '{') {
+                depth++;
+            } else if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(startIndex, i + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String tryExtractFromJsonPayload(String payload) {
+        if (!StringUtils.hasText(payload)) {
+            return null;
         }
         try {
-            JsonNode root = OBJECT_MAPPER.readTree(trimmedSource);
+            JsonNode root = OBJECT_MAPPER.readTree(payload.trim());
             if (root.isObject()) {
                 JsonNode landingPageHtmlNode = root.get("landingPageHtml");
                 if (landingPageHtmlNode != null) {
@@ -67,9 +144,9 @@ public class LeadPortalPublicFlowController {
                 }
             }
         } catch (Exception ignored) {
-            return sourceHtml;
+            return null;
         }
-        return sourceHtml;
+        return null;
     }
 
     private String extractFromLandingPageNode(JsonNode landingPageHtmlNode) throws java.io.IOException {

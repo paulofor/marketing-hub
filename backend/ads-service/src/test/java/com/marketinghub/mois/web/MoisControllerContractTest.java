@@ -1,6 +1,7 @@
 package com.marketinghub.mois.web;
 
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
+import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.service.MoisModuleGateway;
 import java.time.Instant;
@@ -109,5 +110,17 @@ class MoisControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].offerId").value("mois-offer-001"))
                 .andExpect(jsonPath("$.items[0].confidence").value(0.79));
+    }
+
+    @Test
+    void shouldPropagateCategoryFilterToInsightReportsEndpoint() throws Exception {
+        when(gateway.listInsightReports(eq("mois-req-001"), eq("nutricao"), eq("DIGITAL_PRODUCT")))
+                .thenReturn(new MoisInsightDtos.InsightReportListResponse(List.of()));
+
+        mockMvc.perform(get("/api/v1/mois/insight-reports")
+                        .param("requestId", "mois-req-001")
+                        .param("nicheName", "nutricao")
+                        .param("category", "DIGITAL_PRODUCT"))
+                .andExpect(status().isOk());
     }
 }

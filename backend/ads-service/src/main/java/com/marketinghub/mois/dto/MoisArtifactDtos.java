@@ -14,6 +14,7 @@ public final class MoisArtifactDtos {
             String schemaVersion,
             String status,
             String module,
+            String createdBy,
             Instant createdAt,
             Instant updatedAt,
             Map<String, Object> lineage,

@@ -73,9 +73,10 @@ public class MoisController {
     @GetMapping("/insight-reports")
     public MoisInsightDtos.InsightReportListResponse listInsightReports(
             @RequestParam(required = false) String requestId,
-            @RequestParam(required = false) String nicheName
+            @RequestParam(required = false) String nicheName,
+            @RequestParam(required = false) String category
     ) {
-        return gateway.listInsightReports(requestId, nicheName);
+        return gateway.listInsightReports(requestId, nicheName, category);
     }
 
     @GetMapping("/insight-reports/{reportId}")

@@ -30,4 +30,19 @@ class CustomFormHtmlResolverTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("HTML puro");
     }
+
+    @Test
+    void normalizeRescuesLegacyWrappedJsonInsideHtmlBody() {
+        String payload = """
+                <html lang="\\&quot;pt-BR\\&quot;">
+                  <head></head>
+                  <body>
+                    {"landingPageHtml":{"htmlDocument":"<html><body><h1>Exp 14</h1><p class=\\&quot;lead\\&quot;>ok</p></body></html>"}}
+                  </body>
+                </html>
+                """;
+
+        assertThat(resolver.normalize(payload))
+                .isEqualTo("<html><body><h1>Exp 14</h1><p class=\"lead\">ok</p></body></html>");
+    }
 }

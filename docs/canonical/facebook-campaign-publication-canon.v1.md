@@ -7,6 +7,7 @@
 > - esclarece que para o público manual do experimento, 1 cargo (`JOB_TITLE`) aprovado já atende o mínimo operacional
 > - esclarece que o formulário de captação do experimento é do fluxo interno do Marketing Hub (não é o Instant Form nativo da Meta)
 > - adiciona invariante canônico de unicidade: um experimento não pode gerar campanhas duplicadas na mesma plataforma
+> - adiciona fluxo canônico de deduplicação de upload de imagem com reuso de `meta_image_hash`
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -79,6 +80,12 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 6. **Pixel worker** – a mesma liberação coloca o nicho na fila de criação de pixel enquanto `market_niche.facebook_pixel_id` estiver vazio. O worker consulta `/api/facebook-pixels/niches-ready` e só considera nichos com experimentos liberados (`facebook_release_requested_at` definido, `creative_approved=true`, `status IN ('PLANNED','RUNNING','PAUSED')` e plataforma Facebook). Ao registrar o pixel do nicho, todos os experimentos herdam o mesmo ID/HTML.
 7. **Execução registrada** – cada anúncio publicado referencia o valor de rastreamento (`utm_campaign`) exibido na UI junto com as conversões atribuídas.
 8. **Parada manual do operador** – a UI de Experimentos pode registrar `status='USER_STOPPED'` quando a campanha for interrompida por decisão humana. Esse status encerra o ciclo operacional no Hub e **não** recoloca o experimento na fila `/api/facebook-campaigns/experiments-ready` até uma nova liberação explícita.
+9. **Upload de imagem com reuso canônico (Meta `image_hash`)** – para criativos de anúncio, o worker **não** deve fazer upload cego da mesma imagem em toda execução. O fluxo obrigatório é:
+   - gerar hash determinístico local do arquivo (ex.: `sha256` dos bytes da imagem);
+   - consultar repositório canônico no backend para verificar se já existe vínculo `hash_local -> meta_image_hash` para a mesma plataforma/conta de anúncio;
+   - se existir vínculo válido, reutilizar diretamente o `meta_image_hash` no payload do anúncio;
+   - se não existir, realizar upload para a Meta, capturar o `image_hash` retornado e persistir o mapeamento para reuso futuro.
+   - **invariante operacional**: deduplicação por conteúdo de imagem é obrigatória para reduzir custo, latência e risco de variação acidental entre anúncios com o mesmo asset.
 
 ## 8. Funil e telemetria operacional
 

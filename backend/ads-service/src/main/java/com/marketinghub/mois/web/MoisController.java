@@ -85,6 +85,12 @@ public class MoisController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
     }
 
+    @GetMapping("/insight-reports/{reportId}/executive-summary")
+    public MoisInsightDtos.InsightExecutiveSummaryResponse getInsightExecutiveSummary(@PathVariable String reportId) {
+        return gateway.getInsightExecutiveSummary(reportId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "insight report not found"));
+    }
+
     @GetMapping("/artifacts/{artifactId}")
     public MoisArtifactDtos.ArtifactEnvelopeResponse getArtifact(@PathVariable String artifactId) {
         return gateway.getArtifact(artifactId)

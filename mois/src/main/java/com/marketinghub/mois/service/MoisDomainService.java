@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -283,6 +284,19 @@ public class MoisDomainService {
         return Optional.of(computed);
     }
 
+    public Optional<MoisInsightDtos.InsightExecutiveSummaryResponse> getInsightExecutiveSummary(String reportId) {
+        return getInsightReport(reportId)
+                .map(report -> new MoisInsightDtos.InsightExecutiveSummaryResponse(
+                        report.reportId(),
+                        report.requestId(),
+                        report.nicheName(),
+                        report.marketTheme(),
+                        report.frameworkRecommendation(),
+                        report.gapOpportunities().stream().limit(3).toList(),
+                        report.saturationSignals().stream().limit(5).toList(),
+                        report.recommendedNextActions()));
+    }
+
     private MoisInsightDtos.InsightReportResponse buildInsightReport(String reportId, DiscoveryRequest request) {
         String requestId = request.requestId();
         List<OfferCard> requestOffers = listOffersByRequest(requestId);
@@ -298,6 +312,9 @@ public class MoisDomainService {
                 buildPatternDistribution(requestOffers, OfferCard::funnelPatternSummary, offerCount);
         List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns =
                 buildPatternDistribution(requestOffers, OfferCard::mechanismClaimSummary, offerCount);
+        List<MoisInsightDtos.SaturationSignalResponse> saturationSignals = buildSaturationSignals(requestOffers);
+        MoisInsightDtos.FrameworkRecommendationResponse frameworkRecommendation =
+                buildFrameworkRecommendation(request, repeatedPromises, repeatedProofPatterns, mechanismPatterns, pricingPatterns);
 
         return new MoisInsightDtos.InsightReportResponse(
                 reportId,
@@ -320,10 +337,12 @@ public class MoisDomainService {
                 pricingPatterns,
                 funnelPatterns,
                 mechanismPatterns,
+                saturationSignals,
                 buildSaturationNotes(repeatedPromises, pricingPatterns, offerCount),
-                buildGapOpportunities(requestOffers, repeatedPromises, pricingPatterns),
+                buildGapOpportunities(requestOffers, repeatedPromises, pricingPatterns, mechanismPatterns, repeatedProofPatterns),
                 buildDifferentiationSignals(requestOffers, repeatedPromises, mechanismPatterns),
-                buildRecommendedActions(repeatedPromises, pricingPatterns, mechanismPatterns));
+                buildRecommendedActions(repeatedPromises, pricingPatterns, mechanismPatterns),
+                frameworkRecommendation);
     }
 
     public Optional<MoisArtifactDtos.ArtifactEnvelopeResponse> getArtifact(String artifactId) {
@@ -412,10 +431,12 @@ public class MoisDomainService {
             content.put("pricingPatterns", report.pricingPatterns());
             content.put("funnelPatterns", report.funnelPatterns());
             content.put("mechanismClaimPatterns", report.mechanismClaimPatterns());
+            content.put("saturationSignals", report.saturationSignals());
             content.put("saturationNotes", report.saturationNotes());
             content.put("gapOpportunities", report.gapOpportunities());
             content.put("differentiationSignals", report.differentiationSignals());
             content.put("recommendedNextActions", report.recommendedNextActions());
+            content.put("frameworkRecommendation", report.frameworkRecommendation());
             return Optional.of(new MoisArtifactDtos.ArtifactEnvelopeResponse(
                     report.reportId(),
                     "mois.marketOfferInsightReport.v1",
@@ -457,7 +478,7 @@ public class MoisDomainService {
         return requestOffers.stream()
                 .map(extractor)
                 .filter(value -> value != null && !value.isBlank())
-                .collect(java.util.stream.Collectors.groupingBy(Function.identity(), java.util.stream.Collectors.counting()))
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                 .entrySet()
                 .stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
@@ -497,7 +518,9 @@ public class MoisDomainService {
     private List<MoisInsightDtos.GapOpportunityResponse> buildGapOpportunities(
             List<OfferCard> requestOffers,
             List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises,
-            List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns
+            List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns,
+            List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns,
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedProofPatterns
     ) {
         if (requestOffers.isEmpty()) {
             return List.of();
@@ -512,7 +535,8 @@ public class MoisDomainService {
                         "Ofertas com promessa alternativa tendem a destacar posicionamento em mercado saturado.",
                         requestOffers.stream().map(OfferCard::artifactId).toList(),
                         "HIGH",
-                        0.72));
+                        0.72,
+                        List.of("promise_share>0.70", "offer_count>3")));
             }
         });
 
@@ -523,9 +547,121 @@ public class MoisDomainService {
                     "Adicionar modelos de ancoragem, parcelamento ou ticket escalonado pode ampliar conversão por perfil.",
                     requestOffers.stream().map(OfferCard::artifactId).toList(),
                     "MEDIUM",
-                    0.66));
+                    0.66,
+                    List.of("unique_price_patterns<=1")));
         }
-        return gaps;
+
+        mechanismPatterns.stream().findFirst().ifPresent(topMechanism -> {
+            if (topMechanism.share() >= 0.65) {
+                gaps.add(new MoisInsightDtos.GapOpportunityResponse(
+                        "MECHANISM_PROOF_GAP",
+                        "Um único mecanismo domina o discurso competitivo.",
+                        "Há espaço para combinar mecanismo alternativo com prova específica e reduzir paridade.",
+                        requestOffers.stream().map(OfferCard::artifactId).toList(),
+                        "HIGH",
+                        0.74,
+                        List.of("mechanism_share>=0.65", "proof_pattern_diversity<3")));
+            }
+        });
+
+        if (repeatedProofPatterns.size() <= 1) {
+            gaps.add(new MoisInsightDtos.GapOpportunityResponse(
+                    "PROOF_ANGLE_UNEXPLORED",
+                    "Pouca variação de prova nas ofertas coletadas.",
+                    "Introduzir prova operacional e estudos de caso aprofundados aumenta credibilidade percebida.",
+                    requestOffers.stream().map(OfferCard::artifactId).toList(),
+                    "MEDIUM",
+                    0.61,
+                    List.of("unique_proof_patterns<=1")));
+        }
+        return gaps.stream()
+                .sorted(Comparator.comparingDouble(MoisInsightDtos.GapOpportunityResponse::confidence).reversed())
+                .toList();
+    }
+
+    private List<MoisInsightDtos.SaturationSignalResponse> buildSaturationSignals(List<OfferCard> requestOffers) {
+        if (requestOffers.isEmpty()) {
+            return List.of();
+        }
+
+        int totalOffers = requestOffers.size();
+        Map<String, Long> grouped = requestOffers.stream()
+                .collect(Collectors.groupingBy(
+                        offer -> offer.primaryOfferType() + "|" + toPriceBand(offer.mainPrice()),
+                        LinkedHashMap::new,
+                        Collectors.counting()));
+
+        return grouped.entrySet().stream()
+                .map(entry -> {
+                    String[] key = entry.getKey().split("\\|", 2);
+                    long count = entry.getValue();
+                    double score = count / (double) totalOffers;
+                    return new MoisInsightDtos.SaturationSignalResponse(key[0], key[1], count, score);
+                })
+                .sorted(Comparator.comparingDouble(MoisInsightDtos.SaturationSignalResponse::saturationScore).reversed())
+                .toList();
+    }
+
+    private MoisInsightDtos.FrameworkRecommendationResponse buildFrameworkRecommendation(
+            DiscoveryRequest request,
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedPromises,
+            List<MoisInsightDtos.InsightReportPatternResponse> repeatedProofPatterns,
+            List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns,
+            List<MoisInsightDtos.InsightReportPatternResponse> pricingPatterns
+    ) {
+        String dominantPain = request.painOrOutcomeFocus() == null || request.painOrOutcomeFocus().isBlank()
+                ? "Dor não especificada na requisição"
+                : request.painOrOutcomeFocus();
+        String mostPromisedOutcome = topLabel(repeatedPromises, "Sem padrão de resultado dominante");
+        String mostExploredMechanism = topLabel(mechanismPatterns, "Mecanismo ainda difuso");
+        String mostUsedProof = topLabel(repeatedProofPatterns, "Prova pouco explicitada");
+        List<String> subexploredAngles = new ArrayList<>();
+        if (mechanismPatterns.size() > 1) {
+            subexploredAngles.add("Explorar mecanismo alternativo: " + mechanismPatterns.get(1).label());
+        }
+        if (pricingPatterns.size() > 1) {
+            subexploredAngles.add("Testar ângulo de oferta na faixa " + pricingPatterns.get(pricingPatterns.size() - 1).label());
+        }
+        if (subexploredAngles.isEmpty()) {
+            subexploredAngles.add("Buscar combinação inédita de mecanismo + prova para romper saturação.");
+        }
+        return new MoisInsightDtos.FrameworkRecommendationResponse(
+                dominantPain,
+                mostPromisedOutcome,
+                mostExploredMechanism,
+                mostUsedProof,
+                subexploredAngles);
+    }
+
+    private String topLabel(List<MoisInsightDtos.InsightReportPatternResponse> patterns, String fallback) {
+        return patterns.stream().findFirst().map(MoisInsightDtos.InsightReportPatternResponse::label).orElse(fallback);
+    }
+
+    private String toPriceBand(String mainPrice) {
+        if (mainPrice == null || mainPrice.isBlank()) {
+            return "UNSPECIFIED";
+        }
+        double numeric = parsePrice(mainPrice);
+        if (numeric <= 0) {
+            return "UNSPECIFIED";
+        }
+        if (numeric < 100) {
+            return "LOW";
+        }
+        if (numeric < 500) {
+            return "MID";
+        }
+        return "HIGH";
+    }
+
+    private double parsePrice(String rawPrice) {
+        String sanitized = rawPrice.replace("R$", "").replace("$", "").trim();
+        sanitized = sanitized.replace(".", "").replace(",", ".");
+        try {
+            return Double.parseDouble(sanitized);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     private List<String> buildDifferentiationSignals(

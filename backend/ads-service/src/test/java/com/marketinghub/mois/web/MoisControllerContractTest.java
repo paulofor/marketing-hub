@@ -123,4 +123,27 @@ class MoisControllerContractTest {
                         .param("category", "DIGITAL_PRODUCT"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void shouldExposeExecutiveSummaryEndpointContract() throws Exception {
+        when(gateway.getInsightExecutiveSummary("mois-report-001"))
+                .thenReturn(Optional.of(new MoisInsightDtos.InsightExecutiveSummaryResponse(
+                        "mois-report-001",
+                        "mois-req-001",
+                        "nutricao",
+                        "perda de peso",
+                        new MoisInsightDtos.FrameworkRecommendationResponse(
+                                "dor dominante",
+                                "resultado",
+                                "mecanismo",
+                                "prova",
+                                List.of("angulo")),
+                        List.of(),
+                        List.of(),
+                        List.of("acao"))));
+
+        mockMvc.perform(get("/api/v1/mois/insight-reports/mois-report-001/executive-summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportId").value("mois-report-001"));
+    }
 }

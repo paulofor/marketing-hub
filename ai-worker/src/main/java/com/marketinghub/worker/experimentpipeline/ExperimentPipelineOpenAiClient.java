@@ -34,6 +34,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
     private static final String REQUIRED_TEXT_MODEL = "gpt-5.2";
+    private static final String REQUIRED_LANDING_HTML_MODEL = "gpt-5.1-codex";
     private static final int TRANSIENT_ERROR_MAX_ATTEMPTS = 3;
     private static final long TRANSIENT_ERROR_RETRY_DELAY_MS = 1_500L;
     private static final String PIPELINE_PROMPT_PREFIX = """
@@ -269,7 +270,6 @@ public class ExperimentPipelineOpenAiClient {
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = parseResponseContent(content, job);
             validateExpectedResponseContract(parsed, content, job);
-            ensureLandingHtmlHasStaticFormContract(parsed, job);
             enrichConsistencyChecks(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
@@ -914,21 +914,22 @@ public class ExperimentPipelineOpenAiClient {
 
 
     private String enforceRequiredModel(Map<String, Object> payload, ExperimentPipelineJobDto job) {
+        String requiredModel = isLandingHtmlSection(job) ? REQUIRED_LANDING_HTML_MODEL : REQUIRED_TEXT_MODEL;
         if (payload == null) {
-            return REQUIRED_TEXT_MODEL;
+            return requiredModel;
         }
         String previousModel = payload.get("model") instanceof String value ? value : null;
-        if (!REQUIRED_TEXT_MODEL.equals(previousModel)) {
+        if (!requiredModel.equals(previousModel)) {
             log.warn(
                     "Forçando modelo OpenAI {} para pipeline (jobId={}, experimento={}, seção={}, modeloOriginal={})",
-                    REQUIRED_TEXT_MODEL,
+                    requiredModel,
                     job != null ? job.id() : null,
                     job != null ? job.experimentId() : null,
                     job != null ? job.section() : null,
                     previousModel);
         }
-        payload.put("model", REQUIRED_TEXT_MODEL);
-        return REQUIRED_TEXT_MODEL;
+        payload.put("model", requiredModel);
+        return requiredModel;
     }
 
     private OpenAiResponse requestWithTransientRetries(Map<String, Object> payload, ExperimentPipelineJobDto job) {

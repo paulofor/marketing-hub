@@ -803,7 +803,16 @@ class ExperimentPipelineOpenAiClientTest {
     void enforcesGpt51CodexModelForLandingHtmlPipelineCall() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                WebClient.builder().exchangeFunction(capturePayloadExchange(
+                        payloadRef,
+                        """
+                                <!doctype html>
+                                <html lang="pt-BR">
+                                  <body>
+                                    <form id="lead-capture-primary"></form>
+                                  </body>
+                                </html>
+                                """)),
                 MAPPER,
                 "test-key",
                 "http://openai");

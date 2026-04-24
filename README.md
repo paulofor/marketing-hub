@@ -99,3 +99,17 @@ deploy/                      arquivos de deploy em containers
 docs/                        documentação e cânones
 AGENTS.md                    contrato operacional principal
 docker-compose.yml           compose raiz para serviços auxiliares
+
+## Troubleshooting rápido (Frontend / Sandbox)
+
+Se o comando de build do frontend falhar com mensagens como `vite: command not found` ou erro equivalente, normalmente as dependências ainda não foram instaladas no diretório `frontend`.
+
+Fluxo recomendado:
+
+1. `npm -C frontend ci`
+2. `npm -C frontend run build`
+
+Observações:
+
+- O script de build do frontend usa `vite build`, então o pacote `vite` precisa existir em `node_modules` antes de executar o build.
+- Em ambientes de sandbox/CI podem aparecer avisos de configuração global do npm (por exemplo, proxy). Esses avisos podem ser específicos do ambiente e não necessariamente indicam erro de código do projeto.

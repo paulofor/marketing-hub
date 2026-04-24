@@ -525,7 +525,7 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
-    void injectsStaticFormFieldsForLandingPageHtmlWhenModelReturnsDynamicFormOnly() throws Exception {
+    void preservesLandingPageHtmlWithoutWorkerNormalizationWhenModelReturnsDynamicFormOnly() throws Exception {
         String openAiText = MAPPER.writeValueAsString(Map.of(
                 "landingPageHtml", Map.of(
                         "htmlDocument", """
@@ -570,21 +570,15 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> landingPageHtml = (Map<String, Object>) content.get("landingPageHtml");
         String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
 
-        assertThat(htmlDocument).contains("name=\"nome\"");
-        assertThat(htmlDocument).contains("name=\"email\"");
-        assertThat(htmlDocument).contains("name=\"whatsapp\"");
+        assertThat(htmlDocument).contains("<div id=\"form-fields\"></div>");
         assertThat(htmlDocument).contains("id=\"lead-capture-primary\"");
-        assertThat(htmlDocument).contains("method=\"post\"");
-        assertThat(htmlDocument).contains("enctype=\"multipart/form-data\"");
-        assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
-        assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
-        assertThat(htmlDocument).contains("var slugtoken = /\\{slug\\}|%7bslug%7d/i;");
-        assertThat(htmlDocument).contains("lead-capture-success-message");
-        assertThat(htmlDocument).contains("aguarde: em instantes você receberá a prévia no e-mail informado");
+        assertThat(htmlDocument).doesNotContain("name=\"email\"");
+        assertThat(htmlDocument).doesNotContain("name=\"whatsapp\"");
+        assertThat(htmlDocument).doesNotContain("id=\"lead-capture-submit-contract\"");
     }
 
     @Test
-    void normalizesLandingPageHtmlWhenSectionComesAsEnumName() throws Exception {
+    void preservesLandingPageHtmlWhenSectionComesAsEnumName() throws Exception {
         String openAiText = MAPPER.writeValueAsString(Map.of(
                 "landingPageHtml", Map.of(
                         "htmlDocument", """
@@ -631,15 +625,9 @@ class ExperimentPipelineOpenAiClientTest {
         String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
 
         assertThat(htmlDocument).contains("name=\"nome\"");
-        assertThat(htmlDocument).contains("name=\"email\"");
-        assertThat(htmlDocument).contains("name=\"whatsapp\"");
-        assertThat(htmlDocument).doesNotContain("name=\"objetivo\"");
-        assertThat(htmlDocument).doesNotContain("<select name=\"objetivo\"");
-        assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
-        assertThat(htmlDocument).contains("id=\"lead-capture-submit-contract\"");
-        assertThat(htmlDocument).contains("var slugtoken = /\\{slug\\}|%7bslug%7d/i;");
-        assertThat(htmlDocument).contains("lead-capture-success-message");
-        assertThat(htmlDocument).contains("aguarde: em instantes você receberá a prévia no e-mail informado");
+        assertThat(htmlDocument).contains("name=\"objetivo\"");
+        assertThat(htmlDocument).contains("<select name=\"objetivo\"");
+        assertThat(htmlDocument).doesNotContain("id=\"lead-capture-submit-contract\"");
     }
 
     @Test
@@ -685,10 +673,9 @@ class ExperimentPipelineOpenAiClientTest {
         String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
 
         assertThat(htmlDocument).contains("name=\"nome\"");
-        assertThat(htmlDocument).contains("name=\"email\"");
-        assertThat(htmlDocument).contains("name=\"whatsapp\"");
-        assertThat(htmlDocument).doesNotContain("name=\"objetivo\"");
-        assertThat(htmlDocument).contains("action=\"/api/flows/{slug}/submissions\"");
+        assertThat(htmlDocument).contains("name=\"objetivo\"");
+        assertThat(htmlDocument).doesNotContain("name=\"email\"");
+        assertThat(htmlDocument).doesNotContain("name=\"whatsapp\"");
     }
 
     @Test
@@ -735,8 +722,9 @@ class ExperimentPipelineOpenAiClientTest {
         String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
 
         assertThat(htmlDocument).contains("<!doctype html>");
-        assertThat(htmlDocument).contains("name=\"email\"");
-        assertThat(htmlDocument).contains("name=\"whatsapp\"");
+        assertThat(htmlDocument).contains("name=\"nome\"");
+        assertThat(htmlDocument).doesNotContain("name=\"email\"");
+        assertThat(htmlDocument).doesNotContain("name=\"whatsapp\"");
     }
 
     @Test
@@ -809,6 +797,37 @@ class ExperimentPipelineOpenAiClientTest {
 
         Map<String, Object> payload = payloadRef.get();
         assertThat(payload.get("model")).isEqualTo("gpt-5.2");
+    }
+
+    @Test
+    void enforcesGpt51CodexModelForLandingHtmlPipelineCall() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                15L,
+                "landing-page-html",
+                "gpt-4o-mini",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-4o-mini",
+                          "input": [
+                            {"role": "user", "content": "Prompt de landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        assertThat(payload.get("model")).isEqualTo("gpt-5.1-codex");
     }
 
     @Test

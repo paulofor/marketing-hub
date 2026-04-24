@@ -91,7 +91,9 @@ public class ExperimentPipelineOpenAiClient {
     private static final Pattern FORM_FIELD_BLOCK_PATTERN = Pattern.compile(
             "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
     private static final Pattern HTML_SECTION_PATTERN = Pattern.compile("(?is)<section\\b[^>]*>");
+    private static final Pattern HTML_OPENING_TAG_PATTERN = Pattern.compile("(?is)<[a-z][^>]*>");
     private static final Pattern HTML_ATTRIBUTE_PATTERN = Pattern.compile("(?i)(data-surface-token|class)\\s*=\\s*['\"]([^'\"]+)['\"]");
+    private static final Pattern HTML_GENERIC_ATTRIBUTE_PATTERN = Pattern.compile("(?i)([a-z0-9:-]+)\\s*=\\s*(['\"])(.*?)\\2");
     private static final Pattern MARKDOWN_CODE_BLOCK_PATTERN = Pattern.compile("(?is)^```(?:html|htm)?\\s*(.*?)\\s*```$");
     private static final List<String> GENERIC_DELIVERABLE_TERMS = List.of("kit", "prévia", "previa", "ativos digitais", "material", "pacote");
     private static final List<String> CONCRETE_DELIVERABLE_TERMS = List.of(
@@ -269,6 +271,7 @@ public class ExperimentPipelineOpenAiClient {
             }
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = parseResponseContent(content, job);
+            enforceLandingHtmlSurfaceBinding(parsed, payload, job, content);
             validateExpectedResponseContract(parsed, content, job);
             enrichConsistencyChecks(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
@@ -506,6 +509,263 @@ public class ExperimentPipelineOpenAiClient {
             return htmlDocument.substring(0, bodyClose) + STATIC_FORM_SUBMIT_SCRIPT + "\n" + htmlDocument.substring(bodyClose);
         }
         return htmlDocument + "\n" + STATIC_FORM_SUBMIT_SCRIPT;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void enforceLandingHtmlSurfaceBinding(Map<String, Object> parsed,
+                                                  Map<String, Object> requestPayload,
+                                                  ExperimentPipelineJobDto job,
+                                                  String rawContent) {
+        if (!isLandingHtmlSection(job) || parsed == null) {
+            return;
+        }
+        Object nestedPayload = parsed.get("landingPageHtml");
+        Map<String, Object> landingPayload = nestedPayload instanceof Map<?, ?> map
+                ? (Map<String, Object>) map
+                : parsed;
+        String htmlDocument = readString(landingPayload, LANDING_HTML_MARKER);
+        if (!StringUtils.hasText(htmlDocument)) {
+            return;
+        }
+        List<SectionSurfaceContract> expectedSurfaces = extractExpectedSurfacesFromRequestPayload(requestPayload);
+        if (expectedSurfaces.isEmpty()) {
+            return;
+        }
+        String synchronizedHtml = synchronizeHtmlSurfaceBinding(htmlDocument, expectedSurfaces);
+        List<SectionSurfaceContract> expectedSorted = expectedSurfaces.stream()
+                .sorted(java.util.Comparator.comparing(SectionSurfaceContract::sectionId))
+                .toList();
+        List<SectionSurfaceContract> actualSorted = extractSurfacesFromHtml(synchronizedHtml).stream()
+                .sorted(java.util.Comparator.comparing(SectionSurfaceContract::sectionId))
+                .toList();
+        if (!expectedSorted.equals(actualSorted)) {
+            String reason = "Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.";
+            logContractBreak(job, reason, rawContent, null);
+            throw new IllegalStateException(reason);
+        }
+        landingPayload.put(LANDING_HTML_MARKER, synchronizedHtml);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<SectionSurfaceContract> extractExpectedSurfacesFromRequestPayload(Map<String, Object> requestPayload) {
+        String userPrompt = extractUserPromptFromRequestPayload(requestPayload);
+        if (!StringUtils.hasText(userPrompt)) {
+            return List.of();
+        }
+        int markerIndex = userPrompt.indexOf("Wireframe da landing:");
+        if (markerIndex < 0) {
+            return List.of();
+        }
+        int jsonStart = userPrompt.indexOf('{', markerIndex);
+        if (jsonStart < 0) {
+            return List.of();
+        }
+        String wireframeJson = extractBalancedJsonObject(userPrompt, jsonStart);
+        if (!StringUtils.hasText(wireframeJson)) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> root = objectMapper.readValue(wireframeJson, new TypeReference<>() {});
+            Object wireframeNode = root.get("landingPageWireframe");
+            Map<String, Object> wireframe = wireframeNode instanceof Map<?, ?> map
+                    ? (Map<String, Object>) map
+                    : root;
+            Object sectionsNode = wireframe.get("sectionOrder");
+            if (!(sectionsNode instanceof List<?> sections)) {
+                return List.of();
+            }
+            List<SectionSurfaceContract> expected = new ArrayList<>();
+            for (Object section : sections) {
+                if (!(section instanceof Map<?, ?> sectionMap)) {
+                    continue;
+                }
+                Map<String, Object> sectionData = (Map<String, Object>) sectionMap;
+                String sectionId = normalizeHtmlAttr(readString(sectionData, "sectionId"));
+                Object surfaceNode = sectionData.get("surfaceSpec");
+                if (!(surfaceNode instanceof Map<?, ?> surfaceMap)) {
+                    continue;
+                }
+                Map<String, Object> surface = (Map<String, Object>) surfaceMap;
+                String surfaceToken = normalizeHtmlAttr(readString(surface, "surfaceToken"));
+                String style = normalizeHtmlAttr(readString(surface, "style"));
+                String contrastMode = normalizeHtmlAttr(readString(surface, "contrastMode"));
+                if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(surfaceToken)
+                        || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
+                    continue;
+                }
+                expected.add(new SectionSurfaceContract(sectionId, surfaceToken, style, contrastMode));
+            }
+            return expected;
+        } catch (Exception ex) {
+            log.warn("Falha ao extrair wireframe do prompt para validar surfaceSpec: {}", ex.getMessage());
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractUserPromptFromRequestPayload(Map<String, Object> requestPayload) {
+        if (requestPayload == null) {
+            return "";
+        }
+        Object inputNode = requestPayload.get("input");
+        if (!(inputNode instanceof List<?> inputList)) {
+            return "";
+        }
+        for (Object node : inputList) {
+            if (!(node instanceof Map<?, ?> message)) {
+                continue;
+            }
+            Object role = ((Map<String, Object>) message).get("role");
+            if (!(role instanceof String roleValue) || !"user".equalsIgnoreCase(roleValue)) {
+                continue;
+            }
+            Object content = ((Map<String, Object>) message).get("content");
+            if (content instanceof String text) {
+                return text;
+            }
+        }
+        return "";
+    }
+
+    private String extractBalancedJsonObject(String source, int startIndex) {
+        if (!StringUtils.hasText(source) || startIndex < 0 || startIndex >= source.length() || source.charAt(startIndex) != '{') {
+            return null;
+        }
+        int depth = 0;
+        boolean inString = false;
+        boolean escaping = false;
+        for (int idx = startIndex; idx < source.length(); idx++) {
+            char current = source.charAt(idx);
+            if (escaping) {
+                escaping = false;
+                continue;
+            }
+            if (current == '\\') {
+                escaping = true;
+                continue;
+            }
+            if (current == '"') {
+                inString = !inString;
+                continue;
+            }
+            if (inString) {
+                continue;
+            }
+            if (current == '{') {
+                depth++;
+                continue;
+            }
+            if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(startIndex, idx + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String synchronizeHtmlSurfaceBinding(String htmlDocument, List<SectionSurfaceContract> expectedSurfaces) {
+        if (!StringUtils.hasText(htmlDocument) || expectedSurfaces == null || expectedSurfaces.isEmpty()) {
+            return htmlDocument;
+        }
+        Map<String, SectionSurfaceContract> expectedBySection = new LinkedHashMap<>();
+        for (SectionSurfaceContract contract : expectedSurfaces) {
+            expectedBySection.put(contract.sectionId(), contract);
+        }
+        StringBuffer rebuilt = new StringBuffer();
+        Matcher tagMatcher = HTML_OPENING_TAG_PATTERN.matcher(htmlDocument);
+        while (tagMatcher.find()) {
+            String tag = tagMatcher.group();
+            String sectionId = normalizeHtmlAttr(readAttribute(tag, "data-section-id"));
+            SectionSurfaceContract expected = expectedBySection.get(sectionId);
+            if (expected == null) {
+                tagMatcher.appendReplacement(rebuilt, Matcher.quoteReplacement(tag));
+                continue;
+            }
+            String updatedTag = upsertTagAttribute(tag, "data-surface-token", expected.surfaceToken());
+            updatedTag = upsertTagAttribute(updatedTag, "data-surface-style", expected.style());
+            updatedTag = upsertTagAttribute(updatedTag, "data-surface-contrast", expected.contrastMode());
+            tagMatcher.appendReplacement(rebuilt, Matcher.quoteReplacement(updatedTag));
+        }
+        tagMatcher.appendTail(rebuilt);
+        return rebuilt.toString();
+    }
+
+    private List<SectionSurfaceContract> extractSurfacesFromHtml(String htmlDocument) {
+        if (!StringUtils.hasText(htmlDocument)) {
+            return List.of();
+        }
+        Map<String, SectionSurfaceContract> contractsBySectionId = new LinkedHashMap<>();
+        Matcher tagMatcher = HTML_OPENING_TAG_PATTERN.matcher(htmlDocument);
+        while (tagMatcher.find()) {
+            String tag = tagMatcher.group();
+            String sectionId = normalizeHtmlAttr(readAttribute(tag, "data-section-id"));
+            String surfaceToken = normalizeHtmlAttr(readAttribute(tag, "data-surface-token"));
+            String style = normalizeHtmlAttr(readAttribute(tag, "data-surface-style"));
+            String contrastMode = normalizeHtmlAttr(readAttribute(tag, "data-surface-contrast"));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(surfaceToken)
+                    || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
+                continue;
+            }
+            contractsBySectionId.put(sectionId, new SectionSurfaceContract(sectionId, surfaceToken, style, contrastMode));
+        }
+        return new ArrayList<>(contractsBySectionId.values());
+    }
+
+    private String readAttribute(String tag, String attributeName) {
+        if (!StringUtils.hasText(tag) || !StringUtils.hasText(attributeName)) {
+            return "";
+        }
+        Matcher matcher = HTML_GENERIC_ATTRIBUTE_PATTERN.matcher(tag);
+        while (matcher.find()) {
+            if (attributeName.equalsIgnoreCase(matcher.group(1))) {
+                return matcher.group(3);
+            }
+        }
+        return "";
+    }
+
+    private String upsertTagAttribute(String tag, String attributeName, String value) {
+        Pattern pattern = Pattern.compile("(?i)(\\s+" + Pattern.quote(attributeName) + "\\s*=\\s*)(['\"])(.*?)\\2");
+        Matcher matcher = pattern.matcher(tag);
+        String escapedValue = value == null ? "" : value.trim();
+        if (matcher.find()) {
+            return matcher.replaceFirst("$1\"" + Matcher.quoteReplacement(escapedValue) + "\"");
+        }
+        int closeTag = tag.lastIndexOf('>');
+        if (closeTag < 0) {
+            return tag;
+        }
+        return tag.substring(0, closeTag) + " " + attributeName + "=\"" + escapedValue + "\"" + tag.substring(closeTag);
+    }
+
+    private String normalizeHtmlAttr(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = value.trim();
+        normalized = normalized
+                .replace("\\&quot;", "\"")
+                .replace("\\&#34;", "\"")
+                .replace("\\&#x22;", "\"")
+                .replace("&quot;", "\"")
+                .replace("&#34;", "\"")
+                .replace("&#x22;", "\"")
+                .replace("\\n", "")
+                .replace("\\r", "")
+                .replace("\\t", "");
+        if (normalized.length() >= 2) {
+            char first = normalized.charAt(0);
+            char last = normalized.charAt(normalized.length() - 1);
+            if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                normalized = normalized.substring(1, normalized.length() - 1).trim();
+            }
+        }
+        return normalized;
+    }
+
+    private record SectionSurfaceContract(String sectionId, String surfaceToken, String style, String contrastMode) {
     }
 
     @SuppressWarnings("unchecked")

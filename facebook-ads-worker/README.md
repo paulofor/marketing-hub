@@ -41,6 +41,7 @@ alinhada com os identificadores e faixas de audiência retornados pela Meta.
 ## Testes com MockWebServer
 
 A suíte `FacebookCampaignServiceTest` usa `FailFastMockWebServer` com respostas condicionais de fallback para endpoints de telemetria (`/facebook-api-logs`), publicação de instant form (`/instant-forms/{id}/publication`), status de experimento e fallbacks de campanhas/adsets. Isso evita falhas por requisições auxiliares fora da ordem principal, mantendo os cenários focados no fluxo funcional de criação de campanha.
+Com a telemetria de API ativa durante o fluxo principal, os testes que validam `GET /api/experiments/{id}/adset-playbook` devem preferir `takeRequest` com predicado (matching por path+método) em vez de depender de ordem fixa absoluta na fila do backend.
 Como o fluxo agora sempre pré-carrega imagens via `POST /adimages` antes da criação da campanha e publica o anúncio final via `POST /ads`, os testes devem enfileirar respostas para essas duas chamadas para evitar consumo inesperado dos stubs de campanha/adset/criativo.
 
 ## Fila de resolução de targeting

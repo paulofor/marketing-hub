@@ -49,11 +49,9 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
     5. Identificar e reportar **exatamente** qual trecho (campo/estrutura/valor) gerado pelo modelo foi rejeitado.
     6. Informar a causa raiz e a correção proposta (ajuste de prompt, mapeamento, contrato ou validação).
   - **Formato mínimo obrigatório da resposta de diagnóstico:**
-    - `timestamp` da falha
-    - `endpoint` afetado
-    - trecho do payload do modelo que foi rejeitado
-    - regra/validação violada
-    - evidência no log
+    - o que o modelo entregou de forma literal
+    - o que a especificação esperava de forma literal
+    - diferença entre a entrega do modelo e o que era esperado
     - ação corretiva recomendada
   - Não encerrar análise de 422 sem apontar explicitamente o trecho rejeitado e a validação correspondente.
 

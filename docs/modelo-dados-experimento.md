@@ -86,6 +86,21 @@ Regras operacionais associadas:
 - `marketOfferCard` é enriquecido com os campos extraídos na própria Sprint 4 (promessa/prova/mecanismo/funil) mantendo compatibilidade do contrato de leitura já existente;
 - endpoint de artefato (`/api/v1/mois/artifacts/{artifactId}`) passa a resolver também os novos tipos canônicos `mois.marketOfferPromiseSignal.v1`, `mois.marketOfferProofSignal.v1`, `mois.marketOfferMechanismClaim.v1` e `mois.marketOfferFunnelPattern.v1`.
 
+
+## Atualização incremental — MOIS Sprint 2 (coleta real e qualidade de dado, 24/04/2026)
+
+Evoluções no módulo `mois` (bounded context operacional) sem quebra de contrato:
+
+- `sourceSnapshot` passa a registrar também `canonicalUrl` para suportar deduplicação e rastreabilidade por fonte canônica.
+- `offerCard` passa a carregar `contentSignature` (assinatura SHA-256 do conteúdo normalizado) e `evidenceRefs` (IDs dos snapshots usados como evidência).
+- o pipeline de `run` realiza coleta HTTP real, normalização textual, extração heurística de sinais (promessa, prova, mecanismo, preço, funil) e cálculo de confiança por oferta.
+
+Regras operacionais associadas:
+
+- deduplicação de ofertas por chave composta `canonicalUrl + contentSignature`;
+- requests com coleta sem fontes válidas encerram como `FAILED`;
+- lineage de oferta deve apontar explicitamente para `evidenceRefs` no envelope canônico (`/api/v1/mois/artifacts/{artifactId}`).
+
 ## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
 
 Entidades/tabelas adicionadas no backend (`ads-service`) para suportar o início do Mechanism Discovery Service:

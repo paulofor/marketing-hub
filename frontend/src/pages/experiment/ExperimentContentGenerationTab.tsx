@@ -3415,10 +3415,23 @@ function LandingHtmlPreview({
     if (!experimentId) return;
     try {
       setIsApplying(true);
-      await axios.post(
-        `/api/experiments/${experimentId}/pipeline/landing-page-html/apply-to-form`,
+      const { data } = await axios.post<{
+        publicUrl?: string | null;
+        facebookPixelId?: string | null;
+        pixelAppliedAutomatically?: boolean;
+      }>(
+        `/api/experiments/${experimentId}/pipeline/landing-page-html/approve-and-publish`,
       );
-      toast.success("HTML da landing aplicado no formulário do experimento.");
+      const publicationUrl = data?.publicUrl;
+      const pixelFeedback =
+        data?.pixelAppliedAutomatically && data.facebookPixelId
+          ? ` Pixel do nicho aplicado automaticamente (${data.facebookPixelId}).`
+          : " Pixel do nicho será aplicado automaticamente ao ficar disponível.";
+      toast.success(
+        publicationUrl
+          ? `Landing aprovada e publicada automaticamente em ${publicationUrl}.${pixelFeedback}`
+          : `Landing aprovada e publicação automática iniciada.${pixelFeedback}`,
+      );
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -3450,7 +3463,7 @@ function LandingHtmlPreview({
               Aplicando...
             </span>
           ) : (
-            "Usar como formulário do experimento"
+            "Aprovar e publicar landing"
           )}
         </button>
       </div>

@@ -5,6 +5,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobDetailDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobSummaryDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
+import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.pipeline.service.ExperimentPipelineGenerationService;
 import java.math.BigDecimal;
@@ -47,6 +48,11 @@ public class ExperimentPipelineController {
     @PostMapping("/landing-page-html/apply-to-form")
     public ExperimentDto applyLandingHtmlToForm(@PathVariable Long id) {
         return generationService.applyLandingHtmlToLeadPortalForm(id);
+    }
+
+    @PostMapping("/landing-page-html/approve-and-publish")
+    public LandingPagePublicationResultDto approveAndPublishLanding(@PathVariable Long id) {
+        return generationService.approveAndPublishLandingPage(id);
     }
 
     @GetMapping("/jobs")

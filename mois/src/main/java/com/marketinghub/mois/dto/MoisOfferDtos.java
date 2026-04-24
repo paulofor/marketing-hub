@@ -30,6 +30,7 @@ public final class MoisOfferDtos {
             String primaryOfferType,
             String mainPrice,
             Double confidence,
+            List<String> evidenceRefs,
             List<String> deliverables,
             List<String> pricePoints,
             String proofSummary,

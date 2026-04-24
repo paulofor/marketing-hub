@@ -2,31 +2,77 @@ package com.marketinghub.mois.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
-import com.marketinghub.mois.dto.MoisArtifactDtos;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MoisDomainServiceTest {
 
     private MoisDomainService service;
+    private HttpServer server;
+    private String baseUrl;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         service = new MoisDomainService();
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/oferta-a", new HtmlHandler("""
+                <html><head><title>Oferta A</title></head>
+                <body>
+                  <h1>Ganhe resultado em 21 dias</h1>
+                  <p>Nosso método validado tem prova com +120 alunos e 4.9 de avaliação.</p>
+                  <p>Inscreva-se agora no checkout com preço R$97.</p>
+                </body></html>
+                """));
+        server.createContext("/oferta-b", new HtmlHandler("""
+                <html><head><title>Oferta B</title></head>
+                <body>
+                  <h1>Transforme sua rotina</h1>
+                  <p>Framework prático em 3 passos com estudos de caso e depoimentos.</p>
+                  <p>Garanta a vaga hoje por R$197.</p>
+                </body></html>
+                """));
+        server.createContext("/oferta-duplicada", new HtmlHandler("""
+                <html><head><title>Oferta A</title></head>
+                <body>
+                  <h1>Ganhe resultado em 21 dias</h1>
+                  <p>Nosso método validado tem prova com +120 alunos e 4.9 de avaliação.</p>
+                  <p>Inscreva-se agora no checkout com preço R$97.</p>
+                </body></html>
+                """));
+        server.createContext("/fraco", new HtmlHandler("""
+                <html><head><title>Página fraca</title></head>
+                <body><p>Texto institucional sem sinais claros.</p></body></html>
+                """));
+        server.start();
+        baseUrl = "http://localhost:" + server.getAddress().getPort();
+    }
+
+    @AfterEach
+    void tearDown() {
+        server.stop(0);
     }
 
     @Test
-    void shouldBuildConsolidatedInsightReportWithPatternsAndGaps() {
+    void shouldBuildConsolidatedInsightReportWithRealSignals() {
         MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse accepted = service.createDiscoveryRequest(
                 new MoisDiscoveryDtos.CreateDiscoveryRequest(
                         "Fisioterapia",
                         "Dor lombar",
                         "Alívio de dor",
                         List.of("dor lombar oferta"),
-                        List.of("https://example.com/oferta-a", "https://example.com/oferta-b"),
+                        List.of(baseUrl + "/oferta-a", baseUrl + "/oferta-b"),
                         List.of("META_ADS"),
                         "BR",
                         "pt-BR",
@@ -45,14 +91,54 @@ class MoisDomainServiceTest {
     }
 
     @Test
-    void shouldFilterInsightReportsByCategory() {
+    void shouldDeduplicateOffersByCanonicalUrlAndContentSignature() {
         MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse accepted = service.createDiscoveryRequest(
                 new MoisDiscoveryDtos.CreateDiscoveryRequest(
                         "Nutrição",
                         "Perda de peso",
                         "Resultado rápido",
                         List.of(),
-                        List.of("https://example.com/oferta-c"),
+                        List.of(baseUrl + "/oferta-a?ref=1", baseUrl + "/oferta-a?ref=2"),
+                        List.of("SEARCH"),
+                        "BR",
+                        "pt-BR",
+                        null));
+
+        service.runDiscoveryRequest(accepted.requestId());
+
+        assertThat(service.listOffers(accepted.requestId(), null, null).items()).hasSize(1);
+    }
+
+    @Test
+    void shouldHandleInvalidSourceAndMarkRequestAsFailed() {
+        MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse accepted = service.createDiscoveryRequest(
+                new MoisDiscoveryDtos.CreateDiscoveryRequest(
+                        "Nutrição",
+                        "Perda de peso",
+                        "Resultado rápido",
+                        List.of(),
+                        List.of("file:///invalid-source"),
+                        List.of("SEARCH"),
+                        "BR",
+                        "pt-BR",
+                        null));
+
+        service.runDiscoveryRequest(accepted.requestId());
+
+        MoisDiscoveryDtos.DiscoveryRequestDetailResponse detail = service.getDiscoveryRequest(accepted.requestId()).orElseThrow();
+        assertThat(detail.status()).isEqualTo("FAILED");
+        assertThat(service.listOffers(accepted.requestId(), null, null).items()).isEmpty();
+    }
+
+    @Test
+    void shouldGenerateLowConfidenceWhenSignalsAreWeak() {
+        MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse accepted = service.createDiscoveryRequest(
+                new MoisDiscoveryDtos.CreateDiscoveryRequest(
+                        "Gestão",
+                        "Produtividade",
+                        "Melhorar rotina",
+                        List.of(),
+                        List.of(baseUrl + "/fraco"),
                         List.of("SEARCH"),
                         "BR",
                         "pt-BR",
@@ -61,10 +147,12 @@ class MoisDomainServiceTest {
         service.runDiscoveryRequest(accepted.requestId());
 
         MoisInsightDtos.InsightReportListResponse matching = service.listInsightReports(null, null, "DIGITAL_PRODUCT");
-        MoisInsightDtos.InsightReportListResponse noMatch = service.listInsightReports(null, null, "MENTORIA");
-
         assertThat(matching.items()).hasSize(1);
-        assertThat(noMatch.items()).isEmpty();
+
+        String offerId = service.listOffers(accepted.requestId(), null, null).items().getFirst().offerId();
+        var offer = service.getOffer(offerId).orElseThrow();
+        assertThat(offer.confidence()).isLessThan(0.7);
+        assertThat(offer.evidenceRefs()).hasSize(1);
     }
 
     @Test
@@ -75,7 +163,7 @@ class MoisDomainServiceTest {
                         "Perda de peso",
                         "Resultado rápido",
                         List.of(),
-                        List.of("https://example.com/oferta-c"),
+                        List.of(baseUrl + "/oferta-a"),
                         List.of("SEARCH"),
                         "BR",
                         "pt-BR",
@@ -96,7 +184,7 @@ class MoisDomainServiceTest {
                         "Dor lombar",
                         "Alívio de dor",
                         List.of("dor lombar oferta"),
-                        List.of("https://example.com/oferta-a"),
+                        List.of(baseUrl + "/oferta-a"),
                         List.of("META_ADS"),
                         "BR",
                         "pt-BR",
@@ -107,5 +195,23 @@ class MoisDomainServiceTest {
         assertThat(artifact.artifactType()).isEqualTo("mois.marketOfferInsightReport.v1");
         assertThat(artifact.schemaVersion()).isEqualTo("v1");
         assertThat(artifact.createdBy()).isEqualTo("mois-system");
+    }
+
+    private static class HtmlHandler implements HttpHandler {
+        private final String body;
+
+        private HtmlHandler(String body) {
+            this.body = body;
+        }
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            byte[] payload = body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "text/html; charset=UTF-8");
+            exchange.sendResponseHeaders(200, payload.length);
+            try (OutputStream output = exchange.getResponseBody()) {
+                output.write(payload);
+            }
+        }
     }
 }

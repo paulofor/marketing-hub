@@ -100,6 +100,7 @@ class MoisDomainControllerTest {
                         List.of(new com.marketinghub.mois.dto.MoisInsightDtos.InsightReportPatternResponse("R$97", 1, 1.0)),
                         List.of(new com.marketinghub.mois.dto.MoisInsightDtos.InsightReportPatternResponse("Funnel", 1, 1.0)),
                         List.of(new com.marketinghub.mois.dto.MoisInsightDtos.InsightReportPatternResponse("Mecanismo", 1, 1.0)),
+                        List.of(new com.marketinghub.mois.dto.MoisInsightDtos.SaturationSignalResponse("DIGITAL_PRODUCT", "LOW", 1, 1.0)),
                         List.of("Saturação"),
                         List.of(new com.marketinghub.mois.dto.MoisInsightDtos.GapOpportunityResponse(
                                 "PROMISE_DIFFERENTIATION",
@@ -107,11 +108,41 @@ class MoisDomainControllerTest {
                                 "Motivo",
                                 List.of("mois-offer-1"),
                                 "HIGH",
-                                0.7)),
+                                0.7,
+                                List.of("critério"))),
                         List.of("Diferenciação"),
-                        List.of("Next"))));
+                        List.of("Next"),
+                        new com.marketinghub.mois.dto.MoisInsightDtos.FrameworkRecommendationResponse(
+                                "Dor dominante",
+                                "Resultado",
+                                "Mecanismo",
+                                "Prova",
+                                List.of("Ângulo subexplorado")))));
 
         mockMvc.perform(get("/api/v1/mois/insight-reports/mois-report-mois-req-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportId").value("mois-report-mois-req-1"));
+    }
+
+    @Test
+    void shouldReturnInsightExecutiveSummary() throws Exception {
+        when(service.getInsightExecutiveSummary("mois-report-mois-req-1")).thenReturn(Optional.of(
+                new com.marketinghub.mois.dto.MoisInsightDtos.InsightExecutiveSummaryResponse(
+                        "mois-report-mois-req-1",
+                        "mois-req-1",
+                        "Fisioterapia",
+                        "Dor lombar",
+                        new com.marketinghub.mois.dto.MoisInsightDtos.FrameworkRecommendationResponse(
+                                "Dor dominante",
+                                "Resultado",
+                                "Mecanismo",
+                                "Prova",
+                                List.of("Ângulo subexplorado")),
+                        List.of(),
+                        List.of(),
+                        List.of("Próxima ação"))));
+
+        mockMvc.perform(get("/api/v1/mois/insight-reports/mois-report-mois-req-1/executive-summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportId").value("mois-report-mois-req-1"));
     }

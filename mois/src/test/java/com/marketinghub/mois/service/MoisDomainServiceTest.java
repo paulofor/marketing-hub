@@ -86,8 +86,33 @@ class MoisDomainServiceTest {
         assertThat(report.offersAnalyzed()).hasSize(2);
         assertThat(report.repeatedPromises()).isNotEmpty();
         assertThat(report.pricingPatterns()).isNotEmpty();
+        assertThat(report.saturationSignals()).isNotEmpty();
+        assertThat(report.frameworkRecommendation()).isNotNull();
         assertThat(report.saturationNotes()).isNotEmpty();
         assertThat(report.recommendedNextActions()).isNotEmpty();
+    }
+
+    @Test
+    void shouldKeepRankingStableForRepeatedPatterns() {
+        MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse accepted = service.createDiscoveryRequest(
+                new MoisDiscoveryDtos.CreateDiscoveryRequest(
+                        "Fisioterapia",
+                        "Dor lombar",
+                        "Alívio de dor",
+                        List.of("dor lombar oferta"),
+                        List.of(baseUrl + "/oferta-a", baseUrl + "/oferta-duplicada", baseUrl + "/oferta-b"),
+                        List.of("META_ADS"),
+                        "BR",
+                        "pt-BR",
+                        null));
+
+        service.runDiscoveryRequest(accepted.requestId());
+
+        MoisInsightDtos.InsightReportResponse report = service.getInsightReport("mois-report-" + accepted.requestId()).orElseThrow();
+        assertThat(report.repeatedPromises()).isNotEmpty();
+        assertThat(report.repeatedPromises().getFirst().share()).isGreaterThanOrEqualTo(0.5);
+        assertThat(report.gapOpportunities()).isNotEmpty();
+        assertThat(report.gapOpportunities().getFirst().confidence()).isGreaterThan(0.6);
     }
 
     @Test
@@ -195,6 +220,27 @@ class MoisDomainServiceTest {
         assertThat(artifact.artifactType()).isEqualTo("mois.marketOfferInsightReport.v1");
         assertThat(artifact.schemaVersion()).isEqualTo("v1");
         assertThat(artifact.createdBy()).isEqualTo("mois-system");
+    }
+
+    @Test
+    void shouldExposeExecutiveSummaryForConsumers() {
+        MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse accepted = service.createDiscoveryRequest(
+                new MoisDiscoveryDtos.CreateDiscoveryRequest(
+                        "Fisioterapia",
+                        "Dor lombar",
+                        "Alívio de dor",
+                        List.of("dor lombar oferta"),
+                        List.of(baseUrl + "/oferta-a", baseUrl + "/oferta-b"),
+                        List.of("META_ADS"),
+                        "BR",
+                        "pt-BR",
+                        null));
+        service.runDiscoveryRequest(accepted.requestId());
+
+        MoisInsightDtos.InsightExecutiveSummaryResponse summary =
+                service.getInsightExecutiveSummary("mois-report-" + accepted.requestId()).orElseThrow();
+        assertThat(summary.frameworkRecommendation().dominantPain()).isEqualTo("Alívio de dor");
+        assertThat(summary.decisionReadyActions()).isNotEmpty();
     }
 
     private static class HtmlHandler implements HttpHandler {

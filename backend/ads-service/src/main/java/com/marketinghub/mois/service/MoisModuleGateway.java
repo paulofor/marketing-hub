@@ -76,6 +76,11 @@ public class MoisModuleGateway {
         return optionalGet("/api/v1/mois/insight-reports/" + reportId, MoisInsightDtos.InsightReportResponse.class);
     }
 
+    public Optional<MoisInsightDtos.InsightExecutiveSummaryResponse> getInsightExecutiveSummary(String reportId) {
+        return optionalGet("/api/v1/mois/insight-reports/" + reportId + "/executive-summary",
+                MoisInsightDtos.InsightExecutiveSummaryResponse.class);
+    }
+
     public Optional<MoisArtifactDtos.ArtifactEnvelopeResponse> getArtifact(String artifactId) {
         return optionalGet("/api/v1/mois/artifacts/" + artifactId, MoisArtifactDtos.ArtifactEnvelopeResponse.class);
     }

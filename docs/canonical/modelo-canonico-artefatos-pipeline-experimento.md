@@ -428,6 +428,21 @@ Regra prática:
 - este arquivo responde a "qual artefato e qual estrutura";
 - o cânone de automação responde a "em qual ordem, com quais estados e com quais gatilhos".
 
+### Regra canônica de publicação da landing (resumo executivo obrigatório)
+
+Independentemente dos detalhes internos de orquestração, a experiência oficial
+de publicação da landing para o usuário deve seguir exatamente:
+
+1. geração da landing pela IA;
+2. aprovação do usuário;
+3. sistema cria/publica a URL final e aplica o pixel do nicho automaticamente.
+
+Regras mandatórias:
+
+- é proibido exigir do usuário uma segunda aprovação para concluir publicação;
+- é proibido exigir inserção manual do pixel após a aprovação;
+- URL publicada e pixel aplicado devem ficar auditáveis no backend.
+
 
 ---
 

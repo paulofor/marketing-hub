@@ -168,23 +168,31 @@ Quando `BLOCKED`:
 - exibir causa técnica resumida + ação recomendada;
 - disponibilizar apenas comandos necessários para destravar (`retentar`, `corrigir`, `pausar`).
 
-### 8.5 Aba canônica de destino da campanha (Landing)
+### 8.5 Fluxo canônico simplificado de publicação da landing (obrigatório)
 
-Para experimentos com tráfego direcionado para página própria, a UI administrativa
-deve centralizar a escolha do destino na aba **Landing** do detalhe do experimento.
+Para experimentos com tráfego direcionado para landing própria, o processo oficial
+de publicação deve ser simplificado em **3 passos**:
+
+1. **Geração da landing pela IA**
+   O pipeline gera o HTML final da landing para o experimento.
+2. **Aprovação única do usuário**
+   O usuário aprova a landing uma única vez na interface administrativa.
+3. **Publicação automática pelo sistema**
+   Após a aprovação, o backend/sistema:
+   - cria/publica a URL final da landing;
+   - aplica automaticamente o pixel do nicho na landing publicada.
 
 Regras mandatórias:
 
-- a navegação principal do experimento deve expor a aba `Landing` (em substituição
-  à aba operacional de `Instant Forms` no fluxo desta tela);
-- a aba `Landing` deve exibir a **URL standalone** do HTML gerado no experimento
-  (publicado em `/landings/...` no mesmo host);
-- a aba deve oferecer ação explícita para **aprovar** a landing como destino do
-  experimento/campanha;
-- ao aprovar, o backend deve persistir a URL escolhida como `followUpActionUrl`
-  do experimento, mantendo o backend como única fonte de verdade do destino;
-- toda ação assíncrona de aprovação deve manter feedback visual (botão desabilitado
-  + spinner + mensagem de sucesso/erro).
+- não exigir etapa manual adicional entre aprovação e publicação da URL final;
+- não exigir etapa manual adicional para inserção do pixel do nicho;
+- manter o backend como fonte única de verdade para URL publicada e vínculo de pixel;
+- exibir feedback claro de sucesso/erro da aprovação e do resultado da publicação.
+
+### 8.6 Aba canônica de destino da campanha (Landing)
+
+A navegação principal do experimento deve expor a aba `Landing` para suportar o
+fluxo simplificado definido na seção 8.5.
 
 ## 9. Observabilidade mínima
 

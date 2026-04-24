@@ -13,6 +13,11 @@ type FeedbackState = {
   message: string;
 };
 
+type LandingLinks = {
+  standaloneUrl: string;
+  iframeUrl: string;
+};
+
 function resolveStandaloneLandingUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) {
     return path;
@@ -29,12 +34,33 @@ function normalizeUrl(url?: string | null) {
   return (url ?? "").trim().replace(/\/$/, "");
 }
 
+function buildLandingLinksFromPublicUrl(publicUrl?: string | null): LandingLinks | null {
+  if (!publicUrl) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(publicUrl);
+    const slug = parsed.pathname.split("/").filter(Boolean).pop();
+    if (!slug) {
+      return null;
+    }
+    return {
+      standaloneUrl: `${parsed.origin}/api/flows/${encodeURIComponent(slug)}/page`,
+      iframeUrl: publicUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function LandingTab({ experiment }: LandingTabProps) {
   const { data: landingPages, isLoading, isError } = useLandingPages(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [pendingLandingId, setPendingLandingId] = useState<number | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedLinks, setPublishedLinks] = useState<LandingLinks | null>(null);
 
   const sortedLandingPages = useMemo(() => {
     if (!Array.isArray(landingPages)) {
@@ -46,6 +72,19 @@ export default function LandingTab({ experiment }: LandingTabProps) {
 
   const selectedDestinationUrl = normalizeUrl(experiment.followUpActionUrl);
   const hasGeneratedLandingHtml = Boolean(experiment.landingPageHtml?.trim());
+  const experimentApprovedLinks = useMemo(() => {
+    if (publishedLinks) {
+      return publishedLinks;
+    }
+    if (!experiment.leadPortalFlowSlug || typeof window === "undefined" || !window.location?.origin) {
+      return null;
+    }
+    const slug = encodeURIComponent(experiment.leadPortalFlowSlug);
+    return {
+      standaloneUrl: `${window.location.origin}/api/flows/${slug}/page`,
+      iframeUrl: `${window.location.origin}/flows/${slug}`,
+    };
+  }, [experiment.leadPortalFlowSlug, publishedLinks]);
 
   const handleApproveAndPublish = async () => {
     if (!hasGeneratedLandingHtml) {
@@ -64,6 +103,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
         facebookPixelId?: string | null;
         pixelAppliedAutomatically?: boolean;
       }>(`/api/experiments/${experiment.id}/pipeline/landing-page-html/approve-and-publish`);
+      setPublishedLinks(buildLandingLinksFromPublicUrl(data?.publicUrl));
 
       const pixelFeedback =
         data?.pixelAppliedAutomatically && data.facebookPixelId
@@ -167,6 +207,28 @@ export default function LandingTab({ experiment }: LandingTabProps) {
             <p className="text-muted small mt-2 mb-0">
               Gere o HTML na aba Estrutura de conteúdo para habilitar a aprovação nesta aba.
             </p>
+          ) : null}
+          {experimentApprovedLinks ? (
+            <div className="mt-3">
+              <p className="text-muted small mb-1">Link standalone</p>
+              <a
+                href={experimentApprovedLinks.standaloneUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="small text-break d-block"
+              >
+                {experimentApprovedLinks.standaloneUrl}
+              </a>
+              <p className="text-muted small mb-1 mt-2">Link iframe</p>
+              <a
+                href={experimentApprovedLinks.iframeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="small text-break d-block"
+              >
+                {experimentApprovedLinks.iframeUrl}
+              </a>
+            </div>
           ) : null}
         </div>
       </div>

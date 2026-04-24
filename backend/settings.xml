@@ -11,7 +11,7 @@
       <id>central-all</id>
       <name>Maven Central (HTTPS)</name>
       <url>https://repo.maven.apache.org/maven2/</url>
-      <mirrorOf>central</mirrorOf>   <!-- apenas o repositório central -->
+      <mirrorOf>external:*,!github</mirrorOf>   <!-- padroniza downloads externos, preservando GitHub Packages -->
     </mirror>
   </mirrors>
 

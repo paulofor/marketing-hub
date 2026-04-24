@@ -194,6 +194,13 @@ Regras mandatórias:
 A navegação principal do experimento deve expor a aba `Landing` para suportar o
 fluxo simplificado definido na seção 8.5.
 
+Regra mandatória de posicionamento da ação de aprovação:
+
+- o comando primário de aprovação/publicação da landing deve estar na aba `Landing`;
+- o rótulo recomendado é `Aprovar e publicar landing` (ou equivalente semântico direto);
+- é proibido deslocar a ação principal de aprovação para outra aba como único ponto de execução;
+- controles auxiliares (pré-visualização, diagnóstico e reprocessamento) podem existir em outras abas, desde que a aprovação oficial permaneça acessível na aba `Landing`.
+
 ## 9. Observabilidade mínima
 
 Cada transição de estado da fila e de etapa deve gerar log com:

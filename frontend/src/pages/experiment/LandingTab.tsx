@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import axios from "axios";
 import type { Experiment } from "../../api/experiment/useExperiments";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useLandingPages } from "../../api/landing/useLandingPages";
@@ -33,6 +34,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
   const updateExperiment = useUpdateExperiment(experiment.id);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [pendingLandingId, setPendingLandingId] = useState<number | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const sortedLandingPages = useMemo(() => {
     if (!Array.isArray(landingPages)) {
@@ -43,6 +45,45 @@ export default function LandingTab({ experiment }: LandingTabProps) {
   }, [landingPages]);
 
   const selectedDestinationUrl = normalizeUrl(experiment.followUpActionUrl);
+  const hasGeneratedLandingHtml = Boolean(experiment.landingPageHtml?.trim());
+
+  const handleApproveAndPublish = async () => {
+    if (!hasGeneratedLandingHtml) {
+      setFeedback({
+        variant: "error",
+        message: "Gere o HTML da landing na aba Estrutura de conteúdo antes de aprovar e publicar.",
+      });
+      return;
+    }
+
+    setFeedback(null);
+    setIsPublishing(true);
+    try {
+      const { data } = await axios.post<{
+        publicUrl?: string | null;
+        facebookPixelId?: string | null;
+        pixelAppliedAutomatically?: boolean;
+      }>(`/api/experiments/${experiment.id}/pipeline/landing-page-html/approve-and-publish`);
+
+      const pixelFeedback =
+        data?.pixelAppliedAutomatically && data.facebookPixelId
+          ? ` Pixel do nicho aplicado automaticamente (${data.facebookPixelId}).`
+          : " Pixel do nicho será aplicado automaticamente ao ficar disponível.";
+      setFeedback({
+        variant: "success",
+        message: data?.publicUrl
+          ? `Landing aprovada e publicada automaticamente em ${data.publicUrl}.${pixelFeedback}`
+          : `Landing aprovada e publicação automática iniciada.${pixelFeedback}`,
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        message: "Não foi possível aprovar/publicar a landing agora. Tente novamente em instantes.",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const handleApproveLanding = async (landingId: number, landingUrl: string) => {
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
@@ -105,6 +146,28 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           <p className="text-muted mb-0">
             Aprove a landing que deve ser usada como URL de destino da campanha.
           </p>
+          <div className="mt-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleApproveAndPublish}
+              disabled={isPublishing || !hasGeneratedLandingHtml}
+            >
+              {isPublishing ? (
+                <span className="d-inline-flex align-items-center gap-2">
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  Publicando...
+                </span>
+              ) : (
+                "Aprovar e publicar landing"
+              )}
+            </button>
+          </div>
+          {!hasGeneratedLandingHtml ? (
+            <p className="text-muted small mt-2 mb-0">
+              Gere o HTML na aba Estrutura de conteúdo para habilitar a aprovação nesta aba.
+            </p>
+          ) : null}
         </div>
       </div>
 

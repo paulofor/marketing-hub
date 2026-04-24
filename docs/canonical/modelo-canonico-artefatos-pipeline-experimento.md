@@ -442,6 +442,7 @@ Regras mandatórias:
 - é proibido exigir do usuário uma segunda aprovação para concluir publicação;
 - é proibido exigir inserção manual do pixel após a aprovação;
 - URL publicada e pixel aplicado devem ficar auditáveis no backend.
+- a ação oficial de aprovação/publicação deve estar disponível na aba `Landing` do experimento (não apenas em abas auxiliares).
 
 
 ---

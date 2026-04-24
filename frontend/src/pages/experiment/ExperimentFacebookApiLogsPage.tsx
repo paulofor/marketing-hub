@@ -16,6 +16,8 @@ export default function ExperimentFacebookApiLogsPage() {
   const { data, isLoading, isFetching, refetch } =
     useExperimentFacebookApiLogs(experimentId, limit);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [copyingLogId, setCopyingLogId] = useState<number | null>(null);
+  const [copiedLogId, setCopiedLogId] = useState<number | null>(null);
 
   const stats = useMemo(() => {
     const logs = Array.isArray(data) ? data : [];
@@ -30,6 +32,22 @@ export default function ExperimentFacebookApiLogsPage() {
 
   const toggleRow = (logId: number) => {
     setExpanded((prev) => ({ ...prev, [logId]: !prev[logId] }));
+  };
+
+  const handleCopyPayloads = async (log: ExperimentFacebookApiLog) => {
+    const content = buildCopyPayload(log);
+    setCopyingLogId(log.id);
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedLogId(log.id);
+      window.setTimeout(() => {
+        setCopiedLogId((current) => (current === log.id ? null : current));
+      }, 2000);
+    } catch (error) {
+      console.error("Não foi possível copiar request/response.", error);
+    } finally {
+      setCopyingLogId((current) => (current === log.id ? null : current));
+    }
   };
 
   return (
@@ -205,6 +223,28 @@ export default function ExperimentFacebookApiLogsPage() {
                         <tr>
                           <td colSpan={8}>
                             <div className="bg-light rounded border p-3">
+                              <div className="d-flex justify-content-end mb-2">
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() => handleCopyPayloads(log)}
+                                  disabled={copyingLogId === log.id}
+                                >
+                                  {copyingLogId === log.id ? (
+                                    <>
+                                      <span
+                                        className="spinner-border spinner-border-sm me-2"
+                                        aria-hidden="true"
+                                      />
+                                      Copiando...
+                                    </>
+                                  ) : copiedLogId === log.id ? (
+                                    "Copiado!"
+                                  ) : (
+                                    "Copiar request/response"
+                                  )}
+                                </button>
+                              </div>
                               <div className="facebook-api-log-expanded-grid">
                                 <div className="facebook-api-log-expanded-card">
                                   <h6 className="h6">Request</h6>
@@ -325,4 +365,20 @@ function PayloadViewer({ payload }: { payload?: string | null }) {
       {formatted}
     </pre>
   );
+}
+
+function buildCopyPayload(log: ExperimentFacebookApiLog) {
+  const request = formatPayloadForCopy(log.requestPayload);
+  const response = formatPayloadForCopy(log.responsePayload);
+  return `Request:\n${request}\n\nResponse:\n${response}`;
+}
+
+function formatPayloadForCopy(payload?: string | null) {
+  if (!payload) return "Sem conteúdo";
+  try {
+    const parsed = JSON.parse(payload);
+    return JSON.stringify(parsed, null, 2);
+  } catch (error) {
+    return payload;
+  }
 }

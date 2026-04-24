@@ -14,7 +14,6 @@ import { getExperimentStageLabel } from "./stageLabels";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
-import InstantFormsTab from "./InstantFormsTab";
 import EmailsTab from "./EmailsTab";
 import SampleEmailsTab from "./SampleEmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -38,6 +37,7 @@ import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentReportPanel from "./ExperimentReportPanel";
 import ExperimentLearningPanel from "./ExperimentLearningPanel";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
+import LandingTab from "./LandingTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 
@@ -111,21 +111,18 @@ export default function ExperimentDetailPage() {
     { label: data?.name || "...", icon: experimentIcon },
   ]);
   const templateSteps = template?.steps ?? [];
-  const hasInstantFormSteps = templateSteps.some(
-    (step) => step.stimulusType === "INSTANT_FORM",
-  );
   const hasEmailSteps = templateSteps.some(
     (step) => step.stimulusType === "EMAIL",
   );
 
   useEffect(() => {
-    if (tab === "instant-form" && !hasInstantFormSteps) {
+    if (tab === "instant-form") {
       setTab("overview");
     }
     if (tab === "emails" && !hasEmailSteps) {
       setTab("overview");
     }
-  }, [tab, hasInstantFormSteps, hasEmailSteps]);
+  }, [tab, hasEmailSteps]);
 
   const assignmentsWithSteps = useMemo(() => {
     const assignments = journeyAssignments?.assignments ?? [];
@@ -254,11 +251,6 @@ export default function ExperimentDetailPage() {
   const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
   const experimentPage = data.facebookPage;
   const hasExperimentPage = Boolean(experimentPage?.pageId);
-  const experimentInstantForm = data.facebookInstantForm;
-  const instantFormApproved = Boolean(experimentInstantForm?.approved);
-  const instantFormPublished = Boolean(experimentInstantForm?.published);
-  const instantFormReadyForCampaign =
-    Boolean(experimentInstantForm) && instantFormApproved && instantFormPublished;
   const instagramAccount = data.instagramAccount;
   const hasInstagramAccount = Boolean(instagramAccount);
   const facebookWorker = facebookConfig?.worker;
@@ -333,8 +325,8 @@ export default function ExperimentDetailPage() {
     isReadyForFacebook && data.platform === "FACEBOOK";
   const releaseButtonDisabled =
     releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
-  const openInstantFormActions = () => {
-    setTab("instant-form");
+  const openLandingActions = () => {
+    setTab("landing");
     window.requestAnimationFrame(() => {
       tabsSectionRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -412,29 +404,16 @@ export default function ExperimentDetailPage() {
   ];
 
   const operationalChecklist: ChecklistItem[] = [
-    ...(hasInstantFormSteps
-      ? [
-          {
-            id: "instant-form",
-            title: "Instant form aprovado e publicado",
-            isMet: instantFormReadyForCampaign,
-            hint: experimentInstantForm
-              ? instantFormReadyForCampaign
-                ? `O formulário ${experimentInstantForm.name}${experimentInstantForm.facebookFormId ? ` (${experimentInstantForm.facebookFormId})` : ""} está aprovado e publicado para a campanha.`
-                : `O formulário ${experimentInstantForm.name} está vinculado, mas ainda precisa ${instantFormApproved ? "" : "de aprovação"}${!instantFormApproved && !instantFormPublished ? " e " : ""}${instantFormPublished ? "" : "de publicação na Meta"} para liberar a campanha.`
-              : "Associe um instant form compatível na aba Instant Forms para destravar a etapa de captura.",
-            action: experimentInstantForm
-              ? instantFormReadyForCampaign
-                ? undefined
-                : openInstantFormActions
-              : openInstantFormActions,
-            actionLabel:
-              experimentInstantForm && instantFormReadyForCampaign
-                ? undefined
-                : "Ir para Instant Forms",
-          },
-        ]
-      : []),
+    {
+      id: "landing-destination",
+      title: "Landing aprovada como destino da campanha",
+      isMet: Boolean(data.followUpActionUrl),
+      hint: data.followUpActionUrl
+        ? `URL de destino ativa: ${data.followUpActionUrl}.`
+        : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
+      action: data.followUpActionUrl ? undefined : openLandingActions,
+      actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
+    },
     {
       id: "platform",
       title: "Plataforma configurada para Facebook Ads",
@@ -1253,11 +1232,9 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="creatives" className="nav-link">
             Criativos
           </Tabs.Trigger>
-          {hasInstantFormSteps ? (
-            <Tabs.Trigger value="instant-form" className="nav-link">
-              Instant Forms
-            </Tabs.Trigger>
-          ) : null}
+          <Tabs.Trigger value="landing" className="nav-link">
+            Landing
+          </Tabs.Trigger>
           {hasEmailSteps ? (
             <Tabs.Trigger value="emails" className="nav-link">
               E-mails
@@ -1321,11 +1298,9 @@ export default function ExperimentDetailPage() {
         <Tabs.Content value="creatives" asChild>
           <CriativosTab experimentId={expId} />
         </Tabs.Content>
-        {hasInstantFormSteps ? (
-          <Tabs.Content value="instant-form" asChild>
-            <InstantFormsTab experiment={data} steps={templateSteps} />
-          </Tabs.Content>
-        ) : null}
+        <Tabs.Content value="landing" asChild>
+          <LandingTab experiment={data} />
+        </Tabs.Content>
         {hasEmailSteps ? (
           <Tabs.Content value="emails" asChild>
             <EmailsTab

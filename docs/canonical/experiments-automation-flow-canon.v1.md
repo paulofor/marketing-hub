@@ -168,6 +168,24 @@ Quando `BLOCKED`:
 - exibir causa técnica resumida + ação recomendada;
 - disponibilizar apenas comandos necessários para destravar (`retentar`, `corrigir`, `pausar`).
 
+### 8.5 Aba canônica de destino da campanha (Landing)
+
+Para experimentos com tráfego direcionado para página própria, a UI administrativa
+deve centralizar a escolha do destino na aba **Landing** do detalhe do experimento.
+
+Regras mandatórias:
+
+- a navegação principal do experimento deve expor a aba `Landing` (em substituição
+  à aba operacional de `Instant Forms` no fluxo desta tela);
+- a aba `Landing` deve exibir a **URL standalone** do HTML gerado no experimento
+  (publicado em `/landings/...` no mesmo host);
+- a aba deve oferecer ação explícita para **aprovar** a landing como destino do
+  experimento/campanha;
+- ao aprovar, o backend deve persistir a URL escolhida como `followUpActionUrl`
+  do experimento, mantendo o backend como única fonte de verdade do destino;
+- toda ação assíncrona de aprovação deve manter feedback visual (botão desabilitado
+  + spinner + mensagem de sucesso/erro).
+
 ## 9. Observabilidade mínima
 
 Cada transição de estado da fila e de etapa deve gerar log com:

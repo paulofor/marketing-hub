@@ -311,8 +311,11 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, message, ex);
         }
         String pixelId = saved.getMarketNiche() != null ? saved.getMarketNiche().getFacebookPixelId() : null;
+        Long publicationExperimentId = experimentDto != null && experimentDto.getId() != null
+                ? experimentDto.getId()
+                : experimentId;
         return new LandingPagePublicationResultDto(
-                experimentDto.getId(),
+                publicationExperimentId,
                 saved.getId(),
                 saved.isApproved(),
                 true,

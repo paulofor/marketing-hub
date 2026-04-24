@@ -40,7 +40,8 @@ flowchart TD
     experiments --> service
     service --> createCampaign["POST /v20.0/act_<adAccountId>/campaigns"]
     createCampaign --> createAdSet["POST /v20.0/act_<adAccountId>/adsets"]
-    createAdSet --> createCreative["POST /v20.0/act_<adAccountId>/adcreatives"]
+    createAdSet --> uploadImage["POST /v20.0/act_<adAccountId>/adimages"]
+    uploadImage --> createCreative["POST /v20.0/act_<adAccountId>/adcreatives (com image_hash)"]
     createCreative --> createAd["POST /v20.0/act_<adAccountId>/ads"]
     createAd --> persist["POST /facebook-campaigns"]
     persist --> db["Tabelas facebook_ads_*"]
@@ -93,7 +94,13 @@ flowchart TD
 
 * **Resposta tratada:** o `id` do ad set é utilizado na criação do anúncio.
 
-## 4. Criação do criativo
+## 4. Upload da imagem para a biblioteca da conta
+
+* **Endpoint da Graph API:** `POST https://graph.facebook.com/v20.0/act_<adAccountId>/adimages`
+* **Objetivo:** enviar a imagem do anúncio para a biblioteca da conta de anúncio e recuperar o `image_hash` oficial.
+* **Observação:** a Meta permite enviar e gerenciar imagens de forma independente de anúncios/criativos; por isso o worker deve priorizar esse fluxo em vez de depender de `image_url` no criativo.
+
+## 5. Criação do criativo
 
 * **Endpoint da Graph API:** `POST https://graph.facebook.com/v20.0/act_<adAccountId>/adcreatives`
 * **Payload enviado:**
@@ -108,11 +115,12 @@ flowchart TD
 | `object_story_spec.link_data.call_to_action.type` | Conta configurada (`worker-config.defaultCallToActionType`) ou `Creative.cta` | Lista completa documentada em [call-to-action-types.md](call-to-action-types.md) |
 | `object_story_spec.link_data.call_to_action.value.link` | Mesmo valor de `link` | Omitido quando a campanha utiliza formulário de leads |
 | `object_story_spec.link_data.call_to_action.value.lead_gen_form_id` | `Creative.leadGenFormId` ou `worker-config.defaultLeadGenFormId` | Permite direcionar o CTA para formulários do Facebook ou Instagram |
+| `object_story_spec.link_data.image_hash` | Retorno de `POST /adimages` | Referencia a imagem já enviada à biblioteca da conta; preferível a `image_url` no criativo |
 | `access_token` | Conta configurada (`worker-config.accessToken`) | Token com permissão para o Ad Account |
 
 * **Resposta tratada:** o `id` do criativo abastece a criação do anúncio.
 
-## 5. Criação do anúncio
+## 6. Criação do anúncio
 
 * **Endpoint da Graph API:** `POST https://graph.facebook.com/v20.0/act_<adAccountId>/ads`
 * **Payload enviado:**
@@ -128,7 +136,7 @@ flowchart TD
 * **Resposta tratada:** o identificador alimenta o payload enviado ao backend,
   mantendo o vínculo entre anúncio, conjunto e criativo na base própria.
 
-## 6. Persistência da campanha no backend
+## 7. Persistência da campanha no backend
 
 Após criar a hierarquia na Graph API, o worker envia um `CreateCampaignRequest`
 para o backend.

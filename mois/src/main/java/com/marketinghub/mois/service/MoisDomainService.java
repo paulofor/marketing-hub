@@ -28,6 +28,10 @@ public class MoisDomainService {
     private final Map<String, DiscoveryRequest> requests = new ConcurrentHashMap<>();
     private final Map<String, SourceSnapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<String, OfferCard> offers = new ConcurrentHashMap<>();
+    private final Map<String, MoisInsightDtos.InsightReportResponse> reports = new ConcurrentHashMap<>();
+    private final Map<String, String> runOperations = new ConcurrentHashMap<>();
+    private static final String MODULE_NAME = "MOIS";
+    private static final String CREATED_BY = "mois-system";
 
     public MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse createDiscoveryRequest(
             MoisDiscoveryDtos.CreateDiscoveryRequest payload
@@ -87,6 +91,9 @@ public class MoisDomainService {
         if (request == null) {
             return Optional.empty();
         }
+        if (runOperations.containsKey(requestId)) {
+            return Optional.of(new MoisDiscoveryDtos.AsyncAcceptedResponse("ACCEPTED", runOperations.get(requestId)));
+        }
 
         List<String> seedUrls = request.seedUrls().isEmpty() ? List.of("https://example.com/oferta") : request.seedUrls();
         for (String seedUrl : seedUrls) {
@@ -136,7 +143,10 @@ public class MoisDomainService {
                 request.createdAt(),
                 Instant.now()));
 
-        return Optional.of(new MoisDiscoveryDtos.AsyncAcceptedResponse("ACCEPTED", "mois-run-" + requestId));
+        String operationId = "mois-run-" + requestId;
+        runOperations.put(requestId, operationId);
+        reports.put("mois-report-" + requestId, buildInsightReport("mois-report-" + requestId, requests.get(requestId)));
+        return Optional.of(new MoisDiscoveryDtos.AsyncAcceptedResponse("ACCEPTED", operationId));
     }
 
     public MoisOfferDtos.OfferCardListResponse listOffers(String requestId, String nicheName, String sellerOrBrand) {
@@ -201,6 +211,10 @@ public class MoisDomainService {
     }
 
     public Optional<MoisInsightDtos.InsightReportResponse> getInsightReport(String reportId) {
+        MoisInsightDtos.InsightReportResponse persisted = reports.get(reportId);
+        if (persisted != null) {
+            return Optional.of(persisted);
+        }
         String prefix = "mois-report-";
         if (!reportId.startsWith(prefix)) {
             return Optional.empty();
@@ -210,7 +224,13 @@ public class MoisDomainService {
         if (request == null || request.status() != DiscoveryStatus.COLLECTED) {
             return Optional.empty();
         }
+        MoisInsightDtos.InsightReportResponse computed = buildInsightReport(reportId, request);
+        reports.put(reportId, computed);
+        return Optional.of(computed);
+    }
 
+    private MoisInsightDtos.InsightReportResponse buildInsightReport(String reportId, DiscoveryRequest request) {
+        String requestId = request.requestId();
         List<OfferCard> requestOffers = listOffersByRequest(requestId);
         int offerCount = requestOffers.size();
 
@@ -225,7 +245,7 @@ public class MoisDomainService {
         List<MoisInsightDtos.InsightReportPatternResponse> mechanismPatterns =
                 buildPatternDistribution(requestOffers, OfferCard::mechanismClaimSummary, offerCount);
 
-        return Optional.of(new MoisInsightDtos.InsightReportResponse(
+        return new MoisInsightDtos.InsightReportResponse(
                 reportId,
                 requestId,
                 request.nicheName(),
@@ -249,7 +269,7 @@ public class MoisDomainService {
                 buildSaturationNotes(repeatedPromises, pricingPatterns, offerCount),
                 buildGapOpportunities(requestOffers, repeatedPromises, pricingPatterns),
                 buildDifferentiationSignals(requestOffers, repeatedPromises, mechanismPatterns),
-                buildRecommendedActions(repeatedPromises, pricingPatterns, mechanismPatterns)));
+                buildRecommendedActions(repeatedPromises, pricingPatterns, mechanismPatterns));
     }
 
     public Optional<MoisArtifactDtos.ArtifactEnvelopeResponse> getArtifact(String artifactId) {
@@ -260,7 +280,8 @@ public class MoisDomainService {
                     "mois.marketOfferDiscoveryRequest.v1",
                     "v1",
                     request.status().name(),
-                    "MOIS",
+                    MODULE_NAME,
+                    CREATED_BY,
                     request.createdAt(),
                     request.updatedAt(),
                     Map.of("requestId", request.requestId(), "parentArtifactIds", List.of()),
@@ -284,7 +305,8 @@ public class MoisDomainService {
                     "mois.marketOfferSourceSnapshot.v1",
                     "v1",
                     "COLLECTED",
-                    "MOIS",
+                    MODULE_NAME,
+                    CREATED_BY,
                     snapshot.capturedAt(),
                     snapshot.capturedAt(),
                     Map.of("requestId", snapshot.requestId(), "parentArtifactIds", List.of(snapshot.requestId())),
@@ -304,7 +326,8 @@ public class MoisDomainService {
                     "mois.marketOfferCard.v1",
                     "v1",
                     "COLLECTED",
-                    "MOIS",
+                    MODULE_NAME,
+                    CREATED_BY,
                     offer.createdAt(),
                     offer.createdAt(),
                     Map.of("requestId", offer.requestId(), "parentArtifactIds", collectParentArtifactsForOffer(offer.requestId())),
@@ -318,6 +341,33 @@ public class MoisDomainService {
                             "proofSummary", offer.proofSummary(),
                             "mechanismClaimSummary", offer.mechanismClaimSummary(),
                             "funnelPatternSummary", offer.funnelPatternSummary())));
+        }
+        MoisInsightDtos.InsightReportResponse report = reports.get(artifactId);
+        if (report != null) {
+            Map<String, Object> content = new HashMap<>();
+            content.put("requestSummary", report.requestSummary());
+            content.put("offersAnalyzed", report.offersAnalyzed());
+            content.put("repeatedPromises", report.repeatedPromises());
+            content.put("repeatedProofPatterns", report.repeatedProofPatterns());
+            content.put("pricingPatterns", report.pricingPatterns());
+            content.put("funnelPatterns", report.funnelPatterns());
+            content.put("mechanismClaimPatterns", report.mechanismClaimPatterns());
+            content.put("saturationNotes", report.saturationNotes());
+            content.put("gapOpportunities", report.gapOpportunities());
+            content.put("differentiationSignals", report.differentiationSignals());
+            content.put("recommendedNextActions", report.recommendedNextActions());
+            return Optional.of(new MoisArtifactDtos.ArtifactEnvelopeResponse(
+                    report.reportId(),
+                    "mois.marketOfferInsightReport.v1",
+                    "v1",
+                    report.status(),
+                    MODULE_NAME,
+                    CREATED_BY,
+                    report.createdAt(),
+                    report.createdAt(),
+                    Map.of("requestId", report.requestId(), "parentArtifactIds", report.offersAnalyzed()),
+                    Map.of("nicheName", report.nicheName(), "marketTheme", report.marketTheme()),
+                    content));
         }
         return Optional.empty();
     }

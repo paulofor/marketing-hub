@@ -64,10 +64,11 @@ public class MoisModuleGateway {
         return optionalGet("/api/v1/mois/offers/" + offerId, MoisOfferDtos.OfferCardResponse.class);
     }
 
-    public MoisInsightDtos.InsightReportListResponse listInsightReports(String requestId, String nicheName) {
+    public MoisInsightDtos.InsightReportListResponse listInsightReports(String requestId, String nicheName, String category) {
         UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/api/v1/mois/insight-reports");
         maybeAddQuery(uri, "requestId", requestId);
         maybeAddQuery(uri, "nicheName", nicheName);
+        maybeAddQuery(uri, "category", category);
         return exchange(uri.toUriString(), HttpMethod.GET, null, MoisInsightDtos.InsightReportListResponse.class).getBody();
     }
 

@@ -59,6 +59,8 @@ sequenceDiagram
         GraphAPI-->>Worker: campaignId
         Worker->>GraphAPI: POST /{v}/act_<adAccountId>/adsets
         GraphAPI-->>Worker: adSetId
+        Worker->>GraphAPI: POST /{v}/act_<adAccountId>/adimages
+        GraphAPI-->>Worker: imageHash
         Worker->>GraphAPI: POST /{v}/act_<adAccountId>/adcreatives
         GraphAPI-->>Worker: adCreativeId
         Worker->>GraphAPI: POST /{v}/act_<adAccountId>/ads
@@ -92,8 +94,10 @@ sequenceDiagram
    worker calcula página do Facebook, Instagram user ID, URL/lead form e CTA,
    combinando valores vindos do experimento com os defaults da conta.
 6. **Criar a hierarquia na Graph API** – A sequência de chamadas `POST` cria a
-   campanha (`/campaigns`), conjunto (`/adsets`), criativo (`/adcreatives`) e
-   anúncio (`/ads`) usando `facebook.graph-api.version` (padrão `v23.0`). Todas
+   campanha (`/campaigns`), conjunto (`/adsets`), faz upload da imagem em
+   `/adimages` para obter `image_hash`, cria o criativo (`/adcreatives`)
+   referenciando esse hash e finaliza com anúncio (`/ads`) usando
+   `facebook.graph-api.version` (padrão `v23.0`). Todas
    são enviadas com `status=PAUSED` e token mascarado nos logs. A composição dos
    payloads inclui segmentação geográfica, promoted object com `page_id`, CTA e
    mensagem do criativo.
@@ -128,7 +132,8 @@ sequenceDiagram
 | --- | --- | --- | --- | --- |
 | POST | `/v23.0/act_<adAccountId>/campaigns` | `FacebookAdsService.createCampaign` | Nome, objetivo dinâmico (`OUTCOME_TRAFFIC` ou `OUTCOME_LEADS`), `special_ad_categories=[]`, `status=PAUSED` | Usado tanto para campanhas Facebook quanto Instagram |
 | POST | `/v23.0/act_<adAccountId>/adsets` | `FacebookAdsService.createAdSet` | Daily budget, billing event, optimization goal, destination type, targeting por país, promoted page | Inclui `bid_strategy` e `bid_amount` quando configurados |
-| POST | `/v23.0/act_<adAccountId>/adcreatives` | `FacebookAdsService.createAdCreative` | `object_story_spec` com `page_id`, `instagram_user_id`, mensagem, CTA, link ou lead form | CTA só envia `value` quando há URL ou formulário |
+| POST | `/v23.0/act_<adAccountId>/adimages` | `FacebookAdsService.uploadAdImage` | upload binário/URL da imagem do criativo + `access_token` | Upload é independente do anúncio/criativo e retorna `image_hash` reutilizável na biblioteca da conta |
+| POST | `/v23.0/act_<adAccountId>/adcreatives` | `FacebookAdsService.createAdCreative` | `object_story_spec` com `page_id`, `instagram_user_id`, mensagem, CTA, link ou lead form + `image_hash` | Evitar `image_url` direto no criativo; usar hash retornado por `/adimages` |
 | POST | `/v23.0/act_<adAccountId>/ads` | `FacebookAdsService.createAd` | Nome, `adset_id`, `creative_id`, `status=PAUSED` | Mantido pausado para revisão manual |
 | POST | `/v23.0/{campaignId}` | `FacebookAdsService.pauseCampaign` | `status=PAUSED`, `access_token` | Conforme [referência oficial da Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/#Updating) |
 | GET | `/v23.0/{campaignId}/insights` | `FacebookAdsService.getCampaignMetrics` | Retorna métricas agregadas da campanha | Trata `(#190)` como token expirado |
@@ -199,6 +204,12 @@ sequenceDiagram
    o mesmo fluxo acima. Se a renovação automática não estiver configurada ou
    continuar falhando, o worker pausa o processamento até receber um token
    válido, registrando mensagens de orientação nos logs.
+
+## Diretriz de tratamento de imagens em publicação de campanha
+
+- Para publicação de campanhas, **não enviar `image_url` diretamente no payload do criativo** quando a imagem precisar ser materializada na conta de anúncio.
+- O fluxo recomendado é: fazer upload da imagem em `POST /act_<adAccountId>/adimages`, capturar o `image_hash` retornado e então enviar esse `image_hash` no `POST /adcreatives`.
+- A Meta documenta que o envio e gerenciamento de imagens pode ocorrer de forma independente do anúncio/criativo, por isso o worker deve priorizar esse fluxo baseado em biblioteca de imagens da conta.
 
 ## Referências adicionais
 

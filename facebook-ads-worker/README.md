@@ -151,13 +151,20 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `instagram_positions=["stream","story","reels","explore"]`), removendo
    placements de Facebook, Audience Network e Messenger.
    Opcionalmente o fluxo inclui mensagem e call-to-action vindos do próprio
-   criativo. O caminho principal de publicação da imagem agora é
-   `POST /adimages` para obter `image_hash` e enviar o criativo com
-   `link_data.image_hash` (sem `picture`). Se o upload da imagem não retornar
-   hash válido, o worker registra aviso e usa fallback com
-   `link_data.picture` (URL pública). Em caso de erro transitório de download da
-   imagem (`error_subcode = 3858258`), o fluxo mantém retentativas de criação
-   até 3 tentativas totais antes de marcar a publicação como falha definitiva.
+   criativo. O caminho principal de publicação da imagem agora segue o cânone
+   de deduplicação por conteúdo: o worker baixa o asset, calcula `sha256`
+   local, consulta o backend em
+   `GET /api/internal/facebook-campaigns/image-hash-mappings/resolve` e, se já
+   existir vínculo para a mesma conta (`local_hash -> meta_image_hash`),
+   reutiliza diretamente o hash sem novo upload para a Meta. Quando não existe
+   mapeamento, o worker envia o binário em `POST /adimages`, recebe o
+   `image_hash` e persiste o vínculo em
+   `POST /api/internal/facebook-campaigns/image-hash-mappings` para reuso nas
+   próximas publicações. Se o upload da imagem não retornar hash válido, o
+   worker registra aviso e usa fallback com `link_data.picture` (URL pública).
+   Em caso de erro transitório de download da imagem (`error_subcode = 3858258`),
+   o fluxo mantém retentativas de criação até 3 tentativas totais antes de
+   marcar a publicação como falha definitiva.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.

@@ -147,6 +147,19 @@ class FacebookCampaignServiceTest {
         );
         backend.enqueueConditionalResponse(
             request -> request.getPath() != null
+                && request.getPath().startsWith("/api/internal/facebook-campaigns/image-hash-mappings/resolve")
+                && "GET".equals(request.getMethod()),
+            () -> new MockResponse().setResponseCode(404)
+        );
+        backend.enqueueConditionalResponse(
+            request -> "/api/internal/facebook-campaigns/image-hash-mappings".equals(request.getPath())
+                && "POST".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody("{\"metaImageHash\":\"hash-preloaded\"}")
+                .addHeader("Content-Type", "application/json")
+        );
+        backend.enqueueConditionalResponse(
+            request -> request.getPath() != null
                 && request.getPath().contains("/api/experiments/")
                 && request.getPath().contains("/status?status=")
                 && "PATCH".equals(request.getMethod()),

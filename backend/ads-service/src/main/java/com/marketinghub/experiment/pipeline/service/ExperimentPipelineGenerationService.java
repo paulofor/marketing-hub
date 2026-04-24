@@ -15,6 +15,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobDetailDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobSummaryDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
+import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
@@ -25,6 +26,7 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.openai.OpenAiResponse;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import java.math.BigDecimal;
@@ -114,6 +116,7 @@ public class ExperimentPipelineGenerationService {
     private final LandingPageImageInjector landingPageImageInjector;
     private final FrameworkImageGenerationService frameworkImageGenerationService;
     private final OpenAiPricingService openAiPricingService;
+    private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
@@ -124,7 +127,8 @@ public class ExperimentPipelineGenerationService {
                                                ObjectMapper objectMapper,
                                                LandingPageImageInjector landingPageImageInjector,
                                                FrameworkImageGenerationService frameworkImageGenerationService,
-                                               OpenAiPricingService openAiPricingService) {
+                                               OpenAiPricingService openAiPricingService,
+                                               LeadPortalPublicUrlResolver leadPortalPublicUrlResolver) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
@@ -135,6 +139,7 @@ public class ExperimentPipelineGenerationService {
         this.landingPageImageInjector = landingPageImageInjector;
         this.frameworkImageGenerationService = frameworkImageGenerationService;
         this.openAiPricingService = openAiPricingService;
+        this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
     }
 
     @Transactional
@@ -277,6 +282,44 @@ public class ExperimentPipelineGenerationService {
             }
         }
         return experimentMapper.toDto(experiment);
+    }
+
+    @Transactional
+    public LandingPagePublicationResultDto approveAndPublishLandingPage(Long experimentId) {
+        ExperimentDto experimentDto = applyLandingHtmlToLeadPortalForm(experimentId);
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
+        LeadPortalFlow flowRef = experiment.getLeadPortalFlow();
+        if (flowRef == null || flowRef.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Fluxo de landing não foi criado para este experimento");
+        }
+        LeadPortalFlow flow = leadPortalFlowRepository.findById(flowRef.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fluxo do Lead Portal não encontrado"));
+        flow.setApproved(true);
+        if (flow.getApprovedAt() == null) {
+            flow.setApprovedAt(Instant.now());
+        }
+        LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
+        try {
+            leadPortalFlowPublisher.publish(saved);
+        } catch (LeadPortalPublicationException ex) {
+            String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
+            String message = StringUtils.hasText(rootCauseMessage)
+                    ? "Falha ao aprovar/publicar landing automaticamente: " + rootCauseMessage
+                    : "Falha ao aprovar/publicar landing automaticamente";
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, message, ex);
+        }
+        String pixelId = saved.getMarketNiche() != null ? saved.getMarketNiche().getFacebookPixelId() : null;
+        return new LandingPagePublicationResultDto(
+                experimentDto.getId(),
+                saved.getId(),
+                saved.isApproved(),
+                true,
+                leadPortalPublicUrlResolver.resolve(saved),
+                pixelId,
+                StringUtils.hasText(pixelId),
+                "Landing aprovada e publicação iniciada automaticamente após a aprovação.");
     }
 
     private LeadPortalFlow createLeadPortalFlowFromLandingHtml(Experiment experiment) {

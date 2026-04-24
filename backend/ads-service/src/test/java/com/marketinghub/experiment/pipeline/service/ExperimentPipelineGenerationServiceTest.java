@@ -10,6 +10,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStage
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
+import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
@@ -18,6 +19,7 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
@@ -72,6 +74,8 @@ class ExperimentPipelineGenerationServiceTest {
     private FrameworkImageGenerationService frameworkImageGenerationService;
     @Mock
     private OpenAiPricingService openAiPricingService;
+    @Mock
+    private LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
     private ExperimentPipelineGenerationService service;
 
@@ -87,7 +91,8 @@ class ExperimentPipelineGenerationServiceTest {
                 new ObjectMapper(),
                 landingPageImageInjector,
                 frameworkImageGenerationService,
-                openAiPricingService);
+                openAiPricingService,
+                leadPortalPublicUrlResolver);
         lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
     }
 
@@ -183,6 +188,41 @@ class ExperimentPipelineGenerationServiceTest {
 
         assertEquals(502, error.getStatusCode().value());
         assertTrue(error.getReason().contains("Connection refused"));
+    }
+
+    @Test
+    void approveAndPublishLandingPageReturnsPublicationFeedback() {
+        LeadPortalFlow linkedFlow = new LeadPortalFlow();
+        linkedFlow.setId(902L);
+        linkedFlow.setSlug("exp-22-landing");
+        linkedFlow.setApproved(false);
+
+        MarketNiche niche = new MarketNiche();
+        niche.setFacebookPixelId("pixel-abc");
+        linkedFlow.setMarketNiche(niche);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(22L);
+        experiment.setLandingPageHtml("<section>ok</section>");
+        experiment.setLeadPortalFlow(linkedFlow);
+
+        when(experimentRepository.findById(22L)).thenReturn(Optional.of(experiment));
+        when(leadPortalFlowRepository.findById(902L)).thenReturn(Optional.of(linkedFlow));
+        when(leadPortalFlowRepository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+        when(landingPageImageInjector.injectImages(22L, "<section>ok</section>")).thenReturn("<section>ok</section>");
+        when(leadPortalPublicUrlResolver.resolve(any(LeadPortalFlow.class)))
+                .thenReturn("https://lead.portal/flows/exp-22-landing");
+
+        LandingPagePublicationResultDto result = service.approveAndPublishLandingPage(22L);
+
+        assertEquals(22L, result.experimentId());
+        assertTrue(result.approved());
+        assertTrue(result.published());
+        assertTrue(result.pixelAppliedAutomatically());
+        assertEquals("pixel-abc", result.facebookPixelId());
+        assertEquals("https://lead.portal/flows/exp-22-landing", result.publicUrl());
+        verify(leadPortalFlowPublisher, times(1)).publish(any(LeadPortalFlow.class));
     }
 
     @Test

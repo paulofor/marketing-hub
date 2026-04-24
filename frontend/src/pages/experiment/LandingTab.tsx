@@ -18,6 +18,13 @@ type LandingLinks = {
   iframeUrl: string;
 };
 
+const leadPortalBaseUrl = import.meta.env.VITE_LEAD_PORTAL_BASE_URL?.trim() || "https://oportunidadebrasil.shop";
+
+function buildLeadPortalUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${leadPortalBaseUrl.replace(/\/$/, "")}${normalizedPath}`;
+}
+
 function resolveStandaloneLandingUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) {
     return path;
@@ -46,8 +53,8 @@ function buildLandingLinksFromPublicUrl(publicUrl?: string | null): LandingLinks
       return null;
     }
     return {
-      standaloneUrl: `${parsed.origin}/api/flows/${encodeURIComponent(slug)}/page`,
-      iframeUrl: publicUrl,
+      standaloneUrl: buildLeadPortalUrl(`/api/flows/${encodeURIComponent(slug)}/page`),
+      iframeUrl: buildLeadPortalUrl(`/flows/${encodeURIComponent(slug)}`),
     };
   } catch {
     return null;
@@ -76,13 +83,13 @@ export default function LandingTab({ experiment }: LandingTabProps) {
     if (publishedLinks) {
       return publishedLinks;
     }
-    if (!experiment.leadPortalFlowSlug || typeof window === "undefined" || !window.location?.origin) {
+    if (!experiment.leadPortalFlowSlug) {
       return null;
     }
     const slug = encodeURIComponent(experiment.leadPortalFlowSlug);
     return {
-      standaloneUrl: `${window.location.origin}/api/flows/${slug}/page`,
-      iframeUrl: `${window.location.origin}/flows/${slug}`,
+      standaloneUrl: buildLeadPortalUrl(`/api/flows/${slug}/page`),
+      iframeUrl: buildLeadPortalUrl(`/flows/${slug}`),
     };
   }, [experiment.leadPortalFlowSlug, publishedLinks]);
 

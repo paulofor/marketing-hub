@@ -551,20 +551,19 @@ function buildStandaloneFlowUrl(flow: LeadPortalFlow): string | null {
     return null;
   }
 
+  const leadPortalBaseUrl = import.meta.env.VITE_LEAD_PORTAL_BASE_URL?.trim() || "https://oportunidadebrasil.shop";
+  const normalizedBaseUrl = leadPortalBaseUrl.replace(/\/$/, "");
+
   if (flow.publicUrl) {
     try {
-      const parsed = new URL(flow.publicUrl);
-      return `${parsed.origin}/api/flows/${encodeURIComponent(slug)}/page`;
+      new URL(flow.publicUrl);
+      return `${normalizedBaseUrl}/api/flows/${encodeURIComponent(slug)}/page`;
     } catch {
       // fallback para ambiente local ou URL parcial
     }
   }
 
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}/api/flows/${encodeURIComponent(slug)}/page`;
-  }
-
-  return null;
+  return `${normalizedBaseUrl}/api/flows/${encodeURIComponent(slug)}/page`;
 }
 
 function formatDate(value?: string | null) {

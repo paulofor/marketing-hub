@@ -42,6 +42,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ public class FacebookCampaignService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignService.class);
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS = 3;
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE = 3858258;
+    private static final String IMAGE_HASH_PLATFORM = "FACEBOOK";
 
     private static final Duration CREATIVE_IMAGE_DOWNLOAD_TIMEOUT = Duration.ofSeconds(20);
     private static final long CREATIVE_IMAGE_MAX_BYTES = 10 * 1024 * 1024L;
@@ -1353,6 +1355,15 @@ public class FacebookCampaignService {
     }
 
     private record DownloadedImage(byte[] bytes, String contentType) {}
+    private record CanonicalImageHashUpsertRequest(
+        String platform,
+        String adAccountId,
+        String localHash,
+        String metaImageHash
+    ) {}
+    private record CanonicalImageHashResponse(
+        @JsonAlias({"metaImageHash", "meta_image_hash", "imageHash", "image_hash"}) String metaImageHash
+    ) {}
 
     private JsonNode parseJson(String raw) {
         if (!StringUtils.hasText(raw)) {
@@ -1470,6 +1481,7 @@ public class FacebookCampaignService {
         List<CreativePublicationPayload> creativePayloads
     ) {
         List<CreativePublicationPayload> resolvedPayloads = new ArrayList<>(creativePayloads.size());
+        Map<String, String> localHashCache = new java.util.HashMap<>();
         for (CreativePublicationPayload payload : creativePayloads) {
             if (!StringUtils.hasText(payload.imageUrl())) {
                 LOGGER.warn(
@@ -1480,17 +1492,13 @@ public class FacebookCampaignService {
                 resolvedPayloads.add(payload.withImageHash(null));
                 continue;
             }
-            LOGGER.info(
-                "Preloading creative image in Facebook ad library before campaign creation: experimentId={}, creativeId={}, imageUrl={}",
-                experimentId,
-                payload.creative().id(),
-                payload.imageUrl()
-            );
             try {
-                String uploadedImageHash = executeFacebookCallWithLogging(
+                String uploadedImageHash = resolveOrUploadCanonicalImageHash(
                     experimentId,
-                    ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                    () -> uploadAdImageWithFallback(adAccountId, experimentId, payload.imageUrl())
+                    adAccountId,
+                    payload.creative().id(),
+                    payload.imageUrl(),
+                    localHashCache
                 );
                 LOGGER.info(
                     "Creative image preload succeeded and will use image_hash as primary path: experimentId={}, creativeId={}, hash={}",
@@ -1511,6 +1519,169 @@ public class FacebookCampaignService {
             }
         }
         return resolvedPayloads;
+    }
+
+    private String resolveOrUploadCanonicalImageHash(
+        long experimentId,
+        String adAccountId,
+        Long creativeId,
+        String imageUrl,
+        Map<String, String> localHashCache
+    ) {
+        LOGGER.info(
+            "Preloading creative image using canonical hash deduplication: experimentId={}, creativeId={}, imageUrl={}",
+            experimentId,
+            creativeId,
+            imageUrl
+        );
+        DownloadedImage downloadedImage;
+        try {
+            downloadedImage = downloadCreativeImage(imageUrl);
+        } catch (Exception ex) {
+            LOGGER.warn(
+                "Could not download creative image for canonical hash deduplication; falling back to legacy upload flow: experimentId={}, creativeId={}, imageUrl={}, message={}",
+                experimentId,
+                creativeId,
+                imageUrl,
+                ex.getMessage()
+            );
+            return executeFacebookCallWithLogging(
+                experimentId,
+                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+                () -> uploadAdImageWithFallback(adAccountId, experimentId, imageUrl)
+            );
+        }
+        String localHash = computeSha256(downloadedImage.bytes());
+        if (localHashCache.containsKey(localHash)) {
+            String cachedHash = localHashCache.get(localHash);
+            LOGGER.info(
+                "Reusing image_hash from in-memory deduplication cache: experimentId={}, creativeId={}, localHash={}, hash={}",
+                experimentId,
+                creativeId,
+                localHash,
+                cachedHash
+            );
+            return cachedHash;
+        }
+
+        Optional<String> canonicalHash = lookupCanonicalImageHash(adAccountId, localHash);
+        if (canonicalHash.isPresent()) {
+            String existingHash = canonicalHash.get();
+            localHashCache.put(localHash, existingHash);
+            LOGGER.info(
+                "Reusing canonical image_hash returned by backend repository: experimentId={}, creativeId={}, localHash={}, hash={}",
+                experimentId,
+                creativeId,
+                localHash,
+                existingHash
+            );
+            return existingHash;
+        }
+
+        String uploadedImageHash = executeFacebookCallWithLogging(
+            experimentId,
+            ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
+            () -> facebookAdsService.uploadAdImageFromBytes(
+                adAccountId,
+                downloadedImage.bytes(),
+                resolveImageFileName(imageUrl),
+                downloadedImage.contentType()
+            )
+        );
+        localHashCache.put(localHash, uploadedImageHash);
+        LOGGER.info(
+            "Creative image uploaded to Meta and image_hash captured for canonical persistence: experimentId={}, creativeId={}, localHash={}, hash={}",
+            experimentId,
+            creativeId,
+            localHash,
+            uploadedImageHash
+        );
+        persistCanonicalImageHash(adAccountId, localHash, uploadedImageHash);
+        return uploadedImageHash;
+    }
+
+    private Optional<String> lookupCanonicalImageHash(String adAccountId, String localHash) {
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/facebook-campaigns/image-hash-mappings/resolve");
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl)
+            .queryParam("platform", IMAGE_HASH_PLATFORM)
+            .queryParam("adAccountId", adAccountId)
+            .queryParam("localHash", localHash)
+            .build(true)
+            .toUri();
+        LOGGER.info(
+            "Requesting canonical image hash mapping from backend: url==>{}, params={}",
+            uri,
+            JsonLogFormatter.wrap(objectMapper, Map.of("platform", IMAGE_HASH_PLATFORM, "adAccountId", adAccountId, "localHash", localHash))
+        );
+        try {
+            CanonicalImageHashResponse response = backendClient.get()
+                .uri(uri)
+                .exchangeToMono(clientResponse -> {
+                    if (clientResponse.statusCode().value() == HttpStatus.NOT_FOUND.value()) {
+                        return Mono.empty();
+                    }
+                    if (clientResponse.statusCode().isError()) {
+                        return clientResponse.createException().flatMap(Mono::error);
+                    }
+                    return clientResponse.bodyToMono(CanonicalImageHashResponse.class);
+                })
+                .block();
+            LOGGER.info(
+                "Received canonical image hash mapping from backend: url<=={}, response={}",
+                uri,
+                JsonLogFormatter.wrap(objectMapper, response)
+            );
+            return Optional.ofNullable(response)
+                .map(CanonicalImageHashResponse::metaImageHash)
+                .filter(StringUtils::hasText);
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to resolve canonical image hash mapping from backend: url==>{}, message={}", uri, ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private void persistCanonicalImageHash(String adAccountId, String localHash, String metaImageHash) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/facebook-campaigns/image-hash-mappings");
+        CanonicalImageHashUpsertRequest payload = new CanonicalImageHashUpsertRequest(
+            IMAGE_HASH_PLATFORM,
+            adAccountId,
+            localHash,
+            metaImageHash
+        );
+        LOGGER.info(
+            "Persisting canonical image hash mapping in backend: url==>{}, payload={}",
+            url,
+            JsonLogFormatter.wrap(objectMapper, payload)
+        );
+        try {
+            CanonicalImageHashResponse response = backendClient.post()
+                .uri(url)
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(CanonicalImageHashResponse.class)
+                .block();
+            LOGGER.info(
+                "Canonical image hash mapping persisted in backend: url<=={}, response={}",
+                url,
+                JsonLogFormatter.wrap(objectMapper, response)
+            );
+        } catch (Exception ex) {
+            LOGGER.warn("Failed to persist canonical image hash mapping in backend: url==>{}, message={}", url, ex.getMessage());
+        }
+    }
+
+    private String computeSha256(byte[] bytes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(bytes);
+            StringBuilder builder = new StringBuilder(hash.length * 2);
+            for (byte value : hash) {
+                builder.append(String.format("%02x", value));
+            }
+            return builder.toString();
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to compute SHA-256 hash for creative image", ex);
+        }
     }
 
     private String createAdCreativeWithImageDownloadRetry(

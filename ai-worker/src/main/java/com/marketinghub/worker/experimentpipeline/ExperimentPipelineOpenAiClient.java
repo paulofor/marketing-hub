@@ -286,7 +286,11 @@ public class ExperimentPipelineOpenAiClient {
                     outputTokens,
                     OpenAiCostEstimator.estimateUsd(effectiveModel, response.usage()));
         } catch (Exception ex) {
-            throw new IllegalStateException("Falha ao gerar seção " + job.section() + " do experimento " + job.experimentId(), ex);
+            String message = "Falha ao gerar seção " + job.section() + " do experimento " + job.experimentId();
+            if (StringUtils.hasText(ex.getMessage())) {
+                message = message + ". " + ex.getMessage();
+            }
+            throw new IllegalStateException(message, ex);
         }
     }
 

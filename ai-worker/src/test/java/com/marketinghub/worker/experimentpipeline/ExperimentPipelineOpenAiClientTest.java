@@ -150,6 +150,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("ctaBlocks[]");
         assertThat(userPrompt).contains("consistencyChecks[]");
         assertThat(userPrompt).contains("complianceNotes");
+        assertThat(userPrompt).contains("copy **não pode depender** de campos, `sectionId` ou estrutura do `landingPageWireframe`");
+        assertThat(userPrompt).doesNotContain("compatível com os `sectionId` previstos no wireframe recebido em `CASE_DATA`");
     }
 
     @Test

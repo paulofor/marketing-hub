@@ -180,9 +180,9 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
    - `faq` deve conter no mínimo 3 perguntas com `question` e `answer` preenchidos.
    - `ctaBlocks` deve conter no mínimo 2 variações (por exemplo: `mid` e `final` ou `hero` e `final`).
 
-3. **Compatibilidade com wireframe**
-   - Todo `sectionId` de `bodySections` deve existir em `landingPageWireframe.sectionOrder.sectionId`.
-   - Todo `ctaBlocks.placement` deve corresponder a um `ctaSlot` previsto no wireframe.
+3. **Independência da etapa de wireframe (ordem canônica)**
+   - A geração de `landingPageCopy` acontece **antes** de `landingPageWireframe`; portanto, a copy **não pode depender** de `sectionOrder`, `ctaSlot` ou qualquer campo de wireframe inexistente nessa etapa.
+   - O alinhamento estrutural com layout acontece na etapa posterior (`landingPageWireframe`), preservando a promessa e a argumentação aprovadas na copy.
    - Toda `ctaUrl` deve ser resolvida (sem placeholders como `{slug}`).
 
 4. **Consistência de promessa e CTA**

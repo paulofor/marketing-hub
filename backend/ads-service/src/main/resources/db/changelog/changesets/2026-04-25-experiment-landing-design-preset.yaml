@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-25-experiment-landing-design-preset
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        and:
+          - dbms:
+              type: mysql
+          - sqlCheck:
+              expectedResult: "0"
+              sql: |
+                SELECT COUNT(*)
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'experiment'
+                  AND COLUMN_NAME = 'landing_page_design_preset'
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN landing_page_design_preset LONGTEXT NULL
+                AFTER landing_page_image_planning;

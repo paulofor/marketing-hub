@@ -60,12 +60,14 @@ public class ExperimentPipelineOpenAiClient {
     private static final String LANDING_COPY_TEMPLATE_PATH = "prompts/experiment/landing-copy.md";
     private static final String LANDING_WIREFRAME_TEMPLATE_PATH = "prompts/experiment/landing-wireframe.md";
     private static final String LANDING_IMAGE_PLANNING_TEMPLATE_PATH = "prompts/experiment/landing-image-planning.md";
+    private static final String LANDING_DESIGN_PRESET_TEMPLATE_PATH = "prompts/experiment/landing-design-preset.md";
     private static final String LANDING_HTML_TEMPLATE_PATH = "prompts/experiment/landing-html.md";
 
     private static final String CAMPAIGN_ANGLE_MARKER = "- visualAngle";
     private static final String LANDING_COPY_MARKER = "- messageMatchSource";
     private static final String LANDING_WIREFRAME_MARKER = "variantLayoutId";
     private static final String LANDING_IMAGE_PLANNING_MARKER = "visualDirectionSummary";
+    private static final String LANDING_DESIGN_PRESET_MARKER = "sectionPresets";
     private static final String LANDING_HTML_MARKER = "htmlDocument";
 
     private static final List<String> TEMPLATE_VARIABLE_KEYS = List.of(
@@ -1285,6 +1287,9 @@ public class ExperimentPipelineOpenAiClient {
         if (isLandingImagePlanningSection(job) && !base.contains(LANDING_IMAGE_PLANNING_MARKER)) {
             return appendSectionTemplate(base, LANDING_IMAGE_PLANNING_TEMPLATE_PATH, job);
         }
+        if (isLandingDesignPresetSection(job) && !base.contains(LANDING_DESIGN_PRESET_MARKER)) {
+            return appendSectionTemplate(base, LANDING_DESIGN_PRESET_TEMPLATE_PATH, job);
+        }
         if (isLandingHtmlSection(job) && !base.contains(LANDING_HTML_MARKER)) {
             return appendSectionTemplate(base, LANDING_HTML_TEMPLATE_PATH, job);
         }
@@ -1352,6 +1357,7 @@ public class ExperimentPipelineOpenAiClient {
                 LANDING_COPY_TEMPLATE_PATH,
                 LANDING_WIREFRAME_TEMPLATE_PATH,
                 LANDING_IMAGE_PLANNING_TEMPLATE_PATH,
+                LANDING_DESIGN_PRESET_TEMPLATE_PATH,
                 LANDING_HTML_TEMPLATE_PATH);
         for (String path : paths) {
             templates.put(path, readPromptTemplate(path));
@@ -1448,6 +1454,9 @@ public class ExperimentPipelineOpenAiClient {
         if (isLandingImagePlanningSection(job)) {
             return LANDING_IMAGE_PLANNING_TEMPLATE_PATH;
         }
+        if (isLandingDesignPresetSection(job)) {
+            return LANDING_DESIGN_PRESET_TEMPLATE_PATH;
+        }
         if (isLandingHtmlSection(job)) {
             return LANDING_HTML_TEMPLATE_PATH;
         }
@@ -1470,6 +1479,7 @@ public class ExperimentPipelineOpenAiClient {
             case LANDING_COPY_TEMPLATE_PATH -> "landingPageCopy";
             case LANDING_WIREFRAME_TEMPLATE_PATH -> "landingPageWireframe";
             case LANDING_IMAGE_PLANNING_TEMPLATE_PATH -> "landingPageImagePlanning";
+            case LANDING_DESIGN_PRESET_TEMPLATE_PATH -> "landingPageDesignPreset";
             case LANDING_HTML_TEMPLATE_PATH -> "landingPageHtml";
             default -> "unknown";
         };
@@ -1643,6 +1653,10 @@ public class ExperimentPipelineOpenAiClient {
 
     private boolean isLandingImagePlanningSection(ExperimentPipelineJobDto job) {
         return isSection(job, "landing-page-image-planning", "landing-page_image_planning", "landing-image-planning", "landing_image_planning");
+    }
+
+    private boolean isLandingDesignPresetSection(ExperimentPipelineJobDto job) {
+        return isSection(job, "landing-page-design-preset", "landing-page_design_preset", "landing-design-preset", "landing_design_preset");
     }
 
     private boolean isSection(ExperimentPipelineJobDto job, String... aliases) {

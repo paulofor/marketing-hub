@@ -27,14 +27,15 @@ public class LandingHtmlModule {
         }
         StringBuilder sb = new StringBuilder();
         sb.append("\nPrompt v2 (inputs mínimos para LANDING_PAGE_HTML):\n");
-        sb.append("Use apenas os 3 insumos abaixo como fonte de verdade para montar o HTML final.\n");
+        sb.append("Use apenas os 4 insumos abaixo como fonte de verdade para montar o HTML final.\n");
         appendIfPresent(sb, "1) Wireframe aprovado (JSON)", experiment.getLandingPageWireframe());
         appendIfPresent(sb, "2) Texto da landing aprovado (JSON)", experiment.getLandingPageCopy());
+        appendIfPresent(sb, "3) Preset de design aprovado (JSON)", experiment.getLandingPageDesignPreset());
         String imageUrls = summarizeImageUrlsFromPlanning(experiment.getLandingPageImagePlanning());
         if (StringUtils.hasText(imageUrls)) {
-            sb.append("3) URLs de imagens aprovadas por seção:\n").append(imageUrls);
+            sb.append("4) URLs de imagens aprovadas por seção:\n").append(imageUrls);
         } else {
-            appendIfPresent(sb, "3) Planejamento de imagens (JSON)", experiment.getLandingPageImagePlanning());
+            appendIfPresent(sb, "4) Planejamento de imagens (JSON)", experiment.getLandingPageImagePlanning());
         }
         return sb.toString();
     }
@@ -96,6 +97,10 @@ public class LandingHtmlModule {
                 asTrimmedString(heroCopy.get("supportingCopy")));
 
         List<Map<String, Object>> plannedImages = extractImages(experiment.getLandingPageImagePlanning());
+        Map<String, Object> designRoot = safeReadObject(experiment.getLandingPageDesignPreset());
+        Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
+        Map<String, Object> palette = extractPalette(designPreset);
+        Map<String, Map<String, Object>> sectionDesignPresets = indexSectionDesignPresets(designPreset);
 
         String formId = firstNonBlank(asTrimmedString(formSpec.get("formId")), "lead-capture-primary");
         String submitTarget = firstNonBlank(asTrimmedString(formSpec.get("submitTarget")), "/api/flows/submissions");
@@ -107,7 +112,14 @@ public class LandingHtmlModule {
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />")
                 .append("<title>").append(escapeHtml(pageTitle)).append("</title>")
                 .append("<style>")
-                .append(":root{--bg:#f3f5f9;--card:#ffffff;--border:#e3e8f2;--text:#0f172a;--muted:#475569;--brand:#1d4ed8;--brand-dark:#1e40af;}")
+                .append(":root{--bg:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("background")), "#f3f5f9")))
+                .append(";--card:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("surface")), "#ffffff")))
+                .append(";--border:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("border")), "#e3e8f2")))
+                .append(";--text:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("textPrimary")), "#0f172a")))
+                .append(";--muted:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("textMuted")), "#475569")))
+                .append(";--brand:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("brandPrimary")), "#1d4ed8")))
+                .append(";--brand-dark:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("brandSecondary")), "#1e40af")))
+                .append(";}")
                 .append("*{box-sizing:border-box;}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text);line-height:1.55;}")
                 .append("main{max-width:980px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:14px;}")
                 .append(".card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.04);}")
@@ -147,6 +159,9 @@ public class LandingHtmlModule {
             String surfaceToken = firstNonBlank(asTrimmedString(surface.get("surfaceToken")), "surface-base");
             String surfaceStyle = firstNonBlank(asTrimmedString(surface.get("style")), "band");
             String surfaceContrast = firstNonBlank(asTrimmedString(surface.get("contrastMode")), "normal");
+            Map<String, Object> sectionPreset = sectionDesignPresets.getOrDefault(sectionId.toLowerCase(), Map.of());
+            surfaceStyle = firstNonBlank(asTrimmedString(sectionPreset.get("surfaceStyle")), surfaceStyle);
+            surfaceContrast = firstNonBlank(asTrimmedString(sectionPreset.get("contrastMode")), surfaceContrast);
             String surfaceStyleClass = "surface-" + normalizeCssToken(surfaceStyle);
             String surfaceContrastClass = "contrast-" + normalizeCssToken(surfaceContrast);
 
@@ -296,6 +311,44 @@ public class LandingHtmlModule {
                 .map(Map.class::cast)
                 .map(item -> (Map<String, Object>) item)
                 .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractPalette(Map<String, Object> designPreset) {
+        if (designPreset == null || designPreset.isEmpty()) {
+            return Map.of();
+        }
+        if (!(designPreset.get("theme") instanceof Map<?, ?> rawTheme)) {
+            return Map.of();
+        }
+        Map<String, Object> theme = (Map<String, Object>) rawTheme;
+        if (!(theme.get("palette") instanceof Map<?, ?> rawPalette)) {
+            return Map.of();
+        }
+        return (Map<String, Object>) rawPalette;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> indexSectionDesignPresets(Map<String, Object> designPreset) {
+        if (designPreset == null || designPreset.isEmpty()) {
+            return Map.of();
+        }
+        if (!(designPreset.get("sectionPresets") instanceof List<?> rawSectionPresets)) {
+            return Map.of();
+        }
+        java.util.LinkedHashMap<String, Map<String, Object>> indexed = new java.util.LinkedHashMap<>();
+        for (Object rawPreset : rawSectionPresets) {
+            if (!(rawPreset instanceof Map<?, ?> rawPresetMap)) {
+                continue;
+            }
+            Map<String, Object> preset = (Map<String, Object>) rawPresetMap;
+            String sectionId = asTrimmedString(preset.get("sectionId"));
+            if (!StringUtils.hasText(sectionId)) {
+                continue;
+            }
+            indexed.put(sectionId.toLowerCase(), preset);
+        }
+        return indexed;
     }
 
     @SuppressWarnings("unchecked")
@@ -555,6 +608,13 @@ public class LandingHtmlModule {
     private String escapeAttr(String value) {
         if (value == null) return "";
         return escapeHtml(value).replace("\"", "&quot;");
+    }
+
+    private String escapeCss(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace(";", "").replace("{", "").replace("}", "");
     }
 
     private String normalizeCssToken(String value) {

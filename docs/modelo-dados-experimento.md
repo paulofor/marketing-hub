@@ -14,6 +14,14 @@ criativos, campanha e objetos de ativação/medição.
 - Coleta de leads no fluxo vinculado ao experimento.
 - Governança mínima de compliance para o módulo Avatar Sales Video (consentimento e revisão humana antes de render/publicação produtiva).
 
+## Atualização incremental — Pipeline de Landing (Design Preset)
+
+Campo adicionado na entidade/tabela `experiment` para suportar o novo passo canônico de design da landing:
+
+- `landing_page_design_preset` (`LONGTEXT`)
+  - armazena o artefato estruturado `landingPageDesignPreset` produzido no pipeline entre `landingPageImagePlanning` e `landingPageHtml`;
+  - objetivo: separar decisão visual (tema/presets) da composição final do HTML pelo LHM, preservando determinismo e auditabilidade.
+
 ## Atualização incremental — Avatar Sales Video (Sprint V4)
 
 Campos adicionados no backend (`sales_video_profile` / `sales_video_job`) para suportar compliance e auditoria:

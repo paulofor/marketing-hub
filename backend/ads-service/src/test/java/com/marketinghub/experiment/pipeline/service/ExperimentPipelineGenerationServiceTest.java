@@ -805,7 +805,7 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
-    void generateLandingHtmlFailsWhenPlannedImagesAreNotFullyGenerated() {
+    void generateLandingDesignPresetFailsWhenPlannedImagesAreNotFullyGenerated() {
         Experiment experiment = new Experiment();
         experiment.setId(302L);
         experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[{\"sectionId\":\"hero\",\"imagePrompt\":\"x\"}]}}");
@@ -814,7 +814,7 @@ class ExperimentPipelineGenerationServiceTest {
         when(frameworkImageGenerationService.allPlanningImagesCompleted(302L)).thenReturn(false);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> service.generate(302L, ExperimentPipelineSection.LANDING_PAGE_HTML, new com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest()));
+                () -> service.generate(302L, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET, new com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest()));
 
         assertTrue(ex.getReason().contains("geração completa das imagens"));
     }

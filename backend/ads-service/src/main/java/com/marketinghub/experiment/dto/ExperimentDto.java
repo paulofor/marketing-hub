@@ -34,6 +34,7 @@ public class ExperimentDto {
     private String landingPageCopy;
     private String landingPageWireframe;
     private String landingPageImagePlanning;
+    private String landingPageDesignPreset;
     private String landingPageHtml;
     private InstagramAccountDto instagramAccount;
     private String facebookPixelId;

@@ -176,8 +176,8 @@ de publicação deve ser simplificado em **3 passos**:
 1. **Geração da landing pela IA**
    O pipeline gera o HTML final da landing para o experimento.
    A composição final deve ser executada pelo **LHM (Landing HTML Module)**,
-   responsável por consolidar wireframe aprovado, copy aprovada e URLs de
-   imagens aprovadas em um único `htmlDocument`.
+   responsável por consolidar wireframe aprovado, copy aprovada, design preset
+   aprovado e URLs de imagens aprovadas em um único `htmlDocument`.
 2. **Aprovação única do usuário**
    O usuário aprova a landing uma única vez na interface administrativa.
 3. **Publicação automática pelo sistema**
@@ -202,7 +202,7 @@ oficialmente como:
 
 Definição operacional do LHM:
 
-- recebe como entradas canônicas: `wireframe`, `copy` e `imagens (URLs)`;
+- recebe como entradas canônicas: `wireframe`, `copy`, `designPreset` e `imagens (URLs)`;
 - entrega como saída canônica: `htmlDocument` final da landing;
 - roda no backend como fonte única de verdade para aplicação de contratos e
   validações de publicação.

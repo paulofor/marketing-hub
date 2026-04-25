@@ -669,16 +669,18 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_COPY -> experiment.getLandingPageCopy();
             case LANDING_PAGE_WIREFRAME -> experiment.getLandingPageWireframe();
             case LANDING_PAGE_IMAGE_PLANNING -> experiment.getLandingPageImagePlanning();
+            case LANDING_PAGE_DESIGN_PRESET -> experiment.getLandingPageDesignPreset();
             case LANDING_PAGE_HTML -> experiment.getLandingPageHtml();
         };
         if (!StringUtils.hasText(predecessorContent)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "A seção " + section.path() + " depende da seção " + predecessor.path() + " já concluída");
         }
-        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML
+        if ((section == ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET
+                || section == ExperimentPipelineSection.LANDING_PAGE_HTML)
                 && !frameworkImageGenerationService.allPlanningImagesCompleted(experiment.getId())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "A seção landing-page-html depende da geração completa das imagens planejadas da landing");
+                    "A seção " + section.path() + " depende da geração completa das imagens planejadas da landing");
         }
     }
 
@@ -693,7 +695,7 @@ public class ExperimentPipelineGenerationService {
         if (section == ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING) {
             frameworkImageGenerationService.enqueueJobsForExperiment(experimentId);
             if (frameworkImageGenerationService.allPlanningImagesCompleted(experimentId)) {
-                enqueueJob(job.getExperiment(), ExperimentPipelineSection.LANDING_PAGE_HTML, deriveFollowUpRequest(request));
+                enqueueJob(job.getExperiment(), ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET, deriveFollowUpRequest(request));
             }
             return;
         }
@@ -1153,6 +1155,25 @@ public class ExperimentPipelineGenerationService {
             return;
         }
 
+        if (section == ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET) {
+            sb.append("\nDiretriz específica para Preset de Design da Landing:\n");
+            sb.append("Contexto do nicho: ").append(niche).append("\n");
+            sb.append("Ângulo da campanha: ").append(campaignAngle).append("\n");
+            sb.append("Promessa principal: ").append(primaryPromise).append("\n");
+            sb.append("CTA obrigatório: ").append(landingCtaForInstructions).append("\n");
+            sb.append("\nObjetivo:\n");
+            sb.append("Definir um preset visual estruturado para a landing (tema + presets por seção) sem gerar HTML final nesta etapa.\n\n");
+            sb.append("Regras:\n");
+            sb.append("1. Gerar objeto `landingPageDesignPreset` com presetId, theme, sectionPresets, componentPresets, motion e consistencyChecks.\n");
+            sb.append("2. Em sectionPresets, cobrir todas as sectionId existentes no wireframe atual.\n");
+            sb.append("3. surfaceStyle deve usar apenas: band, solid, gradient-soft, image-tint.\n");
+            sb.append("4. contrastMode deve usar apenas: normal, high, soft.\n");
+            sb.append("5. Não inventar novas seções; somente mapear sectionId do wireframe.\n");
+            sb.append("6. consistencyChecks deve incluir THEME_CONTRAST e MOBILE_READABILITY.\n");
+            sb.append("7. Não gerar HTML, CSS bruto ou JS nesta etapa; apenas preset estruturado.\n");
+            return;
+        }
+
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
             sb.append("\nDiretriz específica para implementação final da landing (HTML/CSS/JS):\n");
             sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
@@ -1246,6 +1267,7 @@ public class ExperimentPipelineGenerationService {
         appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_COPY, "Textos da landing", completedOutputs);
         appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, "Wireframe da landing", completedOutputs);
         appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING, "Planejamento de imagens da landing", completedOutputs);
+        appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET, "Preset de design da landing", completedOutputs);
     }
 
     private boolean shouldIncludeSectionOutput(ExperimentPipelineSection targetSection,
@@ -1318,6 +1340,7 @@ public class ExperimentPipelineGenerationService {
             case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
             case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
             case LANDING_PAGE_IMAGE_PLANNING -> experiment.setLandingPageImagePlanning(normalized);
+            case LANDING_PAGE_DESIGN_PRESET -> experiment.setLandingPageDesignPreset(normalized);
             case LANDING_PAGE_HTML -> {
                 validateLandingHtmlFormConsistency(experiment, normalized);
                 validateLandingHtmlSubmissionRuntime(experiment, normalized);
@@ -2194,6 +2217,10 @@ public class ExperimentPipelineGenerationService {
                     "landingPageImagePlanning",
                     landingPageImagePlanningFieldSchema(),
                     metadataSchema);
+            case LANDING_PAGE_DESIGN_PRESET -> schemaWithMetadata(
+                    "landingPageDesignPreset",
+                    landingPageDesignPresetFieldSchema(),
+                    metadataSchema);
             case LANDING_PAGE_HTML -> schemaWithMetadata("landingPageHtml", landingPageHtmlFieldSchema(), metadataSchema);
         };
     }
@@ -2322,6 +2349,57 @@ public class ExperimentPipelineGenerationService {
                 ),
                 "required", List.of("pageGoal", "images", "consistencyChecks")
         );
+    }
+
+    private Map<String, Object> landingPageDesignPresetFieldSchema() {
+        Map<String, Object> paletteSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "background", stringSchema(),
+                        "surface", stringSchema(),
+                        "textPrimary", stringSchema(),
+                        "textMuted", stringSchema(),
+                        "brandPrimary", stringSchema(),
+                        "brandSecondary", stringSchema(),
+                        "border", stringSchema()),
+                "required", List.of("background", "surface", "textPrimary", "textMuted", "brandPrimary", "brandSecondary", "border"));
+        Map<String, Object> sectionPresetSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "sectionId", stringSchema(),
+                        "surfaceStyle", Map.of("type", "string", "enum", List.of("band", "solid", "gradient-soft", "image-tint")),
+                        "contrastMode", Map.of("type", "string", "enum", List.of("normal", "high", "soft")),
+                        "layoutPreset", stringSchema(),
+                        "emphasis", Map.of("type", "string", "enum", List.of("primary", "secondary", "support")),
+                        "notes", stringSchema()),
+                "required", List.of("sectionId", "surfaceStyle", "contrastMode", "layoutPreset", "emphasis", "notes"));
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "presetId", stringSchema(),
+                        "theme", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "palette", paletteSchema,
+                                        "typography", Map.of("type", "object", "additionalProperties", true),
+                                        "radius", Map.of("type", "object", "additionalProperties", true),
+                                        "shadow", Map.of("type", "object", "additionalProperties", true)),
+                                "required", List.of("palette")),
+                        "sectionPresets", Map.of("type", "array", "minItems", 1, "items", sectionPresetSchema),
+                        "componentPresets", Map.of("type", "object", "additionalProperties", true),
+                        "motion", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "enabled", Map.of("type", "boolean"),
+                                        "intensity", Map.of("type", "string", "enum", List.of("none", "subtle", "moderate"))),
+                                "required", List.of("enabled", "intensity")),
+                        "consistencyChecks", Map.of("type", "array", "minItems", 1, "items", consistencyCheckSchema())),
+                "required", List.of("presetId", "theme", "sectionPresets", "componentPresets", "motion", "consistencyChecks"));
     }
 
     private Map<String, Object> landingPageHtmlFieldSchema() {

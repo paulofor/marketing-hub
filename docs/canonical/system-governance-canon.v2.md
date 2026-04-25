@@ -28,6 +28,8 @@
 4. **Flags derivadas não são verdade primária.** Rótulos de UI, atalhos de leitura, campos calculados e indicadores transitórios são projeções, não a regra original.
 5. **Contratos entre módulos são explícitos e versionados.** Nenhum módulo pode depender de campos implícitos, estados informais ou convenções não registradas.
 6. **Mudanças relevantes exigem teste e documentação correspondente.** Regra operacional sem teste e sem contrato atualizado é candidata imediata a drift.
+7. **LHM é determinístico por definição canônica.** O Landing HTML Module (LHM) é responsável pela renderização previsível do HTML final de landing pages a partir de artefatos/contratos canônicos; não é camada de ideação livre de copy.
+8. **Evolução visual via artefato canônico.** Ajustes de estética/tema para landing pages devem ser modelados em artefato canônico estruturado (ex.: `landingPageDesignPreset`) consumido pelo LHM; evitar etapa de geração livre de HTML/JS fora do contrato.
 
 ## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
 

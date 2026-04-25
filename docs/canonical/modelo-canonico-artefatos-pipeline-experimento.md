@@ -2,6 +2,14 @@
 
 Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 
+> 🔴 **REGRA CANÔNICA EM DESTAQUE — LHM**
+>
+> O **LHM (Landing HTML Module)** é o módulo **determinístico** responsável por gerar o HTML final da landing page.
+>
+> - O LHM **não** é uma etapa de ideação criativa livre da copy.
+> - O LHM deve renderizar de forma previsível a partir dos artefatos canônicos (ex.: `landingPageCopy` e `landingPageWireframe`) e contratos vigentes.
+> - Mudanças no pipeline devem preservar essa responsabilidade para reduzir drift entre especificação, backend e página publicada.
+
 ## Observação importante — independência dos experimentos
 
 - Cada experimento deve ser tratado de forma independente, sem reutilização implícita de artefatos entre experimentos.
@@ -157,6 +165,34 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 }
 ```
 
+### Regras canônicas de qualidade para geração da `landingPageCopy`
+
+Para considerar a copy **rica** e **compatível com as especificações**, a etapa de geração deve cumprir os critérios abaixo antes da renderização pelo LHM:
+
+1. **Cobertura completa de narrativa**
+   - A copy deve cobrir explicitamente o eixo: **Dor → Resultado → Mecanismo → Prova → Oferta**.
+   - Essa cobertura deve existir em `hero` + `bodySections` + `ctaBlocks` + `faq`.
+
+2. **Densidade mínima de conteúdo**
+   - `hero.supportingCopy` não pode ser vazio.
+   - Cada item de `bodySections` deve conter `summary` e `copy` não vazios.
+   - Cada item de `bodySections` deve conter ao menos 3 itens em `bullets`.
+   - `faq` deve conter no mínimo 3 perguntas com `question` e `answer` preenchidos.
+   - `ctaBlocks` deve conter no mínimo 2 variações (por exemplo: `mid` e `final` ou `hero` e `final`).
+
+3. **Independência da etapa de wireframe (ordem canônica)**
+   - A geração de `landingPageCopy` acontece **antes** de `landingPageWireframe`; portanto, a copy **não pode depender** de `sectionOrder`, `ctaSlot` ou qualquer campo de wireframe inexistente nessa etapa.
+   - O alinhamento estrutural com layout acontece na etapa posterior (`landingPageWireframe`), preservando a promessa e a argumentação aprovadas na copy.
+   - Toda `ctaUrl` deve ser resolvida (sem placeholders como `{slug}`).
+
+4. **Consistência de promessa e CTA**
+   - `hero.promise`, `primaryCTA` e `ctaBlocks[*].matchAdCta` devem manter coerência semântica.
+   - `consistencyChecks` deve incluir, no mínimo, os checks: `CTA_MATCH`, `PROMISE_MATCH` e `GOOGLE_LANDING_BEST_PRACTICES`.
+
+5. **Critério de bloqueio**
+   - Se qualquer regra acima falhar, o artefato permanece em `DRAFT` e não pode seguir para renderização final.
+   - O LHM só deve processar copy com validação aprovada (`status = VALIDATED` ou `APPROVED`).
+
 ## `landingPageWireframe`
 
 ```json
@@ -294,11 +330,83 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 }
 ```
 
+## `landingPageDesignPreset`
+
+> Artefato canônico para separar decisão de estética/tema da etapa final de composição HTML.
+> O objetivo é permitir evolução visual com previsibilidade, sem transformar o LHM em camada de ideação livre.
+
+```json
+{
+  "presetId": "string",
+  "theme": {
+    "palette": {
+      "background": "string",
+      "surface": "string",
+      "textPrimary": "string",
+      "textMuted": "string",
+      "brandPrimary": "string",
+      "brandSecondary": "string",
+      "border": "string"
+    },
+    "typography": {
+      "fontFamily": "string",
+      "baseSize": "string",
+      "headingScale": "string"
+    },
+    "radius": {
+      "card": "string",
+      "field": "string",
+      "button": "string"
+    },
+    "shadow": {
+      "card": "string",
+      "focusRing": "string"
+    }
+  },
+  "sectionPresets": [
+    {
+      "sectionId": "string",
+      "surfaceStyle": "band | solid | gradient-soft | image-tint",
+      "contrastMode": "normal | high | soft",
+      "layoutPreset": "hero-focus | form-focus | proof-grid | narrative-stack | faq-clean | cta-strong",
+      "emphasis": "primary | secondary | support",
+      "notes": "string"
+    }
+  ],
+  "componentPresets": {
+    "hero": {
+      "titleMaxWidth": "string",
+      "summaryMaxWidth": "string",
+      "ctaVariant": "primary | ghost"
+    },
+    "form": {
+      "fieldSpacing": "string",
+      "labelWeight": "string",
+      "submitStyle": "pill | block"
+    },
+    "faq": {
+      "variant": "accordion | stacked-cards"
+    }
+  },
+  "motion": {
+    "enabled": "boolean",
+    "intensity": "none | subtle | moderate"
+  },
+  "consistencyChecks": [
+    {
+      "check": "THEME_CONTRAST | CTA_VISUAL_HIERARCHY | MOBILE_READABILITY",
+      "status": "PASS | FAIL | WARNING",
+      "details": "string"
+    }
+  ]
+}
+```
+
 ## `landingPageHtml`
 
 > **Owner canônico de composição:** **LHM (Landing HTML Module)**.
 > O LHM é o módulo de backend responsável por receber os insumos aprovados
-> (`wireframe`, `copy` e `imagens com URL`) e consolidá-los no
+> (`wireframe`, `copy`, `designPreset` e `imagens com URL`) e consolidá-los no
 > `htmlDocument` final da landing.
 >
 > **Leitura operacional obrigatória para evolução do LHM:** `docs/canonical/lhm-evolution-guide.v1.md`.

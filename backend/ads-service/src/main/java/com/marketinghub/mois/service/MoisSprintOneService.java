@@ -9,12 +9,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MoisSprintOneService {
 
+    private static final Logger log = LoggerFactory.getLogger(MoisSprintOneService.class);
     private static final String DEFAULT_STAGE = "COLETA";
+    private static final int DEFAULT_LIMIT_PER_SOURCE = 50;
+    private static final int DEFAULT_MIN_SUCCESS_SCORE = 50;
 
     private final ConcurrentMap<String, MoisWorkspaceDtos.ReferenceResponse> referencesById = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, MoisWorkspaceDtos.ExtractionDraftResponse> extractionByReferenceId =
@@ -22,6 +27,9 @@ public class MoisSprintOneService {
     private final ConcurrentMap<String, MoisWorkspaceDtos.LibraryBlockResponse> libraryBlocksById = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, MoisWorkspaceDtos.ComparisonResponse> comparisonsById = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, MoisWorkspaceDtos.BuildOfferResponse> offersById = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, MoisWorkspaceDtos.CollectionJobResponse> collectionJobsById = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, List<MoisWorkspaceDtos.CollectedReferenceResponse>> collectedReferencesByJobId =
+            new ConcurrentHashMap<>();
 
     public MoisWorkspaceDtos.WorkspaceDashboardResponse getDashboard(String workspaceId) {
         List<MoisWorkspaceDtos.ReferenceResponse> workspaceReferences = listWorkspaceReferences(workspaceId);
@@ -207,6 +215,50 @@ public class MoisSprintOneService {
         return response;
     }
 
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(MoisWorkspaceDtos.CreateCollectionJobRequest request) {
+        String jobId = "mois-collect-" + UUID.randomUUID();
+        Instant now = Instant.now();
+        int limitPerSource = request.limitPerSource() == null ? DEFAULT_LIMIT_PER_SOURCE : request.limitPerSource();
+        int minSuccessScore = request.minSuccessScore() == null ? DEFAULT_MIN_SUCCESS_SCORE : request.minSuccessScore();
+
+        MoisWorkspaceDtos.CollectionJobResponse job = new MoisWorkspaceDtos.CollectionJobResponse(
+                jobId,
+                request.workspaceId(),
+                request.niche(),
+                request.marketTheme(),
+                "QUEUED",
+                request.timeWindow(),
+                limitPerSource,
+                minSuccessScore,
+                request.sources(),
+                now
+        );
+        collectionJobsById.put(jobId, job);
+        collectedReferencesByJobId.put(jobId, buildSeedCollectedReferences(job, request.sources(), now, request.niche()));
+        log.info("MOIS collection job created: jobId={}, workspaceId={}, sources={}, window={}",
+                jobId, request.workspaceId(), request.sources(), request.timeWindow());
+        return job;
+    }
+
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(String workspaceId, String status) {
+        List<MoisWorkspaceDtos.CollectionJobResponse> jobs = collectionJobsById.values().stream()
+                .filter(job -> workspaceId == null || workspaceId.isBlank() || workspaceId.equals(job.workspaceId()))
+                .filter(job -> status == null || status.isBlank() || status.equalsIgnoreCase(job.status()))
+                .sorted(Comparator.comparing(MoisWorkspaceDtos.CollectionJobResponse::createdAt).reversed())
+                .toList();
+        return new MoisWorkspaceDtos.CollectionJobListResponse(jobs);
+    }
+
+    public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(String jobId) {
+        MoisWorkspaceDtos.CollectionJobResponse job = collectionJobsById.get(jobId);
+        if (job == null) {
+            throw new IllegalArgumentException("collection job not found");
+        }
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> references =
+                collectedReferencesByJobId.getOrDefault(jobId, List.of());
+        return new MoisWorkspaceDtos.CollectedReferenceListResponse(jobId, references);
+    }
+
     private List<MoisWorkspaceDtos.ReferenceResponse> listWorkspaceReferences(String workspaceId) {
         List<MoisWorkspaceDtos.ReferenceResponse> references = new ArrayList<>();
         for (MoisWorkspaceDtos.ReferenceResponse reference : referencesById.values()) {
@@ -268,5 +320,36 @@ public class MoisSprintOneService {
         );
         libraryBlocksById.put(promise.blockId(), promise);
         libraryBlocksById.put(proof.blockId(), proof);
+    }
+
+    private List<MoisWorkspaceDtos.CollectedReferenceResponse> buildSeedCollectedReferences(
+            MoisWorkspaceDtos.CollectionJobResponse job,
+            List<String> sources,
+            Instant now,
+            String niche
+    ) {
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> items = new ArrayList<>();
+        int sourceIndex = 0;
+        for (String source : sources) {
+            sourceIndex++;
+            int score = Math.max(job.minSuccessScore(), 60 + sourceIndex * 7);
+            items.add(new MoisWorkspaceDtos.CollectedReferenceResponse(
+                    UUID.randomUUID().toString(),
+                    job.jobId(),
+                    source,
+                    "Referência " + sourceIndex + " (" + source + ")",
+                    "https://example.com/" + source.toLowerCase() + "/offer-" + sourceIndex,
+                    niche,
+                    score,
+                    score >= 75 ? "HIGH" : "MEDIUM",
+                    now.minusSeconds(sourceIndex * 120L),
+                    Map.of(
+                            "status", "ACTIVE",
+                            "timeWindow", job.timeWindow(),
+                            "evidence", "recorrencia+consistencia"
+                    )
+            ));
+        }
+        return items;
     }
 }

@@ -352,4 +352,105 @@ class MoisControllerContractTest {
                 .andExpect(jsonPath("$.status").value("READY_TO_EXPORT"));
     }
 
+    @Test
+    void shouldCreateCollectionJobContract() throws Exception {
+        when(sprintOneService.createCollectionJob(any(MoisWorkspaceDtos.CreateCollectionJobRequest.class)))
+                .thenReturn(new MoisWorkspaceDtos.CollectionJobResponse(
+                        "mois-collect-001",
+                        "workspace-001",
+                        "nutricao",
+                        "perda de gordura",
+                        "QUEUED",
+                        "LAST_7_DAYS",
+                        50,
+                        60,
+                        List.of("META_AD_LIBRARY", "CLICKBANK"),
+                        Instant.parse("2026-04-25T12:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "niche": "nutricao",
+                                  "marketTheme": "perda de gordura",
+                                  "sources": ["META_AD_LIBRARY", "CLICKBANK"],
+                                  "timeWindow": "LAST_7_DAYS",
+                                  "limitPerSource": 50,
+                                  "minSuccessScore": 60
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.status").value("QUEUED"));
+    }
+
+    @Test
+    void shouldValidateCollectionJobPayload() throws Exception {
+        mockMvc.perform(post("/api/v1/mois/collection-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "",
+                                  "niche": "",
+                                  "sources": [],
+                                  "timeWindow": "INVALID"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldListCollectionJobsContract() throws Exception {
+        when(sprintOneService.listCollectionJobs(eq("workspace-001"), eq("QUEUED")))
+                .thenReturn(new MoisWorkspaceDtos.CollectionJobListResponse(List.of(
+                        new MoisWorkspaceDtos.CollectionJobResponse(
+                                "mois-collect-001",
+                                "workspace-001",
+                                "nutricao",
+                                "perda de gordura",
+                                "QUEUED",
+                                "LAST_7_DAYS",
+                                50,
+                                60,
+                                List.of("META_AD_LIBRARY"),
+                                Instant.parse("2026-04-25T12:00:00Z")
+                        )
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs")
+                        .param("workspaceId", "workspace-001")
+                        .param("status", "QUEUED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.items[0].timeWindow").value("LAST_7_DAYS"));
+    }
+
+    @Test
+    void shouldListCollectedReferencesByJobContract() throws Exception {
+        when(sprintOneService.listCollectedReferencesByJob(eq("mois-collect-001")))
+                .thenReturn(new MoisWorkspaceDtos.CollectedReferenceListResponse(
+                        "mois-collect-001",
+                        List.of(new MoisWorkspaceDtos.CollectedReferenceResponse(
+                                "ref-auto-001",
+                                "mois-collect-001",
+                                "CLICKBANK",
+                                "Oferta com alta recorrência",
+                                "https://example.com/offer",
+                                "nutricao",
+                                78,
+                                "HIGH",
+                                Instant.parse("2026-04-25T12:00:00Z"),
+                                java.util.Map.of("status", "ACTIVE")
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"))
+                .andExpect(jsonPath("$.items[0].successScore").value(78));
+    }
+
 }

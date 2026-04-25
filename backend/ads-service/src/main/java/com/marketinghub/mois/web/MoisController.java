@@ -129,6 +129,33 @@ public class MoisController {
         return sprintOneService.buildOffer(request);
     }
 
+    @PostMapping("/collection-jobs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
+    ) {
+        return sprintOneService.createCollectionJob(request);
+    }
+
+    @GetMapping("/collection-jobs")
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String status
+    ) {
+        return sprintOneService.listCollectionJobs(workspaceId, status);
+    }
+
+    @GetMapping("/collection-jobs/{jobId}/references")
+    public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(
+            @PathVariable String jobId
+    ) {
+        try {
+            return sprintOneService.listCollectedReferencesByJob(jobId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        }
+    }
+
     @GetMapping("/offers")
     public MoisOfferDtos.OfferCardListResponse listOffers(
             @RequestParam(required = false) String requestId,

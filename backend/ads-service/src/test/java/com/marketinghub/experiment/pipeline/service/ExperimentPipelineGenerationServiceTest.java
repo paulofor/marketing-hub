@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
@@ -203,6 +204,35 @@ class ExperimentPipelineGenerationServiceTest {
 
         assertEquals(409, error.getStatusCode().value());
         assertTrue(error.getReason().contains("Wireframe"));
+    }
+
+    @Test
+    void generateLandingHtmlWithLhmTracksFailedAttemptWhenPromptPreparationFails() {
+        Experiment experiment = new Experiment();
+        experiment.setId(34L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\"}}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+
+        when(experimentRepository.findById(34L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(landingHtmlModule.buildPromptV2Inputs(experiment))
+                .thenThrow(new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Validação canônica falhou"));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.generateLandingHtmlWithLhm(34L));
+
+        assertEquals(422, error.getStatusCode().value());
+        verify(jobRepository).save(any(ExperimentPipelineGenerationJob.class));
+        verify(landingHtmlModule, never()).assembleHtmlDocument(experiment);
+
+        ArgumentCaptor<ExperimentPipelineGenerationJob> jobCaptor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
+        verify(jobRepository).save(jobCaptor.capture());
+        ExperimentPipelineGenerationJob job = jobCaptor.getValue();
+        assertEquals(ExperimentPipelineGenerationJobStatus.FAILED, job.getStatus());
+        assertEquals(ExperimentPipelineGenerationJobStage.FAILED, job.getStage());
+        assertEquals("LHM", job.getModel());
+        assertTrue(job.getErrorMessage().contains("Validação canônica falhou"));
+        assertNotNull(job.getFinishedAt());
     }
 
     @Test

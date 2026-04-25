@@ -302,21 +302,25 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Copy da landing ainda não foi gerada para este experimento");
         }
-        String promptInputs = landingHtmlModule.buildPromptV2Inputs(experiment);
-        Map<String, Object> monitoringPayload = Map.of(
-                "mode", "INLINE",
-                "source", "LHM",
-                "section", ExperimentPipelineSection.LANDING_PAGE_HTML.path(),
-                "experimentId", experimentId);
+        Map<String, Object> monitoringPayload = new LinkedHashMap<>();
+        monitoringPayload.put("mode", "INLINE");
+        monitoringPayload.put("source", "LHM");
+        monitoringPayload.put("section", ExperimentPipelineSection.LANDING_PAGE_HTML.path());
+        monitoringPayload.put("experimentId", experimentId);
+        monitoringPayload.put("requestReceivedAt", Instant.now().toString());
         ExperimentPipelineGenerationJob monitoringJob = createInlineGenerationJob(
                 experiment,
                 ExperimentPipelineSection.LANDING_PAGE_HTML,
                 LHM_MODEL,
                 LHM_WORKER_ID,
-                promptInputs,
+                "Solicitação LHM recebida. Preparando montagem determinística do HTML.",
                 monitoringPayload);
 
         try {
+            String promptInputs = landingHtmlModule.buildPromptV2Inputs(experiment);
+            monitoringJob.setPrompt(promptInputs);
+            monitoringPayload.put("promptPrepared", true);
+            monitoringJob.setRequestBodyJson(writeJsonSilently(monitoringPayload));
             String assembledHtml = landingHtmlModule.assembleHtmlDocument(experiment);
             if (!StringUtils.hasText(assembledHtml)) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,

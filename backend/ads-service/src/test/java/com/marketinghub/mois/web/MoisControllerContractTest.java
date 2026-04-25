@@ -3,7 +3,9 @@ package com.marketinghub.mois.web;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisModuleGateway;
+import com.marketinghub.mois.service.MoisSprintOneService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +37,9 @@ class MoisControllerContractTest {
 
     @MockBean
     private MoisModuleGateway gateway;
+
+    @MockBean
+    private MoisSprintOneService sprintOneService;
 
     @Test
     void shouldAcceptDiscoveryRequest() throws Exception {
@@ -146,4 +151,119 @@ class MoisControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportId").value("mois-report-001"));
     }
+
+    @Test
+    void shouldReturnWorkspaceDashboardContract() throws Exception {
+        when(sprintOneService.getDashboard(eq("workspace-001")))
+                .thenReturn(new MoisWorkspaceDtos.WorkspaceDashboardResponse(
+                        "workspace-001",
+                        new MoisWorkspaceDtos.WorkspaceKpisResponse(12, 4, 2, 1),
+                        "COLETA",
+                        List.of(new MoisWorkspaceDtos.RecentAnalysisResponse(
+                                "ref-1",
+                                "nutricao",
+                                "COLETA_CONCLUIDA",
+                                Instant.parse("2026-04-25T12:00:00Z")) )
+                ));
+
+        mockMvc.perform(get("/api/v1/mois/workspaces/workspace-001/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.kpis.collections").value(12))
+                .andExpect(jsonPath("$.recentAnalyses[0].analysisId").value("ref-1"));
+    }
+
+    @Test
+    void shouldCreateReferenceForSprintOneContract() throws Exception {
+        when(sprintOneService.createReference(any(MoisWorkspaceDtos.CreateReferenceRequest.class)))
+                .thenReturn(new MoisWorkspaceDtos.ReferenceResponse(
+                        "ref-123",
+                        "workspace-001",
+                        "nutricao-esportiva",
+                        "https://exemplo.com/oferta",
+                        "LANDING_PAGE",
+                        "Secar 5kg em 8 semanas",
+                        "PROBLEM_AWARE",
+                        "97-297",
+                        "CURSO",
+                        "Oferta com prova social",
+                        Instant.parse("2026-04-25T12:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/references")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "niche": "nutricao-esportiva",
+                                  "sourceUrl": "https://exemplo.com/oferta",
+                                  "assetType": "LANDING_PAGE",
+                                  "primaryPromise": "Secar 5kg em 8 semanas",
+                                  "awarenessStage": "PROBLEM_AWARE",
+                                  "priceRange": "97-297",
+                                  "formatType": "CURSO",
+                                  "notes": "Oferta com prova social"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.referenceId").value("ref-123"))
+                .andExpect(jsonPath("$.workspaceId").value("workspace-001"));
+    }
+
+    @Test
+    void shouldValidateReferencePayload() throws Exception {
+        mockMvc.perform(post("/api/v1/mois/references")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldListReferencesByWorkspace() throws Exception {
+        when(sprintOneService.listReferences(eq("workspace-001")))
+                .thenReturn(new MoisWorkspaceDtos.ReferenceListResponse(List.of(
+                        new MoisWorkspaceDtos.ReferenceResponse(
+                                "ref-123",
+                                "workspace-001",
+                                "nutricao-esportiva",
+                                "https://exemplo.com/oferta",
+                                "LANDING_PAGE",
+                                "Secar 5kg em 8 semanas",
+                                "PROBLEM_AWARE",
+                                "97-297",
+                                "CURSO",
+                                null,
+                                Instant.parse("2026-04-25T12:00:00Z")
+                        )
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/references").param("workspaceId", "workspace-001"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].referenceId").value("ref-123"));
+    }
+
+
+    @Test
+    void shouldUpsertExtractionDraft() throws Exception {
+        when(sprintOneService.upsertExtractionDraft(eq("ref-123"), any(MoisWorkspaceDtos.UpsertExtractionDraftRequest.class)))
+                .thenReturn(new MoisWorkspaceDtos.ExtractionDraftResponse(
+                        "ext-123",
+                        "ref-123",
+                        "DRAFT",
+                        Instant.parse("2026-04-25T12:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/references/ref-123/extractions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "pain": "Falta de tempo",
+                                  "result": "Emagrecer com rotina curta",
+                                  "mechanism": "Treino de 15 minutos"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.extractionId").value("ext-123"))
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+    }
+
 }

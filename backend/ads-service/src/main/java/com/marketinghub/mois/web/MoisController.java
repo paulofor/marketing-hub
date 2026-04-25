@@ -4,7 +4,9 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisModuleGateway;
+import com.marketinghub.mois.service.MoisSprintOneService;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class MoisController {
 
     private final MoisModuleGateway gateway;
+    private final MoisSprintOneService sprintOneService;
 
     @PostMapping("/discovery-requests")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -53,6 +56,37 @@ public class MoisController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisDiscoveryDtos.AsyncAcceptedResponse runDiscoveryRequest(@PathVariable String requestId) {
         return gateway.runDiscoveryRequest(requestId);
+    }
+
+
+    @GetMapping("/workspaces/{workspaceId}/dashboard")
+    public MoisWorkspaceDtos.WorkspaceDashboardResponse getWorkspaceDashboard(@PathVariable String workspaceId) {
+        return sprintOneService.getDashboard(workspaceId);
+    }
+
+    @PostMapping("/references")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.ReferenceResponse createReference(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateReferenceRequest request
+    ) {
+        return sprintOneService.createReference(request);
+    }
+
+    @GetMapping("/references")
+    public MoisWorkspaceDtos.ReferenceListResponse listReferences(@RequestParam String workspaceId) {
+        return sprintOneService.listReferences(workspaceId);
+    }
+
+    @PostMapping("/references/{referenceId}/extractions")
+    public MoisWorkspaceDtos.ExtractionDraftResponse upsertExtractionDraft(
+            @PathVariable String referenceId,
+            @RequestBody MoisWorkspaceDtos.UpsertExtractionDraftRequest request
+    ) {
+        try {
+            return sprintOneService.upsertExtractionDraft(referenceId, request);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        }
     }
 
     @GetMapping("/offers")

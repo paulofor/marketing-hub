@@ -336,3 +336,24 @@ Ao final de **toda sprint**, registrar no próprio documento (ou em log vinculad
 - Cada tela deve possuir estados: loading, empty (quando aplicável) e error.
 - Toda recomendação gerada deve manter rastreabilidade de origem (referência/bloco).
 - O fluxo completo deve preservar o eixo canônico: Dor → Resultado → Mecanismo → Prova → Oferta.
+
+---
+
+## 6) Registro de execução de sprint
+
+### Sprint 1 — fechamento
+- **Data de fechamento:** `2026-04-25`
+- **O que foi feito:**
+  - Backend entregue com contratos MVP da Sprint 1:
+    - `GET /api/v1/mois/workspaces/{workspaceId}/dashboard`
+    - `POST /api/v1/mois/references`
+    - `GET /api/v1/mois/references?workspaceId=...`
+    - `POST /api/v1/mois/references/{referenceId}/extractions`
+  - Frontend entregue para as telas 1 e 2:
+    - Workspace MOIS com KPIs, stepper, lista de análises recentes e estados `loading/empty/error`.
+    - Coleta de referências com formulário validado, submit assíncrono com botão desabilitado + spinner, preview de URL, tabela de referências coletadas e feedback de sucesso/erro via toast.
+  - Navegação principal atualizada para incluir entrada de acesso ao módulo MOIS.
+- **Pendências:**
+  - Trocar armazenamento transitório em memória por persistência em banco para referências e extrações.
+  - Implementar ações `Retomar` e `Aplicar` do workspace conectadas aos próximos endpoints do backlog.
+  - Evoluir Sprint 2 (biblioteca, comparador e builder) conforme seção de planejamento deste documento.

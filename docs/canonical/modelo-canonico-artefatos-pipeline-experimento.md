@@ -330,11 +330,83 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 }
 ```
 
+## `landingPageDesignPreset`
+
+> Artefato canônico para separar decisão de estética/tema da etapa final de composição HTML.
+> O objetivo é permitir evolução visual com previsibilidade, sem transformar o LHM em camada de ideação livre.
+
+```json
+{
+  "presetId": "string",
+  "theme": {
+    "palette": {
+      "background": "string",
+      "surface": "string",
+      "textPrimary": "string",
+      "textMuted": "string",
+      "brandPrimary": "string",
+      "brandSecondary": "string",
+      "border": "string"
+    },
+    "typography": {
+      "fontFamily": "string",
+      "baseSize": "string",
+      "headingScale": "string"
+    },
+    "radius": {
+      "card": "string",
+      "field": "string",
+      "button": "string"
+    },
+    "shadow": {
+      "card": "string",
+      "focusRing": "string"
+    }
+  },
+  "sectionPresets": [
+    {
+      "sectionId": "string",
+      "surfaceStyle": "band | solid | gradient-soft | image-tint",
+      "contrastMode": "normal | high | soft",
+      "layoutPreset": "hero-focus | form-focus | proof-grid | narrative-stack | faq-clean | cta-strong",
+      "emphasis": "primary | secondary | support",
+      "notes": "string"
+    }
+  ],
+  "componentPresets": {
+    "hero": {
+      "titleMaxWidth": "string",
+      "summaryMaxWidth": "string",
+      "ctaVariant": "primary | ghost"
+    },
+    "form": {
+      "fieldSpacing": "string",
+      "labelWeight": "string",
+      "submitStyle": "pill | block"
+    },
+    "faq": {
+      "variant": "accordion | stacked-cards"
+    }
+  },
+  "motion": {
+    "enabled": "boolean",
+    "intensity": "none | subtle | moderate"
+  },
+  "consistencyChecks": [
+    {
+      "check": "THEME_CONTRAST | CTA_VISUAL_HIERARCHY | MOBILE_READABILITY",
+      "status": "PASS | FAIL | WARNING",
+      "details": "string"
+    }
+  ]
+}
+```
+
 ## `landingPageHtml`
 
 > **Owner canônico de composição:** **LHM (Landing HTML Module)**.
 > O LHM é o módulo de backend responsável por receber os insumos aprovados
-> (`wireframe`, `copy` e `imagens com URL`) e consolidá-los no
+> (`wireframe`, `copy`, `designPreset` e `imagens com URL`) e consolidá-los no
 > `htmlDocument` final da landing.
 >
 > **Leitura operacional obrigatória para evolução do LHM:** `docs/canonical/lhm-evolution-guide.v1.md`.

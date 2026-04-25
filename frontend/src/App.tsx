@@ -121,6 +121,7 @@ import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
 import MoisLibraryPage from "./pages/mois/MoisLibraryPage";
 import MoisComparisonPage from "./pages/mois/MoisComparisonPage";
 import MoisOfferBuilderPage from "./pages/mois/MoisOfferBuilderPage";
+import MoisResearchSourcesPage from "./pages/mois/MoisResearchSourcesPage";
 
 export default function App() {
   return (
@@ -268,6 +269,7 @@ export default function App() {
               <Route path="/oprm" element={<OprmWorkspacePage />} />
               <Route path="/mois" element={<MoisWorkspacePage />} />
               <Route path="/mois/references/new" element={<MoisReferenceIntakePage />} />
+              <Route path="/mois/research-sources" element={<MoisResearchSourcesPage />} />
               <Route path="/mois/extraction" element={<MoisExtractionPage />} />
               <Route path="/mois/library" element={<MoisLibraryPage />} />
               <Route path="/mois/comparison" element={<MoisComparisonPage />} />

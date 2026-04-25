@@ -8,6 +8,7 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -41,12 +42,16 @@ public class MoisDomainService {
 
     private static final Logger log = LoggerFactory.getLogger(MoisDomainService.class);
     private static final Pattern PRICE_PATTERN = Pattern.compile("(R\\$\\s?\\d{2,5}(?:[\\.,]\\d{2})?|\\$\\s?\\d{2,5}(?:[\\.,]\\d{2})?)");
+    private static final int DEFAULT_LIMIT_PER_SOURCE = 50;
+    private static final int DEFAULT_MIN_SUCCESS_SCORE = 50;
 
     private final Map<String, DiscoveryRequest> requests = new ConcurrentHashMap<>();
     private final Map<String, SourceSnapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<String, OfferCard> offers = new ConcurrentHashMap<>();
     private final Map<String, MoisInsightDtos.InsightReportResponse> reports = new ConcurrentHashMap<>();
     private final Map<String, String> runOperations = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.CollectionJobResponse> collectionJobs = new ConcurrentHashMap<>();
+    private final Map<String, List<MoisWorkspaceDtos.CollectedReferenceResponse>> collectedReferencesByJob = new ConcurrentHashMap<>();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     private static final String MODULE_NAME = "MOIS";
@@ -453,6 +458,49 @@ public class MoisDomainService {
         return Optional.empty();
     }
 
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(MoisWorkspaceDtos.CreateCollectionJobRequest request) {
+        String jobId = "mois-collect-" + UUID.randomUUID();
+        Instant now = Instant.now();
+        int limitPerSource = request.limitPerSource() == null ? DEFAULT_LIMIT_PER_SOURCE : request.limitPerSource();
+        int minSuccessScore = request.minSuccessScore() == null ? DEFAULT_MIN_SUCCESS_SCORE : request.minSuccessScore();
+        MoisWorkspaceDtos.CollectionJobResponse job = new MoisWorkspaceDtos.CollectionJobResponse(
+                jobId,
+                request.workspaceId(),
+                request.niche(),
+                request.marketTheme(),
+                "QUEUED",
+                request.timeWindow(),
+                limitPerSource,
+                minSuccessScore,
+                request.sources(),
+                now
+        );
+        collectionJobs.put(jobId, job);
+        collectedReferencesByJob.put(jobId, buildSeedCollectedReferences(job, request.niche()));
+        log.info("mois_collection_job_created jobId={} workspaceId={} sources={} window={}",
+                jobId, request.workspaceId(), request.sources(), request.timeWindow());
+        return job;
+    }
+
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(String workspaceId, String status) {
+        List<MoisWorkspaceDtos.CollectionJobResponse> jobs = collectionJobs.values().stream()
+                .filter(item -> workspaceId == null || workspaceId.isBlank() || workspaceId.equals(item.workspaceId()))
+                .filter(item -> status == null || status.isBlank() || status.equalsIgnoreCase(item.status()))
+                .sorted(Comparator.comparing(MoisWorkspaceDtos.CollectionJobResponse::createdAt).reversed())
+                .toList();
+        return new MoisWorkspaceDtos.CollectionJobListResponse(jobs);
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceListResponse> listCollectedReferencesByJob(String jobId) {
+        if (!collectionJobs.containsKey(jobId)) {
+            return Optional.empty();
+        }
+        return Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
+                jobId,
+                collectedReferencesByJob.getOrDefault(jobId, List.of())
+        ));
+    }
+
     private List<OfferCard> listOffersByRequest(String requestId) {
         return offers.values().stream()
                 .filter(offer -> offer.requestId().equals(requestId))
@@ -735,6 +783,35 @@ public class MoisDomainService {
                 .filter(item -> item.requestId().equals(requestId))
                 .map(item -> new MoisDiscoveryDtos.ArtifactRefResponse(item.artifactId(), "mois.marketOfferSourceSnapshot.v1", "v1"))
                 .toList();
+    }
+
+    private List<MoisWorkspaceDtos.CollectedReferenceResponse> buildSeedCollectedReferences(
+            MoisWorkspaceDtos.CollectionJobResponse job,
+            String niche
+    ) {
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> items = new ArrayList<>();
+        int index = 0;
+        for (String source : job.sources()) {
+            index++;
+            int score = Math.max(job.minSuccessScore(), 60 + index * 7);
+            items.add(new MoisWorkspaceDtos.CollectedReferenceResponse(
+                    UUID.randomUUID().toString(),
+                    job.jobId(),
+                    source,
+                    "Referência " + index + " (" + source + ")",
+                    "https://example.com/" + source.toLowerCase() + "/offer-" + index,
+                    niche,
+                    score,
+                    score >= 75 ? "HIGH" : "MEDIUM",
+                    job.createdAt().minusSeconds(index * 120L),
+                    Map.of(
+                            "status", "ACTIVE",
+                            "timeWindow", job.timeWindow(),
+                            "evidence", "recorrencia+consistencia"
+                    )
+            ));
+        }
+        return items;
     }
 
     private Optional<CrawledSource> collectSource(String seedUrl, String requestId, String correlationId) {

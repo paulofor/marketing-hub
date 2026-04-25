@@ -4,6 +4,7 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -83,6 +84,23 @@ public class MoisModuleGateway {
 
     public Optional<MoisArtifactDtos.ArtifactEnvelopeResponse> getArtifact(String artifactId) {
         return optionalGet("/api/v1/mois/artifacts/" + artifactId, MoisArtifactDtos.ArtifactEnvelopeResponse.class);
+    }
+
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(MoisWorkspaceDtos.CreateCollectionJobRequest request) {
+        return exchange("/api/v1/mois/collection-jobs", HttpMethod.POST, request, MoisWorkspaceDtos.CollectionJobResponse.class)
+                .getBody();
+    }
+
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(String workspaceId, String status) {
+        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/api/v1/mois/collection-jobs");
+        maybeAddQuery(uri, "workspaceId", workspaceId);
+        maybeAddQuery(uri, "status", status);
+        return exchange(uri.toUriString(), HttpMethod.GET, null, MoisWorkspaceDtos.CollectionJobListResponse.class).getBody();
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceListResponse> listCollectedReferencesByJob(String jobId) {
+        return optionalGet("/api/v1/mois/collection-jobs/" + jobId + "/references",
+                MoisWorkspaceDtos.CollectedReferenceListResponse.class);
     }
 
     public Map<String, String> health() {

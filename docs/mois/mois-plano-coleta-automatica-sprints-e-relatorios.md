@@ -154,12 +154,21 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 > Regra: ao finalizar cada sprint, registrar o relatório nesta seção (sem criar documento separado).
 
 ## Relatório — Sprint 0
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** iniciar contratos e matriz de risco por fonte
+- **Status:** Concluído
+- **Período:** 25/04/2026
+- **Escopo concluído:**
+  - catálogo inicial de fontes suportadas com tipo de acesso e risco;
+  - contrato de coleta automática com filtros temporais (`LAST_7_DAYS` e `LAST_30_DAYS`);
+  - contrato mínimo de sinal de sucesso (`score`, `confidenceLevel`, `evidenceCount`, `primaryReason`);
+  - matriz de risco legal/compliance por fonte;
+  - fallback explícito para ausência de métrica e falha parcial de coleta.
+- **Evidências (PRs, commits, testes):**
+  - documento: `docs/mois/mois-sprint-0-descoberta-contratos.md`;
+  - commit: `docs(mois): executa sprint 0 com contratos, fontes e matriz de risco`.
+- **Riscos/pendências:**
+  - validar juridicamente as fontes antes da automação em produção;
+  - confirmar limites operacionais por fonte durante a Sprint 1.
+- **Próximos passos:** iniciar Sprint 1 com endpoints de criação/listagem de jobs e persistência mínima.
 
 ## Relatório — Sprint 1
 - **Status:** Planejado
@@ -200,4 +209,3 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Evidências (PRs, commits, testes):** pendente
 - **Riscos/pendências:** pendente
 - **Próximos passos:** operação contínua + melhorias incrementais
-

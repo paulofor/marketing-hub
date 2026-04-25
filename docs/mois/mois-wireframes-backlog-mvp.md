@@ -4,6 +4,11 @@ Este documento transforma o playbook funcional em especificação executável pa
 
 Referência base: `docs/mois/mois-conjunto-telas-playbook.md`.
 
+Documentos canônicos obrigatórios para este módulo e para o projeto:
+- `docs/canonical/system-governance-canon.v2.md` (cânone de governança do projeto).
+- `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (cânone de artefatos e regras de pipeline).
+- `docs/mois/mois-conjunto-telas-playbook.md` (cânone funcional de telas/fluxo do módulo MOIS).
+
 ---
 
 ## 1) Wireframes de baixa fidelidade (estrutura + estados)
@@ -216,7 +221,7 @@ Referência base: `docs/mois/mois-conjunto-telas-playbook.md`.
 
 ## 2) Contratos backend (MVP) para suportar as telas
 
-> Observação: como o front depende do backend, os endpoints abaixo devem ser priorizados antes de UI final.
+> Observação obrigatória: como o frontend depende do backend, os métodos/endpoints abaixo devem ser construídos e mantidos de forma contínua para sustentar as telas. Não evoluir frontend sem contrato/método correspondente no backend.
 
 ## 2.1 Workspace
 
@@ -306,15 +311,21 @@ Payload mínimo (`POST /references`):
 
 ---
 
-## 4) Priorização técnica (2 semanas)
+## 4) Divisão em sprints (MVP)
 
-### Semana 1
+### Sprint 1 (Semana 1)
 - Backend: dashboard, references (POST/GET), extraction draft.
 - Frontend: telas 1 e 2 completas + estados.
 
-### Semana 2
+### Sprint 2 (Semana 2)
 - Backend: library list/favorite/duplicate, comparisons, offer build.
 - Frontend: telas 3, 4, 5 e 6 (MVP), com plano de experimento simplificado.
+
+### Encerramento obrigatório de cada sprint
+Ao final de **toda sprint**, registrar no próprio documento (ou em log vinculado):
+- **Data de fechamento** (formato ISO: `YYYY-MM-DD`);
+- **O que foi feito** (entregas concluídas e evidências objetivas);
+- **Pendências** (itens não concluídos, bloqueios e plano de ação para próxima sprint).
 
 ---
 

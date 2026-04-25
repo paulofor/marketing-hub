@@ -59,8 +59,33 @@ public class LandingHtmlModule {
 
         Map<String, Object> copyRoot = safeReadObject(experiment.getLandingPageCopy());
         Map<String, Object> copy = unwrapSectionPayload(copyRoot, "landingPageCopy");
+        Map<String, Object> heroCopy = copy.get("hero") instanceof Map<?, ?> rawHero
+                ? (Map<String, Object>) rawHero
+                : Map.of();
+        List<Map<String, Object>> bodySectionsCopy = copy.get("bodySections") instanceof List<?> rawBodySections
+                ? rawBodySections.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(item -> (Map<String, Object>) item)
+                .toList()
+                : List.of();
+        List<Map<String, Object>> ctaBlocksCopy = copy.get("ctaBlocks") instanceof List<?> rawCtaBlocks
+                ? rawCtaBlocks.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(item -> (Map<String, Object>) item)
+                .toList()
+                : List.of();
+        List<Map<String, Object>> faqCopy = copy.get("faq") instanceof List<?> rawFaq
+                ? rawFaq.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(item -> (Map<String, Object>) item)
+                .toList()
+                : List.of();
         String pageTitle = firstNonBlank(
                 asTrimmedString(copy.get("headline")),
+                asTrimmedString(heroCopy.get("headline")),
                 asTrimmedString(copy.get("title")),
                 asTrimmedString(formSpec.get("title")),
                 experiment.getName(),
@@ -68,7 +93,7 @@ public class LandingHtmlModule {
         String pageSummary = firstNonBlank(
                 asTrimmedString(copy.get("summary")),
                 asTrimmedString(copy.get("lead")),
-                "Landing gerada pelo LHM");
+                asTrimmedString(heroCopy.get("supportingCopy")));
 
         List<Map<String, Object>> plannedImages = extractImages(experiment.getLandingPageImagePlanning());
 
@@ -82,28 +107,54 @@ public class LandingHtmlModule {
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />")
                 .append("<title>").append(escapeHtml(pageTitle)).append("</title>")
                 .append("<style>")
-                .append("body{font-family:Inter,Arial,sans-serif;margin:0;background:#f7f8fb;color:#141821;line-height:1.5;}")
-                .append("main{max-width:960px;margin:0 auto;padding:24px 16px 48px;display:grid;gap:16px;}")
-                .append(".card{background:#fff;border:1px solid #e6e8ef;border-radius:16px;padding:20px;}")
-                .append("h1,h2{margin:0 0 8px;} p{margin:0 0 10px;} form{display:grid;gap:10px;}")
-                .append("label{font-weight:600;font-size:14px;} input{width:100%;padding:10px;border:1px solid #d2d7e3;border-radius:10px;}")
-                .append("button{padding:12px 16px;border:0;border-radius:999px;background:#1c6dd0;color:#fff;font-weight:700;cursor:pointer;}")
-                .append("img{max-width:100%;height:auto;border-radius:12px;display:block;}")
-                .append("#form-feedback{display:none;margin-top:8px;font-weight:600;}")
+                .append(":root{--bg:#f3f5f9;--card:#ffffff;--border:#e3e8f2;--text:#0f172a;--muted:#475569;--brand:#1d4ed8;--brand-dark:#1e40af;}")
+                .append("*{box-sizing:border-box;}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text);line-height:1.55;}")
+                .append("main{max-width:980px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:14px;}")
+                .append(".card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.04);}")
+                .append(".card[data-surface-contrast='high']{border-color:#cdd8ee;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);}")
+                .append(".surface-band{background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);}")
+                .append(".surface-solid{background:#ffffff;}")
+                .append(".surface-gradient-soft{background:linear-gradient(135deg,#f8fbff 0%,#eef4ff 100%);}")
+                .append(".surface-image-tint{background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%);}")
+                .append(".contrast-high{border-color:#bfd0ee;box-shadow:0 12px 32px rgba(29,78,216,.08);}")
+                .append(".contrast-soft{border-color:#e8edf6;background:#fbfdff;}")
+                .append("h1{font-size:clamp(1.65rem,4vw,2.1rem);line-height:1.15;margin:0 0 10px;font-weight:800;letter-spacing:-0.02em;}")
+                .append("h2{font-size:clamp(1.25rem,3.2vw,1.55rem);line-height:1.25;margin:0 0 10px;font-weight:750;letter-spacing:-0.01em;}")
+                .append("p{margin:0 0 10px;color:var(--muted);font-size:.98rem;}")
+                .append(".section-objective{font-size:.95rem;color:#334155;background:#f8fafc;border:1px dashed #d6e1f5;border-radius:12px;padding:10px 12px;margin:0 0 12px;}")
+                .append("form{display:grid;gap:12px;background:#fbfdff;border:1px solid #dbe5f5;border-radius:14px;padding:14px;}")
+                .append(".field{display:grid;gap:6px;}.help{color:#64748b;font-size:.88rem;line-height:1.35;}")
+                .append("label{font-weight:700;font-size:.92rem;color:#0f172a;}input{width:100%;padding:11px 12px;border:1px solid #cfd8e6;border-radius:10px;background:#fff;font-size:1rem;outline:none;}")
+                .append("input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);}button{padding:12px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;font-weight:800;cursor:pointer;letter-spacing:.01em;}")
+                .append(".hero-cta-link{display:inline-block;padding:10px 14px;border-radius:999px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;text-decoration:none;font-weight:800;}")
+                .append("ul{margin:0 0 12px 18px;padding:0;}li{margin-bottom:6px;color:#1e293b;}")
+                .append(".faq-list details{border:1px solid #dbe5f5;border-radius:12px;background:#fff;padding:10px 12px;margin:0 0 10px;}")
+                .append(".faq-list summary{cursor:pointer;font-weight:700;color:#0f172a;}")
+                .append("button:hover{filter:brightness(1.04);}img{max-width:100%;height:auto;border-radius:12px;display:block;margin-top:8px;}")
+                .append("#form-feedback{display:none;margin-top:2px;font-weight:700;color:#1e3a8a;}")
                 .append("</style></head><body><main>");
 
         for (int sectionIndex = 0; sectionIndex < sections.size(); sectionIndex++) {
             Map<String, Object> section = sections.get(sectionIndex);
             String sectionId = firstNonBlank(asTrimmedString(section.get("sectionId")), "section");
             String sectionName = firstNonBlank(asTrimmedString(section.get("sectionName")), sectionId);
+            String sectionObjective = firstNonBlank(
+                    asTrimmedString(section.get("objective")),
+                    asTrimmedString(section.get("uiNotes")));
             Map<String, Object> surface = section.get("surfaceSpec") instanceof Map<?, ?> rawSurface
                     ? (Map<String, Object>) rawSurface
                     : Map.of();
             String surfaceToken = firstNonBlank(asTrimmedString(surface.get("surfaceToken")), "surface-base");
             String surfaceStyle = firstNonBlank(asTrimmedString(surface.get("style")), "band");
             String surfaceContrast = firstNonBlank(asTrimmedString(surface.get("contrastMode")), "normal");
+            String surfaceStyleClass = "surface-" + normalizeCssToken(surfaceStyle);
+            String surfaceContrastClass = "contrast-" + normalizeCssToken(surfaceContrast);
 
-            html.append("<section class=\"card\" data-section-id=\"")
+            html.append("<section class=\"card ")
+                    .append(escapeAttr(surfaceStyleClass))
+                    .append(" ")
+                    .append(escapeAttr(surfaceContrastClass))
+                    .append("\" data-section-id=\"")
                     .append(escapeAttr(sectionId))
                     .append("\" data-surface-token=\"").append(escapeAttr(surfaceToken))
                     .append("\" data-surface-style=\"").append(escapeAttr(surfaceStyle))
@@ -115,6 +166,15 @@ public class LandingHtmlModule {
             if (sectionIndex == 0 && StringUtils.hasText(pageSummary)) {
                 html.append("<p>").append(escapeHtml(pageSummary)).append("</p>");
             }
+            if (sectionIndex == 0) {
+                html.append(buildHeroCopyMarkup(heroCopy, submitLabel, submitTarget));
+            }
+            if (sectionIndex > 0 && StringUtils.hasText(sectionObjective)) {
+                html.append("<p class=\"section-objective\">").append(escapeHtml(sectionObjective)).append("</p>");
+            }
+            html.append(buildBodySectionCopyMarkup(sectionId, bodySectionsCopy));
+            html.append(buildFaqMarkup(sectionId, faqCopy));
+            html.append(buildCtaBlocksMarkup(sectionId, ctaBlocksCopy));
 
             for (Map<String, Object> image : plannedImages) {
                 String imageSectionId = asTrimmedString(image.get("sectionId"));
@@ -303,6 +363,135 @@ public class LandingHtmlModule {
                 + "\" data-supports-form-conversion=\"" + supportsFormConversion + "\" />";
     }
 
+    private String buildHeroCopyMarkup(Map<String, Object> heroCopy, String fallbackSubmitLabel, String fallbackSubmitTarget) {
+        if (heroCopy == null || heroCopy.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        String promise = asTrimmedString(heroCopy.get("promise"));
+        String supportingCopy = asTrimmedString(heroCopy.get("supportingCopy"));
+        String proofBadge = asTrimmedString(heroCopy.get("proofBadge"));
+        String microcopy = asTrimmedString(heroCopy.get("microcopy"));
+        String ctaLabel = firstNonBlank(asTrimmedString(heroCopy.get("ctaLabel")), fallbackSubmitLabel);
+        String ctaUrl = firstNonBlank(asTrimmedString(heroCopy.get("ctaUrl")), fallbackSubmitTarget);
+        if (StringUtils.hasText(promise)) {
+            sb.append("<p class=\"section-objective\">").append(escapeHtml(promise)).append("</p>");
+        }
+        if (StringUtils.hasText(supportingCopy)) {
+            sb.append("<p>").append(escapeHtml(supportingCopy)).append("</p>");
+        }
+        if (StringUtils.hasText(proofBadge)) {
+            sb.append("<p><strong>").append(escapeHtml(proofBadge)).append("</strong></p>");
+        }
+        if (StringUtils.hasText(microcopy)) {
+            sb.append("<p>").append(escapeHtml(microcopy)).append("</p>");
+        }
+        if (StringUtils.hasText(ctaLabel) && StringUtils.hasText(ctaUrl)) {
+            sb.append("<p><a class=\"hero-cta-link\" href=\"")
+                    .append(escapeAttr(ctaUrl))
+                    .append("\" target=\"_blank\" rel=\"noopener noreferrer\">")
+                    .append(escapeHtml(ctaLabel))
+                    .append("</a></p>");
+        }
+        return sb.toString();
+    }
+
+    private String buildBodySectionCopyMarkup(String sectionId, List<Map<String, Object>> bodySectionsCopy) {
+        if (!StringUtils.hasText(sectionId) || bodySectionsCopy == null || bodySectionsCopy.isEmpty()) {
+            return "";
+        }
+        for (Map<String, Object> bodySection : bodySectionsCopy) {
+            String bodySectionId = asTrimmedString(bodySection.get("sectionId"));
+            if (!StringUtils.hasText(bodySectionId) || !sectionId.equalsIgnoreCase(bodySectionId)) {
+                continue;
+            }
+            StringBuilder sb = new StringBuilder();
+            appendParagraph(sb, asTrimmedString(bodySection.get("summary")));
+            appendParagraph(sb, asTrimmedString(bodySection.get("copy")));
+            if (bodySection.get("bullets") instanceof List<?> rawBullets) {
+                StringBuilder bulletsMarkup = new StringBuilder();
+                for (Object rawBullet : rawBullets) {
+                    String bullet = asTrimmedString(rawBullet);
+                    if (!StringUtils.hasText(bullet)) {
+                        continue;
+                    }
+                    bulletsMarkup.append("<li>").append(escapeHtml(bullet)).append("</li>");
+                }
+                if (bulletsMarkup.length() > 0) {
+                    sb.append("<ul>").append(bulletsMarkup).append("</ul>");
+                }
+            }
+            appendParagraph(sb, asTrimmedString(bodySection.get("ctaSupport")));
+            return sb.toString();
+        }
+        return "";
+    }
+
+    private String buildFaqMarkup(String sectionId, List<Map<String, Object>> faqCopy) {
+        if (!StringUtils.hasText(sectionId) || faqCopy == null || faqCopy.isEmpty()) {
+            return "";
+        }
+        if (!sectionId.toLowerCase().contains("faq")) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("<div class=\"faq-list\">");
+        for (Map<String, Object> faqItem : faqCopy) {
+            String question = asTrimmedString(faqItem.get("question"));
+            String answer = asTrimmedString(faqItem.get("answer"));
+            if (!StringUtils.hasText(question) || !StringUtils.hasText(answer)) {
+                continue;
+            }
+            sb.append("<details><summary>")
+                    .append(escapeHtml(question))
+                    .append("</summary><p>")
+                    .append(escapeHtml(answer))
+                    .append("</p></details>");
+        }
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    private String buildCtaBlocksMarkup(String sectionId, List<Map<String, Object>> ctaBlocksCopy) {
+        if (!StringUtils.hasText(sectionId) || ctaBlocksCopy == null || ctaBlocksCopy.isEmpty()) {
+            return "";
+        }
+        String lowerSectionId = sectionId.toLowerCase();
+        String placementHint = lowerSectionId.contains("sticky") ? "sticky"
+                : lowerSectionId.contains("final") || lowerSectionId.contains("cta") ? "final"
+                : lowerSectionId.contains("hero") ? "hero"
+                : "mid";
+        StringBuilder sb = new StringBuilder();
+        for (Map<String, Object> ctaBlock : ctaBlocksCopy) {
+            String placement = asTrimmedString(ctaBlock.get("placement"));
+            String ctaVariant = asTrimmedString(ctaBlock.get("ctaVariant"));
+            if (StringUtils.hasText(placement) && !placementHint.equalsIgnoreCase(placement)) {
+                continue;
+            }
+            if (StringUtils.hasText(ctaVariant) && !placementHint.equalsIgnoreCase(ctaVariant) && !lowerSectionId.contains("cta")) {
+                continue;
+            }
+            String ctaLabel = asTrimmedString(ctaBlock.get("ctaLabel"));
+            String ctaUrl = asTrimmedString(ctaBlock.get("ctaUrl"));
+            String ctaSupport = asTrimmedString(ctaBlock.get("ctaSupport"));
+            if (StringUtils.hasText(ctaLabel) && StringUtils.hasText(ctaUrl)) {
+                sb.append("<p><a class=\"hero-cta-link\" href=\"")
+                        .append(escapeAttr(ctaUrl))
+                        .append("\" target=\"_blank\" rel=\"noopener noreferrer\">")
+                        .append(escapeHtml(ctaLabel))
+                        .append("</a></p>");
+            }
+            appendParagraph(sb, ctaSupport);
+        }
+        return sb.toString();
+    }
+
+    private void appendParagraph(StringBuilder sb, String text) {
+        if (!StringUtils.hasText(text)) {
+            return;
+        }
+        sb.append("<p>").append(escapeHtml(text)).append("</p>");
+    }
+
     private String buildSubmissionScript(String formId) {
         return """
                 <script>
@@ -366,5 +555,16 @@ public class LandingHtmlModule {
     private String escapeAttr(String value) {
         if (value == null) return "";
         return escapeHtml(value).replace("\"", "&quot;");
+    }
+
+    private String normalizeCssToken(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "normal";
+        }
+        String normalized = value.trim().toLowerCase()
+                .replace('_', '-')
+                .replace(' ', '-')
+                .replaceAll("[^a-z0-9-]", "");
+        return StringUtils.hasText(normalized) ? normalized : "normal";
     }
 }

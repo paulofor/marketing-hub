@@ -2,6 +2,14 @@
 
 Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 
+> 🔴 **REGRA CANÔNICA EM DESTAQUE — LHM**
+>
+> O **LHM (Landing HTML Module)** é o módulo **determinístico** responsável por gerar o HTML final da landing page.
+>
+> - O LHM **não** é uma etapa de ideação criativa livre da copy.
+> - O LHM deve renderizar de forma previsível a partir dos artefatos canônicos (ex.: `landingPageCopy` e `landingPageWireframe`) e contratos vigentes.
+> - Mudanças no pipeline devem preservar essa responsabilidade para reduzir drift entre especificação, backend e página publicada.
+
 ## Observação importante — independência dos experimentos
 
 - Cada experimento deve ser tratado de forma independente, sem reutilização implícita de artefatos entre experimentos.

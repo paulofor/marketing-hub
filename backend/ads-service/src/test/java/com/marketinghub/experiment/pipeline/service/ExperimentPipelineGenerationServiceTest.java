@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.pipeline.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
@@ -154,6 +155,7 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
 
         when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(landingHtmlModule.assembleHtmlDocument(experiment)).thenReturn("""
                 <!doctype html><html><body>
                 <section data-section-id="hero" data-surface-token="surface-base" data-surface-style="band" data-surface-contrast="normal">
@@ -174,6 +176,19 @@ class ExperimentPipelineGenerationServiceTest {
 
         verify(landingHtmlModule).assembleHtmlDocument(experiment);
         assertTrue(experiment.getLandingPageHtml().contains("<!doctype html>"));
+        verify(jobRepository).save(any(ExperimentPipelineGenerationJob.class));
+        verify(generationService).recordGeneration(any(AiWorkerGenerationRequest.class));
+
+        ArgumentCaptor<ExperimentPipelineGenerationJob> jobCaptor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
+        verify(jobRepository).save(jobCaptor.capture());
+        ExperimentPipelineGenerationJob job = jobCaptor.getValue();
+        assertEquals(ExperimentPipelineGenerationJobStatus.COMPLETED, job.getStatus());
+        assertEquals(ExperimentPipelineGenerationJobStage.COMPLETED, job.getStage());
+        assertEquals("LHM", job.getModel());
+        assertEquals("lhm-inline", job.getWorkerId());
+        assertNotNull(job.getRequestBodyJson());
+        assertNotNull(job.getResponseContent());
+        assertNotNull(job.getFinishedAt());
     }
 
     @Test
@@ -188,6 +203,33 @@ class ExperimentPipelineGenerationServiceTest {
 
         assertEquals(409, error.getStatusCode().value());
         assertTrue(error.getReason().contains("Wireframe"));
+    }
+
+    @Test
+    void generateLandingHtmlWithLhmTracksFailedAttemptWhenValidationFails() {
+        Experiment experiment = new Experiment();
+        experiment.setId(33L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-33/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        when(experimentRepository.findById(33L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(landingHtmlModule.assembleHtmlDocument(experiment))
+                .thenReturn("<!doctype html><html><body><form id=\"lead-capture-primary\" method=\"post\" action=\"/api/flows/exp-33/submissions\"></form></body></html>");
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.generateLandingHtmlWithLhm(33L));
+
+        assertEquals(422, error.getStatusCode().value());
+        verify(jobRepository).save(any(ExperimentPipelineGenerationJob.class));
+        verify(generationService, never()).recordGeneration(any(AiWorkerGenerationRequest.class));
+
+        ArgumentCaptor<ExperimentPipelineGenerationJob> jobCaptor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
+        verify(jobRepository).save(jobCaptor.capture());
+        ExperimentPipelineGenerationJob job = jobCaptor.getValue();
+        assertEquals(ExperimentPipelineGenerationJobStatus.FAILED, job.getStatus());
+        assertEquals(ExperimentPipelineGenerationJobStage.FAILED, job.getStage());
+        assertTrue(job.getErrorMessage().contains("Divergência"));
+        assertNotNull(job.getFinishedAt());
     }
 
     @Test

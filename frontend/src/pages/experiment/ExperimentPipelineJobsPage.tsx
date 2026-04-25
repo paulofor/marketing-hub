@@ -20,6 +20,7 @@ const SECTION_OPTIONS = [
   { value: "landing-page-copy", label: "Texto da landing" },
   { value: "landing-page-wireframe", label: "Layout da landing" },
   { value: "landing-page-image-planning", label: "Planejamento de imagens da landing" },
+  { value: "landing-page-design-preset", label: "Preset de design da landing" },
   { value: "landing-page-html", label: "HTML da landing" },
 ];
 

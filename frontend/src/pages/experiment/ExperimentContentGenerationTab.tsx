@@ -62,6 +62,7 @@ type ContentGenerationSectionKey =
   | "landing-copy"
   | "landing-layout"
   | "landing-image-planning"
+  | "landing-design-preset"
   | "landing-html";
 
 interface ContentGenerationSection {
@@ -112,6 +113,13 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     label: "Planejamento de Imagens da Landing",
     description:
       "Planeje prompts, posicionamento e direção visual das imagens antes da geração final do HTML.",
+    defaultQuantity: 1,
+  },
+  {
+    key: "landing-design-preset",
+    label: "Preset de Design da Landing",
+    description:
+      "Defina tema visual, paleta e presets por seção antes da composição final do HTML.",
     defaultQuantity: 1,
   },
   {
@@ -186,6 +194,7 @@ const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
   LANDING_PAGE_COPY: "landing-copy",
   LANDING_PAGE_WIREFRAME: "landing-layout",
   LANDING_PAGE_IMAGE_PLANNING: "landing-image-planning",
+  LANDING_PAGE_DESIGN_PRESET: "landing-design-preset",
   LANDING_PAGE_HTML: "landing-html",
 };
 
@@ -586,6 +595,39 @@ artifact {
   }
 }`;
 
+const LANDING_DESIGN_PRESET_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
+
+Criar o Preset de Design da Landing após o planejamento de imagens e antes do HTML final.
+
+Objetivo:
+Estruturar tema visual reutilizável (paleta, estilos e presets por seção) mantendo coerência com copy, wireframe e planejamento de imagens.
+
+Regras:
+1. Entregar objeto landingPageDesignPreset com:
+   - presetId
+   - theme.palette
+   - sectionPresets[]
+   - componentPresets
+   - motion
+   - consistencyChecks[]
+2. sectionPresets deve cobrir as sectionId existentes no wireframe atual.
+3. surfaceStyle permitido: band | solid | gradient-soft | image-tint.
+4. contrastMode permitido: normal | high | soft.
+5. Não gerar HTML/CSS/JS nesta etapa.
+
+Formato esperado:
+JSON com envelope canônico:
+{
+  landingPageDesignPreset: {
+    presetId,
+    theme,
+    sectionPresets,
+    componentPresets,
+    motion,
+    consistencyChecks
+  }
+}`;
+
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
@@ -593,6 +635,7 @@ const SECTION_PROMPT_DEFAULTS: Partial<
   "landing-copy": LANDING_COPY_PROMPT_TEMPLATE,
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
   "landing-image-planning": LANDING_IMAGE_PLANNING_PROMPT_TEMPLATE,
+  "landing-design-preset": LANDING_DESIGN_PRESET_PROMPT_TEMPLATE,
   "landing-html": LANDING_HTML_PROMPT_TEMPLATE,
 };
 
@@ -603,6 +646,7 @@ const SECTION_API_PATHS: Record<ContentGenerationSectionKey, string> = {
   "landing-copy": "landing-page-copy",
   "landing-layout": "landing-page-wireframe",
   "landing-image-planning": "landing-page-image-planning",
+  "landing-design-preset": "landing-page-design-preset",
   "landing-html": "landing-page-html",
 };
 
@@ -655,6 +699,7 @@ type HistorySectionKey =
   | "landing-copy"
   | "landing-layout"
   | "landing-image-planning"
+  | "landing-design-preset"
   | "landing-html";
 
 const REPORT_SECTION_ORDER: ContentGenerationSectionKey[] = [
@@ -664,6 +709,7 @@ const REPORT_SECTION_ORDER: ContentGenerationSectionKey[] = [
   "landing-copy",
   "landing-layout",
   "landing-image-planning",
+  "landing-design-preset",
   "landing-html",
 ];
 
@@ -678,6 +724,8 @@ const REPORT_DOMAIN_ALIASES: Record<string, ContentGenerationSectionKey> = {
   "landing-layout": "landing-layout",
   "landing-page-image-planning": "landing-image-planning",
   "landing-image-planning": "landing-image-planning",
+  "landing-page-design-preset": "landing-design-preset",
+  "landing-design-preset": "landing-design-preset",
   "landing-page-html": "landing-html",
   "landing-html": "landing-html",
 };
@@ -1198,6 +1246,7 @@ export default function ExperimentContentGenerationTab({
     "landing-copy": [],
     "landing-layout": [],
     "landing-image-planning": [],
+    "landing-design-preset": [],
     "landing-html": [],
   });
   const [isLoadingSectionGenerations, setIsLoadingSectionGenerations] =
@@ -1206,6 +1255,7 @@ export default function ExperimentContentGenerationTab({
       "landing-copy": false,
       "landing-layout": false,
       "landing-image-planning": false,
+      "landing-design-preset": false,
       "landing-html": false,
     });
   const [requestsBySection, setRequestsBySection] = useState<
@@ -1236,10 +1286,11 @@ export default function ExperimentContentGenerationTab({
   const hasFrameworkImageReady = frameworkImageStatuses.some(
     (item) => item.status?.toUpperCase() === "COMPLETED",
   );
-  const shouldWaitLandingHtmlForImages =
+  const shouldWaitLandingFlowForImages =
     autoQueue.isActive &&
     autoQueue.waitingFor === "landing-image-planning" &&
-    autoQueue.pending[0] === "landing-html" &&
+    (autoQueue.pending[0] === "landing-design-preset" ||
+      autoQueue.pending[0] === "landing-html") &&
     (frameworkImageStatusQuery.isLoading ||
       !hasFrameworkImages ||
       hasFrameworkImagesInFlight);
@@ -1461,6 +1512,11 @@ export default function ExperimentContentGenerationTab({
         items: sectionGenerations["landing-image-planning"],
       },
       {
+        key: "landing-design-preset",
+        label: getSectionLabel("landing-design-preset"),
+        items: sectionGenerations["landing-design-preset"],
+      },
+      {
         key: "landing-html",
         label: getSectionLabel("landing-html"),
         items: sectionGenerations["landing-html"],
@@ -1666,6 +1722,7 @@ export default function ExperimentContentGenerationTab({
       "landing-copy",
       "landing-layout",
       "landing-image-planning",
+      "landing-design-preset",
       "landing-html",
     ];
 
@@ -1750,7 +1807,8 @@ export default function ExperimentContentGenerationTab({
     const [nextSectionKey, ...remaining] = autoQueue.pending;
     if (
       autoQueue.waitingFor === "landing-image-planning" &&
-      nextSectionKey === "landing-html"
+      (nextSectionKey === "landing-design-preset" ||
+        nextSectionKey === "landing-html")
     ) {
       const stillLoadingImageStatuses =
         frameworkImageStatusQuery.isLoading || frameworkImageStatusQuery.isFetching;
@@ -1762,7 +1820,7 @@ export default function ExperimentContentGenerationTab({
       if (mustWaitForImages) {
         if (!imageGenerationWaitToastRef.current) {
           imageGenerationWaitToastRef.current = toast.info(
-            "Planejamento concluído. Aguardando geração das imagens para continuar com o HTML da landing.",
+            "Planejamento concluído. Aguardando geração das imagens para continuar com as próximas etapas da landing.",
             { autoClose: 6000 },
           ) as unknown as string;
         }
@@ -2105,10 +2163,10 @@ export default function ExperimentContentGenerationTab({
               aguardando conclusão de{" "}
               <strong>{getSectionLabel(autoQueue.waitingFor)}</strong>.
             </span>
-            {shouldWaitLandingHtmlForImages ? (
+            {shouldWaitLandingFlowForImages ? (
               <span className="text-warning-emphasis">
-                Desvio controlado: gerando imagens da landing antes do HTML
-                final.
+                Desvio controlado: gerando imagens da landing antes das etapas
+                finais.
               </span>
             ) : null}
             <span className="badge text-bg-light">
@@ -2143,8 +2201,9 @@ export default function ExperimentContentGenerationTab({
         {CONTENT_GENERATION_SECTIONS.map((section) => (
           <Tabs.Content key={section.key} value={section.key} className="mt-3">
             {(() => {
-              const isLandingHtmlBlockedByImageGeneration =
-                section.key === "landing-html" &&
+              const isLandingFlowBlockedByImageGeneration =
+                (section.key === "landing-design-preset" ||
+                  section.key === "landing-html") &&
                 (frameworkImageStatusQuery.isLoading ||
                   hasFrameworkImagesInFlight);
               return (
@@ -2164,7 +2223,7 @@ export default function ExperimentContentGenerationTab({
                         isGeneratingSection ||
                         isGeneratingWithLhm ||
                         autoQueue.isActive ||
-                        isLandingHtmlBlockedByImageGeneration
+                        isLandingFlowBlockedByImageGeneration
                       }
                       title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
                     >
@@ -2187,7 +2246,7 @@ export default function ExperimentContentGenerationTab({
                           />
                           Fila em execução...
                         </span>
-                      ) : isLandingHtmlBlockedByImageGeneration ? (
+                      ) : isLandingFlowBlockedByImageGeneration ? (
                         <span className="d-inline-flex align-items-center gap-1">
                           <span
                             className="spinner-border spinner-border-sm"
@@ -2209,7 +2268,7 @@ export default function ExperimentContentGenerationTab({
                           isGeneratingWithLhm ||
                           isGeneratingSection ||
                           autoQueue.isActive ||
-                          isLandingHtmlBlockedByImageGeneration
+                          isLandingFlowBlockedByImageGeneration
                         }
                         title="Gera o HTML final usando o LHM (Landing HTML Module), sem acionar o Worker IA."
                       >
@@ -2418,7 +2477,7 @@ export default function ExperimentContentGenerationTab({
                     </small>
                   ) : null}
                   {section.key === "landing-html" &&
-                  shouldWaitLandingHtmlForImages ? (
+                  shouldWaitLandingFlowForImages ? (
                     <small className="text-warning-emphasis">
                       Fluxo em desvio controlado: estamos gerando as imagens da
                       landing para retomar automaticamente esta etapa ao final.
@@ -2758,6 +2817,8 @@ function parseSectionContent(
       return parseLandingLayoutPayload(raw);
     case "landing-image-planning":
       return parseLandingImagePlanningPayload(raw);
+    case "landing-design-preset":
+      return undefined;
     case "landing-html":
       return parseLandingHtmlPayload(raw);
     default:
@@ -2846,6 +2907,8 @@ function resolveStructuredPreview(
       }
       return { hasStructuredData: false };
     }
+    case "landing-design-preset":
+      return { hasStructuredData: false };
     case "landing-html": {
       const content = parsed as LandingHtmlContent | undefined;
       if (hasLandingHtmlContent(content)) {
@@ -2915,6 +2978,8 @@ function describeGenerationSummary(
       }
       return "Planejamento de imagens registrado para a landing.";
     }
+    case "landing-design-preset":
+      return "Preset de design registrado para a landing.";
     case "landing-html": {
       const typed = content as LandingHtmlContent | undefined;
       if (hasLandingHtmlContent(typed)) {

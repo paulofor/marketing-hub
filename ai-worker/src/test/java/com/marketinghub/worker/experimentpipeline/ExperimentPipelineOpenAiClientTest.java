@@ -150,6 +150,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("ctaBlocks[]");
         assertThat(userPrompt).contains("consistencyChecks[]");
         assertThat(userPrompt).contains("complianceNotes");
+        assertThat(userPrompt).contains("copy **não pode depender** de campos, `sectionId` ou estrutura do `landingPageWireframe`");
+        assertThat(userPrompt).doesNotContain("compatível com os `sectionId` previstos no wireframe recebido em `CASE_DATA`");
     }
 
     @Test
@@ -870,7 +872,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> templateTrace = (Map<String, Object>) trackedRequest.get("templateTrace");
         assertThat(templateTrace)
                 .containsEntry("template_id", "landing-copy")
-                .containsEntry("template_version", "v1")
+                .containsEntry("template_version", "v2")
                 .containsEntry("artifact_target", "landingPageCopy")
                 .containsEntry("model", "gpt-5.2");
     }

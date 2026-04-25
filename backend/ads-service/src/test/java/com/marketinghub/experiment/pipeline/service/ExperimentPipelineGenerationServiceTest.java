@@ -207,6 +207,35 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void generateLandingHtmlWithLhmInjectsCanonicalFormWhenHtmlHasNoForm() {
+        Experiment experiment = new Experiment();
+        experiment.setId(35L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-35/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true},{\"name\":\"email\",\"type\":\"email\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
+
+        when(experimentRepository.findById(35L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(landingHtmlModule.assembleHtmlDocument(experiment)).thenReturn("""
+                <!doctype html><html><body>
+                <main>
+                  <section data-section-id="hero" data-surface-token="surface-base" data-surface-style="band" data-surface-contrast="normal">
+                    <h1>Hero</h1>
+                  </section>
+                </main>
+                </body></html>
+                """);
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generateLandingHtmlWithLhm(35L);
+
+        assertTrue(experiment.getLandingPageHtml().contains("form id=\"lead-capture-primary\""));
+        assertTrue(experiment.getLandingPageHtml().contains("name=\"nome\""));
+        assertTrue(experiment.getLandingPageHtml().contains("name=\"email\""));
+        verify(generationService).recordGeneration(any(AiWorkerGenerationRequest.class));
+    }
+
+    @Test
     void generateLandingHtmlWithLhmTracksFailedAttemptWhenPromptPreparationFails() {
         Experiment experiment = new Experiment();
         experiment.setId(34L);

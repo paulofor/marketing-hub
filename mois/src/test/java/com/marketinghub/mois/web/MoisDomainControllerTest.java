@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisDomainService;
 import java.time.Instant;
 import java.util.List;
@@ -145,5 +146,60 @@ class MoisDomainControllerTest {
         mockMvc.perform(get("/api/v1/mois/insight-reports/mois-report-mois-req-1/executive-summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportId").value("mois-report-mois-req-1"));
+    }
+
+    @Test
+    void shouldCreateCollectionJob() throws Exception {
+        when(service.createCollectionJob(any()))
+                .thenReturn(new MoisWorkspaceDtos.CollectionJobResponse(
+                        "mois-collect-001",
+                        "workspace-001",
+                        "nutricao",
+                        "perda de gordura",
+                        "QUEUED",
+                        "LAST_7_DAYS",
+                        50,
+                        60,
+                        List.of("CLICKBANK"),
+                        Instant.parse("2026-04-25T12:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "niche": "nutricao",
+                                  "sources": ["CLICKBANK"],
+                                  "timeWindow": "LAST_7_DAYS"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.jobId").value("mois-collect-001"));
+    }
+
+    @Test
+    void shouldListCollectedReferencesByJob() throws Exception {
+        when(service.listCollectedReferencesByJob("mois-collect-001"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
+                        "mois-collect-001",
+                        List.of(new MoisWorkspaceDtos.CollectedReferenceResponse(
+                                "ref-1",
+                                "mois-collect-001",
+                                "CLICKBANK",
+                                "Oferta teste",
+                                "https://example.com",
+                                "nutricao",
+                                77,
+                                "HIGH",
+                                Instant.parse("2026-04-25T12:00:00Z"),
+                                java.util.Map.of("status", "ACTIVE")
+                        ))
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"));
     }
 }

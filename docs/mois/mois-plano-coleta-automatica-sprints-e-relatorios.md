@@ -6,6 +6,11 @@ Objetivo: evoluir o MOIS para coletar referências de sucesso de mercado com jan
 
 Este plano mantém aderência ao eixo central do Marketing Hub: **Dor → Resultado → Mecanismo → Prova → Oferta**.
 
+## Diretriz arquitetural crítica (obrigatória)
+
+> **Regra inegociável:** toda regra de negócio do MOIS deve residir no módulo **`/mois`**.
+> O backend principal deve atuar somente como gateway/contrato e camada de leitura/escrita de dados.
+
 ---
 
 ## Escopo funcional (visão macro)
@@ -171,12 +176,24 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Próximos passos:** iniciar Sprint 1 com endpoints de criação/listagem de jobs e persistência mínima.
 
 ## Relatório — Sprint 1
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** implementar normalização e score na Sprint 2
+- **Status:** Concluído
+- **Período:** 25/04/2026
+- **Escopo concluído:**
+  - endpoint para criar job de coleta automática (`POST /api/v1/mois/collection-jobs`);
+  - endpoint para listar jobs (`GET /api/v1/mois/collection-jobs`);
+  - endpoint para listar referências coletadas por job (`GET /api/v1/mois/collection-jobs/{jobId}/references`);
+  - regra de negócio de jobs movida para o módulo MOIS (backend principal atua como gateway/contrato);
+  - persistência mínima em memória no módulo MOIS para jobs e referências coletadas;
+  - logs estruturados no módulo MOIS ao criar job de coleta.
+- **Evidências (PRs, commits, testes):**
+  - backend: `MoisController`, `MoisModuleGateway`, `MoisWorkspaceDtos`;
+  - módulo MOIS: `MoisDomainController`, `MoisDomainService`, `MoisWorkspaceDtos`;
+  - testes: `MoisControllerContractTest`, `MoisDomainControllerTest` e `MoisDomainServiceTest`.
+- **Riscos/pendências:**
+  - persistência ainda em memória (não relacional), apropriada apenas para fase inicial;
+  - referências coletadas ainda são seedadas para contrato/smoke, sem conectores reais de fonte;
+  - alinhar próximos endpoints legados de workspace para o mesmo padrão de delegação ao módulo MOIS.
+- **Próximos passos:** iniciar Sprint 2 para normalização de sinais de sucesso e ranking comparável.
 
 ## Relatório — Sprint 2
 - **Status:** Planejado

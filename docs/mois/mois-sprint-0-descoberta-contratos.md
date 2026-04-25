@@ -4,6 +4,12 @@
 
 Definir, antes de qualquer implementação operacional, os contratos e regras mínimas para coleta automática com janela temporal (7/30 dias), score de sinais de sucesso e rastreabilidade completa.
 
+## Regra de separação de responsabilidade (MANDATÓRIA)
+
+- Regras de negócio do MOIS ficam exclusivamente no módulo **`/mois`**.
+- Backend principal não implementa regra de negócio do MOIS; ele atua como gateway/contrato e leitura/escrita de dados.
+- Qualquer exceção a esta regra exige ADR explícita.
+
 ---
 
 ## 1) Catálogo inicial de fontes suportadas
@@ -144,4 +150,3 @@ Sprint 0 é considerada concluída quando:
 - catálogo inicial de fontes estiver definido;
 - matriz de risco/compliance estiver registrada com mitigação;
 - fallback estiver explicitado para ausência de métrica e falha operacional.
-

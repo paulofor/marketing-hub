@@ -4,6 +4,7 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisDomainService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -97,5 +98,27 @@ public class MoisDomainController {
     public MoisArtifactDtos.ArtifactEnvelopeResponse getArtifact(@PathVariable String artifactId) {
         return service.getArtifact(artifactId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "artifact not found"));
+    }
+
+    @PostMapping("/collection-jobs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
+    ) {
+        return service.createCollectionJob(request);
+    }
+
+    @GetMapping("/collection-jobs")
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String status
+    ) {
+        return service.listCollectionJobs(workspaceId, status);
+    }
+
+    @GetMapping("/collection-jobs/{jobId}/references")
+    public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(@PathVariable String jobId) {
+        return service.listCollectedReferencesByJob(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
     }
 }

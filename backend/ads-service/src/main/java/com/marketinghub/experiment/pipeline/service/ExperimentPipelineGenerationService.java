@@ -1550,6 +1550,7 @@ public class ExperimentPipelineGenerationService {
         Document document = Jsoup.parse(htmlDocument, "", org.jsoup.parser.Parser.htmlParser());
         String expectedFormId = asTrimmedString(wireframeFormSpec.get("formId"));
         String expectedSubmitTarget = asTrimmedString(wireframeFormSpec.get("submitTarget"));
+        String submitLabel = asTrimmedString(wireframeFormSpec.get("submitLabel"));
         Element form = StringUtils.hasText(expectedFormId)
                 ? document.selectFirst("form#" + expectedFormId)
                 : document.selectFirst("form#lead-capture-primary");
@@ -1557,7 +1558,7 @@ public class ExperimentPipelineGenerationService {
             form = document.selectFirst("form");
         }
         if (form == null) {
-            return htmlDocument;
+            form = createCanonicalFormShell(document, expectedFormId, expectedSubmitTarget, submitLabel);
         }
         if (StringUtils.hasText(expectedFormId)) {
             form.attr("id", expectedFormId);
@@ -1573,6 +1574,36 @@ public class ExperimentPipelineGenerationService {
         bindExternalSubmitButtonsToForm(document, form);
         ensureDefaultSubmitRuntime(document, form);
         return document.outerHtml();
+    }
+
+    private Element createCanonicalFormShell(Document document,
+                                             String expectedFormId,
+                                             String expectedSubmitTarget,
+                                             String submitLabel) {
+        Element body = document.body();
+        if (body == null) {
+            body = document.appendElement("body");
+        }
+        Element container = document.selectFirst("main");
+        if (container == null) {
+            container = body;
+        }
+        Element form = container.appendElement("form");
+        form.attr("id", StringUtils.hasText(expectedFormId) ? expectedFormId : "lead-capture-primary");
+        form.attr("method", "post");
+        if (StringUtils.hasText(expectedSubmitTarget)) {
+            form.attr("action", expectedSubmitTarget);
+        }
+        form.appendElement("button")
+                .attr("type", "submit")
+                .text(StringUtils.hasText(submitLabel) ? submitLabel : "Enviar");
+        form.appendElement("p")
+                .attr("id", "form-feedback")
+                .attr("role", "status");
+        container.appendElement("div")
+                .attr("id", "submit-success-state")
+                .attr("style", "display:none");
+        return form;
     }
 
     private void bindExternalSubmitButtonsToForm(Document document, Element form) {

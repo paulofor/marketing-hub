@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Iterator;
+
 /**
  * Public API used by the portal application to fetch approved lead portal flows by slug.
  */
@@ -130,18 +132,9 @@ public class LeadPortalPublicFlowController {
         }
         try {
             JsonNode root = OBJECT_MAPPER.readTree(payload.trim());
-            if (root.isObject()) {
-                JsonNode landingPageHtmlNode = root.get("landingPageHtml");
-                if (landingPageHtmlNode != null) {
-                    String extracted = extractFromLandingPageNode(landingPageHtmlNode);
-                    if (StringUtils.hasText(extracted)) {
-                        return extracted;
-                    }
-                }
-                JsonNode htmlDocumentNode = root.get("htmlDocument");
-                if (htmlDocumentNode != null && htmlDocumentNode.isTextual()) {
-                    return htmlDocumentNode.asText();
-                }
+            String extracted = extractHtmlDocumentFromNode(root);
+            if (StringUtils.hasText(extracted)) {
+                return extracted;
             }
         } catch (Exception ignored) {
             return null;
@@ -149,16 +142,60 @@ public class LeadPortalPublicFlowController {
         return null;
     }
 
-    private String extractFromLandingPageNode(JsonNode landingPageHtmlNode) throws java.io.IOException {
-        if (landingPageHtmlNode.isTextual()) {
-            JsonNode nested = OBJECT_MAPPER.readTree(landingPageHtmlNode.asText());
-            JsonNode htmlDocumentNode = nested.get("htmlDocument");
-            return htmlDocumentNode != null && htmlDocumentNode.isTextual() ? htmlDocumentNode.asText() : null;
+    private String extractHtmlDocumentFromNode(JsonNode node) throws java.io.IOException {
+        if (node == null || node.isNull()) {
+            return null;
         }
-        if (landingPageHtmlNode.isObject()) {
-            JsonNode htmlDocumentNode = landingPageHtmlNode.get("htmlDocument");
-            return htmlDocumentNode != null && htmlDocumentNode.isTextual() ? htmlDocumentNode.asText() : null;
+        if (node.isObject()) {
+            JsonNode landingPageHtmlNode = node.get("landingPageHtml");
+            if (landingPageHtmlNode != null) {
+                String extracted = extractFromLandingPageNode(landingPageHtmlNode);
+                if (StringUtils.hasText(extracted)) {
+                    return extracted;
+                }
+            }
+            JsonNode htmlDocumentNode = node.get("htmlDocument");
+            if (htmlDocumentNode != null) {
+                String extracted = extractHtmlDocumentFromNode(htmlDocumentNode);
+                if (StringUtils.hasText(extracted)) {
+                    return extracted;
+                }
+            }
+            Iterator<JsonNode> children = node.elements();
+            while (children.hasNext()) {
+                String extracted = extractHtmlDocumentFromNode(children.next());
+                if (StringUtils.hasText(extracted)) {
+                    return extracted;
+                }
+            }
+            return null;
+        }
+        if (node.isTextual()) {
+            String value = node.asText();
+            if (!StringUtils.hasText(value)) {
+                return null;
+            }
+            String trimmedValue = value.trim();
+            if (looksLikeJsonPayload(trimmedValue)) {
+                return tryExtractFromJsonPayload(trimmedValue);
+            }
+            if (trimmedValue.contains("<html") || trimmedValue.contains("<!doctype html")) {
+                return value;
+            }
+            return null;
+        }
+        if (node.isArray()) {
+            for (JsonNode child : node) {
+                String extracted = extractHtmlDocumentFromNode(child);
+                if (StringUtils.hasText(extracted)) {
+                    return extracted;
+                }
+            }
         }
         return null;
+    }
+
+    private String extractFromLandingPageNode(JsonNode landingPageHtmlNode) throws java.io.IOException {
+        return extractHtmlDocumentFromNode(landingPageHtmlNode);
     }
 }

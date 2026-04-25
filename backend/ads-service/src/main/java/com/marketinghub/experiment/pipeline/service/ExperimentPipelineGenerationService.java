@@ -19,6 +19,7 @@ import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
+import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
@@ -114,6 +115,7 @@ public class ExperimentPipelineGenerationService {
     private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ObjectMapper objectMapper;
     private final LandingPageImageInjector landingPageImageInjector;
+    private final LandingHtmlModule landingHtmlModule;
     private final FrameworkImageGenerationService frameworkImageGenerationService;
     private final OpenAiPricingService openAiPricingService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
@@ -126,6 +128,7 @@ public class ExperimentPipelineGenerationService {
                                                LeadPortalFlowPublisher leadPortalFlowPublisher,
                                                ObjectMapper objectMapper,
                                                LandingPageImageInjector landingPageImageInjector,
+                                               LandingHtmlModule landingHtmlModule,
                                                FrameworkImageGenerationService frameworkImageGenerationService,
                                                OpenAiPricingService openAiPricingService,
                                                LeadPortalPublicUrlResolver leadPortalPublicUrlResolver) {
@@ -137,6 +140,7 @@ public class ExperimentPipelineGenerationService {
         this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.objectMapper = objectMapper;
         this.landingPageImageInjector = landingPageImageInjector;
+        this.landingHtmlModule = landingHtmlModule;
         this.frameworkImageGenerationService = frameworkImageGenerationService;
         this.openAiPricingService = openAiPricingService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
@@ -285,6 +289,27 @@ public class ExperimentPipelineGenerationService {
     }
 
     @Transactional
+    public ExperimentDto generateLandingHtmlWithLhm(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
+        if (!StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Wireframe da landing ainda não foi gerado para este experimento");
+        }
+        if (!StringUtils.hasText(experiment.getLandingPageCopy())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Copy da landing ainda não foi gerada para este experimento");
+        }
+        String assembledHtml = landingHtmlModule.assembleHtmlDocument(experiment);
+        if (!StringUtils.hasText(assembledHtml)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "LHM não conseguiu montar HTML válido para este experimento");
+        }
+        applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, assembledHtml);
+        return experimentMapper.toDto(experiment);
+    }
+
+    @Transactional
     public LandingPagePublicationResultDto approveAndPublishLandingPage(Long experimentId) {
         ExperimentDto experimentDto = applyLandingHtmlToLeadPortalForm(experimentId);
         Experiment experiment = experimentRepository.findById(experimentId)
@@ -379,6 +404,25 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Job não encontrado para este experimento");
         }
         return toDetailDto(job);
+    }
+
+    @Transactional(readOnly = true)
+    public ExperimentPipelineGenerationJobDetailDto getLatestCompletedJobDetail(Long experimentId,
+                                                                                ExperimentPipelineSection section) {
+        if (section == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "section é obrigatório");
+        }
+        List<ExperimentPipelineGenerationJob> jobs = jobRepository
+                .findByExperimentIdAndSectionAndStatusInOrderByCreatedAtDesc(
+                        experimentId,
+                        section,
+                        List.of(ExperimentPipelineGenerationJobStatus.COMPLETED));
+        ExperimentPipelineGenerationJob latest = jobs.stream()
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Nenhum job concluído encontrado para esta seção"));
+        return toDetailDto(latest);
     }
 
     @Transactional
@@ -621,7 +665,11 @@ public class ExperimentPipelineGenerationService {
             appendCampaignAngleStructuredContext(sb, experiment);
         }
         sb.append("\nTarefa alvo: ").append(section.path()).append("\n");
-        appendPreviousOutputs(sb, experiment, section);
+        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
+            sb.append(landingHtmlModule.buildPromptV2Inputs(experiment));
+        } else {
+            appendPreviousOutputs(sb, experiment, section);
+        }
         appendSectionPrompt(sb, experiment, section);
         if (StringUtils.hasText(customInstructions)) {
             sb.append("\nInstruções extras do usuário:\n").append(customInstructions.trim()).append("\n");

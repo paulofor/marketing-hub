@@ -55,6 +55,11 @@ public class ExperimentPipelineController {
         return generationService.approveAndPublishLandingPage(id);
     }
 
+    @PostMapping("/landing-page-html/generate-with-lhm")
+    public ExperimentDto generateLandingHtmlWithLhm(@PathVariable Long id) {
+        return generationService.generateLandingHtmlWithLhm(id);
+    }
+
     @GetMapping("/jobs")
     public List<ExperimentPipelineGenerationJobDto> listJobs(@PathVariable Long id,
                                                              @RequestParam(value = "size", defaultValue = "30") Integer size) {
@@ -84,6 +89,16 @@ public class ExperimentPipelineController {
     public ExperimentPipelineGenerationJobDetailDto getJobDetail(@PathVariable Long id,
                                                                   @PathVariable UUID jobId) {
         return generationService.getJobDetail(id, jobId);
+    }
+
+    @GetMapping("/sections/{section}/latest-completed")
+    public ExperimentPipelineGenerationJobDetailDto getLatestCompletedJobBySection(@PathVariable Long id,
+                                                                                    @PathVariable String section) {
+        ExperimentPipelineSection parsed = parseSection(section);
+        if (parsed == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "section é obrigatório");
+        }
+        return generationService.getLatestCompletedJobDetail(id, parsed);
     }
 
     @PostMapping("/jobs/close-open")

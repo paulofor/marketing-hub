@@ -12,6 +12,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
+import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import com.marketinghub.experiment.repository.ExperimentRepository;
@@ -71,6 +72,8 @@ class ExperimentPipelineGenerationServiceTest {
     @Mock
     private LandingPageImageInjector landingPageImageInjector;
     @Mock
+    private LandingHtmlModule landingHtmlModule;
+    @Mock
     private FrameworkImageGenerationService frameworkImageGenerationService;
     @Mock
     private OpenAiPricingService openAiPricingService;
@@ -90,9 +93,12 @@ class ExperimentPipelineGenerationServiceTest {
                 leadPortalFlowPublisher,
                 new ObjectMapper(),
                 landingPageImageInjector,
+                landingHtmlModule,
                 frameworkImageGenerationService,
                 openAiPricingService,
                 leadPortalPublicUrlResolver);
+        lenient().when(landingHtmlModule.buildPromptV2Inputs(any())).thenReturn("");
+        lenient().when(landingHtmlModule.assembleHtmlDocument(any())).thenReturn("<!doctype html><html><body></body></html>");
         lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
     }
 
@@ -137,6 +143,51 @@ class ExperimentPipelineGenerationServiceTest {
         assertTrue(created.isApproved());
         assertNotNull(created.getApprovedAt());
         verify(leadPortalFlowPublisher).publish(any(LeadPortalFlow.class));
+    }
+
+    @Test
+    void generateLandingHtmlWithLhmUsesModuleAndPersistsLandingHtml() {
+        Experiment experiment = new Experiment();
+        experiment.setId(31L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-31/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
+
+        when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
+        when(landingHtmlModule.assembleHtmlDocument(experiment)).thenReturn("""
+                <!doctype html><html><body>
+                <section data-section-id="hero" data-surface-token="surface-base" data-surface-style="band" data-surface-contrast="normal">
+                  <form id="lead-capture-primary" method="post" action="/api/flows/exp-31/submissions">
+                    <input type="text" name="nome" required />
+                    <button type="submit">Enviar</button>
+                    <p id="success-message">success</p>
+                  </form>
+                </section>
+                <script>
+                form.addEventListener('submit', async (event) => { event.preventDefault(); form.checkValidity(); form.reportValidity(); submitButton.disabled = true; await fetch(form.action, { method: form.method.toUpperCase(), body: new FormData(form) }); submitButton.disabled = false; });
+                </script>
+                </body></html>
+                """);
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generateLandingHtmlWithLhm(31L);
+
+        verify(landingHtmlModule).assembleHtmlDocument(experiment);
+        assertTrue(experiment.getLandingPageHtml().contains("<!doctype html>"));
+    }
+
+    @Test
+    void generateLandingHtmlWithLhmFailsWhenWireframeMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(32L);
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"ok\"}}");
+        when(experimentRepository.findById(32L)).thenReturn(Optional.of(experiment));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.generateLandingHtmlWithLhm(32L));
+
+        assertEquals(409, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("Wireframe"));
     }
 
     @Test

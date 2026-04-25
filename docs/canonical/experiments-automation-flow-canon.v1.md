@@ -175,6 +175,9 @@ de publicação deve ser simplificado em **3 passos**:
 
 1. **Geração da landing pela IA**
    O pipeline gera o HTML final da landing para o experimento.
+   A composição final deve ser executada pelo **LHM (Landing HTML Module)**,
+   responsável por consolidar wireframe aprovado, copy aprovada e URLs de
+   imagens aprovadas em um único `htmlDocument`.
 2. **Aprovação única do usuário**
    O usuário aprova a landing uma única vez na interface administrativa.
 3. **Publicação automática pelo sistema**
@@ -189,7 +192,24 @@ Regras mandatórias:
 - manter o backend como fonte única de verdade para URL publicada e vínculo de pixel;
 - exibir feedback claro de sucesso/erro da aprovação e do resultado da publicação.
 
-### 8.6 Aba canônica de destino da campanha (Landing)
+### 8.6 Nome canônico do módulo de composição de landing
+
+Para padronizar comunicação técnica e documentação entre backend, frontend e
+worker, o módulo de composição final da landing passa a ser nomeado
+oficialmente como:
+
+- **LHM (Landing HTML Module)**.
+
+Definição operacional do LHM:
+
+- recebe como entradas canônicas: `wireframe`, `copy` e `imagens (URLs)`;
+- entrega como saída canônica: `htmlDocument` final da landing;
+- roda no backend como fonte única de verdade para aplicação de contratos e
+  validações de publicação.
+- a UI pode oferecer o comando `Gerar com LHM` como alternativa explícita ao
+  `Gerar com IA` na etapa `landing-page-html`.
+
+### 8.7 Aba canônica de destino da campanha (Landing)
 
 A navegação principal do experimento deve expor a aba `Landing` para suportar o
 fluxo simplificado definido na seção 8.5.

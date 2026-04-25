@@ -115,6 +115,8 @@ import OprmEvidencePage from "./pages/oprm/OprmEvidencePage";
 import OprmFeedbackPage from "./pages/oprm/OprmFeedbackPage";
 import OprmOperationsPage from "./pages/oprm/OprmOperationsPage";
 import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
+import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
+import MoisReferenceIntakePage from "./pages/mois/MoisReferenceIntakePage";
 
 export default function App() {
   return (
@@ -260,6 +262,8 @@ export default function App() {
                 element={<TargetingRecentQueriesPage />}
               />
               <Route path="/oprm" element={<OprmWorkspacePage />} />
+              <Route path="/mois" element={<MoisWorkspacePage />} />
+              <Route path="/mois/references/new" element={<MoisReferenceIntakePage />} />
               <Route
                 path="/oprm/routine/:occupationSeedRef"
                 element={<OprmRoutinePage />}

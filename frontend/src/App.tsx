@@ -117,6 +117,10 @@ import OprmOperationsPage from "./pages/oprm/OprmOperationsPage";
 import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
 import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
 import MoisReferenceIntakePage from "./pages/mois/MoisReferenceIntakePage";
+import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
+import MoisLibraryPage from "./pages/mois/MoisLibraryPage";
+import MoisComparisonPage from "./pages/mois/MoisComparisonPage";
+import MoisOfferBuilderPage from "./pages/mois/MoisOfferBuilderPage";
 
 export default function App() {
   return (
@@ -264,6 +268,10 @@ export default function App() {
               <Route path="/oprm" element={<OprmWorkspacePage />} />
               <Route path="/mois" element={<MoisWorkspacePage />} />
               <Route path="/mois/references/new" element={<MoisReferenceIntakePage />} />
+              <Route path="/mois/extraction" element={<MoisExtractionPage />} />
+              <Route path="/mois/library" element={<MoisLibraryPage />} />
+              <Route path="/mois/comparison" element={<MoisComparisonPage />} />
+              <Route path="/mois/builder" element={<MoisOfferBuilderPage />} />
               <Route
                 path="/oprm/routine/:occupationSeedRef"
                 element={<OprmRoutinePage />}

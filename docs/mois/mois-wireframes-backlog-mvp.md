@@ -357,3 +357,24 @@ Ao final de **toda sprint**, registrar no próprio documento (ou em log vinculad
   - Trocar armazenamento transitório em memória por persistência em banco para referências e extrações.
   - Implementar ações `Retomar` e `Aplicar` do workspace conectadas aos próximos endpoints do backlog.
   - Evoluir Sprint 2 (biblioteca, comparador e builder) conforme seção de planejamento deste documento.
+
+### Sprint 2 — fechamento
+- **Data de fechamento:** `2026-04-25`
+- **O que foi feito:**
+  - Backend entregue para os contratos MVP da Sprint 2:
+    - `GET /api/v1/mois/library/blocks`
+    - `POST /api/v1/mois/library/blocks/{blockId}/favorite`
+    - `POST /api/v1/mois/library/blocks/{blockId}/duplicate`
+    - `POST /api/v1/mois/comparisons`
+    - `POST /api/v1/mois/offers/build`
+  - Frontend entregue para telas da Sprint 2 (MVP):
+    - **Tela 3 (Extração guiada):** formulário DRMP-O com salvamento assíncrono de rascunho.
+    - **Tela 4 (Biblioteca):** listagem de blocos, filtros básicos e ações de favoritar/duplicar.
+    - **Tela 5 (Comparador):** seleção de referência/oferta, matriz de comparação e scorecards.
+    - **Tela 6 (Builder):** montagem de versão proposta com checklist canônico DRMP-O e geração assistida.
+  - Workspace MOIS atualizado com atalhos para navegação das telas 3–6.
+  - Testes de contrato do controller MOIS ampliados para validar os novos endpoints da sprint.
+- **Pendências:**
+  - Substituir as sementes em memória da biblioteca/comparador/builder por persistência em banco.
+  - Conectar o builder à exportação real (`POST /api/v1/mois/offers/{offerId}/exports`) e implementar rastreabilidade de lineage no retorno.
+  - Evoluir o plano de experimento simplificado para o contrato de publicação da Sprint 3.

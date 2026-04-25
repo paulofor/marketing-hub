@@ -42,6 +42,23 @@ export default function MoisWorkspacePage() {
         </div>
       </section>
 
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-wrap gap-2">
+          <Link className="btn btn-outline-secondary btn-sm" to="/mois/extraction">
+            Extração guiada
+          </Link>
+          <Link className="btn btn-outline-secondary btn-sm" to="/mois/library">
+            Biblioteca
+          </Link>
+          <Link className="btn btn-outline-secondary btn-sm" to="/mois/comparison">
+            Comparador
+          </Link>
+          <Link className="btn btn-outline-secondary btn-sm" to="/mois/builder">
+            Builder
+          </Link>
+        </div>
+      </section>
+
       {dashboardQuery.isLoading ? (
         <section className="card border-0 shadow-sm">
           <div className="card-body">

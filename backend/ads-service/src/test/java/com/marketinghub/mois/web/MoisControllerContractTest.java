@@ -266,4 +266,90 @@ class MoisControllerContractTest {
                 .andExpect(jsonPath("$.status").value("DRAFT"));
     }
 
+    @Test
+    void shouldReturnLibraryBlocksContract() throws Exception {
+        when(sprintOneService.listLibraryBlocks(eq("workspace-001"), eq("nutricao"), eq("CURSO")))
+                .thenReturn(new MoisWorkspaceDtos.LibraryBlockListResponse(List.of(
+                        new MoisWorkspaceDtos.LibraryBlockResponse(
+                                "block-1",
+                                "workspace-001",
+                                "PROMISE",
+                                "Headline objetiva",
+                                List.of("nutricao", "CURSO"),
+                                0.9,
+                                "MARKET_REFERENCE",
+                                false,
+                                Instant.parse("2026-04-25T12:00:00Z")
+                        ))));
+
+        mockMvc.perform(get("/api/v1/mois/library/blocks")
+                        .param("workspaceId", "workspace-001")
+                        .param("niche", "nutricao")
+                        .param("formatType", "CURSO"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].blockId").value("block-1"));
+    }
+
+    @Test
+    void shouldCreateComparisonContract() throws Exception {
+        when(sprintOneService.createComparison(any(MoisWorkspaceDtos.CreateComparisonRequest.class)))
+                .thenReturn(new MoisWorkspaceDtos.ComparisonResponse(
+                        "comparison-1",
+                        "workspace-001",
+                        List.of(new MoisWorkspaceDtos.ComparisonDimensionResponse(
+                                "PROMESSA",
+                                "Mercado",
+                                "Atual",
+                                "Ajustar headline")),
+                        List.of(new MoisWorkspaceDtos.ComparisonScorecardResponse(
+                                "clareza",
+                                70,
+                                "Boa direção com oportunidade de refinamento.")),
+                        List.of(new MoisWorkspaceDtos.ComparisonImprovementResponse(
+                                "imp-1",
+                                "HIGH",
+                                "Incluir prova mensurável"))
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/comparisons")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "referenceBaseId": "ref-123",
+                                  "currentOfferId": "offer-123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comparisonId").value("comparison-1"))
+                .andExpect(jsonPath("$.scorecards[0].metric").value("clareza"));
+    }
+
+    @Test
+    void shouldBuildOfferContract() throws Exception {
+        when(sprintOneService.buildOffer(any(MoisWorkspaceDtos.BuildOfferRequest.class)))
+                .thenReturn(new MoisWorkspaceDtos.BuildOfferResponse(
+                        "offer-1",
+                        "workspace-001",
+                        "READY_TO_EXPORT",
+                        "Conteúdo proposto",
+                        java.util.Map.of("dor", true),
+                        Instant.parse("2026-04-25T12:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/offers/build")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "currentOfferId": "offer-123",
+                                  "selectedBlockIds": ["block-1"],
+                                  "currentVersion": "dor resultado mecanismo prova oferta"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.offerId").value("offer-1"))
+                .andExpect(jsonPath("$.status").value("READY_TO_EXPORT"));
+    }
+
 }

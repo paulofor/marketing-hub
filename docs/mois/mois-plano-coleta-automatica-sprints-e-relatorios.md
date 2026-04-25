@@ -177,14 +177,17 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
   - endpoint para criar job de coleta automática (`POST /api/v1/mois/collection-jobs`);
   - endpoint para listar jobs (`GET /api/v1/mois/collection-jobs`);
   - endpoint para listar referências coletadas por job (`GET /api/v1/mois/collection-jobs/{jobId}/references`);
-  - persistência mínima em memória para jobs e referências coletadas;
-  - logs estruturados no backend ao criar job de coleta.
+  - regra de negócio de jobs movida para o módulo MOIS (backend principal atua como gateway/contrato);
+  - persistência mínima em memória no módulo MOIS para jobs e referências coletadas;
+  - logs estruturados no módulo MOIS ao criar job de coleta.
 - **Evidências (PRs, commits, testes):**
-  - backend: `MoisController`, `MoisWorkspaceDtos`, `MoisSprintOneService`;
-  - testes: `MoisControllerContractTest` e `MoisSprintOneServiceTest`.
+  - backend: `MoisController`, `MoisModuleGateway`, `MoisWorkspaceDtos`;
+  - módulo MOIS: `MoisDomainController`, `MoisDomainService`, `MoisWorkspaceDtos`;
+  - testes: `MoisControllerContractTest`, `MoisDomainControllerTest` e `MoisDomainServiceTest`.
 - **Riscos/pendências:**
   - persistência ainda em memória (não relacional), apropriada apenas para fase inicial;
-  - referências coletadas ainda são seedadas para contrato/smoke, sem conectores reais de fonte.
+  - referências coletadas ainda são seedadas para contrato/smoke, sem conectores reais de fonte;
+  - alinhar próximos endpoints legados de workspace para o mesmo padrão de delegação ao módulo MOIS.
 - **Próximos passos:** iniciar Sprint 2 para normalização de sinais de sucesso e ranking comparável.
 
 ## Relatório — Sprint 2

@@ -134,7 +134,7 @@ public class MoisController {
     public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
             @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
     ) {
-        return sprintOneService.createCollectionJob(request);
+        return gateway.createCollectionJob(request);
     }
 
     @GetMapping("/collection-jobs")
@@ -142,18 +142,15 @@ public class MoisController {
             @RequestParam(required = false) String workspaceId,
             @RequestParam(required = false) String status
     ) {
-        return sprintOneService.listCollectionJobs(workspaceId, status);
+        return gateway.listCollectionJobs(workspaceId, status);
     }
 
     @GetMapping("/collection-jobs/{jobId}/references")
     public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(
             @PathVariable String jobId
     ) {
-        try {
-            return sprintOneService.listCollectedReferencesByJob(jobId);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
-        }
+        return gateway.listCollectedReferencesByJob(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
     }
 
     @GetMapping("/offers")

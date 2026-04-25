@@ -354,7 +354,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldCreateCollectionJobContract() throws Exception {
-        when(sprintOneService.createCollectionJob(any(MoisWorkspaceDtos.CreateCollectionJobRequest.class)))
+        when(gateway.createCollectionJob(any(MoisWorkspaceDtos.CreateCollectionJobRequest.class)))
                 .thenReturn(new MoisWorkspaceDtos.CollectionJobResponse(
                         "mois-collect-001",
                         "workspace-001",
@@ -403,7 +403,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldListCollectionJobsContract() throws Exception {
-        when(sprintOneService.listCollectionJobs(eq("workspace-001"), eq("QUEUED")))
+        when(gateway.listCollectionJobs(eq("workspace-001"), eq("QUEUED")))
                 .thenReturn(new MoisWorkspaceDtos.CollectionJobListResponse(List.of(
                         new MoisWorkspaceDtos.CollectionJobResponse(
                                 "mois-collect-001",
@@ -429,8 +429,8 @@ class MoisControllerContractTest {
 
     @Test
     void shouldListCollectedReferencesByJobContract() throws Exception {
-        when(sprintOneService.listCollectedReferencesByJob(eq("mois-collect-001")))
-                .thenReturn(new MoisWorkspaceDtos.CollectedReferenceListResponse(
+        when(gateway.listCollectedReferencesByJob(eq("mois-collect-001")))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
                         "mois-collect-001",
                         List.of(new MoisWorkspaceDtos.CollectedReferenceResponse(
                                 "ref-auto-001",
@@ -444,13 +444,22 @@ class MoisControllerContractTest {
                                 Instant.parse("2026-04-25T12:00:00Z"),
                                 java.util.Map.of("status", "ACTIVE")
                         ))
-                ));
+                )));
 
         mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
                 .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"))
                 .andExpect(jsonPath("$.items[0].successScore").value(78));
+    }
+
+    @Test
+    void shouldReturn404WhenCollectionJobReferencesNotFound() throws Exception {
+        when(gateway.listCollectedReferencesByJob(eq("mois-collect-missing")))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-missing/references"))
+                .andExpect(status().isNotFound());
     }
 
 }

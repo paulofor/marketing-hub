@@ -86,6 +86,16 @@ public class ExperimentPipelineController {
         return generationService.getJobDetail(id, jobId);
     }
 
+    @GetMapping("/sections/{section}/latest-completed")
+    public ExperimentPipelineGenerationJobDetailDto getLatestCompletedJobBySection(@PathVariable Long id,
+                                                                                    @PathVariable String section) {
+        ExperimentPipelineSection parsed = parseSection(section);
+        if (parsed == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "section é obrigatório");
+        }
+        return generationService.getLatestCompletedJobDetail(id, parsed);
+    }
+
     @PostMapping("/jobs/close-open")
     public int closeOpenJobs(@PathVariable Long id,
                              @RequestParam(value = "reason", required = false) String reason) {

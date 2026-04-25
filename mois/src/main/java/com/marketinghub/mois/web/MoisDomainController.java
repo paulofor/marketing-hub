@@ -4,6 +4,7 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisDomainService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -57,6 +58,67 @@ public class MoisDomainController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "discovery request not found"));
     }
 
+    @GetMapping("/workspaces/{workspaceId}/dashboard")
+    public MoisWorkspaceDtos.WorkspaceDashboardResponse getWorkspaceDashboard(@PathVariable String workspaceId) {
+        return service.getWorkspaceDashboard(workspaceId);
+    }
+
+    @PostMapping("/references")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.ReferenceResponse createReference(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateReferenceRequest request
+    ) {
+        return service.createReference(request);
+    }
+
+    @GetMapping("/references")
+    public MoisWorkspaceDtos.ReferenceListResponse listReferences(@RequestParam String workspaceId) {
+        return service.listReferences(workspaceId);
+    }
+
+    @PostMapping("/references/{referenceId}/extractions")
+    public MoisWorkspaceDtos.ExtractionDraftResponse upsertExtractionDraft(
+            @PathVariable String referenceId,
+            @RequestBody MoisWorkspaceDtos.UpsertExtractionDraftRequest request
+    ) {
+        return service.upsertExtractionDraft(referenceId, request)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "reference not found"));
+    }
+
+    @GetMapping("/library/blocks")
+    public MoisWorkspaceDtos.LibraryBlockListResponse listLibraryBlocks(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String niche,
+            @RequestParam(required = false) String formatType
+    ) {
+        return service.listLibraryBlocks(workspaceId, niche, formatType);
+    }
+
+    @PostMapping("/library/blocks/{blockId}/favorite")
+    public MoisWorkspaceDtos.LibraryBlockActionResponse favoriteLibraryBlock(@PathVariable String blockId) {
+        return service.favoriteLibraryBlock(blockId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
+    }
+
+    @PostMapping("/library/blocks/{blockId}/duplicate")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.LibraryBlockActionResponse duplicateLibraryBlock(@PathVariable String blockId) {
+        return service.duplicateLibraryBlock(blockId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
+    }
+
+    @PostMapping("/comparisons")
+    public MoisWorkspaceDtos.ComparisonResponse createComparison(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateComparisonRequest request
+    ) {
+        return service.createComparison(request);
+    }
+
+    @PostMapping("/offers/build")
+    public MoisWorkspaceDtos.BuildOfferResponse buildOffer(@Valid @RequestBody MoisWorkspaceDtos.BuildOfferRequest request) {
+        return service.buildOffer(request);
+    }
+
     @GetMapping("/offers")
     public MoisOfferDtos.OfferCardListResponse listOffers(
             @RequestParam(required = false) String requestId,
@@ -97,5 +159,34 @@ public class MoisDomainController {
     public MoisArtifactDtos.ArtifactEnvelopeResponse getArtifact(@PathVariable String artifactId) {
         return service.getArtifact(artifactId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "artifact not found"));
+    }
+
+    @PostMapping("/collection-jobs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
+    ) {
+        return service.createCollectionJob(request);
+    }
+
+    @GetMapping("/collection-jobs")
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String status
+    ) {
+        return service.listCollectionJobs(workspaceId, status);
+    }
+
+    @GetMapping("/collection-jobs/{jobId}/references")
+    public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(
+            @PathVariable String jobId,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String niche,
+            @RequestParam(required = false) String timeWindow,
+            @RequestParam(required = false) Integer minScore,
+            @RequestParam(required = false) String confidenceLevel
+    ) {
+        return service.listCollectedReferencesByJob(jobId, source, niche, timeWindow, minScore, confidenceLevel)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
     }
 }

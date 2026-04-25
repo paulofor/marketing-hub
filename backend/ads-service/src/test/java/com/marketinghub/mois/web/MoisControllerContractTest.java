@@ -5,7 +5,6 @@ import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisModuleGateway;
-import com.marketinghub.mois.service.MoisSprintOneService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -37,9 +36,6 @@ class MoisControllerContractTest {
 
     @MockBean
     private MoisModuleGateway gateway;
-
-    @MockBean
-    private MoisSprintOneService sprintOneService;
 
     @Test
     void shouldAcceptDiscoveryRequest() throws Exception {
@@ -154,7 +150,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldReturnWorkspaceDashboardContract() throws Exception {
-        when(sprintOneService.getDashboard(eq("workspace-001")))
+        when(gateway.getWorkspaceDashboard(eq("workspace-001")))
                 .thenReturn(new MoisWorkspaceDtos.WorkspaceDashboardResponse(
                         "workspace-001",
                         new MoisWorkspaceDtos.WorkspaceKpisResponse(12, 4, 2, 1),
@@ -174,7 +170,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldCreateReferenceForSprintOneContract() throws Exception {
-        when(sprintOneService.createReference(any(MoisWorkspaceDtos.CreateReferenceRequest.class)))
+        when(gateway.createReference(any(MoisWorkspaceDtos.CreateReferenceRequest.class)))
                 .thenReturn(new MoisWorkspaceDtos.ReferenceResponse(
                         "ref-123",
                         "workspace-001",
@@ -219,7 +215,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldListReferencesByWorkspace() throws Exception {
-        when(sprintOneService.listReferences(eq("workspace-001")))
+        when(gateway.listReferences(eq("workspace-001")))
                 .thenReturn(new MoisWorkspaceDtos.ReferenceListResponse(List.of(
                         new MoisWorkspaceDtos.ReferenceResponse(
                                 "ref-123",
@@ -244,13 +240,13 @@ class MoisControllerContractTest {
 
     @Test
     void shouldUpsertExtractionDraft() throws Exception {
-        when(sprintOneService.upsertExtractionDraft(eq("ref-123"), any(MoisWorkspaceDtos.UpsertExtractionDraftRequest.class)))
-                .thenReturn(new MoisWorkspaceDtos.ExtractionDraftResponse(
+        when(gateway.upsertExtractionDraft(eq("ref-123"), any(MoisWorkspaceDtos.UpsertExtractionDraftRequest.class)))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.ExtractionDraftResponse(
                         "ext-123",
                         "ref-123",
                         "DRAFT",
                         Instant.parse("2026-04-25T12:00:00Z")
-                ));
+                )));
 
         mockMvc.perform(post("/api/v1/mois/references/ref-123/extractions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -268,7 +264,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldReturnLibraryBlocksContract() throws Exception {
-        when(sprintOneService.listLibraryBlocks(eq("workspace-001"), eq("nutricao"), eq("CURSO")))
+        when(gateway.listLibraryBlocks(eq("workspace-001"), eq("nutricao"), eq("CURSO")))
                 .thenReturn(new MoisWorkspaceDtos.LibraryBlockListResponse(List.of(
                         new MoisWorkspaceDtos.LibraryBlockResponse(
                                 "block-1",
@@ -292,7 +288,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldCreateComparisonContract() throws Exception {
-        when(sprintOneService.createComparison(any(MoisWorkspaceDtos.CreateComparisonRequest.class)))
+        when(gateway.createComparison(any(MoisWorkspaceDtos.CreateComparisonRequest.class)))
                 .thenReturn(new MoisWorkspaceDtos.ComparisonResponse(
                         "comparison-1",
                         "workspace-001",
@@ -327,7 +323,7 @@ class MoisControllerContractTest {
 
     @Test
     void shouldBuildOfferContract() throws Exception {
-        when(sprintOneService.buildOffer(any(MoisWorkspaceDtos.BuildOfferRequest.class)))
+        when(gateway.buildOffer(any(MoisWorkspaceDtos.BuildOfferRequest.class)))
                 .thenReturn(new MoisWorkspaceDtos.BuildOfferResponse(
                         "offer-1",
                         "workspace-001",
@@ -350,6 +346,135 @@ class MoisControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.offerId").value("offer-1"))
                 .andExpect(jsonPath("$.status").value("READY_TO_EXPORT"));
+    }
+
+    @Test
+    void shouldCreateCollectionJobContract() throws Exception {
+        when(gateway.createCollectionJob(any(MoisWorkspaceDtos.CreateCollectionJobRequest.class)))
+                .thenReturn(new MoisWorkspaceDtos.CollectionJobResponse(
+                        "mois-collect-001",
+                        "workspace-001",
+                        "nutricao",
+                        "perda de gordura",
+                        "QUEUED",
+                        "LAST_7_DAYS",
+                        50,
+                        60,
+                        List.of("META_AD_LIBRARY", "CLICKBANK"),
+                        Instant.parse("2026-04-25T12:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "niche": "nutricao",
+                                  "marketTheme": "perda de gordura",
+                                  "sources": ["META_AD_LIBRARY", "CLICKBANK"],
+                                  "timeWindow": "LAST_7_DAYS",
+                                  "limitPerSource": 50,
+                                  "minSuccessScore": 60
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.status").value("QUEUED"));
+    }
+
+    @Test
+    void shouldValidateCollectionJobPayload() throws Exception {
+        mockMvc.perform(post("/api/v1/mois/collection-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "",
+                                  "niche": "",
+                                  "sources": [],
+                                  "timeWindow": "INVALID"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldListCollectionJobsContract() throws Exception {
+        when(gateway.listCollectionJobs(eq("workspace-001"), eq("QUEUED")))
+                .thenReturn(new MoisWorkspaceDtos.CollectionJobListResponse(List.of(
+                        new MoisWorkspaceDtos.CollectionJobResponse(
+                                "mois-collect-001",
+                                "workspace-001",
+                                "nutricao",
+                                "perda de gordura",
+                                "QUEUED",
+                                "LAST_7_DAYS",
+                                50,
+                                60,
+                                List.of("META_AD_LIBRARY"),
+                                Instant.parse("2026-04-25T12:00:00Z")
+                        )
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs")
+                        .param("workspaceId", "workspace-001")
+                        .param("status", "QUEUED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.items[0].timeWindow").value("LAST_7_DAYS"));
+    }
+
+    @Test
+    void shouldListCollectedReferencesByJobContract() throws Exception {
+        when(gateway.listCollectedReferencesByJob(
+                eq("mois-collect-001"),
+                eq("CLICKBANK"),
+                eq("nutricao"),
+                eq("LAST_7_DAYS"),
+                eq(70),
+                eq("HIGH")
+        ))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
+                        "mois-collect-001",
+                        List.of(new MoisWorkspaceDtos.CollectedReferenceResponse(
+                                "ref-auto-001",
+                                "mois-collect-001",
+                                "CLICKBANK",
+                                "Oferta com alta recorrência",
+                                "https://example.com/offer",
+                                "nutricao",
+                                78,
+                                "HIGH",
+                                Instant.parse("2026-04-25T12:00:00Z"),
+                                java.util.Map.of("status", "ACTIVE")
+                        ))
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references")
+                        .param("source", "CLICKBANK")
+                        .param("niche", "nutricao")
+                        .param("timeWindow", "LAST_7_DAYS")
+                        .param("minScore", "70")
+                        .param("confidenceLevel", "HIGH"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
+                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"))
+                .andExpect(jsonPath("$.items[0].successScore").value(78));
+    }
+
+    @Test
+    void shouldReturn404WhenCollectionJobReferencesNotFound() throws Exception {
+        when(gateway.listCollectedReferencesByJob(
+                eq("mois-collect-missing"),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(null)
+        ))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-missing/references"))
+                .andExpect(status().isNotFound());
     }
 
 }

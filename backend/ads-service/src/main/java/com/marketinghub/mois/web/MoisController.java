@@ -6,7 +6,6 @@ import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisModuleGateway;
-import com.marketinghub.mois.service.MoisSprintOneService;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class MoisController {
 
     private final MoisModuleGateway gateway;
-    private final MoisSprintOneService sprintOneService;
 
     @PostMapping("/discovery-requests")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -61,7 +59,7 @@ public class MoisController {
 
     @GetMapping("/workspaces/{workspaceId}/dashboard")
     public MoisWorkspaceDtos.WorkspaceDashboardResponse getWorkspaceDashboard(@PathVariable String workspaceId) {
-        return sprintOneService.getDashboard(workspaceId);
+        return gateway.getWorkspaceDashboard(workspaceId);
     }
 
     @PostMapping("/references")
@@ -69,12 +67,12 @@ public class MoisController {
     public MoisWorkspaceDtos.ReferenceResponse createReference(
             @Valid @RequestBody MoisWorkspaceDtos.CreateReferenceRequest request
     ) {
-        return sprintOneService.createReference(request);
+        return gateway.createReference(request);
     }
 
     @GetMapping("/references")
     public MoisWorkspaceDtos.ReferenceListResponse listReferences(@RequestParam String workspaceId) {
-        return sprintOneService.listReferences(workspaceId);
+        return gateway.listReferences(workspaceId);
     }
 
     @PostMapping("/references/{referenceId}/extractions")
@@ -82,11 +80,8 @@ public class MoisController {
             @PathVariable String referenceId,
             @RequestBody MoisWorkspaceDtos.UpsertExtractionDraftRequest request
     ) {
-        try {
-            return sprintOneService.upsertExtractionDraft(referenceId, request);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
-        }
+        return gateway.upsertExtractionDraft(referenceId, request)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "reference not found"));
     }
 
     @GetMapping("/library/blocks")
@@ -95,38 +90,61 @@ public class MoisController {
             @RequestParam(required = false) String niche,
             @RequestParam(required = false) String formatType
     ) {
-        return sprintOneService.listLibraryBlocks(workspaceId, niche, formatType);
+        return gateway.listLibraryBlocks(workspaceId, niche, formatType);
     }
 
     @PostMapping("/library/blocks/{blockId}/favorite")
     public MoisWorkspaceDtos.LibraryBlockActionResponse favoriteLibraryBlock(@PathVariable String blockId) {
-        try {
-            return sprintOneService.favoriteLibraryBlock(blockId);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
-        }
+        return gateway.favoriteLibraryBlock(blockId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
     }
 
     @PostMapping("/library/blocks/{blockId}/duplicate")
     @ResponseStatus(HttpStatus.CREATED)
     public MoisWorkspaceDtos.LibraryBlockActionResponse duplicateLibraryBlock(@PathVariable String blockId) {
-        try {
-            return sprintOneService.duplicateLibraryBlock(blockId);
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
-        }
+        return gateway.duplicateLibraryBlock(blockId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "library block not found"));
     }
 
     @PostMapping("/comparisons")
     public MoisWorkspaceDtos.ComparisonResponse createComparison(
             @Valid @RequestBody MoisWorkspaceDtos.CreateComparisonRequest request
     ) {
-        return sprintOneService.createComparison(request);
+        return gateway.createComparison(request);
     }
 
     @PostMapping("/offers/build")
     public MoisWorkspaceDtos.BuildOfferResponse buildOffer(@Valid @RequestBody MoisWorkspaceDtos.BuildOfferRequest request) {
-        return sprintOneService.buildOffer(request);
+        return gateway.buildOffer(request);
+    }
+
+    @PostMapping("/collection-jobs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
+    ) {
+        return gateway.createCollectionJob(request);
+    }
+
+    @GetMapping("/collection-jobs")
+    public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String status
+    ) {
+        return gateway.listCollectionJobs(workspaceId, status);
+    }
+
+    @GetMapping("/collection-jobs/{jobId}/references")
+    public MoisWorkspaceDtos.CollectedReferenceListResponse listCollectedReferencesByJob(
+            @PathVariable String jobId,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String niche,
+            @RequestParam(required = false) String timeWindow,
+            @RequestParam(required = false) Integer minScore,
+            @RequestParam(required = false) String confidenceLevel
+    ) {
+        return gateway.listCollectedReferencesByJob(jobId, source, niche, timeWindow, minScore, confidenceLevel)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
     }
 
     @GetMapping("/offers")

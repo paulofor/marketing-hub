@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
+import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -241,6 +242,91 @@ class MoisDomainServiceTest {
                 service.getInsightExecutiveSummary("mois-report-" + accepted.requestId()).orElseThrow();
         assertThat(summary.frameworkRecommendation().dominantPain()).isEqualTo("Alívio de dor");
         assertThat(summary.decisionReadyActions()).isNotEmpty();
+    }
+
+    @Test
+    void shouldCreateAndListCollectionJobsInMoisModule() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-001",
+                        "nutricao",
+                        "perda de gordura",
+                        List.of("CLICKBANK", "JVZOO"),
+                        "LAST_7_DAYS",
+                        null,
+                        "pt-BR",
+                        "BR",
+                        null
+                )
+        );
+
+        MoisWorkspaceDtos.CollectionJobListResponse jobs = service.listCollectionJobs("workspace-001", "QUEUED");
+
+        assertThat(created.jobId()).startsWith("mois-collect-");
+        assertThat(jobs.items()).hasSize(1);
+        assertThat(jobs.items().getFirst().workspaceId()).isEqualTo("workspace-001");
+    }
+
+    @Test
+    void shouldReturnCollectedReferencesForExistingJob() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-001",
+                        "nutricao",
+                        "perda de gordura",
+                        List.of("CLICKBANK"),
+                        "LAST_30_DAYS",
+                        20,
+                        "pt-BR",
+                        "BR",
+                        65
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceListResponse references =
+                service.listCollectedReferencesByJob(
+                        created.jobId(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                ).orElseThrow();
+
+        assertThat(references.items()).hasSize(1);
+        assertThat(references.items().getFirst().source()).isEqualTo("CLICKBANK");
+        assertThat(references.items().getFirst().successScore()).isGreaterThanOrEqualTo(65);
+    }
+
+    @Test
+    void shouldFilterCollectionReferencesByScoreSourceAndConfidence() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-001",
+                        "nutricao",
+                        "perda de gordura",
+                        List.of("CLICKBANK", "JVZOO", "META_AD_LIBRARY"),
+                        "LAST_7_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        50
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceListResponse filtered = service.listCollectedReferencesByJob(
+                created.jobId(),
+                "JVZOO",
+                "nutricao",
+                "LAST_7_DAYS",
+                60,
+                "MEDIUM"
+        ).orElseThrow();
+
+        assertThat(filtered.items()).hasSize(1);
+        assertThat(filtered.items().getFirst().source()).isEqualTo("JVZOO");
+        assertThat(filtered.items().getFirst().successScore()).isGreaterThanOrEqualTo(60);
+        assertThat(filtered.items().getFirst().successSignal()).isEqualTo("MEDIUM");
     }
 
     private static class HtmlHandler implements HttpHandler {

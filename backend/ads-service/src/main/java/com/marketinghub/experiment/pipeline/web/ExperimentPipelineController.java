@@ -55,6 +55,11 @@ public class ExperimentPipelineController {
         return generationService.approveAndPublishLandingPage(id);
     }
 
+    @PostMapping("/landing-page-html/generate-with-lhm")
+    public ExperimentDto generateLandingHtmlWithLhm(@PathVariable Long id) {
+        return generationService.generateLandingHtmlWithLhm(id);
+    }
+
     @GetMapping("/jobs")
     public List<ExperimentPipelineGenerationJobDto> listJobs(@PathVariable Long id,
                                                              @RequestParam(value = "size", defaultValue = "30") Integer size) {

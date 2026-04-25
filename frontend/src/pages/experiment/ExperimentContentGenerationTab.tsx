@@ -1163,6 +1163,7 @@ export default function ExperimentContentGenerationTab({
   const [isGeneratingSection, setIsGeneratingSection] = useState(false);
   const [pendingGenerationSection, setPendingGenerationSection] =
     useState<ContentGenerationSectionKey | null>(null);
+  const [isGeneratingWithLhm, setIsGeneratingWithLhm] = useState(false);
   const [autoQueue, setAutoQueue] = useState<AutoQueueState>(
     AUTO_QUEUE_INITIAL_STATE,
   );
@@ -1794,6 +1795,22 @@ export default function ExperimentContentGenerationTab({
     }
   }
 
+  const handleGenerateLandingWithLhm = useCallback(async () => {
+    try {
+      setIsGeneratingWithLhm(true);
+      await axios.post(
+        `/api/experiments/${experimentId}/pipeline/landing-page-html/generate-with-lhm`,
+      );
+      toast.success("Landing HTML gerado via LHM.");
+      await jobsQuery.refetch();
+      await loadSection("landing-html");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsGeneratingWithLhm(false);
+    }
+  }, [experimentId, jobsQuery, loadSection]);
+
   const handleGenerateSection = useCallback(
     async (section: ContentGenerationSection) => {
       const sectionIndex = CONTENT_GENERATION_SECTIONS.findIndex(
@@ -2045,6 +2062,7 @@ export default function ExperimentContentGenerationTab({
                       onClick={() => void handleGenerateSection(section)}
                       disabled={
                         isGeneratingSection ||
+                        isGeneratingWithLhm ||
                         autoQueue.isActive ||
                         isLandingHtmlBlockedByImageGeneration
                       }
@@ -2082,6 +2100,33 @@ export default function ExperimentContentGenerationTab({
                         "Gerar com IA"
                       )}
                     </button>
+                    {section.key === "landing-html" ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => void handleGenerateLandingWithLhm()}
+                        disabled={
+                          isGeneratingWithLhm ||
+                          isGeneratingSection ||
+                          autoQueue.isActive ||
+                          isLandingHtmlBlockedByImageGeneration
+                        }
+                        title="Gera o HTML final usando o LHM (Landing HTML Module), sem acionar o Worker IA."
+                      >
+                        {isGeneratingWithLhm ? (
+                          <span className="d-inline-flex align-items-center gap-1">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Gerando com LHM...
+                          </span>
+                        ) : (
+                          "Gerar com LHM"
+                        )}
+                      </button>
+                    ) : null}
                     <span className="badge text-bg-light">
                       Estrutura pronta para prompt
                     </span>

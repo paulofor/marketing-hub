@@ -165,6 +165,34 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 }
 ```
 
+### Regras canônicas de qualidade para geração da `landingPageCopy`
+
+Para considerar a copy **rica** e **compatível com as especificações**, a etapa de geração deve cumprir os critérios abaixo antes da renderização pelo LHM:
+
+1. **Cobertura completa de narrativa**
+   - A copy deve cobrir explicitamente o eixo: **Dor → Resultado → Mecanismo → Prova → Oferta**.
+   - Essa cobertura deve existir em `hero` + `bodySections` + `ctaBlocks` + `faq`.
+
+2. **Densidade mínima de conteúdo**
+   - `hero.supportingCopy` não pode ser vazio.
+   - Cada item de `bodySections` deve conter `summary` e `copy` não vazios.
+   - Cada item de `bodySections` deve conter ao menos 3 itens em `bullets`.
+   - `faq` deve conter no mínimo 3 perguntas com `question` e `answer` preenchidos.
+   - `ctaBlocks` deve conter no mínimo 2 variações (por exemplo: `mid` e `final` ou `hero` e `final`).
+
+3. **Compatibilidade com wireframe**
+   - Todo `sectionId` de `bodySections` deve existir em `landingPageWireframe.sectionOrder.sectionId`.
+   - Todo `ctaBlocks.placement` deve corresponder a um `ctaSlot` previsto no wireframe.
+   - Toda `ctaUrl` deve ser resolvida (sem placeholders como `{slug}`).
+
+4. **Consistência de promessa e CTA**
+   - `hero.promise`, `primaryCTA` e `ctaBlocks[*].matchAdCta` devem manter coerência semântica.
+   - `consistencyChecks` deve incluir, no mínimo, os checks: `CTA_MATCH`, `PROMISE_MATCH` e `GOOGLE_LANDING_BEST_PRACTICES`.
+
+5. **Critério de bloqueio**
+   - Se qualquer regra acima falhar, o artefato permanece em `DRAFT` e não pode seguir para renderização final.
+   - O LHM só deve processar copy com validação aprovada (`status = VALIDATED` ou `APPROVED`).
+
 ## `landingPageWireframe`
 
 ```json

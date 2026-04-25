@@ -1,5 +1,5 @@
 template_id: landing-copy
-template_version: v1
+template_version: v2
 artifact_target: landingPageCopy
 
 SYSTEM_INSTRUCTIONS
@@ -26,24 +26,34 @@ Regras fixas da etapa:
 11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta, camadas ou entregáveis fora dos dados recebidos.
 12. Não retornar campos legados fora do contrato (ex.: `messageMatchSummary`).
 13. Não usar taxonomia interna (`entryAsset`, `coreOffer` etc.) no texto final da copy.
+14. A copy final deve cobrir explicitamente o eixo **Dor → Resultado → Mecanismo → Prova → Oferta** ao longo de `hero`, `bodySections`, `ctaBlocks` e `faq`.
+15. `hero.supportingCopy` não pode ser vazio e deve conectar dor, urgência e próximo passo.
+16. Cada item de `bodySections` deve ter `summary` e `copy` substantivos (não usar placeholders).
+17. Cada item de `bodySections` deve conter no mínimo três bullets concretos e específicos.
+18. `faq` deve conter no mínimo três objeções reais do caso atual (sem perguntas genéricas vazias).
+19. `ctaBlocks` deve conter no mínimo duas variações posicionais de CTA (ex.: hero+final ou mid+final), mantendo coerência com `primaryCTA`.
+20. `ctaUrl` nunca pode conter placeholders (ex.: `{slug}`); sempre retornar URL resolvida para o fluxo atual.
+21. Todo conteúdo de seção deve ser compatível com os `sectionId` previstos no wireframe recebido em `CASE_DATA`.
+22. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
+23. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
 
 Diretriz obrigatória para HERO:
-14. `hero.headline`: foco na transformação principal (curta, direta, comercial).
-15. `hero.subheadline`: explicar ativo inicial/prova/primeiro passo quando existir, sem presumir formato fixo.
-16. `hero.supportingCopy`: contextualizar dor + urgência + ponte para a oferta principal atual.
-17. Não presumir formatos universais (kit, PDF, plano fixo, ciclo com duração fixa, regeneração etc.).
+24. `hero.headline`: foco na transformação principal (curta, direta, comercial).
+25. `hero.subheadline`: explicar ativo inicial/prova/primeiro passo quando existir, sem presumir formato fixo.
+26. `hero.supportingCopy`: contextualizar dor + urgência + ponte para a oferta principal atual.
+27. Não presumir formatos universais (kit, PDF, plano fixo, ciclo com duração fixa, regeneração etc.).
 
 Diretriz obrigatória para seção de OFERTA:
-18. Estruture a narrativa para suportar duas camadas quando os dados trouxerem essa distinção:
+28. Estruture a narrativa para suportar duas camadas quando os dados trouxerem essa distinção:
    - Camada A (agora): o que a pessoa recebe/vê/gera de imediato (entryAsset/prova/preview/diagnóstico/primeiro entregável).
    - Camada B (estrutura maior): o que isso representa dentro da entrega principal (coreOffer/sistema/framework/processo/sequência/pacote central).
-19. Se a hipótese trouxer apenas um objeto comercial, não force duas camadas artificiais; mantenha clareza comercial com uma camada única.
-20. Sempre conectar entregáveis ao resultado percebido; evitar listas de exemplos fixos desta hipótese atual.
+29. Se a hipótese trouxer apenas um objeto comercial, não force duas camadas artificiais; mantenha clareza comercial com uma camada única.
+30. Sempre conectar entregáveis ao resultado percebido; evitar listas de exemplos fixos desta hipótese atual.
 
 Diretriz obrigatória para títulos de seção:
-21. Títulos devem ser comerciais e específicos ao caso atual, porém reutilizáveis para hipóteses futuras.
-22. Não usar rótulos internos de taxonomia no output.
-23. Não fixar nomenclaturas da oferta atual como padrão universal.
+31. Títulos devem ser comerciais e específicos ao caso atual, porém reutilizáveis para hipóteses futuras.
+32. Não usar rótulos internos de taxonomia no output.
+33. Não fixar nomenclaturas da oferta atual como padrão universal.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -61,3 +71,10 @@ Campos obrigatórios:
 - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
 - faq[] com question, answer, objectionTag
 - consistencyChecks[] com check, status (PASS/FAIL/WARNING), details
+
+Critérios mínimos de aceite no próprio output:
+- `bodySections.length >= 4`
+- cada `bodySections[i].bullets.length >= 3`
+- `faq.length >= 3`
+- `ctaBlocks.length >= 2`
+- incluir em `consistencyChecks` os checks: CTA_MATCH, PROMISE_MATCH, GOOGLE_LANDING_BEST_PRACTICES

@@ -54,6 +54,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
     - diferença entre a entrega do modelo e o que era esperado
     - ação corretiva recomendada
   - Não encerrar análise de 422 sem apontar explicitamente o trecho rejeitado e a validação correspondente.
+- **json** : temos que evitar ao máximo json dentro de json. Ou seja json em campo texto de outro json. 
 
 
 ## 4. Framework central do Marketing Hub:

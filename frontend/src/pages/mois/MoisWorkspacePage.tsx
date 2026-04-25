@@ -56,6 +56,9 @@ export default function MoisWorkspacePage() {
           <Link className="btn btn-outline-secondary btn-sm" to="/mois/builder">
             Builder
           </Link>
+          <Link className="btn btn-outline-secondary btn-sm" to="/mois/research-sources">
+            Locais de pesquisa
+          </Link>
         </div>
       </section>
 

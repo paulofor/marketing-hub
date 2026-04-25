@@ -89,6 +89,46 @@ public class MoisController {
         }
     }
 
+    @GetMapping("/library/blocks")
+    public MoisWorkspaceDtos.LibraryBlockListResponse listLibraryBlocks(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String niche,
+            @RequestParam(required = false) String formatType
+    ) {
+        return sprintOneService.listLibraryBlocks(workspaceId, niche, formatType);
+    }
+
+    @PostMapping("/library/blocks/{blockId}/favorite")
+    public MoisWorkspaceDtos.LibraryBlockActionResponse favoriteLibraryBlock(@PathVariable String blockId) {
+        try {
+            return sprintOneService.favoriteLibraryBlock(blockId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        }
+    }
+
+    @PostMapping("/library/blocks/{blockId}/duplicate")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MoisWorkspaceDtos.LibraryBlockActionResponse duplicateLibraryBlock(@PathVariable String blockId) {
+        try {
+            return sprintOneService.duplicateLibraryBlock(blockId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        }
+    }
+
+    @PostMapping("/comparisons")
+    public MoisWorkspaceDtos.ComparisonResponse createComparison(
+            @Valid @RequestBody MoisWorkspaceDtos.CreateComparisonRequest request
+    ) {
+        return sprintOneService.createComparison(request);
+    }
+
+    @PostMapping("/offers/build")
+    public MoisWorkspaceDtos.BuildOfferResponse buildOffer(@Valid @RequestBody MoisWorkspaceDtos.BuildOfferRequest request) {
+        return sprintOneService.buildOffer(request);
+    }
+
     @GetMapping("/offers")
     public MoisOfferDtos.OfferCardListResponse listOffers(
             @RequestParam(required = false) String requestId,

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.Map;
 import java.util.List;
 
 public final class MoisWorkspaceDtos {
@@ -77,6 +78,86 @@ public final class MoisWorkspaceDtos {
             String extractionId,
             String referenceId,
             String status,
+            Instant updatedAt
+    ) {
+    }
+
+    public record LibraryBlockResponse(
+            String blockId,
+            String workspaceId,
+            String type,
+            String summary,
+            List<String> tags,
+            double score,
+            String origin,
+            boolean favorite,
+            Instant updatedAt
+    ) {
+    }
+
+    public record LibraryBlockListResponse(List<LibraryBlockResponse> items) {
+    }
+
+    public record LibraryBlockActionResponse(
+            String blockId,
+            String action,
+            String status,
+            Instant updatedAt
+    ) {
+    }
+
+    public record CreateComparisonRequest(
+            @NotBlank String workspaceId,
+            @NotBlank String referenceBaseId,
+            @NotBlank String currentOfferId
+    ) {
+    }
+
+    public record ComparisonDimensionResponse(
+            String dimension,
+            String market,
+            String current,
+            String highlight
+    ) {
+    }
+
+    public record ComparisonScorecardResponse(
+            String metric,
+            int value,
+            String explanation
+    ) {
+    }
+
+    public record ComparisonImprovementResponse(
+            String improvementId,
+            String priority,
+            String description
+    ) {
+    }
+
+    public record ComparisonResponse(
+            String comparisonId,
+            String workspaceId,
+            List<ComparisonDimensionResponse> dimensions,
+            List<ComparisonScorecardResponse> scorecards,
+            List<ComparisonImprovementResponse> improvements
+    ) {
+    }
+
+    public record BuildOfferRequest(
+            @NotBlank String workspaceId,
+            @NotBlank String currentOfferId,
+            List<String> selectedBlockIds,
+            @NotBlank String currentVersion
+    ) {
+    }
+
+    public record BuildOfferResponse(
+            String offerId,
+            String workspaceId,
+            String status,
+            String proposedVersion,
+            Map<String, Boolean> checklist,
             Instant updatedAt
     ) {
     }

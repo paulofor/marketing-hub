@@ -67,8 +67,7 @@ public class LandingHtmlModule {
                 "Landing");
         String pageSummary = firstNonBlank(
                 asTrimmedString(copy.get("summary")),
-                asTrimmedString(copy.get("lead")),
-                "Landing gerada pelo LHM");
+                asTrimmedString(copy.get("lead")));
 
         List<Map<String, Object>> plannedImages = extractImages(experiment.getLandingPageImagePlanning());
 
@@ -82,20 +81,30 @@ public class LandingHtmlModule {
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />")
                 .append("<title>").append(escapeHtml(pageTitle)).append("</title>")
                 .append("<style>")
-                .append("body{font-family:Inter,Arial,sans-serif;margin:0;background:#f7f8fb;color:#141821;line-height:1.5;}")
-                .append("main{max-width:960px;margin:0 auto;padding:24px 16px 48px;display:grid;gap:16px;}")
-                .append(".card{background:#fff;border:1px solid #e6e8ef;border-radius:16px;padding:20px;}")
-                .append("h1,h2{margin:0 0 8px;} p{margin:0 0 10px;} form{display:grid;gap:10px;}")
-                .append("label{font-weight:600;font-size:14px;} input{width:100%;padding:10px;border:1px solid #d2d7e3;border-radius:10px;}")
-                .append("button{padding:12px 16px;border:0;border-radius:999px;background:#1c6dd0;color:#fff;font-weight:700;cursor:pointer;}")
-                .append("img{max-width:100%;height:auto;border-radius:12px;display:block;}")
-                .append("#form-feedback{display:none;margin-top:8px;font-weight:600;}")
+                .append(":root{--bg:#f3f5f9;--card:#ffffff;--border:#e3e8f2;--text:#0f172a;--muted:#475569;--brand:#1d4ed8;--brand-dark:#1e40af;}")
+                .append("*{box-sizing:border-box;}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text);line-height:1.55;}")
+                .append("main{max-width:980px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:14px;}")
+                .append(".card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.04);}")
+                .append(".card[data-surface-contrast='high']{border-color:#cdd8ee;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);}")
+                .append("h1{font-size:clamp(1.65rem,4vw,2.1rem);line-height:1.15;margin:0 0 10px;font-weight:800;letter-spacing:-0.02em;}")
+                .append("h2{font-size:clamp(1.25rem,3.2vw,1.55rem);line-height:1.25;margin:0 0 10px;font-weight:750;letter-spacing:-0.01em;}")
+                .append("p{margin:0 0 10px;color:var(--muted);font-size:.98rem;}")
+                .append(".section-objective{font-size:.95rem;color:#334155;background:#f8fafc;border:1px dashed #d6e1f5;border-radius:12px;padding:10px 12px;margin:0 0 12px;}")
+                .append("form{display:grid;gap:12px;background:#fbfdff;border:1px solid #dbe5f5;border-radius:14px;padding:14px;}")
+                .append(".field{display:grid;gap:6px;}.help{color:#64748b;font-size:.88rem;line-height:1.35;}")
+                .append("label{font-weight:700;font-size:.92rem;color:#0f172a;}input{width:100%;padding:11px 12px;border:1px solid #cfd8e6;border-radius:10px;background:#fff;font-size:1rem;outline:none;}")
+                .append("input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);}button{padding:12px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;font-weight:800;cursor:pointer;letter-spacing:.01em;}")
+                .append("button:hover{filter:brightness(1.04);}img{max-width:100%;height:auto;border-radius:12px;display:block;margin-top:8px;}")
+                .append("#form-feedback{display:none;margin-top:2px;font-weight:700;color:#1e3a8a;}")
                 .append("</style></head><body><main>");
 
         for (int sectionIndex = 0; sectionIndex < sections.size(); sectionIndex++) {
             Map<String, Object> section = sections.get(sectionIndex);
             String sectionId = firstNonBlank(asTrimmedString(section.get("sectionId")), "section");
             String sectionName = firstNonBlank(asTrimmedString(section.get("sectionName")), sectionId);
+            String sectionObjective = firstNonBlank(
+                    asTrimmedString(section.get("objective")),
+                    asTrimmedString(section.get("uiNotes")));
             Map<String, Object> surface = section.get("surfaceSpec") instanceof Map<?, ?> rawSurface
                     ? (Map<String, Object>) rawSurface
                     : Map.of();
@@ -114,6 +123,9 @@ public class LandingHtmlModule {
                             : "<h2>" + escapeHtml(sectionName) + "</h2>");
             if (sectionIndex == 0 && StringUtils.hasText(pageSummary)) {
                 html.append("<p>").append(escapeHtml(pageSummary)).append("</p>");
+            }
+            if (sectionIndex > 0 && StringUtils.hasText(sectionObjective)) {
+                html.append("<p class=\"section-objective\">").append(escapeHtml(sectionObjective)).append("</p>");
             }
 
             for (Map<String, Object> image : plannedImages) {

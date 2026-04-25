@@ -870,7 +870,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> templateTrace = (Map<String, Object>) trackedRequest.get("templateTrace");
         assertThat(templateTrace)
                 .containsEntry("template_id", "landing-copy")
-                .containsEntry("template_version", "v1")
+                .containsEntry("template_version", "v2")
                 .containsEntry("artifact_target", "landingPageCopy")
                 .containsEntry("model", "gpt-5.2");
     }

@@ -144,6 +144,14 @@ interface SectionRequestState {
   customInstructions?: string;
   errorMessage?: string;
   stageLabel?: string;
+  executionSource?: "WORKER_IA" | "LHM";
+}
+
+interface ParsedBackendError {
+  timestamp?: string;
+  message?: string;
+  status?: number;
+  path?: string;
 }
 
 interface SectionInvalidationState {
@@ -203,6 +211,16 @@ const STAGE_LABELS: Record<string, string> = {
   WAITING_OPENAI: "Aguardando resposta da OpenAI",
   COMPLETED: "Finalizada",
   FAILED: "Falhou",
+};
+
+const EXECUTION_SOURCE_LABELS: Record<"WORKER_IA" | "LHM", string> = {
+  WORKER_IA: "Worker IA",
+  LHM: "LHM inline",
+};
+
+const EXECUTION_SOURCE_BADGES: Record<"WORKER_IA" | "LHM", string> = {
+  WORKER_IA: "primary",
+  LHM: "info",
 };
 
 const COMMON_PIPELINE_PROMPT = `Você cria ativos de campanha para o Marketing Hub.
@@ -678,6 +696,39 @@ function formatDateTime(value?: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatDateTimeWithTimezone(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+function parseBackendError(errorMessage?: string): ParsedBackendError | null {
+  if (!errorMessage) {
+    return null;
+  }
+  const jsonStart = errorMessage.indexOf("{");
+  const jsonEnd = errorMessage.lastIndexOf("}");
+  if (jsonStart < 0 || jsonEnd <= jsonStart) {
+    return null;
+  }
+  const raw = errorMessage.slice(jsonStart, jsonEnd + 1);
+  try {
+    const parsed = JSON.parse(raw) as ParsedBackendError;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 function parseTimestamp(value?: string) {
@@ -1223,6 +1274,7 @@ export default function ExperimentContentGenerationTab({
             customInstructions: job.customInstructions,
             errorMessage: job.errorMessage,
             stageLabel,
+            executionSource: job.model === "LHM" ? "LHM" : "WORKER_IA",
           };
           return acc;
         },
@@ -1263,6 +1315,18 @@ export default function ExperimentContentGenerationTab({
         { ...SECTION_REQUEST_INITIAL_STATE },
       ),
     [requestsFromBackend, requestsBySection],
+  );
+
+  const lhmHistory = useMemo(
+    () =>
+      (jobsQuery.data ?? [])
+        .filter(
+          (job) =>
+            normalizeJobSection(job.section) === "landing-html" &&
+            job.model === "LHM",
+        )
+        .slice(0, 3),
+    [jobsQuery.data],
   );
 
   const invalidationBySection = useMemo(() => {
@@ -1796,16 +1860,52 @@ export default function ExperimentContentGenerationTab({
   }
 
   const handleGenerateLandingWithLhm = useCallback(async () => {
+    const nowIso = new Date().toISOString();
     try {
       setIsGeneratingWithLhm(true);
+      setRequestsBySection((previous) => ({
+        ...previous,
+        "landing-html": {
+          status: "PROCESSING",
+          requestedAt: nowIso,
+          startedAt: nowIso,
+          executionSource: "LHM",
+          stageLabel: "Processando no LHM inline",
+        },
+      }));
       await axios.post(
         `/api/experiments/${experimentId}/pipeline/landing-page-html/generate-with-lhm`,
       );
       toast.success("Landing HTML gerado via LHM.");
+      setRequestsBySection((previous) => ({
+        ...previous,
+        "landing-html": {
+          status: "COMPLETED",
+          requestedAt: previous["landing-html"]?.requestedAt ?? nowIso,
+          startedAt: previous["landing-html"]?.startedAt ?? nowIso,
+          completedAt: new Date().toISOString(),
+          executionSource: "LHM",
+          stageLabel: "Finalizada",
+        },
+      }));
       await jobsQuery.refetch();
       await loadSection("landing-html");
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      const parsedError = parseBackendError(getErrorMessage(error));
+      const summary = parsedError?.message ?? getErrorMessage(error);
+      setRequestsBySection((previous) => ({
+        ...previous,
+        "landing-html": {
+          status: "FAILED",
+          requestedAt: previous["landing-html"]?.requestedAt ?? nowIso,
+          startedAt: previous["landing-html"]?.startedAt ?? nowIso,
+          completedAt: new Date().toISOString(),
+          executionSource: "LHM",
+          stageLabel: "Falhou",
+          errorMessage: summary,
+        },
+      }));
+      toast.error(summary);
     } finally {
       setIsGeneratingWithLhm(false);
     }
@@ -2247,6 +2347,8 @@ export default function ExperimentContentGenerationTab({
                     ? "INVALIDATED"
                     : request.status;
               const workerStatus = getWorkerStatus(request);
+              const executionSource = request.executionSource ?? "WORKER_IA";
+              const backendError = parseBackendError(request.errorMessage);
 
               return (
                 <div
@@ -2265,6 +2367,16 @@ export default function ExperimentContentGenerationTab({
                     Solicitado em: {formatDateTime(request.requestedAt)} ·
                     Concluído em: {formatDateTime(request.completedAt)}
                   </small>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <span className="small text-body-secondary">
+                      Origem da execução:
+                    </span>
+                    <span
+                      className={`badge text-bg-${EXECUTION_SOURCE_BADGES[executionSource]}`}
+                    >
+                      {EXECUTION_SOURCE_LABELS[executionSource]}
+                    </span>
+                  </div>
                   <div className="small d-flex flex-column gap-1">
                     <div>
                       <strong>1. Solicitação do usuário:</strong>{" "}
@@ -2273,7 +2385,10 @@ export default function ExperimentContentGenerationTab({
                         : "ainda não enviada."}
                     </div>
                     <div className="d-flex flex-wrap align-items-center gap-2">
-                      <strong>2. Atendimento do Worker IA:</strong>
+                      <strong>
+                        2. Atendimento do{" "}
+                        {EXECUTION_SOURCE_LABELS[executionSource]}:
+                      </strong>
                       <span className={`badge text-bg-${workerStatus.badge}`}>
                         {workerStatus.label}
                       </span>
@@ -2318,13 +2433,80 @@ export default function ExperimentContentGenerationTab({
                   ) : null}
                   {request.errorMessage ? (
                     <small className="text-danger">
-                      Último erro: {request.errorMessage}
+                      Último erro: {backendError?.message ?? request.errorMessage}
+                      {backendError?.timestamp ? (
+                        <>
+                          {" "}
+                          · retornado pelo backend em{" "}
+                          {formatDateTimeWithTimezone(backendError.timestamp)}
+                        </>
+                      ) : null}
                     </small>
                   ) : null}
                 </div>
               );
             })}
           </div>
+          {lhmHistory.length > 0 ? (
+            <div className="border rounded-3 p-3 mt-3 bg-info-subtle border-info-subtle">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                  <h6 className="mb-1">Solicitações recentes do LHM (HTML da Landing)</h6>
+                  <p className="small text-body-secondary mb-0">
+                    Este bloco separa as execuções inline do LHM das execuções do
+                    Worker IA para evitar confusão de horário e origem.
+                  </p>
+                </div>
+                <span className="badge text-bg-info">LHM inline</span>
+              </div>
+              <div className="d-flex flex-column gap-2 mt-3">
+                {lhmHistory.map((job) => {
+                  const parsedError = parseBackendError(job.errorMessage);
+                  const statusBadge =
+                    job.status === "COMPLETED"
+                      ? "success"
+                      : job.status === "FAILED"
+                        ? "danger"
+                        : "warning";
+                  const statusLabel =
+                    job.status === "COMPLETED"
+                      ? "Concluída"
+                      : job.status === "FAILED"
+                        ? "Com erro"
+                        : "Em processamento";
+                  return (
+                    <div key={`lhm-history-${job.id}`} className="bg-body border rounded-3 p-2">
+                      <div className="d-flex flex-wrap align-items-center gap-2">
+                        <strong>Tentativa #{job.id.slice(0, 8)}</strong>
+                        <span className={`badge text-bg-${statusBadge}`}>{statusLabel}</span>
+                      </div>
+                      <div className="small mt-1 d-flex flex-column gap-1">
+                        <span>
+                          Solicitação registrada:{" "}
+                          <strong>{formatDateTimeWithTimezone(job.createdAt)}</strong>
+                        </span>
+                        <span>
+                          Início: <strong>{formatDateTimeWithTimezone(job.startedAt)}</strong> ·
+                          Fim: <strong>{formatDateTimeWithTimezone(job.finishedAt)}</strong>
+                        </span>
+                        {parsedError?.timestamp ? (
+                          <span>
+                            Erro retornado pelo backend em{" "}
+                            <strong>{formatDateTimeWithTimezone(parsedError.timestamp)}</strong>
+                          </span>
+                        ) : null}
+                        {job.errorMessage ? (
+                          <span className="text-danger">
+                            Motivo: {parsedError?.message ?? job.errorMessage}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

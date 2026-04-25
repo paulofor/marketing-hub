@@ -92,12 +92,8 @@ public class LandingHtmlModule {
                 .append("#form-feedback{display:none;margin-top:8px;font-weight:600;}")
                 .append("</style></head><body><main>");
 
-        html.append("<section class=\"card\" data-section-id=\"hero\" data-surface-token=\"surface-hero\" data-surface-style=\"band\" data-surface-contrast=\"normal\">")
-                .append("<h1>").append(escapeHtml(pageTitle)).append("</h1>")
-                .append("<p>").append(escapeHtml(pageSummary)).append("</p>")
-                .append("</section>");
-
-        for (Map<String, Object> section : sections) {
+        for (int sectionIndex = 0; sectionIndex < sections.size(); sectionIndex++) {
+            Map<String, Object> section = sections.get(sectionIndex);
             String sectionId = firstNonBlank(asTrimmedString(section.get("sectionId")), "section");
             String sectionName = firstNonBlank(asTrimmedString(section.get("sectionName")), sectionId);
             Map<String, Object> surface = section.get("surfaceSpec") instanceof Map<?, ?> rawSurface
@@ -113,7 +109,12 @@ public class LandingHtmlModule {
                     .append("\" data-surface-style=\"").append(escapeAttr(surfaceStyle))
                     .append("\" data-surface-contrast=\"").append(escapeAttr(surfaceContrast))
                     .append("\">")
-                    .append("<h2>").append(escapeHtml(sectionName)).append("</h2>");
+                    .append(sectionIndex == 0
+                            ? "<h1>" + escapeHtml(pageTitle) + "</h1>"
+                            : "<h2>" + escapeHtml(sectionName) + "</h2>");
+            if (sectionIndex == 0 && StringUtils.hasText(pageSummary)) {
+                html.append("<p>").append(escapeHtml(pageSummary)).append("</p>");
+            }
 
             for (Map<String, Object> image : plannedImages) {
                 String imageSectionId = asTrimmedString(image.get("sectionId"));
@@ -127,12 +128,6 @@ public class LandingHtmlModule {
                 html.append(buildFormMarkup(formId, submitTarget, submitLabel, formSpec));
             }
             html.append("</section>");
-        }
-
-        if (!html.toString().contains("<form ")) {
-            html.append("<section class=\"card\" data-section-id=\"form\" data-surface-token=\"surface-form\" data-surface-style=\"band\" data-surface-contrast=\"normal\">")
-                    .append(buildFormMarkup(formId, submitTarget, submitLabel, formSpec))
-                    .append("</section>");
         }
 
         html.append("</main>").append(buildSubmissionScript(formId)).append("</body></html>");

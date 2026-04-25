@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LandingHtmlModuleTest {
@@ -61,5 +62,46 @@ class LandingHtmlModuleTest {
         assertTrue(html.toLowerCase().contains("checkvalidity"));
         assertTrue(html.toLowerCase().contains("reportvalidity"));
         assertTrue(html.toLowerCase().contains("success"));
+    }
+
+    @Test
+    void assembleHtmlDocumentKeepsExactSurfaceContractFromWireframe() {
+        Experiment experiment = new Experiment();
+        experiment.setName("Teste LHM Surface");
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "benefits",
+                        "sectionName": "Benefícios",
+                        "contentType": "split",
+                        "surfaceSpec": {
+                          "surfaceToken": "surface-benefits",
+                          "style": "solid",
+                          "contrastMode": "high"
+                        }
+                      }
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "submitTarget": "/api/flows/submissions",
+                      "submitLabel": "Enviar",
+                      "fields": [
+                        {"name": "nome", "type": "text", "required": true}
+                      ]
+                    }
+                  }
+                }
+                """);
+
+        String html = module.assembleHtmlDocument(experiment);
+
+        assertTrue(html.contains("data-section-id=\"benefits\""));
+        assertTrue(html.contains("data-surface-token=\"surface-benefits\""));
+        assertTrue(html.contains("data-surface-style=\"solid\""));
+        assertTrue(html.contains("data-surface-contrast=\"high\""));
+        assertFalse(html.contains("data-section-id=\"hero\""));
+        assertFalse(html.contains("data-section-id=\"form\""));
     }
 }

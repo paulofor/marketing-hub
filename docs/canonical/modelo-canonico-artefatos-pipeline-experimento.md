@@ -300,6 +300,8 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 > O LHM é o módulo de backend responsável por receber os insumos aprovados
 > (`wireframe`, `copy` e `imagens com URL`) e consolidá-los no
 > `htmlDocument` final da landing.
+>
+> **Leitura operacional obrigatória para evolução do LHM:** `docs/canonical/lhm-evolution-guide.v1.md`.
 
 > Cada documento HTML gerado pela etapa `landingPageHtml` traz atributos de dados para vincular os visuais planejados aos ativos finais.
 > Os principais atributos são `data-image-section-id` (mapeia o `planning_item_key`), `data-image-binding-key` (chave semântica)

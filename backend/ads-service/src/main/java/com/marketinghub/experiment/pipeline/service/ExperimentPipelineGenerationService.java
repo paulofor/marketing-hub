@@ -682,6 +682,61 @@ public class ExperimentPipelineGenerationService {
         return sb.toString();
     }
 
+    @SuppressWarnings("unchecked")
+    private void appendLandingHtmlV2Inputs(StringBuilder sb, Experiment experiment) {
+        sb.append("\nPrompt v2 (inputs mínimos para LANDING_PAGE_HTML):\n");
+        sb.append("Use apenas os 3 insumos abaixo como fonte de verdade para montar o HTML final.\n");
+        appendIfPresent(sb, "1) Wireframe aprovado (JSON)", experiment.getLandingPageWireframe());
+        appendIfPresent(sb, "2) Texto da landing aprovado (JSON)", experiment.getLandingPageCopy());
+        String imageUrls = summarizeImageUrlsFromPlanning(experiment != null ? experiment.getLandingPageImagePlanning() : null);
+        if (StringUtils.hasText(imageUrls)) {
+            sb.append("3) URLs de imagens aprovadas por seção:\n").append(imageUrls);
+        } else {
+            appendIfPresent(sb, "3) Planejamento de imagens (JSON)", experiment.getLandingPageImagePlanning());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String summarizeImageUrlsFromPlanning(String imagePlanningPayload) {
+        if (!StringUtils.hasText(imagePlanningPayload)) {
+            return null;
+        }
+        try {
+            Map<String, Object> root = readObject(imagePlanningPayload, "Planejamento de imagens da landing inválido");
+            Map<String, Object> payload = unwrapSectionPayload(root, "landingPageImagePlanning");
+            if (!(payload.get("images") instanceof List<?> rawImages)) {
+                return null;
+            }
+            StringBuilder sb = new StringBuilder();
+            int index = 0;
+            for (Object rawImage : rawImages) {
+                if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                    continue;
+                }
+                Map<String, Object> image = (Map<String, Object>) rawImageMap;
+                String sectionId = asTrimmedString(image.get("sectionId"));
+                String bindingKey = asTrimmedString(image.get("imageBindingKey"));
+                String url = firstNonBlank(
+                        asTrimmedString(image.get("webUrl")),
+                        asTrimmedString(image.get("imageUrl")),
+                        asTrimmedString(image.get("sourceUrl")),
+                        asTrimmedString(image.get("url")));
+                if (!StringUtils.hasText(url)) {
+                    continue;
+                }
+                index++;
+                sb.append("- #").append(index)
+                        .append(" | sectionId=").append(StringUtils.hasText(sectionId) ? sectionId : "(sem sectionId)")
+                        .append(" | imageBindingKey=").append(StringUtils.hasText(bindingKey) ? bindingKey : "(sem binding)")
+                        .append(" | url=").append(url)
+                        .append("\n");
+            }
+            return sb.length() > 0 ? sb.toString() : null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
     private Map<String, Object> buildRequestBody(String model,
                                                  String userPrompt,
                                                  ExperimentPipelineSection section) {

@@ -1349,12 +1349,18 @@ public class ExperimentPipelineGenerationService {
                 ? document.getElementById(expectedFormId)
                 : document.selectFirst("form");
         if (formElement == null) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "HTML da landing sem <form> compatível com wireframe.formSpec.formId");
+            String expectedFormIdLabel = StringUtils.hasText(expectedFormId) ? expectedFormId : "(não definido no wireframe)";
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "HTML da landing sem <form> compatível com wireframe.formSpec.formId. esperado formId=" + expectedFormIdLabel);
         }
 
         String method = formElement.attr("method");
         if (!StringUtils.hasText(method) || !"post".equalsIgnoreCase(method.trim())) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Formulário da landing deve usar method=\"post\"");
+            String receivedMethod = StringUtils.hasText(method) ? method.trim() : "(ausente)";
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Formulário da landing deve usar method=\"post\". recebido method=\"" + receivedMethod + "\"");
         }
 
         String action = asTrimmedString(formElement.attr("action"));
@@ -1362,10 +1368,42 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Formulário da landing deve declarar atributo action");
         }
         if (StringUtils.hasText(expectedSubmitTarget) && !Objects.equals(action, expectedSubmitTarget)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Formulário da landing deve usar formSpec.submitTarget no action");
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Formulário da landing deve usar formSpec.submitTarget no action. esperado action=\""
+                            + expectedSubmitTarget + "\" recebido action=\"" + action + "\"");
         }
 
         String lowered = htmlDocument.toLowerCase(Locale.ROOT);
+        List<String> missingRuntimeRequirements = new ArrayList<>();
+        if (!SUBMIT_LISTENER_PATTERN.matcher(htmlDocument).find()) {
+            missingRuntimeRequirements.add("listener de submit (addEventListener('submit', ...))");
+        }
+        if (!PREVENT_DEFAULT_PATTERN.matcher(htmlDocument).find()) {
+            missingRuntimeRequirements.add("event.preventDefault()");
+        }
+        if (!FETCH_FORM_ACTION_PATTERN.matcher(htmlDocument).find()) {
+            missingRuntimeRequirements.add("fetch(form.action, ...)");
+        }
+        if (!FORM_DATA_PATTERN.matcher(htmlDocument).find()) {
+            missingRuntimeRequirements.add("FormData(form)");
+        }
+        if (!SUBMIT_DISABLE_PATTERN.matcher(htmlDocument).find()) {
+            missingRuntimeRequirements.add("loading: botão desabilitado durante envio");
+        }
+        if (!SUBMIT_ENABLE_PATTERN.matcher(htmlDocument).find()) {
+            missingRuntimeRequirements.add("loading: botão reabilitado após envio");
+        }
+        if (!lowered.contains("checkvalidity")) {
+            missingRuntimeRequirements.add("checkValidity()");
+        }
+        if (!lowered.contains("reportvalidity")) {
+            missingRuntimeRequirements.add("reportValidity()");
+        }
+        if (!lowered.contains("success")) {
+            missingRuntimeRequirements.add("feedback de sucesso inline");
+        }
+
         if (!SUBMIT_LISTENER_PATTERN.matcher(htmlDocument).find()
                 || !PREVENT_DEFAULT_PATTERN.matcher(htmlDocument).find()
                 || !FETCH_FORM_ACTION_PATTERN.matcher(htmlDocument).find()
@@ -1377,7 +1415,8 @@ public class ExperimentPipelineGenerationService {
                 || !lowered.contains("success")) {
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "HTML da landing deve seguir o runtime de envio padrão (submit assíncrono com validação, loading e sucesso inline)");
+                    "HTML da landing deve seguir o runtime de envio padrão (submit assíncrono com validação, loading e sucesso inline). "
+                            + "Itens ausentes: " + String.join("; ", missingRuntimeRequirements));
         }
     }
 

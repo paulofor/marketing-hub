@@ -334,11 +334,13 @@ public class LandingHtmlModule {
                       }
                       if (feedback) {
                         feedback.style.display = 'block';
+                        feedback.dataset.state = 'success';
                         feedback.textContent = 'Recebemos seu envio. Verifique seu e-mail.';
                       }
                     } catch (error) {
                       if (feedback) {
                         feedback.style.display = 'block';
+                        feedback.dataset.state = 'error';
                         feedback.textContent = 'Não foi possível enviar agora. Tente novamente.';
                       }
                     } finally {

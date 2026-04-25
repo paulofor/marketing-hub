@@ -81,10 +81,20 @@ Regra prática:
 | Tema | Dono da regra | Consumidores típicos |
 | --- | --- | --- |
 | Regras operacionais de domínio | backend / domínio correspondente | frontend, workers, integrações |
+| Regras de negócio do domínio **MOIS** | **módulo MOIS (`/mois`)** | backend principal (gateway/contrato), frontend, workers |
 | Schemas e contratos de decisão | domínio + backend responsável | todos os consumidores do contrato |
 | Projeções de UI | frontend | usuário final |
 | Fatos externos e resultados assíncronos | workers / integrações | backend / domínio |
 | Governança global do sistema | `system-governance-canon` + ADRs relevantes | todo o projeto |
+
+### 7.1 Regra arquitetural mandatória para MOIS
+
+- O **backend principal** não deve conter regra de negócio específica do MOIS.
+- Para MOIS, o backend principal atua como:
+  - gateway HTTP;
+  - camada de contrato/validação;
+  - camada de leitura/escrita de dados quando aplicável.
+- A orquestração, decisões, cálculo de score, transições e políticas de domínio devem residir no **módulo MOIS**.
 
 ## 8. Áreas candidatas a futuros cânones específicos
 

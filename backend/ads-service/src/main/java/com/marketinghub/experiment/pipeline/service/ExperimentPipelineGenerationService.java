@@ -79,6 +79,8 @@ public class ExperimentPipelineGenerationService {
     private static final Pattern OPENING_TAG_PATTERN = Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
     private static final String DEFAULT_MODEL = "gpt-5.2";
+    private static final String LHM_MODEL = "LHM";
+    private static final String LHM_WORKER_ID = "lhm-inline";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
     private static final Set<ExperimentPipelineGenerationJobStatus> ACTIVE_JOB_STATUSES = Set.of(
@@ -300,13 +302,36 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Copy da landing ainda não foi gerada para este experimento");
         }
-        String assembledHtml = landingHtmlModule.assembleHtmlDocument(experiment);
-        if (!StringUtils.hasText(assembledHtml)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "LHM não conseguiu montar HTML válido para este experimento");
+        String promptInputs = landingHtmlModule.buildPromptV2Inputs(experiment);
+        Map<String, Object> monitoringPayload = Map.of(
+                "mode", "INLINE",
+                "source", "LHM",
+                "section", ExperimentPipelineSection.LANDING_PAGE_HTML.path(),
+                "experimentId", experimentId);
+        ExperimentPipelineGenerationJob monitoringJob = createInlineGenerationJob(
+                experiment,
+                ExperimentPipelineSection.LANDING_PAGE_HTML,
+                LHM_MODEL,
+                LHM_WORKER_ID,
+                promptInputs,
+                monitoringPayload);
+
+        try {
+            String assembledHtml = landingHtmlModule.assembleHtmlDocument(experiment);
+            if (!StringUtils.hasText(assembledHtml)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "LHM não conseguiu montar HTML válido para este experimento");
+            }
+            applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, assembledHtml);
+            completeInlineGenerationJob(monitoringJob, assembledHtml, assembledHtml, BigDecimal.ZERO);
+            return experimentMapper.toDto(experiment);
+        } catch (ResponseStatusException ex) {
+            failInlineGenerationJob(monitoringJob, ex.getReason());
+            throw ex;
+        } catch (RuntimeException ex) {
+            failInlineGenerationJob(monitoringJob, ex.getMessage());
+            throw ex;
         }
-        applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, assembledHtml);
-        return experimentMapper.toDto(experiment);
     }
 
     @Transactional
@@ -558,6 +583,74 @@ public class ExperimentPipelineGenerationService {
                 .requestBodyJson(requestBodyJson)
                 .build();
         jobRepository.save(job);
+    }
+
+    private ExperimentPipelineGenerationJob createInlineGenerationJob(Experiment experiment,
+                                                                      ExperimentPipelineSection section,
+                                                                      String model,
+                                                                      String workerId,
+                                                                      String prompt,
+                                                                      Map<String, Object> payload) {
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .experiment(experiment)
+                .section(section)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.WAITING_OPENAI)
+                .model(model)
+                .workerId(workerId)
+                .prompt(prompt)
+                .requestBodyJson(writeJsonSilently(payload))
+                .startedAt(Instant.now())
+                .build();
+        return jobRepository.save(job);
+    }
+
+    private void completeInlineGenerationJob(ExperimentPipelineGenerationJob job,
+                                             String responseContent,
+                                             String rawResponse,
+                                             BigDecimal costUsd) {
+        generationService.recordGeneration(AiWorkerGenerationRequest.builder()
+                .domain("experiment.pipeline." + job.getSection().path())
+                .referenceId(job.getExperiment().getId().toString())
+                .prompt(job.getPrompt())
+                .rawResponse(rawResponse)
+                .model(job.getModel())
+                .inputTokens(0)
+                .outputTokens(0)
+                .costUsd(costUsd != null ? costUsd : BigDecimal.ZERO)
+                .build());
+
+        job.setStatus(ExperimentPipelineGenerationJobStatus.COMPLETED);
+        job.setStage(ExperimentPipelineGenerationJobStage.COMPLETED);
+        job.setResponseContent(responseContent);
+        job.setRawResponse(rawResponse);
+        job.setInputTokens(0);
+        job.setOutputTokens(0);
+        job.setCostUsd(costUsd != null ? costUsd : BigDecimal.ZERO);
+        job.setErrorMessage(null);
+        job.setFinishedAt(Instant.now());
+    }
+
+    private void failInlineGenerationJob(ExperimentPipelineGenerationJob job, String errorMessage) {
+        if (job == null) {
+            return;
+        }
+        job.setStatus(ExperimentPipelineGenerationJobStatus.FAILED);
+        job.setStage(ExperimentPipelineGenerationJobStage.FAILED);
+        job.setErrorMessage(StringUtils.hasText(errorMessage) ? errorMessage.trim() : "Falha desconhecida no LHM");
+        job.setFinishedAt(Instant.now());
+    }
+
+    private String writeJsonSilently(Object payload) {
+        if (payload == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao serializar payload de monitoramento inline do pipeline", ex);
+            return null;
+        }
     }
 
     private void validatePredecessor(Experiment experiment, ExperimentPipelineSection section) {

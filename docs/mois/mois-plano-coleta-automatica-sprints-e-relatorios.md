@@ -6,6 +6,11 @@ Objetivo: evoluir o MOIS para coletar referências de sucesso de mercado com jan
 
 Este plano mantém aderência ao eixo central do Marketing Hub: **Dor → Resultado → Mecanismo → Prova → Oferta**.
 
+## Diretriz arquitetural crítica (obrigatória)
+
+> **Regra inegociável:** toda regra de negócio do MOIS deve residir no módulo **`/mois`**.
+> O backend principal deve atuar somente como gateway/contrato e camada de leitura/escrita de dados.
+
 ---
 
 ## Escopo funcional (visão macro)

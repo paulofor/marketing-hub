@@ -190,6 +190,11 @@ public class MoisController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference lineage not found"));
     }
 
+    @GetMapping("/workspaces/{workspaceId}/collection-ops/summary")
+    public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(@PathVariable String workspaceId) {
+        return gateway.getCollectionOpsSummary(workspaceId);
+    }
+
     @GetMapping("/offers")
     public MoisOfferDtos.OfferCardListResponse listOffers(
             @RequestParam(required = false) String requestId,

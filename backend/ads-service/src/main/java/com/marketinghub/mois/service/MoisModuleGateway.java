@@ -232,6 +232,13 @@ public class MoisModuleGateway {
         );
     }
 
+    public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(String workspaceId) {
+        return exchange("/api/v1/mois/workspaces/" + workspaceId + "/collection-ops/summary",
+                HttpMethod.GET,
+                null,
+                MoisWorkspaceDtos.CollectionOpsSummaryResponse.class).getBody();
+    }
+
     public Map<String, String> health() {
         return exchange("/api/v1/mois/health", HttpMethod.GET, null, Map.class).getBody();
     }

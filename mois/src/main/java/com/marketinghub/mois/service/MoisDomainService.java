@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -47,6 +48,7 @@ public class MoisDomainService {
     private static final double ENGAGEMENT_WEIGHT = 0.45;
     private static final double RECURRENCE_WEIGHT = 0.35;
     private static final double EVIDENCE_WEIGHT = 0.20;
+    private static final int MAX_COLLECTION_RETRIES = 2;
 
     private final Map<String, DiscoveryRequest> requests = new ConcurrentHashMap<>();
     private final Map<String, SourceSnapshot> snapshots = new ConcurrentHashMap<>();
@@ -56,6 +58,8 @@ public class MoisDomainService {
     private final Map<String, MoisWorkspaceDtos.CollectionJobResponse> collectionJobs = new ConcurrentHashMap<>();
     private final Map<String, List<MoisWorkspaceDtos.CollectedReferenceResponse>> collectedReferencesByJob = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> collectedReferenceLineage = new ConcurrentHashMap<>();
+    private final Map<String, CollectionJobRuntimeStats> collectionJobRuntimeStats = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, SourceOpsStats>> collectionOpsByWorkspace = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.ReferenceResponse> referencesById = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.ExtractionDraftResponse> extractionByReferenceId = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.LibraryBlockResponse> libraryBlocksById = new ConcurrentHashMap<>();
@@ -66,6 +70,12 @@ public class MoisDomainService {
     private static final String MODULE_NAME = "MOIS";
     private static final String CREATED_BY = "mois-system";
     private static final String DEFAULT_STAGE = "COLETA";
+    private volatile boolean collectionRolloutEnabled = true;
+    private final Set<String> rolloutAllowedWorkspaces = ConcurrentHashMap.newKeySet();
+
+    public MoisDomainService() {
+        loadCollectionRolloutFromEnv();
+    }
 
     public MoisWorkspaceDtos.WorkspaceDashboardResponse getDashboard(String workspaceId) {
         List<MoisWorkspaceDtos.ReferenceResponse> workspaceReferences = listWorkspaceReferences(workspaceId);
@@ -653,11 +663,14 @@ public class MoisDomainService {
     }
 
     public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(MoisWorkspaceDtos.CreateCollectionJobRequest request) {
+        if (!isCollectionRolloutAllowed(request.workspaceId())) {
+            throw new IllegalStateException("collection rollout is disabled for workspace");
+        }
         String jobId = "mois-collect-" + UUID.randomUUID();
         Instant now = Instant.now();
         int limitPerSource = request.limitPerSource() == null ? DEFAULT_LIMIT_PER_SOURCE : request.limitPerSource();
         int minSuccessScore = request.minSuccessScore() == null ? DEFAULT_MIN_SUCCESS_SCORE : request.minSuccessScore();
-        MoisWorkspaceDtos.CollectionJobResponse job = new MoisWorkspaceDtos.CollectionJobResponse(
+        MoisWorkspaceDtos.CollectionJobResponse queuedJob = new MoisWorkspaceDtos.CollectionJobResponse(
                 jobId,
                 request.workspaceId(),
                 request.niche(),
@@ -669,11 +682,100 @@ public class MoisDomainService {
                 request.sources(),
                 now
         );
-        collectionJobs.put(jobId, job);
-        collectedReferencesByJob.put(jobId, buildSeedCollectedReferences(job, request.niche()));
+        collectionJobs.put(jobId, queuedJob);
+        MoisWorkspaceDtos.CollectionJobResponse runningJob = new MoisWorkspaceDtos.CollectionJobResponse(
+                queuedJob.jobId(),
+                queuedJob.workspaceId(),
+                queuedJob.niche(),
+                queuedJob.marketTheme(),
+                "RUNNING",
+                queuedJob.timeWindow(),
+                queuedJob.limitPerSource(),
+                queuedJob.minSuccessScore(),
+                queuedJob.sources(),
+                queuedJob.createdAt()
+        );
+        collectionJobs.put(jobId, runningJob);
+        CollectionExecutionResult execution = runCollectionWithRetries(runningJob, request.niche());
+        collectedReferencesByJob.put(jobId, reRank(execution.references()));
+        collectionJobRuntimeStats.put(jobId, execution.runtimeStats());
+        MoisWorkspaceDtos.CollectionJobResponse completedJob = new MoisWorkspaceDtos.CollectionJobResponse(
+                runningJob.jobId(),
+                runningJob.workspaceId(),
+                runningJob.niche(),
+                runningJob.marketTheme(),
+                execution.hasFailure() ? "FAILED" : "COMPLETED",
+                runningJob.timeWindow(),
+                runningJob.limitPerSource(),
+                runningJob.minSuccessScore(),
+                runningJob.sources(),
+                runningJob.createdAt()
+        );
+        collectionJobs.put(jobId, completedJob);
         log.info("mois_collection_job_created jobId={} workspaceId={} sources={} window={}",
                 jobId, request.workspaceId(), request.sources(), request.timeWindow());
-        return job;
+        return completedJob;
+    }
+
+    public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(String workspaceId) {
+        boolean rolloutEnabled = isCollectionRolloutAllowed(workspaceId);
+        List<MoisWorkspaceDtos.CollectionJobResponse> workspaceJobs = collectionJobs.values().stream()
+                .filter(job -> workspaceId == null || workspaceId.isBlank() || workspaceId.equals(job.workspaceId()))
+                .toList();
+        int queued = (int) workspaceJobs.stream().filter(job -> "QUEUED".equalsIgnoreCase(job.status())).count();
+        int running = (int) workspaceJobs.stream().filter(job -> "RUNNING".equalsIgnoreCase(job.status())).count();
+        int completed = (int) workspaceJobs.stream().filter(job -> "COMPLETED".equalsIgnoreCase(job.status())).count();
+        int failed = (int) workspaceJobs.stream().filter(job -> "FAILED".equalsIgnoreCase(job.status())).count();
+        int totalRetries = workspaceJobs.stream()
+                .map(MoisWorkspaceDtos.CollectionJobResponse::jobId)
+                .map(collectionJobRuntimeStats::get)
+                .filter(Objects::nonNull)
+                .mapToInt(CollectionJobRuntimeStats::retries)
+                .sum();
+        long avgLatencyMs = (long) workspaceJobs.stream()
+                .map(MoisWorkspaceDtos.CollectionJobResponse::jobId)
+                .map(collectionJobRuntimeStats::get)
+                .filter(Objects::nonNull)
+                .mapToLong(CollectionJobRuntimeStats::latencyMs)
+                .average()
+                .orElse(0);
+        int totalReferences = workspaceJobs.stream()
+                .map(MoisWorkspaceDtos.CollectionJobResponse::jobId)
+                .map(collectedReferencesByJob::get)
+                .filter(Objects::nonNull)
+                .mapToInt(List::size)
+                .sum();
+        List<MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse> sourceBreakdown = collectionOpsByWorkspace
+                .getOrDefault(workspaceId, Map.of())
+                .values()
+                .stream()
+                .sorted(Comparator.comparing(SourceOpsStats::source))
+                .map(item -> new MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse(
+                        item.source(),
+                        item.attempts(),
+                        item.successes(),
+                        item.failures(),
+                        item.retries(),
+                        item.rateLimitedEvents(),
+                        item.averageLatencyMs(),
+                        item.lastError(),
+                        item.lastAttemptAt()
+                ))
+                .toList();
+        return new MoisWorkspaceDtos.CollectionOpsSummaryResponse(
+                workspaceId,
+                rolloutEnabled,
+                workspaceJobs.size(),
+                queued,
+                running,
+                completed,
+                failed,
+                totalReferences,
+                avgLatencyMs,
+                totalRetries,
+                sourceBreakdown,
+                Instant.now()
+        );
     }
 
     public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(String workspaceId, String status) {
@@ -1140,14 +1242,21 @@ public class MoisDomainService {
                 .toList();
     }
 
-    private List<MoisWorkspaceDtos.CollectedReferenceResponse> buildSeedCollectedReferences(
-            MoisWorkspaceDtos.CollectionJobResponse job,
-            String niche
-    ) {
+    private CollectionExecutionResult runCollectionWithRetries(MoisWorkspaceDtos.CollectionJobResponse job, String niche) {
         List<MoisWorkspaceDtos.CollectedReferenceResponse> items = new ArrayList<>();
         int index = 0;
+        boolean hasFailure = false;
+        int retries = 0;
+        long totalLatencyMs = 0;
         for (String source : job.sources()) {
             index++;
+            SourceExecutionOutcome outcome = executeSourceCollection(job.workspaceId(), source, index);
+            retries += outcome.retries();
+            totalLatencyMs += outcome.latencyMs();
+            if (!outcome.success()) {
+                hasFailure = true;
+                continue;
+            }
             SourceMetricSnapshot metrics = buildSourceMetricSnapshot(job, source, index);
             NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
             items.add(new MoisWorkspaceDtos.CollectedReferenceResponse(
@@ -1171,6 +1280,9 @@ public class MoisDomainService {
                     Map.of(
                             "status", "ACTIVE",
                             "timeWindow", job.timeWindow(),
+                            "attempts", String.valueOf(outcome.attempts()),
+                            "retries", String.valueOf(outcome.retries()),
+                            "latencyMs", String.valueOf(outcome.latencyMs()),
                             "engagementRaw", String.valueOf(metrics.engagementRaw()),
                             "recurrenceRaw", String.valueOf(metrics.recurrenceRaw()),
                             "evidenceRaw", String.valueOf(metrics.evidenceRaw()),
@@ -1178,7 +1290,28 @@ public class MoisDomainService {
                     )
             ));
         }
-        return reRank(items);
+        return new CollectionExecutionResult(
+                reRank(items),
+                hasFailure,
+                new CollectionJobRuntimeStats(job.jobId(), retries, totalLatencyMs, Instant.now())
+        );
+    }
+
+    private SourceExecutionOutcome executeSourceCollection(String workspaceId, String source, int index) {
+        boolean hasRateLimit = source.toUpperCase().contains("META");
+        boolean unavailable = source.toUpperCase().contains("UNAVAILABLE");
+        int attempts = unavailable ? (MAX_COLLECTION_RETRIES + 1) : (hasRateLimit ? 2 : 1);
+        int retries = Math.max(0, attempts - 1);
+        int failures = unavailable ? attempts : retries;
+        int successes = unavailable ? 0 : 1;
+        int rateLimitedEvents = hasRateLimit ? 1 : 0;
+        long latencyMs = 160L + (Math.abs(source.hashCode()) % 450L) + (retries * 120L) + (index * 15L);
+        String lastError = unavailable ? "source unavailable" : (hasRateLimit ? "rate limited (recovered)" : null);
+        SourceOpsStats stats = collectionOpsByWorkspace
+                .computeIfAbsent(workspaceId, ignored -> new ConcurrentHashMap<>())
+                .computeIfAbsent(source, SourceOpsStats::new);
+        stats.register(attempts, successes, failures, retries, rateLimitedEvents, latencyMs, lastError);
+        return new SourceExecutionOutcome(!unavailable, attempts, retries, latencyMs);
     }
 
     private List<MoisWorkspaceDtos.CollectedReferenceResponse> reRank(List<MoisWorkspaceDtos.CollectedReferenceResponse> items) {
@@ -1590,6 +1723,43 @@ public class MoisDomainService {
         return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
     }
 
+    private void loadCollectionRolloutFromEnv() {
+        String enabled = System.getenv().getOrDefault("MOIS_COLLECTION_ROLLOUT_ENABLED", "true");
+        this.collectionRolloutEnabled = !"false".equalsIgnoreCase(enabled);
+        String allowed = System.getenv().getOrDefault("MOIS_COLLECTION_ROLLOUT_ALLOWED_WORKSPACES", "");
+        rolloutAllowedWorkspaces.clear();
+        if (!allowed.isBlank()) {
+            for (String workspace : allowed.split(",")) {
+                String normalized = workspace.trim();
+                if (!normalized.isBlank()) {
+                    rolloutAllowedWorkspaces.add(normalized);
+                }
+            }
+        }
+    }
+
+    void configureCollectionRollout(boolean enabled, List<String> allowedWorkspaces) {
+        this.collectionRolloutEnabled = enabled;
+        this.rolloutAllowedWorkspaces.clear();
+        if (allowedWorkspaces != null) {
+            this.rolloutAllowedWorkspaces.addAll(allowedWorkspaces.stream()
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .toList());
+        }
+    }
+
+    private boolean isCollectionRolloutAllowed(String workspaceId) {
+        if (!collectionRolloutEnabled) {
+            return false;
+        }
+        if (rolloutAllowedWorkspaces.isEmpty()) {
+            return true;
+        }
+        return workspaceId != null && rolloutAllowedWorkspaces.contains(workspaceId);
+    }
+
     private List<String> defaultList(List<String> values) {
         return values == null ? List.of() : values;
     }
@@ -1635,5 +1805,99 @@ public class MoisDomainService {
             double recurrenceScore,
             double evidenceScore
     ) {
+    }
+
+    private record SourceExecutionOutcome(
+            boolean success,
+            int attempts,
+            int retries,
+            long latencyMs
+    ) {
+    }
+
+    private record CollectionExecutionResult(
+            List<MoisWorkspaceDtos.CollectedReferenceResponse> references,
+            boolean hasFailure,
+            CollectionJobRuntimeStats runtimeStats
+    ) {
+    }
+
+    private record CollectionJobRuntimeStats(
+            String jobId,
+            int retries,
+            long latencyMs,
+            Instant finishedAt
+    ) {
+    }
+
+    private static final class SourceOpsStats {
+        private final String source;
+        private int attempts;
+        private int successes;
+        private int failures;
+        private int retries;
+        private int rateLimitedEvents;
+        private long totalLatencyMs;
+        private String lastError;
+        private Instant lastAttemptAt;
+
+        private SourceOpsStats(String source) {
+            this.source = source;
+        }
+
+        synchronized void register(
+                int attempts,
+                int successes,
+                int failures,
+                int retries,
+                int rateLimitedEvents,
+                long latencyMs,
+                String lastError
+        ) {
+            this.attempts += attempts;
+            this.successes += successes;
+            this.failures += failures;
+            this.retries += retries;
+            this.rateLimitedEvents += rateLimitedEvents;
+            this.totalLatencyMs += latencyMs;
+            this.lastError = lastError;
+            this.lastAttemptAt = Instant.now();
+        }
+
+        String source() {
+            return source;
+        }
+
+        synchronized int attempts() {
+            return attempts;
+        }
+
+        synchronized int successes() {
+            return successes;
+        }
+
+        synchronized int failures() {
+            return failures;
+        }
+
+        synchronized int retries() {
+            return retries;
+        }
+
+        synchronized int rateLimitedEvents() {
+            return rateLimitedEvents;
+        }
+
+        synchronized long averageLatencyMs() {
+            return attempts == 0 ? 0 : totalLatencyMs / attempts;
+        }
+
+        synchronized String lastError() {
+            return lastError;
+        }
+
+        synchronized Instant lastAttemptAt() {
+            return lastAttemptAt;
+        }
     }
 }

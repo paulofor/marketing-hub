@@ -68,6 +68,9 @@ Regras mandatórias:
   recomendada antes de permitir retomada.
 - após `landingPageDesignPreset`, a continuidade para `landingPageHtml` exige
   comando manual explícito do usuário (LHM ou IA).
+- a etapa `landingPageImagePlanning` só é considerada **efetivamente concluída**
+  após a conclusão da geração das imagens planejadas (não apenas após salvar o
+  artefato de planejamento).
 
 ## 4. Estados da fila automática
 
@@ -104,6 +107,12 @@ A etapa atual só pode transicionar para `COMPLETED` quando:
 1. o artefato obrigatório da etapa foi persistido;
 2. o artefato passou nas validações canônicas mínimas;
 3. o vínculo com `experimentId` está consistente.
+
+Regra complementar obrigatória para `landingPageImagePlanning`:
+
+4. todos os itens de geração de imagem vinculados ao planejamento do mesmo
+   `experimentId` já concluíram seu ciclo (sem itens em `PLANNED`, `PENDING`
+   ou `PROCESSING`).
 
 Se algum critério falhar:
 
@@ -151,6 +160,9 @@ A UI deve exibir, no mínimo:
 - quando houver desvio controlado para geração de imagens, explicitar que o
   fluxo saiu temporariamente de `landingPageImagePlanning`, está gerando imagens
   e retornará automaticamente para `landingPageHtml`.
+- mesmo fora da aba específica de planejamento de imagens, exibir status
+  simplificado do fluxo de imagens da landing com os estados:
+  `Iniciado` → `Processando` → `Concluído`.
 
 ### 8.2 Bloqueios obrigatórios de ação
 

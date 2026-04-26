@@ -176,6 +176,8 @@ interface AutoQueueState {
   pending: ContentGenerationSectionKey[];
 }
 
+type LandingImageFlowStatus = "NOT_STARTED" | "STARTED" | "PROCESSING" | "COMPLETED";
+
 const SECTION_REQUEST_INITIAL_STATE: Record<
   ContentGenerationSectionKey,
   SectionRequestState
@@ -234,6 +236,20 @@ const EXECUTION_SOURCE_LABELS: Record<"WORKER_IA" | "LHM", string> = {
 const EXECUTION_SOURCE_BADGES: Record<"WORKER_IA" | "LHM", string> = {
   WORKER_IA: "primary",
   LHM: "info",
+};
+
+const LANDING_IMAGE_FLOW_LABELS: Record<LandingImageFlowStatus, string> = {
+  NOT_STARTED: "Não iniciado",
+  STARTED: "Iniciado",
+  PROCESSING: "Processando",
+  COMPLETED: "Concluído",
+};
+
+const LANDING_IMAGE_FLOW_BADGES: Record<LandingImageFlowStatus, string> = {
+  NOT_STARTED: "secondary",
+  STARTED: "info",
+  PROCESSING: "warning",
+  COMPLETED: "success",
 };
 
 const COMMON_PIPELINE_PROMPT = `Você cria ativos de campanha para o Marketing Hub.
@@ -1382,6 +1398,46 @@ export default function ExperimentContentGenerationTab({
     [requestsFromBackend, requestsBySection],
   );
 
+  const landingImagePlanningRequest =
+    mergedRequestsBySection["landing-image-planning"];
+
+  const landingImageFlowStatus = useMemo<LandingImageFlowStatus>(() => {
+    if (!landingImagePlanningRequest.requestedAt) {
+      return "NOT_STARTED";
+    }
+    if (!landingImagePlanningRequest.completedAt) {
+      return "STARTED";
+    }
+    if (!hasFrameworkImages) {
+      return "STARTED";
+    }
+    if (hasFrameworkImagesInFlight) {
+      return "PROCESSING";
+    }
+    return "COMPLETED";
+  }, [
+    hasFrameworkImages,
+    hasFrameworkImagesInFlight,
+    landingImagePlanningRequest.completedAt,
+    landingImagePlanningRequest.requestedAt,
+  ]);
+
+  const landingImageFlowMessage = useMemo(() => {
+    if (landingImageFlowStatus === "NOT_STARTED") {
+      return "Aguardando solicitação do planejamento de imagens.";
+    }
+    if (landingImageFlowStatus === "STARTED") {
+      return "Planejamento finalizado. Disparo da geração das imagens iniciado.";
+    }
+    if (landingImageFlowStatus === "PROCESSING") {
+      return "Geração das imagens em andamento.";
+    }
+    if (hasFrameworkImageFailure) {
+      return "Geração finalizada com falhas em alguns itens.";
+    }
+    return "Geração das imagens concluída.";
+  }, [hasFrameworkImageFailure, landingImageFlowStatus]);
+
   const lhmHistory = useMemo(
     () =>
       (jobsQuery.data ?? [])
@@ -2211,6 +2267,18 @@ export default function ExperimentContentGenerationTab({
         </div>
       ) : null}
 
+      <div className="alert alert-light border py-2 px-3 mb-3" role="status">
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <strong>Fluxo das imagens da landing:</strong>
+          <span
+            className={`badge text-bg-${LANDING_IMAGE_FLOW_BADGES[landingImageFlowStatus]}`}
+          >
+            {LANDING_IMAGE_FLOW_LABELS[landingImageFlowStatus]}
+          </span>
+          <span className="small text-body-secondary">{landingImageFlowMessage}</span>
+        </div>
+      </div>
+
       <Tabs.Root
         value={activeSection}
         onValueChange={(value) =>
@@ -2434,12 +2502,21 @@ export default function ExperimentContentGenerationTab({
             {CONTENT_GENERATION_SECTIONS.map((section) => {
               const request = mergedRequestsBySection[section.key];
               const invalidation = invalidationBySection[section.key];
+              const isLandingImagePlanningSection =
+                section.key === "landing-image-planning";
+              const effectiveRequestStatus: RequestUiStatus =
+                isLandingImagePlanningSection &&
+                request.status === "COMPLETED" &&
+                landingImageFlowStatus !== "COMPLETED"
+                  ? "PROCESSING"
+                  : request.status;
               const displayStatus: RequestUiStatus =
-                request.status === "PROCESSING" || request.status === "PENDING"
+                effectiveRequestStatus === "PROCESSING" ||
+                effectiveRequestStatus === "PENDING"
                   ? "PROCESSING"
                   : invalidation
                     ? "INVALIDATED"
-                    : request.status;
+                    : effectiveRequestStatus;
               const workerStatus = getWorkerStatus(request);
               const executionSource = request.executionSource ?? "WORKER_IA";
               const backendError = parseBackendError(request.errorMessage);
@@ -2494,14 +2571,21 @@ export default function ExperimentContentGenerationTab({
                     </div>
                     <div>
                       <strong>3. Conclusão:</strong>{" "}
-                      {request.completedAt
+                      {isLandingImagePlanningSection &&
+                      landingImageFlowStatus !== "COMPLETED"
+                        ? "aguardando conclusão da geração das imagens planejadas."
+                        : request.completedAt
                         ? `finalizada em ${formatDateTime(request.completedAt)}.`
                         : request.status === "FAILED"
                           ? "fluxo encerrado com erro."
                           : "aguardando finalização."}
                     </div>
                   </div>
-                  {request.stageLabel ? (
+                  {isLandingImagePlanningSection ? (
+                    <small className="text-body-secondary">
+                      Etapa atual: {landingImageFlowMessage}
+                    </small>
+                  ) : request.stageLabel ? (
                     <small className="text-body-secondary">
                       Etapa atual: {request.stageLabel}
                     </small>

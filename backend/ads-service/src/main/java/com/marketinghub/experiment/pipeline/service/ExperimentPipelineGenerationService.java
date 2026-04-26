@@ -302,12 +302,11 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Copy da landing ainda não foi gerada para este experimento");
         }
-        Map<String, Object> monitoringPayload = new LinkedHashMap<>();
-        monitoringPayload.put("mode", "INLINE");
-        monitoringPayload.put("source", "LHM");
-        monitoringPayload.put("section", ExperimentPipelineSection.LANDING_PAGE_HTML.path());
-        monitoringPayload.put("experimentId", experimentId);
-        monitoringPayload.put("requestReceivedAt", Instant.now().toString());
+        if (!StringUtils.hasText(experiment.getLandingPageDesignPreset())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Preset de design da landing ainda não foi gerado para este experimento");
+        }
+        Map<String, Object> monitoringPayload = buildLhmMonitoringPayload(experiment, experimentId);
         ExperimentPipelineGenerationJob monitoringJob = createInlineGenerationJob(
                 experiment,
                 ExperimentPipelineSection.LANDING_PAGE_HTML,
@@ -330,12 +329,36 @@ public class ExperimentPipelineGenerationService {
             completeInlineGenerationJob(monitoringJob, assembledHtml, assembledHtml, BigDecimal.ZERO);
             return experimentMapper.toDto(experiment);
         } catch (ResponseStatusException ex) {
+            monitoringPayload.put("errorStatus", ex.getStatusCode().value());
+            monitoringPayload.put("errorReason", ex.getReason());
+            monitoringJob.setRequestBodyJson(writeJsonSilently(monitoringPayload));
             failInlineGenerationJob(monitoringJob, ex.getReason());
             throw ex;
         } catch (RuntimeException ex) {
+            monitoringPayload.put("errorType", ex.getClass().getSimpleName());
+            monitoringPayload.put("errorMessage", ex.getMessage());
+            monitoringJob.setRequestBodyJson(writeJsonSilently(monitoringPayload));
             failInlineGenerationJob(monitoringJob, ex.getMessage());
             throw ex;
         }
+    }
+
+    private Map<String, Object> buildLhmMonitoringPayload(Experiment experiment, Long experimentId) {
+        Map<String, Object> monitoringPayload = new LinkedHashMap<>();
+        monitoringPayload.put("mode", "INLINE");
+        monitoringPayload.put("source", "LHM");
+        monitoringPayload.put("section", ExperimentPipelineSection.LANDING_PAGE_HTML.path());
+        monitoringPayload.put("experimentId", experimentId);
+        monitoringPayload.put("requestReceivedAt", Instant.now().toString());
+
+        Map<String, Object> inputs = new LinkedHashMap<>();
+        inputs.put("wireframePresent", StringUtils.hasText(experiment.getLandingPageWireframe()));
+        inputs.put("copyPresent", StringUtils.hasText(experiment.getLandingPageCopy()));
+        inputs.put("designPresetPresent", StringUtils.hasText(experiment.getLandingPageDesignPreset()));
+        inputs.put("imagePlanningPresent", StringUtils.hasText(experiment.getLandingPageImagePlanning()));
+        monitoringPayload.put("canonicalInputs", inputs);
+
+        return monitoringPayload;
     }
 
     @Transactional

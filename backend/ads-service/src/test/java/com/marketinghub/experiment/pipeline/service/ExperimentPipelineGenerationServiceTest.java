@@ -153,6 +153,7 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setId(31L);
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-31/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-31\"}}");
         experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
 
         when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
@@ -188,6 +189,7 @@ class ExperimentPipelineGenerationServiceTest {
         assertEquals("LHM", job.getModel());
         assertEquals("lhm-inline", job.getWorkerId());
         assertNotNull(job.getRequestBodyJson());
+        assertTrue(job.getRequestBodyJson().contains("\"designPresetPresent\":true"));
         assertNotNull(job.getResponseContent());
         assertNotNull(job.getFinishedAt());
     }
@@ -212,6 +214,7 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setId(35L);
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-35/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true},{\"name\":\"email\",\"type\":\"email\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-35\"}}");
         experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
 
         when(experimentRepository.findById(35L)).thenReturn(Optional.of(experiment));
@@ -241,6 +244,7 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setId(34L);
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\"}}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-34\"}}");
 
         when(experimentRepository.findById(34L)).thenReturn(Optional.of(experiment));
         when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -270,6 +274,7 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setId(33L);
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-33/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-33\"}}");
         when(experimentRepository.findById(33L)).thenReturn(Optional.of(experiment));
         when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(landingHtmlModule.assembleHtmlDocument(experiment))
@@ -289,6 +294,21 @@ class ExperimentPipelineGenerationServiceTest {
         assertEquals(ExperimentPipelineGenerationJobStage.FAILED, job.getStage());
         assertTrue(job.getErrorMessage().contains("Divergência"));
         assertNotNull(job.getFinishedAt());
+    }
+
+    @Test
+    void generateLandingHtmlWithLhmFailsWhenDesignPresetMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(36L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\"}}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        when(experimentRepository.findById(36L)).thenReturn(Optional.of(experiment));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.generateLandingHtmlWithLhm(36L));
+
+        assertEquals(409, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("Preset de design"));
     }
 
     @Test

@@ -296,9 +296,27 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Próximos passos:** estabilizar operação, observabilidade e rollout gradual na Sprint 5.
 
 ## Relatório — Sprint 5
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** operação contínua + melhorias incrementais
+- **Status:** Em andamento
+- **Período:** iniciado em 26/04/2026
+- **Confirmação de status (26/04/2026):** Sprint 5 está **iniciada e em execução**, ainda **não concluída**.
+- **Escopo em execução:**
+  - definição de baseline operacional para coleta automática (latência, taxa de falha por fonte e taxa de referências úteis);
+  - desenho de persistência relacional para jobs, referências e lineage de coleta;
+  - plano de rollout gradual por workspace com feature flag;
+  - playbook inicial de incidentes para indisponibilidade de fontes externas.
+- **Entregas implementadas nesta rodada:**
+  - endpoint de resumo operacional por workspace: `GET /api/v1/mois/workspaces/{workspaceId}/collection-ops/summary`;
+  - instrumentação operacional no módulo `mois` para consolidar tentativas, falhas, retries, eventos de rate limit e latência média;
+  - execução da coleta com status de job (`RUNNING` → `COMPLETED`/`FAILED`) e retry controlado por fonte;
+  - gate de rollout para coleta automática por workspace (com bloqueio explícito quando fora da política).
+- **Evidências (PRs, commits, testes):**
+  - documento de status atualizado: `docs/mois/mois-status-implantacao-2026-04-26.md`;
+  - este ajuste de execução da Sprint 5 neste relatório único.
+- **Riscos/pendências atuais:**
+  - coleta ainda depende de persistência volátil em memória no módulo `mois`;
+  - ausência de telemetria consolidada por fonte para operação diária;
+  - necessidade de validar limites/rate limit por conector antes de ampliar rollout.
+- **Próximos passos (curto prazo):**
+  - publicar contrato técnico de observabilidade mínima da Sprint 5;
+  - implementar persistência relacional do ciclo de coleta com migrações;
+  - liberar rollout controlado para workspaces piloto com monitoramento ativo.

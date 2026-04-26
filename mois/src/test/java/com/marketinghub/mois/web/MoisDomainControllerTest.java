@@ -2,6 +2,7 @@ package com.marketinghub.mois.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -179,6 +180,24 @@ class MoisDomainControllerTest {
     }
 
     @Test
+    void shouldReturnForbiddenWhenCollectionRolloutBlocksWorkspace() throws Exception {
+        doThrow(new IllegalStateException("collection rollout is disabled for workspace"))
+                .when(service).createCollectionJob(any());
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "niche": "nutricao",
+                                  "sources": ["CLICKBANK"],
+                                  "timeWindow": "LAST_7_DAYS"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void shouldListCollectedReferencesByJob() throws Exception {
         when(service.listCollectedReferencesByJob("mois-collect-001", "CLICKBANK", "nutricao", 70, "HIGH"))
                 .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
@@ -252,5 +271,40 @@ class MoisDomainControllerTest {
         mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-1/import-and-start-extraction"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.extractionId").value("ext-1"));
+    }
+
+    @Test
+    void shouldReturnCollectionOpsSummary() throws Exception {
+        when(service.getCollectionOpsSummary("workspace-001"))
+                .thenReturn(new MoisWorkspaceDtos.CollectionOpsSummaryResponse(
+                        "workspace-001",
+                        true,
+                        3,
+                        0,
+                        0,
+                        3,
+                        0,
+                        6,
+                        320,
+                        2,
+                        List.of(new MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse(
+                                "CLICKBANK",
+                                3,
+                                3,
+                                0,
+                                0,
+                                0,
+                                120,
+                                null,
+                                Instant.parse("2026-04-26T12:00:00Z")
+                        )),
+                        Instant.parse("2026-04-26T12:01:00Z")
+                ));
+
+        mockMvc.perform(get("/api/v1/mois/workspaces/workspace-001/collection-ops/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workspaceId").value("workspace-001"))
+                .andExpect(jsonPath("$.completedJobs").value(3))
+                .andExpect(jsonPath("$.sourceBreakdown[0].source").value("CLICKBANK"));
     }
 }

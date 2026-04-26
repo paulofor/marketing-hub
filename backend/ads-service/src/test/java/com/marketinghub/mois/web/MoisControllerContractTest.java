@@ -56,6 +56,41 @@ class MoisControllerContractTest {
     }
 
     @Test
+    void shouldReturnCollectionOpsSummaryContract() throws Exception {
+        when(gateway.getCollectionOpsSummary("workspace-001"))
+                .thenReturn(new MoisWorkspaceDtos.CollectionOpsSummaryResponse(
+                        "workspace-001",
+                        true,
+                        2,
+                        0,
+                        0,
+                        2,
+                        0,
+                        4,
+                        280,
+                        1,
+                        List.of(new MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse(
+                                "CLICKBANK",
+                                2,
+                                2,
+                                0,
+                                0,
+                                0,
+                                110,
+                                null,
+                                Instant.parse("2026-04-26T12:00:00Z")
+                        )),
+                        Instant.parse("2026-04-26T12:00:30Z")
+                ));
+
+        mockMvc.perform(get("/api/v1/mois/workspaces/workspace-001/collection-ops/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workspaceId").value("workspace-001"))
+                .andExpect(jsonPath("$.totalJobs").value(2))
+                .andExpect(jsonPath("$.sourceBreakdown[0].source").value("CLICKBANK"));
+    }
+
+    @Test
     void shouldReturnValidationErrorWhenRequiredFieldsMissing() throws Exception {
         mockMvc.perform(post("/api/v1/mois/discovery-requests")
                         .contentType(MediaType.APPLICATION_JSON)

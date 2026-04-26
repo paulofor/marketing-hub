@@ -175,7 +175,11 @@ public class MoisDomainController {
     public MoisWorkspaceDtos.CollectionJobResponse createCollectionJob(
             @Valid @RequestBody MoisWorkspaceDtos.CreateCollectionJobRequest request
     ) {
-        return service.createCollectionJob(request);
+        try {
+            return service.createCollectionJob(request);
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage());
+        }
     }
 
     @GetMapping("/collection-jobs")
@@ -241,5 +245,10 @@ public class MoisDomainController {
     ) {
         return service.getCollectedReferenceLineage(jobId, referenceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference lineage not found"));
+    }
+
+    @GetMapping("/workspaces/{workspaceId}/collection-ops/summary")
+    public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(@PathVariable String workspaceId) {
+        return service.getCollectionOpsSummary(workspaceId);
     }
 }

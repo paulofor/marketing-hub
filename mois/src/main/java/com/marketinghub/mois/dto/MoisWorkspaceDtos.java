@@ -247,4 +247,33 @@ public final class MoisWorkspaceDtos {
             Instant updatedAt
     ) {
     }
+
+    public record CollectionSourceOpsSummaryResponse(
+            String source,
+            int attempts,
+            int successes,
+            int failures,
+            int retries,
+            int rateLimitedEvents,
+            long averageLatencyMs,
+            String lastError,
+            Instant lastAttemptAt
+    ) {
+    }
+
+    public record CollectionOpsSummaryResponse(
+            String workspaceId,
+            boolean rolloutEnabled,
+            int totalJobs,
+            int queuedJobs,
+            int runningJobs,
+            int completedJobs,
+            int failedJobs,
+            int totalCollectedReferences,
+            long averageJobLatencyMs,
+            int totalRetries,
+            List<CollectionSourceOpsSummaryResponse> sourceBreakdown,
+            Instant generatedAt
+    ) {
+    }
 }

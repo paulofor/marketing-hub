@@ -260,11 +260,12 @@ class MoisDomainServiceTest {
                 )
         );
 
-        MoisWorkspaceDtos.CollectionJobListResponse jobs = service.listCollectionJobs("workspace-001", "QUEUED");
+        MoisWorkspaceDtos.CollectionJobListResponse jobs = service.listCollectionJobs("workspace-001", "COMPLETED");
 
         assertThat(created.jobId()).startsWith("mois-collect-");
         assertThat(jobs.items()).hasSize(1);
         assertThat(jobs.items().getFirst().workspaceId()).isEqualTo("workspace-001");
+        assertThat(created.status()).isEqualTo("COMPLETED");
     }
 
     @Test
@@ -388,6 +389,50 @@ class MoisDomainServiceTest {
         assertThat(lineage.importedReferenceId()).isEqualTo(action.importedReferenceId());
         assertThat(lineage.extractionId()).isEqualTo(action.extractionId());
         assertThat(lineage.generatedLibraryBlockIds()).hasSize(2);
+    }
+
+    @Test
+    void shouldExposeCollectionOpsSummaryWithRetriesAndLatency() {
+        service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-ops",
+                        "nutricao",
+                        "perda de gordura",
+                        List.of("META_AD_LIBRARY", "CLICKBANK"),
+                        "LAST_7_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        55
+                )
+        );
+
+        MoisWorkspaceDtos.CollectionOpsSummaryResponse summary = service.getCollectionOpsSummary("workspace-ops");
+        assertThat(summary.workspaceId()).isEqualTo("workspace-ops");
+        assertThat(summary.totalJobs()).isEqualTo(1);
+        assertThat(summary.completedJobs()).isEqualTo(1);
+        assertThat(summary.totalRetries()).isGreaterThanOrEqualTo(1);
+        assertThat(summary.averageJobLatencyMs()).isGreaterThan(0);
+        assertThat(summary.sourceBreakdown()).isNotEmpty();
+    }
+
+    @Test
+    void shouldBlockCollectionWhenRolloutDoesNotAllowWorkspace() {
+        service.configureCollectionRollout(true, List.of("workspace-allowed"));
+
+        var request = new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                "workspace-blocked",
+                "nutricao",
+                "tema",
+                List.of("CLICKBANK"),
+                "LAST_7_DAYS",
+                10,
+                "pt-BR",
+                "BR",
+                40
+        );
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> service.createCollectionJob(request));
     }
 
     private static class HtmlHandler implements HttpHandler {

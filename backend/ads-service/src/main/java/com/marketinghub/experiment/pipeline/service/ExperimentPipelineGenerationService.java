@@ -738,6 +738,12 @@ public class ExperimentPipelineGenerationService {
             }
             return;
         }
+        if (section == ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET) {
+            log.info("Fila automática finalizada após LANDING_PAGE_DESIGN_PRESET para experimento {}. "
+                            + "A geração do HTML deve ser iniciada manualmente (LHM ou IA).",
+                    experimentId);
+            return;
+        }
 
         ExperimentPipelineSection successor = section.successor();
         if (successor == null) {

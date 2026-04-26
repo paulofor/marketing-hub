@@ -1066,6 +1066,75 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void completeJobDoesNotAutomaticallyEnqueueLandingHtmlAfterDesignPreset() {
+        Experiment experiment = new Experiment();
+        experiment.setId(314L);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "hero",
+                        "surfaceSpec": {"surfaceToken": "surface-base", "notes": "hero"}
+                      }
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET);
+        String designPresetPayload = """
+                {
+                  "landingPageDesignPreset": {
+                    "presetId": "preset-manual-html",
+                    "theme": {
+                      "palette": {
+                        "background":"#ffffff",
+                        "surface":"#ffffff",
+                        "textPrimary":"#111827",
+                        "textMuted":"#6b7280",
+                        "brandPrimary":"#2563eb",
+                        "brandSecondary":"#1d4ed8",
+                        "border":"#e5e7eb"
+                      }
+                    },
+                    "sectionPresets": [
+                      {
+                        "sectionId":"hero",
+                        "surfaceStyle":"band",
+                        "contrastMode":"normal",
+                        "layoutPreset":"hero-focus",
+                        "emphasis":"primary",
+                        "notes":"hero"
+                      }
+                    ],
+                    "componentPresets": {},
+                    "motion": {"enabled": false, "intensity": "none"},
+                    "consistencyChecks": [{"check":"THEME_CONTRAST","status":"PASS"}]
+                  },
+                  "experimentMetadata": {
+                    "primary_variable":"pv",
+                    "variant_id":"v1",
+                    "stage":"AD",
+                    "control_or_treatment":"treatment",
+                    "asset_role":"landing-page-design-preset"
+                  }
+                }
+                """;
+
+        service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                designPresetPayload,
+                "{\"id\":\"resp_design\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                50,
+                30,
+                null));
+
+        verify(jobRepository, never()).save(argThat(saved ->
+                saved.getSection() == ExperimentPipelineSection.LANDING_PAGE_HTML
+                        && saved.getStatus() == ExperimentPipelineGenerationJobStatus.PENDING));
+    }
+
+    @Test
     void generateLandingDesignPresetFailsWhenPlannedImagesAreNotFullyGenerated() {
         Experiment experiment = new Experiment();
         experiment.setId(302L);

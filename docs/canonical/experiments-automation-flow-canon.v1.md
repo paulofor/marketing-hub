@@ -31,16 +31,22 @@ Quando a fila automática estiver ativa, o pipeline deve respeitar a sequência 
 4. `landingPageCopy` (Texto da Landing)
 5. `landingPageWireframe` (Layout da Landing)
 6. `landingPageImagePlanning` (Planejamento de Imagens da Landing)
-7. `landingPageHtml` (HTML da Landing)
+7. `landingPageDesignPreset` (Preset visual da Landing)
+
+Após `landingPageDesignPreset`, a etapa `landingPageHtml` **não** deve ser enfileirada automaticamente.
+Ela passa a ser uma escolha manual do usuário na UI, com duas opções válidas:
+
+- `Gerar com LHM` (determinístico);
+- `Gerar com IA` (não determinístico, sujeito ao contrato de validação do backend).
 
 Regra canônica:
 
 - uma etapa só pode iniciar quando a etapa anterior estiver em `COMPLETED`.
 - avanço fora de ordem é drift e deve ser bloqueado no backend.
 
-### 3.1 Desvio controlado obrigatório entre planejamento e HTML
+### 3.1 Desvio controlado obrigatório entre planejamento e preset visual
 
-Entre as etapas `landingPageImagePlanning` e `landingPageHtml`, existe um
+Entre as etapas `landingPageImagePlanning` e `landingPageDesignPreset`, existe um
 **desvio controlado obrigatório** para geração das imagens finais da landing.
 
 Fluxo canônico:
@@ -50,16 +56,18 @@ Fluxo canônico:
 3. fila entra em `WAITING_DEPENDENCY` enquanto houver item em `PLANNED`,
    `PENDING` ou `PROCESSING`;
 4. após concluir (ou consolidar erro tratável) os itens de imagem, a fila
-   retorna ao trilho principal e só então libera `landingPageHtml`.
+   retorna ao trilho principal e só então libera `landingPageDesignPreset`.
 
 Regras mandatórias:
 
-- `landingPageHtml` não pode iniciar enquanto a geração de imagens estiver em
+- `landingPageDesignPreset` não pode iniciar enquanto a geração de imagens estiver em
   andamento.
-- o retorno ao trilho principal deve ser automático (sem exigir ação manual
-  quando não houver bloqueio).
+- o retorno ao trilho principal deve ser automático até `landingPageDesignPreset`
+  (sem exigir ação manual quando não houver bloqueio).
 - se houver falha na geração de imagens, a UI deve apresentar causa e ação
   recomendada antes de permitir retomada.
+- após `landingPageDesignPreset`, a continuidade para `landingPageHtml` exige
+  comando manual explícito do usuário (LHM ou IA).
 
 ## 4. Estados da fila automática
 
@@ -69,7 +77,8 @@ Estados permitidos para execução da fila:
 - `RUNNING`: fila automática ativa com etapa em processamento;
 - `WAITING_DEPENDENCY`: aguardando pré-condição externa (worker, artefato obrigatório ou sincronização);
 - `BLOCKED`: execução interrompida por erro de regra, contrato ou validação;
-- `COMPLETED`: todas as etapas automáticas concluídas para o experimento.
+- `COMPLETED`: todas as etapas automáticas concluídas para o experimento
+  (termina em `landingPageDesignPreset`).
 
 Regra canônica:
 

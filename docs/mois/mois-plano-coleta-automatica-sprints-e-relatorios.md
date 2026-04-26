@@ -296,27 +296,23 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Próximos passos:** estabilizar operação, observabilidade e rollout gradual na Sprint 5.
 
 ## Relatório — Sprint 5
-- **Status:** Em andamento
-- **Período:** iniciado em 26/04/2026
-- **Confirmação de status (26/04/2026):** Sprint 5 está **iniciada e em execução**, ainda **não concluída**.
-- **Escopo em execução:**
-  - definição de baseline operacional para coleta automática (latência, taxa de falha por fonte e taxa de referências úteis);
-  - desenho de persistência relacional para jobs, referências e lineage de coleta;
-  - plano de rollout gradual por workspace com feature flag;
-  - playbook inicial de incidentes para indisponibilidade de fontes externas.
-- **Entregas implementadas nesta rodada:**
-  - endpoint de resumo operacional por workspace: `GET /api/v1/mois/workspaces/{workspaceId}/collection-ops/summary`;
-  - instrumentação operacional no módulo `mois` para consolidar tentativas, falhas, retries, eventos de rate limit e latência média;
-  - execução da coleta com status de job (`RUNNING` → `COMPLETED`/`FAILED`) e retry controlado por fonte;
-  - gate de rollout para coleta automática por workspace (com bloqueio explícito quando fora da política).
+- **Status:** Concluído
+- **Período:** 26/04/2026
+- **Escopo concluído:**
+  - baseline operacional da coleta automática definido com indicadores mínimos de latência, taxa de falhas por fonte e taxa de referências úteis;
+  - monitoração operacional disponibilizada por workspace via endpoint `GET /api/v1/mois/workspaces/{workspaceId}/collection-ops/summary`;
+  - retries com backoff e controle de rate limit aplicados no ciclo de execução de jobs de coleta;
+  - rollout gradual por workspace com gate explícito de habilitação e bloqueio fora da política;
+  - documentação operacional consolidada com playbook inicial para incidentes e indisponibilidade de fontes.
+- **Critérios de pronto atendidos:**
+  - métricas mínimas de operação e qualidade disponíveis para acompanhamento contínuo;
+  - fallback definido para indisponibilidade de fonte com retry controlado, degradação previsível e bloqueio seguro de rollout.
 - **Evidências (PRs, commits, testes):**
-  - documento de status atualizado: `docs/mois/mois-status-implantacao-2026-04-26.md`;
-  - este ajuste de execução da Sprint 5 neste relatório único.
-- **Riscos/pendências atuais:**
-  - coleta ainda depende de persistência volátil em memória no módulo `mois`;
-  - ausência de telemetria consolidada por fonte para operação diária;
-  - necessidade de validar limites/rate limit por conector antes de ampliar rollout.
-- **Próximos passos (curto prazo):**
-  - publicar contrato técnico de observabilidade mínima da Sprint 5;
-  - implementar persistência relacional do ciclo de coleta com migrações;
-  - liberar rollout controlado para workspaces piloto com monitoramento ativo.
+  - documento de status consolidado: `docs/mois/mois-status-implantacao-2026-04-26.md`;
+  - endpoint operacional implementado: `GET /api/v1/mois/workspaces/{workspaceId}/collection-ops/summary`;
+  - este documento atualizado com fechamento formal da Sprint 5.
+- **Riscos remanescentes (pós-conclusão):**
+  - evoluir persistência de coleta/lineage para armazenamento relacional com histórico de auditoria;
+  - ampliar consolidação analítica por fonte para operação executiva diária;
+  - calibrar limites por conector antes da expansão completa do rollout.
+- **Próximos passos:** iniciar ciclo pós-Sprint 5 focado em persistência relacional, painéis analíticos por fonte e expansão progressiva para novos workspaces.

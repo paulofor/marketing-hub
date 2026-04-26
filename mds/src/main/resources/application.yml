@@ -9,7 +9,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,logfile
+
+logging:
+  file:
+    name: ${MDS_LOG_FILE:/var/log/marketinghub/mds.log}
 
 mds:
   loop-enabled: true

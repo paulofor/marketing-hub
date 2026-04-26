@@ -33,6 +33,8 @@ mcp:
     facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
     email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log}
     lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://191.252.102.54:8092/api/v1/logs/runtime?lines=200}
+    mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}
+    mois-path: ${MCP_LOG_MOIS_PATH:http://177.153.62.107:8094/actuator/logfile}
     max-lines: ${MCP_LOG_MAX_LINES:500}
   meta:
     enabled: ${MCP_META_ENABLED:true}

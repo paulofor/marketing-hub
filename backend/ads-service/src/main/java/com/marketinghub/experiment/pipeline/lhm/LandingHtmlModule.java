@@ -100,7 +100,6 @@ public class LandingHtmlModule {
         Map<String, Object> designRoot = safeReadObject(experiment.getLandingPageDesignPreset());
         Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
         Map<String, Object> palette = extractPalette(designPreset);
-        Map<String, Map<String, Object>> sectionDesignPresets = indexSectionDesignPresets(designPreset);
 
         String formId = firstNonBlank(asTrimmedString(formSpec.get("formId")), "lead-capture-primary");
         String submitTarget = firstNonBlank(asTrimmedString(formSpec.get("submitTarget")), "/api/flows/submissions");
@@ -159,9 +158,6 @@ public class LandingHtmlModule {
             String surfaceToken = firstNonBlank(asTrimmedString(surface.get("surfaceToken")), "surface-base");
             String surfaceStyle = firstNonBlank(asTrimmedString(surface.get("style")), "band");
             String surfaceContrast = firstNonBlank(asTrimmedString(surface.get("contrastMode")), "normal");
-            Map<String, Object> sectionPreset = sectionDesignPresets.getOrDefault(sectionId.toLowerCase(), Map.of());
-            surfaceStyle = firstNonBlank(asTrimmedString(sectionPreset.get("surfaceStyle")), surfaceStyle);
-            surfaceContrast = firstNonBlank(asTrimmedString(sectionPreset.get("contrastMode")), surfaceContrast);
             String surfaceStyleClass = "surface-" + normalizeCssToken(surfaceStyle);
             String surfaceContrastClass = "contrast-" + normalizeCssToken(surfaceContrast);
 
@@ -326,29 +322,6 @@ public class LandingHtmlModule {
             return Map.of();
         }
         return (Map<String, Object>) rawPalette;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> indexSectionDesignPresets(Map<String, Object> designPreset) {
-        if (designPreset == null || designPreset.isEmpty()) {
-            return Map.of();
-        }
-        if (!(designPreset.get("sectionPresets") instanceof List<?> rawSectionPresets)) {
-            return Map.of();
-        }
-        java.util.LinkedHashMap<String, Map<String, Object>> indexed = new java.util.LinkedHashMap<>();
-        for (Object rawPreset : rawSectionPresets) {
-            if (!(rawPreset instanceof Map<?, ?> rawPresetMap)) {
-                continue;
-            }
-            Map<String, Object> preset = (Map<String, Object>) rawPresetMap;
-            String sectionId = asTrimmedString(preset.get("sectionId"));
-            if (!StringUtils.hasText(sectionId)) {
-                continue;
-            }
-            indexed.put(sectionId.toLowerCase(), preset);
-        }
-        return indexed;
     }
 
     @SuppressWarnings("unchecked")

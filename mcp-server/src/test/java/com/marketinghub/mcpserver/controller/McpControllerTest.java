@@ -45,6 +45,8 @@ class McpControllerTest {
         registry.add("mcp.logs.email-service-path", () -> TEST_LOG_DIR.resolve("email-service.log").toString());
         registry.add("mcp.logs.lead-portal-payment-path",
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
+        registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
+        registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.meta.enabled", () -> "false");
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
@@ -180,7 +182,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois"));
     }
 
     @Test
@@ -244,6 +246,8 @@ class McpControllerApiKeyEnabledTest {
         registry.add("mcp.logs.email-service-path", () -> TEST_LOG_DIR.resolve("email-service.log").toString());
         registry.add("mcp.logs.lead-portal-payment-path",
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
+        registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
+        registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.meta.enabled", () -> "false");
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");

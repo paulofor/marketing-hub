@@ -194,5 +194,17 @@ export interface MoisCollectedReferenceActionResponse {
   action: string;
   status: string;
   importedReferenceId?: string;
+  extractionId?: string;
+  generatedLibraryBlockIds: string[];
+  updatedAt: string;
+}
+
+export interface MoisCollectedReferenceLineageResponse {
+  jobId: string;
+  referenceId: string;
+  sourceUrl: string;
+  importedReferenceId?: string;
+  extractionId?: string;
+  generatedLibraryBlockIds: string[];
   updatedAt: string;
 }

@@ -351,6 +351,45 @@ class MoisDomainServiceTest {
         assertThat(discarded.status()).isEqualTo("DISCARDED");
     }
 
+    @Test
+    void shouldImportAndStartExtractionWithLineageAndLibraryBlocks() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-004",
+                        "fisioterapia",
+                        "dor lombar",
+                        List.of("CLICKBANK"),
+                        "LAST_30_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        50
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceResponse reference = service
+                .listCollectedReferencesByJob(created.jobId(), null, null, null, null)
+                .orElseThrow()
+                .items()
+                .getFirst();
+
+        MoisWorkspaceDtos.CollectedReferenceActionResponse action = service
+                .importAndStartExtraction(created.jobId(), reference.referenceId())
+                .orElseThrow();
+
+        assertThat(action.action()).isEqualTo("IMPORT_AND_START_EXTRACTION");
+        assertThat(action.importedReferenceId()).isNotBlank();
+        assertThat(action.extractionId()).isNotBlank();
+        assertThat(action.generatedLibraryBlockIds()).hasSize(2);
+
+        MoisWorkspaceDtos.CollectedReferenceLineageResponse lineage = service
+                .getCollectedReferenceLineage(created.jobId(), reference.referenceId())
+                .orElseThrow();
+        assertThat(lineage.importedReferenceId()).isEqualTo(action.importedReferenceId());
+        assertThat(lineage.extractionId()).isEqualTo(action.extractionId());
+        assertThat(lineage.generatedLibraryBlockIds()).hasSize(2);
+    }
+
     private static class HtmlHandler implements HttpHandler {
         private final String body;
 

@@ -224,4 +224,22 @@ public class MoisDomainController {
         return service.importCollectedReference(jobId, referenceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
     }
+
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import-and-start-extraction")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse importAndStartExtraction(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return service.importAndStartExtraction(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
+
+    @GetMapping("/collection-jobs/{jobId}/references/{referenceId}/lineage")
+    public MoisWorkspaceDtos.CollectedReferenceLineageResponse getCollectedReferenceLineage(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return service.getCollectedReferenceLineage(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference lineage not found"));
+    }
 }

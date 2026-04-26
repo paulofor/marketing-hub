@@ -231,6 +231,19 @@ public final class MoisWorkspaceDtos {
             String action,
             String status,
             String importedReferenceId,
+            String extractionId,
+            List<String> generatedLibraryBlockIds,
+            Instant updatedAt
+    ) {
+    }
+
+    public record CollectedReferenceLineageResponse(
+            String jobId,
+            String referenceId,
+            String sourceUrl,
+            String importedReferenceId,
+            String extractionId,
+            List<String> generatedLibraryBlockIds,
             Instant updatedAt
     ) {
     }

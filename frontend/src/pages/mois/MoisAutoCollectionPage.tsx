@@ -4,7 +4,9 @@ import {
   useCreateMoisCollectionJob,
   useDiscardMoisCollectedReference,
   useFavoriteMoisCollectedReference,
+  useImportAndStartExtractionMoisCollectedReference,
   useImportMoisCollectedReference,
+  useMoisCollectedReferenceLineage,
   useMoisCollectedReferences,
 } from "../../api/mois/useMoisCollection";
 
@@ -21,11 +23,13 @@ export default function MoisAutoCollectionPage() {
 
   const [sourceFilter, setSourceFilter] = useState("");
   const [confidenceFilter, setConfidenceFilter] = useState("");
+  const [selectedLineageReferenceId, setSelectedLineageReferenceId] = useState("");
 
   const createJob = useCreateMoisCollectionJob();
   const favoriteMutation = useFavoriteMoisCollectedReference();
   const discardMutation = useDiscardMoisCollectedReference();
   const importMutation = useImportMoisCollectedReference();
+  const importAndExtractMutation = useImportAndStartExtractionMoisCollectedReference();
 
   const filters = useMemo(
     () => ({
@@ -38,6 +42,7 @@ export default function MoisAutoCollectionPage() {
   );
 
   const referencesQuery = useMoisCollectedReferences(activeJobId, filters);
+  const lineageQuery = useMoisCollectedReferenceLineage(activeJobId, selectedLineageReferenceId);
 
   function toggleSource(source: string) {
     setSelectedSources((prev) => (prev.includes(source) ? prev.filter((item) => item !== source) : [...prev, source]));
@@ -221,7 +226,7 @@ export default function MoisAutoCollectionPage() {
                 <tbody>
                   {referencesQuery.data.map((item) => {
                     const isActing =
-                      favoriteMutation.isPending || discardMutation.isPending || importMutation.isPending;
+                      favoriteMutation.isPending || discardMutation.isPending || importMutation.isPending || importAndExtractMutation.isPending;
                     return (
                       <tr key={item.referenceId}>
                         <td>
@@ -261,12 +266,47 @@ export default function MoisAutoCollectionPage() {
                           >
                             {importMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : "Importar"}
                           </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            disabled={isActing || item.status === "IMPORTED"}
+                            onClick={() => importAndExtractMutation.mutate({ jobId: item.jobId, referenceId: item.referenceId })}
+                          >
+                            {importAndExtractMutation.isPending ? (
+                              <span className="spinner-border spinner-border-sm" />
+                            ) : (
+                              "Importar + Extração"
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => setSelectedLineageReferenceId(item.referenceId)}
+                          >
+                            Ver lineage
+                          </button>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+            </div>
+          ) : null}
+
+          {selectedLineageReferenceId ? (
+            <div className="border rounded p-3 mt-3">
+              <h3 className="h6 mb-2">Lineage da referência</h3>
+              {lineageQuery.isLoading ? <p className="text-secondary mb-0">Carregando lineage...</p> : null}
+              {lineageQuery.isError ? <p className="text-danger mb-0">Não foi possível carregar o lineage.</p> : null}
+              {lineageQuery.data ? (
+                <ul className="mb-0">
+                  <li>Fonte original: {lineageQuery.data.sourceUrl}</li>
+                  <li>Referência importada: {lineageQuery.data.importedReferenceId ?? "—"}</li>
+                  <li>Extração iniciada: {lineageQuery.data.extractionId ?? "—"}</li>
+                  <li>Blocos de biblioteca: {lineageQuery.data.generatedLibraryBlockIds.join(", ") || "—"}</li>
+                </ul>
+              ) : null}
             </div>
           ) : null}
         </div>

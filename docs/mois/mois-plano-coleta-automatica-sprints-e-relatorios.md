@@ -271,12 +271,29 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Próximos passos:** integrar automaticamente com Extração e Biblioteca na Sprint 4.
 
 ## Relatório — Sprint 4
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** fechar operação e rollout na Sprint 5
+- **Status:** Concluído
+- **Período:** 26/04/2026
+- **Escopo concluído:**
+  - importação de referência coletada para o workspace MOIS com atualização de status;
+  - ação de **clique único** `Importar + Extração`, iniciando extração draft automaticamente;
+  - geração inicial de blocos de biblioteca a partir da referência importada;
+  - endpoint de lineage por referência coletada (`source -> importedReference -> extraction -> blocks`);
+  - visualização de lineage na UI de coleta automática.
+- **Evidências (PRs, commits, testes):**
+  - frontend:
+    - `frontend/src/pages/mois/MoisAutoCollectionPage.tsx`
+    - `frontend/src/api/mois/useMoisCollection.ts`
+    - `frontend/src/api/mois/types.ts`
+  - backend/mois:
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisModuleGateway.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/dto/MoisWorkspaceDtos.java`
+    - `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+    - `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+- **Riscos/pendências:**
+  - lineage ainda em persistência volátil (memória) no módulo `mois`;
+  - necessário evoluir para persistência relacional e auditoria completa na Sprint 5.
+- **Próximos passos:** estabilizar operação, observabilidade e rollout gradual na Sprint 5.
 
 ## Relatório — Sprint 5
 - **Status:** Planejado

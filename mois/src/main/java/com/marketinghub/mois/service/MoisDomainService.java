@@ -55,6 +55,7 @@ public class MoisDomainService {
     private final Map<String, String> runOperations = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.CollectionJobResponse> collectionJobs = new ConcurrentHashMap<>();
     private final Map<String, List<MoisWorkspaceDtos.CollectedReferenceResponse>> collectedReferencesByJob = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> collectedReferenceLineage = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.ReferenceResponse> referencesById = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.ExtractionDraftResponse> extractionByReferenceId = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.LibraryBlockResponse> libraryBlocksById = new ConcurrentHashMap<>();
@@ -757,6 +758,23 @@ public class MoisDomainService {
     }
 
     public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReference(String jobId, String referenceId) {
+        return importCollectedReferenceInternal(jobId, referenceId, false);
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importAndStartExtraction(String jobId, String referenceId) {
+        return importCollectedReferenceInternal(jobId, referenceId, true);
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceLineageResponse> getCollectedReferenceLineage(String jobId, String referenceId) {
+        MoisWorkspaceDtos.CollectedReferenceLineageResponse lineage = collectedReferenceLineage.get(lineageKey(jobId, referenceId));
+        return Optional.ofNullable(lineage);
+    }
+
+    private Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReferenceInternal(
+            String jobId,
+            String referenceId,
+            boolean startExtraction
+    ) {
         if (!collectionJobs.containsKey(jobId)) {
             return Optional.empty();
         }
@@ -783,7 +801,38 @@ public class MoisDomainService {
                     Instant.now()
             );
             referencesById.put(importedReferenceId, imported);
-            return updateCollectedReference(jobId, referenceId, "IMPORT", current -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+            String extractionId = null;
+            if (startExtraction) {
+                MoisWorkspaceDtos.UpsertExtractionDraftRequest extractionSeed = new MoisWorkspaceDtos.UpsertExtractionDraftRequest(
+                        "Dor inferida da referência coletada",
+                        item.title(),
+                        "Mecanismo a validar com base no criativo coletado",
+                        "Prova inicial: score " + item.successScore(),
+                        "Oferta importada de " + item.source(),
+                        List.of(item.url())
+                );
+                MoisWorkspaceDtos.ExtractionDraftResponse extractionDraft = upsertExtractionDraft(importedReferenceId, extractionSeed);
+                extractionId = extractionDraft.extractionId();
+            }
+
+            List<String> generatedBlockIds = generateLibraryBlocksFromCollectedReference(job.workspaceId(), item);
+            collectedReferenceLineage.put(
+                    lineageKey(jobId, referenceId),
+                    new MoisWorkspaceDtos.CollectedReferenceLineageResponse(
+                            jobId,
+                            referenceId,
+                            item.url(),
+                            importedReferenceId,
+                            extractionId,
+                            generatedBlockIds,
+                            Instant.now()
+                    )
+            );
+
+            final String finalExtractionId = extractionId;
+            final List<String> finalGeneratedBlockIds = generatedBlockIds;
+            return updateCollectedReference(jobId, referenceId, startExtraction ? "IMPORT_AND_START_EXTRACTION" : "IMPORT",
+                    current -> new MoisWorkspaceDtos.CollectedReferenceResponse(
                     current.referenceId(),
                     current.jobId(),
                     current.source(),
@@ -802,7 +851,7 @@ public class MoisDomainService {
                     current.evidenceScore(),
                     current.collectedAt(),
                     current.rawMetadata()
-            ));
+            ), finalExtractionId, finalGeneratedBlockIds);
         }
         return Optional.empty();
     }
@@ -1169,6 +1218,17 @@ public class MoisDomainService {
             String action,
             Function<MoisWorkspaceDtos.CollectedReferenceResponse, MoisWorkspaceDtos.CollectedReferenceResponse> updater
     ) {
+        return updateCollectedReference(jobId, referenceId, action, updater, null, List.of());
+    }
+
+    private Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> updateCollectedReference(
+            String jobId,
+            String referenceId,
+            String action,
+            Function<MoisWorkspaceDtos.CollectedReferenceResponse, MoisWorkspaceDtos.CollectedReferenceResponse> updater,
+            String extractionId,
+            List<String> generatedLibraryBlockIds
+    ) {
         if (!collectionJobs.containsKey(jobId)) {
             return Optional.empty();
         }
@@ -1187,10 +1247,50 @@ public class MoisDomainService {
                     action,
                     updated.status(),
                     updated.importedReferenceId(),
+                    extractionId,
+                    generatedLibraryBlockIds,
                     Instant.now()
             ));
         }
         return Optional.empty();
+    }
+
+    private List<String> generateLibraryBlocksFromCollectedReference(
+            String workspaceId,
+            MoisWorkspaceDtos.CollectedReferenceResponse item
+    ) {
+        Instant now = Instant.now();
+        String promiseBlockId = UUID.randomUUID().toString();
+        String proofBlockId = UUID.randomUUID().toString();
+        MoisWorkspaceDtos.LibraryBlockResponse promiseBlock = new MoisWorkspaceDtos.LibraryBlockResponse(
+                promiseBlockId,
+                workspaceId,
+                "PROMISE",
+                "Importado de " + item.source() + ": " + trimTo(item.title(), 90),
+                List.of(item.niche(), "AUTO_COLLECTION"),
+                Math.min(1.0, item.successScore() / 100.0),
+                "AUTO_COLLECTED_REFERENCE_" + item.referenceId(),
+                item.favorite(),
+                now
+        );
+        MoisWorkspaceDtos.LibraryBlockResponse proofBlock = new MoisWorkspaceDtos.LibraryBlockResponse(
+                proofBlockId,
+                workspaceId,
+                "PROOF",
+                "Sinal " + item.successSignal() + " com confiança " + item.confidenceLevel(),
+                List.of(item.niche(), "AUTO_COLLECTION"),
+                Math.min(1.0, item.evidenceScore() / 100.0),
+                "AUTO_COLLECTED_REFERENCE_" + item.referenceId(),
+                item.favorite(),
+                now.minusSeconds(1)
+        );
+        libraryBlocksById.put(promiseBlockId, promiseBlock);
+        libraryBlocksById.put(proofBlockId, proofBlock);
+        return List.of(promiseBlockId, proofBlockId);
+    }
+
+    private String lineageKey(String jobId, String referenceId) {
+        return jobId + "::" + referenceId;
     }
 
     private SourceMetricSnapshot buildSourceMetricSnapshot(MoisWorkspaceDtos.CollectionJobResponse job, String source, int index) {

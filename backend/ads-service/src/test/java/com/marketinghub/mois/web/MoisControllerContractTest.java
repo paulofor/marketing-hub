@@ -480,6 +480,8 @@ class MoisControllerContractTest {
                         "FAVORITE",
                         "ACTIVE",
                         null,
+                        null,
+                        List.of(),
                         Instant.parse("2026-04-26T12:00:00Z")
                 )));
 
@@ -498,6 +500,8 @@ class MoisControllerContractTest {
                         "IMPORT",
                         "IMPORTED",
                         "ref-imported-001",
+                        null,
+                        List.of("block-1", "block-2"),
                         Instant.parse("2026-04-26T12:00:00Z")
                 )));
 
@@ -505,6 +509,45 @@ class MoisControllerContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IMPORTED"))
                 .andExpect(jsonPath("$.importedReferenceId").value("ref-imported-001"));
+    }
+
+    @Test
+    void shouldImportAndStartExtractionCollectedReference() throws Exception {
+        when(gateway.importAndStartExtraction("mois-collect-001", "ref-auto-001"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-auto-001",
+                        "IMPORT_AND_START_EXTRACTION",
+                        "IMPORTED",
+                        "ref-imported-001",
+                        "ext-001",
+                        List.of("block-1", "block-2"),
+                        Instant.parse("2026-04-26T12:10:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-auto-001/import-and-start-extraction"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.action").value("IMPORT_AND_START_EXTRACTION"))
+                .andExpect(jsonPath("$.extractionId").value("ext-001"));
+    }
+
+    @Test
+    void shouldReturnCollectedReferenceLineage() throws Exception {
+        when(gateway.getCollectedReferenceLineage("mois-collect-001", "ref-auto-001"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceLineageResponse(
+                        "mois-collect-001",
+                        "ref-auto-001",
+                        "https://example.com/offer",
+                        "ref-imported-001",
+                        "ext-001",
+                        List.of("block-1", "block-2"),
+                        Instant.parse("2026-04-26T12:12:00Z")
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-auto-001/lineage"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.importedReferenceId").value("ref-imported-001"))
+                .andExpect(jsonPath("$.generatedLibraryBlockIds[0]").value("block-1"));
     }
 
 }

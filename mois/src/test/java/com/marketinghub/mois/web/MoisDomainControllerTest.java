@@ -225,11 +225,32 @@ class MoisDomainControllerTest {
                         "FAVORITE",
                         "ACTIVE",
                         null,
+                        null,
+                        List.of(),
                         Instant.parse("2026-04-26T12:00:00Z")
                 )));
 
         mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-1/favorite"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.action").value("FAVORITE"));
+    }
+
+    @Test
+    void shouldImportAndStartExtraction() throws Exception {
+        when(service.importAndStartExtraction("mois-collect-001", "ref-1"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-1",
+                        "IMPORT_AND_START_EXTRACTION",
+                        "IMPORTED",
+                        "ref-imported-1",
+                        "ext-1",
+                        List.of("block-1", "block-2"),
+                        Instant.parse("2026-04-26T12:00:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-1/import-and-start-extraction"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.extractionId").value("ext-1"));
     }
 }

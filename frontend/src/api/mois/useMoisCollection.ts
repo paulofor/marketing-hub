@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   MoisCollectedReferenceActionResponse,
+  MoisCollectedReferenceLineageResponse,
   MoisCollectedReferenceListResponse,
   MoisCollectionJob,
   MoisCreateCollectionJobPayload,
@@ -40,7 +41,7 @@ export function useMoisCollectedReferences(jobId: string, filters: MoisCollectio
   });
 }
 
-function useCollectedReferenceAction(action: "favorite" | "discard" | "import") {
+function useCollectedReferenceAction(action: "favorite" | "discard" | "import" | "import-and-start-extraction") {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ jobId, referenceId }: { jobId: string; referenceId: string }) => {
@@ -51,7 +52,9 @@ function useCollectedReferenceAction(action: "favorite" | "discard" | "import") 
     },
     onSuccess: async ({ jobId }) => {
       await queryClient.invalidateQueries({ queryKey: ["mois", "collection-references", jobId] });
+      await queryClient.invalidateQueries({ queryKey: ["mois", "collection-lineage", jobId] });
       await queryClient.invalidateQueries({ queryKey: ["mois", "references"] });
+      await queryClient.invalidateQueries({ queryKey: ["mois", "library"] });
     },
   });
 }
@@ -59,3 +62,18 @@ function useCollectedReferenceAction(action: "favorite" | "discard" | "import") 
 export const useFavoriteMoisCollectedReference = () => useCollectedReferenceAction("favorite");
 export const useDiscardMoisCollectedReference = () => useCollectedReferenceAction("discard");
 export const useImportMoisCollectedReference = () => useCollectedReferenceAction("import");
+export const useImportAndStartExtractionMoisCollectedReference = () =>
+  useCollectedReferenceAction("import-and-start-extraction");
+
+export function useMoisCollectedReferenceLineage(jobId: string, referenceId: string) {
+  return useQuery({
+    queryKey: ["mois", "collection-lineage", jobId, referenceId],
+    enabled: Boolean(jobId) && Boolean(referenceId),
+    queryFn: async () => {
+      const { data } = await axios.get<MoisCollectedReferenceLineageResponse>(
+        `/api/v1/mois/collection-jobs/${jobId}/references/${referenceId}/lineage`,
+      );
+      return data;
+    },
+  });
+}

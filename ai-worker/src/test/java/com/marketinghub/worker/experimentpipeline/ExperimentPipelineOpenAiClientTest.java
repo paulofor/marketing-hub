@@ -203,6 +203,42 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void prependsLandingImagePlanningGuidanceRequiringFullWireframeCoverage() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                13L,
+                "landing-page-image-planning",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt de imagens"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).contains("`images[]` deve cobrir **100%** dos `sectionId` de `landingPageWireframe.sectionOrder`");
+        assertThat(userPrompt).contains("incluindo seções de formulário");
+        assertThat(userPrompt).contains("é proibido inventar `sectionId` fora do wireframe");
+    }
+
+    @Test
     void injectsStructuredCaseDataBlockIntoSectionTemplate() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

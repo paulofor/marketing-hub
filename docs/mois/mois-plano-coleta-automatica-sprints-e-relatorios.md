@@ -75,6 +75,7 @@ Transformar dados heterogêneos em score comparável entre fontes.
 ### Critérios de pronto
 - score reproduzível e documentado;
 - testes cobrindo cenários de dados ausentes/incompletos.
+- backend façade e módulo MOIS aceitando filtros de consulta por fonte, nicho, score mínimo e confiança.
 
 ---
 
@@ -196,28 +197,103 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Próximos passos:** iniciar Sprint 2 para normalização de sinais de sucesso e ranking comparável.
 
 ## Relatório — Sprint 2
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** entregar interface de coleta automática na Sprint 3
+- **Status:** Concluído
+- **Período:** 26/04/2026
+- **Escopo concluído:**
+  - normalização de sinal de sucesso com score composto (0–100) no módulo `mois`, usando pesos documentados:
+    - `0.45 * engagementRelative`
+    - `0.35 * recurrenceScore`
+    - `0.20 * evidenceScore`
+  - fallback explícito para dados incompletos: quando `evidenceRaw` estiver ausente, o cálculo usa média de `engagementRelative` e `recurrenceScore`;
+  - enriquecimento do contrato de referência coletada com:
+    - `confidenceLevel` (`LOW|MEDIUM|HIGH`),
+    - `rankingPosition`,
+    - `engagementRelative`,
+    - `recurrenceScore`,
+    - `evidenceScore`;
+  - ordenação por score + re-ranking determinístico para garantir comparabilidade entre fontes;
+  - filtros no endpoint de listagem de referências por job:
+    - `source`,
+    - `niche`,
+    - `minSuccessScore`,
+    - `confidenceLevel`;
+  - propagação completa dos filtros no backend façade (`/api/v1/mois/*`) até o módulo `mois`.
+  - migração das regras de negócio de workspace (dashboard, referências, extração, biblioteca, comparação e build de oferta) para o módulo `mois`, removendo implementação de domínio duplicada no backend.
+- **Evidências (PRs, commits, testes):**
+  - backend:
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisModuleGateway.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/dto/MoisWorkspaceDtos.java`
+    - `backend/ads-service/src/test/java/com/marketinghub/mois/web/MoisControllerContractTest.java`
+  - módulo MOIS:
+    - `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+    - `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+    - `mois/src/main/java/com/marketinghub/mois/dto/MoisWorkspaceDtos.java`
+    - `mois/src/test/java/com/marketinghub/mois/service/MoisDomainServiceTest.java`
+    - `mois/src/test/java/com/marketinghub/mois/web/MoisDomainControllerTest.java`
+- **Riscos/pendências:**
+  - persistência de coleta ainda em memória no módulo `mois` (não relacional);
+  - conectores reais por fonte ainda não implementados (dados seedados para contrato/smoke);
+  - calibragem de pesos de score deve ser revisada com dados reais de produção/homologação.
+- **Próximos passos:** executar Sprint 3 com UI de coleta automática orientada por filtros e ranking já normalizado.
 
 ## Relatório — Sprint 3
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** integrar com extração/biblioteca na Sprint 4
+- **Status:** Concluído
+- **Período:** 26/04/2026
+- **Escopo concluído:**
+  - nova página de **Coleta automática** no frontend MOIS com:
+    - seleção de fontes;
+    - janela temporal (`LAST_7_DAYS` e `LAST_30_DAYS`);
+    - nicho e tema;
+    - botão de iniciar coleta;
+  - tabela de resultados com colunas de status, score, origem e data;
+  - ações por referência coletada:
+    - importar para referências MOIS,
+    - descartar,
+    - favoritar;
+  - filtros de leitura na UI (fonte, confiança e score mínimo), com estados `loading`, `empty` e `error`;
+  - links externos de origem abrindo em nova aba (`target="_blank"` + `rel="noreferrer"`).
+- **Evidências (PRs, commits, testes):**
+  - frontend:
+    - `frontend/src/pages/mois/MoisAutoCollectionPage.tsx`
+    - `frontend/src/api/mois/useMoisCollection.ts`
+    - `frontend/src/api/mois/types.ts`
+    - `frontend/src/pages/mois/MoisWorkspacePage.tsx`
+    - `frontend/src/App.tsx`
+  - backend/mois (apoio contratual para ações):
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisModuleGateway.java`
+    - `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+    - `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+- **Riscos/pendências:**
+  - persistência das ações de coleta ainda em memória no módulo `mois`;
+  - necessidade de consolidar importação com lineage completo na Sprint 4.
+- **Próximos passos:** integrar automaticamente com Extração e Biblioteca na Sprint 4.
 
 ## Relatório — Sprint 4
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** fechar operação e rollout na Sprint 5
+- **Status:** Concluído
+- **Período:** 26/04/2026
+- **Escopo concluído:**
+  - importação de referência coletada para o workspace MOIS com atualização de status;
+  - ação de **clique único** `Importar + Extração`, iniciando extração draft automaticamente;
+  - geração inicial de blocos de biblioteca a partir da referência importada;
+  - endpoint de lineage por referência coletada (`source -> importedReference -> extraction -> blocks`);
+  - visualização de lineage na UI de coleta automática.
+- **Evidências (PRs, commits, testes):**
+  - frontend:
+    - `frontend/src/pages/mois/MoisAutoCollectionPage.tsx`
+    - `frontend/src/api/mois/useMoisCollection.ts`
+    - `frontend/src/api/mois/types.ts`
+  - backend/mois:
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisModuleGateway.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/dto/MoisWorkspaceDtos.java`
+    - `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+    - `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+- **Riscos/pendências:**
+  - lineage ainda em persistência volátil (memória) no módulo `mois`;
+  - necessário evoluir para persistência relacional e auditoria completa na Sprint 5.
+- **Próximos passos:** estabilizar operação, observabilidade e rollout gradual na Sprint 5.
 
 ## Relatório — Sprint 5
 - **Status:** Planejado

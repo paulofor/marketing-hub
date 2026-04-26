@@ -180,7 +180,7 @@ class MoisDomainControllerTest {
 
     @Test
     void shouldListCollectedReferencesByJob() throws Exception {
-        when(service.listCollectedReferencesByJob("mois-collect-001"))
+        when(service.listCollectedReferencesByJob("mois-collect-001", "CLICKBANK", "nutricao", 70, "HIGH"))
                 .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
                         "mois-collect-001",
                         List.of(new MoisWorkspaceDtos.CollectedReferenceResponse(
@@ -190,16 +190,67 @@ class MoisDomainControllerTest {
                                 "Oferta teste",
                                 "https://example.com",
                                 "nutricao",
+                                "ACTIVE",
+                                false,
+                                null,
                                 77,
                                 "HIGH",
+                                "HIGH",
+                                1,
+                                80.0,
+                                76.0,
+                                74.0,
                                 Instant.parse("2026-04-25T12:00:00Z"),
                                 java.util.Map.of("status", "ACTIVE")
                         ))
                 )));
 
-        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references"))
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references")
+                        .param("source", "CLICKBANK")
+                        .param("niche", "nutricao")
+                        .param("minSuccessScore", "70")
+                        .param("confidenceLevel", "HIGH"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
-                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"));
+                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"))
+                .andExpect(jsonPath("$.items[0].confidenceLevel").value("HIGH"));
+    }
+
+    @Test
+    void shouldFavoriteCollectedReference() throws Exception {
+        when(service.favoriteCollectedReference("mois-collect-001", "ref-1"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-1",
+                        "FAVORITE",
+                        "ACTIVE",
+                        null,
+                        null,
+                        List.of(),
+                        Instant.parse("2026-04-26T12:00:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-1/favorite"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.action").value("FAVORITE"));
+    }
+
+    @Test
+    void shouldImportAndStartExtraction() throws Exception {
+        when(service.importAndStartExtraction("mois-collect-001", "ref-1"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-1",
+                        "IMPORT_AND_START_EXTRACTION",
+                        "IMPORTED",
+                        "ref-imported-1",
+                        "ext-1",
+                        List.of("block-1", "block-2"),
+                        Instant.parse("2026-04-26T12:00:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-1/import-and-start-extraction"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.extractionId").value("ext-1"));
     }
 }

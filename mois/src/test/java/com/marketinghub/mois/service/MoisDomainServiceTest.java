@@ -284,11 +284,110 @@ class MoisDomainServiceTest {
         );
 
         MoisWorkspaceDtos.CollectedReferenceListResponse references =
-                service.listCollectedReferencesByJob(created.jobId()).orElseThrow();
+                service.listCollectedReferencesByJob(created.jobId(), null, null, null, null).orElseThrow();
 
         assertThat(references.items()).hasSize(1);
         assertThat(references.items().getFirst().source()).isEqualTo("CLICKBANK");
         assertThat(references.items().getFirst().successScore()).isGreaterThanOrEqualTo(65);
+        assertThat(references.items().getFirst().confidenceLevel()).isIn("LOW", "MEDIUM", "HIGH");
+    }
+
+    @Test
+    void shouldFilterCollectedReferencesByScoreAndConfidenceAndHandleMissingEvidence() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-002",
+                        "financas",
+                        "renda extra",
+                        List.of("CLICKBANK", "JVZOO", "HOTMART"),
+                        "LAST_7_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        55
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceListResponse filtered =
+                service.listCollectedReferencesByJob(created.jobId(), null, "financas", 70, "MEDIUM").orElseThrow();
+
+        assertThat(filtered.items()).isNotEmpty();
+        assertThat(filtered.items()).allMatch(item -> item.successScore() >= 70);
+        assertThat(filtered.items()).allMatch(item -> "MEDIUM".equals(item.confidenceLevel()));
+        assertThat(filtered.items()).allMatch(item -> item.rankingPosition() >= 1);
+        assertThat(filtered.items()).allMatch(item -> item.evidenceScore() > 0.0);
+    }
+
+    @Test
+    void shouldFavoriteDiscardAndImportCollectedReference() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-003",
+                        "nutricao",
+                        "hipertrofia",
+                        List.of("CLICKBANK"),
+                        "LAST_7_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        40
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceResponse reference = service
+                .listCollectedReferencesByJob(created.jobId(), null, null, null, null)
+                .orElseThrow()
+                .items()
+                .getFirst();
+
+        var favorite = service.favoriteCollectedReference(created.jobId(), reference.referenceId()).orElseThrow();
+        assertThat(favorite.action()).isEqualTo("FAVORITE");
+
+        var imported = service.importCollectedReference(created.jobId(), reference.referenceId()).orElseThrow();
+        assertThat(imported.status()).isEqualTo("IMPORTED");
+        assertThat(imported.importedReferenceId()).isNotBlank();
+
+        var discarded = service.discardCollectedReference(created.jobId(), reference.referenceId()).orElseThrow();
+        assertThat(discarded.status()).isEqualTo("DISCARDED");
+    }
+
+    @Test
+    void shouldImportAndStartExtractionWithLineageAndLibraryBlocks() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-004",
+                        "fisioterapia",
+                        "dor lombar",
+                        List.of("CLICKBANK"),
+                        "LAST_30_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        50
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceResponse reference = service
+                .listCollectedReferencesByJob(created.jobId(), null, null, null, null)
+                .orElseThrow()
+                .items()
+                .getFirst();
+
+        MoisWorkspaceDtos.CollectedReferenceActionResponse action = service
+                .importAndStartExtraction(created.jobId(), reference.referenceId())
+                .orElseThrow();
+
+        assertThat(action.action()).isEqualTo("IMPORT_AND_START_EXTRACTION");
+        assertThat(action.importedReferenceId()).isNotBlank();
+        assertThat(action.extractionId()).isNotBlank();
+        assertThat(action.generatedLibraryBlockIds()).hasSize(2);
+
+        MoisWorkspaceDtos.CollectedReferenceLineageResponse lineage = service
+                .getCollectedReferenceLineage(created.jobId(), reference.referenceId())
+                .orElseThrow();
+        assertThat(lineage.importedReferenceId()).isEqualTo(action.importedReferenceId());
+        assertThat(lineage.extractionId()).isEqualTo(action.extractionId());
+        assertThat(lineage.generatedLibraryBlockIds()).hasSize(2);
     }
 
     private static class HtmlHandler implements HttpHandler {

@@ -44,6 +44,9 @@ public class MoisDomainService {
     private static final Pattern PRICE_PATTERN = Pattern.compile("(R\\$\\s?\\d{2,5}(?:[\\.,]\\d{2})?|\\$\\s?\\d{2,5}(?:[\\.,]\\d{2})?)");
     private static final int DEFAULT_LIMIT_PER_SOURCE = 50;
     private static final int DEFAULT_MIN_SUCCESS_SCORE = 50;
+    private static final double ENGAGEMENT_WEIGHT = 0.45;
+    private static final double RECURRENCE_WEIGHT = 0.35;
+    private static final double EVIDENCE_WEIGHT = 0.20;
 
     private final Map<String, DiscoveryRequest> requests = new ConcurrentHashMap<>();
     private final Map<String, SourceSnapshot> snapshots = new ConcurrentHashMap<>();
@@ -52,10 +55,201 @@ public class MoisDomainService {
     private final Map<String, String> runOperations = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.CollectionJobResponse> collectionJobs = new ConcurrentHashMap<>();
     private final Map<String, List<MoisWorkspaceDtos.CollectedReferenceResponse>> collectedReferencesByJob = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> collectedReferenceLineage = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.ReferenceResponse> referencesById = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.ExtractionDraftResponse> extractionByReferenceId = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.LibraryBlockResponse> libraryBlocksById = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.ComparisonResponse> comparisonsById = new ConcurrentHashMap<>();
+    private final Map<String, MoisWorkspaceDtos.BuildOfferResponse> offersById = new ConcurrentHashMap<>();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     private static final String MODULE_NAME = "MOIS";
     private static final String CREATED_BY = "mois-system";
+    private static final String DEFAULT_STAGE = "COLETA";
+
+    public MoisWorkspaceDtos.WorkspaceDashboardResponse getDashboard(String workspaceId) {
+        List<MoisWorkspaceDtos.ReferenceResponse> workspaceReferences = listWorkspaceReferences(workspaceId);
+        int extractions = (int) workspaceReferences.stream()
+                .filter(reference -> extractionByReferenceId.containsKey(reference.referenceId()))
+                .count();
+
+        List<MoisWorkspaceDtos.RecentAnalysisResponse> recentAnalyses = workspaceReferences.stream()
+                .sorted(Comparator.comparing(MoisWorkspaceDtos.ReferenceResponse::createdAt).reversed())
+                .limit(10)
+                .map(reference -> new MoisWorkspaceDtos.RecentAnalysisResponse(
+                        reference.referenceId(),
+                        reference.niche(),
+                        extractionByReferenceId.containsKey(reference.referenceId()) ? "EXTRACTION_DRAFT" : "COLETA_CONCLUIDA",
+                        reference.createdAt()))
+                .toList();
+
+        return new MoisWorkspaceDtos.WorkspaceDashboardResponse(
+                workspaceId,
+                new MoisWorkspaceDtos.WorkspaceKpisResponse(workspaceReferences.size(), extractions, 0, 0),
+                DEFAULT_STAGE,
+                recentAnalyses
+        );
+    }
+
+    public MoisWorkspaceDtos.ReferenceResponse createReference(MoisWorkspaceDtos.CreateReferenceRequest request) {
+        Instant now = Instant.now();
+        MoisWorkspaceDtos.ReferenceResponse created = new MoisWorkspaceDtos.ReferenceResponse(
+                UUID.randomUUID().toString(),
+                request.workspaceId(),
+                request.niche(),
+                request.sourceUrl(),
+                request.assetType(),
+                request.primaryPromise(),
+                request.awarenessStage(),
+                request.priceRange(),
+                request.formatType(),
+                request.notes(),
+                now
+        );
+        referencesById.put(created.referenceId(), created);
+        return created;
+    }
+
+    public MoisWorkspaceDtos.ReferenceListResponse listReferences(String workspaceId) {
+        List<MoisWorkspaceDtos.ReferenceResponse> references = listWorkspaceReferences(workspaceId).stream()
+                .sorted(Comparator.comparing(MoisWorkspaceDtos.ReferenceResponse::createdAt).reversed())
+                .toList();
+        return new MoisWorkspaceDtos.ReferenceListResponse(references);
+    }
+
+    public MoisWorkspaceDtos.ExtractionDraftResponse upsertExtractionDraft(
+            String referenceId,
+            MoisWorkspaceDtos.UpsertExtractionDraftRequest request
+    ) {
+        MoisWorkspaceDtos.ReferenceResponse reference = referencesById.get(referenceId);
+        if (reference == null) {
+            throw new IllegalArgumentException("reference not found");
+        }
+
+        MoisWorkspaceDtos.ExtractionDraftResponse draft = new MoisWorkspaceDtos.ExtractionDraftResponse(
+                UUID.randomUUID().toString(),
+                referenceId,
+                hasAnyDraftContent(request) ? "DRAFT" : "EMPTY_DRAFT",
+                Instant.now()
+        );
+        extractionByReferenceId.put(referenceId, draft);
+        return draft;
+    }
+
+    public MoisWorkspaceDtos.LibraryBlockListResponse listLibraryBlocks(String workspaceId, String niche, String formatType) {
+        seedLibraryIfNeeded(workspaceId);
+        List<MoisWorkspaceDtos.LibraryBlockResponse> blocks = new ArrayList<>();
+        for (MoisWorkspaceDtos.LibraryBlockResponse block : libraryBlocksById.values()) {
+            boolean sameWorkspace = workspaceId == null || workspaceId.isBlank() || workspaceId.equals(block.workspaceId());
+            boolean matchesNiche = niche == null || niche.isBlank() || block.tags().contains(niche);
+            boolean matchesFormat = formatType == null || formatType.isBlank() || block.tags().contains(formatType);
+            if (sameWorkspace && matchesNiche && matchesFormat) {
+                blocks.add(block);
+            }
+        }
+
+        blocks.sort(Comparator.comparing(MoisWorkspaceDtos.LibraryBlockResponse::updatedAt).reversed());
+        return new MoisWorkspaceDtos.LibraryBlockListResponse(blocks);
+    }
+
+    public MoisWorkspaceDtos.LibraryBlockActionResponse favoriteLibraryBlock(String blockId) {
+        MoisWorkspaceDtos.LibraryBlockResponse block = getLibraryBlockOrThrow(blockId);
+        MoisWorkspaceDtos.LibraryBlockResponse updated = new MoisWorkspaceDtos.LibraryBlockResponse(
+                block.blockId(),
+                block.workspaceId(),
+                block.type(),
+                block.summary(),
+                block.tags(),
+                block.score(),
+                block.origin(),
+                true,
+                Instant.now()
+        );
+        libraryBlocksById.put(blockId, updated);
+        return new MoisWorkspaceDtos.LibraryBlockActionResponse(blockId, "FAVORITE", "OK", updated.updatedAt());
+    }
+
+    public MoisWorkspaceDtos.LibraryBlockActionResponse duplicateLibraryBlock(String blockId) {
+        MoisWorkspaceDtos.LibraryBlockResponse source = getLibraryBlockOrThrow(blockId);
+        String duplicateId = UUID.randomUUID().toString();
+        MoisWorkspaceDtos.LibraryBlockResponse duplicate = new MoisWorkspaceDtos.LibraryBlockResponse(
+                duplicateId,
+                source.workspaceId(),
+                source.type(),
+                source.summary() + " (cópia)",
+                source.tags(),
+                source.score(),
+                "DUPLICATED_FROM_" + source.blockId(),
+                false,
+                Instant.now()
+        );
+        libraryBlocksById.put(duplicateId, duplicate);
+        return new MoisWorkspaceDtos.LibraryBlockActionResponse(duplicateId, "DUPLICATE", "OK", duplicate.updatedAt());
+    }
+
+    public MoisWorkspaceDtos.ComparisonResponse createComparison(MoisWorkspaceDtos.CreateComparisonRequest request) {
+        String comparisonId = UUID.randomUUID().toString();
+        List<MoisWorkspaceDtos.ComparisonDimensionResponse> dimensions = List.of(
+                new MoisWorkspaceDtos.ComparisonDimensionResponse(
+                        "PROMESSA", "Resultado em 8 semanas", "Resultado sem prazo", "Adicionar prazo específico"),
+                new MoisWorkspaceDtos.ComparisonDimensionResponse(
+                        "MECANISMO", "Protocolo em 3 etapas", "Método genérico", "Explicitar etapas"),
+                new MoisWorkspaceDtos.ComparisonDimensionResponse(
+                        "PROVA", "Depoimentos com números", "Sem dados concretos", "Anexar provas mensuráveis"),
+                new MoisWorkspaceDtos.ComparisonDimensionResponse(
+                        "LAYOUT", "Fluxo com CTA principal", "Múltiplos CTAs", "Reduzir atrito visual")
+        );
+        List<MoisWorkspaceDtos.ComparisonScorecardResponse> scorecards = List.of(
+                new MoisWorkspaceDtos.ComparisonScorecardResponse("clareza", 72, "Promessa compreensível, porém ampla."),
+                new MoisWorkspaceDtos.ComparisonScorecardResponse("prova", 46, "Faltam evidências verificáveis."),
+                new MoisWorkspaceDtos.ComparisonScorecardResponse("coerencia", 69, "Narrativa parcialmente alinhada ao mecanismo."),
+                new MoisWorkspaceDtos.ComparisonScorecardResponse("atrito", 58, "Existem etapas redundantes no fluxo.")
+        );
+        List<MoisWorkspaceDtos.ComparisonImprovementResponse> improvements = List.of(
+                new MoisWorkspaceDtos.ComparisonImprovementResponse(UUID.randomUUID().toString(), "HIGH", "Adicionar seção de prova com antes/depois."),
+                new MoisWorkspaceDtos.ComparisonImprovementResponse(UUID.randomUUID().toString(), "MEDIUM", "Reescrever headline com prazo e público."),
+                new MoisWorkspaceDtos.ComparisonImprovementResponse(UUID.randomUUID().toString(), "MEDIUM", "Consolidar CTAs em um único caminho.")
+        );
+        MoisWorkspaceDtos.ComparisonResponse comparison = new MoisWorkspaceDtos.ComparisonResponse(
+                comparisonId,
+                request.workspaceId(),
+                dimensions,
+                scorecards,
+                improvements
+        );
+        comparisonsById.put(comparisonId, comparison);
+        return comparison;
+    }
+
+    public MoisWorkspaceDtos.BuildOfferResponse buildOffer(MoisWorkspaceDtos.BuildOfferRequest request) {
+        boolean hasPain = request.currentVersion().toLowerCase().contains("dor");
+        boolean hasResult = request.currentVersion().toLowerCase().contains("resultado");
+        boolean hasMechanism = request.currentVersion().toLowerCase().contains("mecanismo");
+        boolean hasProof = request.currentVersion().toLowerCase().contains("prova");
+        boolean hasOffer = request.currentVersion().toLowerCase().contains("oferta");
+
+        Map<String, Boolean> checklist = Map.of(
+                "dor", hasPain,
+                "resultado", hasResult,
+                "mecanismo", hasMechanism,
+                "prova", hasProof,
+                "oferta", hasOffer
+        );
+        String proposed = request.currentVersion()
+                + "\n\n## Versão proposta\n- Blocos selecionados: "
+                + (request.selectedBlockIds() == null ? 0 : request.selectedBlockIds().size())
+                + "\n- Reforçar Dor → Resultado → Mecanismo → Prova → Oferta.";
+        MoisWorkspaceDtos.BuildOfferResponse response = new MoisWorkspaceDtos.BuildOfferResponse(
+                UUID.randomUUID().toString(),
+                request.workspaceId(),
+                checklist.containsValue(false) ? "INCOMPLETE_CHECKLIST" : "READY_TO_EXPORT",
+                proposed,
+                checklist,
+                Instant.now()
+        );
+        offersById.put(response.offerId(), response);
+        return response;
+    }
 
     public MoisDiscoveryDtos.DiscoveryRequestAcceptedResponse createDiscoveryRequest(
             MoisDiscoveryDtos.CreateDiscoveryRequest payload
@@ -491,14 +685,175 @@ public class MoisDomainService {
         return new MoisWorkspaceDtos.CollectionJobListResponse(jobs);
     }
 
-    public Optional<MoisWorkspaceDtos.CollectedReferenceListResponse> listCollectedReferencesByJob(String jobId) {
+    public Optional<MoisWorkspaceDtos.CollectedReferenceListResponse> listCollectedReferencesByJob(
+            String jobId,
+            String source,
+            String niche,
+            Integer minSuccessScore,
+            String confidenceLevel
+    ) {
         if (!collectionJobs.containsKey(jobId)) {
             return Optional.empty();
         }
+        int minimumScore = minSuccessScore == null ? 0 : Math.max(0, minSuccessScore);
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> filtered = collectedReferencesByJob.getOrDefault(jobId, List.of()).stream()
+                .filter(item -> source == null || source.isBlank() || source.equalsIgnoreCase(item.source()))
+                .filter(item -> niche == null || niche.isBlank() || niche.equalsIgnoreCase(item.niche()))
+                .filter(item -> item.successScore() >= minimumScore)
+                .filter(item -> confidenceLevel == null || confidenceLevel.isBlank()
+                        || confidenceLevel.equalsIgnoreCase(item.confidenceLevel()))
+                .sorted(Comparator.comparingInt(MoisWorkspaceDtos.CollectedReferenceResponse::successScore).reversed()
+                        .thenComparing(MoisWorkspaceDtos.CollectedReferenceResponse::collectedAt, Comparator.reverseOrder()))
+                .toList();
         return Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
                 jobId,
-                collectedReferencesByJob.getOrDefault(jobId, List.of())
+                reRank(filtered)
         ));
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> favoriteCollectedReference(String jobId, String referenceId) {
+        return updateCollectedReference(jobId, referenceId, "FAVORITE", item -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+                item.referenceId(),
+                item.jobId(),
+                item.source(),
+                item.title(),
+                item.url(),
+                item.niche(),
+                item.status(),
+                true,
+                item.importedReferenceId(),
+                item.successScore(),
+                item.successSignal(),
+                item.confidenceLevel(),
+                item.rankingPosition(),
+                item.engagementRelative(),
+                item.recurrenceScore(),
+                item.evidenceScore(),
+                item.collectedAt(),
+                item.rawMetadata()
+        ));
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> discardCollectedReference(String jobId, String referenceId) {
+        return updateCollectedReference(jobId, referenceId, "DISCARD", item -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+                item.referenceId(),
+                item.jobId(),
+                item.source(),
+                item.title(),
+                item.url(),
+                item.niche(),
+                "DISCARDED",
+                item.favorite(),
+                item.importedReferenceId(),
+                item.successScore(),
+                item.successSignal(),
+                item.confidenceLevel(),
+                item.rankingPosition(),
+                item.engagementRelative(),
+                item.recurrenceScore(),
+                item.evidenceScore(),
+                item.collectedAt(),
+                item.rawMetadata()
+        ));
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReference(String jobId, String referenceId) {
+        return importCollectedReferenceInternal(jobId, referenceId, false);
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importAndStartExtraction(String jobId, String referenceId) {
+        return importCollectedReferenceInternal(jobId, referenceId, true);
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceLineageResponse> getCollectedReferenceLineage(String jobId, String referenceId) {
+        MoisWorkspaceDtos.CollectedReferenceLineageResponse lineage = collectedReferenceLineage.get(lineageKey(jobId, referenceId));
+        return Optional.ofNullable(lineage);
+    }
+
+    private Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReferenceInternal(
+            String jobId,
+            String referenceId,
+            boolean startExtraction
+    ) {
+        if (!collectionJobs.containsKey(jobId)) {
+            return Optional.empty();
+        }
+        MoisWorkspaceDtos.CollectionJobResponse job = collectionJobs.get(jobId);
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> items = collectedReferencesByJob.getOrDefault(jobId, List.of());
+        for (MoisWorkspaceDtos.CollectedReferenceResponse item : items) {
+            if (!item.referenceId().equals(referenceId)) {
+                continue;
+            }
+            String importedReferenceId = item.importedReferenceId() == null || item.importedReferenceId().isBlank()
+                    ? UUID.randomUUID().toString()
+                    : item.importedReferenceId();
+            MoisWorkspaceDtos.ReferenceResponse imported = new MoisWorkspaceDtos.ReferenceResponse(
+                    importedReferenceId,
+                    job.workspaceId(),
+                    item.niche(),
+                    item.url(),
+                    "AUTO_COLLECTED",
+                    item.title(),
+                    "SOLUTION_AWARE",
+                    null,
+                    null,
+                    "Importado automaticamente da coleta " + jobId,
+                    Instant.now()
+            );
+            referencesById.put(importedReferenceId, imported);
+            String extractionId = null;
+            if (startExtraction) {
+                MoisWorkspaceDtos.UpsertExtractionDraftRequest extractionSeed = new MoisWorkspaceDtos.UpsertExtractionDraftRequest(
+                        "Dor inferida da referência coletada",
+                        item.title(),
+                        "Mecanismo a validar com base no criativo coletado",
+                        "Prova inicial: score " + item.successScore(),
+                        "Oferta importada de " + item.source(),
+                        List.of(item.url())
+                );
+                MoisWorkspaceDtos.ExtractionDraftResponse extractionDraft = upsertExtractionDraft(importedReferenceId, extractionSeed);
+                extractionId = extractionDraft.extractionId();
+            }
+
+            List<String> generatedBlockIds = generateLibraryBlocksFromCollectedReference(job.workspaceId(), item);
+            collectedReferenceLineage.put(
+                    lineageKey(jobId, referenceId),
+                    new MoisWorkspaceDtos.CollectedReferenceLineageResponse(
+                            jobId,
+                            referenceId,
+                            item.url(),
+                            importedReferenceId,
+                            extractionId,
+                            generatedBlockIds,
+                            Instant.now()
+                    )
+            );
+
+            final String finalExtractionId = extractionId;
+            final List<String> finalGeneratedBlockIds = generatedBlockIds;
+            return updateCollectedReference(jobId, referenceId, startExtraction ? "IMPORT_AND_START_EXTRACTION" : "IMPORT",
+                    current -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+                    current.referenceId(),
+                    current.jobId(),
+                    current.source(),
+                    current.title(),
+                    current.url(),
+                    current.niche(),
+                    "IMPORTED",
+                    current.favorite(),
+                    importedReferenceId,
+                    current.successScore(),
+                    current.successSignal(),
+                    current.confidenceLevel(),
+                    current.rankingPosition(),
+                    current.engagementRelative(),
+                    current.recurrenceScore(),
+                    current.evidenceScore(),
+                    current.collectedAt(),
+                    current.rawMetadata()
+            ), finalExtractionId, finalGeneratedBlockIds);
+        }
+        return Optional.empty();
     }
 
     private List<OfferCard> listOffersByRequest(String requestId) {
@@ -793,7 +1148,8 @@ public class MoisDomainService {
         int index = 0;
         for (String source : job.sources()) {
             index++;
-            int score = Math.max(job.minSuccessScore(), 60 + index * 7);
+            SourceMetricSnapshot metrics = buildSourceMetricSnapshot(job, source, index);
+            NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
             items.add(new MoisWorkspaceDtos.CollectedReferenceResponse(
                     UUID.randomUUID().toString(),
                     job.jobId(),
@@ -801,17 +1157,226 @@ public class MoisDomainService {
                     "Referência " + index + " (" + source + ")",
                     "https://example.com/" + source.toLowerCase() + "/offer-" + index,
                     niche,
-                    score,
-                    score >= 75 ? "HIGH" : "MEDIUM",
+                    "ACTIVE",
+                    false,
+                    null,
+                    normalized.successScore(),
+                    normalized.successSignal(),
+                    normalized.confidenceLevel(),
+                    index,
+                    normalized.engagementRelative(),
+                    normalized.recurrenceScore(),
+                    normalized.evidenceScore(),
                     job.createdAt().minusSeconds(index * 120L),
                     Map.of(
                             "status", "ACTIVE",
                             "timeWindow", job.timeWindow(),
-                            "evidence", "recorrencia+consistencia"
+                            "engagementRaw", String.valueOf(metrics.engagementRaw()),
+                            "recurrenceRaw", String.valueOf(metrics.recurrenceRaw()),
+                            "evidenceRaw", String.valueOf(metrics.evidenceRaw()),
+                            "normalizationPolicy", "v1:0.45*engagement+0.35*recurrence+0.20*evidence"
                     )
             ));
         }
-        return items;
+        return reRank(items);
+    }
+
+    private List<MoisWorkspaceDtos.CollectedReferenceResponse> reRank(List<MoisWorkspaceDtos.CollectedReferenceResponse> items) {
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> ranked = new ArrayList<>();
+        int position = 1;
+        for (MoisWorkspaceDtos.CollectedReferenceResponse item : items.stream()
+                .sorted(Comparator.comparingInt(MoisWorkspaceDtos.CollectedReferenceResponse::successScore).reversed()
+                        .thenComparing(MoisWorkspaceDtos.CollectedReferenceResponse::collectedAt, Comparator.reverseOrder()))
+                .toList()) {
+            ranked.add(new MoisWorkspaceDtos.CollectedReferenceResponse(
+                    item.referenceId(),
+                    item.jobId(),
+                    item.source(),
+                    item.title(),
+                    item.url(),
+                    item.niche(),
+                    item.status(),
+                    item.favorite(),
+                    item.importedReferenceId(),
+                    item.successScore(),
+                    item.successSignal(),
+                    item.confidenceLevel(),
+                    position++,
+                    item.engagementRelative(),
+                    item.recurrenceScore(),
+                    item.evidenceScore(),
+                    item.collectedAt(),
+                    item.rawMetadata()
+            ));
+        }
+        return ranked;
+    }
+
+    private Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> updateCollectedReference(
+            String jobId,
+            String referenceId,
+            String action,
+            Function<MoisWorkspaceDtos.CollectedReferenceResponse, MoisWorkspaceDtos.CollectedReferenceResponse> updater
+    ) {
+        return updateCollectedReference(jobId, referenceId, action, updater, null, List.of());
+    }
+
+    private Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> updateCollectedReference(
+            String jobId,
+            String referenceId,
+            String action,
+            Function<MoisWorkspaceDtos.CollectedReferenceResponse, MoisWorkspaceDtos.CollectedReferenceResponse> updater,
+            String extractionId,
+            List<String> generatedLibraryBlockIds
+    ) {
+        if (!collectionJobs.containsKey(jobId)) {
+            return Optional.empty();
+        }
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> items = new ArrayList<>(collectedReferencesByJob.getOrDefault(jobId, List.of()));
+        for (int i = 0; i < items.size(); i++) {
+            MoisWorkspaceDtos.CollectedReferenceResponse current = items.get(i);
+            if (!current.referenceId().equals(referenceId)) {
+                continue;
+            }
+            MoisWorkspaceDtos.CollectedReferenceResponse updated = updater.apply(current);
+            items.set(i, updated);
+            collectedReferencesByJob.put(jobId, reRank(items));
+            return Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                    jobId,
+                    referenceId,
+                    action,
+                    updated.status(),
+                    updated.importedReferenceId(),
+                    extractionId,
+                    generatedLibraryBlockIds,
+                    Instant.now()
+            ));
+        }
+        return Optional.empty();
+    }
+
+    private List<String> generateLibraryBlocksFromCollectedReference(
+            String workspaceId,
+            MoisWorkspaceDtos.CollectedReferenceResponse item
+    ) {
+        Instant now = Instant.now();
+        String promiseBlockId = UUID.randomUUID().toString();
+        String proofBlockId = UUID.randomUUID().toString();
+        MoisWorkspaceDtos.LibraryBlockResponse promiseBlock = new MoisWorkspaceDtos.LibraryBlockResponse(
+                promiseBlockId,
+                workspaceId,
+                "PROMISE",
+                "Importado de " + item.source() + ": " + trimTo(item.title(), 90),
+                List.of(item.niche(), "AUTO_COLLECTION"),
+                Math.min(1.0, item.successScore() / 100.0),
+                "AUTO_COLLECTED_REFERENCE_" + item.referenceId(),
+                item.favorite(),
+                now
+        );
+        MoisWorkspaceDtos.LibraryBlockResponse proofBlock = new MoisWorkspaceDtos.LibraryBlockResponse(
+                proofBlockId,
+                workspaceId,
+                "PROOF",
+                "Sinal " + item.successSignal() + " com confiança " + item.confidenceLevel(),
+                List.of(item.niche(), "AUTO_COLLECTION"),
+                Math.min(1.0, item.evidenceScore() / 100.0),
+                "AUTO_COLLECTED_REFERENCE_" + item.referenceId(),
+                item.favorite(),
+                now.minusSeconds(1)
+        );
+        libraryBlocksById.put(promiseBlockId, promiseBlock);
+        libraryBlocksById.put(proofBlockId, proofBlock);
+        return List.of(promiseBlockId, proofBlockId);
+    }
+
+    private String lineageKey(String jobId, String referenceId) {
+        return jobId + "::" + referenceId;
+    }
+
+    private SourceMetricSnapshot buildSourceMetricSnapshot(MoisWorkspaceDtos.CollectionJobResponse job, String source, int index) {
+        double base = 40 + (Math.abs(source.hashCode()) % 50);
+        double engagementRaw = clamp(base + index * 6.0);
+        double recurrenceRaw = clamp(base - 8 + index * 5.0);
+        Double evidenceRaw = (index % 2 == 0) ? null : clamp(base - 12 + index * 4.0);
+        return new SourceMetricSnapshot(engagementRaw, recurrenceRaw, evidenceRaw);
+    }
+
+    private NormalizedSuccessSignal normalizeSuccessSignal(SourceMetricSnapshot metrics, int minSuccessScore) {
+        double engagement = clamp(metrics.engagementRaw());
+        double recurrence = clamp(metrics.recurrenceRaw());
+        double evidence = metrics.evidenceRaw() == null ? ((engagement + recurrence) / 2.0) : clamp(metrics.evidenceRaw());
+        int score = (int) Math.round((engagement * ENGAGEMENT_WEIGHT) + (recurrence * RECURRENCE_WEIGHT) + (evidence * EVIDENCE_WEIGHT));
+        score = Math.max(minSuccessScore, Math.min(100, score));
+        String successSignal = score >= 85 ? "HIGH" : (score >= 70 ? "MEDIUM" : "LOW");
+        String confidenceLevel = score >= 85 ? "HIGH" : (score >= 65 ? "MEDIUM" : "LOW");
+        return new NormalizedSuccessSignal(score, successSignal, confidenceLevel, engagement, recurrence, evidence);
+    }
+
+    private double clamp(double value) {
+        return Math.max(0, Math.min(100, value));
+    }
+
+    private List<MoisWorkspaceDtos.ReferenceResponse> listWorkspaceReferences(String workspaceId) {
+        List<MoisWorkspaceDtos.ReferenceResponse> references = new ArrayList<>();
+        for (MoisWorkspaceDtos.ReferenceResponse reference : referencesById.values()) {
+            if (reference.workspaceId().equals(workspaceId)) {
+                references.add(reference);
+            }
+        }
+        return references;
+    }
+
+    private boolean hasAnyDraftContent(MoisWorkspaceDtos.UpsertExtractionDraftRequest request) {
+        return isNotBlank(request.pain())
+                || isNotBlank(request.result())
+                || isNotBlank(request.mechanism())
+                || isNotBlank(request.proof())
+                || isNotBlank(request.offer())
+                || (request.evidenceItems() != null && !request.evidenceItems().isEmpty());
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private MoisWorkspaceDtos.LibraryBlockResponse getLibraryBlockOrThrow(String blockId) {
+        MoisWorkspaceDtos.LibraryBlockResponse block = libraryBlocksById.get(blockId);
+        if (block == null) {
+            throw new IllegalArgumentException("library block not found");
+        }
+        return block;
+    }
+
+    private void seedLibraryIfNeeded(String workspaceId) {
+        if (!libraryBlocksById.isEmpty()) {
+            return;
+        }
+        String effectiveWorkspace = workspaceId == null || workspaceId.isBlank() ? "workspace-default" : workspaceId;
+        Instant now = Instant.now();
+        MoisWorkspaceDtos.LibraryBlockResponse promise = new MoisWorkspaceDtos.LibraryBlockResponse(
+                UUID.randomUUID().toString(),
+                effectiveWorkspace,
+                "PROMISE",
+                "Headline com resultado e prazo explícito.",
+                List.of("nutricao-esportiva", "CURSO"),
+                0.82,
+                "MARKET_REFERENCE",
+                false,
+                now
+        );
+        MoisWorkspaceDtos.LibraryBlockResponse proof = new MoisWorkspaceDtos.LibraryBlockResponse(
+                UUID.randomUUID().toString(),
+                effectiveWorkspace,
+                "PROOF",
+                "Prova social com dados antes/depois auditáveis.",
+                List.of("nutricao-esportiva", "MENTORIA"),
+                0.77,
+                "MARKET_REFERENCE",
+                false,
+                now.minusSeconds(300)
+        );
+        libraryBlocksById.put(promise.blockId(), promise);
+        libraryBlocksById.put(proof.blockId(), proof);
     }
 
     private Optional<CrawledSource> collectSource(String seedUrl, String requestId, String correlationId) {
@@ -1052,6 +1617,23 @@ public class MoisDomainService {
             double confidence,
             List<String> deliverables,
             List<String> pricePoints
+    ) {
+    }
+
+    private record SourceMetricSnapshot(
+            double engagementRaw,
+            double recurrenceRaw,
+            Double evidenceRaw
+    ) {
+    }
+
+    private record NormalizedSuccessSignal(
+            int successScore,
+            String successSignal,
+            String confidenceLevel,
+            double engagementRelative,
+            double recurrenceScore,
+            double evidenceScore
     ) {
     }
 }

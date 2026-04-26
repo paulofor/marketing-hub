@@ -53,6 +53,63 @@ public class MoisModuleGateway {
                 MoisDiscoveryDtos.AsyncAcceptedResponse.class).getBody();
     }
 
+    public MoisWorkspaceDtos.WorkspaceDashboardResponse getDashboard(String workspaceId) {
+        return exchange("/api/v1/mois/workspaces/" + workspaceId + "/dashboard", HttpMethod.GET, null,
+                MoisWorkspaceDtos.WorkspaceDashboardResponse.class).getBody();
+    }
+
+    public MoisWorkspaceDtos.ReferenceResponse createReference(MoisWorkspaceDtos.CreateReferenceRequest request) {
+        return exchange("/api/v1/mois/references", HttpMethod.POST, request, MoisWorkspaceDtos.ReferenceResponse.class).getBody();
+    }
+
+    public MoisWorkspaceDtos.ReferenceListResponse listReferences(String workspaceId) {
+        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/api/v1/mois/references");
+        maybeAddQuery(uri, "workspaceId", workspaceId);
+        return exchange(uri.toUriString(), HttpMethod.GET, null, MoisWorkspaceDtos.ReferenceListResponse.class).getBody();
+    }
+
+    public MoisWorkspaceDtos.ExtractionDraftResponse upsertExtractionDraft(
+            String referenceId,
+            MoisWorkspaceDtos.UpsertExtractionDraftRequest request
+    ) {
+        return exchange("/api/v1/mois/references/" + referenceId + "/extractions", HttpMethod.POST, request,
+                MoisWorkspaceDtos.ExtractionDraftResponse.class).getBody();
+    }
+
+    public MoisWorkspaceDtos.LibraryBlockListResponse listLibraryBlocks(String workspaceId, String niche, String formatType) {
+        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/api/v1/mois/library/blocks");
+        maybeAddQuery(uri, "workspaceId", workspaceId);
+        maybeAddQuery(uri, "niche", niche);
+        maybeAddQuery(uri, "formatType", formatType);
+        return exchange(uri.toUriString(), HttpMethod.GET, null, MoisWorkspaceDtos.LibraryBlockListResponse.class).getBody();
+    }
+
+    public Optional<MoisWorkspaceDtos.LibraryBlockActionResponse> favoriteLibraryBlock(String blockId) {
+        try {
+            return Optional.ofNullable(exchange("/api/v1/mois/library/blocks/" + blockId + "/favorite", HttpMethod.POST, null,
+                    MoisWorkspaceDtos.LibraryBlockActionResponse.class).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.LibraryBlockActionResponse> duplicateLibraryBlock(String blockId) {
+        try {
+            return Optional.ofNullable(exchange("/api/v1/mois/library/blocks/" + blockId + "/duplicate", HttpMethod.POST, null,
+                    MoisWorkspaceDtos.LibraryBlockActionResponse.class).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public MoisWorkspaceDtos.ComparisonResponse createComparison(MoisWorkspaceDtos.CreateComparisonRequest request) {
+        return exchange("/api/v1/mois/comparisons", HttpMethod.POST, request, MoisWorkspaceDtos.ComparisonResponse.class).getBody();
+    }
+
+    public MoisWorkspaceDtos.BuildOfferResponse buildOffer(MoisWorkspaceDtos.BuildOfferRequest request) {
+        return exchange("/api/v1/mois/offers/build", HttpMethod.POST, request, MoisWorkspaceDtos.BuildOfferResponse.class).getBody();
+    }
+
     public MoisOfferDtos.OfferCardListResponse listOffers(String requestId, String nicheName, String sellerOrBrand) {
         UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/api/v1/mois/offers");
         maybeAddQuery(uri, "requestId", requestId);
@@ -98,9 +155,81 @@ public class MoisModuleGateway {
         return exchange(uri.toUriString(), HttpMethod.GET, null, MoisWorkspaceDtos.CollectionJobListResponse.class).getBody();
     }
 
-    public Optional<MoisWorkspaceDtos.CollectedReferenceListResponse> listCollectedReferencesByJob(String jobId) {
-        return optionalGet("/api/v1/mois/collection-jobs/" + jobId + "/references",
+    public Optional<MoisWorkspaceDtos.CollectedReferenceListResponse> listCollectedReferencesByJob(
+            String jobId,
+            String source,
+            String niche,
+            Integer minSuccessScore,
+            String confidenceLevel
+    ) {
+        UriComponentsBuilder uri = UriComponentsBuilder.fromPath("/api/v1/mois/collection-jobs/" + jobId + "/references");
+        maybeAddQuery(uri, "source", source);
+        maybeAddQuery(uri, "niche", niche);
+        if (minSuccessScore != null) {
+            uri.queryParam("minSuccessScore", minSuccessScore);
+        }
+        maybeAddQuery(uri, "confidenceLevel", confidenceLevel);
+        return optionalGet(uri.toUriString(),
                 MoisWorkspaceDtos.CollectedReferenceListResponse.class);
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> favoriteCollectedReference(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/favorite",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> discardCollectedReference(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/discard",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReference(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/import",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importAndStartExtraction(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/import-and-start-extraction",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceLineageResponse> getCollectedReferenceLineage(String jobId, String referenceId) {
+        return optionalGet(
+                "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/lineage",
+                MoisWorkspaceDtos.CollectedReferenceLineageResponse.class
+        );
     }
 
     public Map<String, String> health() {

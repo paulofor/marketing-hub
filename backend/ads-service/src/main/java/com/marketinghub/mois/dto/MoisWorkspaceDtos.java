@@ -204,8 +204,16 @@ public final class MoisWorkspaceDtos {
             String title,
             String url,
             String niche,
+            String status,
+            boolean favorite,
+            String importedReferenceId,
             int successScore,
             String successSignal,
+            String confidenceLevel,
+            int rankingPosition,
+            double engagementRelative,
+            double recurrenceScore,
+            double evidenceScore,
             Instant collectedAt,
             Map<String, String> rawMetadata
     ) {
@@ -214,6 +222,29 @@ public final class MoisWorkspaceDtos {
     public record CollectedReferenceListResponse(
             String jobId,
             List<CollectedReferenceResponse> items
+    ) {
+    }
+
+    public record CollectedReferenceActionResponse(
+            String jobId,
+            String referenceId,
+            String action,
+            String status,
+            String importedReferenceId,
+            String extractionId,
+            List<String> generatedLibraryBlockIds,
+            Instant updatedAt
+    ) {
+    }
+
+    public record CollectedReferenceLineageResponse(
+            String jobId,
+            String referenceId,
+            String sourceUrl,
+            String importedReferenceId,
+            String extractionId,
+            List<String> generatedLibraryBlockIds,
+            Instant updatedAt
     ) {
     }
 }

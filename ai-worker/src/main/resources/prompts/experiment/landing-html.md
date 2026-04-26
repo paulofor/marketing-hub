@@ -19,7 +19,7 @@ Regras fixas da etapa:
 4. Inclua validação de campos obrigatórios no JavaScript.
 5. Inclua compliance reforçando entrega digital via IA e sem consultoria.
 6. Consuma explicitamente os artefatos aprovados de copy, wireframe e planejamento de imagens.
-7. Cada seção renderizada deve incluir `data-section-id` e aplicar `wireframe.sectionOrder[i].surfaceSpec`.
+7. Cada seção renderizada deve incluir `data-section-id` e aplicar superfícies com origem canônica dividida: `data-surface-token` do `wireframe.sectionOrder[i].surfaceSpec.surfaceToken`; `data-surface-style` e `data-surface-contrast` do `landingPageDesignPreset.sectionPresets` por `sectionId`.
 8. Não invente estrutura visual fora de wireframe/plano de imagens sem justificar em `consistencyChecks`.
 9. Não use bibliotecas externas.
 10. Renderize imagens apenas para itens listados em `landingPageImagePlanning.images[]`.

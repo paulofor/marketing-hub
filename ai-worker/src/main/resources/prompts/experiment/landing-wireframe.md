@@ -15,7 +15,7 @@ Modelo conceitual interno obrigatório (não expor no output final):
 Regras fixas da etapa:
 1. `pageGoal` deve explicitar a ação principal esperada da página.
 2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
-3. `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` + `uiNotes`.
+3. `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` (âncora estrutural) + `uiNotes`.
 4. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 5. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
 6. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
@@ -44,3 +44,7 @@ Campos obrigatórios:
 - formPlacementNotes
 - consistencyChecks[]
 - formSpec
+
+Observação canônica:
+- Em `surfaceSpec` do wireframe, trate `surfaceToken` + `notes` como núcleo obrigatório estrutural.
+- `style` e `contrastMode` são responsabilidade da etapa `landingPageDesignPreset.sectionPresets`.

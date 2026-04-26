@@ -166,7 +166,7 @@ class LandingHtmlModuleTest {
     }
 
     @Test
-    void assembleHtmlDocumentDoesNotOverrideSurfaceSpecFromWireframeUsingDesignPreset() {
+    void assembleHtmlDocumentUsesDesignPresetForStyleAndContrastMode() {
         Experiment experiment = new Experiment();
         experiment.setName("Teste LHM Surface Preset");
         experiment.setLandingPageWireframe("""
@@ -210,10 +210,11 @@ class LandingHtmlModuleTest {
         String html = module.assembleHtmlDocument(experiment);
 
         assertTrue(html.contains("data-section-id=\"proof\""));
-        assertTrue(html.contains("class=\"card surface-band contrast-soft\""));
-        assertTrue(html.contains("data-surface-style=\"band\""));
-        assertTrue(html.contains("data-surface-contrast=\"soft\""));
-        assertFalse(html.contains("data-surface-style=\"solid\""));
-        assertFalse(html.contains("data-surface-contrast=\"high\""));
+        assertTrue(html.contains("class=\"card surface-solid contrast-high\""));
+        assertTrue(html.contains("data-surface-token=\"surface-proof\""));
+        assertTrue(html.contains("data-surface-style=\"solid\""));
+        assertTrue(html.contains("data-surface-contrast=\"high\""));
+        assertFalse(html.contains("data-surface-style=\"band\""));
+        assertFalse(html.contains("data-surface-contrast=\"soft\""));
     }
 }

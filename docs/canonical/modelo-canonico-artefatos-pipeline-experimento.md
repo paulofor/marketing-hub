@@ -237,6 +237,54 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
   "mobilePriorityNotes": "string",
   "ctaPlacementNotes": "string",
   "formPlacementNotes": "string",
+  "readingFlowSpec": {
+    "scanPattern": "F-pattern | Z-pattern | mixed",
+    "maxParagraphLinesMobile": "number",
+    "bulletDensityPerSection": "number",
+    "headlineClarityRule": "string",
+    "cognitiveLoadNotes": "string"
+  },
+  "conversionPathSpec": {
+    "primaryAction": "string",
+    "ctaLabelCanonical": "string",
+    "ctaLabelVariantsAllowed": ["string"],
+    "stickyCtaMobile": {
+      "enabled": "boolean",
+      "triggerAfterSection": "string",
+      "ctaLabel": "string",
+      "ctaUrl": "string"
+    },
+    "microCommitments": ["string"],
+    "frictionPoints": ["string"]
+  },
+  "proofPlan": {
+    "requiredProofTypes": [
+      "depoimento",
+      "mini-caso-com-numero",
+      "evidencia-tecnica-simplificada"
+    ],
+    "proofSectionIds": ["string"],
+    "proofContinuityNotes": "string"
+  },
+  "trustSignalsSpec": {
+    "brandIdentityRequired": "boolean",
+    "heroIdentityItems": [
+      "logo",
+      "nome-da-marca",
+      "promessa-curta",
+      "prova-rapida"
+    ],
+    "authorityElements": ["string"],
+    "privacyNoticeNearForm": "boolean",
+    "privacyPolicyUrl": "string",
+    "legalFooterItems": ["empresa", "cnpj", "contato", "politica-de-privacidade"]
+  },
+  "accessibilitySpec": {
+    "minTextContrast": "4.5:1",
+    "minTouchTargetPx": "44",
+    "formFieldMinHeightPx": "44",
+    "smallTextUsageNotes": "string"
+  },
   "consistencyChecks": [
     {
       "check": "string",
@@ -277,6 +325,43 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 > - `style` e `contrastMode` são responsabilidade da etapa `landingPageDesignPreset.sectionPresets` (detalhe visual por `sectionId`).
 > - Após `complete` da etapa de wireframe, o backend valida presença de `sectionOrder` estruturado e `surfaceSpec.surfaceToken` por seção antes de aceitar o artefato.
 > - Antes de iniciar `landingPageHtml`, o backend executa pré-validação de consistência entre wireframe e design preset para antecipar falhas que antes apareciam apenas no fim do pipeline.
+
+### Regras canônicas de qualidade para `landingPageWireframe` (enriquecido para conversão)
+
+1. **Escaneabilidade mobile mandatória**
+   - `readingFlowSpec.maxParagraphLinesMobile` deve ser `<= 4`.
+   - `readingFlowSpec.bulletDensityPerSection` deve ser `>= 3` para seções de argumento e prova.
+   - `sectionOrder[*].mobilePriorityScore` deve refletir risco de drop-off (se `dropOffRisk = alto`, score mínimo `>= 8`).
+
+2. **Continuidade comercial por seção**
+   - Cada seção deve declarar objetivo explícito coerente com **Dor → Resultado → Mecanismo → Prova → Oferta**.
+   - `conversionPathSpec.primaryAction` deve ser idêntica ao CTA principal da copy.
+   - `conversionPathSpec.ctaLabelCanonical` deve ser o rótulo dominante da página; variações só podem existir se listadas em `ctaLabelVariantsAllowed`.
+   - Se `stickyCtaMobile.enabled = true`, `ctaLabel` e `ctaUrl` devem manter match semântico com `primaryCTA`.
+
+3. **Plano de prova obrigatório**
+   - `proofPlan.requiredProofTypes` deve conter pelo menos 2 tipos distintos de prova.
+   - `proofSectionIds` deve apontar para seções existentes em `sectionOrder`.
+   - Quando faltar prova contextualizada, o artefato não pode avançar para `APPROVED`.
+
+4. **Ritmo visual e redução de fricção**
+   - `conversionPathSpec.frictionPoints` deve mapear explicitamente pontos de abandono previstos.
+   - Cada ponto de fricção mapeado deve ter mitigação em `uiNotes`, `ctaPlacementNotes` ou `formPlacementNotes`.
+   - O wireframe deve reservar pelo menos 1 bloco de objeções (FAQ ou equivalente) antes do CTA final.
+
+5. **Confiança e conformidade de coleta**
+   - `trustSignalsSpec.brandIdentityRequired` deve ser `true` para páginas de captação com formulário.
+   - `privacyNoticeNearForm` deve ser `true` e `privacyPolicyUrl` deve estar preenchida.
+   - `legalFooterItems` deve conter ao menos empresa, contato e política de privacidade.
+
+6. **Acessibilidade mínima obrigatória**
+   - `accessibilitySpec.minTextContrast` deve ser no mínimo `4.5:1` para texto comum.
+   - `accessibilitySpec.minTouchTargetPx` deve ser `>= 44`.
+   - `formFieldMinHeightPx` deve ser `>= 44`.
+
+7. **Critério de bloqueio**
+   - Ausência de `readingFlowSpec`, `conversionPathSpec`, `proofPlan`, `trustSignalsSpec` ou `accessibilitySpec` mantém o artefato em `DRAFT`.
+   - `landingPageHtml` só pode iniciar com wireframe em `VALIDATED` ou `APPROVED`.
 
 ## `landingPageImagePlanning`
 
@@ -360,12 +445,35 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
       "textMuted": "string",
       "brandPrimary": "string",
       "brandSecondary": "string",
+      "ctaPrimary": "string",
+      "ctaPrimaryHover": "string",
+      "success": "string",
+      "warning": "string",
       "border": "string"
     },
     "typography": {
       "fontFamily": "string",
       "baseSize": "string",
-      "headingScale": "string"
+      "headingScale": "string",
+      "lineHeightBody": "string",
+      "lineHeightHeading": "string",
+      "fontWeightRegular": "string",
+      "fontWeightSemibold": "string",
+      "fontWeightBold": "string",
+      "maxLineLength": "string"
+    },
+    "spacing": {
+      "scaleBase": "4|8",
+      "sectionGapDesktop": "string",
+      "sectionGapMobile": "string",
+      "containerWidthDesktop": "string",
+      "containerPaddingMobile": "string"
+    },
+    "accessibility": {
+      "textContrastBody": "string",
+      "textContrastSmall": "string",
+      "focusVisibleStyle": "string",
+      "touchTargetMinPx": "string"
     },
     "radius": {
       "card": "string",
@@ -391,15 +499,34 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
     "hero": {
       "titleMaxWidth": "string",
       "summaryMaxWidth": "string",
-      "ctaVariant": "primary | ghost"
+      "ctaVariant": "primary | ghost",
+      "mediaPlacement": "left | right | center | background"
     },
     "form": {
       "fieldSpacing": "string",
       "labelWeight": "string",
-      "submitStyle": "pill | block"
+      "submitStyle": "pill | block",
+      "fieldHeight": "string",
+      "errorStyle": "inline | tooltip"
     },
     "faq": {
       "variant": "accordion | stacked-cards"
+    },
+    "proof": {
+      "cardVariant": "metric-first | testimonial-first | mixed",
+      "showIdentity": "boolean",
+      "highlightMetric": "boolean"
+    },
+    "trust": {
+      "showBrandLockupInHero": "boolean",
+      "showLegalFooter": "boolean",
+      "privacyMicrocopyNearForm": "boolean",
+      "authorityStripVariant": "logo-row | credential-cards | mixed"
+    },
+    "cta": {
+      "stickyMobile": "boolean",
+      "stickyOffsetBottom": "string",
+      "pulseOnScrollStop": "boolean"
     }
   },
   "motion": {
@@ -418,6 +545,32 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 
 > `landingPageDesignPreset.sectionPresets` é a fonte canônica de `surfaceStyle` e `contrastMode` por `sectionId` para renderização final do HTML.
 > Após `complete` da etapa de design preset, o backend valida se `sectionPresets` cobre todas as `sectionId` do wireframe atual.
+
+### Regras canônicas de qualidade para `landingPageDesignPreset` (preset rico)
+
+1. **Legibilidade e leitura orientada à conversão**
+   - `theme.typography.maxLineLength` deve ficar entre `55ch` e `75ch`.
+   - `theme.typography.lineHeightBody` deve ser `>= 1.5`.
+   - `theme.spacing.sectionGapMobile` não pode ser inferior a `48px`.
+
+2. **Hierarquia de CTA obrigatória**
+   - `theme.palette.ctaPrimary` deve ter contraste AA com o fundo predominante da seção.
+   - O preset de CTA (`componentPresets.cta`) deve definir comportamento mobile quando existir CTA sticky.
+   - O texto dominante de CTA no preset deve respeitar `conversionPathSpec.ctaLabelCanonical` do wireframe.
+   - `sectionPresets` de alta intenção comercial (hero, oferta, fechamento) devem usar `emphasis = primary` ou justificar em `notes`.
+
+3. **Prova visual com identidade**
+   - `componentPresets.proof.showIdentity` deve ser `true` para páginas de venda direta.
+   - Quando `highlightMetric = true`, a métrica principal deve estar na primeira dobra da seção de prova.
+
+4. **Consistência wireframe ↔ preset**
+   - Todo `sectionId` do wireframe deve ter 1 preset correspondente e sem duplicidade.
+   - `layoutPreset` em `sectionPresets` deve ser compatível com `contentType` e `objective` do wireframe.
+   - Incompatibilidades devem ser registradas em `consistencyChecks` como `FAIL`.
+
+5. **Critério de bloqueio**
+   - Preset sem tokens mínimos (`palette`, `typography`, `spacing`, `accessibility`, `componentPresets.cta`, `componentPresets.trust`) permanece em `DRAFT`.
+   - O LHM não deve renderizar HTML final quando `THEME_CONTRAST`, `CTA_VISUAL_HIERARCHY` ou `MOBILE_READABILITY` estiver `FAIL`.
 
 ## `landingPageHtml`
 

@@ -318,6 +318,39 @@ class MoisDomainServiceTest {
         assertThat(filtered.items()).allMatch(item -> item.evidenceScore() > 0.0);
     }
 
+    @Test
+    void shouldFavoriteDiscardAndImportCollectedReference() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-003",
+                        "nutricao",
+                        "hipertrofia",
+                        List.of("CLICKBANK"),
+                        "LAST_7_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        40
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceResponse reference = service
+                .listCollectedReferencesByJob(created.jobId(), null, null, null, null)
+                .orElseThrow()
+                .items()
+                .getFirst();
+
+        var favorite = service.favoriteCollectedReference(created.jobId(), reference.referenceId()).orElseThrow();
+        assertThat(favorite.action()).isEqualTo("FAVORITE");
+
+        var imported = service.importCollectedReference(created.jobId(), reference.referenceId()).orElseThrow();
+        assertThat(imported.status()).isEqualTo("IMPORTED");
+        assertThat(imported.importedReferenceId()).isNotBlank();
+
+        var discarded = service.discardCollectedReference(created.jobId(), reference.referenceId()).orElseThrow();
+        assertThat(discarded.status()).isEqualTo("DISCARDED");
+    }
+
     private static class HtmlHandler implements HttpHandler {
         private final String body;
 

@@ -197,4 +197,31 @@ public class MoisDomainController {
         return service.listCollectedReferencesByJob(jobId, source, niche, minSuccessScore, confidenceLevel)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
     }
+
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/favorite")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse favoriteCollectedReference(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return service.favoriteCollectedReference(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
+
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/discard")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse discardCollectedReference(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return service.discardCollectedReference(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
+
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse importCollectedReference(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return service.importCollectedReference(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
 }

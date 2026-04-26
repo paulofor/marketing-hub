@@ -173,6 +173,45 @@ public class MoisModuleGateway {
                 MoisWorkspaceDtos.CollectedReferenceListResponse.class);
     }
 
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> favoriteCollectedReference(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/favorite",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> discardCollectedReference(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/discard",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReference(String jobId, String referenceId) {
+        try {
+            return Optional.ofNullable(exchange(
+                    "/api/v1/mois/collection-jobs/" + jobId + "/references/" + referenceId + "/import",
+                    HttpMethod.POST,
+                    null,
+                    MoisWorkspaceDtos.CollectedReferenceActionResponse.class
+            ).getBody());
+        } catch (HttpClientErrorException.NotFound notFound) {
+            return Optional.empty();
+        }
+    }
+
     public Map<String, String> health() {
         return exchange("/api/v1/mois/health", HttpMethod.GET, null, Map.class).getBody();
     }

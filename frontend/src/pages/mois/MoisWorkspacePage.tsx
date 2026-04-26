@@ -59,6 +59,9 @@ export default function MoisWorkspacePage() {
           <Link className="btn btn-outline-secondary btn-sm" to="/mois/research-sources">
             Locais de pesquisa
           </Link>
+          <Link className="btn btn-outline-secondary btn-sm" to="/mois/auto-collection">
+            Coleta automática
+          </Link>
         </div>
       </section>
 

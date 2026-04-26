@@ -190,6 +190,9 @@ class MoisDomainControllerTest {
                                 "Oferta teste",
                                 "https://example.com",
                                 "nutricao",
+                                "ACTIVE",
+                                false,
+                                null,
                                 77,
                                 "HIGH",
                                 "HIGH",
@@ -211,5 +214,22 @@ class MoisDomainControllerTest {
                 .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
                 .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"))
                 .andExpect(jsonPath("$.items[0].confidenceLevel").value("HIGH"));
+    }
+
+    @Test
+    void shouldFavoriteCollectedReference() throws Exception {
+        when(service.favoriteCollectedReference("mois-collect-001", "ref-1"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-1",
+                        "FAVORITE",
+                        "ACTIVE",
+                        null,
+                        Instant.parse("2026-04-26T12:00:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-1/favorite"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.action").value("FAVORITE"));
     }
 }

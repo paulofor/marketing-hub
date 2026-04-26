@@ -204,6 +204,9 @@ public final class MoisWorkspaceDtos {
             String title,
             String url,
             String niche,
+            String status,
+            boolean favorite,
+            String importedReferenceId,
             int successScore,
             String successSignal,
             String confidenceLevel,
@@ -219,6 +222,16 @@ public final class MoisWorkspaceDtos {
     public record CollectedReferenceListResponse(
             String jobId,
             List<CollectedReferenceResponse> items
+    ) {
+    }
+
+    public record CollectedReferenceActionResponse(
+            String jobId,
+            String referenceId,
+            String action,
+            String status,
+            String importedReferenceId,
+            Instant updatedAt
     ) {
     }
 }

@@ -145,6 +145,33 @@ public class MoisController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collection job not found"));
     }
 
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/favorite")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse favoriteCollectedReference(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return gateway.favoriteCollectedReference(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
+
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/discard")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse discardCollectedReference(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return gateway.discardCollectedReference(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
+
+    @PostMapping("/collection-jobs/{jobId}/references/{referenceId}/import")
+    public MoisWorkspaceDtos.CollectedReferenceActionResponse importCollectedReference(
+            @PathVariable String jobId,
+            @PathVariable String referenceId
+    ) {
+        return gateway.importCollectedReference(jobId, referenceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "collected reference not found"));
+    }
+
     @GetMapping("/offers")
     public MoisOfferDtos.OfferCardListResponse listOffers(
             @RequestParam(required = false) String requestId,

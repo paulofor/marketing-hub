@@ -435,6 +435,9 @@ class MoisControllerContractTest {
                                 "Oferta com alta recorrência",
                                 "https://example.com/offer",
                                 "nutricao",
+                                "ACTIVE",
+                                false,
+                                null,
                                 78,
                                 "HIGH",
                                 "HIGH",
@@ -466,6 +469,42 @@ class MoisControllerContractTest {
 
         mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-missing/references"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldFavoriteCollectedReference() throws Exception {
+        when(gateway.favoriteCollectedReference("mois-collect-001", "ref-auto-001"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-auto-001",
+                        "FAVORITE",
+                        "ACTIVE",
+                        null,
+                        Instant.parse("2026-04-26T12:00:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-auto-001/favorite"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.action").value("FAVORITE"))
+                .andExpect(jsonPath("$.referenceId").value("ref-auto-001"));
+    }
+
+    @Test
+    void shouldImportCollectedReference() throws Exception {
+        when(gateway.importCollectedReference("mois-collect-001", "ref-auto-001"))
+                .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                        "mois-collect-001",
+                        "ref-auto-001",
+                        "IMPORT",
+                        "IMPORTED",
+                        "ref-imported-001",
+                        Instant.parse("2026-04-26T12:00:00Z")
+                )));
+
+        mockMvc.perform(post("/api/v1/mois/collection-jobs/mois-collect-001/references/ref-auto-001/import"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IMPORTED"))
+                .andExpect(jsonPath("$.importedReferenceId").value("ref-imported-001"));
     }
 
 }

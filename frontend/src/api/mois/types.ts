@@ -136,3 +136,63 @@ export interface MoisBuildOfferResponse {
   checklist: Record<string, boolean>;
   updatedAt: string;
 }
+
+export interface MoisCreateCollectionJobPayload {
+  workspaceId: string;
+  niche: string;
+  marketTheme?: string;
+  sources: string[];
+  timeWindow: "LAST_7_DAYS" | "LAST_30_DAYS";
+  limitPerSource?: number;
+  locale?: string;
+  country?: string;
+  minSuccessScore?: number;
+}
+
+export interface MoisCollectionJob {
+  jobId: string;
+  workspaceId: string;
+  niche: string;
+  marketTheme?: string;
+  status: string;
+  timeWindow: string;
+  limitPerSource: number;
+  minSuccessScore: number;
+  sources: string[];
+  createdAt: string;
+}
+
+export interface MoisCollectedReference {
+  referenceId: string;
+  jobId: string;
+  source: string;
+  title: string;
+  url: string;
+  niche: string;
+  status: string;
+  favorite: boolean;
+  importedReferenceId?: string;
+  successScore: number;
+  successSignal: string;
+  confidenceLevel: string;
+  rankingPosition: number;
+  engagementRelative: number;
+  recurrenceScore: number;
+  evidenceScore: number;
+  collectedAt: string;
+  rawMetadata: Record<string, string>;
+}
+
+export interface MoisCollectedReferenceListResponse {
+  jobId: string;
+  items: MoisCollectedReference[];
+}
+
+export interface MoisCollectedReferenceActionResponse {
+  jobId: string;
+  referenceId: string;
+  action: string;
+  status: string;
+  importedReferenceId?: string;
+  updatedAt: string;
+}

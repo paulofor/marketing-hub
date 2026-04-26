@@ -238,12 +238,37 @@ Garantir estabilidade, observabilidade e adoção segura em produção.
 - **Próximos passos:** executar Sprint 3 com UI de coleta automática orientada por filtros e ranking já normalizado.
 
 ## Relatório — Sprint 3
-- **Status:** Planejado
-- **Período:** a definir
-- **Escopo concluído:** pendente
-- **Evidências (PRs, commits, testes):** pendente
-- **Riscos/pendências:** pendente
-- **Próximos passos:** integrar com extração/biblioteca na Sprint 4
+- **Status:** Concluído
+- **Período:** 26/04/2026
+- **Escopo concluído:**
+  - nova página de **Coleta automática** no frontend MOIS com:
+    - seleção de fontes;
+    - janela temporal (`LAST_7_DAYS` e `LAST_30_DAYS`);
+    - nicho e tema;
+    - botão de iniciar coleta;
+  - tabela de resultados com colunas de status, score, origem e data;
+  - ações por referência coletada:
+    - importar para referências MOIS,
+    - descartar,
+    - favoritar;
+  - filtros de leitura na UI (fonte, confiança e score mínimo), com estados `loading`, `empty` e `error`;
+  - links externos de origem abrindo em nova aba (`target="_blank"` + `rel="noreferrer"`).
+- **Evidências (PRs, commits, testes):**
+  - frontend:
+    - `frontend/src/pages/mois/MoisAutoCollectionPage.tsx`
+    - `frontend/src/api/mois/useMoisCollection.ts`
+    - `frontend/src/api/mois/types.ts`
+    - `frontend/src/pages/mois/MoisWorkspacePage.tsx`
+    - `frontend/src/App.tsx`
+  - backend/mois (apoio contratual para ações):
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisModuleGateway.java`
+    - `mois/src/main/java/com/marketinghub/mois/web/MoisDomainController.java`
+    - `mois/src/main/java/com/marketinghub/mois/service/MoisDomainService.java`
+- **Riscos/pendências:**
+  - persistência das ações de coleta ainda em memória no módulo `mois`;
+  - necessidade de consolidar importação com lineage completo na Sprint 4.
+- **Próximos passos:** integrar automaticamente com Extração e Biblioteca na Sprint 4.
 
 ## Relatório — Sprint 4
 - **Status:** Planejado

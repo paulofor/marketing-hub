@@ -710,6 +710,103 @@ public class MoisDomainService {
         ));
     }
 
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> favoriteCollectedReference(String jobId, String referenceId) {
+        return updateCollectedReference(jobId, referenceId, "FAVORITE", item -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+                item.referenceId(),
+                item.jobId(),
+                item.source(),
+                item.title(),
+                item.url(),
+                item.niche(),
+                item.status(),
+                true,
+                item.importedReferenceId(),
+                item.successScore(),
+                item.successSignal(),
+                item.confidenceLevel(),
+                item.rankingPosition(),
+                item.engagementRelative(),
+                item.recurrenceScore(),
+                item.evidenceScore(),
+                item.collectedAt(),
+                item.rawMetadata()
+        ));
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> discardCollectedReference(String jobId, String referenceId) {
+        return updateCollectedReference(jobId, referenceId, "DISCARD", item -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+                item.referenceId(),
+                item.jobId(),
+                item.source(),
+                item.title(),
+                item.url(),
+                item.niche(),
+                "DISCARDED",
+                item.favorite(),
+                item.importedReferenceId(),
+                item.successScore(),
+                item.successSignal(),
+                item.confidenceLevel(),
+                item.rankingPosition(),
+                item.engagementRelative(),
+                item.recurrenceScore(),
+                item.evidenceScore(),
+                item.collectedAt(),
+                item.rawMetadata()
+        ));
+    }
+
+    public Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> importCollectedReference(String jobId, String referenceId) {
+        if (!collectionJobs.containsKey(jobId)) {
+            return Optional.empty();
+        }
+        MoisWorkspaceDtos.CollectionJobResponse job = collectionJobs.get(jobId);
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> items = collectedReferencesByJob.getOrDefault(jobId, List.of());
+        for (MoisWorkspaceDtos.CollectedReferenceResponse item : items) {
+            if (!item.referenceId().equals(referenceId)) {
+                continue;
+            }
+            String importedReferenceId = item.importedReferenceId() == null || item.importedReferenceId().isBlank()
+                    ? UUID.randomUUID().toString()
+                    : item.importedReferenceId();
+            MoisWorkspaceDtos.ReferenceResponse imported = new MoisWorkspaceDtos.ReferenceResponse(
+                    importedReferenceId,
+                    job.workspaceId(),
+                    item.niche(),
+                    item.url(),
+                    "AUTO_COLLECTED",
+                    item.title(),
+                    "SOLUTION_AWARE",
+                    null,
+                    null,
+                    "Importado automaticamente da coleta " + jobId,
+                    Instant.now()
+            );
+            referencesById.put(importedReferenceId, imported);
+            return updateCollectedReference(jobId, referenceId, "IMPORT", current -> new MoisWorkspaceDtos.CollectedReferenceResponse(
+                    current.referenceId(),
+                    current.jobId(),
+                    current.source(),
+                    current.title(),
+                    current.url(),
+                    current.niche(),
+                    "IMPORTED",
+                    current.favorite(),
+                    importedReferenceId,
+                    current.successScore(),
+                    current.successSignal(),
+                    current.confidenceLevel(),
+                    current.rankingPosition(),
+                    current.engagementRelative(),
+                    current.recurrenceScore(),
+                    current.evidenceScore(),
+                    current.collectedAt(),
+                    current.rawMetadata()
+            ));
+        }
+        return Optional.empty();
+    }
+
     private List<OfferCard> listOffersByRequest(String requestId) {
         return offers.values().stream()
                 .filter(offer -> offer.requestId().equals(requestId))
@@ -1011,6 +1108,9 @@ public class MoisDomainService {
                     "Referência " + index + " (" + source + ")",
                     "https://example.com/" + source.toLowerCase() + "/offer-" + index,
                     niche,
+                    "ACTIVE",
+                    false,
+                    null,
                     normalized.successScore(),
                     normalized.successSignal(),
                     normalized.confidenceLevel(),
@@ -1046,6 +1146,9 @@ public class MoisDomainService {
                     item.title(),
                     item.url(),
                     item.niche(),
+                    item.status(),
+                    item.favorite(),
+                    item.importedReferenceId(),
                     item.successScore(),
                     item.successSignal(),
                     item.confidenceLevel(),
@@ -1058,6 +1161,36 @@ public class MoisDomainService {
             ));
         }
         return ranked;
+    }
+
+    private Optional<MoisWorkspaceDtos.CollectedReferenceActionResponse> updateCollectedReference(
+            String jobId,
+            String referenceId,
+            String action,
+            Function<MoisWorkspaceDtos.CollectedReferenceResponse, MoisWorkspaceDtos.CollectedReferenceResponse> updater
+    ) {
+        if (!collectionJobs.containsKey(jobId)) {
+            return Optional.empty();
+        }
+        List<MoisWorkspaceDtos.CollectedReferenceResponse> items = new ArrayList<>(collectedReferencesByJob.getOrDefault(jobId, List.of()));
+        for (int i = 0; i < items.size(); i++) {
+            MoisWorkspaceDtos.CollectedReferenceResponse current = items.get(i);
+            if (!current.referenceId().equals(referenceId)) {
+                continue;
+            }
+            MoisWorkspaceDtos.CollectedReferenceResponse updated = updater.apply(current);
+            items.set(i, updated);
+            collectedReferencesByJob.put(jobId, reRank(items));
+            return Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
+                    jobId,
+                    referenceId,
+                    action,
+                    updated.status(),
+                    updated.importedReferenceId(),
+                    Instant.now()
+            ));
+        }
+        return Optional.empty();
     }
 
     private SourceMetricSnapshot buildSourceMetricSnapshot(MoisWorkspaceDtos.CollectionJobResponse job, String source, int index) {

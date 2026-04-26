@@ -2510,16 +2510,25 @@ export default function ExperimentContentGenerationTab({
                 landingImageFlowStatus !== "COMPLETED"
                   ? "PROCESSING"
                   : request.status;
+              const waitingDependency = invalidation?.requiresRefresh === true;
               const displayStatus: RequestUiStatus =
-                effectiveRequestStatus === "PROCESSING" ||
-                effectiveRequestStatus === "PENDING"
+                waitingDependency
                   ? "PROCESSING"
-                  : invalidation
-                    ? "INVALIDATED"
-                    : effectiveRequestStatus;
+                  : effectiveRequestStatus === "PROCESSING" ||
+                      effectiveRequestStatus === "PENDING"
+                    ? "PROCESSING"
+                    : invalidation
+                      ? "INVALIDATED"
+                      : effectiveRequestStatus;
               const workerStatus = getWorkerStatus(request);
               const executionSource = request.executionSource ?? "WORKER_IA";
               const backendError = parseBackendError(request.errorMessage);
+              const displayWorkerStatus = waitingDependency
+                ? {
+                    label: "Aguardando atualização após dependência",
+                    badge: "info",
+                  }
+                : workerStatus;
 
               return (
                 <div
@@ -2560,18 +2569,28 @@ export default function ExperimentContentGenerationTab({
                         2. Atendimento do{" "}
                         {EXECUTION_SOURCE_LABELS[executionSource]}:
                       </strong>
-                      <span className={`badge text-bg-${workerStatus.badge}`}>
-                        {workerStatus.label}
+                      <span
+                        className={`badge text-bg-${displayWorkerStatus.badge}`}
+                      >
+                        {displayWorkerStatus.label}
                       </span>
                       <span>
-                        {request.startedAt
+                        {waitingDependency
+                          ? request.completedAt
+                            ? `última execução finalizada em ${formatDateTime(request.completedAt)}`
+                            : "aguardando nova execução"
+                          : request.startedAt
                           ? `iniciado em ${formatDateTime(request.startedAt)}`
-                          : "sem início registrado"}
+                          : request.status === "PENDING"
+                            ? "aguardando início"
+                            : "sem início registrado"}
                       </span>
                     </div>
                     <div>
                       <strong>3. Conclusão:</strong>{" "}
-                      {isLandingImagePlanningSection &&
+                      {waitingDependency
+                        ? `aguardando conclusão de ${invalidation?.sourceSection} para atualizar esta etapa.`
+                        : isLandingImagePlanningSection &&
                       landingImageFlowStatus !== "COMPLETED"
                         ? "aguardando conclusão da geração das imagens planejadas."
                         : request.completedAt
@@ -2584,6 +2603,11 @@ export default function ExperimentContentGenerationTab({
                   {isLandingImagePlanningSection ? (
                     <small className="text-body-secondary">
                       Etapa atual: {landingImageFlowMessage}
+                    </small>
+                  ) : waitingDependency && invalidation ? (
+                    <small className="text-body-secondary">
+                      Etapa atual: aguardando conclusão de{" "}
+                      {invalidation.sourceSection} para atualização automática.
                     </small>
                   ) : request.stageLabel ? (
                     <small className="text-body-secondary">
@@ -2602,15 +2626,11 @@ export default function ExperimentContentGenerationTab({
                       landing para retomar automaticamente esta etapa ao final.
                     </small>
                   ) : null}
-                  {invalidation ? (
+                  {invalidation && !invalidation.requiresRefresh ? (
                     <small className="text-warning-emphasis">
-                      {invalidation.requiresRefresh
-                        ? `Execução em andamento em ${invalidation.sourceSection} (${formatDateTime(
-                            invalidation.sourceAt,
-                          )}). Esta etapa será atualizada após a conclusão da dependência anterior.`
-                        : `Dependência atualizada em ${invalidation.sourceSection} (${formatDateTime(
-                            invalidation.sourceAt,
-                          )}). Gere esta etapa novamente.`}
+                      {`Dependência atualizada em ${invalidation.sourceSection} (${formatDateTime(
+                        invalidation.sourceAt,
+                      )}). Gere esta etapa novamente.`}
                     </small>
                   ) : null}
                   {request.errorMessage ? (

@@ -25,6 +25,7 @@ import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.cost.CostAttributionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,6 +82,8 @@ class ExperimentPipelineGenerationServiceTest {
     private OpenAiPricingService openAiPricingService;
     @Mock
     private LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
+    @Mock
+    private CostAttributionService costAttributionService;
 
     private ExperimentPipelineGenerationService service;
 
@@ -98,7 +101,8 @@ class ExperimentPipelineGenerationServiceTest {
                 landingHtmlModule,
                 frameworkImageGenerationService,
                 openAiPricingService,
-                leadPortalPublicUrlResolver);
+                leadPortalPublicUrlResolver,
+                costAttributionService);
         lenient().when(landingHtmlModule.buildPromptV2Inputs(any())).thenReturn("");
         lenient().when(landingHtmlModule.assembleHtmlDocument(any())).thenReturn("<!doctype html><html><body></body></html>");
         lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
@@ -634,8 +638,10 @@ class ExperimentPipelineGenerationServiceTest {
                 100,
                 50,
                 null);
+        when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(new BigDecimal("0.0750"));
 
         service.completeJob(jobId, request);
+        verify(costAttributionService).addUsdCostToExperimentHierarchy(experiment, new BigDecimal("0.0750"));
 
         ObjectMapper mapper = new ObjectMapper();
         @SuppressWarnings("unchecked")

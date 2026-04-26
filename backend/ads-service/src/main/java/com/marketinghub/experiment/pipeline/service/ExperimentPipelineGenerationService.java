@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
@@ -122,6 +123,7 @@ public class ExperimentPipelineGenerationService {
     private final FrameworkImageGenerationService frameworkImageGenerationService;
     private final OpenAiPricingService openAiPricingService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
+    private final CostAttributionService costAttributionService;
 
     public ExperimentPipelineGenerationService(ExperimentRepository experimentRepository,
                                                ExperimentPipelineGenerationJobRepository jobRepository,
@@ -134,7 +136,8 @@ public class ExperimentPipelineGenerationService {
                                                LandingHtmlModule landingHtmlModule,
                                                FrameworkImageGenerationService frameworkImageGenerationService,
                                                OpenAiPricingService openAiPricingService,
-                                               LeadPortalPublicUrlResolver leadPortalPublicUrlResolver) {
+                                               LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
+                                               CostAttributionService costAttributionService) {
         this.experimentRepository = experimentRepository;
         this.jobRepository = jobRepository;
         this.experimentMapper = experimentMapper;
@@ -147,6 +150,7 @@ public class ExperimentPipelineGenerationService {
         this.frameworkImageGenerationService = frameworkImageGenerationService;
         this.openAiPricingService = openAiPricingService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
+        this.costAttributionService = costAttributionService;
     }
 
     @Transactional
@@ -569,6 +573,7 @@ public class ExperimentPipelineGenerationService {
         job.setCostUsd(estimatedCost);
         job.setErrorMessage(null);
         job.setFinishedAt(Instant.now());
+        applyCostToExperimentHierarchy(experiment, estimatedCost);
 
         enqueueNextAutomaticStep(job, request);
     }
@@ -657,6 +662,7 @@ public class ExperimentPipelineGenerationService {
         job.setCostUsd(costUsd != null ? costUsd : BigDecimal.ZERO);
         job.setErrorMessage(null);
         job.setFinishedAt(Instant.now());
+        applyCostToExperimentHierarchy(job.getExperiment(), costUsd);
     }
 
     private void failInlineGenerationJob(ExperimentPipelineGenerationJob job, String errorMessage) {
@@ -667,6 +673,16 @@ public class ExperimentPipelineGenerationService {
         job.setStage(ExperimentPipelineGenerationJobStage.FAILED);
         job.setErrorMessage(StringUtils.hasText(errorMessage) ? errorMessage.trim() : "Falha desconhecida no LHM");
         job.setFinishedAt(Instant.now());
+    }
+
+    private void applyCostToExperimentHierarchy(Experiment experiment, BigDecimal costUsd) {
+        if (experiment == null || experiment.getId() == null) {
+            return;
+        }
+        if (costUsd == null || costUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        costAttributionService.addUsdCostToExperimentHierarchy(experiment, costUsd);
     }
 
     private String writeJsonSilently(Object payload) {

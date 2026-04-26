@@ -1160,7 +1160,14 @@ public class ExperimentPipelineGenerationService {
             sb.append("15. Não transformar o layout em HTML final; esta etapa deve decidir ordem, hierarquia e slots de mídia.\n");
             sb.append("16. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
             sb.append("17. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n");
-            sb.append("18. Definir formSpec como contrato estruturado do formulário com esta configuração:\n");
+            sb.append("18. Preencher readingFlowSpec, conversionPathSpec, proofPlan, trustSignalsSpec e accessibilitySpec (todos obrigatórios no cânone).\n");
+            sb.append("19. readingFlowSpec.maxParagraphLinesMobile deve ser <= 4 e bulletDensityPerSection >= 3.\n");
+            sb.append("20. Se dropOffRisk=alto em alguma seção, mobilePriorityScore dessa seção deve ser >= 8.\n");
+            sb.append("21. conversionPathSpec precisa trazer primaryAction + ctaLabelCanonical com o CTA dominante da página.\n");
+            sb.append("22. proofPlan.requiredProofTypes precisa listar pelo menos 2 tipos distintos e proofSectionIds deve apontar para sectionId existentes.\n");
+            sb.append("23. trustSignalsSpec exige brandIdentityRequired=true, privacyNoticeNearForm=true, privacyPolicyUrl preenchida e legalFooterItems com empresa/contato/política.\n");
+            sb.append("24. accessibilitySpec exige minTextContrast >= 4.5:1, minTouchTargetPx >= 44 e formFieldMinHeightPx >= 44.\n");
+            sb.append("25. Definir formSpec como contrato estruturado do formulário com esta configuração:\n");
             sb.append("   - formId: lead-capture-primary\n");
             sb.append("   - title: Receber a prévia do Kit (IA)\n");
             sb.append("   - submitLabel: Desbloquear o Kit (receber a prévia gerada por IA)\n");
@@ -1174,6 +1181,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("- Preencher mediaSlot, compositionNotes e surfaceSpec (somente surfaceToken + notes) em todas as seções.\n");
             sb.append("- Preencher formSpec completo como fonte única da verdade para campos e obrigatoriedade do formulário.\n");
             sb.append("- Preencher ctaSlot dentro das seções com CTA.\n");
+            sb.append("- Preencher readingFlowSpec, conversionPathSpec, proofPlan, trustSignalsSpec e accessibilitySpec respeitando os thresholds canônicos.\n");
             sb.append("- Preencher consistencyChecks e observações finais (mobilePriorityNotes, ctaPlacementNotes, formPlacementNotes).\n");
             sb.append("- Reforçar message match usando primaryAdHeadline, landingMatchLine e " + landingCtaForInstructions + " como referência fixa.\n");
             return;
@@ -1230,8 +1238,13 @@ public class ExperimentPipelineGenerationService {
             sb.append("3. surfaceStyle deve usar apenas: band, solid, gradient-soft, image-tint.\n");
             sb.append("4. contrastMode deve usar apenas: normal, high, soft.\n");
             sb.append("5. Não inventar novas seções; somente mapear sectionId do wireframe.\n");
-            sb.append("6. consistencyChecks deve incluir THEME_CONTRAST e MOBILE_READABILITY.\n");
-            sb.append("7. Não gerar HTML, CSS bruto ou JS nesta etapa; apenas preset estruturado.\n");
+            sb.append("6. theme deve trazer blocos mínimos: palette, typography, spacing e accessibility.\n");
+            sb.append("7. componentPresets deve incluir explicitamente cta, trust, proof, hero, form e faq.\n");
+            sb.append("8. typography.maxLineLength deve ficar entre 55ch e 75ch; lineHeightBody >= 1.5.\n");
+            sb.append("9. spacing.sectionGapMobile não pode ser menor que 48px.\n");
+            sb.append("10. consistencyChecks deve incluir THEME_CONTRAST, CTA_VISUAL_HIERARCHY e MOBILE_READABILITY.\n");
+            sb.append("11. Seções de alta intenção (hero/oferta/fechamento) devem usar emphasis=primary ou justificar em notes.\n");
+            sb.append("12. Não gerar HTML, CSS bruto ou JS nesta etapa; apenas preset estruturado.\n");
             return;
         }
 
@@ -1573,6 +1586,7 @@ public class ExperimentPipelineGenerationService {
         if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections) || rawSections.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem sectionOrder estruturado");
         }
+        Set<String> sectionIds = new LinkedHashSet<>();
         for (Object rawSection : rawSections) {
             if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
                 continue;
@@ -1581,6 +1595,18 @@ public class ExperimentPipelineGenerationService {
             String sectionId = asTrimmedString(section.get("sectionId"));
             if (!StringUtils.hasText(sectionId)) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing com section sem sectionId");
+            }
+            String normalizedSectionId = normalizeLookupKey(sectionId);
+            if (!sectionIds.add(normalizedSectionId)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe da landing inválido: sectionId duplicado em sectionOrder (" + sectionId + ")");
+            }
+            String dropOffRisk = asTrimmedString(section.get("dropOffRisk"));
+            Integer mobilePriorityScore = asInteger(section.get("mobilePriorityScore"));
+            if ("alto".equalsIgnoreCase(dropOffRisk) && (mobilePriorityScore == null || mobilePriorityScore < 8)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe inválido: sectionId '" + sectionId
+                                + "' com dropOffRisk=alto exige mobilePriorityScore >= 8");
             }
             if (!(section.get("surfaceSpec") instanceof Map<?, ?> rawSurfaceMap)) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
@@ -1591,6 +1617,93 @@ public class ExperimentPipelineGenerationService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "Wireframe da landing com section sem surfaceSpec.surfaceToken");
             }
+        }
+        Map<String, Object> readingFlowSpec = requiredMap(wireframePayload, "readingFlowSpec",
+                "Wireframe incompleto: readingFlowSpec é obrigatório");
+        Integer maxParagraphLinesMobile = asInteger(readingFlowSpec.get("maxParagraphLinesMobile"));
+        if (maxParagraphLinesMobile == null || maxParagraphLinesMobile > 4) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: readingFlowSpec.maxParagraphLinesMobile deve ser <= 4");
+        }
+        Integer bulletDensityPerSection = asInteger(readingFlowSpec.get("bulletDensityPerSection"));
+        if (bulletDensityPerSection == null || bulletDensityPerSection < 3) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: readingFlowSpec.bulletDensityPerSection deve ser >= 3");
+        }
+
+        Map<String, Object> conversionPathSpec = requiredMap(wireframePayload, "conversionPathSpec",
+                "Wireframe incompleto: conversionPathSpec é obrigatório");
+        if (!StringUtils.hasText(asTrimmedString(conversionPathSpec.get("primaryAction")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: conversionPathSpec.primaryAction é obrigatório");
+        }
+        if (!StringUtils.hasText(asTrimmedString(conversionPathSpec.get("ctaLabelCanonical")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: conversionPathSpec.ctaLabelCanonical é obrigatório");
+        }
+
+        Map<String, Object> proofPlan = requiredMap(wireframePayload, "proofPlan",
+                "Wireframe incompleto: proofPlan é obrigatório");
+        if (!(proofPlan.get("requiredProofTypes") instanceof List<?> rawProofTypes) || rawProofTypes.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: proofPlan.requiredProofTypes deve conter pelo menos 2 tipos");
+        }
+        Set<String> proofTypes = rawProofTypes.stream()
+                .map(this::asTrimmedString)
+                .filter(StringUtils::hasText)
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (proofTypes.size() < 2) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: proofPlan.requiredProofTypes deve conter pelo menos 2 tipos distintos");
+        }
+        if (!(proofPlan.get("proofSectionIds") instanceof List<?> rawProofSectionIds) || rawProofSectionIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: proofPlan.proofSectionIds é obrigatório e deve mapear seções existentes");
+        }
+        for (Object rawProofSectionId : rawProofSectionIds) {
+            String proofSectionId = asTrimmedString(rawProofSectionId);
+            if (!StringUtils.hasText(proofSectionId) || !sectionIds.contains(normalizeLookupKey(proofSectionId))) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe inválido: proofPlan.proofSectionIds contém sectionId inexistente em sectionOrder (" + proofSectionId + ")");
+            }
+        }
+
+        Map<String, Object> trustSignalsSpec = requiredMap(wireframePayload, "trustSignalsSpec",
+                "Wireframe incompleto: trustSignalsSpec é obrigatório");
+        if (!Boolean.TRUE.equals(asBoolean(trustSignalsSpec.get("brandIdentityRequired")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: trustSignalsSpec.brandIdentityRequired deve ser true");
+        }
+        if (!Boolean.TRUE.equals(asBoolean(trustSignalsSpec.get("privacyNoticeNearForm")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: trustSignalsSpec.privacyNoticeNearForm deve ser true");
+        }
+        if (!StringUtils.hasText(asTrimmedString(trustSignalsSpec.get("privacyPolicyUrl")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: trustSignalsSpec.privacyPolicyUrl é obrigatório");
+        }
+        if (!(trustSignalsSpec.get("legalFooterItems") instanceof List<?> rawLegalFooterItems) || rawLegalFooterItems.size() < 3) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: trustSignalsSpec.legalFooterItems deve conter ao menos empresa, contato e política de privacidade");
+        }
+
+        Map<String, Object> accessibilitySpec = requiredMap(wireframePayload, "accessibilitySpec",
+                "Wireframe incompleto: accessibilitySpec é obrigatório");
+        BigDecimal minTextContrast = parseContrastRatio(accessibilitySpec.get("minTextContrast"));
+        if (minTextContrast == null || minTextContrast.compareTo(new BigDecimal("4.5")) < 0) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: accessibilitySpec.minTextContrast deve ser no mínimo 4.5:1");
+        }
+        Integer minTouchTargetPx = asInteger(accessibilitySpec.get("minTouchTargetPx"));
+        if (minTouchTargetPx == null || minTouchTargetPx < 44) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: accessibilitySpec.minTouchTargetPx deve ser >= 44");
+        }
+        Integer formFieldMinHeightPx = asInteger(accessibilitySpec.get("formFieldMinHeightPx"));
+        if (formFieldMinHeightPx == null || formFieldMinHeightPx < 44) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: accessibilitySpec.formFieldMinHeightPx deve ser >= 44");
         }
     }
 
@@ -1604,6 +1717,50 @@ public class ExperimentPipelineGenerationService {
         if (!(designPayload.get("sectionPresets") instanceof List<?> rawSectionPresets) || rawSectionPresets.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Preset de design da landing sem sectionPresets estruturado");
+        }
+        Map<String, Object> theme = requiredMap(designPayload, "theme",
+                "Preset de design incompleto: theme é obrigatório");
+        requiredMap(theme, "palette", "Preset de design incompleto: theme.palette é obrigatório");
+        Map<String, Object> typography = requiredMap(theme, "typography",
+                "Preset de design incompleto: theme.typography é obrigatório");
+        Map<String, Object> spacing = requiredMap(theme, "spacing",
+                "Preset de design incompleto: theme.spacing é obrigatório");
+        requiredMap(theme, "accessibility", "Preset de design incompleto: theme.accessibility é obrigatório");
+        Integer maxLineLength = parseCssCh(typography.get("maxLineLength"));
+        if (maxLineLength == null || maxLineLength < 55 || maxLineLength > 75) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design inválido: theme.typography.maxLineLength deve ficar entre 55ch e 75ch");
+        }
+        BigDecimal lineHeightBody = parseDecimalLike(typography.get("lineHeightBody"));
+        if (lineHeightBody == null || lineHeightBody.compareTo(new BigDecimal("1.5")) < 0) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design inválido: theme.typography.lineHeightBody deve ser >= 1.5");
+        }
+        Integer sectionGapMobile = parseCssPx(spacing.get("sectionGapMobile"));
+        if (sectionGapMobile == null || sectionGapMobile < 48) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design inválido: theme.spacing.sectionGapMobile deve ser >= 48px");
+        }
+
+        Map<String, Object> componentPresets = requiredMap(designPayload, "componentPresets",
+                "Preset de design incompleto: componentPresets é obrigatório");
+        requiredMap(componentPresets, "cta", "Preset de design incompleto: componentPresets.cta é obrigatório");
+        requiredMap(componentPresets, "trust", "Preset de design incompleto: componentPresets.trust é obrigatório");
+        Map<String, Object> proofPreset = requiredMap(componentPresets, "proof",
+                "Preset de design incompleto: componentPresets.proof é obrigatório");
+        if (!Boolean.TRUE.equals(asBoolean(proofPreset.get("showIdentity")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design inválido: componentPresets.proof.showIdentity deve ser true para páginas de venda/captação");
+        }
+
+        if (!(designPayload.get("consistencyChecks") instanceof List<?> rawChecks) || rawChecks.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design da landing sem consistencyChecks");
+        }
+        Set<String> checks = extractCheckNames(rawChecks);
+        if (!checks.contains("THEME_CONTRAST") || !checks.contains("CTA_VISUAL_HIERARCHY") || !checks.contains("MOBILE_READABILITY")) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design sem consistencyChecks obrigatórios: THEME_CONTRAST, CTA_VISUAL_HIERARCHY e MOBILE_READABILITY");
         }
 
         if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
@@ -1629,9 +1786,26 @@ public class ExperimentPipelineGenerationService {
             if (!(rawPreset instanceof Map<?, ?> rawPresetMap)) {
                 continue;
             }
-            String sectionId = asTrimmedString(((Map<String, Object>) rawPresetMap).get("sectionId"));
+            Map<String, Object> preset = (Map<String, Object>) rawPresetMap;
+            String sectionId = asTrimmedString(preset.get("sectionId"));
             if (StringUtils.hasText(sectionId)) {
-                presetSectionIds.add(normalizeLookupKey(sectionId));
+                String normalized = normalizeLookupKey(sectionId);
+                if (!presetSectionIds.add(normalized)) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Preset de design inválido: sectionPresets contém sectionId duplicado (" + sectionId + ")");
+                }
+                String emphasis = asTrimmedString(preset.get("emphasis"));
+                boolean highIntentSection = normalized.contains("hero")
+                        || normalized.contains("offer")
+                        || normalized.contains("cta")
+                        || normalized.contains("closing")
+                        || normalized.contains("final");
+                if (highIntentSection && !"primary".equalsIgnoreCase(emphasis)
+                        && !StringUtils.hasText(asTrimmedString(preset.get("notes")))) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Preset de design inválido: seção de alta intenção '" + sectionId
+                                    + "' exige emphasis=primary ou justificativa em notes");
+                }
             }
         }
         Set<String> missing = new LinkedHashSet<>(expectedSectionIds);
@@ -1640,6 +1814,88 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Preset de design incompleto: sectionPresets não cobre todas as sectionId do wireframe. Faltando: " + missing);
         }
+        Set<String> extras = new LinkedHashSet<>(presetSectionIds);
+        extras.removeAll(expectedSectionIds);
+        if (!extras.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design inválido: sectionPresets contém sectionId fora do wireframe. Excedente: " + extras);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> requiredMap(Map<String, Object> source, String field, String errorMessage) {
+        Object value = source.get(field);
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, errorMessage);
+        }
+        return (Map<String, Object>) rawMap;
+    }
+
+    private Integer asInteger(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (!StringUtils.hasText(asTrimmedString(value))) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(asTrimmedString(value).replaceAll("[^0-9-]", ""));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Boolean asBoolean(Object value) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        String normalized = asTrimmedString(value);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        if ("true".equalsIgnoreCase(normalized)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(normalized)) {
+            return false;
+        }
+        return null;
+    }
+
+    private BigDecimal parseContrastRatio(Object value) {
+        String raw = asTrimmedString(value);
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String normalized = raw.contains(":") ? raw.substring(0, raw.indexOf(':')) : raw;
+        return parseDecimalLike(normalized);
+    }
+
+    private BigDecimal parseDecimalLike(Object value) {
+        String raw = asTrimmedString(value);
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String normalized = raw.toLowerCase(Locale.ROOT)
+                .replace("ch", "")
+                .replace("px", "")
+                .replace(",", ".")
+                .trim();
+        try {
+            return new BigDecimal(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Integer parseCssPx(Object value) {
+        BigDecimal parsed = parseDecimalLike(value);
+        return parsed == null ? null : parsed.intValue();
+    }
+
+    private Integer parseCssCh(Object value) {
+        BigDecimal parsed = parseDecimalLike(value);
+        return parsed == null ? null : parsed.intValue();
     }
 
     @SuppressWarnings("unchecked")

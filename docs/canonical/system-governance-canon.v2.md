@@ -85,6 +85,8 @@ Regra prática:
 | Regras operacionais de domínio | backend / domínio correspondente | frontend, workers, integrações |
 | Regras de negócio do domínio **MOIS** | **módulo MOIS (`/mois`)** | backend principal (gateway/contrato), frontend, workers |
 | Schemas e contratos de decisão | domínio + backend responsável | todos os consumidores do contrato |
+| Artefatos canônicos de landing (`landingPageCopy`, `landingPageWireframe`, `landingPageDesignPreset`) | backend / domínio de experimentos | ai-worker, frontend administrativo, LHM |
+| Matriz de conversão visual e confiança (hierarquia, prova, acessibilidade, sinais legais) | cânone de experimentos + backend validador | ai-worker, LHM, frontend |
 | Projeções de UI | frontend | usuário final |
 | Fatos externos e resultados assíncronos | workers / integrações | backend / domínio |
 | Governança global do sistema | `system-governance-canon` + ADRs relevantes | todo o projeto |

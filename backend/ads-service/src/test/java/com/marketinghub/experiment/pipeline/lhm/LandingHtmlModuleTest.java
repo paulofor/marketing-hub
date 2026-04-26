@@ -164,4 +164,56 @@ class LandingHtmlModuleTest {
         assertTrue(html.contains("<details><summary>Dúvida 1"));
         assertTrue(html.contains("Final CTA"));
     }
+
+    @Test
+    void assembleHtmlDocumentDoesNotOverrideSurfaceSpecFromWireframeUsingDesignPreset() {
+        Experiment experiment = new Experiment();
+        experiment.setName("Teste LHM Surface Preset");
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "proof",
+                        "sectionName": "Prova",
+                        "contentType": "proof",
+                        "surfaceSpec": {
+                          "surfaceToken": "surface-proof",
+                          "style": "band",
+                          "contrastMode": "soft"
+                        }
+                      }
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "submitTarget": "/api/flows/submissions",
+                      "submitLabel": "Enviar",
+                      "fields": [{"name": "nome", "type": "text", "required": true}]
+                    }
+                  }
+                }
+                """);
+        experiment.setLandingPageDesignPreset("""
+                {
+                  "landingPageDesignPreset": {
+                    "sectionPresets": [
+                      {
+                        "sectionId": "proof",
+                        "surfaceStyle": "solid",
+                        "contrastMode": "high"
+                      }
+                    ]
+                  }
+                }
+                """);
+
+        String html = module.assembleHtmlDocument(experiment);
+
+        assertTrue(html.contains("data-section-id=\"proof\""));
+        assertTrue(html.contains("class=\"card surface-band contrast-soft\""));
+        assertTrue(html.contains("data-surface-style=\"band\""));
+        assertTrue(html.contains("data-surface-contrast=\"soft\""));
+        assertFalse(html.contains("data-surface-style=\"solid\""));
+        assertFalse(html.contains("data-surface-contrast=\"high\""));
+    }
 }

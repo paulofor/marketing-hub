@@ -9,6 +9,12 @@ type ResearchSource = {
   useCase: string;
 };
 
+type WeeklyHighlight = {
+  sourceName: string;
+  insight: string;
+  action: string;
+};
+
 const RESEARCH_SOURCES: ResearchSource[] = [
   {
     name: "Meta Ad Library",
@@ -89,6 +95,24 @@ const RESEARCH_SOURCES: ResearchSource[] = [
   },
 ];
 
+const WEEKLY_HIGHLIGHTS: WeeklyHighlight[] = [
+  {
+    sourceName: "TikTok Creative Center",
+    insight: "Aumento de criativos curtos com ganchos nos primeiros 3 segundos e CTA explícito.",
+    action: "Priorizar coleta de anúncios com estrutura Hook → Prova rápida → CTA direto.",
+  },
+  {
+    sourceName: "Google Trends",
+    insight: "Termos de intenção prática seguem com crescimento estável em nichos de produtividade.",
+    action: "Validar palavras-chave de demanda crescente antes de iniciar extrações longas.",
+  },
+  {
+    sourceName: "Hotmart Marketplace",
+    insight: "Ofertas com promessa de resultado em até 30 dias aparecem com maior recorrência.",
+    action: "Mapear promessas temporais e cruzar com mecanismos/provas mais repetidos.",
+  },
+];
+
 export default function MoisResearchSourcesPage() {
   return (
     <div className="d-flex flex-column gap-4">
@@ -103,6 +127,30 @@ export default function MoisResearchSourcesPage() {
           Voltar ao workspace
         </Link>
       </header>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <h2 className="h5">Destaques da semana</h2>
+          <p className="text-secondary mb-3">
+            Resumo rápido dos sinais mais relevantes para orientar a priorização da coleta.
+          </p>
+          <div className="row g-3">
+            {WEEKLY_HIGHLIGHTS.map((highlight) => (
+              <div className="col-12 col-lg-4" key={highlight.sourceName}>
+                <article className="h-100 border rounded-3 p-3 bg-light-subtle">
+                  <h3 className="h6 mb-2">{highlight.sourceName}</h3>
+                  <p className="small mb-2">
+                    <strong>Sinal:</strong> {highlight.insight}
+                  </p>
+                  <p className="small mb-0">
+                    <strong>Ação recomendada:</strong> {highlight.action}
+                  </p>
+                </article>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="card border-0 shadow-sm">
         <div className="card-body">

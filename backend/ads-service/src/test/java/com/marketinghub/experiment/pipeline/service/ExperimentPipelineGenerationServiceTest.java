@@ -492,6 +492,42 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void generateLandingHtmlFailsEarlyWhenWireframeAndDesignPresetAreInconsistent() {
+        Experiment experiment = new Experiment();
+        experiment.setId(88L);
+        experiment.setLandingPageDesignPreset("""
+                {
+                  "landingPageDesignPreset": {
+                    "sectionPresets": [
+                      {"sectionId":"hero","surfaceStyle":"solid","contrastMode":"high","layoutPreset":"hero-focus","emphasis":"primary","notes":"hero"}
+                    ]
+                  }
+                }
+                """);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId":"hero","surfaceSpec":{"surfaceToken":"surface-base","notes":"hero"}},
+                      {"sectionId":"proof","surfaceSpec":{"surfaceToken":"surface-alt-1","notes":"proof"}}
+                    ]
+                  }
+                }
+                """);
+
+        when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+        when(frameworkImageGenerationService.allPlanningImagesCompleted(88L)).thenReturn(true);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.generate(88L, ExperimentPipelineSection.LANDING_PAGE_HTML, new ExperimentPipelineGenerationRequest()));
+
+        assertEquals(409, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("Pré-validação antes de LANDING_PAGE_HTML falhou"));
+        assertTrue(error.getReason().contains("Preset de design incompleto"));
+        verify(jobRepository, never()).save(any(ExperimentPipelineGenerationJob.class));
+    }
+
+    @Test
     void listPendingJobsReturnsOnlyEligibleExperimentStatuses() {
         Experiment plannedExperiment = new Experiment();
         plannedExperiment.setId(31L);
@@ -770,6 +806,211 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void completeJobUsesDesignPresetAsCanonicalSourceForSurfaceStyleAndContrast() {
+        Experiment experiment = buildLandingHtmlValidationExperiment(240L);
+        experiment.setLandingPageDesignPreset("""
+                {
+                  "landingPageDesignPreset": {
+                    "sectionPresets": [
+                      {
+                        "sectionId": "hero",
+                        "surfaceStyle": "solid",
+                        "contrastMode": "high"
+                      }
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createLandingHtmlJob(experiment);
+
+        service.completeJob(job.getId(), landingHtmlCompletionRequest("""
+                <!doctype html><html><body>
+                <section data-section-id='hero' data-surface-token='surface-base' data-surface-style='solid' data-surface-contrast='high'>
+                  <img src='https://cdn.example.com/hero.jpg' alt='Hero'
+                       data-image-section-id='hero'
+                       data-image-binding-key='hero_pain_anchor'
+                       data-image-role='Hero Pain Anchor'
+                       data-conversion-role='grab-attention'
+                       data-attention-priority='high'
+                       data-visual-weight='primary'
+                       data-distance-to-cta='near'
+                       data-supports-form-conversion='true' />
+                  <form id='lead-capture-primary'><input type='text' name='nome' required /><input type='email' name='email' required /><input type='tel' name='whatsapp' /></form>
+                </section></body></html>
+                """));
+
+        assertNotNull(experiment.getLandingPageHtml());
+    }
+
+    @Test
+    void completeJobRejectsWireframeWhenSurfaceTokenIsMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(410L);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageWireframe": {
+                                    "pageGoal": "goal",
+                                    "variantLayoutId": "form-first",
+                                    "sectionOrder": [
+                                      {
+                                        "sectionId": "hero",
+                                        "sectionName": "Hero",
+                                        "objective": "obj",
+                                        "contentType": "hero",
+                                        "mobilePriorityScore": 10,
+                                        "dropOffRisk": "baixo",
+                                        "surfaceSpec": {"notes": "sem token"}
+                                      }
+                                    ],
+                                    "consistencyChecks": [{"check":"CTA_MATCH","status":"PASS"}],
+                                    "formSpec": {
+                                      "formId": "lead-capture-primary",
+                                      "title": "Receber a prévia",
+                                      "submitLabel": "Enviar",
+                                      "submitTarget": "/api/flows/submissions",
+                                      "fields": [{"name":"nome","type":"text","label":"Nome","required":true,"placeholder":"Seu nome"}],
+                                      "consent": {"enabled": true, "required": false, "label": "ok"},
+                                      "successState": {"title":"ok","message":"ok"}
+                                    }
+                                  },
+                                  "experimentMetadata": {
+                                    "primary_variable":"pv","variant_id":"v1","stage":"AD","control_or_treatment":"treatment","asset_role":"landing-page-wireframe"
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("surfaceSpec.surfaceToken"));
+    }
+
+    @Test
+    void completeJobRejectsDesignPresetWhenSectionPresetsDoesNotCoverWireframeSections() {
+        Experiment experiment = new Experiment();
+        experiment.setId(411L);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "hero",
+                        "surfaceSpec": {"surfaceToken": "surface-base", "notes": "hero"}
+                      },
+                      {
+                        "sectionId": "proof",
+                        "surfaceSpec": {"surfaceToken": "surface-alt-1", "notes": "proof"}
+                      }
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageDesignPreset": {
+                                    "presetId": "preset-1",
+                                    "theme": {
+                                      "palette": {
+                                        "background":"#fff","surface":"#fff","textPrimary":"#111","textMuted":"#666","brandPrimary":"#1d4ed8","brandSecondary":"#1e40af","border":"#e2e8f0"
+                                      }
+                                    },
+                                    "sectionPresets": [
+                                      {"sectionId":"hero","surfaceStyle":"solid","contrastMode":"high","layoutPreset":"hero-focus","emphasis":"primary","notes":"hero"}
+                                    ],
+                                    "componentPresets": {},
+                                    "motion": {"enabled": false, "intensity": "none"},
+                                    "consistencyChecks": [{"check":"THEME_CONTRAST","status":"PASS"}]
+                                  },
+                                  "experimentMetadata": {
+                                    "primary_variable":"pv","variant_id":"v1","stage":"AD","control_or_treatment":"treatment","asset_role":"landing-page-design-preset"
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("Preset de design incompleto"));
+        assertTrue(exception.getReason().contains("proof"));
+    }
+
+    @Test
+    void completeJobRejectsLandingCopyWhenCanonicalChecksAreMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(412L);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_COPY);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageCopy": {
+                                    "hero": {
+                                      "headline": "Headline",
+                                      "promise": "Promise",
+                                      "ctaLabel": "CTA"
+                                    },
+                                    "bodySections": [
+                                      {"sectionId": "hero", "summary": "Resumo"}
+                                    ],
+                                    "consistencyChecks": [
+                                      {"check":"GOOGLE_LANDING_BEST_PRACTICES","status":"PASS"}
+                                    ]
+                                  },
+                                  "experimentMetadata": {
+                                    "primary_variable":"pv","variant_id":"v1","stage":"AD","control_or_treatment":"treatment","asset_role":"landing-page-copy"
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("CTA_MATCH"));
+        assertTrue(exception.getReason().contains("PROMISE_MATCH"));
+    }
+
+    @Test
+    void completeJobRejectsImagePlanningWhenRequiredChecksAreMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(413L);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId": "hero", "surfaceSpec": {"surfaceToken": "surface-base", "notes": "hero"}}
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageImagePlanning": {
+                                    "images": [
+                                      {"sectionId":"hero","imageBindingKey":"hero-anchor"}
+                                    ],
+                                    "consistencyChecks": [
+                                      {"check":"VISUAL_HIERARCHY","status":"PASS"}
+                                    ]
+                                  },
+                                  "experimentMetadata": {
+                                    "primary_variable":"pv","variant_id":"v1","stage":"AD","control_or_treatment":"treatment","asset_role":"landing-page-image-planning"
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("IMAGE_MESSAGE_MATCH"));
+        assertTrue(exception.getReason().contains("CTA_CONTINUITY"));
+    }
+
+    @Test
     void completeJobSucceedsWhenBindingKeyContainsEscapedQuoteArtifacts() {
         Experiment experiment = buildLandingHtmlValidationExperiment(205L);
         ExperimentPipelineGenerationJob job = createLandingHtmlJob(experiment);
@@ -923,6 +1164,10 @@ class ExperimentPipelineGenerationServiceTest {
         experiment.setLandingPageImagePlanning("""
                 {
                   "landingPageImagePlanning": {
+                    "consistencyChecks": [
+                      {"check": "IMAGE_MESSAGE_MATCH", "status": "PASS"},
+                      {"check": "CTA_CONTINUITY", "status": "PASS"}
+                    ],
                     "images": [
                       {
                         "sectionId": "hero",
@@ -966,6 +1211,10 @@ class ExperimentPipelineGenerationServiceTest {
         String payload = """
                 {
                   "landingPageImagePlanning": {
+                    "consistencyChecks": [
+                      {"check": "IMAGE_MESSAGE_MATCH", "status": "PASS"},
+                      {"check": "CTA_CONTINUITY", "status": "PASS"}
+                    ],
                     "images": [
                       {
                         "sectionId": "s0-hero-variant",
@@ -1081,11 +1330,15 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     private ExperimentPipelineGenerationJob createLandingHtmlJob(Experiment experiment) {
+        return createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML);
+    }
+
+    private ExperimentPipelineGenerationJob createJobForSection(Experiment experiment, ExperimentPipelineSection section) {
         UUID jobId = UUID.randomUUID();
         ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
                 .id(jobId)
                 .experiment(experiment)
-                .section(ExperimentPipelineSection.LANDING_PAGE_HTML)
+                .section(section)
                 .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
                 .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
                 .model("gpt-5.2")

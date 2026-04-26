@@ -9,6 +9,7 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 > - O LHM **não** é uma etapa de ideação criativa livre da copy.
 > - O LHM deve renderizar de forma previsível a partir dos artefatos canônicos (ex.: `landingPageCopy` e `landingPageWireframe`) e contratos vigentes.
 > - Mudanças no pipeline devem preservar essa responsabilidade para reduzir drift entre especificação, backend e página publicada.
+> - **Regra de negócio mandatória**: a robustez arquitetural dos artefatos deve sempre servir ao objetivo de vendas (conversão, consistência de promessa, redução de fricção e avanço de funil).
 
 ## Observação importante — independência dos experimentos
 
@@ -189,7 +190,16 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
    - `hero.promise`, `primaryCTA` e `ctaBlocks[*].matchAdCta` devem manter coerência semântica.
    - `consistencyChecks` deve incluir, no mínimo, os checks: `CTA_MATCH`, `PROMISE_MATCH` e `GOOGLE_LANDING_BEST_PRACTICES`.
 
-5. **Critério de bloqueio**
+5. **Mínimos comerciais de oferta (mandatórios)**
+   - A copy deve explicitar risco reverso (garantia, teste ou política equivalente).
+   - A copy deve apresentar escassez/urgência legítima (sem alegação artificial).
+   - A copy deve apresentar ancoragem de valor (comparação clara entre custo e valor percebido).
+   - A copy deve incluir prova específica e contextualizada (evitar prova genérica).
+
+6. **Biblioteca de mecanismos de prova por nicho**
+   - Priorizar combinação de pelo menos 2 tipos de prova entre: antes/depois, benchmark comparativo, micro-caso com número e evidência técnica simplificada.
+
+7. **Critério de bloqueio**
    - Se qualquer regra acima falhar, o artefato permanece em `DRAFT` e não pode seguir para renderização final.
    - O LHM só deve processar copy com validação aprovada (`status = VALIDATED` ou `APPROVED`).
 
@@ -213,8 +223,6 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
       "dropOffRisk": "baixo | medio | alto",
       "surfaceSpec": {
         "surfaceToken": "string",
-        "style": "band | solid | gradient-soft | image-tint",
-        "contrastMode": "normal | high | soft",
         "notes": "string"
       },
       "ctaSlot": {
@@ -263,6 +271,12 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
   }
 }
 ```
+
+> **Responsabilidade canônica (vigente):**
+> - `landingPageWireframe` define **estrutura** (ordem, hierarquia, intenção de seção) e mantém em `surfaceSpec` apenas a âncora estrutural (`surfaceToken` + `notes`).
+> - `style` e `contrastMode` são responsabilidade da etapa `landingPageDesignPreset.sectionPresets` (detalhe visual por `sectionId`).
+> - Após `complete` da etapa de wireframe, o backend valida presença de `sectionOrder` estruturado e `surfaceSpec.surfaceToken` por seção antes de aceitar o artefato.
+> - Antes de iniciar `landingPageHtml`, o backend executa pré-validação de consistência entre wireframe e design preset para antecipar falhas que antes apareciam apenas no fim do pipeline.
 
 ## `landingPageImagePlanning`
 
@@ -401,6 +415,9 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
   ]
 }
 ```
+
+> `landingPageDesignPreset.sectionPresets` é a fonte canônica de `surfaceStyle` e `contrastMode` por `sectionId` para renderização final do HTML.
+> Após `complete` da etapa de design preset, o backend valida se `sectionPresets` cobre todas as `sectionId` do wireframe atual.
 
 ## `landingPageHtml`
 

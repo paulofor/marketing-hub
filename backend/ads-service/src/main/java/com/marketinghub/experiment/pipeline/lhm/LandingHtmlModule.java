@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Landing HTML Module (LHM): consolidates canonical inputs for the LANDING_PAGE_HTML prompt.
@@ -100,6 +102,7 @@ public class LandingHtmlModule {
         Map<String, Object> designRoot = safeReadObject(experiment.getLandingPageDesignPreset());
         Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
         Map<String, Object> palette = extractPalette(designPreset);
+        Map<String, SectionVisualPreset> sectionVisualPresets = extractSectionVisualPresets(designPreset);
 
         String formId = firstNonBlank(asTrimmedString(formSpec.get("formId")), "lead-capture-primary");
         String submitTarget = firstNonBlank(asTrimmedString(formSpec.get("submitTarget")), "/api/flows/submissions");
@@ -155,9 +158,16 @@ public class LandingHtmlModule {
             Map<String, Object> surface = section.get("surfaceSpec") instanceof Map<?, ?> rawSurface
                     ? (Map<String, Object>) rawSurface
                     : Map.of();
+            SectionVisualPreset visualPreset = sectionVisualPresets.get(normalizeLookupKey(sectionId));
             String surfaceToken = firstNonBlank(asTrimmedString(surface.get("surfaceToken")), "surface-base");
-            String surfaceStyle = firstNonBlank(asTrimmedString(surface.get("style")), "band");
-            String surfaceContrast = firstNonBlank(asTrimmedString(surface.get("contrastMode")), "normal");
+            String surfaceStyle = firstNonBlank(
+                    visualPreset != null ? visualPreset.surfaceStyle() : null,
+                    asTrimmedString(surface.get("style")),
+                    "band");
+            String surfaceContrast = firstNonBlank(
+                    visualPreset != null ? visualPreset.contrastMode() : null,
+                    asTrimmedString(surface.get("contrastMode")),
+                    "normal");
             String surfaceStyleClass = "surface-" + normalizeCssToken(surfaceStyle);
             String surfaceContrastClass = "contrast-" + normalizeCssToken(surfaceContrast);
 
@@ -322,6 +332,41 @@ public class LandingHtmlModule {
             return Map.of();
         }
         return (Map<String, Object>) rawPalette;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, SectionVisualPreset> extractSectionVisualPresets(Map<String, Object> designPreset) {
+        if (designPreset == null || !(designPreset.get("sectionPresets") instanceof List<?> rawSectionPresets)) {
+            return Map.of();
+        }
+        return rawSectionPresets.stream()
+                .filter(Map.class::isInstance)
+                .map(Map.class::cast)
+                .map(item -> (Map<String, Object>) item)
+                .map(this::toSectionVisualPreset)
+                .filter(preset -> preset != null && StringUtils.hasText(preset.sectionId()))
+                .collect(Collectors.toMap(
+                        preset -> normalizeLookupKey(preset.sectionId()),
+                        preset -> preset,
+                        (first, second) -> second));
+    }
+
+    private SectionVisualPreset toSectionVisualPreset(Map<String, Object> sectionPreset) {
+        if (sectionPreset == null) {
+            return null;
+        }
+        String sectionId = asTrimmedString(sectionPreset.get("sectionId"));
+        if (!StringUtils.hasText(sectionId)) {
+            return null;
+        }
+        return new SectionVisualPreset(
+                sectionId,
+                asTrimmedString(sectionPreset.get("surfaceStyle")),
+                asTrimmedString(sectionPreset.get("contrastMode")));
+    }
+
+    private String normalizeLookupKey(String value) {
+        return firstNonBlank(value, "").trim().toLowerCase(Locale.ROOT);
     }
 
     @SuppressWarnings("unchecked")
@@ -594,10 +639,13 @@ public class LandingHtmlModule {
         if (!StringUtils.hasText(value)) {
             return "normal";
         }
-        String normalized = value.trim().toLowerCase()
+        String normalized = value.trim().toLowerCase(Locale.ROOT)
                 .replace('_', '-')
                 .replace(' ', '-')
                 .replaceAll("[^a-z0-9-]", "");
         return StringUtils.hasText(normalized) ? normalized : "normal";
+    }
+
+    private record SectionVisualPreset(String sectionId, String surfaceStyle, String contrastMode) {
     }
 }

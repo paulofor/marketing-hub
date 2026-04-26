@@ -39,6 +39,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -705,6 +706,21 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "A seção " + section.path() + " depende da geração completa das imagens planejadas da landing");
         }
+        if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
+            validateLandingArtifactsReadinessForHtml(experiment);
+        }
+    }
+
+    private void validateLandingArtifactsReadinessForHtml(Experiment experiment) {
+        try {
+            validateLandingWireframeArtifacts(experiment.getLandingPageWireframe());
+            validateLandingDesignPresetArtifacts(experiment, experiment.getLandingPageDesignPreset());
+        } catch (ResponseStatusException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Pré-validação antes de LANDING_PAGE_HTML falhou: " + ex.getReason(),
+                    ex);
+        }
     }
 
     private void enqueueNextAutomaticStep(ExperimentPipelineGenerationJob job,
@@ -1117,8 +1133,8 @@ public class ExperimentPipelineGenerationService {
             sb.append("10. mobilePriorityNotes deve destacar o que precisa aparecer antes da rolagem.\n");
             sb.append("11. Cada sectionOrder[i] deve preencher mediaSlot com: none, image, illustration, chart, icon-set ou video-thumb.\n");
             sb.append("12. Cada sectionOrder[i] deve preencher compositionNotes explicando hierarquia visual, densidade de conteúdo e leitura mobile-first.\n");
-            sb.append("13. Cada sectionOrder[i] deve preencher surfaceSpec com surfaceToken, style, contrastMode e notes para formalizar a superfície visual da seção.\n");
-            sb.append("14. Use surfaceToken alternando entre surface-base e surface-alt-* para reforçar escaneabilidade entre seções consecutivas.\n");
+            sb.append("13. Cada sectionOrder[i] deve preencher surfaceSpec com surfaceToken e notes para ancorar identidade estrutural da seção.\n");
+            sb.append("14. style e contrastMode são responsabilidade da etapa landing-page-design-preset (sectionPresets), não do wireframe.\n");
             sb.append("15. Não transformar o layout em HTML final; esta etapa deve decidir ordem, hierarquia e slots de mídia.\n");
             sb.append("16. Não usar linguagem de consultoria e não criar estrutura que pareça página genérica para qualquer mercado.\n");
             sb.append("17. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para ").append(niche).append(".\n");
@@ -1133,7 +1149,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("   - successState: title e message preenchidos.\n\n");
             sb.append("Formato obrigatório:\n");
             sb.append("- Preencher sectionOrder respeitando a ordem real da landing e referenciando sectionId de bodySections quando existir.\n");
-            sb.append("- Preencher mediaSlot, compositionNotes e surfaceSpec em todas as seções.\n");
+            sb.append("- Preencher mediaSlot, compositionNotes e surfaceSpec (somente surfaceToken + notes) em todas as seções.\n");
             sb.append("- Preencher formSpec completo como fonte única da verdade para campos e obrigatoriedade do formulário.\n");
             sb.append("- Preencher ctaSlot dentro das seções com CTA.\n");
             sb.append("- Preencher consistencyChecks e observações finais (mobilePriorityNotes, ctaPlacementNotes, formPlacementNotes).\n");
@@ -1225,7 +1241,7 @@ public class ExperimentPipelineGenerationService {
             sb.append("   - wireframe para ordem/hierarquia e mediaSlot;\n");
             sb.append("   - planejamento de imagens para imageRole, conversionRole, layoutBinding, prioridade e altText;\n");
             sb.append("   - wireframe.formSpec para renderização exata dos campos do formulário.\n");
-            sb.append("9. Renderizar cada seção com data-section-id e aplicar exatamente wireframe.sectionOrder[i].surfaceSpec via data-surface-token, data-surface-style e data-surface-contrast.\n");
+            sb.append("9. Renderizar cada seção com data-section-id e aplicar: data-surface-token vindo do wireframe.sectionOrder[i].surfaceSpec.surfaceToken; data-surface-style e data-surface-contrast vindos de landing-page-design-preset.sectionPresets por sectionId.\n");
             sb.append("10. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.\n");
             sb.append("11. O código deve ser limpo, legível e pronto para ser renderizado em iframe.\n");
             sb.append("12. Toda tag <img> deve usar src absoluto válido (https://... ou data:image/...) e reaproveitar altText do planejamento de imagens.\n\n");
@@ -1360,10 +1376,22 @@ public class ExperimentPipelineGenerationService {
             case CAMPAIGN_ANGLE -> experiment.setCampaignAngle(normalized);
             case AD_COPY -> experiment.setAdCopy(normalized);
             case AD_IMAGE_BRIEFING -> experiment.setAdImageBriefing(normalized);
-            case LANDING_PAGE_COPY -> experiment.setLandingPageCopy(normalized);
-            case LANDING_PAGE_WIREFRAME -> experiment.setLandingPageWireframe(normalized);
-            case LANDING_PAGE_IMAGE_PLANNING -> experiment.setLandingPageImagePlanning(normalized);
-            case LANDING_PAGE_DESIGN_PRESET -> experiment.setLandingPageDesignPreset(normalized);
+            case LANDING_PAGE_COPY -> {
+                validateLandingCopyArtifacts(normalized);
+                experiment.setLandingPageCopy(normalized);
+            }
+            case LANDING_PAGE_WIREFRAME -> {
+                validateLandingWireframeArtifacts(normalized);
+                experiment.setLandingPageWireframe(normalized);
+            }
+            case LANDING_PAGE_IMAGE_PLANNING -> {
+                validateLandingImagePlanningArtifacts(experiment, normalized);
+                experiment.setLandingPageImagePlanning(normalized);
+            }
+            case LANDING_PAGE_DESIGN_PRESET -> {
+                validateLandingDesignPresetArtifacts(experiment, normalized);
+                experiment.setLandingPageDesignPreset(normalized);
+            }
             case LANDING_PAGE_HTML -> {
                 validateLandingHtmlFormConsistency(experiment, normalized);
                 validateLandingHtmlSubmissionRuntime(experiment, normalized);
@@ -1371,6 +1399,224 @@ public class ExperimentPipelineGenerationService {
                 validateLandingHtmlImagePlanConsistency(experiment, normalized);
                 experiment.setLandingPageHtml(normalized);
             }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingCopyArtifacts(String landingCopyContent) {
+        if (!StringUtils.hasText(landingCopyContent)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Copy da landing vazia");
+        }
+        Map<String, Object> copyRoot = readObject(landingCopyContent, "Copy da landing inválida");
+        Map<String, Object> copyPayload = unwrapSectionPayload(copyRoot, "landingPageCopy");
+        boolean hasCanonicalHero = false;
+        if (copyPayload.get("hero") instanceof Map<?, ?> rawHero) {
+            Map<String, Object> hero = (Map<String, Object>) rawHero;
+            hasCanonicalHero = StringUtils.hasText(asTrimmedString(hero.get("headline")))
+                    && StringUtils.hasText(asTrimmedString(hero.get("promise")))
+                    && StringUtils.hasText(asTrimmedString(hero.get("ctaLabel")));
+        }
+        boolean hasLegacyMinimal = StringUtils.hasText(asTrimmedString(copyPayload.get("pageGoal")))
+                && StringUtils.hasText(asTrimmedString(copyPayload.get("primaryCTA")));
+
+        if (!hasCanonicalHero && !hasLegacyMinimal) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Copy da landing incompleta: esperado hero estruturado (headline/promise/ctaLabel) ou legado mínimo (pageGoal/primaryCTA)");
+        }
+
+        if (hasCanonicalHero) {
+            if (!(copyPayload.get("bodySections") instanceof List<?> rawBodySections) || rawBodySections.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Copy da landing sem bodySections estruturado");
+            }
+            for (Object rawBodySection : rawBodySections) {
+                if (!(rawBodySection instanceof Map<?, ?> rawBodySectionMap)) {
+                    continue;
+                }
+                Map<String, Object> bodySection = (Map<String, Object>) rawBodySectionMap;
+                String sectionId = asTrimmedString(bodySection.get("sectionId"));
+                String summary = asTrimmedString(bodySection.get("summary"));
+                String copy = asTrimmedString(bodySection.get("copy"));
+                if (!StringUtils.hasText(sectionId) || (!StringUtils.hasText(summary) && !StringUtils.hasText(copy))) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Copy da landing inválida em bodySections: cada item exige sectionId e summary/copy");
+                }
+            }
+            if (!(copyPayload.get("consistencyChecks") instanceof List<?> rawChecks) || rawChecks.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Copy da landing sem consistencyChecks");
+            }
+            Set<String> checkNames = extractCheckNames(rawChecks);
+            if (!checkNames.contains("CTA_MATCH") || !checkNames.contains("PROMISE_MATCH")) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Copy da landing sem consistencyChecks obrigatórios: CTA_MATCH e PROMISE_MATCH");
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingImagePlanningArtifacts(Experiment experiment, String imagePlanningContent) {
+        if (!StringUtils.hasText(imagePlanningContent)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Planejamento de imagens vazio");
+        }
+        Map<String, Object> planningRoot = readObject(imagePlanningContent, "Planejamento de imagens inválido");
+        Map<String, Object> planningPayload = unwrapSectionPayload(planningRoot, "landingPageImagePlanning");
+        if (!(planningPayload.get("images") instanceof List<?> rawImages) || rawImages.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Planejamento de imagens sem images[] estruturado");
+        }
+        if (!(planningPayload.get("consistencyChecks") instanceof List<?> rawChecks) || rawChecks.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Planejamento de imagens sem consistencyChecks");
+        }
+        Set<String> checkNames = extractCheckNames(rawChecks);
+        if (!checkNames.contains("IMAGE_MESSAGE_MATCH") || !checkNames.contains("CTA_CONTINUITY")) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Planejamento de imagens sem consistencyChecks obrigatórios: IMAGE_MESSAGE_MATCH e CTA_CONTINUITY");
+        }
+        Set<String> plannedSectionIds = new LinkedHashSet<>();
+        Set<String> bindingKeys = new LinkedHashSet<>();
+        for (Object rawImage : rawImages) {
+            if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                continue;
+            }
+            Map<String, Object> image = (Map<String, Object>) rawImageMap;
+            String sectionId = asTrimmedString(image.get("sectionId"));
+            String bindingKey = asTrimmedString(image.get("imageBindingKey"));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(bindingKey)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Planejamento de imagens incompleto: cada item exige sectionId e imageBindingKey");
+            }
+            if (!bindingKeys.add(normalizeLookupKey(bindingKey))) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Planejamento de imagens inválido: imageBindingKey duplicado em images[]");
+            }
+            plannedSectionIds.add(normalizeLookupKey(sectionId));
+        }
+
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return;
+        }
+        Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+        if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections) || rawSections.isEmpty()) {
+            return;
+        }
+        Set<String> expectedSectionIds = new LinkedHashSet<>();
+        for (Object rawSection : rawSections) {
+            if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
+                continue;
+            }
+            String sectionId = asTrimmedString(((Map<String, Object>) rawSectionMap).get("sectionId"));
+            if (StringUtils.hasText(sectionId)) {
+                expectedSectionIds.add(normalizeLookupKey(sectionId));
+            }
+        }
+        Set<String> missing = new LinkedHashSet<>(expectedSectionIds);
+        missing.removeAll(plannedSectionIds);
+        if (!missing.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Planejamento de imagens incompleto: faltam sectionId do wireframe em images[]. Faltando: " + missing);
+        }
+        Set<String> extras = new LinkedHashSet<>(plannedSectionIds);
+        extras.removeAll(expectedSectionIds);
+        if (!extras.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Planejamento de imagens inválido: sectionId fora do wireframe em images[]. Excedente: " + extras);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<String> extractCheckNames(List<?> rawChecks) {
+        Set<String> checkNames = new LinkedHashSet<>();
+        if (rawChecks == null) {
+            return checkNames;
+        }
+        for (Object rawCheck : rawChecks) {
+            if (!(rawCheck instanceof Map<?, ?> rawCheckMap)) {
+                continue;
+            }
+            String check = asTrimmedString(((Map<String, Object>) rawCheckMap).get("check"));
+            if (StringUtils.hasText(check)) {
+                checkNames.add(check.toUpperCase(Locale.ROOT));
+            }
+        }
+        return checkNames;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingWireframeArtifacts(String wireframeContent) {
+        if (!StringUtils.hasText(wireframeContent)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing vazio");
+        }
+        Map<String, Object> wireframeRoot = readObject(wireframeContent, "Wireframe da landing inválido");
+        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+        if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections) || rawSections.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem sectionOrder estruturado");
+        }
+        for (Object rawSection : rawSections) {
+            if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
+                continue;
+            }
+            Map<String, Object> section = (Map<String, Object>) rawSectionMap;
+            String sectionId = asTrimmedString(section.get("sectionId"));
+            if (!StringUtils.hasText(sectionId)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing com section sem sectionId");
+            }
+            if (!(section.get("surfaceSpec") instanceof Map<?, ?> rawSurfaceMap)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe da landing com section sem surfaceSpec");
+            }
+            Map<String, Object> surfaceSpec = (Map<String, Object>) rawSurfaceMap;
+            if (!StringUtils.hasText(asTrimmedString(surfaceSpec.get("surfaceToken")))) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe da landing com section sem surfaceSpec.surfaceToken");
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateLandingDesignPresetArtifacts(Experiment experiment, String designPresetContent) {
+        if (!StringUtils.hasText(designPresetContent)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Preset de design da landing vazio");
+        }
+        Map<String, Object> designRoot = readObject(designPresetContent, "Preset de design da landing inválido");
+        Map<String, Object> designPayload = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
+        if (!(designPayload.get("sectionPresets") instanceof List<?> rawSectionPresets) || rawSectionPresets.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design da landing sem sectionPresets estruturado");
+        }
+
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return;
+        }
+        Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+        if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections) || rawSections.isEmpty()) {
+            return;
+        }
+        Set<String> expectedSectionIds = new LinkedHashSet<>();
+        for (Object rawSection : rawSections) {
+            if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
+                continue;
+            }
+            String sectionId = asTrimmedString(((Map<String, Object>) rawSectionMap).get("sectionId"));
+            if (StringUtils.hasText(sectionId)) {
+                expectedSectionIds.add(normalizeLookupKey(sectionId));
+            }
+        }
+        Set<String> presetSectionIds = new LinkedHashSet<>();
+        for (Object rawPreset : rawSectionPresets) {
+            if (!(rawPreset instanceof Map<?, ?> rawPresetMap)) {
+                continue;
+            }
+            String sectionId = asTrimmedString(((Map<String, Object>) rawPresetMap).get("sectionId"));
+            if (StringUtils.hasText(sectionId)) {
+                presetSectionIds.add(normalizeLookupKey(sectionId));
+            }
+        }
+        Set<String> missing = new LinkedHashSet<>(expectedSectionIds);
+        missing.removeAll(presetSectionIds);
+        if (!missing.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: sectionPresets não cobre todas as sectionId do wireframe. Faltando: " + missing);
         }
     }
 
@@ -1751,7 +1997,7 @@ public class ExperimentPipelineGenerationService {
                 Map.of("check", "CTA_MATCH", "status", "PASS", "details", "CTA principal mantido conforme artefatos anteriores."),
                 Map.of("check", "PROMISE_MATCH", "status", "PASS", "details", "Narrativa permanece consistente com os artefatos predecessores."),
                 Map.of("check", "IMAGE_PLAN_BINDING", "status", "PASS", "details", "Bindings de imagem preservados na saída final."),
-                Map.of("check", "SURFACE_SPEC_BINDING", "status", "PASS", "details", "surfaceSpec aplicado conforme wireframe.")
+                Map.of("check", "SURFACE_SPEC_BINDING", "status", "PASS", "details", "surfaceToken aplicado conforme wireframe e style/contrast conforme design preset.")
         );
     }
 
@@ -2678,7 +2924,7 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("contrastMode", Map.of("type", "string", "enum", List.of("normal", "high", "soft"))),
                         Map.entry("notes", stringSchema())
                 ),
-                "required", List.of("surfaceToken", "style", "contrastMode", "notes")
+                "required", List.of("surfaceToken", "notes")
         );
         Map<String, Object> ctaSlotSchema = Map.of(
                 "type", "object",
@@ -2844,7 +3090,8 @@ public class ExperimentPipelineGenerationService {
 
         Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
         Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
-        List<SectionSurfaceContract> expectedSurfaces = extractExpectedSectionSurfaces(wireframePayload);
+        Map<String, SectionVisualPresetContract> visualPresetBySection = extractSectionVisualPresetBySection(experiment);
+        List<SectionSurfaceContract> expectedSurfaces = extractExpectedSectionSurfaces(wireframePayload, visualPresetBySection);
         if (expectedSurfaces.isEmpty()) {
             log.warn("Validação landing HTML (experimentId={}): wireframe sem sectionOrder.surfaceSpec", experiment.getId());
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Wireframe da landing sem sectionOrder.surfaceSpec estruturado");
@@ -2876,7 +3123,9 @@ public class ExperimentPipelineGenerationService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<SectionSurfaceContract> extractExpectedSectionSurfaces(Map<String, Object> wireframePayload) {
+    private List<SectionSurfaceContract> extractExpectedSectionSurfaces(
+            Map<String, Object> wireframePayload,
+            Map<String, SectionVisualPresetContract> visualPresetBySection) {
         if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections)) {
             return List.of();
         }
@@ -2892,8 +3141,13 @@ public class ExperimentPipelineGenerationService {
             }
             Map<String, Object> surfaceSpec = (Map<String, Object>) rawSurfaceMap;
             String surfaceToken = normalizeHtmlAttr(asTrimmedString(surfaceSpec.get("surfaceToken")));
-            String style = normalizeHtmlAttr(asTrimmedString(surfaceSpec.get("style")));
-            String contrastMode = normalizeHtmlAttr(asTrimmedString(surfaceSpec.get("contrastMode")));
+            SectionVisualPresetContract visualPreset = visualPresetBySection.get(normalizeLookupKey(sectionId));
+            String style = normalizeHtmlAttr(firstNonBlank(
+                    visualPreset != null ? visualPreset.surfaceStyle() : null,
+                    asTrimmedString(surfaceSpec.get("style"))));
+            String contrastMode = normalizeHtmlAttr(firstNonBlank(
+                    visualPreset != null ? visualPreset.contrastMode() : null,
+                    asTrimmedString(surfaceSpec.get("contrastMode"))));
             if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(surfaceToken)
                     || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
                 continue;
@@ -2901,6 +3155,33 @@ public class ExperimentPipelineGenerationService {
             surfaces.add(new SectionSurfaceContract(sectionId, surfaceToken, style, contrastMode));
         }
         return surfaces;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, SectionVisualPresetContract> extractSectionVisualPresetBySection(Experiment experiment) {
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageDesignPreset())) {
+            return Map.of();
+        }
+        Map<String, Object> designRoot = readObject(experiment.getLandingPageDesignPreset(), "Preset de design da landing inválido");
+        Map<String, Object> designPayload = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
+        if (!(designPayload.get("sectionPresets") instanceof List<?> rawPresets)) {
+            return Map.of();
+        }
+        Map<String, SectionVisualPresetContract> presets = new LinkedHashMap<>();
+        for (Object rawPreset : rawPresets) {
+            if (!(rawPreset instanceof Map<?, ?> rawPresetMap)) {
+                continue;
+            }
+            Map<String, Object> preset = (Map<String, Object>) rawPresetMap;
+            String sectionId = normalizeHtmlAttr(asTrimmedString(preset.get("sectionId")));
+            String surfaceStyle = normalizeHtmlAttr(asTrimmedString(preset.get("surfaceStyle")));
+            String contrastMode = normalizeHtmlAttr(asTrimmedString(preset.get("contrastMode")));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(surfaceStyle) || !StringUtils.hasText(contrastMode)) {
+                continue;
+            }
+            presets.put(normalizeLookupKey(sectionId), new SectionVisualPresetContract(sectionId, surfaceStyle, contrastMode));
+        }
+        return presets;
     }
 
     private List<SectionSurfaceContract> extractSectionSurfacesFromHtmlDocument(Long experimentId, String htmlDocument) {
@@ -3232,6 +3513,10 @@ public class ExperimentPipelineGenerationService {
                 || lower.contains("\\\"");
     }
 
+    private String normalizeLookupKey(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : "";
+    }
+
     private record FormFieldContract(String name, String type, boolean required) {
         @Override
         public boolean equals(Object obj) {
@@ -3250,6 +3535,9 @@ public class ExperimentPipelineGenerationService {
     }
 
     private record SectionSurfaceContract(String sectionId, String surfaceToken, String style, String contrastMode) {
+    }
+
+    private record SectionVisualPresetContract(String sectionId, String surfaceStyle, String contrastMode) {
     }
 
     private record ImagePlanBindingContract(String sectionId,

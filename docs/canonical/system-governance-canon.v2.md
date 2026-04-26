@@ -31,6 +31,7 @@
 7. **LHM é determinístico por definição canônica.** O Landing HTML Module (LHM) é responsável pela renderização previsível do HTML final de landing pages a partir de artefatos/contratos canônicos; não é camada de ideação livre de copy.
 8. **Evolução visual via artefato canônico.** Ajustes de estética/tema para landing pages devem ser modelados em artefato canônico estruturado (ex.: `landingPageDesignPreset`) consumido pelo LHM; evitar etapa de geração livre de HTML/JS fora do contrato.
 9. **Arquitetura robusta orientada a vendas.** Robustez técnica, validações e contratos existem para sustentar resultado comercial: melhorar conversão, reduzir fricção e manter continuidade de mensagem entre criativo, landing e oferta. Toda decisão arquitetural deve explicitar seu impacto em receita (CVR, CPL/CPA e avanço de funil), não apenas conformidade técnica.
+10. **Stack mandatória para módulos de apoio + deploy rastreável.** Módulos de apoio/satélites devem adotar baseline **Spring Boot + Java + Maven** e manter workflow CI/CD dedicado com teste, build e deploy por **disparo manual (`workflow_dispatch`)** além dos gatilhos automáticos necessários.
 
 ## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
 
@@ -119,6 +120,7 @@ Regra prática:
 - Mudanças cross-domain ou arquiteturalmente significativas devem gerar ADR correspondente.
 - Conflitos entre documentos devem ser registrados explicitamente, nunca escondidos.
 - Toda alteração que muda comportamento em produção deve alinhar: código, testes, contrato e cânone relevante.
+- Todo novo módulo de apoio deve nascer com workflow CI/CD próprio contendo, no mínimo, etapa de testes, build de imagem e deploy com acionamento manual (`workflow_dispatch`).
 
 ## 10. ADRs
 

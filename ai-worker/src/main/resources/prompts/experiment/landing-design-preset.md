@@ -21,7 +21,9 @@ Regras:
    - `THEME_CONTRAST`
    - `CTA_VISUAL_HIERARCHY`
    - `MOBILE_READABILITY`
-8. Saída obrigatoriamente em JSON válido no envelope do artefato.
+8. `layoutPreset` só pode ser: `hero-focus`, `form-focus`, `proof-grid`, `narrative-stack`, `faq-clean`, `cta-strong`.
+9. `motion.enabled` deve ser booleano (`true` ou `false`).
+10. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -61,7 +63,7 @@ Responda em JSON válido no formato:
         "sectionId": "string",
         "surfaceStyle": "band | solid | gradient-soft | image-tint",
         "contrastMode": "normal | high | soft",
-        "layoutPreset": "string",
+        "layoutPreset": "hero-focus | form-focus | proof-grid | narrative-stack | faq-clean | cta-strong",
         "emphasis": "primary | secondary | support",
         "notes": "string"
       }
@@ -82,7 +84,7 @@ Responda em JSON válido no formato:
       }
     },
     "motion": {
-      "enabled": true,
+      "enabled": "boolean",
       "intensity": "none | subtle | moderate"
     },
     "consistencyChecks": [

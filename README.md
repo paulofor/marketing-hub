@@ -53,6 +53,14 @@ Princípios gerais:
 - `mcp-server`  
   Serviço auxiliar para consultas e operações suportadas via MCP.
 
+### Regra tecnológica para módulos de apoio
+
+- Módulos de apoio/satélites (como `oprm`, `mds`, `mois`, `market-research-service` e serviços equivalentes) devem ser desenvolvidos no padrão **Spring Boot + Java + Maven**.
+- Cada módulo de apoio deve possuir workflow CI/CD dedicado no GitHub Actions, com:
+  - execução de testes da própria aplicação;
+  - build/publicação da imagem;
+  - etapa de deploy com gatilho por **disparo de workflow** (`workflow_dispatch`) e também execução automática nos eventos definidos pelo módulo.
+
 ### Módulos de operação, entrega e ativos
 
 - `facebook-ads-worker`  

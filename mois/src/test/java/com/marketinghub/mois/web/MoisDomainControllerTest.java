@@ -180,7 +180,7 @@ class MoisDomainControllerTest {
 
     @Test
     void shouldListCollectedReferencesByJob() throws Exception {
-        when(service.listCollectedReferencesByJob("mois-collect-001"))
+        when(service.listCollectedReferencesByJob("mois-collect-001", "CLICKBANK", "nutricao", 70, "HIGH"))
                 .thenReturn(Optional.of(new MoisWorkspaceDtos.CollectedReferenceListResponse(
                         "mois-collect-001",
                         List.of(new MoisWorkspaceDtos.CollectedReferenceResponse(
@@ -192,14 +192,24 @@ class MoisDomainControllerTest {
                                 "nutricao",
                                 77,
                                 "HIGH",
+                                "HIGH",
+                                1,
+                                80.0,
+                                76.0,
+                                74.0,
                                 Instant.parse("2026-04-25T12:00:00Z"),
                                 java.util.Map.of("status", "ACTIVE")
                         ))
                 )));
 
-        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references"))
+        mockMvc.perform(get("/api/v1/mois/collection-jobs/mois-collect-001/references")
+                        .param("source", "CLICKBANK")
+                        .param("niche", "nutricao")
+                        .param("minSuccessScore", "70")
+                        .param("confidenceLevel", "HIGH"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobId").value("mois-collect-001"))
-                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"));
+                .andExpect(jsonPath("$.items[0].source").value("CLICKBANK"))
+                .andExpect(jsonPath("$.items[0].confidenceLevel").value("HIGH"));
     }
 }

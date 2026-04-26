@@ -206,6 +206,11 @@ public final class MoisWorkspaceDtos {
             String niche,
             int successScore,
             String successSignal,
+            String confidenceLevel,
+            int rankingPosition,
+            double engagementRelative,
+            double recurrenceScore,
+            double evidenceScore,
             Instant collectedAt,
             Map<String, String> rawMetadata
     ) {

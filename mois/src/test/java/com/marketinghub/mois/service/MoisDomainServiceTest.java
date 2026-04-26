@@ -284,11 +284,38 @@ class MoisDomainServiceTest {
         );
 
         MoisWorkspaceDtos.CollectedReferenceListResponse references =
-                service.listCollectedReferencesByJob(created.jobId()).orElseThrow();
+                service.listCollectedReferencesByJob(created.jobId(), null, null, null, null).orElseThrow();
 
         assertThat(references.items()).hasSize(1);
         assertThat(references.items().getFirst().source()).isEqualTo("CLICKBANK");
         assertThat(references.items().getFirst().successScore()).isGreaterThanOrEqualTo(65);
+        assertThat(references.items().getFirst().confidenceLevel()).isIn("LOW", "MEDIUM", "HIGH");
+    }
+
+    @Test
+    void shouldFilterCollectedReferencesByScoreAndConfidenceAndHandleMissingEvidence() {
+        MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
+                new MoisWorkspaceDtos.CreateCollectionJobRequest(
+                        "workspace-002",
+                        "financas",
+                        "renda extra",
+                        List.of("CLICKBANK", "JVZOO", "HOTMART"),
+                        "LAST_7_DAYS",
+                        10,
+                        "pt-BR",
+                        "BR",
+                        55
+                )
+        );
+
+        MoisWorkspaceDtos.CollectedReferenceListResponse filtered =
+                service.listCollectedReferencesByJob(created.jobId(), null, "financas", 70, "MEDIUM").orElseThrow();
+
+        assertThat(filtered.items()).isNotEmpty();
+        assertThat(filtered.items()).allMatch(item -> item.successScore() >= 70);
+        assertThat(filtered.items()).allMatch(item -> "MEDIUM".equals(item.confidenceLevel()));
+        assertThat(filtered.items()).allMatch(item -> item.rankingPosition() >= 1);
+        assertThat(filtered.items()).allMatch(item -> item.evidenceScore() > 0.0);
     }
 
     private static class HtmlHandler implements HttpHandler {

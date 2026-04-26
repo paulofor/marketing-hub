@@ -1645,6 +1645,9 @@ public class MoisDomainService {
 
     private List<String> buildCollectionSeeds(DiscoveryRequest request) {
         List<String> seeds = new ArrayList<>(request.seedUrls());
+        if (!seeds.isEmpty()) {
+            return seeds;
+        }
         for (String query : request.seedQueries()) {
             if (query == null || query.isBlank()) {
                 continue;

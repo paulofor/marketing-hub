@@ -28,6 +28,7 @@ interface Props {
 
 type RequestUiStatus =
   | "IDLE"
+  | "PENDING"
   | "PROCESSING"
   | "COMPLETED"
   | "FAILED"
@@ -83,6 +84,7 @@ const REPORT_SECTION_ORDER: HypothesisFrameworkSection[] = [
 
 const STATUS_LABELS: Record<RequestUiStatus, string> = {
   IDLE: "Sem solicitação",
+  PENDING: "Na fila",
   PROCESSING: "Em processamento",
   COMPLETED: "Concluída",
   FAILED: "Com erro",
@@ -91,6 +93,7 @@ const STATUS_LABELS: Record<RequestUiStatus, string> = {
 
 const STATUS_BADGES: Record<RequestUiStatus, string> = {
   IDLE: "secondary",
+  PENDING: "info",
   PROCESSING: "warning",
   COMPLETED: "success",
   FAILED: "danger",
@@ -170,6 +173,13 @@ function getWorkerStatus(request: SectionRequestState) {
     return {
       label: "Worker IA em processamento",
       badge: "warning",
+    };
+  }
+
+  if (request.status === "PENDING") {
+    return {
+      label: "Worker IA aguardando processamento",
+      badge: "info",
     };
   }
 
@@ -301,7 +311,9 @@ export function HypothesisFrameworkTabsView({
           ? "COMPLETED"
           : job.status === "FAILED"
             ? "FAILED"
-            : "PROCESSING";
+            : job.status === "PROCESSING"
+              ? "PROCESSING"
+              : "PENDING";
 
       grouped[kind][sectionId] = {
         status: uiStatus,

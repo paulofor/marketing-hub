@@ -139,6 +139,7 @@ const SECTION_LABEL_BY_KEY: Record<ContentGenerationSectionKey, string> =
 
 type RequestUiStatus =
   | "IDLE"
+  | "PENDING"
   | "PROCESSING"
   | "COMPLETED"
   | "FAILED"
@@ -166,6 +167,7 @@ interface SectionInvalidationState {
   sourceSection: string;
   sourceAt?: string;
   sourceTimestamp: number;
+  requiresRefresh: boolean;
 }
 
 interface AutoQueueState {
@@ -200,6 +202,7 @@ const JOB_SECTION_ALIASES: Record<string, ContentGenerationSectionKey> = {
 
 const STATUS_LABELS: Record<RequestUiStatus, string> = {
   IDLE: "Sem solicitação",
+  PENDING: "Na fila",
   PROCESSING: "Em processamento",
   COMPLETED: "Concluída",
   FAILED: "Com erro",
@@ -208,6 +211,7 @@ const STATUS_LABELS: Record<RequestUiStatus, string> = {
 
 const STATUS_BADGES: Record<RequestUiStatus, string> = {
   IDLE: "secondary",
+  PENDING: "info",
   PROCESSING: "warning",
   COMPLETED: "success",
   FAILED: "danger",
@@ -743,6 +747,7 @@ function formatDateTime(value?: string) {
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   });
 }
 
@@ -1199,6 +1204,13 @@ function getWorkerStatus(request: SectionRequestState) {
     };
   }
 
+  if (request.status === "PENDING") {
+    return {
+      label: "Worker IA aguardando processamento",
+      badge: "info",
+    };
+  }
+
   return {
     label: "Worker IA ainda não acionado",
     badge: "secondary",
@@ -1313,7 +1325,9 @@ export default function ExperimentContentGenerationTab({
               ? "COMPLETED"
               : job.status === "FAILED"
                 ? "FAILED"
-                : "PROCESSING";
+                : job.status === "PROCESSING"
+                  ? "PROCESSING"
+                  : "PENDING";
           const stageLabel =
             STAGE_LABELS[job.stage] ??
             (job.stage ? job.stage.split("_").join(" ") : undefined);
@@ -1393,10 +1407,30 @@ export default function ExperimentContentGenerationTab({
       if (
         latestDependency &&
         currentRequest.status !== "PROCESSING" &&
+        currentRequest.status !== "PENDING" &&
         (currentTimestamp === undefined ||
+          latestDependency.requiresRefresh ||
           currentTimestamp < latestDependency.sourceTimestamp)
       ) {
         bySection[sectionKey] = latestDependency;
+      }
+
+      if (
+        currentRequest.status === "PROCESSING" ||
+        currentRequest.status === "PENDING"
+      ) {
+        const inFlightTimestamp =
+          parseTimestamp(currentRequest.startedAt) ??
+          parseTimestamp(currentRequest.requestedAt);
+        if (inFlightTimestamp !== undefined) {
+          latestDependency = {
+            sourceSection: getSectionLabel(sectionKey),
+            sourceAt: currentRequest.startedAt ?? currentRequest.requestedAt,
+            sourceTimestamp: inFlightTimestamp,
+            requiresRefresh: true,
+          };
+        }
+        return;
       }
 
       if (
@@ -1408,6 +1442,7 @@ export default function ExperimentContentGenerationTab({
           sourceSection: getSectionLabel(sectionKey),
           sourceAt: currentRequest.completedAt ?? currentRequest.requestedAt,
           sourceTimestamp: currentTimestamp,
+          requiresRefresh: false,
         };
       }
     });
@@ -2400,7 +2435,7 @@ export default function ExperimentContentGenerationTab({
               const request = mergedRequestsBySection[section.key];
               const invalidation = invalidationBySection[section.key];
               const displayStatus: RequestUiStatus =
-                request.status === "PROCESSING"
+                request.status === "PROCESSING" || request.status === "PENDING"
                   ? "PROCESSING"
                   : invalidation
                     ? "INVALIDATED"
@@ -2485,9 +2520,13 @@ export default function ExperimentContentGenerationTab({
                   ) : null}
                   {invalidation ? (
                     <small className="text-warning-emphasis">
-                      Dependência atualizada em {invalidation.sourceSection} ({" "}
-                      {formatDateTime(invalidation.sourceAt)}). Gere esta etapa
-                      novamente.
+                      {invalidation.requiresRefresh
+                        ? `Execução em andamento em ${invalidation.sourceSection} (${formatDateTime(
+                            invalidation.sourceAt,
+                          )}). Esta etapa será atualizada após a conclusão da dependência anterior.`
+                        : `Dependência atualizada em ${invalidation.sourceSection} (${formatDateTime(
+                            invalidation.sourceAt,
+                          )}). Gere esta etapa novamente.`}
                     </small>
                   ) : null}
                   {request.errorMessage ? (

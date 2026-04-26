@@ -121,5 +121,5 @@ jobs:
               -e MDS_SEARCH_TIMEOUT_MS='${MDS_SEARCH_TIMEOUT_MS}' \
               -e MDS_SEARCH_RETRY_MAX_ATTEMPTS='${MDS_SEARCH_RETRY_MAX_ATTEMPTS}' \
               -e MDS_SEARCH_RETRY_BACKOFF_MS='${MDS_SEARCH_RETRY_BACKOFF_MS}' \
-              ${IMAGE} \
+              \${IMAGE} \
             && docker image prune -af"

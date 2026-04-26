@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: V2037_04_26__widen_experiment_pipeline_job_section_mysql5.sql
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-04-22-mois-sprint4-signals.yaml
       relativeToChangelogFile: true
   - include:

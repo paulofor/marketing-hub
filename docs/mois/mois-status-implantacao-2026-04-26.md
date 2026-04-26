@@ -70,7 +70,7 @@ O que ainda não está implementado (lacuna principal):
 - Sprint 2: concluída.
 - Sprint 3: concluída (UI de coleta automática).
 - Sprint 4: concluída (importação + extração + lineage).
-- Sprint 5: **em andamento**, já com entrega inicial de observabilidade operacional (`collection-ops/summary`), retry controlado e gate de rollout por workspace.
+- Sprint 5: **concluída**, com baseline operacional, observabilidade mínima (`collection-ops/summary`), retry com backoff/rate limit, fallback de indisponibilidade e rollout gradual por workspace.
 
 ---
 
@@ -79,7 +79,7 @@ O que ainda não está implementado (lacuna principal):
 1. A iniciativa da tela em anexo (**Locais de pesquisa MOIS**) está implantada e navegável.
 2. A iniciativa de “destaques” avançou no nível de score/sinal por referência coletada.
 3. Ainda há gap para entregar o que normalmente se entende por “destaques de cada fonte” no nível executivo (agregado por fonte e período).
-4. O ciclo de produto entrou na Sprint 5 para endurecimento operacional (persistência robusta, observabilidade e rollout com segurança).
+4. O ciclo de coleta automática concluiu a Sprint 5 com endurecimento operacional (observabilidade mínima, rollout com segurança e fallback definido para indisponibilidade de fonte).
 
 ---
 
@@ -93,3 +93,39 @@ Priorizar uma entrega incremental de **Resumo por Fonte** com:
 - telemetria mínima (latência por fonte, falhas, taxa de coleta útil).
 
 Isso fecha a lacuna entre “listar fontes para pesquisar” e “mostrar, de forma acionável, os destaques extraídos de cada fonte”.
+
+---
+
+
+## 6) Validação direta do plano de sprints (pergunta: “tudo foi implementado?”)
+
+### Resposta curta
+**Não 100%.** O plano de sprints foi concluído formalmente até a Sprint 5, mas ainda existem lacunas explicitamente registradas no próprio escopo pós-sprint.
+
+### Matriz de verificação
+
+| Item do plano | Situação | Evidência atual |
+|---|---|---|
+| Sprint 0 a Sprint 5 | Concluídas | Relatórios de sprint e status consolidado neste ciclo |
+| Monitoração mínima operacional | Implementado | Endpoint `collection-ops/summary` e telemetria por workspace |
+| Retry/backoff + rate-limit | Implementado em baseline | Execução de coleta com retry controlado e estatísticas por fonte |
+| Rollout gradual por workspace | Implementado | Gate de habilitação por workspace no fluxo de criação de job |
+| Fallback de indisponibilidade de fonte | Implementado | Coleta marca falha por fonte indisponível com degradação previsível |
+| Persistência relacional + auditoria histórica | **Pendente** | Coleta/lineage ainda em memória (volátil) |
+| Destaques agregados por fonte (nível executivo) | **Pendente** | Existe destaque por item; falta consolidação analítica por fonte/período |
+| Conectores reais por fonte (produção) | **Pendente** | Fluxo ainda opera com seed/simulação para contrato/smoke |
+
+### Conclusão objetiva
+- A entrega está **completa no recorte de MVP + endurecimento operacional da Sprint 5**.
+- A entrega **não está completa no recorte de produção plena** (persistência relacional, conectores reais e analytics agregada por fonte ainda pendentes).
+
+
+
+### Atualização arquitetural (MOIS -> Backend para persistência de coleta)
+
+- Foi implementado fluxo de persistência operacional via backend para estado de coleta automática (`job`, `references`, `lineage`, `runtime`, `sourceOps`).
+- Endpoints internos adicionados no backend:
+  - `PUT /api/v1/mois/persistence/collection-jobs/{jobId}`
+  - `GET /api/v1/mois/persistence/collection-jobs/{jobId}`
+  - `GET /api/v1/mois/persistence/collection-jobs?workspaceId&status`
+- O MOIS agora consulta/sincroniza estado por esse contrato (MOIS -> Backend), reduzindo acoplamento da operação à memória local do módulo.

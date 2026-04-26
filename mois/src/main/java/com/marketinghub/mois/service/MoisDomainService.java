@@ -5,6 +5,7 @@ import com.marketinghub.mois.domain.MoisDomainModels.DiscoveryStatus;
 import com.marketinghub.mois.domain.MoisDomainModels.OfferCard;
 import com.marketinghub.mois.domain.MoisDomainModels.SourceSnapshot;
 import com.marketinghub.mois.dto.MoisArtifactDtos;
+import com.marketinghub.mois.dto.MoisCollectionPersistenceDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
@@ -66,6 +67,7 @@ public class MoisDomainService {
     private final Map<String, MoisWorkspaceDtos.ComparisonResponse> comparisonsById = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.BuildOfferResponse> offersById = new ConcurrentHashMap<>();
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final MoisBackendPersistenceGateway backendPersistenceGateway;
 
     private static final String MODULE_NAME = "MOIS";
     private static final String CREATED_BY = "mois-system";
@@ -73,7 +75,8 @@ public class MoisDomainService {
     private volatile boolean collectionRolloutEnabled = true;
     private final Set<String> rolloutAllowedWorkspaces = ConcurrentHashMap.newKeySet();
 
-    public MoisDomainService() {
+    public MoisDomainService(MoisBackendPersistenceGateway backendPersistenceGateway) {
+        this.backendPersistenceGateway = backendPersistenceGateway;
         loadCollectionRolloutFromEnv();
     }
 
@@ -683,6 +686,7 @@ public class MoisDomainService {
                 now
         );
         collectionJobs.put(jobId, queuedJob);
+        persistCollectionState(jobId);
         MoisWorkspaceDtos.CollectionJobResponse runningJob = new MoisWorkspaceDtos.CollectionJobResponse(
                 queuedJob.jobId(),
                 queuedJob.workspaceId(),
@@ -696,6 +700,7 @@ public class MoisDomainService {
                 queuedJob.createdAt()
         );
         collectionJobs.put(jobId, runningJob);
+        persistCollectionState(jobId);
         CollectionExecutionResult execution = runCollectionWithRetries(runningJob, request.niche());
         collectedReferencesByJob.put(jobId, reRank(execution.references()));
         collectionJobRuntimeStats.put(jobId, execution.runtimeStats());
@@ -712,12 +717,14 @@ public class MoisDomainService {
                 runningJob.createdAt()
         );
         collectionJobs.put(jobId, completedJob);
+        persistCollectionState(jobId);
         log.info("mois_collection_job_created jobId={} workspaceId={} sources={} window={}",
                 jobId, request.workspaceId(), request.sources(), request.timeWindow());
         return completedJob;
     }
 
     public MoisWorkspaceDtos.CollectionOpsSummaryResponse getCollectionOpsSummary(String workspaceId) {
+        hydrateCollectionState(workspaceId, null);
         boolean rolloutEnabled = isCollectionRolloutAllowed(workspaceId);
         List<MoisWorkspaceDtos.CollectionJobResponse> workspaceJobs = collectionJobs.values().stream()
                 .filter(job -> workspaceId == null || workspaceId.isBlank() || workspaceId.equals(job.workspaceId()))
@@ -779,6 +786,7 @@ public class MoisDomainService {
     }
 
     public MoisWorkspaceDtos.CollectionJobListResponse listCollectionJobs(String workspaceId, String status) {
+        hydrateCollectionState(workspaceId, status);
         List<MoisWorkspaceDtos.CollectionJobResponse> jobs = collectionJobs.values().stream()
                 .filter(item -> workspaceId == null || workspaceId.isBlank() || workspaceId.equals(item.workspaceId()))
                 .filter(item -> status == null || status.isBlank() || status.equalsIgnoreCase(item.status()))
@@ -794,6 +802,7 @@ public class MoisDomainService {
             Integer minSuccessScore,
             String confidenceLevel
     ) {
+        hydrateCollectionStateByJob(jobId);
         if (!collectionJobs.containsKey(jobId)) {
             return Optional.empty();
         }
@@ -868,6 +877,7 @@ public class MoisDomainService {
     }
 
     public Optional<MoisWorkspaceDtos.CollectedReferenceLineageResponse> getCollectedReferenceLineage(String jobId, String referenceId) {
+        hydrateCollectionStateByJob(jobId);
         MoisWorkspaceDtos.CollectedReferenceLineageResponse lineage = collectedReferenceLineage.get(lineageKey(jobId, referenceId));
         return Optional.ofNullable(lineage);
     }
@@ -877,6 +887,7 @@ public class MoisDomainService {
             String referenceId,
             boolean startExtraction
     ) {
+        hydrateCollectionStateByJob(jobId);
         if (!collectionJobs.containsKey(jobId)) {
             return Optional.empty();
         }
@@ -930,6 +941,7 @@ public class MoisDomainService {
                             Instant.now()
                     )
             );
+            persistCollectionState(jobId);
 
             final String finalExtractionId = extractionId;
             final List<String> finalGeneratedBlockIds = generatedBlockIds;
@@ -1362,6 +1374,7 @@ public class MoisDomainService {
             String extractionId,
             List<String> generatedLibraryBlockIds
     ) {
+        hydrateCollectionStateByJob(jobId);
         if (!collectionJobs.containsKey(jobId)) {
             return Optional.empty();
         }
@@ -1374,6 +1387,7 @@ public class MoisDomainService {
             MoisWorkspaceDtos.CollectedReferenceResponse updated = updater.apply(current);
             items.set(i, updated);
             collectedReferencesByJob.put(jobId, reRank(items));
+            persistCollectionState(jobId);
             return Optional.of(new MoisWorkspaceDtos.CollectedReferenceActionResponse(
                     jobId,
                     referenceId,
@@ -1723,6 +1737,87 @@ public class MoisDomainService {
         return trimmed.length() <= max ? trimmed : trimmed.substring(0, max);
     }
 
+    private void hydrateCollectionState(String workspaceId, String status) {
+        if (!backendPersistenceGateway.isEnabled()) {
+            return;
+        }
+        MoisCollectionPersistenceDtos.CollectionJobStateListResponse response =
+                backendPersistenceGateway.listCollectionJobStates(workspaceId, status);
+        if (response == null || response.items() == null) {
+            return;
+        }
+        response.items().forEach(this::applyPersistedJobState);
+    }
+
+    private void hydrateCollectionStateByJob(String jobId) {
+        if (!backendPersistenceGateway.isEnabled()) {
+            return;
+        }
+        backendPersistenceGateway.getCollectionJobState(jobId).ifPresent(this::applyPersistedJobState);
+    }
+
+    private void applyPersistedJobState(MoisCollectionPersistenceDtos.CollectionJobStateResponse state) {
+        if (state == null || state.job() == null) {
+            return;
+        }
+        String jobId = state.job().jobId();
+        collectionJobs.put(jobId, state.job());
+        collectedReferencesByJob.put(jobId, defaultList(state.references()));
+        Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> lineage = state.lineageByReferenceId();
+        if (lineage != null) {
+            lineage.forEach((referenceId, lineageValue) -> collectedReferenceLineage.put(lineageKey(jobId, referenceId), lineageValue));
+        }
+        if (state.runtime() != null) {
+            collectionJobRuntimeStats.put(jobId, new CollectionJobRuntimeStats(
+                    jobId,
+                    state.runtime().retries(),
+                    state.runtime().latencyMs(),
+                    state.runtime().finishedAt()
+            ));
+        }
+        if (state.sourceOps() != null) {
+            Map<String, SourceOpsStats> workspaceStats = collectionOpsByWorkspace
+                    .computeIfAbsent(state.job().workspaceId(), ignored -> new ConcurrentHashMap<>());
+            for (MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse sourceItem : state.sourceOps()) {
+                workspaceStats.put(sourceItem.source(), SourceOpsStats.copyOf(sourceItem));
+            }
+        }
+    }
+
+    private void persistCollectionState(String jobId) {
+        if (!backendPersistenceGateway.isEnabled()) {
+            return;
+        }
+        MoisWorkspaceDtos.CollectionJobResponse job = collectionJobs.get(jobId);
+        if (job == null) {
+            return;
+        }
+        Map<String, MoisWorkspaceDtos.CollectedReferenceLineageResponse> lineage = new HashMap<>();
+        collectedReferenceLineage.values().stream()
+                .filter(item -> jobId.equals(item.jobId()))
+                .forEach(item -> lineage.put(item.referenceId(), item));
+        CollectionJobRuntimeStats runtime = collectionJobRuntimeStats.get(jobId);
+        MoisCollectionPersistenceDtos.RuntimeStatsResponse runtimeResponse = runtime == null
+                ? null
+                : new MoisCollectionPersistenceDtos.RuntimeStatsResponse(runtime.retries(), runtime.latencyMs(), runtime.finishedAt());
+        List<MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse> sourceOps = collectionOpsByWorkspace
+                .getOrDefault(job.workspaceId(), Map.of())
+                .values().stream()
+                .sorted(Comparator.comparing(SourceOpsStats::source))
+                .map(SourceOpsStats::toResponse)
+                .toList();
+        backendPersistenceGateway.upsertCollectionJobState(
+                jobId,
+                new MoisCollectionPersistenceDtos.CollectionJobStateResponse(
+                        job,
+                        defaultList(collectedReferencesByJob.get(jobId)),
+                        lineage,
+                        runtimeResponse,
+                        sourceOps
+                )
+        );
+    }
+
     private void loadCollectionRolloutFromEnv() {
         String enabled = System.getenv().getOrDefault("MOIS_COLLECTION_ROLLOUT_ENABLED", "true");
         this.collectionRolloutEnabled = !"false".equalsIgnoreCase(enabled);
@@ -1760,7 +1855,7 @@ public class MoisDomainService {
         return workspaceId != null && rolloutAllowedWorkspaces.contains(workspaceId);
     }
 
-    private List<String> defaultList(List<String> values) {
+    private <T> List<T> defaultList(List<T> values) {
         return values == null ? List.of() : values;
     }
 
@@ -1898,6 +1993,33 @@ public class MoisDomainService {
 
         synchronized Instant lastAttemptAt() {
             return lastAttemptAt;
+        }
+
+        static SourceOpsStats copyOf(MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse response) {
+            SourceOpsStats stats = new SourceOpsStats(response.source());
+            stats.attempts = response.attempts();
+            stats.successes = response.successes();
+            stats.failures = response.failures();
+            stats.retries = response.retries();
+            stats.rateLimitedEvents = response.rateLimitedEvents();
+            stats.totalLatencyMs = response.averageLatencyMs() * Math.max(1, response.attempts());
+            stats.lastError = response.lastError();
+            stats.lastAttemptAt = response.lastAttemptAt();
+            return stats;
+        }
+
+        synchronized MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse toResponse() {
+            return new MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse(
+                    source,
+                    attempts,
+                    successes,
+                    failures,
+                    retries,
+                    rateLimitedEvents,
+                    averageLatencyMs(),
+                    lastError,
+                    lastAttemptAt
+            );
         }
     }
 }

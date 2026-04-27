@@ -48,7 +48,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
     3. Comparar o payload com a especificação oficial do artefato em `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`.
     4. Comparar o payload com as validações ativas no backend (DTOs, validators, regras de domínio e contratos de API).
     5. Identificar e reportar **exatamente** qual trecho (campo/estrutura/valor) gerado pelo modelo foi rejeitado.
-    6. Informar a causa raiz e a correção proposta (priorizando ajuste de prompt e manutenção das definições canonicas).
+    6. Informar a causa raiz e a correção proposta (priorizando ajuste de prompt e manutenção das definições canonicas, não fique tentando 'consertar' o que o modelo gerou, faça ele gerar de forma correta).
   - **Formato mínimo obrigatório da resposta de diagnóstico:**
     - o que o modelo entregou de forma literal
     - o que a especificação esperava de forma literal

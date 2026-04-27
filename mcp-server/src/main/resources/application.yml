@@ -33,8 +33,8 @@ mcp:
     facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:/var/log/marketinghub/facebook-ads.log}
     email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:/var/log/marketinghub/email-service.log}
     lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:/var/log/marketinghub/lead-portal-payment.log}
-    mds-path: ${MCP_LOG_MDS_PATH:/var/log/marketinghub/mds.log}
-    mois-path: ${MCP_LOG_MOIS_PATH:/var/log/marketinghub/mois.log}
+    mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}
+    mois-path: ${MCP_LOG_MOIS_PATH:http://177.153.62.107:8094/actuator/logfile}
     max-lines: ${MCP_LOG_MAX_LINES:500}
   meta:
     enabled: ${MCP_META_ENABLED:true}

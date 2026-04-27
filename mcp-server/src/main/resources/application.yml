@@ -27,14 +27,14 @@ mcp:
   server-version: ${MCP_SERVER_VERSION:1.0.0}
   api-key: ${MCP_API_KEY:}
   logs:
-    backend-path: ${MCP_LOG_BACKEND_PATH:/var/log/marketinghub/backend.log}
-    ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:/var/log/marketinghub/ai-worker.log}
-    lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:/var/log/marketinghub/lead-portal.log}
-    facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:/var/log/marketinghub/facebook-ads.log}
-    email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:/var/log/marketinghub/email-service.log}
-    lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:/var/log/marketinghub/lead-portal-payment.log}
+    backend-path: ${MCP_LOG_BACKEND_PATH:http://191.252.120.96:4567/worker-observability/logfile}
+    ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:http://191.252.120.96:4567/worker-observability/logfile}
+    lead-portal-path: ${MCP_LOG_LEAD_PORTAL_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
+    facebook-ads-path: ${MCP_LOG_FACEBOOK_ADS_PATH:http://191.252.120.96:8082/public/runtime-logs/tail?lines=300}
+    email-service-path: ${MCP_LOG_EMAIL_SERVICE_PATH:http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log}
+    lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://191.252.102.54:8092/api/v1/logs/runtime?lines=200}
     mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}
-    mois-path: ${MCP_LOG_MOIS_PATH:http://177.153.62.107:8094/actuator/logfile}
+    mois-path: ${MCP_LOG_MOIS_PATH:http://177.153.62.107:8094/manage/logfile}
     max-lines: ${MCP_LOG_MAX_LINES:500}
   meta:
     enabled: ${MCP_META_ENABLED:true}

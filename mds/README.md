@@ -27,6 +27,7 @@ Variáveis úteis:
 
 - `MDS_BACKEND_BASE_URL` (default `http://localhost:8080`)
 - `MDS_WORKER_ID` (default `mds-worker-local`)
+- `MDS_SEARCH_RETRY_BACKOFF_MS` (default `180000`, ou 3 minutos)
 
 ## Build de artefato executável
 

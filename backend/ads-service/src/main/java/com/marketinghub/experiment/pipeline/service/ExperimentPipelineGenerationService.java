@@ -3253,6 +3253,10 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("title", stringSchema()),
                         Map.entry("submitLabel", stringSchema()),
                         Map.entry("submitTarget", stringSchema()),
+                        Map.entry("submitOwnership", Map.of(
+                                "type", "string",
+                                "enum", List.of("inside-form", "external-with-form-attr")
+                        )),
                         Map.entry("fields", Map.of(
                                 "type", "array",
                                 "minItems", 3,
@@ -3278,7 +3282,8 @@ public class ExperimentPipelineGenerationService {
                                 "required", List.of("title", "message")
                         ))
                 ),
-                "required", List.of("formId", "title", "submitLabel", "submitTarget", "fields", "consent", "successState")
+                "required", List.of("formId", "title", "submitLabel", "submitTarget", "submitOwnership", "fields",
+                        "consent", "successState")
         );
         Map<String, Object> surfaceSpecSchema = Map.of(
                 "type", "object",
@@ -3328,6 +3333,111 @@ public class ExperimentPipelineGenerationService {
                 ),
                 "required", List.of("sectionId", "sectionName", "objective", "contentType", "mobilePriorityScore", "dropOffRisk", "surfaceSpec")
         );
+        Map<String, Object> readingFlowSpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("scanPattern", Map.of("type", "string", "enum", List.of("F-pattern", "Z-pattern", "mixed"))),
+                        Map.entry("maxParagraphLinesMobile", Map.of("type", "integer", "minimum", 1, "maximum", 4)),
+                        Map.entry("bulletDensityPerSection", Map.of("type", "integer", "minimum", 3)),
+                        Map.entry("headlineClarityRule", stringSchema()),
+                        Map.entry("cognitiveLoadNotes", stringSchema())
+                ),
+                "required", List.of("scanPattern", "maxParagraphLinesMobile", "bulletDensityPerSection", "headlineClarityRule",
+                        "cognitiveLoadNotes")
+        );
+        Map<String, Object> stickyCtaMobileSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("enabled", Map.of("type", "boolean")),
+                        Map.entry("triggerAfterSection", stringSchema()),
+                        Map.entry("ctaLabel", stringSchema()),
+                        Map.entry("ctaUrl", stringSchema())
+                ),
+                "required", List.of("enabled", "triggerAfterSection", "ctaLabel", "ctaUrl")
+        );
+        Map<String, Object> conversionPathSpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("primaryAction", stringSchema()),
+                        Map.entry("ctaLabelCanonical", stringSchema()),
+                        Map.entry("ctaLabelVariantsAllowed", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", stringSchema()
+                        )),
+                        Map.entry("stickyCtaMobile", stickyCtaMobileSchema),
+                        Map.entry("microCommitments", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", stringSchema()
+                        )),
+                        Map.entry("frictionPoints", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", stringSchema()
+                        ))
+                ),
+                "required", List.of("primaryAction", "ctaLabelCanonical", "ctaLabelVariantsAllowed", "stickyCtaMobile",
+                        "microCommitments", "frictionPoints")
+        );
+        Map<String, Object> proofPlanSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("requiredProofTypes", Map.of(
+                                "type", "array",
+                                "minItems", 2,
+                                "items", stringSchema()
+                        )),
+                        Map.entry("proofSectionIds", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", stringSchema()
+                        )),
+                        Map.entry("proofContinuityNotes", stringSchema())
+                ),
+                "required", List.of("requiredProofTypes", "proofSectionIds", "proofContinuityNotes")
+        );
+        Map<String, Object> trustSignalsSpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("brandIdentityRequired", Map.of("type", "boolean")),
+                        Map.entry("heroIdentityItems", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", stringSchema()
+                        )),
+                        Map.entry("authorityElements", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", stringSchema()
+                        )),
+                        Map.entry("privacyNoticeNearForm", Map.of("type", "boolean")),
+                        Map.entry("privacyPolicyUrl", stringSchema()),
+                        Map.entry("legalFooterItems", Map.of(
+                                "type", "array",
+                                "minItems", 3,
+                                "items", stringSchema()
+                        ))
+                ),
+                "required", List.of("brandIdentityRequired", "heroIdentityItems", "authorityElements", "privacyNoticeNearForm",
+                        "privacyPolicyUrl", "legalFooterItems")
+        );
+        Map<String, Object> accessibilitySpecSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.ofEntries(
+                        Map.entry("minTextContrast", stringSchema()),
+                        Map.entry("minTouchTargetPx", Map.of("type", "integer", "minimum", 44)),
+                        Map.entry("formFieldMinHeightPx", Map.of("type", "integer", "minimum", 44)),
+                        Map.entry("smallTextUsageNotes", stringSchema())
+                ),
+                "required", List.of("minTextContrast", "minTouchTargetPx", "formFieldMinHeightPx", "smallTextUsageNotes")
+        );
         return Map.of(
                 "type", "object",
                 "additionalProperties", false,
@@ -3346,6 +3456,11 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("mobilePriorityNotes", stringSchema()),
                         Map.entry("ctaPlacementNotes", stringSchema()),
                         Map.entry("formPlacementNotes", stringSchema()),
+                        Map.entry("readingFlowSpec", readingFlowSpecSchema),
+                        Map.entry("conversionPathSpec", conversionPathSpecSchema),
+                        Map.entry("proofPlan", proofPlanSchema),
+                        Map.entry("trustSignalsSpec", trustSignalsSpecSchema),
+                        Map.entry("accessibilitySpec", accessibilitySpecSchema),
                         Map.entry("consistencyChecks", Map.of(
                                 "type", "array",
                                 "minItems", 2,
@@ -3353,7 +3468,8 @@ public class ExperimentPipelineGenerationService {
                         )),
                         Map.entry("formSpec", formSpecSchema)
                 ),
-                "required", List.of("pageGoal", "variantLayoutId", "sectionOrder", "consistencyChecks", "formSpec")
+                "required", List.of("pageGoal", "variantLayoutId", "sectionOrder", "readingFlowSpec", "conversionPathSpec",
+                        "proofPlan", "trustSignalsSpec", "accessibilitySpec", "consistencyChecks", "formSpec")
         );
     }
 

@@ -154,93 +154,139 @@ Para a UI, o backend principal deve expor endpoints administrativos (autenticado
 
 ### Sprint 0 — Registro
 
-- **Status:** `PLANEJADO`
-- **Período:** `<AAAA-MM-DD até AAAA-MM-DD>`
-- **Responsáveis:** `<nomes/time>`
+- **Status:** `CONCLUÍDO`
+- **Período:** `2026-04-27 até 2026-04-27`
+- **Responsáveis:** `Codex (implementação assistida)`
 - **Escopo realizado:**
-  - `<item>`
+  - definição de DTOs administrativos de listagem, detalhe, timeline, artefatos/lineage e retry no backend principal
+  - criação dos endpoints administrativos autenticáveis por papel em `/api/mds/*`
+  - criação das rotas frontend para lista, detalhe, artefatos e relatório
 - **Endpoints criados/alterados:**
-  - `<endpoint>`
+  - `GET /api/mds/requests`
+  - `GET /api/mds/requests/{id}`
+  - `GET /api/mds/requests/{id}/artifacts`
+  - `GET /api/mds/reports/{requestId}`
+  - `POST /api/mds/requests/{id}/retry`
+  - `GET /api/mds/health`
 - **Telas criadas/alteradas:**
-  - `<arquivo frontend>`
+  - `frontend/src/pages/mds/MdsWorkspacePage.tsx`
+  - `frontend/src/pages/mds/MdsRequestDetailPage.tsx`
+  - `frontend/src/pages/mds/MdsArtifactsPage.tsx`
+  - `frontend/src/pages/mds/MdsReportPage.tsx`
 - **Testes executados:**
-  - `<comando e resultado>`
+  - `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest,MdsInternalControllerContractTest test`
+  - `cd frontend && npm run build`
 - **Riscos pendentes:**
-  - `<item>`
+  - validação final de RBAC com fonte oficial de identidade ainda depende da camada global de autenticação
 - **Decisões tomadas:**
-  - `<item>`
+  - filtro de tenant/produto foi mapeado no MVP para `correlationId`
+  - classificação de falha recuperável x não recuperável foi inicialmente heurística para suportar diagnóstico operacional
 
 ### Sprint 1 — Registro
 
-- **Status:** `PLANEJADO`
-- **Período:** `<AAAA-MM-DD até AAAA-MM-DD>`
-- **Responsáveis:** `<nomes/time>`
+- **Status:** `CONCLUÍDO`
+- **Período:** `2026-04-27 até 2026-04-27`
+- **Responsáveis:** `Codex (implementação assistida)`
 - **Escopo realizado:**
-  - `<item>`
+  - implementação da Tela 1 (lista de requests) com filtros por status/período/tenant-produto, badges de status e ações para detalhe/artefatos/relatório/retry
+  - implementação da Tela 2 (detalhe da request) com diagnóstico, classificação de falha e timeline de estágios
+  - finalização dos estados de loading/erro/vazio nas telas principais da sprint
+  - inclusão de testes unitários para hooks e páginas principais do fluxo da Sprint 1
 - **Endpoints criados/alterados:**
-  - `<endpoint>`
+  - `GET /api/mds/requests`
+  - `GET /api/mds/requests/{id}`
+  - `POST /api/mds/requests/{id}/retry`
 - **Telas criadas/alteradas:**
-  - `<arquivo frontend>`
+  - `frontend/src/pages/mds/MdsWorkspacePage.tsx`
+  - `frontend/src/pages/mds/MdsRequestDetailPage.tsx`
 - **Testes executados:**
-  - `<comando e resultado>`
+  - `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx`
+  - `cd frontend && npm run build`
+  - `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
 - **Riscos pendentes:**
-  - `<item>`
+  - dependência de disponibilidade do Maven Central ainda pode bloquear execução de testes Java na infraestrutura
 - **Decisões tomadas:**
-  - `<item>`
+  - os filtros de período da UI foram padronizados em UTC (`T00:00:00Z` e `T23:59:59Z`) para consistência de consulta
+  - os testes de sprint foram concentrados em hooks e componentes principais de lista e detalhe
 
 ### Sprint 2 — Registro
 
-- **Status:** `PLANEJADO`
-- **Período:** `<AAAA-MM-DD até AAAA-MM-DD>`
-- **Responsáveis:** `<nomes/time>`
+- **Status:** `CONCLUÍDO`
+- **Período:** `2026-04-27 até 2026-04-27`
+- **Responsáveis:** `Codex (implementação assistida)`
 - **Escopo realizado:**
-  - `<item>`
+  - evolução da tela de artefatos por request com agrupamento por tipo, seleção de item e leitura operacional
+  - implementação da visualização de envelope canônico (`artifact`) com `artifactType`, `artifactVersion`, `status`, `parentArtifactIds` e `content`
+  - implementação de navegação de lineage básico por pais/filhos com botões de salto entre artefatos
+  - ampliação dos contratos backend↔frontend para retorno de conteúdo do artefato no endpoint administrativo de artifacts
+  - inclusão de testes de contrato/frontend para artefatos e lineage
 - **Endpoints criados/alterados:**
-  - `<endpoint>`
+  - `GET /api/mds/requests/{id}/artifacts` (payload enriquecido com `content` + `parentArtifactIds` + `childArtifactIds`)
 - **Telas criadas/alteradas:**
-  - `<arquivo frontend>`
+  - `frontend/src/pages/mds/MdsArtifactsPage.tsx`
 - **Testes executados:**
-  - `<comando e resultado>`
+  - `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsArtifactsPage.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx`
+  - `cd frontend && npm run build`
+  - `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
 - **Riscos pendentes:**
-  - `<item>`
+  - revisão de performance para requests com alto volume de artefatos e lineage denso
 - **Decisões tomadas:**
-  - `<item>`
+  - manter endpoint único de artifacts para reduzir round-trips na auditoria da Sprint 2
+  - expor `parentArtifactIds` e `childArtifactIds` já resolvidos no backend para simplificar navegação no frontend
 
 ### Sprint 3 — Registro
 
-- **Status:** `PLANEJADO`
-- **Período:** `<AAAA-MM-DD até AAAA-MM-DD>`
-- **Responsáveis:** `<nomes/time>`
+- **Status:** `CONCLUÍDO`
+- **Período:** `2026-04-27 até 2026-04-27`
+- **Responsáveis:** `Codex (implementação assistida)`
 - **Escopo realizado:**
-  - `<item>`
+  - evolução da Tela de relatório com leitura executiva (mecanismo, evidências, confiança, limitações, justificativa)
+  - refinamento da UX operacional na lista com mensagens explícitas de retry elegível/não elegível e feedback de sucesso/erro da ação
+  - ajuste do contrato backend para expor `retryEligible` e `retryReason` em listagem e detalhe
+  - inclusão de teste E2E do fluxo principal (lista → detalhe → artefatos → relatório)
 - **Endpoints criados/alterados:**
-  - `<endpoint>`
+  - `GET /api/mds/requests` (campos novos: `retryEligible`, `retryReason`)
+  - `GET /api/mds/requests/{id}` (campos novos: `retryEligible`, `retryReason`)
+  - `POST /api/mds/requests/{id}/retry` (elegibilidade explícita por status)
 - **Telas criadas/alteradas:**
-  - `<arquivo frontend>`
+  - `frontend/src/pages/mds/MdsWorkspacePage.tsx`
+  - `frontend/src/pages/mds/MdsReportPage.tsx`
 - **Testes executados:**
-  - `<comando e resultado>`
+  - `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx src/pages/mds/MdsArtifactsPage.test.tsx src/pages/mds/MdsReportPage.test.tsx src/pages/mds/MdsMainFlow.e2e.test.tsx`
+  - `cd frontend && npm run build`
+  - `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
 - **Riscos pendentes:**
-  - `<item>`
+  - fluxo de retry para requests `COMPLETED` permanece bloqueado por decisão operacional atual e pode exigir trilha dedicada
 - **Decisões tomadas:**
-  - `<item>`
+  - retry operacional da Sprint 3 ficou restrito a status `FAILED` para evitar replay indevido de requests concluídas
+  - feedback operacional do frontend foi padronizado em alerts persistentes com fechamento manual
 
 ### Sprint 4 — Registro
 
-- **Status:** `PLANEJADO`
-- **Período:** `<AAAA-MM-DD até AAAA-MM-DD>`
-- **Responsáveis:** `<nomes/time>`
+- **Status:** `CONCLUÍDO`
+- **Período:** `2026-04-27 até 2026-04-27`
+- **Responsáveis:** `Codex (implementação assistida)`
 - **Escopo realizado:**
-  - `<item>`
+  - implementação de observabilidade da UI com painel de saúde do módulo (`/api/mds/health`) e contadores por status
+  - melhoria de performance com polling controlável (auto-refresh on/off), `staleTime` e cache com `keepPreviousData`
+  - revisão de acessibilidade/consistência visual (seções com rótulos, `aria-live`, feedbacks operacionais com fechamento manual)
+  - validação final de aderência canônica na visualização de artifacts/report e fluxo principal MDS
 - **Endpoints criados/alterados:**
-  - `<endpoint>`
+  - `GET /api/mds/health` (consumo ativo na UI)
+  - ajustes de contrato de requests para governar ação operacional de retry (`retryEligible`, `retryReason`)
 - **Telas criadas/alteradas:**
-  - `<arquivo frontend>`
+  - `frontend/src/pages/mds/MdsWorkspacePage.tsx`
+  - `frontend/src/pages/mds/MdsReportPage.tsx`
+  - `frontend/src/pages/mds/MdsArtifactsPage.tsx`
 - **Testes executados:**
-  - `<comando e resultado>`
+  - `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx src/pages/mds/MdsArtifactsPage.test.tsx src/pages/mds/MdsReportPage.test.tsx src/pages/mds/MdsMainFlow.e2e.test.tsx`
+  - `cd frontend && npm run build`
+  - `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
 - **Riscos pendentes:**
-  - `<item>`
+  - em cenários de alto volume pode ser necessário paginação adicional no painel administrativo e otimização de bundle frontend
 - **Decisões tomadas:**
-  - `<item>`
+  - auto-refresh da fila foi mantido habilitado por padrão com opção explícita de desligamento
+  - observabilidade mínima na UI passou a ser obrigatória para operação contínua da fila MDS
 
 ---
 

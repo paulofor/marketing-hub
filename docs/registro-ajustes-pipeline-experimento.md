@@ -75,6 +75,53 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0002 — 422 no planejamento de imagens por cobertura incompleta de `sectionId`
+
+- **Data/Hora (UTC):** 2026-04-27
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker + backend
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Pipeline do experimento `15` (etapa "Planejamento de Imagens da Landing")
+
+#### 1) Erro observado
+- **Sintoma:** Etapa finalizou com erro e bloqueou continuidade do pipeline.
+- **Endpoint/rota/fila:** conclusão de job da etapa `LANDING_PAGE_IMAGE_PLANNING`.
+- **Status code:** 422 `UNPROCESSABLE_ENTITY`.
+- **Mensagem de erro literal:** `Planejamento de imagens incompleto: faltam sectionId do wireframe em images[]. Faltando: [objection-anti-preco-pratica, faq-objections]`.
+- **Payload enviado (literal):** não incluía todos os `sectionId` presentes no `landingPageWireframe.sectionOrder`.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste registro (diagnóstico guiado pelo erro literal retornado pela UI/back-end).
+- **Dados de banco consultados via MCP:** não executado neste registro.
+- **Trecho canônico consultado:** regra de `landingPageImagePlanning.images[].sectionId` e cobertura por seção.
+- **Validação/regra que rejeitou:** backend compara conjunto esperado (`wireframe.sectionOrder[*].sectionId`) vs conjunto entregue (`images[*].sectionId`) e rejeita faltantes.
+- **Causa raiz:** resposta do modelo sem checklist final de cobertura 1:1 entre wireframe e images.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `images[]` sem os `sectionId` `objection-anti-preco-pratica` e `faq-objections`.
+- **O que a especificação esperava (literal):** `images[]` com 100% dos `sectionId` do `landingPageWireframe.sectionOrder`, sem omitir e sem inventar.
+- **Diferença objetiva:** cobertura parcial de seções canônicas.
+- **Ação corretiva recomendada:** reforçar no prompt checklist de cobertura obrigatório antes de finalizar.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt + teste.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/resources/prompts/experiment/landing-image-planning.md`
+  - `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** adicionada regra explícita de checklist de cobertura (`sectionOrder[*].sectionId` vs `images[*].sectionId`) e teste para garantir presença desta instrução no prompt gerado.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de teste unitário focado no prompt da etapa de image planning.
+- **Resultado:** reteste bloqueado por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages) no ambiente atual.
+- **Evidências (logs/ids/prints):** `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` retornando erro de resolução de dependência.
+- **Status final:** Parcial (ajuste aplicado; validação automatizada pendente de credenciais de pacote).
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar etapa "Planejamento de Imagens da Landing" do experimento 15 para validar cobertura completa em ambiente integrado.
+- **Dono da ação:** Time de operação do pipeline.
+- **Prazo:** imediato (próxima execução).
+
 ### INC-0001 — Criação do documento de rastreabilidade
 
 - **Data/Hora (UTC):** 2026-04-26

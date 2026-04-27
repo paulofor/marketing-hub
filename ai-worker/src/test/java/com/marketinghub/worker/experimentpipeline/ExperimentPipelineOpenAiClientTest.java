@@ -243,6 +243,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("`images[]` deve cobrir **100%** dos `sectionId` de `landingPageWireframe.sectionOrder`");
         assertThat(userPrompt).contains("incluindo seções de formulário");
         assertThat(userPrompt).contains("é proibido inventar `sectionId` fora do wireframe");
+        assertThat(userPrompt).contains("checklist de cobertura obrigatório");
     }
 
     @Test

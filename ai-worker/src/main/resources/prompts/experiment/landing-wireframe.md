@@ -33,8 +33,10 @@ Regras fixas da etapa:
 18. Em `readingFlowSpec`, garantir `maxParagraphLinesMobile <= 4` e `bulletDensityPerSection >= 3` (especialmente em argumento/prova).
 19. Em `conversionPathSpec`, manter continuidade com CTA principal da copy (`primaryAction` + `ctaLabelCanonical`) e listar variações apenas em `ctaLabelVariantsAllowed`.
 20. Em `proofPlan`, incluir pelo menos 2 tipos distintos de prova e mapear `proofSectionIds` apenas para seções existentes em `sectionOrder`.
-21. Em `trustSignalsSpec`, para páginas com formulário: `brandIdentityRequired=true`, `privacyNoticeNearForm=true`, `privacyPolicyUrl` preenchida e `legalFooterItems` com empresa/contato/política.
-22. Em `accessibilitySpec`, respeitar mínimos canônicos: `minTextContrast` >= 4.5:1, `minTouchTargetPx` >= 44 e `formFieldMinHeightPx` >= 44.
+21. Para evitar erro 422, monte `proofPlan.proofSectionIds` somente após finalizar `sectionOrder`: copie os `sectionId` literalmente de `sectionOrder` (sem renomear, traduzir, resumir ou inventar IDs).
+22. Antes de responder, faça checklist final obrigatório: para cada item em `proofPlan.proofSectionIds`, confirme correspondência exata (match 1:1) com algum `sectionOrder[*].sectionId`; se não existir correspondência exata, corrija/remova o item.
+23. Em `trustSignalsSpec`, para páginas com formulário: `brandIdentityRequired=true`, `privacyNoticeNearForm=true`, `privacyPolicyUrl` preenchida e `legalFooterItems` com empresa/contato/política.
+24. Em `accessibilitySpec`, respeitar mínimos canônicos: `minTextContrast` >= 4.5:1, `minTouchTargetPx` >= 44 e `formFieldMinHeightPx` >= 44.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

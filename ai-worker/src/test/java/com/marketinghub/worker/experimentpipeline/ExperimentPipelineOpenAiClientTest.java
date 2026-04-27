@@ -200,6 +200,9 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("readingFlowSpec");
         assertThat(userPrompt).contains("conversionPathSpec");
         assertThat(userPrompt).contains("proofPlan");
+        assertThat(userPrompt).contains("Para evitar erro 422");
+        assertThat(userPrompt).contains("copie os `sectionId` literalmente de `sectionOrder`");
+        assertThat(userPrompt).contains("match 1:1");
         assertThat(userPrompt).contains("trustSignalsSpec");
         assertThat(userPrompt).contains("accessibilitySpec");
         assertThat(userPrompt).contains("maxParagraphLinesMobile <= 4");

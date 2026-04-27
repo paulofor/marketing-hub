@@ -41,7 +41,7 @@ mvn -s settings.xml spring-boot:run
 
 ## Logs de Spring Boot dos módulos Java
 
-O tool `java_module_logs` lê os arquivos de log do Spring Boot configurados em:
+O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou URL HTTP/HTTPS** configurada em:
 
 - `MCP_LOG_BACKEND_PATH` (default `/var/log/marketinghub/backend.log`);
 - `MCP_LOG_AI_WORKER_PATH` (default `/var/log/marketinghub/ai-worker.log`);
@@ -49,8 +49,8 @@ O tool `java_module_logs` lê os arquivos de log do Spring Boot configurados em:
 - `MCP_LOG_FACEBOOK_ADS_PATH` (default `/var/log/marketinghub/facebook-ads.log`);
 - `MCP_LOG_EMAIL_SERVICE_PATH` (default `/var/log/marketinghub/email-service.log`);
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `/var/log/marketinghub/lead-portal-payment.log`);
-- `MCP_LOG_MDS_PATH` (default `/var/log/marketinghub/mds.log`);
-- `MCP_LOG_MOIS_PATH` (default `/var/log/marketinghub/mois.log`).
+- `MCP_LOG_MDS_PATH` (default `http://177.153.62.107:8091/actuator/logfile`);
+- `MCP_LOG_MOIS_PATH` (default `http://177.153.62.107:8094/actuator/logfile`).
 
 > Em produção, configure explicitamente os `MCP_LOG_*_PATH` via variáveis de ambiente (arquivo `.env` do host) para apontar para o destino de log aprovado.
 

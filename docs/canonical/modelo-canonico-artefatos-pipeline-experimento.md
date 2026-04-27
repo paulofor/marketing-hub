@@ -2,6 +2,14 @@
 
 Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 
+> 🔵 **DIRETRIZ ESTRATÉGICA — PAPEL DO MDS NA CONSTRUÇÃO DO PRODUTO**
+>
+> O **MDS** é a principal fonte estruturada de informação para transformar dor de mercado em produto digital final.
+>
+> - Além de apoiar a definição de mecanismo, o MDS deve sustentar a construção de promessa, prova e oferta.
+> - Os artefatos derivados do MDS devem manter rastreabilidade de origem e aderência comercial até a versão final do produto.
+> - Sempre que houver conflito entre volume de conteúdo e qualidade de decisão comercial, priorizar evidência útil para conversão real.
+
 > 🔴 **REGRA CANÔNICA EM DESTAQUE — LHM**
 >
 > O **LHM (Landing HTML Module)** é o módulo **determinístico** responsável por gerar o HTML final da landing page.
@@ -857,6 +865,7 @@ Isso significa que:
 - workers não têm estado canônico próprio;
 - providers externos não definem o estado final do domínio;
 - o frontend não cria artefatos canônicos fora do backend.
+- resultados e evidências produzidos pelo MDS devem ser persistidos no backend como base informacional do produto digital final.
 
 ## 3.3 Schema-first
 

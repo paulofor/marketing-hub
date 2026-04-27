@@ -109,6 +109,19 @@ Regras operacionais associadas:
 - requests com coleta sem fontes válidas encerram como `FAILED`;
 - lineage de oferta deve apontar explicitamente para `evidenceRefs` no envelope canônico (`/api/v1/mois/artifacts/{artifactId}`).
 
+## Atualização incremental — MOIS Hotmart (coleta recorrente de ofertas quentes, 27/04/2026)
+
+Entidade/tabela adicionada no backend (`ads-service`) para registrar o robô de coleta recorrente do Hotmart:
+
+- `mois_hotmart_collection_run`
+  - histórico de execuções da rotina diária de coleta com `run_id`, `workspace_id`, `niche`, `market_theme`, `source_list`, `created_job_id`, `status`, `min_success_score`, `limit_per_source`, `triggered_by`, `triggered_at` e `error_message`.
+
+Regras operacionais associadas:
+
+- o backend principal passa a oferecer gatilho manual (`POST /api/v1/mois/hotmart-collection-runs/trigger`) e histórico (`GET /api/v1/mois/hotmart-collection-runs`) para a coleta do Hotmart;
+- o agendamento diário usa o contrato já existente de `collection-jobs` do MOIS, com filtro de temperatura via `minSuccessScore` configurável;
+- cada tentativa do robô deve ser persistida (sucesso ou falha) para auditoria operacional e rastreabilidade de execução.
+
 ## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
 
 Entidades/tabelas adicionadas no backend (`ads-service`) para suportar o início do Mechanism Discovery Service:

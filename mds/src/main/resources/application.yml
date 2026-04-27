@@ -23,7 +23,7 @@ mds:
   search:
     timeout-ms: ${MDS_SEARCH_TIMEOUT_MS:5000}
     retry-max-attempts: ${MDS_SEARCH_RETRY_MAX_ATTEMPTS:2}
-    retry-backoff-ms: ${MDS_SEARCH_RETRY_BACKOFF_MS:250}
+    retry-backoff-ms: ${MDS_SEARCH_RETRY_BACKOFF_MS:180000}
   backend:
     base-url: ${MDS_BACKEND_BASE_URL:http://localhost:8080}
     worker-id: ${MDS_WORKER_ID:mds-worker-local}

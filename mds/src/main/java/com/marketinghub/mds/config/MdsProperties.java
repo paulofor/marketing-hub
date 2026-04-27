@@ -65,7 +65,7 @@ public class MdsProperties {
     public static class Search {
         private int timeoutMs = 5000;
         private int retryMaxAttempts = 2;
-        private int retryBackoffMs = 250;
+        private int retryBackoffMs = 180000;
 
         public int getTimeoutMs() {
             return timeoutMs;

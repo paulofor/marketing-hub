@@ -34,10 +34,15 @@ Quando a fila automática estiver ativa, o pipeline deve respeitar a sequência 
 7. `landingPageDesignPreset` (Preset visual da Landing)
 
 Após `landingPageDesignPreset`, a etapa `landingPageHtml` **não** deve ser enfileirada automaticamente.
-Ela passa a ser uma escolha manual do usuário na UI, com duas opções válidas:
+Ela passa a ser uma ação manual única do usuário na UI, que dispara a geração dupla obrigatória:
 
-- `Gerar com LHM` (determinístico);
-- `Gerar com IA` (não determinístico, sujeito ao contrato de validação do backend).
+- variante `deterministic` com `LHM`;
+- variante `ai` com geração de IA.
+
+Regra de execução:
+
+- a ação manual não representa escolha entre alternativas; representa comando para gerar **as duas** variantes no mesmo ciclo.
+- o backend deve garantir que ambas recebam exatamente o mesmo snapshot de entrada canônica.
 
 Regra canônica:
 
@@ -67,7 +72,7 @@ Regras mandatórias:
 - se houver falha na geração de imagens, a UI deve apresentar causa e ação
   recomendada antes de permitir retomada.
 - após `landingPageDesignPreset`, a continuidade para `landingPageHtml` exige
-  comando manual explícito do usuário (LHM ou IA).
+  comando manual explícito do usuário para geração dupla (LHM + IA).
 - a etapa `landingPageImagePlanning` só é considerada **efetivamente concluída**
   após a conclusão da geração das imagens planejadas (não apenas após salvar o
   artefato de planejamento).
@@ -195,22 +200,23 @@ Para experimentos com tráfego direcionado para landing própria, o processo ofi
 de publicação deve ser simplificado em **3 passos**:
 
 1. **Geração da landing pela IA**
-   O pipeline gera o HTML final da landing para o experimento.
-   A composição final deve ser executada pelo **LHM (Landing HTML Module)**,
-   responsável por consolidar wireframe aprovado, copy aprovada, design preset
-   aprovado e URLs de imagens aprovadas em um único `htmlDocument`.
+   O pipeline gera o HTML final da landing para o experimento em **duas variantes públicas**:
+   - `deterministic` (LHM);
+   - `ai` (IA).
+   Ambas devem usar a mesma entrada canônica (wireframe/copy/design preset/imagens aprovadas) e passar pelo mesmo contrato de validação.
 2. **Aprovação única do usuário**
    O usuário aprova a landing uma única vez na interface administrativa.
 3. **Publicação automática pelo sistema**
    Após a aprovação, o backend/sistema:
-   - cria/publica a URL final da landing;
-   - aplica automaticamente o pixel do nicho na landing publicada.
+   - cria/publica as duas URLs finais da landing (`deterministic` e `ai`);
+   - aplica automaticamente o pixel do nicho nas duas páginas publicadas.
 
 Regras mandatórias:
 
 - não exigir etapa manual adicional entre aprovação e publicação da URL final;
+- não exigir etapa manual adicional entre aprovação e publicação das duas URLs finais;
 - não exigir etapa manual adicional para inserção do pixel do nicho;
-- manter o backend como fonte única de verdade para URL publicada e vínculo de pixel;
+- manter o backend como fonte única de verdade para as duas URLs publicadas e vínculo de pixel;
 - exibir feedback claro de sucesso/erro da aprovação e do resultado da publicação.
 
 ### 8.6 Nome canônico do módulo de composição de landing

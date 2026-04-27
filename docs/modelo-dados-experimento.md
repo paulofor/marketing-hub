@@ -22,6 +22,25 @@ Campo adicionado na entidade/tabela `experiment` para suportar o novo passo can�
   - armazena o artefato estruturado `landingPageDesignPreset` produzido no pipeline entre `landingPageImagePlanning` e `landingPageHtml`;
   - objetivo: separar decisão visual (tema/presets) da composição final do HTML pelo LHM, preservando determinismo e auditabilidade.
 
+## Atualização incremental — Pipeline de Landing (HTML duplo público, 27/04/2026)
+
+Atualização de contrato de persistência/auditoria para a etapa `landingPageHtml`:
+
+- o artefato de saída passa a armazenar duas variantes públicas no mesmo `experimentId`:
+  - `html_variants.deterministic` (gerada por LHM);
+  - `html_variants.ai` (gerada por IA).
+- cada variante deve registrar:
+  - `html_document` (conteúdo final);
+  - `public_url` (URL publicada);
+  - `validation_summary` (resultado dos checks canônicos).
+- o backend deve persistir também `canonical_input_hash` comum às duas variantes para comprovar que ambas foram geradas com a mesma entrada.
+
+Regras operacionais associadas:
+
+- publicação oficial da landing exige que as duas variantes tenham sido geradas no mesmo ciclo de execução;
+- as duas variantes devem executar o mesmo conjunto de validações canônicas antes da publicação;
+- rastreabilidade de publicação e aplicação de pixel deve existir por variante (`deterministic` e `ai`), mantendo vínculo único ao `experimentId`.
+
 ## Atualização incremental — Avatar Sales Video (Sprint V4)
 
 Campos adicionados no backend (`sales_video_profile` / `sales_video_job`) para suportar compliance e auditoria:

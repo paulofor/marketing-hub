@@ -580,6 +580,13 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 > `htmlDocument` final da landing.
 >
 > **Leitura operacional obrigatória para evolução do LHM:** `docs/canonical/lhm-evolution-guide.v1.md`.
+>
+> **Atualização canônica (2026-04-27) — geração dupla obrigatória:**
+> - a etapa `landingPageHtml` passa a gerar **duas versões públicas** da landing para o mesmo `experimentId`:
+>   1. `deterministic` (renderizada pelo **LHM**);
+>   2. `ai` (renderizada por geração de IA).
+> - as duas versões devem receber **a mesma entrada canônica** (`landingPageCopy`, `landingPageWireframe`, `landingPageDesignPreset` e `landingPageImagePlanning` resolvido com URLs finais);
+> - as duas versões devem passar pelas **mesmas validações canônicas** antes de qualquer publicação.
 
 > Cada documento HTML gerado pela etapa `landingPageHtml` traz atributos de dados para vincular os visuais planejados aos ativos finais.
 > Os principais atributos são `data-image-section-id` (mapeia o `planning_item_key`), `data-image-binding-key` (chave semântica)
@@ -594,7 +601,39 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 
 ```json
 {
-  "htmlDocument": "string",
+  "htmlVariants": {
+    "deterministic": {
+      "generator": "LHM",
+      "htmlDocument": "string",
+      "publicUrl": "string",
+      "validationSummary": {
+        "status": "PASS | FAIL",
+        "checks": [
+          {
+            "check": "CTA_MATCH | PROMISE_MATCH | IMAGE_PLAN_BINDING | SURFACE_SPEC_BINDING | FORM_SPEC_BINDING | FORM_USABILITY",
+            "status": "PASS | FAIL | WARNING",
+            "details": "string"
+          }
+        ]
+      }
+    },
+    "ai": {
+      "generator": "AI_WORKER",
+      "htmlDocument": "string",
+      "publicUrl": "string",
+      "validationSummary": {
+        "status": "PASS | FAIL",
+        "checks": [
+          {
+            "check": "CTA_MATCH | PROMISE_MATCH | IMAGE_PLAN_BINDING | SURFACE_SPEC_BINDING | FORM_SPEC_BINDING | FORM_USABILITY",
+            "status": "PASS | FAIL | WARNING",
+            "details": "string"
+          }
+        ]
+      }
+    }
+  },
+  "canonicalInputHash": "string",
   "formSpec": {
     "formId": "string",
     "title": "string",
@@ -684,6 +723,25 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 }
 ```
 
+### Regras canônicas obrigatórias — geração dupla `landingPageHtml`
+
+1. **Entrada única e idêntica**
+   - `deterministic` e `ai` devem usar o mesmo snapshot de entrada canônica do experimento.
+   - Divergência de snapshot de entrada entre variantes é bloqueio de domínio.
+
+2. **Paridade de validação**
+   - As duas variantes devem executar exatamente o mesmo conjunto de checks canônicos.
+   - Não é permitido “afrouxar” validação da variante `ai`.
+
+3. **Publicação em URL pública dupla**
+   - O backend deve publicar duas URLs rastreáveis e auditáveis no mesmo ciclo:
+     - `publicUrl` da variante `deterministic`;
+     - `publicUrl` da variante `ai`.
+   - As duas URLs devem permanecer vinculadas ao mesmo `experimentId`.
+
+4. **Critério de bloqueio**
+   - Se qualquer variante falhar em check crítico (`CTA_MATCH`, `PROMISE_MATCH`, `FORM_SPEC_BINDING` ou `FORM_USABILITY`), a etapa permanece bloqueada para publicação oficial até correção.
+
 ## `landingCodeBundle`
 
 ```json
@@ -718,15 +776,15 @@ Regra prática:
 Independentemente dos detalhes internos de orquestração, a experiência oficial
 de publicação da landing para o usuário deve seguir exatamente:
 
-1. geração da landing pela IA;
+1. geração da landing em **duas variantes** (LHM determinístico + IA) com a mesma entrada;
 2. aprovação do usuário;
-3. sistema cria/publica a URL final e aplica o pixel do nicho automaticamente.
+3. sistema cria/publica as **duas URLs finais** e aplica o pixel do nicho automaticamente em ambas.
 
 Regras mandatórias:
 
 - é proibido exigir do usuário uma segunda aprovação para concluir publicação;
 - é proibido exigir inserção manual do pixel após a aprovação;
-- URL publicada e pixel aplicado devem ficar auditáveis no backend.
+- ambas as URLs publicadas e o pixel aplicado em cada variante devem ficar auditáveis no backend.
 - a ação oficial de aprovação/publicação deve estar disponível na aba `Landing` do experimento (não apenas em abas auxiliares).
 
 

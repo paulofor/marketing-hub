@@ -153,7 +153,7 @@ interface SectionRequestState {
   customInstructions?: string;
   errorMessage?: string;
   stageLabel?: string;
-  executionSource?: "WORKER_IA" | "LHM";
+  executionSource?: "WORKER_IA" | "LHM" | "LHM_IA";
 }
 
 interface ParsedBackendError {
@@ -228,14 +228,16 @@ const STAGE_LABELS: Record<string, string> = {
   FAILED: "Falhou",
 };
 
-const EXECUTION_SOURCE_LABELS: Record<"WORKER_IA" | "LHM", string> = {
+const EXECUTION_SOURCE_LABELS: Record<"WORKER_IA" | "LHM" | "LHM_IA", string> = {
   WORKER_IA: "Worker IA",
   LHM: "LHM inline",
+  LHM_IA: "LHM + IA",
 };
 
-const EXECUTION_SOURCE_BADGES: Record<"WORKER_IA" | "LHM", string> = {
+const EXECUTION_SOURCE_BADGES: Record<"WORKER_IA" | "LHM" | "LHM_IA", string> = {
   WORKER_IA: "primary",
   LHM: "info",
+  LHM_IA: "dark",
 };
 
 const LANDING_IMAGE_FLOW_LABELS: Record<LandingImageFlowStatus, string> = {
@@ -2008,7 +2010,7 @@ export default function ExperimentContentGenerationTab({
     }
   }
 
-  const handleGenerateLandingWithLhm = useCallback(async () => {
+  const handleGenerateLandingDualHtml = useCallback(async () => {
     const nowIso = new Date().toISOString();
     try {
       setIsGeneratingWithLhm(true);
@@ -2018,14 +2020,21 @@ export default function ExperimentContentGenerationTab({
           status: "PROCESSING",
           requestedAt: nowIso,
           startedAt: nowIso,
-          executionSource: "LHM",
-          stageLabel: "Processando no LHM inline",
+          executionSource: "LHM_IA",
+          stageLabel: "Gerando duas variantes públicas (LHM + IA)",
         },
       }));
       await axios.post(
         `/api/experiments/${experimentId}/pipeline/landing-page-html/generate-with-lhm`,
       );
-      toast.success("Landing HTML gerado via LHM.");
+      await axios.post(
+        `/api/experiments/${experimentId}/pipeline/landing-page-html/generate`,
+        {
+          quantity: 1,
+          promptTemplate: SECTION_PROMPT_DEFAULTS["landing-html"],
+        },
+      );
+      toast.success("Landing HTML gerado nas duas variantes: LHM (determinístico) e IA.");
       setRequestsBySection((previous) => ({
         ...previous,
         "landing-html": {
@@ -2033,7 +2042,7 @@ export default function ExperimentContentGenerationTab({
           requestedAt: previous["landing-html"]?.requestedAt ?? nowIso,
           startedAt: previous["landing-html"]?.startedAt ?? nowIso,
           completedAt: new Date().toISOString(),
-          executionSource: "LHM",
+          executionSource: "LHM_IA",
           stageLabel: "Finalizada",
         },
       }));
@@ -2049,7 +2058,7 @@ export default function ExperimentContentGenerationTab({
           requestedAt: previous["landing-html"]?.requestedAt ?? nowIso,
           startedAt: previous["landing-html"]?.startedAt ?? nowIso,
           completedAt: new Date().toISOString(),
-          executionSource: "LHM",
+          executionSource: "LHM_IA",
           stageLabel: "Falhou",
           errorMessage: summary,
         },
@@ -2316,64 +2325,26 @@ export default function ExperimentContentGenerationTab({
                   <div>
                     <h5 className="card-title mb-1">{section.label}</h5>
                     <p className="text-muted mb-0">{section.description}</p>
+                    {section.key === "landing-html" ? (
+                      <p className="small text-body-secondary mt-2 mb-0">
+                        Nesta etapa, o sistema gera duas versões públicas da landing
+                        com a mesma entrada canônica: uma determinística (LHM) e outra via IA.
+                      </p>
+                    ) : null}
                   </div>
                   <div className="d-flex align-items-start flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-sm"
-                      onClick={() => void handleGenerateSection(section)}
-                      disabled={
-                        isGeneratingSection ||
-                        isGeneratingWithLhm ||
-                        autoQueue.isActive ||
-                        isLandingFlowBlockedByImageGeneration
-                      }
-                      title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
-                    >
-                      {isGeneratingSection &&
-                      pendingGenerationSection === section.key ? (
-                        <span className="d-inline-flex align-items-center gap-1">
-                          <span
-                            className="spinner-border spinner-border-sm"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Gerando com IA...
-                        </span>
-                      ) : autoQueue.isActive ? (
-                        <span className="d-inline-flex align-items-center gap-1">
-                          <span
-                            className="spinner-border spinner-border-sm"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Fila em execução...
-                        </span>
-                      ) : isLandingFlowBlockedByImageGeneration ? (
-                        <span className="d-inline-flex align-items-center gap-1">
-                          <span
-                            className="spinner-border spinner-border-sm"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Gerando imagens...
-                        </span>
-                      ) : (
-                        "Gerar com IA"
-                      )}
-                    </button>
                     {section.key === "landing-html" ? (
                       <button
                         type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => void handleGenerateLandingWithLhm()}
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={() => void handleGenerateLandingDualHtml()}
                         disabled={
                           isGeneratingWithLhm ||
                           isGeneratingSection ||
                           autoQueue.isActive ||
                           isLandingFlowBlockedByImageGeneration
                         }
-                        title="Gera o HTML final usando o LHM (Landing HTML Module), sem acionar o Worker IA."
+                        title="Gera as duas versões públicas do HTML final com a mesma entrada: LHM determinístico + IA."
                       >
                         {isGeneratingWithLhm ? (
                           <span className="d-inline-flex align-items-center gap-1">
@@ -2382,13 +2353,76 @@ export default function ExperimentContentGenerationTab({
                               role="status"
                               aria-hidden="true"
                             />
-                            Gerando com LHM...
+                            Gerando LHM + IA...
+                          </span>
+                        ) : autoQueue.isActive ? (
+                          <span className="d-inline-flex align-items-center gap-1">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Fila em execução...
+                          </span>
+                        ) : isLandingFlowBlockedByImageGeneration ? (
+                          <span className="d-inline-flex align-items-center gap-1">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Gerando imagens...
                           </span>
                         ) : (
-                          "Gerar com LHM"
+                          "Gerar HTML (LHM + IA)"
                         )}
                       </button>
-                    ) : null}
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={() => void handleGenerateSection(section)}
+                        disabled={
+                          isGeneratingSection ||
+                          isGeneratingWithLhm ||
+                          autoQueue.isActive ||
+                          isLandingFlowBlockedByImageGeneration
+                        }
+                        title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
+                      >
+                        {isGeneratingSection &&
+                        pendingGenerationSection === section.key ? (
+                          <span className="d-inline-flex align-items-center gap-1">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Gerando com IA...
+                          </span>
+                        ) : autoQueue.isActive ? (
+                          <span className="d-inline-flex align-items-center gap-1">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Fila em execução...
+                          </span>
+                        ) : isLandingFlowBlockedByImageGeneration ? (
+                          <span className="d-inline-flex align-items-center gap-1">
+                            <span
+                              className="spinner-border spinner-border-sm"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Gerando imagens...
+                          </span>
+                        ) : (
+                          "Gerar com IA"
+                        )}
+                      </button>
+                    )}
                     <span className="badge text-bg-light">
                       Estrutura pronta para prompt
                     </span>
@@ -3845,6 +3879,8 @@ function LandingHtmlPreview({
       ),
     [content.htmlDocument, resolvedGeneratedImages],
   );
+  const deterministicUrl = content.deterministic?.publicUrl?.trim();
+  const aiUrl = content.ai?.publicUrl?.trim();
 
   const handleApplyToForm = async () => {
     if (!experimentId) return;
@@ -3879,6 +3915,41 @@ function LandingHtmlPreview({
       {content.summary ? (
         <div className="alert alert-info py-2 mb-0">
           <strong>Resumo:</strong> {content.summary}
+        </div>
+      ) : null}
+      <div className="alert alert-light border py-2 mb-0">
+        <strong>Procedimento canônico:</strong> esta etapa trabalha com duas versões
+        públicas da landing (LHM determinístico + IA) usando a mesma entrada
+        canônica e validações equivalentes.
+      </div>
+      {deterministicUrl || aiUrl ? (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body">
+            <h6 className="card-title mb-2">URLs públicas geradas</h6>
+            <div className="d-flex flex-column gap-2 small">
+              {deterministicUrl ? (
+                <div>
+                  <strong>Determinística (LHM): </strong>
+                  <a href={deterministicUrl} target="_blank" rel="noreferrer">
+                    {deterministicUrl}
+                  </a>
+                </div>
+              ) : null}
+              {aiUrl ? (
+                <div>
+                  <strong>IA: </strong>
+                  <a href={aiUrl} target="_blank" rel="noreferrer">
+                    {aiUrl}
+                  </a>
+                </div>
+              ) : null}
+              {content.canonicalInputHash ? (
+                <div className="text-muted">
+                  Hash da entrada canônica: <code>{content.canonicalInputHash}</code>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
       ) : null}
       <div className="d-flex flex-wrap gap-2">

@@ -41,6 +41,11 @@ Leitura obrigatória antes de qualquer alteração em:
    - Quando houver mudança estrutural relevante de runtime, introduzir `runtimeVersion` ou estratégia equivalente de versionamento.
    - Evitar mudanças “silenciosas” que alterem comportamento sem atualização de contrato/teste.
 
+6. **Preservar paridade da geração dupla (LHM + IA)**
+   - A evolução do LHM não pode quebrar a regra canônica de entrada compartilhada entre variantes `deterministic` e `ai`.
+   - O mesmo conjunto de validações canônicas deve permanecer aplicável às duas variantes.
+   - Mudanças em checks críticos precisam manter comparabilidade entre os dois outputs públicos da landing.
+
 ## 4. Requisitos mínimos atuais do runtime de submit
 
 O HTML final da landing deve implementar, no mínimo:

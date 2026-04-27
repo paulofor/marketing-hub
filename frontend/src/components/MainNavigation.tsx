@@ -35,6 +35,7 @@ import {
   Search,
   Mail,
   Inbox,
+  Microscope,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -106,6 +107,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
       { to: "/mois", label: "MOIS", icon: Workflow },
       { to: "/oprm", label: "OPRM", icon: Workflow },
+      { to: "/mds", label: "MDS", icon: Microscope },
     ],
   },
   {

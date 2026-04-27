@@ -918,3 +918,162 @@ O pipeline do MDS passou a reagir de forma previsível a falhas transitórias de
 **Próximo passo sugerido:**
 
 Abrir a próxima fase fora da Sprint 7 para evolução de dashboards, política adaptativa de retry por tipo de erro e testes end-to-end com cenários reais de indisponibilidade externa.
+
+## [2026-04-27] — Etapa: sprint 0 da UI administrativa MDS
+
+### Resumo objetivo
+
+Foi implementada a base contratual da Sprint 0 da UI MDS, incluindo endpoints administrativos no backend principal, DTOs dedicados para listagem/detalhe/artefatos/relatório e criação das rotas iniciais no frontend para as quatro telas previstas no plano de UI.
+
+### Escopo realizado
+
+- Backend: criação do controlador `/api/mds` com rotas para requests, detalhe, artefatos, relatório, retry e health.
+- Backend: definição de DTOs administrativos da UI e serviço de agregação para timeline, classificação de falha e lineage básico.
+- Backend: validação inicial de papéis por header `X-User-Role` (`ADMIN`, `MDS_OPERATOR`, `OPS`).
+- Frontend: criação das páginas `MdsWorkspacePage`, `MdsRequestDetailPage`, `MdsArtifactsPage` e `MdsReportPage`.
+- Frontend: inclusão das rotas e entrada de navegação para o módulo MDS.
+- Documentação: atualização do plano de UI (registro da Sprint 0) e do contrato backend↔MDS para refletir endpoints administrativos.
+
+### Endpoints criados/alterados
+
+- `GET /api/mds/requests`
+- `GET /api/mds/requests/{id}`
+- `GET /api/mds/requests/{id}/artifacts`
+- `GET /api/mds/reports/{requestId}`
+- `POST /api/mds/requests/{id}/retry`
+- `GET /api/mds/health`
+
+### Testes executados
+
+- `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest,MdsInternalControllerContractTest test`
+- `cd frontend && npm run build`
+
+### Pendências
+
+- Integrar validação de papéis ao provedor oficial de identidade/SSO da plataforma.
+- Evoluir classificação de falha para critério orientado por código/causa estruturada.
+
+## [2026-04-27] — Etapa: sprint 1 da UI administrativa MDS (lista + detalhe)
+
+### Resumo objetivo
+
+Implementada a Sprint 1 da UI MDS com foco em operação mínima: tela de lista de requests com filtros e ações operacionais, tela de detalhe com timeline e classificação de falha, estados de loading/erro/vazio e testes unitários dos hooks/componentes principais.
+
+### Escopo realizado
+
+- Frontend: evolução da `MdsWorkspacePage` com filtros mínimos da sprint (`status`, `período`, `tenant/produto`) e ações de navegação.
+- Frontend: evolução da `MdsRequestDetailPage` para diagnóstico operacional e timeline de estágios.
+- Frontend: cobertura de testes unitários para hooks de API e páginas principais de Sprint 1.
+- Documentação: atualização do registro da Sprint 1 no plano de UI.
+
+### Endpoints utilizados
+
+- `GET /api/mds/requests`
+- `GET /api/mds/requests/{id}`
+- `POST /api/mds/requests/{id}/retry`
+
+### Testes executados
+
+- `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx`
+- `cd frontend && npm run build`
+- `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
+
+### Pendências
+
+- Refinar UX e feedbacks operacionais para as próximas sprints (artefatos/lineage e relatório avançado).
+- Integrar observabilidade de frontend (telemetria de interação) na fase de hardening.
+
+## [2026-04-27] — Etapa: sprint 2 da UI administrativa MDS (artefatos + lineage)
+
+### Resumo objetivo
+
+Implementada a Sprint 2 da UI MDS com rastreabilidade operacional: tela de artefatos por request, visualização do envelope canônico e navegação básica de lineage (pais/filhos), com testes de contrato frontend↔backend para artifacts.
+
+### Escopo realizado
+
+- Backend: enriquecimento do endpoint `GET /api/mds/requests/{id}/artifacts` para retornar conteúdo canônico de cada artefato e relações derivadas (`parentArtifactIds`/`childArtifactIds`).
+- Backend: ampliação do teste de contrato do controller administrativo para validar estrutura de artifacts + lineage + content.
+- Frontend: evolução da `MdsArtifactsPage` com:
+  - agrupamento por tipo de artefato;
+  - seleção de item para leitura;
+  - envelope canônico renderizado em JSON;
+  - navegação básica de lineage por botões de pais e filhos.
+- Frontend: testes unitários para fluxo da tela de artifacts e contratos do hook `useMdsArtifacts`.
+- Documentação: atualização do plano de UI (registro Sprint 2 concluído).
+
+### Endpoints criados/alterados
+
+- `GET /api/mds/requests/{id}/artifacts` (enriquecido)
+
+### Testes executados
+
+- `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsArtifactsPage.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx`
+- `cd frontend && npm run build`
+- `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
+
+### Pendências
+
+- observar volume de payload de artifacts para requests muito grandes;
+- considerar paginação/virtualização de lineage em sprint de hardening se necessário.
+
+## [2026-04-27] — Etapa: sprint 3 da UI administrativa MDS (relatório + ações operacionais)
+
+### Resumo objetivo
+
+Implementada a Sprint 3 da UI MDS para fechar o ciclo de diagnóstico e ação operacional: refinamento da tela de relatório, regras explícitas de elegibilidade para retry e mensagens operacionais de sucesso/erro no fluxo administrativo.
+
+### Escopo realizado
+
+- Backend: evolução dos DTOs de listagem e detalhe com campos `retryEligible` e `retryReason`.
+- Backend: ajuste da regra de retry para aceitar somente status `FAILED`, com motivo explícito quando bloqueado.
+- Backend: atualização de teste de contrato administrativo para validar os novos campos de elegibilidade.
+- Frontend: evolução da `MdsWorkspacePage` com feedback operacional (sucesso/erro) e explicação de bloqueio de retry por request.
+- Frontend: evolução da `MdsReportPage` com resumo executivo (mecanismo recomendado, evidências selecionadas, confiança, limitações e justificativa).
+- Frontend: criação de teste E2E do fluxo principal `lista → detalhe → artefatos → relatório`.
+
+### Endpoints criados/alterados
+
+- `GET /api/mds/requests` (campos novos de elegibilidade de retry)
+- `GET /api/mds/requests/{id}` (campos novos de elegibilidade de retry)
+- `POST /api/mds/requests/{id}/retry` (bloqueio explícito para status não elegíveis)
+
+### Testes executados
+
+- `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx src/pages/mds/MdsArtifactsPage.test.tsx src/pages/mds/MdsReportPage.test.tsx src/pages/mds/MdsMainFlow.e2e.test.tsx`
+- `cd frontend && npm run build`
+- `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
+
+### Pendências
+
+- avaliar trilha dedicada para replay seguro de requests `COMPLETED` sem conflitar com retry operacional rápido;
+- avaliar telemetria de UX dos alerts operacionais na sprint de hardening.
+
+## [2026-04-27] — Etapa: sprint 4 da UI administrativa MDS (hardening + governança)
+
+### Resumo objetivo
+
+Implementada a Sprint 4 com foco em robustez operacional contínua: observabilidade da UI, ajustes de performance (polling/caching), revisão de acessibilidade e fechamento de aderência canônica das telas administrativas MDS.
+
+### Escopo realizado
+
+- Frontend: painel de observabilidade na `MdsWorkspacePage` com saúde do backend MDS (`/api/mds/health`) e contadores por status.
+- Frontend: melhoria de performance com `staleTime`, `keepPreviousData`, polling controlável por toggle de auto-refresh e refetch periódico para detalhe/health.
+- Frontend: revisão de acessibilidade e consistência visual (labels de seção, `aria-live`, feedbacks operacionais com fechamento manual).
+- Frontend: manutenção da aderência canônica na leitura de envelope e relatório executivo/técnico.
+- Testes: ampliação da suíte de hooks para health e manutenção do teste E2E do fluxo principal.
+
+### Endpoints criados/alterados
+
+- `GET /api/mds/health` (consumido no dashboard operacional da UI)
+- `GET /api/mds/requests` e `GET /api/mds/requests/{id}` (campos de governança operacional de retry)
+
+### Testes executados
+
+- `cd frontend && npm run test -- --run src/api/mds/useMdsAdmin.test.tsx src/pages/mds/MdsWorkspacePage.test.tsx src/pages/mds/MdsRequestDetailPage.test.tsx src/pages/mds/MdsArtifactsPage.test.tsx src/pages/mds/MdsReportPage.test.tsx src/pages/mds/MdsMainFlow.e2e.test.tsx`
+- `cd frontend && npm run build`
+- `cd backend/ads-service && mvn -Dtest=MdsAdminControllerContractTest test`
+
+### Pendências
+
+- evolução futura para paginação/virtualização adicional quando o volume operacional crescer;
+- avaliação de divisão de bundle para reduzir warning de chunks grandes no build de frontend.

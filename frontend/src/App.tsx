@@ -123,6 +123,10 @@ import MoisComparisonPage from "./pages/mois/MoisComparisonPage";
 import MoisOfferBuilderPage from "./pages/mois/MoisOfferBuilderPage";
 import MoisResearchSourcesPage from "./pages/mois/MoisResearchSourcesPage";
 import MoisAutoCollectionPage from "./pages/mois/MoisAutoCollectionPage";
+import MdsWorkspacePage from "./pages/mds/MdsWorkspacePage";
+import MdsRequestDetailPage from "./pages/mds/MdsRequestDetailPage";
+import MdsArtifactsPage from "./pages/mds/MdsArtifactsPage";
+import MdsReportPage from "./pages/mds/MdsReportPage";
 
 export default function App() {
   return (
@@ -276,6 +280,10 @@ export default function App() {
               <Route path="/mois/library" element={<MoisLibraryPage />} />
               <Route path="/mois/comparison" element={<MoisComparisonPage />} />
               <Route path="/mois/builder" element={<MoisOfferBuilderPage />} />
+              <Route path="/mds" element={<MdsWorkspacePage />} />
+              <Route path="/mds/requests/:requestId" element={<MdsRequestDetailPage />} />
+              <Route path="/mds/requests/:requestId/artifacts" element={<MdsArtifactsPage />} />
+              <Route path="/mds/reports/:requestId" element={<MdsReportPage />} />
               <Route
                 path="/oprm/routine/:occupationSeedRef"
                 element={<OprmRoutinePage />}

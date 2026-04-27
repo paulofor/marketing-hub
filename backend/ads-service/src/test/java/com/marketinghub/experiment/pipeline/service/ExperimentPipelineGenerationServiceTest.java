@@ -488,6 +488,50 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void generateImagePlanningIncludesExplicitWireframeCoverageChecklistInPrompt() {
+        Experiment experiment = new Experiment();
+        experiment.setId(131L);
+        experiment.setName("Experimento 131");
+        experiment.setCampaignAngle("{\"campaignAngle\":\"angulo\"}");
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId":"hero"},
+                      {"sectionId":"objection-anti-preco-pratica"},
+                      {"sectionId":"faq-objections"}
+                    ]
+                  }
+                }
+                """);
+
+        when(experimentRepository.findById(131L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                131L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(jobRepository.findLatestCompletedPerSectionByExperimentId(131L, null))
+                .thenReturn(List.of(
+                        completedJob(experiment, ExperimentPipelineSection.CAMPAIGN_ANGLE, "{\"campaignAngle\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.AD_COPY, "{\"adCopy\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.AD_IMAGE_BRIEFING, "{\"adImageBriefing\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_COPY, "{\"landingPageCopy\":true}"),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, experiment.getLandingPageWireframe())));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(131L, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING, new ExperimentPipelineGenerationRequest());
+
+        verify(jobRepository).save(argThat(job -> {
+            String prompt = job.getPrompt();
+            return prompt != null
+                    && prompt.contains("Checklist de cobertura obrigatório")
+                    && prompt.contains("sectionId obrigatórias: hero, objection-anti-preco-pratica, faq-objections")
+                    && prompt.contains("images[].sectionId contém exatamente esta lista");
+        }));
+    }
+
+    @Test
     void generateRejectsNewStageWhenAnotherStageIsAlreadyActiveForExperiment() {
         Experiment experiment = new Experiment();
         experiment.setId(14L);

@@ -32,6 +32,12 @@ Regras fixas da etapa:
 17. Reagir ao tipo concreto de oferta atual sem inventar objetos não presentes nos artefatos.
 18. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 19. Antes de finalizar, execute checklist de cobertura obrigatório: compare `landingPageWireframe.sectionOrder[*].sectionId` com `images[*].sectionId` e só responda quando todos estiverem presentes, sem faltas e sem excedentes.
+20. Fluxo obrigatório interno antes da resposta:
+    - extraia a lista literal `requiredSectionIds` de `landingPageWireframe.sectionOrder[*].sectionId`;
+    - monte `images[]` cobrindo 1:1 cada item de `requiredSectionIds`;
+    - valide internamente `missing = requiredSectionIds - images.sectionId` e `extras = images.sectionId - requiredSectionIds`;
+    - só finalize quando `missing=[]` e `extras=[]`.
+21. Se existir seção de objeção/oferta/faq no wireframe (ex.: `objection-*`, `offer-*`, `faq-*`), ela também é obrigatória em `images[]` e não pode ser omitida.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

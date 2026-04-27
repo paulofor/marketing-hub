@@ -75,6 +75,56 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0003 — Reforço de instruções no prompt do worker para cobertura 1:1 de `sectionId` em `images[]`
+
+- **Data/Hora (UTC):** 2026-04-27
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker + backend
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Pipeline do experimento `15` (etapa "Planejamento de Imagens da Landing")
+
+#### 1) Erro observado
+- **Sintoma:** Etapa de planejamento de imagens permanece vulnerável a 422 por cobertura incompleta de `sectionId`.
+- **Endpoint/rota/fila:** conclusão de job da etapa `LANDING_PAGE_IMAGE_PLANNING`.
+- **Status code:** 422 `UNPROCESSABLE_ENTITY`.
+- **Mensagem de erro literal:** `Planejamento de imagens incompleto: faltam sectionId do wireframe em images[]. Faltando: [objection-anti-preco-pratica]`.
+- **Payload enviado (literal):** `images[]` sem item correspondente ao `sectionId` obrigatório listado acima.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste registro (diagnóstico guiado por validação literal do backend + evidência de UI).
+- **Dados de banco consultados via MCP:** não executado neste registro.
+- **Trecho canônico consultado:** regra de cobertura total em `landingPageImagePlanning.images[].sectionId` vs `landingPageWireframe.sectionOrder[*].sectionId`.
+- **Validação/regra que rejeitou:** verificação de conjunto esperado vs planejado em `validateLandingImagePlanningArtifacts`.
+- **Causa raiz:** instrução anterior não estava suficientemente prescritiva no template do worker para forçar validação interna de `missing/extras` antes da resposta final.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `images[]` sem `sectionId` `objection-anti-preco-pratica`.
+- **O que a especificação esperava (literal):** `images[]` contendo todos os `sectionId` de `landingPageWireframe.sectionOrder`, sem faltas e sem excedentes.
+- **Diferença objetiva:** omissão de seção obrigatória do wireframe no artefato final.
+- **Ação corretiva recomendada:** fortalecer o template `landing-image-planning` com fluxo obrigatório explícito (`requiredSectionIds`, cálculo de `missing/extras` e bloqueio de finalização até zerar diferenças).
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt + robustez backend + teste.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/resources/prompts/experiment/landing-image-planning.md`
+  - `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** template do worker ganhou fluxo interno obrigatório 1:1 por `sectionId`; teste unitário passou a validar presença das novas instruções; helper do backend para checklist no prompt passou a registrar log em caso de falha ao carregar wireframe, evitando fallback silencioso.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de testes unitários focados em backend e ai-worker.
+- **Resultado:** backend aprovado; ai-worker bloqueado por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` indisponível no ambiente.
+- **Evidências (logs/ids/prints):**
+  - `backend/ads-service`: suite `ExperimentPipelineGenerationServiceTest` aprovada.
+  - `ai-worker`: erro de resolução de dependência durante `mvn test`.
+- **Status final:** Parcial (ajuste aplicado; validação automatizada completa depende de credencial/repositório para dependência privada).
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar etapa de planejamento de imagens no experimento 15 e validar que `images[]` cobre integralmente `sectionOrder` (incluindo `objection-*`, `offer-*`, `faq-*` quando presentes).
+- **Dono da ação:** Time de operação do pipeline.
+- **Prazo:** imediato (próxima execução).
+
 ### INC-0002 — 422 no planejamento de imagens por cobertura incompleta de `sectionId`
 
 - **Data/Hora (UTC):** 2026-04-27

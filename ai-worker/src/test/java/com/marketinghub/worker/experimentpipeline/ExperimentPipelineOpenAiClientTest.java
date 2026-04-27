@@ -244,6 +244,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("incluindo seções de formulário");
         assertThat(userPrompt).contains("é proibido inventar `sectionId` fora do wireframe");
         assertThat(userPrompt).contains("checklist de cobertura obrigatório");
+        assertThat(userPrompt).contains("extraia a lista literal `requiredSectionIds`");
+        assertThat(userPrompt).contains("só finalize quando `missing=[]` e `extras=[]`");
     }
 
     @Test

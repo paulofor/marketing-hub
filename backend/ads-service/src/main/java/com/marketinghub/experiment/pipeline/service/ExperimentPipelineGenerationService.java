@@ -2741,146 +2741,9 @@ public class ExperimentPipelineGenerationService {
     private Map<String, Object> sectionSchema(ExperimentPipelineSection section) {
         Map<String, Object> metadataSchema = experimentMetadataSchema();
         return switch (section) {
-            case CAMPAIGN_ANGLE -> schemaWithMetadata("campaignAngle", Map.of(
-                    "type", "object",
-                    "additionalProperties", false,
-                    "properties", Map.of(
-                            "primaryPain", Map.of("type", "string"),
-                            "primaryPromise", Map.of("type", "string"),
-                            "mechanismSummary", Map.of("type", "string"),
-                            "proofSummary", Map.of("type", "string"),
-                            "cta", Map.of("type", "string"),
-                            "singleMindedPromise", Map.of("type", "string"),
-                            "primaryCTA", Map.of("type", "string"),
-                            "landingMatchLine", Map.of("type", "string"),
-                            "tone", Map.of("type", "string"),
-                            "funnelStage", Map.of("type", "string")
-                    ),
-                    "required", List.of(
-                            "primaryPain",
-                            "primaryPromise",
-                            "mechanismSummary",
-                            "proofSummary",
-                            "cta",
-                            "singleMindedPromise",
-                            "primaryCTA",
-                            "landingMatchLine",
-                            "tone",
-                            "funnelStage")
-            ), metadataSchema);
-            case AD_COPY -> schemaWithMetadata("adCopy", Map.of(
-                    "type", "object",
-                    "additionalProperties", false,
-                    "properties", Map.of(
-                            "primaryTextVariants", Map.of(
-                                    "type", "array",
-                                    "items", Map.of(
-                                            "type", "object",
-                                            "additionalProperties", false,
-                                            "properties", Map.of(
-                                                    "label", Map.of("type", "string"),
-                                                    "openingHookType", Map.of(
-                                                            "type", "string",
-                                                            "enum", List.of("dor", "consequência", "resultado", "prova")
-                                                    ),
-                                                    "placementHint", Map.of(
-                                                            "type", "string",
-                                                            "enum", List.of("feed", "stories/reels")
-                                                    ),
-                                                    "lengthVariants", Map.of(
-                                                            "type", "object",
-                                                            "additionalProperties", false,
-                                                            "properties", Map.of(
-                                                                    "curta", Map.of("type", "string"),
-                                                                    "media", Map.of("type", "string"),
-                                                                    "longa", Map.of("type", "string")
-                                                            ),
-                                                            "required", List.of("curta", "media", "longa")
-                                                    ),
-                                                    "primaryText", Map.of("type", "string"),
-                                                    "headline", Map.of("type", "string"),
-                                                    "description", Map.of("type", "string"),
-                                                    "ctaText", Map.of("type", "string"),
-                                                    "compliance", Map.of(
-                                                            "type", "object",
-                                                            "additionalProperties", false,
-                                                            "properties", Map.of(
-                                                                    "semGarantiaAbsoluta", Map.of("type", "boolean"),
-                                                                    "semPromessaIndividual", Map.of("type", "boolean"),
-                                                                    "semLinguagemDeConsultoria", Map.of("type", "boolean")
-                                                            ),
-                                                            "required", List.of(
-                                                                    "semGarantiaAbsoluta",
-                                                                    "semPromessaIndividual",
-                                                                    "semLinguagemDeConsultoria")
-                                                    )
-                                            ),
-                                            "required", List.of(
-                                                    "label",
-                                                    "openingHookType",
-                                                    "placementHint",
-                                                    "lengthVariants",
-                                                    "headline",
-                                                    "description",
-                                                    "ctaText",
-                                                    "compliance")
-                                    )
-                            )
-                    ),
-                    "required", List.of("primaryTextVariants")
-            ), metadataSchema);
-            case AD_IMAGE_BRIEFING -> schemaWithMetadata("adImageBriefing", Map.of(
-                    "type", "object",
-                    "additionalProperties", false,
-                    "properties", Map.of(
-                            "briefings", Map.of(
-                                    "type", "array",
-                                    "minItems", 3,
-                                    "maxItems", 3,
-                                    "items", Map.of(
-                                            "type", "object",
-                                            "additionalProperties", false,
-                                            "properties", Map.of(
-                                                    "mustMatchAdVariant", Map.of(
-                                                            "type", "string",
-                                                            "enum", List.of("dor", "resultado", "prova")
-                                                    ),
-                                                    "visualAngle", Map.of(
-                                                            "type", "string",
-                                                            "enum", List.of("dor", "resultado", "prova")
-                                                    ),
-                                                    "assetType", Map.of(
-                                                            "type", "string",
-                                                            "enum", List.of("estatico", "carrossel", "story-vertical")
-                                                    ),
-                                                    "imageTextMaxWords", Map.of(
-                                                            "type", "integer",
-                                                            "minimum", 3,
-                                                            "maximum", 12
-                                                    ),
-                                                    "visualBriefing", Map.of("type", "string"),
-                                                    "hierarchy", Map.of("type", "string"),
-                                                    "formatByPlacement", Map.of("type", "string"),
-                                                    "safeMargins", Map.of("type", "string"),
-                                                    "complianceNotes", Map.of("type", "string"),
-                                                    "messageMatchNotes", Map.of("type", "string")
-                                            ),
-                                            "required", List.of(
-                                                    "mustMatchAdVariant",
-                                                    "visualAngle",
-                                                    "assetType",
-                                                    "imageTextMaxWords",
-                                                    "visualBriefing",
-                                                    "hierarchy",
-                                                    "formatByPlacement",
-                                                    "safeMargins",
-                                                    "complianceNotes",
-                                                    "messageMatchNotes")
-                                    )
-                            )
-                    ),
-                    "required", List.of("briefings")
-            ), metadataSchema);
+            case CAMPAIGN_ANGLE -> schemaWithMetadata("campaignAngle", campaignAngleFieldSchema(), metadataSchema);
+            case AD_COPY -> schemaWithMetadata("adCopy", adCopyFieldSchema(), metadataSchema);
+            case AD_IMAGE_BRIEFING -> schemaWithMetadata("adImageBriefing", adImageBriefingFieldSchema(), metadataSchema);
             case LANDING_PAGE_COPY -> schemaWithMetadata("landingPageCopy", landingPageCopyFieldSchema(), metadataSchema);
             case LANDING_PAGE_WIREFRAME -> schemaWithMetadata("landingPageWireframe", landingPageWireframeFieldSchema(), metadataSchema);
             case LANDING_PAGE_IMAGE_PLANNING -> schemaWithMetadata(
@@ -2893,6 +2756,155 @@ public class ExperimentPipelineGenerationService {
                     metadataSchema);
             case LANDING_PAGE_HTML -> schemaWithMetadata("landingPageHtml", landingPageHtmlFieldSchema(), metadataSchema);
         };
+    }
+
+    private Map<String, Object> campaignAngleFieldSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "primaryPain", Map.of("type", "string"),
+                        "primaryPromise", Map.of("type", "string"),
+                        "mechanismSummary", Map.of("type", "string"),
+                        "proofSummary", Map.of("type", "string"),
+                        "cta", Map.of("type", "string"),
+                        "singleMindedPromise", Map.of("type", "string"),
+                        "primaryCTA", Map.of("type", "string"),
+                        "landingMatchLine", Map.of("type", "string"),
+                        "tone", Map.of("type", "string"),
+                        "funnelStage", Map.of("type", "string")
+                ),
+                "required", List.of(
+                        "primaryPain",
+                        "primaryPromise",
+                        "mechanismSummary",
+                        "proofSummary",
+                        "cta",
+                        "singleMindedPromise",
+                        "primaryCTA",
+                        "landingMatchLine",
+                        "tone",
+                        "funnelStage")
+        );
+    }
+
+    private Map<String, Object> adCopyFieldSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "primaryTextVariants", Map.of(
+                                "type", "array",
+                                "items", Map.of(
+                                        "type", "object",
+                                        "additionalProperties", false,
+                                        "properties", Map.of(
+                                                "label", Map.of("type", "string"),
+                                                "openingHookType", Map.of(
+                                                        "type", "string",
+                                                        "enum", List.of("dor", "consequência", "resultado", "prova")
+                                                ),
+                                                "placementHint", Map.of(
+                                                        "type", "string",
+                                                        "enum", List.of("feed", "stories/reels")
+                                                ),
+                                                "lengthVariants", Map.of(
+                                                        "type", "object",
+                                                        "additionalProperties", false,
+                                                        "properties", Map.of(
+                                                                "curta", Map.of("type", "string"),
+                                                                "media", Map.of("type", "string"),
+                                                                "longa", Map.of("type", "string")
+                                                        ),
+                                                        "required", List.of("curta", "media", "longa")
+                                                ),
+                                                "primaryText", Map.of("type", "string"),
+                                                "headline", Map.of("type", "string"),
+                                                "description", Map.of("type", "string"),
+                                                "ctaText", Map.of("type", "string"),
+                                                "compliance", Map.of(
+                                                        "type", "object",
+                                                        "additionalProperties", false,
+                                                        "properties", Map.of(
+                                                                "semGarantiaAbsoluta", Map.of("type", "boolean"),
+                                                                "semPromessaIndividual", Map.of("type", "boolean"),
+                                                                "semLinguagemDeConsultoria", Map.of("type", "boolean")
+                                                        ),
+                                                        "required", List.of(
+                                                                "semGarantiaAbsoluta",
+                                                                "semPromessaIndividual",
+                                                                "semLinguagemDeConsultoria")
+                                                )
+                                        ),
+                                        "required", List.of(
+                                                "label",
+                                                "openingHookType",
+                                                "placementHint",
+                                                "lengthVariants",
+                                                "headline",
+                                                "description",
+                                                "ctaText",
+                                                "compliance")
+                                )
+                        )
+                ),
+                "required", List.of("primaryTextVariants")
+        );
+    }
+
+    private Map<String, Object> adImageBriefingFieldSchema() {
+        return Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "briefings", Map.of(
+                                "type", "array",
+                                "minItems", 3,
+                                "maxItems", 3,
+                                "items", Map.of(
+                                        "type", "object",
+                                        "additionalProperties", false,
+                                        "properties", Map.of(
+                                                "mustMatchAdVariant", Map.of(
+                                                        "type", "string",
+                                                        "enum", List.of("dor", "resultado", "prova")
+                                                ),
+                                                "visualAngle", Map.of(
+                                                        "type", "string",
+                                                        "enum", List.of("dor", "resultado", "prova")
+                                                ),
+                                                "assetType", Map.of(
+                                                        "type", "string",
+                                                        "enum", List.of("estatico", "carrossel", "story-vertical")
+                                                ),
+                                                "imageTextMaxWords", Map.of(
+                                                        "type", "integer",
+                                                        "minimum", 3,
+                                                        "maximum", 12
+                                                ),
+                                                "visualBriefing", Map.of("type", "string"),
+                                                "hierarchy", Map.of("type", "string"),
+                                                "formatByPlacement", Map.of("type", "string"),
+                                                "safeMargins", Map.of("type", "string"),
+                                                "complianceNotes", Map.of("type", "string"),
+                                                "messageMatchNotes", Map.of("type", "string")
+                                        ),
+                                        "required", List.of(
+                                                "mustMatchAdVariant",
+                                                "visualAngle",
+                                                "assetType",
+                                                "imageTextMaxWords",
+                                                "visualBriefing",
+                                                "hierarchy",
+                                                "formatByPlacement",
+                                                "safeMargins",
+                                                "complianceNotes",
+                                                "messageMatchNotes")
+                                )
+                        )
+                ),
+                "required", List.of("briefings")
+        );
     }
 
     private Map<String, Object> landingPageImagePlanningFieldSchema() {

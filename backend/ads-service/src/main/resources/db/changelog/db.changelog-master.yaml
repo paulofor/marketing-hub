@@ -1,8 +1,5 @@
 databaseChangeLog:
   - include:
-      file: changesets/2026-04-27-mois-hotmart-daily-collection.yaml
-      relativeToChangelogFile: true
-  - include:
       file: V2037_04_26__widen_experiment_pipeline_job_section_mysql5.sql
       relativeToChangelogFile: true
   - include:

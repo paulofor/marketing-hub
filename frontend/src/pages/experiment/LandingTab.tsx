@@ -18,6 +18,13 @@ type LandingLinks = {
   iframeUrl: string;
 };
 
+type VariantLandingLinks = {
+  variant: string;
+  flowId?: number;
+  standaloneUrl?: string | null;
+  iframeUrl?: string | null;
+};
+
 const leadPortalBaseUrl = import.meta.env.VITE_LEAD_PORTAL_BASE_URL?.trim() || "https://oportunidadebrasil.shop";
 
 function buildLeadPortalUrl(path: string): string {
@@ -61,6 +68,17 @@ function buildLandingLinksFromPublicUrl(publicUrl?: string | null): LandingLinks
   }
 }
 
+function normalizeVariantLabel(variant: string): string {
+  const upper = variant.trim().toUpperCase();
+  if (upper === "LHM") {
+    return "LHM (determinística)";
+  }
+  if (upper === "IA" || upper === "WORKER_IA") {
+    return "IA";
+  }
+  return variant;
+}
+
 export default function LandingTab({ experiment }: LandingTabProps) {
   const { data: landingPages, isLoading, isError } = useLandingPages(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
@@ -68,6 +86,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
   const [pendingLandingId, setPendingLandingId] = useState<number | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedLinks, setPublishedLinks] = useState<LandingLinks | null>(null);
+  const [publishedVariantLinks, setPublishedVariantLinks] = useState<VariantLandingLinks[]>([]);
 
   const sortedLandingPages = useMemo(() => {
     if (!Array.isArray(landingPages)) {
@@ -109,8 +128,14 @@ export default function LandingTab({ experiment }: LandingTabProps) {
         publicUrl?: string | null;
         facebookPixelId?: string | null;
         pixelAppliedAutomatically?: boolean;
+        variantLinks?: VariantLandingLinks[] | null;
       }>(`/api/experiments/${experiment.id}/pipeline/landing-page-html/approve-and-publish`);
       setPublishedLinks(buildLandingLinksFromPublicUrl(data?.publicUrl));
+      setPublishedVariantLinks(
+        Array.isArray(data?.variantLinks)
+          ? data.variantLinks.filter((item) => item?.standaloneUrl || item?.iframeUrl)
+          : [],
+      );
 
       const pixelFeedback =
         data?.pixelAppliedAutomatically && data.facebookPixelId
@@ -235,6 +260,36 @@ export default function LandingTab({ experiment }: LandingTabProps) {
               >
                 {experimentApprovedLinks.iframeUrl}
               </a>
+            </div>
+          ) : null}
+          {publishedVariantLinks.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-muted small mb-1">Variantes públicas (LHM + IA)</p>
+              {publishedVariantLinks.map((variantLink) => (
+                <div key={`${variantLink.variant}-${variantLink.flowId ?? "flow"}`} className="mb-2">
+                  <p className="small fw-semibold mb-1">{normalizeVariantLabel(variantLink.variant)}</p>
+                  {variantLink.standaloneUrl ? (
+                    <a
+                      href={variantLink.standaloneUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="small text-break d-block"
+                    >
+                      Standalone: {variantLink.standaloneUrl}
+                    </a>
+                  ) : null}
+                  {variantLink.iframeUrl ? (
+                    <a
+                      href={variantLink.iframeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="small text-break d-block"
+                    >
+                      Iframe: {variantLink.iframeUrl}
+                    </a>
+                  ) : null}
+                </div>
+              ))}
             </div>
           ) : null}
         </div>

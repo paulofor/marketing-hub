@@ -17,6 +17,7 @@ import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobD
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobSummaryDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
+import com.marketinghub.experiment.pipeline.dto.LandingPageVariantLinksDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
@@ -33,6 +34,7 @@ import com.marketinghub.openai.OpenAiResponse;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,6 +64,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.core.NestedExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -368,43 +371,127 @@ public class ExperimentPipelineGenerationService {
 
     @Transactional
     public LandingPagePublicationResultDto approveAndPublishLandingPage(Long experimentId) {
-        ExperimentDto experimentDto = applyLandingHtmlToLeadPortalForm(experimentId);
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
-        LeadPortalFlow flowRef = experiment.getLeadPortalFlow();
-        if (flowRef == null || flowRef.getId() == null) {
+        if (!StringUtils.hasText(experiment.getLandingPageHtml())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Fluxo de landing não foi criado para este experimento");
+                    "Landing HTML ainda não foi gerado para este experimento");
         }
-        LeadPortalFlow flow = leadPortalFlowRepository.findById(flowRef.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fluxo do Lead Portal não encontrado"));
-        flow.setApproved(true);
-        if (flow.getApprovedAt() == null) {
-            flow.setApprovedAt(Instant.now());
+        ExperimentPipelineGenerationJob latestLhmJob = jobRepository
+                .findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
+                        experimentId,
+                        ExperimentPipelineSection.LANDING_PAGE_HTML,
+                        ExperimentPipelineGenerationJobStatus.COMPLETED,
+                        LHM_MODEL)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "HTML determinístico (LHM) não encontrado. Gere novamente em 'LHM + IA' antes de publicar."));
+        String lhmHtml = firstNonBlank(latestLhmJob.getResponseContent(), latestLhmJob.getRawResponse());
+        if (!StringUtils.hasText(lhmHtml)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "HTML determinístico (LHM) está vazio. Gere novamente em 'LHM + IA' antes de publicar.");
         }
-        LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
-        try {
-            leadPortalFlowPublisher.publish(saved);
-        } catch (LeadPortalPublicationException ex) {
-            String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
-            String message = StringUtils.hasText(rootCauseMessage)
-                    ? "Falha ao aprovar/publicar landing automaticamente: " + rootCauseMessage
-                    : "Falha ao aprovar/publicar landing automaticamente";
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, message, ex);
+        LeadPortalFlow iaFlow = upsertLandingVariantFlow(experiment, "ia", "WORKER_IA", experiment.getLandingPageHtml());
+        LeadPortalFlow lhmFlow = upsertLandingVariantFlow(experiment, "lhm", LHM_MODEL, lhmHtml);
+
+        for (LeadPortalFlow flow : List.of(iaFlow, lhmFlow)) {
+            flow.setApproved(true);
+            if (flow.getApprovedAt() == null) {
+                flow.setApprovedAt(Instant.now());
+            }
+            leadPortalFlowRepository.save(flow);
+            try {
+                leadPortalFlowPublisher.publish(flow);
+            } catch (LeadPortalPublicationException ex) {
+                String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
+                String message = StringUtils.hasText(rootCauseMessage)
+                        ? "Falha ao aprovar/publicar landing automaticamente: " + rootCauseMessage
+                        : "Falha ao aprovar/publicar landing automaticamente";
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, message, ex);
+            }
         }
-        String pixelId = saved.getMarketNiche() != null ? saved.getMarketNiche().getFacebookPixelId() : null;
-        Long publicationExperimentId = experimentDto != null && experimentDto.getId() != null
-                ? experimentDto.getId()
-                : experimentId;
+        experiment.setLeadPortalFlow(iaFlow);
+        experiment.setSchemaFirstLeadPortalEnabled(true);
+        experimentRepository.save(experiment);
+
+        List<LandingPageVariantLinksDto> variantLinks = List.of(
+                toVariantLinks("IA", iaFlow),
+                toVariantLinks("LHM", lhmFlow));
+
+        String pixelId = iaFlow.getMarketNiche() != null ? iaFlow.getMarketNiche().getFacebookPixelId() : null;
         return new LandingPagePublicationResultDto(
-                publicationExperimentId,
-                saved.getId(),
-                saved.isApproved(),
+                experimentId,
+                iaFlow.getId(),
+                iaFlow.isApproved() && lhmFlow.isApproved(),
                 true,
-                leadPortalPublicUrlResolver.resolve(saved),
+                leadPortalPublicUrlResolver.resolve(iaFlow),
+                variantLinks,
                 pixelId,
                 StringUtils.hasText(pixelId),
                 "Landing aprovada e publicação iniciada automaticamente após a aprovação.");
+    }
+
+    private LeadPortalFlow upsertLandingVariantFlow(Experiment experiment,
+                                                    String variantKey,
+                                                    String model,
+                                                    String landingHtml) {
+        Long experimentId = experiment.getId();
+        String variantSuffix = normalizeSlug(variantKey);
+        String slug = "exp-" + experimentId + "-landing-" + variantSuffix;
+        LeadPortalFlow flow = leadPortalFlowRepository.findBySlug(slug).orElseGet(() -> LeadPortalFlow.builder()
+                .name("Landing " + variantKey.toUpperCase(Locale.ROOT) + " - Experimento " + experimentId)
+                .slug(slug)
+                .description("Fluxo criado automaticamente para a variação " + variantKey.toUpperCase(Locale.ROOT)
+                        + " da landing page do experimento " + experimentId)
+                .prompt("Pipeline: landing-page-html/approve-and-publish")
+                .schemaFirst(true)
+                .experiment(experiment)
+                .marketNiche(experiment.getNiche())
+                .build());
+        String htmlWithImages = landingPageImageInjector.injectImages(experimentId, landingHtml);
+        flow.setCustomFormHtml(htmlWithImages != null ? htmlWithImages.trim() : null);
+        flow.setSchemaFirst(true);
+        flow.setModel(model);
+        flow.setExperiment(experiment);
+        flow.setMarketNiche(experiment.getNiche());
+        return leadPortalFlowRepository.save(flow);
+    }
+
+    private LandingPageVariantLinksDto toVariantLinks(String variant, LeadPortalFlow flow) {
+        String iframeUrl = leadPortalPublicUrlResolver.resolve(flow);
+        return new LandingPageVariantLinksDto(
+                variant,
+                flow.getId(),
+                iframeUrl,
+                resolveStandaloneLandingUrl(iframeUrl));
+    }
+
+    private String resolveStandaloneLandingUrl(String iframeUrl) {
+        if (!StringUtils.hasText(iframeUrl)) {
+            return null;
+        }
+        try {
+            URI parsed = URI.create(iframeUrl);
+            String path = parsed.getPath();
+            if (!StringUtils.hasText(path)) {
+                return null;
+            }
+            String[] segments = path.split("/");
+            String slug = segments.length == 0 ? "" : segments[segments.length - 1];
+            if (!StringUtils.hasText(slug)) {
+                return null;
+            }
+            return UriComponentsBuilder.newInstance()
+                    .scheme(parsed.getScheme())
+                    .host(parsed.getHost())
+                    .port(parsed.getPort())
+                    .path("/api/flows/{slug}/page")
+                    .buildAndExpand(slug)
+                    .toUriString();
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 
     private LeadPortalFlow createLeadPortalFlowFromLandingHtml(Experiment experiment) {

@@ -29,6 +29,12 @@ Regras fixas da etapa:
 14. A seção de oferta deve acomodar `entryAsset` e `coreOffer` quando ambos existirem, sem assumir nomes fixos.
 15. Se não houver distinção clara entre ativo inicial e oferta principal, projetar seção única coerente (sem forçar duas camadas artificiais).
 16. Não usar nomenclaturas internas (`entryAsset`, `coreOffer` etc.) como rótulo visível do wireframe; usar linguagem comercial apropriada ao caso.
+17. Preencher obrigatoriamente `readingFlowSpec`, `conversionPathSpec`, `proofPlan`, `trustSignalsSpec` e `accessibilitySpec` (ausência bloqueia aprovação no backend).
+18. Em `readingFlowSpec`, garantir `maxParagraphLinesMobile <= 4` e `bulletDensityPerSection >= 3` (especialmente em argumento/prova).
+19. Em `conversionPathSpec`, manter continuidade com CTA principal da copy (`primaryAction` + `ctaLabelCanonical`) e listar variações apenas em `ctaLabelVariantsAllowed`.
+20. Em `proofPlan`, incluir pelo menos 2 tipos distintos de prova e mapear `proofSectionIds` apenas para seções existentes em `sectionOrder`.
+21. Em `trustSignalsSpec`, para páginas com formulário: `brandIdentityRequired=true`, `privacyNoticeNearForm=true`, `privacyPolicyUrl` preenchida e `legalFooterItems` com empresa/contato/política.
+22. Em `accessibilitySpec`, respeitar mínimos canônicos: `minTextContrast` >= 4.5:1, `minTouchTargetPx` >= 44 e `formFieldMinHeightPx` >= 44.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -42,6 +48,11 @@ Campos obrigatórios:
 - mobilePriorityNotes
 - ctaPlacementNotes
 - formPlacementNotes
+- readingFlowSpec
+- conversionPathSpec
+- proofPlan
+- trustSignalsSpec
+- accessibilitySpec
 - consistencyChecks[]
 - formSpec
 

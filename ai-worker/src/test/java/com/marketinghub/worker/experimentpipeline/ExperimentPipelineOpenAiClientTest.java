@@ -196,10 +196,14 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("mobilePriorityScore");
         assertThat(userPrompt).contains("dropOffRisk");
         assertThat(userPrompt).contains("sectionOrder");
-        assertThat(userPrompt).contains("messageMatchSummary");
         assertThat(userPrompt).contains("ctaSlot");
-        assertThat(userPrompt).contains("backgroundColorStrategy");
-        assertThat(userPrompt).contains("textImageBalanceNotes");
+        assertThat(userPrompt).contains("readingFlowSpec");
+        assertThat(userPrompt).contains("conversionPathSpec");
+        assertThat(userPrompt).contains("proofPlan");
+        assertThat(userPrompt).contains("trustSignalsSpec");
+        assertThat(userPrompt).contains("accessibilitySpec");
+        assertThat(userPrompt).contains("maxParagraphLinesMobile <= 4");
+        assertThat(userPrompt).contains("bulletDensityPerSection >= 3");
     }
 
     @Test

@@ -1275,6 +1275,7 @@ public class ExperimentPipelineGenerationService {
         }
 
         if (section == ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING) {
+            List<String> wireframeSectionIds = loadWireframeSectionIds(experiment);
             sb.append("\nDiretriz específica para Planejamento de Imagens da Landing:\n");
             sb.append(COMMON_CAMPAIGN_ASSET_RULES).append("\n");
             sb.append("Contexto do nicho: ").append(niche).append("\n");
@@ -1287,6 +1288,11 @@ public class ExperimentPipelineGenerationService {
             appendIfPresent(sb, "Linha de match com landing", landingMatchLine);
             sb.append("\nObjetivo:\n");
             sb.append("Planejar todas as imagens da landing antes do HTML final, conectando ângulo da campanha, copy da landing e layout aprovado.\n\n");
+            if (!wireframeSectionIds.isEmpty()) {
+                sb.append("Checklist de cobertura obrigatório (wireframe.sectionOrder):\n");
+                sb.append("- sectionId obrigatórias: ").append(String.join(", ", wireframeSectionIds)).append("\n");
+                sb.append("- Antes de responder, confirme que images[].sectionId contém exatamente esta lista (sem faltas e sem excedentes).\n\n");
+            }
             sb.append("Regras:\n");
             sb.append("1. images[] deve ter no mínimo 4 itens com sectionId e sectionName existentes no wireframe.\n");
             sb.append("2. Cada item precisa trazer imagePrompt, objective, visualStyle, composition, focalPoint, supportingElements e mood.\n");
@@ -1396,6 +1402,36 @@ public class ExperimentPipelineGenerationService {
                     .append("\n");
         }
         sb.append("Para cada imagem acima, declare data-image-section-id, data-image-binding-key, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n");
+    }
+
+    private List<String> loadWireframeSectionIds(Experiment experiment) {
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> root = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+            Map<String, Object> payload = unwrapSectionPayload(root, "landingPageWireframe");
+            if (!(payload.get("sectionOrder") instanceof List<?> rawSections)) {
+                return List.of();
+            }
+            Set<String> sectionIds = new LinkedHashSet<>();
+            for (Object rawSection : rawSections) {
+                if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
+                    continue;
+                }
+                String sectionId = asTrimmedString(rawSectionMap.get("sectionId"));
+                if (StringUtils.hasText(sectionId)) {
+                    sectionIds.add(sectionId);
+                }
+            }
+            return List.copyOf(sectionIds);
+        } catch (ResponseStatusException ex) {
+            log.warn("Falha ao carregar sectionId do wireframe para checklist do prompt: {}", ex.getReason());
+            return List.of();
+        } catch (RuntimeException ex) {
+            log.warn("Falha inesperada ao carregar sectionId do wireframe para checklist do prompt: {}", ex.getMessage());
+            return List.of();
+        }
     }
 
     private List<ImagePlanBindingContract> loadImagePlanBindings(Experiment experiment) {

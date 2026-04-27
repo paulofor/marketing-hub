@@ -200,6 +200,9 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("readingFlowSpec");
         assertThat(userPrompt).contains("conversionPathSpec");
         assertThat(userPrompt).contains("proofPlan");
+        assertThat(userPrompt).contains("Para evitar erro 422");
+        assertThat(userPrompt).contains("copie os `sectionId` literalmente de `sectionOrder`");
+        assertThat(userPrompt).contains("match 1:1");
         assertThat(userPrompt).contains("trustSignalsSpec");
         assertThat(userPrompt).contains("accessibilitySpec");
         assertThat(userPrompt).contains("maxParagraphLinesMobile <= 4");
@@ -1127,6 +1130,47 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
         assertThat(readCheckStatus(html, "SECTION_THEME_VARIATION")).isEqualTo("FAIL");
         assertThat(readCheckStatus(html, "PREVIEW_CONCRETENESS")).isEqualTo("WARN");
+    }
+
+    @Test
+    void sanitizesWireframeProofPlanSectionIdsBeforeCompletion() throws Exception {
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageWireframe", Map.of(
+                        "pageGoal", "captura",
+                        "variantLayoutId", "form-first",
+                        "sectionOrder", List.of(
+                                Map.of("sectionId", "hero-message-match", "surfaceSpec",
+                                        Map.of("surfaceToken", "surface-hero", "style", "solid", "contrastMode", "high")),
+                                Map.of("sectionId", "proof-packshot-preview", "surfaceSpec",
+                                        Map.of("surfaceToken", "surface-proof", "style", "band", "contrastMode", "normal"))),
+                        "proofPlan", Map.of(
+                                "requiredProofTypes", List.of("Prévia visual", "Aplicação prática"),
+                                "proofSectionIds", List.of("proof-previa-pdf-minikit", "proof-packshot-preview"),
+                                "proofContinuityNotes", "ok"),
+                        "consistencyChecks", List.of()
+                )));
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                36L,
+                "landing-page-wireframe",
+                "gpt-5.2",
+                "prompt",
+                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}",
+                Instant.now()));
+
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> wireframe = (Map<String, Object>) content.get("landingPageWireframe");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> proofPlan = (Map<String, Object>) wireframe.get("proofPlan");
+        assertThat(proofPlan.get("proofSectionIds"))
+                .isEqualTo(List.of("proof-packshot-preview"));
     }
 
     @Test

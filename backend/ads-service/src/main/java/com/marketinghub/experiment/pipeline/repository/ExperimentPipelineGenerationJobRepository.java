@@ -7,6 +7,7 @@ import com.marketinghub.experiment.ExperimentStatus;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,12 @@ public interface ExperimentPipelineGenerationJobRepository extends JpaRepository
     List<ExperimentPipelineGenerationJob> findByExperimentIdAndStatusInOrderByCreatedAtDesc(
             Long experimentId,
             Collection<ExperimentPipelineGenerationJobStatus> statuses);
+
+    Optional<ExperimentPipelineGenerationJob> findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
+            Long experimentId,
+            ExperimentPipelineSection section,
+            ExperimentPipelineGenerationJobStatus status,
+            String model);
 
     List<ExperimentPipelineGenerationJob> findByStatusOrderByCreatedAtAsc(ExperimentPipelineGenerationJobStatus status,
                                                                           Pageable pageable);

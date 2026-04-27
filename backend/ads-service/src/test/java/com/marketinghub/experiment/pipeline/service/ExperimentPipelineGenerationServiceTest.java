@@ -368,27 +368,42 @@ class ExperimentPipelineGenerationServiceTest {
 
     @Test
     void approveAndPublishLandingPageReturnsPublicationFeedback() {
-        LeadPortalFlow linkedFlow = new LeadPortalFlow();
-        linkedFlow.setId(902L);
-        linkedFlow.setSlug("exp-22-landing");
-        linkedFlow.setApproved(false);
+        LeadPortalFlow iaFlow = new LeadPortalFlow();
+        iaFlow.setId(902L);
+        iaFlow.setSlug("exp-22-landing-ia");
+        iaFlow.setApproved(false);
+
+        LeadPortalFlow lhmFlow = new LeadPortalFlow();
+        lhmFlow.setId(903L);
+        lhmFlow.setSlug("exp-22-landing-lhm");
+        lhmFlow.setApproved(false);
 
         MarketNiche niche = new MarketNiche();
         niche.setFacebookPixelId("pixel-abc");
-        linkedFlow.setMarketNiche(niche);
+        iaFlow.setMarketNiche(niche);
+        lhmFlow.setMarketNiche(niche);
 
         Experiment experiment = new Experiment();
         experiment.setId(22L);
-        experiment.setLandingPageHtml("<section>ok</section>");
-        experiment.setLeadPortalFlow(linkedFlow);
+        experiment.setNiche(niche);
+        experiment.setLandingPageHtml("<section>ia</section>");
 
+        ExperimentPipelineGenerationJob lhmJob = new ExperimentPipelineGenerationJob();
+        lhmJob.setResponseContent("<section>lhm</section>");
         when(experimentRepository.findById(22L)).thenReturn(Optional.of(experiment));
-        when(leadPortalFlowRepository.findById(902L)).thenReturn(Optional.of(linkedFlow));
+        when(jobRepository.findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
+                22L,
+                ExperimentPipelineSection.LANDING_PAGE_HTML,
+                ExperimentPipelineGenerationJobStatus.COMPLETED,
+                "LHM")).thenReturn(Optional.of(lhmJob));
+        when(leadPortalFlowRepository.findBySlug("exp-22-landing-ia")).thenReturn(Optional.of(iaFlow));
+        when(leadPortalFlowRepository.findBySlug("exp-22-landing-lhm")).thenReturn(Optional.of(lhmFlow));
         when(leadPortalFlowRepository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
-        when(landingPageImageInjector.injectImages(22L, "<section>ok</section>")).thenReturn("<section>ok</section>");
-        when(leadPortalPublicUrlResolver.resolve(any(LeadPortalFlow.class)))
-                .thenReturn("https://lead.portal/flows/exp-22-landing");
+        when(experimentRepository.save(any(Experiment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(landingPageImageInjector.injectImages(22L, "<section>ia</section>")).thenReturn("<section>ia</section>");
+        when(landingPageImageInjector.injectImages(22L, "<section>lhm</section>")).thenReturn("<section>lhm</section>");
+        when(leadPortalPublicUrlResolver.resolve(iaFlow)).thenReturn("https://lead.portal/flows/exp-22-landing-ia");
+        when(leadPortalPublicUrlResolver.resolve(lhmFlow)).thenReturn("https://lead.portal/flows/exp-22-landing-lhm");
 
         LandingPagePublicationResultDto result = service.approveAndPublishLandingPage(22L);
 
@@ -397,8 +412,13 @@ class ExperimentPipelineGenerationServiceTest {
         assertTrue(result.published());
         assertTrue(result.pixelAppliedAutomatically());
         assertEquals("pixel-abc", result.facebookPixelId());
-        assertEquals("https://lead.portal/flows/exp-22-landing", result.publicUrl());
-        verify(leadPortalFlowPublisher, times(1)).publish(any(LeadPortalFlow.class));
+        assertEquals("https://lead.portal/flows/exp-22-landing-ia", result.publicUrl());
+        assertEquals(2, result.variantLinks().size());
+        assertEquals("IA", result.variantLinks().get(0).variant());
+        assertEquals("https://lead.portal/api/flows/exp-22-landing-ia/page", result.variantLinks().get(0).standaloneUrl());
+        assertEquals("LHM", result.variantLinks().get(1).variant());
+        assertEquals("https://lead.portal/api/flows/exp-22-landing-lhm/page", result.variantLinks().get(1).standaloneUrl());
+        verify(leadPortalFlowPublisher, times(2)).publish(any(LeadPortalFlow.class));
     }
 
     @Test

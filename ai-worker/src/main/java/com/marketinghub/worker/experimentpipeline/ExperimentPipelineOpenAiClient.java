@@ -273,7 +273,6 @@ public class ExperimentPipelineOpenAiClient {
             }
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = parseResponseContent(content, job);
-            sanitizeLandingWireframeProofPlan(parsed, job);
             enforceLandingHtmlSurfaceBinding(parsed, payload, job, content);
             validateExpectedResponseContract(parsed, content, job);
             enrichConsistencyChecks(parsed, job);
@@ -551,62 +550,6 @@ public class ExperimentPipelineOpenAiClient {
             throw new IllegalStateException(reason);
         }
         landingPayload.put(LANDING_HTML_MARKER, synchronizedHtml);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void sanitizeLandingWireframeProofPlan(Map<String, Object> parsed, ExperimentPipelineJobDto job) {
-        if (!isLandingLayoutSection(job) || parsed == null) {
-            return;
-        }
-        Map<String, Object> wireframe = parsed.get("landingPageWireframe") instanceof Map<?, ?> nested
-                ? (Map<String, Object>) nested
-                : parsed;
-        if (!(wireframe.get("sectionOrder") instanceof List<?> sections) || sections.isEmpty()) {
-            return;
-        }
-        Set<String> existingSectionIds = new LinkedHashSet<>();
-        for (Object section : sections) {
-            if (section instanceof Map<?, ?> map) {
-                String sectionId = readString((Map<String, Object>) map, "sectionId");
-                if (StringUtils.hasText(sectionId)) {
-                    existingSectionIds.add(sectionId.trim());
-                }
-            }
-        }
-        if (existingSectionIds.isEmpty()) {
-            return;
-        }
-        if (!(wireframe.get("proofPlan") instanceof Map<?, ?> rawProofPlan)) {
-            return;
-        }
-        Map<String, Object> proofPlan = (Map<String, Object>) rawProofPlan;
-        if (!(proofPlan.get("proofSectionIds") instanceof List<?> rawProofSectionIds)) {
-            return;
-        }
-        List<String> sanitizedProofSectionIds = new ArrayList<>();
-        for (Object item : rawProofSectionIds) {
-            if (!(item instanceof String sectionId) || !StringUtils.hasText(sectionId)) {
-                continue;
-            }
-            String normalizedId = sectionId.trim();
-            if (existingSectionIds.contains(normalizedId) && !sanitizedProofSectionIds.contains(normalizedId)) {
-                sanitizedProofSectionIds.add(normalizedId);
-            }
-        }
-        if (sanitizedProofSectionIds.isEmpty()) {
-            String fallbackSectionId = existingSectionIds.stream()
-                    .filter(id -> id.toLowerCase(Locale.ROOT).contains("proof"))
-                    .findFirst()
-                    .orElse(existingSectionIds.iterator().next());
-            sanitizedProofSectionIds.add(fallbackSectionId);
-        }
-        if (!sanitizedProofSectionIds.equals(rawProofSectionIds)) {
-            log.warn("Wireframe proofPlan.proofSectionIds ajustado para seções existentes (jobId={}, before={}, after={})",
-                    job != null ? job.id() : null,
-                    rawProofSectionIds,
-                    sanitizedProofSectionIds);
-            proofPlan.put("proofSectionIds", sanitizedProofSectionIds);
-        }
     }
 
     @SuppressWarnings("unchecked")

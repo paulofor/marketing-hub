@@ -1912,6 +1912,16 @@ export default function ExperimentContentGenerationTab({
     }
 
     const [nextSectionKey, ...remaining] = autoQueue.pending;
+    const nextSectionRequest = mergedRequestsBySection[nextSectionKey];
+    if (nextSectionRequest.status !== "IDLE") {
+      setAutoQueue({
+        isActive: true,
+        waitingFor: nextSectionKey,
+        pending: remaining,
+      });
+      return;
+    }
+
     if (
       autoQueue.waitingFor === "landing-image-planning" &&
       (nextSectionKey === "landing-design-preset" ||

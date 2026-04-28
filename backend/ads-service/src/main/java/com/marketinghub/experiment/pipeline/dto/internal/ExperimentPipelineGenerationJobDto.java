@@ -18,6 +18,8 @@ public record ExperimentPipelineGenerationJobDto(
         String model,
         String prompt,
         String requestBodyJson,
+        String rawResponse,
+        String openAiResponseId,
         Instant createdAt,
         Instant startedAt,
         Instant finishedAt) {

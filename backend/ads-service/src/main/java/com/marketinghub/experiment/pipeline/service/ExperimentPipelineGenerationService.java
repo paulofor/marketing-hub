@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.pipeline.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
@@ -2513,6 +2514,7 @@ public class ExperimentPipelineGenerationService {
     }
 
     private ExperimentPipelineGenerationJobDto toDto(ExperimentPipelineGenerationJob job) {
+        String rawResponse = job.getRawResponse();
         return ExperimentPipelineGenerationJobDto.builder()
                 .id(job.getId())
                 .experimentId(job.getExperiment().getId())
@@ -2524,10 +2526,29 @@ public class ExperimentPipelineGenerationService {
                 .model(job.getModel())
                 .prompt(job.getPrompt())
                 .requestBodyJson(job.getRequestBodyJson())
+                .rawResponse(rawResponse)
+                .openAiResponseId(extractOpenAiResponseId(rawResponse))
                 .createdAt(job.getCreatedAt())
                 .startedAt(job.getStartedAt())
                 .finishedAt(job.getFinishedAt())
                 .build();
+    }
+
+    private String extractOpenAiResponseId(String rawResponse) {
+        if (!StringUtils.hasText(rawResponse)) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(rawResponse);
+            JsonNode idNode = root.get("id");
+            if (idNode != null && idNode.isTextual()) {
+                String id = idNode.asText().trim();
+                return id.startsWith("resp_") ? id : null;
+            }
+        } catch (Exception ex) {
+            log.debug("Falha ao extrair OpenAI response id do raw_response: {}", ex.getMessage());
+        }
+        return null;
     }
 
     private Integer totalTokens(Integer inputTokens, Integer outputTokens) {

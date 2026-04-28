@@ -1260,53 +1260,143 @@ public class MoisDomainService {
         boolean hasFailure = false;
         int retries = 0;
         long totalLatencyMs = 0;
+        int safeLimitPerSource = Math.max(1, job.limitPerSource());
+        collectedReferencesByJob.put(job.jobId(), new ArrayList<>());
         for (String source : job.sources()) {
-            index++;
-            SourceExecutionOutcome outcome = executeSourceCollection(job.workspaceId(), source, index);
+            String normalizedSource = source == null ? "UNKNOWN" : source.trim().toUpperCase();
+            SourceExecutionOutcome outcome = executeSourceCollection(job.workspaceId(), source, index + 1);
             retries += outcome.retries();
             totalLatencyMs += outcome.latencyMs();
             if (!outcome.success()) {
                 hasFailure = true;
                 continue;
             }
-            SourceMetricSnapshot metrics = buildSourceMetricSnapshot(job, source, index);
-            NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
-            items.add(new MoisWorkspaceDtos.CollectedReferenceResponse(
-                    UUID.randomUUID().toString(),
-                    job.jobId(),
-                    source,
-                    "Referência " + index + " (" + source + ")",
-                    "https://example.com/" + source.toLowerCase() + "/offer-" + index,
-                    niche,
-                    "ACTIVE",
-                    false,
-                    null,
-                    normalized.successScore(),
-                    normalized.successSignal(),
-                    normalized.confidenceLevel(),
-                    index,
-                    normalized.engagementRelative(),
-                    normalized.recurrenceScore(),
-                    normalized.evidenceScore(),
-                    job.createdAt().minusSeconds(index * 120L),
-                    Map.of(
-                            "status", "ACTIVE",
-                            "timeWindow", job.timeWindow(),
-                            "attempts", String.valueOf(outcome.attempts()),
-                            "retries", String.valueOf(outcome.retries()),
-                            "latencyMs", String.valueOf(outcome.latencyMs()),
-                            "engagementRaw", String.valueOf(metrics.engagementRaw()),
-                            "recurrenceRaw", String.valueOf(metrics.recurrenceRaw()),
-                            "evidenceRaw", String.valueOf(metrics.evidenceRaw()),
-                            "normalizationPolicy", "v1:0.45*engagement+0.35*recurrence+0.20*evidence"
-                    )
-            ));
+            List<String> sourceUrls = resolveSourceUrls(normalizedSource, niche, safeLimitPerSource);
+            for (int sourceRank = 1; sourceRank <= safeLimitPerSource; sourceRank++) {
+                index++;
+                SourceMetricSnapshot metrics = buildSourceMetricSnapshot(job, source, index);
+                NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
+                String sourceUrl = sourceRank <= sourceUrls.size()
+                        ? sourceUrls.get(sourceRank - 1)
+                        : buildCollectionSourceUrl(normalizedSource, niche, sourceRank);
+                MoisWorkspaceDtos.CollectedReferenceResponse item = buildCollectedReference(
+                        job,
+                        normalizedSource,
+                        niche,
+                        sourceUrl,
+                        index,
+                        sourceRank,
+                        outcome,
+                        metrics,
+                        normalized
+                );
+                items.add(item);
+                collectedReferencesByJob.put(job.jobId(), reRank(items));
+                persistCollectionState(job.jobId());
+            }
         }
         return new CollectionExecutionResult(
                 reRank(items),
                 hasFailure,
                 new CollectionJobRuntimeStats(job.jobId(), retries, totalLatencyMs, Instant.now())
         );
+    }
+
+    private MoisWorkspaceDtos.CollectedReferenceResponse buildCollectedReference(
+            MoisWorkspaceDtos.CollectionJobResponse job,
+            String source,
+            String niche,
+            String sourceUrl,
+            int globalIndex,
+            int sourceRank,
+            SourceExecutionOutcome outcome,
+            SourceMetricSnapshot metrics,
+            NormalizedSuccessSignal normalized
+    ) {
+        String title = "HOTMART".equals(source)
+                ? "Oferta Hotmart #" + sourceRank + " • " + trimTo(niche, 50)
+                : "Referência " + sourceRank + " (" + source + ")";
+        return new MoisWorkspaceDtos.CollectedReferenceResponse(
+                UUID.randomUUID().toString(),
+                job.jobId(),
+                source,
+                title,
+                sourceUrl,
+                niche,
+                "ACTIVE",
+                false,
+                null,
+                normalized.successScore(),
+                normalized.successSignal(),
+                normalized.confidenceLevel(),
+                globalIndex,
+                normalized.engagementRelative(),
+                normalized.recurrenceScore(),
+                normalized.evidenceScore(),
+                job.createdAt().minusSeconds(globalIndex * 120L),
+                Map.of(
+                        "status", "ACTIVE",
+                        "timeWindow", job.timeWindow(),
+                        "attempts", String.valueOf(outcome.attempts()),
+                        "retries", String.valueOf(outcome.retries()),
+                        "latencyMs", String.valueOf(outcome.latencyMs()),
+                        "engagementRaw", String.valueOf(metrics.engagementRaw()),
+                        "recurrenceRaw", String.valueOf(metrics.recurrenceRaw()),
+                        "evidenceRaw", String.valueOf(metrics.evidenceRaw()),
+                        "normalizationPolicy", "v1:0.45*engagement+0.35*recurrence+0.20*evidence"
+                )
+        );
+    }
+
+    private List<String> resolveSourceUrls(String source, String niche, int limitPerSource) {
+        if ("HOTMART".equals(source)) {
+            List<String> hotmartUrls = fetchHotmartProductUrls(niche, limitPerSource);
+            if (!hotmartUrls.isEmpty()) {
+                return hotmartUrls;
+            }
+        }
+        List<String> fallback = new ArrayList<>();
+        for (int sourceRank = 1; sourceRank <= limitPerSource; sourceRank++) {
+            fallback.add(buildCollectionSourceUrl(source, niche, sourceRank));
+        }
+        return fallback;
+    }
+
+    private List<String> fetchHotmartProductUrls(String niche, int limitPerSource) {
+        String marketplaceUrl = buildCollectionSourceUrl("HOTMART", niche, 1);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(marketplaceUrl))
+                    .GET()
+                    .timeout(Duration.ofSeconds(10))
+                    .header("User-Agent", "Mozilla/5.0 (compatible; MarketingHub-MOIS/1.0)")
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null) {
+                return List.of();
+            }
+            Pattern linkPattern = Pattern.compile("\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\"");
+            Matcher matcher = linkPattern.matcher(response.body());
+            List<String> links = new ArrayList<>();
+            while (matcher.find() && links.size() < limitPerSource) {
+                String decoded = matcher.group(1).replace("\\/", "/").replace("\\u0026", "&");
+                if (!links.contains(decoded)) {
+                    links.add(decoded);
+                }
+            }
+            return links;
+        } catch (Exception ex) {
+            log.warn("mois_hotmart_product_url_fetch_failed niche={} reason={}", niche, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    private String buildCollectionSourceUrl(String source, String niche, int sourceRank) {
+        String encodedNiche = URLEncoder.encode(niche == null ? "" : niche, StandardCharsets.UTF_8);
+        if ("HOTMART".equals(source)) {
+            return "https://www.hotmart.com/pt-br/marketplace?query=" + encodedNiche + "&page=" + sourceRank;
+        }
+        return "https://example.com/" + source.toLowerCase() + "/offer-" + sourceRank;
     }
 
     private SourceExecutionOutcome executeSourceCollection(String workspaceId, String source, int index) {

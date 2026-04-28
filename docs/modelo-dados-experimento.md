@@ -140,6 +140,7 @@ Regras operacionais associadas:
 - o backend principal passa a oferecer gatilho manual (`POST /api/v1/mois/hotmart-collection-runs/trigger`) e histórico (`GET /api/v1/mois/hotmart-collection-runs`) para a coleta do Hotmart;
 - o agendamento diário usa o contrato já existente de `collection-jobs` do MOIS, com filtro de temperatura via `minSuccessScore` configurável;
 - cada tentativa do robô deve ser persistida (sucesso ou falha) para auditoria operacional e rastreabilidade de execução.
+- o estado consolidado de cada `collection-job` (job, referências, lineage e runtime) deve ser persistido no backend principal em `mois_collection_job_state`, eliminando dependência de memória volátil no serviço de persistência.
 
 ## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
 

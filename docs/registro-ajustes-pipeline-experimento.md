@@ -75,6 +75,149 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0007 — LANDING_PAGE_HTML com contrato de saída em HTML puro (sem JSON)
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Revisão de contrato para etapa `LANDING_PAGE_HTML`
+
+#### 1) Erro observado
+- **Sintoma:** retorno do modelo em JSON (ou JSON malformado) para uma etapa cujo artefato final precisa ser documento HTML completo.
+- **Endpoint/rota/fila:** consumo de resposta da OpenAI no `ExperimentPipelineOpenAiClient`.
+- **Status code:** n/a (erro de contrato no worker).
+- **Mensagem de erro literal:** variava entre parsing JSON e quebra de contrato de conteúdo.
+- **Payload enviado (literal):** respostas com envelope JSON contendo `htmlDocument` ao invés de resposta HTML pura.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado nesta revisão local.
+- **Dados de banco consultados via MCP:** não aplicável.
+- **Trecho canônico consultado:** artefato `LANDING_PAGE_HTML` em `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`.
+- **Validação/regra que rejeitou:** validação local do worker para seção `LANDING_PAGE_HTML`.
+- **Causa raiz:** contrato de prompt permitia deriva para JSON, aumentando risco de `json dentro de campo texto de json` e parse frágil.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** JSON (inclusive versões malformadas) com `landingPageHtml.htmlDocument`.
+- **O que a especificação esperava (literal):** HTML puro completo (`<!doctype html> ... </html>`), com CSS/JS inline quando necessário.
+- **Diferença objetiva:** envelope JSON em vez de documento HTML direto.
+- **Ação corretiva recomendada:** exigir somente HTML puro no prompt e rejeitar qualquer resposta não-HTML para `LANDING_PAGE_HTML`.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** contrato + validação + teste.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`
+  - `ai-worker/src/main/resources/prompts/experiment/landing-html.md`
+  - `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** removido fallback de extração leniente de JSON para esta etapa; o worker agora aceita apenas HTML puro (ou bloco markdown com HTML), rejeitando retorno JSON para `LANDING_PAGE_HTML`; prompt atualizado para retornar exclusivamente HTML.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de `ExperimentPipelineOpenAiClientTest`.
+- **Resultado:** não executado integralmente no ambiente atual por dependência privada indisponível (`com.marketinghub:ads-service:0.0.1-SNAPSHOT`, HTTP 401).
+- **Evidências (logs/ids/prints):** comando `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` no módulo `ai-worker`.
+- **Status final:** Parcial (correção aplicada; validação automatizada pendente em ambiente com credencial).
+
+#### 6) Próximo passo
+- **Ação seguinte:** validar em ambiente integrado que a etapa `LANDING_PAGE_HTML` responde consistentemente com HTML puro.
+- **Dono da ação:** Time do AI Worker.
+- **Prazo:** próxima execução do pipeline.
+
+### INC-0006 — Bloqueio explícito de JSON serializado dentro de `landingPageHtml.htmlDocument`
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Revisão pós-incidente `INC-0005` para prevenir `json dentro de campo texto de json`
+
+#### 1) Erro observado
+- **Sintoma:** risco de o modelo devolver `htmlDocument` com JSON serializado (ex.: `"{\"headline\":\"...\"}"`) em vez de HTML puro.
+- **Endpoint/rota/fila:** consumo da resposta da OpenAI no `ExperimentPipelineOpenAiClient`.
+- **Status code:** n/a (erro de contrato no worker).
+- **Mensagem de erro literal:** n/a (ajuste preventivo orientado por revisão).
+- **Payload enviado (literal):** cenário-alvo: `landingPageHtml.htmlDocument` contendo objeto JSON serializado como texto.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado nesta revisão local.
+- **Dados de banco consultados via MCP:** não aplicável.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (`LANDING_PAGE_HTML` exige documento HTML).
+- **Validação/regra que rejeitou:** nova validação local no worker para recusar JSON serializado em `htmlDocument`.
+- **Causa raiz:** instrução do prompt e validação não deixavam explícita a proibição de JSON stringificado dentro do campo textual.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `"{\"headline\":\"Plano de Conteúdo\",\"cta\":\"Quero a prévia\"}"` dentro de `htmlDocument`.
+- **O que a especificação esperava (literal):** HTML puro completo em `htmlDocument` (`<!doctype html>...` / `<html ...>`).
+- **Diferença objetiva:** JSON serializado em campo de texto destinado a HTML.
+- **Ação corretiva recomendada:** reforçar prompt para serialização correta e bloquear no worker qualquer `htmlDocument` com aparência de JSON.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt + validação + teste.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`
+  - `ai-worker/src/main/resources/prompts/experiment/landing-html.md`
+  - `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** adicionado bloqueio explícito de contrato para `htmlDocument` com JSON serializado; prompt da etapa `landing-html` ganhou regra explícita "não colocar JSON dentro de campo texto de JSON"; teste unitário incluído para garantir rejeição desse formato.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução da suíte `ExperimentPipelineOpenAiClientTest`.
+- **Resultado:** não executado integralmente no ambiente atual por dependência privada indisponível (`com.marketinghub:ads-service:0.0.1-SNAPSHOT`, HTTP 401).
+- **Evidências (logs/ids/prints):** comando `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` no módulo `ai-worker`.
+- **Status final:** Parcial (correção aplicada; validação automatizada pendente em ambiente com credencial).
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar suíte de testes do `ai-worker` em ambiente com acesso ao GitHub Packages e monitorar novas execuções da etapa `LANDING_PAGE_HTML`.
+- **Dono da ação:** Time do AI Worker.
+- **Prazo:** próxima janela de integração.
+
+### INC-0005 — Falha em `LANDING_PAGE_HTML` por JSON inválido com quebra de linha literal no `htmlDocument`
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Pipeline do experimento `15` (etapa "HTML da Landing")
+
+#### 1) Erro observado
+- **Sintoma:** tentativa da etapa `LANDING_PAGE_HTML` finalizou com erro na desserialização do retorno do modelo.
+- **Endpoint/rota/fila:** consumo da resposta da OpenAI no `ExperimentPipelineOpenAiClient`.
+- **Status code:** n/a (erro interno do worker antes de chamada de conclusão no backend).
+- **Mensagem de erro literal:** `Illegal unquoted character ((CTRL-CHAR, code 10)): has to be escaped using backslash to be included in string value`.
+- **Payload enviado (literal):** resposta textual contendo objeto JSON com `landingPageHtml.htmlDocument` entre aspas, porém com quebra de linha literal dentro da string (sem escape JSON), por exemplo: `"...<head>...</head>\n<body>...` com quebra física de linha antes do fechamento da string.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste ajuste local; diagnóstico baseado no erro literal exibido na UI e no fluxo de parsing do worker.
+- **Dados de banco consultados via MCP:** não aplicável (falha ocorre antes de persistência/validação do backend).
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (seção `LANDING_PAGE_HTML`, exigência de `htmlDocument` válido).
+- **Validação/regra que rejeitou:** parser JSON do worker (`ObjectMapper.readValue`) rejeitou string JSON malformada.
+- **Causa raiz:** o modelo retornou `htmlDocument` como string JSON com quebra de linha literal não escapada, tornando o bloco inválido para parser estrito.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `{"landingPageHtml":{"htmlDocument":"<!DOCTYPE html>...<head>...</head>` + quebra de linha literal + `<body>...</body></html>"}}`.
+- **O que a especificação esperava (literal):** JSON válido ou HTML puro; se usar JSON string, quebras devem estar escapadas (`\\n`) e aspas internas escapadas.
+- **Diferença objetiva:** presença de caractere de nova linha bruto dentro de string JSON.
+- **Ação corretiva recomendada:** aplicar extração leniente de `htmlDocument` para tolerar esse formato específico e preservar pipeline; manter pressão no prompt para retorno em HTML puro ou JSON estrito.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** parsing + teste.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`
+  - `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** adicionado fallback leniente para extrair e decodificar `htmlDocument` quando o JSON do modelo vier malformado por quebra de linha literal em string; incluído teste unitário cobrindo este cenário.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de teste unitário focado no cliente OpenAI do pipeline.
+- **Resultado:** não executado integralmente no ambiente atual por dependência privada indisponível (`com.marketinghub:ads-service:0.0.1-SNAPSHOT`, HTTP 401 em GitHub Packages).
+- **Evidências (logs/ids/prints):** `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` (módulo `ai-worker`) retornou `DependencyResolutionException` por `Unauthorized (401)` na resolução de `ads-service`.
+- **Status final:** Parcial (correção aplicada; validação automatizada pendente em ambiente com credencial de pacote).
+
+#### 6) Próximo passo
+- **Ação seguinte:** monitorar novas execuções de `LANDING_PAGE_HTML` e, se reincidir, reforçar instrução do prompt para priorizar retorno em HTML puro.
+- **Dono da ação:** Time do AI Worker.
+- **Prazo:** próxima execução do experimento 15.
+
 ### INC-0004 — Ajuste de granularidade do schema de `landingPageDesignPreset` após revisão
 
 - **Data/Hora (UTC):** 2026-04-28

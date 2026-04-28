@@ -249,6 +249,49 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void prependsLandingHtmlGuidanceWithExplicitBindingChecklist() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                14L,
+                "landing-page-html",
+                "gpt-5.1-codex",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt de html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).contains("surfaceMatrix[]");
+        assertThat(userPrompt).contains("imageMatrix[]");
+        assertThat(userPrompt).contains("data-image-section-id");
+        assertThat(userPrompt).contains("data-image-binding-key");
+        assertThat(userPrompt).contains("missingSections");
+        assertThat(userPrompt).contains("extraSections");
+        assertThat(userPrompt).contains("missingImageBindings");
+        assertThat(userPrompt).contains("extraImageBindings");
+        assertThat(userPrompt).contains("só finalize quando `missingSections=[]`, `extraSections=[]`, `missingImageBindings=[]` e `extraImageBindings=[]`");
+        assertThat(userPrompt).contains("case-sensitive");
+    }
+
+    @Test
     void injectsStructuredCaseDataBlockIntoSectionTemplate() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
@@ -600,7 +643,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 20L,
                 "landing-page-html",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -654,7 +697,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 20L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -702,7 +745,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 21L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -751,7 +794,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 22L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -795,7 +838,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 29L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -839,7 +882,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 23L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -880,7 +923,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 30L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -959,6 +1002,46 @@ class ExperimentPipelineOpenAiClientTest {
                 """
                         {
                           "model": "gpt-4o-mini",
+                          "input": [
+                            {"role": "user", "content": "Prompt de landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        assertThat(payload.get("model")).isEqualTo("gpt-5.1-codex");
+    }
+
+    @Test
+    void enforcesGpt51CodexModelForLandingHtmlPipelineCallWhenSectionIsEnumName() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(
+                        payloadRef,
+                        """
+                                <!doctype html>
+                                <html lang="pt-BR">
+                                  <body>
+                                    <form id="lead-capture-primary"></form>
+                                  </body>
+                                </html>
+                                """)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                16L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.1-codex",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
                           "input": [
                             {"role": "user", "content": "Prompt de landing html"}
                           ]
@@ -1211,7 +1294,7 @@ class ExperimentPipelineOpenAiClientTest {
                 "test-key",
                 "http://openai");
         ExperimentPipelineJobCompletionPayload htmlPayload = htmlClient.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 34L, "landing-page-html", "gpt-5.2", "prompt",
+                UUID.randomUUID(), 34L, "landing-page-html", "gpt-5.1-codex", "prompt",
                 "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
         Map<String, Object> htmlContent = MAPPER.readValue(htmlPayload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1250,7 +1333,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 35L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now()));
+                UUID.randomUUID(), 35L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
 
         Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1290,7 +1373,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 38L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now()));
+                UUID.randomUUID(), 38L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
 
         Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1330,7 +1413,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 36L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now())));
+                UUID.randomUUID(), 36L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
@@ -1366,10 +1449,86 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 37L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now())));
+                UUID.randomUUID(), 37L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
+    }
+
+    @Test
+    void acceptsLandingHtmlWhenImagePlanningBindingsMatchExactly() throws Exception {
+        String htmlText = """
+                {
+                  "landingPageHtml": {
+                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-hero' data-surface-style='band' data-surface-contrast='high'><img data-image-section-id='hero' data-image-binding-key='hero-main' alt='Hero'></section><section data-section-id='proof' data-surface-token='surface-proof' data-surface-style='solid' data-surface-contrast='normal'><img data-image-section-id='proof' data-image-binding-key='proof-packshot' alt='Proof'></section></body></html>",
+                    "summary": "ok",
+                    "formSpec": {"formId": "lead-capture-primary"},
+                    "imagePlacementContract": {"requiredDataAttributes": []},
+                    "consistencyChecks": []
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        String requestBody = """
+                {
+                  "model":"gpt-5.2",
+                  "input":[
+                    {"role":"user","content":"Prompt\\nWireframe da landing:\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"high\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\nPlanejamento de imagens da landing:\\n{\\"landingPageImagePlanning\\":{\\"images\\":[{\\"sectionId\\":\\"hero\\",\\"imageBindingKey\\":\\"hero-main\\"},{\\"sectionId\\":\\"proof\\",\\"imageBindingKey\\":\\"proof-packshot\\"}]}}"}
+                  ]
+                }
+                """;
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 39L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
+
+        Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
+        String htmlDocument = String.valueOf(html.get("htmlDocument"));
+        assertThat(htmlDocument).contains("data-image-section-id='hero' data-image-binding-key='hero-main'");
+        assertThat(htmlDocument).contains("data-image-section-id='proof' data-image-binding-key='proof-packshot'");
+    }
+
+    @Test
+    void failsFastWhenLandingHtmlCannotReproduceImagePlanningBinding() {
+        String htmlText = """
+                {
+                  "landingPageHtml": {
+                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-hero' data-surface-style='band' data-surface-contrast='high'><img data-image-section-id='hero' data-image-binding-key='hero-main' alt='Hero'></section><section data-section-id='proof' data-surface-token='surface-proof' data-surface-style='solid' data-surface-contrast='normal'><img data-image-section-id='proof' data-image-binding-key='proof-wrong' alt='Proof'></section></body></html>",
+                    "summary": "ok",
+                    "formSpec": {"formId": "lead-capture-primary"},
+                    "imagePlacementContract": {"requiredDataAttributes": []},
+                    "consistencyChecks": []
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        String requestBody = """
+                {
+                  "model":"gpt-5.2",
+                  "input":[
+                    {"role":"user","content":"Prompt v2\\n1) Wireframe aprovado (JSON):\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"high\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\n2) Copy aprovada (JSON):\\n{}\\n3) Preset de design aprovado (JSON):\\n{}\\n4) Planejamento de imagens aprovado (JSON):\\n{\\"landingPageImagePlanning\\":{\\"images\\":[{\\"sectionId\\":\\"hero\\",\\"imageBindingKey\\":\\"hero-main\\"},{\\"sectionId\\":\\"proof\\",\\"imageBindingKey\\":\\"proof-packshot\\"}]}}"}
+                  ]
+                }
+                """;
+
+        Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 40L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-image-planning.images[].sectionId/imageBindingKey.");
     }
 
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {

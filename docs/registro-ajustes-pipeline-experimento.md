@@ -75,6 +75,70 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0010 — Verificação da tentativa `9f5de7ad` (LANDING_PAGE_HTML com divergência de binding de imagens)
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** backend + ai-worker (contrato entre `landing-page-image-planning` e `landing-page-html`)
+- **Ambiente:** Execução remota exibida no Marketing Hub (`experiments/15`)
+- **Execução/Teste:** Tentativa `9f5de7ad` (erro registrado em `28/04/2026, 12:51:31 BRT`)
+
+#### 1) Erro observado
+- **Sintoma:** etapa `LANDING_PAGE_HTML` finalizou com 422 por quebra de vínculo canônico de imagens por seção.
+- **Endpoint/rota/fila:** fechamento do job em `POST /api/internal/experiment-pipeline/jobs/{jobId}/complete`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey`.
+- **Payload enviado (literal):** `landingPageHtml.htmlDocument` concluído pelo worker, rejeitado no backend por divergência frente ao `landingPageImagePlanning.images[]`.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** `java_module_logs` (`ai-worker`, 500 linhas) retornou apenas cauda operacional recente; a janela da falha `12:51:31 BRT` já não estava mais presente no tail disponível.
+- **Dados de banco consultados via MCP:** `experiment_pipeline_generation_job` confirmou job `LANDING_PAGE_HTML` (`model=gpt-5.2`, `status=FAILED`, `created_at=2026-04-28 15:49:00 UTC`) com rejeição 422 no endpoint `/api/internal/experiment-pipeline/jobs/9f5de7ad-ea5f-4345-b877-7444a06992ee/complete`; `experiment` confirmou planejamento de imagens persistido com 9 bindings canônicos para o experimento 15.
+- **Trecho canônico consultado:** regra de vínculo explícito entre `landingPageImagePlanning.images[*].sectionId` + `images[*].imageBindingKey` e reprodução obrigatória no artefato `landing-page-html`.
+- **Validação/regra que rejeitou:** validação determinística de binding por seção/imagem no backend ao concluir o job `LANDING_PAGE_HTML`.
+- **Causa raiz provável:** o HTML gerado não refletiu 1:1 o mapa de imagens canônico do planejamento (seção sem chave esperada, chave trocada entre seções ou seção extra/ausente).
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** HTML final que não reproduziu integralmente o binding explícito do plano de imagens (conforme mensagem 422).
+- **O que a especificação esperava (literal):** para cada seção do plano, o HTML deve manter o par canônico `sectionId/imageBindingKey` sem substituições, omissões ou inversões.
+- **Diferença objetiva:** divergência entre o binding esperado em `landing-page-image-planning` e o binding efetivamente materializado em `landing-page-html`.
+- **Ação corretiva recomendada:** antes do `/complete`, validar localmente no worker a matriz `sectionId -> imageBindingKey` extraída do HTML contra o `landingPageImagePlanning.images[]` do payload do job; bloquear finalização quando houver qualquer delta.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** documentação operacional de incidente.
+- **Arquivos alterados:**
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** registro formal da tentativa `9f5de7ad` com diagnóstico 422 no formato SOP obrigatório (modelo entregue vs esperado vs diferença vs ação corretiva).
+
+#### 5) Reteste
+- **Procedimento de reteste:** revalidação via MCP Server com `initialize`, `tools/list`, `db_query` e `java_module_logs`.
+- **Resultado:** verificação concluída com sucesso no MCP (conectividade OK e evidências de banco coletadas); pendente apenas nova execução integrada para confirmar correção funcional.
+- **Evidências (logs/ids/prints):** job com path `/jobs/9f5de7ad-ea5f-4345-b877-7444a06992ee/complete`, mensagem 422 literal e lista canônica de 9 pares `sectionId/imageBindingKey` do planejamento da landing no experimento 15.
+- **Status final:** Pendente.
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar `LANDING_PAGE_HTML` no experimento 15 após validar previamente o binding `sectionId/imageBindingKey` contra o `landingPageImagePlanning` aprovado.
+- **Dono da ação:** Time do AI Worker + operação do experimento.
+- **Prazo:** imediato (próxima janela de reprocessamento).
+
+#### 7) Confirmação MCP (nova tentativa)
+- **MCP Server utilizado:** `https://mcpserverdigi.shop/mcp` (JSON-RPC; chamadas `initialize`, `tools/list`, `tools/call`).
+- **Amostra 1 — job da tentativa `9f5de7ad`:**
+  - `experiment_pipeline_generation_job` retornou `status=FAILED`, `section=LANDING_PAGE_HTML`, `model=gpt-5.2`, `created_at=2026-04-28 15:49:00 UTC`.
+  - `error_message` confirmou 422 literal por divergência de binding de imagens e `path` com o identificador completo da tentativa: `/api/internal/experiment-pipeline/jobs/9f5de7ad-ea5f-4345-b877-7444a06992ee/complete`.
+- **Amostra 2 — vínculo canônico esperado no experimento 15 (`experiment.landing_page_image_planning`):**
+  - O artefato persistido contém 9 entradas em `landingPageImagePlanning.images[]`.
+  - Pares canônicos extraídos via MCP:
+    - `nav-identity -> nav-identity-strip`
+    - `hero-split-form -> hero-whats-preco-pdf`
+    - `pain-quanto-custa-some -> pain-cards-preco-sumi`
+    - `mechanism-ciclo-evolucao-8s -> mechanism-timeline-8w`
+    - `proof-previa-pdf-minikit -> proof-packshot-pdf-minikit`
+    - `offer-gerar-amostra-pdf -> offer-3steps-flow`
+    - `objection-anti-preco-pratica -> usage-whats-flow-cards`
+    - `faq-objections -> faq-trust-privacy`
+    - `footer-legal -> footer-legal-strip`
+- **Conclusão confirmada com MCP:** a tentativa `9f5de7ad` foi rejeitada por não reproduzir fielmente, no HTML final, o binding explícito canônico por `sectionId/imageBindingKey` já aprovado no `landing_page_image_planning` do experimento 15.
+
 ### INC-0009 — Verificação da tentativa `b244db1f` (LANDING_PAGE_HTML com divergência de superfície)
 
 - **Data/Hora (UTC):** 2026-04-28

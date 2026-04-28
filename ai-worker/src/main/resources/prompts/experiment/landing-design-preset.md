@@ -23,7 +23,12 @@ Regras:
    - `MOBILE_READABILITY`
 8. `layoutPreset` só pode ser: `hero-focus`, `form-focus`, `proof-grid`, `narrative-stack`, `faq-clean`, `cta-strong`.
 9. `motion.enabled` deve ser booleano (`true` ou `false`).
-10. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
+10. `theme.typography.maxLineLength` deve ficar entre `55ch` e `75ch`.
+11. `theme.typography.lineHeightBody` deve ser `>= 1.5`.
+12. `theme.spacing.sectionGapMobile` deve ser `>= 48px`.
+13. `theme.palette.ctaPrimary` deve ter contraste AA com o fundo predominante da seção.
+14. O preset deve conter obrigatoriamente os tokens mínimos: `theme.palette`, `theme.typography`, `theme.spacing`, `theme.accessibility`, `componentPresets.cta`, `componentPresets.trust`.
+15. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -41,12 +46,35 @@ Responda em JSON válido no formato:
         "textMuted": "string",
         "brandPrimary": "string",
         "brandSecondary": "string",
+        "ctaPrimary": "string",
+        "ctaPrimaryHover": "string",
+        "success": "string",
+        "warning": "string",
         "border": "string"
       },
       "typography": {
         "fontFamily": "string",
         "baseSize": "string",
-        "headingScale": "string"
+        "headingScale": "string",
+        "lineHeightBody": "string",
+        "lineHeightHeading": "string",
+        "fontWeightRegular": "string",
+        "fontWeightSemibold": "string",
+        "fontWeightBold": "string",
+        "maxLineLength": "string"
+      },
+      "spacing": {
+        "scaleBase": "4|8",
+        "sectionGapDesktop": "string",
+        "sectionGapMobile": "string",
+        "containerWidthDesktop": "string",
+        "containerPaddingMobile": "string"
+      },
+      "accessibility": {
+        "textContrastBody": "string",
+        "textContrastSmall": "string",
+        "focusVisibleStyle": "string",
+        "touchTargetMinPx": "string"
       },
       "radius": {
         "card": "string",
@@ -72,15 +100,34 @@ Responda em JSON válido no formato:
       "hero": {
         "titleMaxWidth": "string",
         "summaryMaxWidth": "string",
-        "ctaVariant": "primary | ghost"
+        "ctaVariant": "primary | ghost",
+        "mediaPlacement": "left | right | center | background"
       },
       "form": {
         "fieldSpacing": "string",
         "labelWeight": "string",
-        "submitStyle": "pill | block"
+        "submitStyle": "pill | block",
+        "fieldHeight": "string",
+        "errorStyle": "inline | tooltip"
       },
       "faq": {
         "variant": "accordion | stacked-cards"
+      },
+      "proof": {
+        "cardVariant": "metric-first | testimonial-first | mixed",
+        "showIdentity": "boolean",
+        "highlightMetric": "boolean"
+      },
+      "trust": {
+        "showBrandLockupInHero": "boolean",
+        "showLegalFooter": "boolean",
+        "privacyMicrocopyNearForm": "boolean",
+        "authorityStripVariant": "logo-row | credential-cards | mixed"
+      },
+      "cta": {
+        "stickyMobile": "boolean",
+        "stickyOffsetBottom": "string",
+        "pulseOnScrollStop": "boolean"
       }
     },
     "motion": {

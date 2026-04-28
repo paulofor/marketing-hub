@@ -73,8 +73,8 @@ function normalizeVariantLabel(variant: string): string {
   if (upper === "LHM") {
     return "LHM (determinística)";
   }
-  if (upper === "IA" || upper === "WORKER_IA") {
-    return "IA";
+  if (upper === "IA" || upper === "WORKER_IA" || upper === "GERAR COM IA" || upper === "GERAR_COM_IA") {
+    return "Gerar com IA";
   }
   return variant;
 }

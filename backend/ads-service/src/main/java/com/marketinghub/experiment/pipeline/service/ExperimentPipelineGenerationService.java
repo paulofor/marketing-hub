@@ -85,6 +85,7 @@ public class ExperimentPipelineGenerationService {
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
     private static final String DEFAULT_MODEL = "gpt-5.2";
     private static final String LHM_MODEL = "LHM";
+    private static final String GERAR_COM_IA_MODEL = "GERAR_COM_IA";
     private static final String LHM_WORKER_ID = "lhm-inline";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
@@ -392,7 +393,11 @@ public class ExperimentPipelineGenerationService {
                     HttpStatus.CONFLICT,
                     "HTML determinístico (LHM) está vazio. Gere novamente em 'LHM + IA' antes de publicar.");
         }
-        LeadPortalFlow iaFlow = upsertLandingVariantFlow(experiment, "ia", "WORKER_IA", experiment.getLandingPageHtml());
+        LeadPortalFlow iaFlow = upsertLandingVariantFlow(
+                experiment,
+                "gerar-com-ia",
+                GERAR_COM_IA_MODEL,
+                experiment.getLandingPageHtml());
         LeadPortalFlow lhmFlow = upsertLandingVariantFlow(experiment, "lhm", LHM_MODEL, lhmHtml);
 
         for (LeadPortalFlow flow : List.of(iaFlow, lhmFlow)) {
@@ -416,7 +421,7 @@ public class ExperimentPipelineGenerationService {
         experimentRepository.save(experiment);
 
         List<LandingPageVariantLinksDto> variantLinks = List.of(
-                toVariantLinks("IA", iaFlow),
+                toVariantLinks("Gerar com IA", iaFlow),
                 toVariantLinks("LHM", lhmFlow));
 
         String pixelId = iaFlow.getMarketNiche() != null ? iaFlow.getMarketNiche().getFacebookPixelId() : null;

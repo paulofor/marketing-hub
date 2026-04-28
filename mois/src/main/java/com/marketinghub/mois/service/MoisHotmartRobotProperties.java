@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class MoisHotmartRobotProperties {
 
     private boolean enabled = false;
-    private String cron = "0 10 3 * * *";
+    private String cron = "0 0 14 * * *";
     private String workspaceId = "workspace-001";
     private String niche = "marketing-digital";
     private String marketTheme = "ofertas-com-temperatura-alta";

@@ -322,6 +322,11 @@ public class ExperimentPipelineOpenAiClient {
                 payload instanceof Map<?, ?> ? (Map<String, Object>) payload : parsed;
         String htmlDocument = landingPayload != null ? readString(landingPayload, LANDING_HTML_MARKER) : "";
         if (StringUtils.hasText(htmlDocument)) {
+            if (!isHtmlDocument(htmlDocument)) {
+                String reason = "Quebra de contrato: LANDING_PAGE_HTML exige HTML puro no retorno do modelo (não JSON).";
+                logContractBreak(job, reason, rawContent, null);
+                throw new IllegalStateException(reason);
+            }
             return;
         }
         String reason = "Quebra de contrato: LANDING_PAGE_HTML sem campo htmlDocument válido.";
@@ -343,20 +348,11 @@ public class ExperimentPipelineOpenAiClient {
                 return codeBlockPayload.trim();
             }
         }
-        try {
-            Map<String, Object> parsed = objectMapper.readValue(trimmedContent, new TypeReference<>() {});
-            String jsonHtml = extractHtmlDocumentFromPayload(parsed);
-            if (StringUtils.hasText(jsonHtml)) {
-                return jsonHtml.trim();
-            }
-        } catch (JsonProcessingException ignored) {
-            logContractBreak(
-                    job,
-                    "Quebra de contrato: LANDING_PAGE_HTML não veio em HTML puro e também não é JSON válido.",
-                    trimmedContent,
-                    ignored);
-            // fallback: conteúdo seguirá para parser JSON original
-        }
+        logContractBreak(
+                job,
+                "Quebra de contrato: LANDING_PAGE_HTML deve retornar HTML puro (com CSS/JS inline quando necessário), sem envelope JSON.",
+                trimmedContent,
+                null);
         return null;
     }
 
@@ -385,23 +381,13 @@ public class ExperimentPipelineOpenAiClient {
                 preview);
     }
 
-    @SuppressWarnings("unchecked")
-    private String extractHtmlDocumentFromPayload(Map<String, Object> parsed) {
-        if (parsed == null || parsed.isEmpty()) {
-            return null;
+    private boolean isHtmlDocument(String htmlDocument) {
+        String normalized = htmlDocument != null ? htmlDocument.trim() : "";
+        if (!StringUtils.hasText(normalized)) {
+            return false;
         }
-        Object directHtml = parsed.get(LANDING_HTML_MARKER);
-        if (directHtml instanceof String htmlDocument && StringUtils.hasText(htmlDocument)) {
-            return htmlDocument;
-        }
-        Object nestedPayload = parsed.get("landingPageHtml");
-        if (nestedPayload instanceof Map<?, ?> nestedMap) {
-            Object nestedHtml = ((Map<String, Object>) nestedMap).get(LANDING_HTML_MARKER);
-            if (nestedHtml instanceof String htmlDocument && StringUtils.hasText(htmlDocument)) {
-                return htmlDocument;
-            }
-        }
-        return null;
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        return lower.startsWith("<!doctype html") || lower.startsWith("<html");
     }
 
     @SuppressWarnings("unchecked")

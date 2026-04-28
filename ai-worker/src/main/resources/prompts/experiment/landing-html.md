@@ -38,10 +38,5 @@ CASE_DATA
 {{CASE_DATA_BLOCK}}
 
 OUTPUT_CONTRACT
-Responda em JSON válido e estritamente aderente ao artefato `landingPageHtml`.
-Campos obrigatórios:
-- htmlDocument
-- formSpec
-- summary
-- imagePlacementContract
-- consistencyChecks[] com CTA_MATCH, PROMISE_MATCH, IMAGE_PLAN_BINDING, SURFACE_SPEC_BINDING, FORM_SPEC_BINDING e FORM_USABILITY
+Retorne **somente HTML puro completo** (`<!doctype html> ... </html>`), com CSS e JavaScript inline quando necessário.
+Não retorne JSON, não retorne Markdown e não inclua texto explicativo fora do HTML.

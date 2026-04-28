@@ -776,6 +776,48 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void failsWhenLandingPageHtmlReturnsJsonInsteadOfPureHtml() {
+        String openAiText = """
+                {
+                  "landingPageHtml": {
+                    "htmlDocument": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head><meta charset=\\"UTF-8\\"></head>
+<body><form id=\\"lead-capture-primary\\"><input type=\\"text\\" name=\\"nome\\" /></form></body></html>"
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                29L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        Throwable error = catchThrowable(() -> client.generate(job));
+
+        assertThat(error).isInstanceOf(IllegalStateException.class);
+        assertThat(error).hasMessageContaining("Falha ao gerar seção LANDING_PAGE_HTML do experimento 29");
+        assertThat(error.getCause())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("LANDING_PAGE_HTML exige HTML puro");
+    }
+
+    @Test
     void failsWhenLandingPageHtmlContractIsBrokenWithoutHtmlDocument() throws Exception {
         String openAiText = """
                 {
@@ -814,6 +856,47 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(error.getCause())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("LANDING_PAGE_HTML sem campo htmlDocument válido");
+    }
+
+    @Test
+    void failsWhenLandingPageHtmlContainsSerializedJsonInsideHtmlDocument() throws Exception {
+        String openAiText = """
+                {
+                  "landingPageHtml": {
+                    "htmlDocument": "{\\"headline\\":\\"Plano de Conteúdo\\",\\"cta\\":\\"Quero a prévia\\"}"
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                30L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt da landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        Throwable error = catchThrowable(() -> client.generate(job));
+
+        assertThat(error).isInstanceOf(IllegalStateException.class);
+        assertThat(error).hasMessageContaining("Falha ao gerar seção LANDING_PAGE_HTML do experimento 30");
+        assertThat(error.getCause())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("LANDING_PAGE_HTML exige HTML puro");
     }
 
     @Test

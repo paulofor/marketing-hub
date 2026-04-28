@@ -1583,52 +1583,18 @@ export default function ExperimentContentGenerationTab({
   const persistedAdCopy = useMemo(() => parseAdCopyPayload(adCopy), [adCopy]);
 
   const promptVersionsBySection = useMemo(() => {
+    const pipelineJobs = jobsQuery.data ?? [];
     const sources: {
       key: ContentGenerationSectionKey;
       label: string;
-      items: SimpleGenerationRow[];
-    }[] = [
-      {
-        key: "campaign-angle",
-        label: getSectionLabel("campaign-angle"),
-        items: campaignAngleGenerations,
-      },
-      {
-        key: "ad-copy",
-        label: getSectionLabel("ad-copy"),
-        items: adCopyGenerations,
-      },
-      {
-        key: "image-prompt",
-        label: getSectionLabel("image-prompt"),
-        items: sectionGenerations["image-prompt"],
-      },
-      {
-        key: "landing-copy",
-        label: getSectionLabel("landing-copy"),
-        items: sectionGenerations["landing-copy"],
-      },
-      {
-        key: "landing-layout",
-        label: getSectionLabel("landing-layout"),
-        items: sectionGenerations["landing-layout"],
-      },
-      {
-        key: "landing-image-planning",
-        label: getSectionLabel("landing-image-planning"),
-        items: sectionGenerations["landing-image-planning"],
-      },
-      {
-        key: "landing-design-preset",
-        label: getSectionLabel("landing-design-preset"),
-        items: sectionGenerations["landing-design-preset"],
-      },
-      {
-        key: "landing-html",
-        label: getSectionLabel("landing-html"),
-        items: sectionGenerations["landing-html"],
-      },
-    ];
+      items: typeof pipelineJobs;
+    }[] = CONTENT_GENERATION_SECTIONS.map((section) => ({
+      key: section.key,
+      label: section.label,
+      items: pipelineJobs.filter(
+        (job) => normalizeJobSection(job.section) === section.key,
+      ),
+    }));
 
     return sources
       .map((source) => {
@@ -1640,6 +1606,8 @@ export default function ExperimentContentGenerationTab({
             latestUsedAt?: string;
             latestTimestamp: number;
             models: Set<string>;
+            jobIds: string[];
+            openAiResponseIds: Set<string>;
           }
         >();
 
@@ -1651,6 +1619,7 @@ export default function ExperimentContentGenerationTab({
           const parsedTimestamp =
             parseTimestamp(item.createdAt) ?? Number.MIN_SAFE_INTEGER;
           const model = item.model?.trim();
+          const openAiResponseId = item.openAiResponseId?.trim();
           const current = byFingerprint.get(fingerprint);
 
           if (!current) {
@@ -1660,17 +1629,23 @@ export default function ExperimentContentGenerationTab({
               latestUsedAt: item.createdAt,
               latestTimestamp: parsedTimestamp,
               models: new Set(model ? [model] : []),
+              jobIds: [item.id],
+              openAiResponseIds: new Set(openAiResponseId ? [openAiResponseId] : []),
             });
             return;
           }
 
           current.occurrences += 1;
+          current.jobIds.push(item.id);
           if (parsedTimestamp >= current.latestTimestamp) {
             current.latestTimestamp = parsedTimestamp;
             current.latestUsedAt = item.createdAt;
           }
           if (model) {
             current.models.add(model);
+          }
+          if (openAiResponseId) {
+            current.openAiResponseIds.add(openAiResponseId);
           }
         });
 
@@ -1681,6 +1656,8 @@ export default function ExperimentContentGenerationTab({
             occurrences: version.occurrences,
             latestUsedAt: version.latestUsedAt,
             models: Array.from(version.models).sort(),
+            jobIds: version.jobIds,
+            openAiResponseIds: Array.from(version.openAiResponseIds).sort(),
           }));
 
         return {
@@ -1690,12 +1667,9 @@ export default function ExperimentContentGenerationTab({
         };
       })
       .filter((section) => section.versions.length > 0);
-  }, [adCopyGenerations, campaignAngleGenerations, sectionGenerations]);
+  }, [jobsQuery.data]);
 
-  const isLoadingPromptVersions =
-    isLoadingCampaignAngles ||
-    isLoadingAdCopy ||
-    Object.values(isLoadingSectionGenerations).some(Boolean);
+  const isLoadingPromptVersions = jobsQuery.isLoading;
 
   const currentSection =
     CONTENT_GENERATION_SECTIONS.find(
@@ -3318,6 +3292,8 @@ interface PromptVersionSummary {
     occurrences: number;
     latestUsedAt?: string;
     models: string[];
+    jobIds: string[];
+    openAiResponseIds: string[];
   }[];
 }
 
@@ -3372,6 +3348,13 @@ function PipelinePromptVersionsPanel({
                         </p>
                         <p className="small mb-2">
                           <strong>Modelos:</strong> {version.models.join(", ") || "—"}
+                        </p>
+                        <p className="small mb-2">
+                          <strong>Jobs:</strong> {version.jobIds.join(", ")}
+                        </p>
+                        <p className="small mb-2">
+                          <strong>OpenAI response id:</strong>{" "}
+                          {version.openAiResponseIds.join(", ") || "—"}
                         </p>
                         <pre className="small bg-body-secondary rounded p-2 mb-0">
                           {version.prompt}

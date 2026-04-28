@@ -12,6 +12,8 @@ export interface ExperimentPipelineGenerationJob {
   model?: string;
   prompt?: string;
   requestBodyJson?: string;
+  rawResponse?: string;
+  openAiResponseId?: string;
   createdAt?: string;
   startedAt?: string;
   finishedAt?: string;

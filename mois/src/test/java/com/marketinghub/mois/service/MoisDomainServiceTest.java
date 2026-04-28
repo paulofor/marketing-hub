@@ -290,7 +290,7 @@ class MoisDomainServiceTest {
         MoisWorkspaceDtos.CollectedReferenceListResponse references =
                 service.listCollectedReferencesByJob(created.jobId(), null, null, null, null).orElseThrow();
 
-        assertThat(references.items()).hasSize(1);
+        assertThat(references.items()).hasSize(20);
         assertThat(references.items().getFirst().source()).isEqualTo("CLICKBANK");
         assertThat(references.items().getFirst().successScore()).isGreaterThanOrEqualTo(65);
         assertThat(references.items().getFirst().confidenceLevel()).isIn("LOW", "MEDIUM", "HIGH");

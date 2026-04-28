@@ -331,6 +331,7 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 > **Responsabilidade canônica (vigente):**
 > - `landingPageWireframe` define **estrutura** (ordem, hierarquia, intenção de seção) e mantém em `surfaceSpec` apenas a âncora estrutural (`surfaceToken` + `notes`).
 > - `style` e `contrastMode` são responsabilidade da etapa `landingPageDesignPreset.sectionPresets` (detalhe visual por `sectionId`).
+> - Não existe co-ownership de campo: `surfaceToken` pertence ao wireframe; `style/contrastMode` pertencem ao design preset. Em caso de divergência, `landingPageDesignPreset` prevalece para os campos visuais.
 > - Após `complete` da etapa de wireframe, o backend valida presença de `sectionOrder` estruturado e `surfaceSpec.surfaceToken` por seção antes de aceitar o artefato.
 > - Antes de iniciar `landingPageHtml`, o backend executa pré-validação de consistência entre wireframe e design preset para antecipar falhas que antes apareciam apenas no fim do pipeline.
 

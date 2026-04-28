@@ -19,6 +19,14 @@ Documento operacional para leitura rápida, separando **quem é responsável por
 - **Visual (`designPreset`)**: `surfaceStyle` + `contrastMode` por `sectionId`.
 - **HTML final (`LHM`)**: combina os dois contratos e publica os `data-*` aderentes.
 
+### Regra anti-duplicidade (fonte de verdade única por campo)
+
+- Não há duplicidade de responsabilidade quando os campos são separados por natureza:
+  - `surfaceToken` → **exclusivo** do `landingPageWireframe.sectionOrder[*].surfaceSpec`.
+  - `surfaceStyle` e `contrastMode` → **exclusivos** do `landingPageDesignPreset.sectionPresets[*]`.
+- Se `style/contrastMode` aparecerem no wireframe por legado, devem ser tratados apenas como fallback transitório; a fonte de verdade vigente continua sendo o design preset.
+- Em conflito entre valores, prevalece `landingPageDesignPreset` para `style/contrastMode` e prevalece o wireframe para `surfaceToken` e `sectionId`.
+
 ## Gate antecipado antes de HTML
 
 Além do fechamento de cada etapa, o backend executa pré-validação antes de gerar `landingPageHtml` para bloquear inconsistências de artefatos cedo (sem esperar o erro final de publicação).

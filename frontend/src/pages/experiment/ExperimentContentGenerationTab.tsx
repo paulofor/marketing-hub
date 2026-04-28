@@ -1452,6 +1452,18 @@ export default function ExperimentContentGenerationTab({
     [jobsQuery.data],
   );
 
+  const workerIaHistory = useMemo(
+    () =>
+      (jobsQuery.data ?? [])
+        .filter(
+          (job) =>
+            normalizeJobSection(job.section) === "landing-html" &&
+            job.model !== "LHM",
+        )
+        .slice(0, 3),
+    [jobsQuery.data],
+  );
+
   const invalidationBySection = useMemo(() => {
     const bySection: Partial<
       Record<ContentGenerationSectionKey, SectionInvalidationState>
@@ -2683,64 +2695,103 @@ export default function ExperimentContentGenerationTab({
               );
             })}
           </div>
-          {lhmHistory.length > 0 ? (
-            <div className="border rounded-3 p-3 mt-3 bg-info-subtle border-info-subtle">
-              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div>
-                  <h6 className="mb-1">Solicitações recentes do LHM (HTML da Landing)</h6>
-                  <p className="small text-body-secondary mb-0">
-                    Este bloco separa as execuções inline do LHM das execuções do
-                    Worker IA para evitar confusão de horário e origem.
-                  </p>
-                </div>
-                <span className="badge text-bg-info">LHM inline</span>
-              </div>
-              <div className="d-flex flex-column gap-2 mt-3">
-                {lhmHistory.map((job) => {
-                  const parsedError = parseBackendError(job.errorMessage);
-                  const statusBadge =
-                    job.status === "COMPLETED"
-                      ? "success"
-                      : job.status === "FAILED"
-                        ? "danger"
-                        : "warning";
-                  const statusLabel =
-                    job.status === "COMPLETED"
-                      ? "Concluída"
-                      : job.status === "FAILED"
-                        ? "Com erro"
-                        : "Em processamento";
-                  return (
-                    <div key={`lhm-history-${job.id}`} className="bg-body border rounded-3 p-2">
-                      <div className="d-flex flex-wrap align-items-center gap-2">
-                        <strong>Tentativa #{job.id.slice(0, 8)}</strong>
-                        <span className={`badge text-bg-${statusBadge}`}>{statusLabel}</span>
-                      </div>
-                      <div className="small mt-1 d-flex flex-column gap-1">
-                        <span>
-                          Solicitação registrada:{" "}
-                          <strong>{formatDateTimeWithTimezone(job.createdAt)}</strong>
-                        </span>
-                        <span>
-                          Início: <strong>{formatDateTimeWithTimezone(job.startedAt)}</strong> ·
-                          Fim: <strong>{formatDateTimeWithTimezone(job.finishedAt)}</strong>
-                        </span>
-                        {parsedError?.timestamp ? (
-                          <span>
-                            Erro retornado pelo backend em{" "}
-                            <strong>{formatDateTimeWithTimezone(parsedError.timestamp)}</strong>
-                          </span>
-                        ) : null}
-                        {job.errorMessage ? (
-                          <span className="text-danger">
-                            Motivo: {parsedError?.message ?? job.errorMessage}
-                          </span>
-                        ) : null}
-                      </div>
+          {lhmHistory.length > 0 || workerIaHistory.length > 0 ? (
+            <div className="mt-3 d-flex flex-column gap-3">
+              {[
+                {
+                  key: "lhm",
+                  title: "Solicitações recentes do LHM (HTML da Landing)",
+                  description:
+                    "Execuções inline do LHM para geração de HTML da landing.",
+                  badgeLabel: "LHM inline",
+                  badgeClass: "info",
+                  containerClass: "bg-info-subtle border-info-subtle",
+                  jobs: lhmHistory,
+                },
+                {
+                  key: "worker-ia",
+                  title: "Solicitações recentes do Worker IA (HTML da Landing)",
+                  description:
+                    "Execuções do Worker IA para geração de HTML da landing.",
+                  badgeLabel: "Worker IA",
+                  badgeClass: "primary",
+                  containerClass: "bg-primary-subtle border-primary-subtle",
+                  jobs: workerIaHistory,
+                },
+              ].map((historyGroup) => (
+                <div
+                  key={historyGroup.key}
+                  className={`border rounded-3 p-3 ${historyGroup.containerClass}`}
+                >
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                      <h6 className="mb-1">{historyGroup.title}</h6>
+                      <p className="small text-body-secondary mb-0">
+                        {historyGroup.description}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
+                    <span className={`badge text-bg-${historyGroup.badgeClass}`}>
+                      {historyGroup.badgeLabel}
+                    </span>
+                  </div>
+                  {historyGroup.jobs.length > 0 ? (
+                    <div className="d-flex flex-column gap-2 mt-3">
+                      {historyGroup.jobs.map((job) => {
+                        const parsedError = parseBackendError(job.errorMessage);
+                        const statusBadge =
+                          job.status === "COMPLETED"
+                            ? "success"
+                            : job.status === "FAILED"
+                              ? "danger"
+                              : "warning";
+                        const statusLabel =
+                          job.status === "COMPLETED"
+                            ? "Concluída"
+                            : job.status === "FAILED"
+                              ? "Com erro"
+                              : "Em processamento";
+                        return (
+                          <div
+                            key={`${historyGroup.key}-history-${job.id}`}
+                            className="bg-body border rounded-3 p-2"
+                          >
+                            <div className="d-flex flex-wrap align-items-center gap-2">
+                              <strong>Tentativa #{job.id.slice(0, 8)}</strong>
+                              <span className={`badge text-bg-${statusBadge}`}>{statusLabel}</span>
+                            </div>
+                            <div className="small mt-1 d-flex flex-column gap-1">
+                              <span>
+                                Solicitação registrada:{" "}
+                                <strong>{formatDateTimeWithTimezone(job.createdAt)}</strong>
+                              </span>
+                              <span>
+                                Início: <strong>{formatDateTimeWithTimezone(job.startedAt)}</strong>
+                                {" · "}
+                                Fim: <strong>{formatDateTimeWithTimezone(job.finishedAt)}</strong>
+                              </span>
+                              {parsedError?.timestamp ? (
+                                <span>
+                                  Erro retornado pelo backend em{" "}
+                                  <strong>{formatDateTimeWithTimezone(parsedError.timestamp)}</strong>
+                                </span>
+                              ) : null}
+                              {job.errorMessage ? (
+                                <span className="text-danger">
+                                  Motivo: {parsedError?.message ?? job.errorMessage}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="small text-body-secondary mt-3 mb-0">
+                      Nenhuma solicitação recente registrada para esta origem.
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
           ) : null}
         </div>

@@ -75,6 +75,53 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0004 — Ajuste de granularidade do schema de `landingPageDesignPreset` após revisão
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** backend
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Revisão do PR `Fix landing design preset schema to enforce canonical required tokens`
+
+#### 1) Erro observado
+- **Sintoma:** Ajuste anterior tornou o schema da etapa `LANDING_PAGE_DESIGN_PRESET` rígido em excesso para campos não bloqueantes da validação canônica de conclusão.
+- **Endpoint/rota/fila:** geração de payload `response_format` para jobs `LANDING_PAGE_DESIGN_PRESET`.
+- **Status code:** n/a (ajuste preventivo de contrato antes de execução).
+- **Mensagem de erro literal:** n/a.
+- **Payload enviado (literal):** n/a.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** referência do incidente anterior com 422 (`theme.spacing é obrigatório`) já confirmada.
+- **Dados de banco consultados via MCP:** referência do incidente anterior para experimentId `15`.
+- **Trecho canônico consultado:** regras de tokens mínimos do `landingPageDesignPreset` (tema mínimo + `componentPresets.cta`/`trust`) e validações de backend em `completeJob`.
+- **Validação/regra que rejeitou:** previamente, `theme.spacing` ausente; nesta revisão, foco em evitar sobre-restrição desnecessária.
+- **Causa raiz:** schema anterior passou a exigir muitos subcampos detalhados além do mínimo bloqueante.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** no incidente original, preset sem `theme.spacing`.
+- **O que a especificação esperava (literal):** presença dos tokens mínimos canônicos para prosseguir (`theme.palette`, `theme.typography`, `theme.spacing`, `theme.accessibility`, `componentPresets.cta`, `componentPresets.trust`) e `proof.showIdentity=true` para validação operacional.
+- **Diferença objetiva:** ausência de token mínimo (incidente original) e excesso de rigidez do schema no ajuste anterior.
+- **Ação corretiva recomendada:** manter exigência dos mínimos canônicos/bloqueantes e relaxar campos não críticos para reduzir rejeições desnecessárias.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** contrato + teste.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationServiceTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** schema de `landingPageDesignPreset` foi recalibrado para exigir o núcleo mínimo bloqueante (tema mínimo + `componentPresets` essenciais, incluindo `proof.showIdentity`) com flexibilidade em campos complementares; teste unitário atualizado para validar os tokens mínimos.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução da suíte `ExperimentPipelineGenerationServiceTest`.
+- **Resultado:** aprovado.
+- **Evidências (logs/ids/prints):** `../mvnw -Dtest=ExperimentPipelineGenerationServiceTest test` com `Tests run: 40, Failures: 0, Errors: 0`.
+- **Status final:** Resolvido.
+
+#### 6) Próximo passo
+- **Ação seguinte:** monitorar novas execuções de `LANDING_PAGE_DESIGN_PRESET` no experimento 15 para confirmar redução de 422 por contrato.
+- **Dono da ação:** Time de operação do pipeline.
+- **Prazo:** próxima execução do pipeline.
+
 ### INC-0003 — Reforço de instruções no prompt do worker para cobertura 1:1 de `sectionId` em `images[]`
 
 - **Data/Hora (UTC):** 2026-04-27

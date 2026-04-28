@@ -3,6 +3,8 @@
 ## Objetivo
 Documento operacional para leitura rápida, separando **quem é responsável por cada item** no pipeline e quais validações de fechamento existem em cada etapa.
 
+> Para visão campo-a-campo com dono único, consulte também: `docs/canonical/matriz-responsaveis-unicos-itens-artefato.md`.
+
 ## Mapa por etapa
 
 | Etapa | Responsabilidade principal | Itens canônicos sob responsabilidade | Validação pesada no fechamento (`complete`) |

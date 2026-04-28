@@ -532,6 +532,49 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void generateLandingDesignPresetIncludesMinimumCanonicalTokensInJsonSchema() {
+        Experiment experiment = new Experiment();
+        experiment.setId(132L);
+        experiment.setName("Experimento 132");
+        experiment.setCampaignAngle("{\"campaignAngle\":true}");
+        experiment.setAdCopy("{\"adCopy\":true}");
+        experiment.setAdImageBriefing("{\"adImageBriefing\":true}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":true}");
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[{\"sectionId\":\"hero\"}]}}");
+        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[{\"sectionId\":\"hero\",\"imagePrompt\":\"x\"}]}}");
+
+        when(experimentRepository.findById(132L)).thenReturn(Optional.of(experiment));
+        when(frameworkImageGenerationService.allPlanningImagesCompleted(132L)).thenReturn(true);
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                132L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(jobRepository.findLatestCompletedPerSectionByExperimentId(132L, null))
+                .thenReturn(List.of(
+                        completedJob(experiment, ExperimentPipelineSection.CAMPAIGN_ANGLE, experiment.getCampaignAngle()),
+                        completedJob(experiment, ExperimentPipelineSection.AD_COPY, experiment.getAdCopy()),
+                        completedJob(experiment, ExperimentPipelineSection.AD_IMAGE_BRIEFING, experiment.getAdImageBriefing()),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_COPY, experiment.getLandingPageCopy()),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME, experiment.getLandingPageWireframe()),
+                        completedJob(experiment, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING, experiment.getLandingPageImagePlanning())));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(132L, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET, new ExperimentPipelineGenerationRequest());
+
+        verify(jobRepository).save(argThat(job -> {
+            String requestBodyJson = job.getRequestBodyJson();
+            return requestBodyJson != null
+                    && requestBodyJson.contains("\"sectionGapMobile\"")
+                    && requestBodyJson.contains("\"textContrastBody\"")
+                    && requestBodyJson.contains("\"showIdentity\"")
+                    && requestBodyJson.contains("\"showLegalFooter\"")
+                    && requestBodyJson.contains("\"stickyMobile\"")
+                    && requestBodyJson.contains("\"ctaPrimary\"");
+        }));
+    }
+
+    @Test
     void generateRejectsNewStageWhenAnotherStageIsAlreadyActiveForExperiment() {
         Experiment experiment = new Experiment();
         experiment.setId(14L);

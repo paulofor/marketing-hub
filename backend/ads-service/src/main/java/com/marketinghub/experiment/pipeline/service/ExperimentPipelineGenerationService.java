@@ -3041,7 +3041,7 @@ public class ExperimentPipelineGenerationService {
     private Map<String, Object> landingPageDesignPresetFieldSchema() {
         Map<String, Object> paletteSchema = Map.of(
                 "type", "object",
-                "additionalProperties", false,
+                "additionalProperties", true,
                 "properties", Map.of(
                         "background", stringSchema(),
                         "surface", stringSchema(),
@@ -3049,8 +3049,27 @@ public class ExperimentPipelineGenerationService {
                         "textMuted", stringSchema(),
                         "brandPrimary", stringSchema(),
                         "brandSecondary", stringSchema(),
-                        "border", stringSchema()),
-                "required", List.of("background", "surface", "textPrimary", "textMuted", "brandPrimary", "brandSecondary", "border"));
+                        "ctaPrimary", stringSchema()),
+                "required", List.of("background", "surface", "textPrimary", "textMuted", "brandPrimary", "brandSecondary", "ctaPrimary"));
+        Map<String, Object> typographySchema = Map.of(
+                "type", "object",
+                "additionalProperties", true,
+                "properties", Map.of(
+                        "lineHeightBody", stringSchema(),
+                        "maxLineLength", stringSchema()),
+                "required", List.of("lineHeightBody", "maxLineLength"));
+        Map<String, Object> spacingSchema = Map.of(
+                "type", "object",
+                "additionalProperties", true,
+                "properties", Map.of(
+                        "sectionGapMobile", stringSchema()),
+                "required", List.of("sectionGapMobile"));
+        Map<String, Object> accessibilitySchema = Map.of(
+                "type", "object",
+                "additionalProperties", true,
+                "properties", Map.of(
+                        "textContrastBody", stringSchema()),
+                "required", List.of("textContrastBody"));
         Map<String, Object> sectionPresetSchema = Map.of(
                 "type", "object",
                 "additionalProperties", false,
@@ -3072,12 +3091,36 @@ public class ExperimentPipelineGenerationService {
                                 "additionalProperties", false,
                                 "properties", Map.of(
                                         "palette", paletteSchema,
-                                        "typography", Map.of("type", "object", "additionalProperties", true),
+                                        "typography", typographySchema,
+                                        "spacing", spacingSchema,
+                                        "accessibility", accessibilitySchema,
                                         "radius", Map.of("type", "object", "additionalProperties", true),
                                         "shadow", Map.of("type", "object", "additionalProperties", true)),
-                                "required", List.of("palette")),
+                                "required", List.of("palette", "typography", "spacing", "accessibility")),
                         "sectionPresets", Map.of("type", "array", "minItems", 1, "items", sectionPresetSchema),
-                        "componentPresets", Map.of("type", "object", "additionalProperties", true),
+                        "componentPresets", Map.of(
+                                "type", "object",
+                                "additionalProperties", true,
+                                "properties", Map.of(
+                                        "proof", Map.of(
+                                                "type", "object",
+                                                "additionalProperties", true,
+                                                "properties", Map.of(
+                                                        "showIdentity", Map.of("type", "boolean")),
+                                                "required", List.of("showIdentity")),
+                                        "trust", Map.of(
+                                                "type", "object",
+                                                "additionalProperties", true,
+                                                "properties", Map.of(
+                                                        "showLegalFooter", Map.of("type", "boolean")),
+                                                "required", List.of("showLegalFooter")),
+                                        "cta", Map.of(
+                                                "type", "object",
+                                                "additionalProperties", true,
+                                                "properties", Map.of(
+                                                        "stickyMobile", Map.of("type", "boolean")),
+                                                "required", List.of("stickyMobile"))),
+                                "required", List.of("proof", "trust", "cta")),
                         "motion", Map.of(
                                 "type", "object",
                                 "additionalProperties", false,

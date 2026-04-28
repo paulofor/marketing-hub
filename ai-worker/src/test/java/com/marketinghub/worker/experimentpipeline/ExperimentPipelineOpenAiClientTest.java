@@ -261,7 +261,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 14L,
                 "landing-page-html",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -643,7 +643,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 20L,
                 "landing-page-html",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -697,7 +697,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 20L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -745,7 +745,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 21L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -794,7 +794,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 22L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -838,7 +838,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 29L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -882,7 +882,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 23L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -923,7 +923,7 @@ class ExperimentPipelineOpenAiClientTest {
                 UUID.randomUUID(),
                 30L,
                 "LANDING_PAGE_HTML",
-                "gpt-5.2",
+                "gpt-5.1-codex",
                 "prompt",
                 """
                         {
@@ -1002,6 +1002,46 @@ class ExperimentPipelineOpenAiClientTest {
                 """
                         {
                           "model": "gpt-4o-mini",
+                          "input": [
+                            {"role": "user", "content": "Prompt de landing html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        assertThat(payload.get("model")).isEqualTo("gpt-5.1-codex");
+    }
+
+    @Test
+    void enforcesGpt51CodexModelForLandingHtmlPipelineCallWhenSectionIsEnumName() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(
+                        payloadRef,
+                        """
+                                <!doctype html>
+                                <html lang="pt-BR">
+                                  <body>
+                                    <form id="lead-capture-primary"></form>
+                                  </body>
+                                </html>
+                                """)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                16L,
+                "LANDING_PAGE_HTML",
+                "gpt-5.1-codex",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
                           "input": [
                             {"role": "user", "content": "Prompt de landing html"}
                           ]
@@ -1254,7 +1294,7 @@ class ExperimentPipelineOpenAiClientTest {
                 "test-key",
                 "http://openai");
         ExperimentPipelineJobCompletionPayload htmlPayload = htmlClient.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 34L, "landing-page-html", "gpt-5.2", "prompt",
+                UUID.randomUUID(), 34L, "landing-page-html", "gpt-5.1-codex", "prompt",
                 "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
         Map<String, Object> htmlContent = MAPPER.readValue(htmlPayload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1293,7 +1333,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 35L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now()));
+                UUID.randomUUID(), 35L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
 
         Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1333,7 +1373,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 38L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now()));
+                UUID.randomUUID(), 38L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
 
         Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1373,7 +1413,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 36L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now())));
+                UUID.randomUUID(), 36L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
@@ -1409,7 +1449,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 37L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now())));
+                UUID.randomUUID(), 37L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
@@ -1445,7 +1485,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 39L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now()));
+                UUID.randomUUID(), 39L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
 
         Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
         @SuppressWarnings("unchecked")
@@ -1485,7 +1525,7 @@ class ExperimentPipelineOpenAiClientTest {
                 """;
 
         Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 40L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now())));
+                UUID.randomUUID(), 40L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
 
         assertThat(thrown).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-image-planning.images[].sectionId/imageBindingKey.");

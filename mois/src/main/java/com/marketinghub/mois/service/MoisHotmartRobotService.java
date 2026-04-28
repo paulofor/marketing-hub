@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +18,7 @@ public class MoisHotmartRobotService {
 
     private static final String SOURCE_HOTMART = "HOTMART";
     private static final int MAX_HISTORY_SIZE = 300;
+    private static final Logger log = LoggerFactory.getLogger(MoisHotmartRobotService.class);
 
     private final MoisDomainService domainService;
     private final MoisHotmartRobotProperties properties;
@@ -45,13 +48,24 @@ public class MoisHotmartRobotService {
     private MoisAutomationDtos.HotmartRobotRunResponse trigger(String triggerType) {
         String runId = UUID.randomUUID().toString();
         Instant now = Instant.now();
+        List<String> sources = resolveSources();
+        log.info("MOIS Hotmart run iniciado (runId={}, triggerType={}, workspaceId={}, niche={}, marketTheme={}, sources={}, timeWindow={}, minSuccessScore={}, limitPerSource={})",
+                runId,
+                triggerType,
+                properties.getWorkspaceId(),
+                properties.getNiche(),
+                properties.getMarketTheme(),
+                sources,
+                properties.getTimeWindow(),
+                properties.getMinSuccessScore(),
+                properties.getLimitPerSource());
 
         try {
             MoisWorkspaceDtos.CollectionJobResponse job = domainService.createCollectionJob(new MoisWorkspaceDtos.CreateCollectionJobRequest(
                     properties.getWorkspaceId(),
                     properties.getNiche(),
                     properties.getMarketTheme(),
-                    resolveSources(),
+                    sources,
                     properties.getTimeWindow(),
                     properties.getLimitPerSource(),
                     properties.getLocale(),
@@ -72,6 +86,8 @@ public class MoisHotmartRobotService {
                     null
             );
             remember(response);
+            log.info("MOIS Hotmart run finalizado com sucesso (runId={}, triggerType={}, jobId={})",
+                    runId, triggerType, job.jobId());
             return response;
         } catch (RuntimeException ex) {
             MoisAutomationDtos.HotmartRobotRunResponse response = new MoisAutomationDtos.HotmartRobotRunResponse(
@@ -88,6 +104,7 @@ public class MoisHotmartRobotService {
                     ex.getMessage()
             );
             remember(response);
+            log.error("MOIS Hotmart run falhou (runId={}, triggerType={})", runId, triggerType, ex);
             throw ex;
         }
     }

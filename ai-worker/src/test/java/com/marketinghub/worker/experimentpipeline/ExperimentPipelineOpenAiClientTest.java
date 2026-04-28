@@ -776,14 +776,13 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
-    void failsWhenLandingPageHtmlReturnsJsonInsteadOfPureHtml() {
+    void acceptsLandingPageHtmlWithoutJsonEnvelope() throws Exception {
         String openAiText = """
-                {
-                  "landingPageHtml": {
-                    "htmlDocument": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head><meta charset=\\"UTF-8\\"></head>
-<body><form id=\\"lead-capture-primary\\"><input type=\\"text\\" name=\\"nome\\" /></form></body></html>"
-                  }
-                }
+                <!doctype html>
+                <html lang="pt-BR">
+                <head><meta charset="UTF-8"></head>
+                <body><form id="lead-capture-primary"><input type="text" name="nome" /></form></body>
+                </html>
                 """;
 
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
@@ -808,13 +807,16 @@ class ExperimentPipelineOpenAiClientTest {
                         """,
                 Instant.now());
 
-        Throwable error = catchThrowable(() -> client.generate(job));
+        ExperimentPipelineJobCompletionPayload payload = client.generate(job);
+        Map<String, Object> content = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> landingPageHtml = (Map<String, Object>) content.get("landingPageHtml");
+        String htmlDocument = String.valueOf(landingPageHtml.get("htmlDocument")).toLowerCase();
 
-        assertThat(error).isInstanceOf(IllegalStateException.class);
-        assertThat(error).hasMessageContaining("Falha ao gerar seção LANDING_PAGE_HTML do experimento 29");
-        assertThat(error.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("LANDING_PAGE_HTML exige HTML puro");
+        assertThat(htmlDocument).contains("<!doctype html>");
+        assertThat(htmlDocument).contains("name=\"nome\"");
+        assertThat(htmlDocument).doesNotContain("name=\"email\"");
+        assertThat(htmlDocument).doesNotContain("name=\"whatsapp\"");
     }
 
     @Test

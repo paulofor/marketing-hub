@@ -463,11 +463,12 @@ Regras:
 14. Não criar seções desnecessárias.
 15. Cada seção deve declarar mediaSlot (none, image, illustration, chart, icon-set ou video-thumb) com a função visual esperada.
 16. Cada seção deve declarar compositionNotes com instruções de composição e hierarquia visual para guiar a etapa de HTML.
-17. Cada seção deve declarar surfaceSpec com: surfaceToken, style, contrastMode e notes para formalizar a superfície visual.
+17. Cada seção deve declarar surfaceSpec com: surfaceToken e notes (âncora estrutural da seção).
 18. Use surfaceToken alternando entre surface-base e surface-alt-* para melhorar escaneabilidade entre seções consecutivas.
-19. Não transformar o layout em HTML final; foque apenas em ordem, hierarquia, slots e leitura mobile-first.
-20. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para {nicho}.
-21. Defina formSpec como contrato estruturado único do formulário com:
+19. Não definir style/contrastMode no wireframe como fonte primária; esses campos pertencem ao landing-page-design-preset.sectionPresets.
+20. Não transformar o layout em HTML final; foque apenas em ordem, hierarquia, slots e leitura mobile-first.
+21. Se a estrutura puder servir para qualquer nicho, reescreva até ficar específica para {nicho}.
+22. Defina formSpec como contrato estruturado único do formulário com:
     - formId: "lead-capture-primary"
     - title: "Receber a prévia do Kit (IA)"
     - submitLabel: "Desbloquear o Kit (receber a prévia gerada por IA)"
@@ -502,8 +503,6 @@ artifact {
     "sectionDependsOn": "",
     "surfaceSpec": {
       "surfaceToken": "surface-alt-1",
-      "style": "band",
-      "contrastMode": "normal",
       "notes": "Seção com fundo alternado para contraste sutil com a anterior"
     }
       }
@@ -537,7 +536,10 @@ Regras:
    - layout da landing para ordem/hierarquia e mediaSlot;
    - planejamento de imagens para posicionamento visual e altText;
    - wireframe.formSpec para renderizar exatamente os campos e obrigatoriedade do formulário.
-7. Aplicar cada wireframe.sectionOrder[i].surfaceSpec sem reinterpretar, usando data-section-id + data-surface-token + data-surface-style + data-surface-contrast na seção correspondente.
+7. Aplicar superfícies por origem canônica dividida:
+   - data-surface-token vem de wireframe.sectionOrder[i].surfaceSpec.surfaceToken
+   - data-surface-style e data-surface-contrast vêm de landingPageDesignPreset.sectionPresets por sectionId
+   - usar data-section-id na seção correspondente para binding determinístico.
 8. Não inventar estrutura visual fora do layout/plano de imagens sem justificar nos consistencyChecks.
 9. É proibido inventar/remover/renomear campos do formulário fora do formSpec.
 10. Não usar dependências externas.

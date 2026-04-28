@@ -3,6 +3,8 @@
 ## Objetivo
 Documento operacional para leitura rápida, separando **quem é responsável por cada item** no pipeline e quais validações de fechamento existem em cada etapa.
 
+> Para visão campo-a-campo com dono único, consulte também: `docs/canonical/matriz-responsaveis-unicos-itens-artefato.md`.
+
 ## Mapa por etapa
 
 | Etapa | Responsabilidade principal | Itens canônicos sob responsabilidade | Validação pesada no fechamento (`complete`) |
@@ -18,6 +20,14 @@ Documento operacional para leitura rápida, separando **quem é responsável por
 - **Estrutural (`wireframe`)**: `surfaceToken` + organização da página.
 - **Visual (`designPreset`)**: `surfaceStyle` + `contrastMode` por `sectionId`.
 - **HTML final (`LHM`)**: combina os dois contratos e publica os `data-*` aderentes.
+
+### Regra anti-duplicidade (fonte de verdade única por campo)
+
+- Não há duplicidade de responsabilidade quando os campos são separados por natureza:
+  - `surfaceToken` → **exclusivo** do `landingPageWireframe.sectionOrder[*].surfaceSpec`.
+  - `surfaceStyle` e `contrastMode` → **exclusivos** do `landingPageDesignPreset.sectionPresets[*]`.
+- Se `style/contrastMode` aparecerem no wireframe por legado, devem ser tratados apenas como fallback transitório; a fonte de verdade vigente continua sendo o design preset.
+- Em conflito entre valores, prevalece `landingPageDesignPreset` para `style/contrastMode` e prevalece o wireframe para `surfaceToken` e `sectionId`.
 
 ## Gate antecipado antes de HTML
 

@@ -1296,6 +1296,42 @@ class ExperimentPipelineOpenAiClientTest {
                 .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
     }
 
+    @Test
+    void failsFastWhenLandingHtmlCannotReproduceWireframeSurfaceSpecUsingPromptV2Marker() {
+        String htmlText = """
+                {
+                  "landingPageHtml": {
+                    "htmlDocument": "<!doctype html><html><body><section data-section-id='proof'></section></body></html>",
+                    "summary": "ok",
+                    "formSpec": {"formId": "lead-capture-primary"},
+                    "imagePlacementContract": {"requiredDataAttributes": []},
+                    "consistencyChecks": []
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        String requestBody = """
+                {
+                  "model":"gpt-5.2",
+                  "input":[
+                    {"role":"user","content":"Prompt v2\\n1) Wireframe aprovado (JSON):\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero-proof-form\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"normal\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\n2) Copy aprovada (JSON):\\n{}"}
+                  ]
+                }
+                """;
+
+        Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 37L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now())));
+
+        assertThat(thrown).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
+    }
+
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return capturePayloadExchange(payloadRef, "{\"content\":\"ok\"}");
     }

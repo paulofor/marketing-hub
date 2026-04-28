@@ -75,6 +75,53 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0008 — LANDING_PAGE_HTML não validava surfaceSpec quando prompt vinha no formato “Prompt v2”
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Tentativa `ca004a13-e78a-4ada-81d2-f7d4bbfe00ec` (experimento 15)
+
+#### 1) Erro observado
+- **Sintoma:** job `LANDING_PAGE_HTML` falhou no backend com `422` por divergência de superfície (`surfaceSpec`), apesar de o worker ter seguido para `/complete`.
+- **Endpoint/rota/fila:** `POST /api/internal/experiment-pipeline/jobs/{jobId}/complete`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Divergência de superfície: landing-page-html deve reproduzir exatamente landing-page-wireframe.sectionOrder.surfaceSpec`.
+- **Payload enviado (literal):** conteúdo de `landingPageHtml` com `htmlDocument` de 36199 caracteres; logs do worker mostram seções enviadas sem correspondência exata 1:1 com `sectionOrder` esperado no wireframe.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** `java_module_logs` do `ai-worker` com job `ca004a13...` mostrando envio para `/complete` e retorno 422.
+- **Dados de banco consultados via MCP:** `experiment_pipeline_generation_job` (erro 422) e `experiment.landing_page_wireframe` (surfaceSpec esperado por seção para o experimento 15).
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` e regra de contrato da etapa `landing-page-html` no prompt.
+- **Validação/regra que rejeitou:** validação de igualdade exata `expectedSurfaces` vs `actualSurfaces` no backend.
+- **Causa raiz:** no worker, a extração de `surfaceSpec` esperado do `request_body_json` dependia apenas do marcador textual `Wireframe da landing:`. No formato atual (“Prompt v2”, com `1) Wireframe aprovado (JSON):`), a extração retornava vazio e a validação preventiva do worker era pulada.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** HTML com conjunto de `data-section-id` diferente do `sectionOrder` canônico (faltando seção esperada e incluindo seção extra).
+- **O que a especificação esperava (literal):** reprodução exata de `landingPageWireframe.sectionOrder[*].surfaceSpec` no HTML (`data-section-id`, `data-surface-token`, `data-surface-style`, `data-surface-contrast`) sem sobras/faltas.
+- **Diferença objetiva:** worker não validou localmente devido falha de parsing do wireframe no prompt v2; backend validou e rejeitou.
+- **Ação corretiva recomendada:** robustecer extração do wireframe no worker para múltiplos marcadores de prompt e fallback por chave `landingPageWireframe`.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** parsing + validação preventiva + teste.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java`
+  - `ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** extração do JSON de wireframe agora aceita marcadores legados e do prompt v2 (`Wireframe aprovado (JSON)`), com fallback por chave `landingPageWireframe`; adicionada cobertura de teste para falha rápida no cenário de prompt v2 quando o HTML não reproduz `surfaceSpec`.
+
+#### 5) Reteste
+- **Procedimento de reteste:** `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` no módulo `ai-worker`.
+- **Resultado:** não executado com sucesso por dependência privada inacessível no ambiente (`com.marketinghub:ads-service:0.0.1-SNAPSHOT`).
+- **Evidências (logs/ids/prints):** erro Maven `401 Unauthorized` ao resolver artefato no GitHub Packages.
+- **Status final:** Parcial (correção aplicada; reteste automatizado pendente em ambiente com credencial).
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar a suíte de testes do `ai-worker` em ambiente autenticado e disparar nova tentativa de `LANDING_PAGE_HTML` para o experimento 15.
+- **Dono da ação:** Time do AI Worker.
+- **Prazo:** próxima janela de validação integrada.
+
 ### INC-0007 — LANDING_PAGE_HTML com contrato de saída em HTML puro (sem JSON)
 
 - **Data/Hora (UTC):** 2026-04-28

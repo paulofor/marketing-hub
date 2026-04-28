@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -97,11 +98,15 @@ public class LandingHtmlModule {
                 asTrimmedString(copy.get("summary")),
                 asTrimmedString(copy.get("lead")),
                 asTrimmedString(heroCopy.get("supportingCopy")));
+        String heroSectionId = resolveHeroSectionId(sections);
+        String heroHeadline = resolveHeroHeadline(copy, heroCopy, pageTitle);
+        String sanitizedPageSummary = sanitizePageSummary(pageSummary, heroHeadline, heroCopy);
 
         List<Map<String, Object>> plannedImages = extractImages(experiment.getLandingPageImagePlanning());
         Map<String, Object> designRoot = safeReadObject(experiment.getLandingPageDesignPreset());
         Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
         Map<String, Object> palette = extractPalette(designPreset);
+        Map<String, Object> typography = extractTypography(designPreset);
         Map<String, SectionVisualPreset> sectionVisualPresets = extractSectionVisualPresets(designPreset);
 
         String formId = firstNonBlank(asTrimmedString(formSpec.get("formId")), "lead-capture-primary");
@@ -121,8 +126,10 @@ public class LandingHtmlModule {
                 .append(";--muted:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("textMuted")), "#475569")))
                 .append(";--brand:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("brandPrimary")), "#1d4ed8")))
                 .append(";--brand-dark:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("brandSecondary")), "#1e40af")))
+                .append(";--lh-body-line-height:").append(escapeCss(firstNonBlank(asTrimmedString(typography.get("lineHeightBody")), "1.55")))
+                .append(";--lh-max-line:").append(escapeCss(firstNonBlank(asTrimmedString(typography.get("maxLineLength")), "66ch")))
                 .append(";}")
-                .append("*{box-sizing:border-box;}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text);line-height:1.55;}")
+                .append("*{box-sizing:border-box;}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text);line-height:var(--lh-body-line-height);}")
                 .append("main{max-width:980px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:14px;}")
                 .append(".card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.04);}")
                 .append(".card[data-surface-contrast='high']{border-color:#cdd8ee;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);}")
@@ -134,7 +141,7 @@ public class LandingHtmlModule {
                 .append(".contrast-soft{border-color:#e8edf6;background:#fbfdff;}")
                 .append("h1{font-size:clamp(1.65rem,4vw,2.1rem);line-height:1.15;margin:0 0 10px;font-weight:800;letter-spacing:-0.02em;}")
                 .append("h2{font-size:clamp(1.25rem,3.2vw,1.55rem);line-height:1.25;margin:0 0 10px;font-weight:750;letter-spacing:-0.01em;}")
-                .append("p{margin:0 0 10px;color:var(--muted);font-size:.98rem;}")
+                .append("p{margin:0 0 10px;color:var(--muted);font-size:.98rem;max-width:var(--lh-max-line);}")
                 .append(".section-objective{font-size:.95rem;color:#334155;background:#f8fafc;border:1px dashed #d6e1f5;border-radius:12px;padding:10px 12px;margin:0 0 12px;}")
                 .append("form{display:grid;gap:12px;background:#fbfdff;border:1px solid #dbe5f5;border-radius:14px;padding:14px;}")
                 .append(".field{display:grid;gap:6px;}.help{color:#64748b;font-size:.88rem;line-height:1.35;}")
@@ -170,6 +177,7 @@ public class LandingHtmlModule {
                     "normal");
             String surfaceStyleClass = "surface-" + normalizeCssToken(surfaceStyle);
             String surfaceContrastClass = "contrast-" + normalizeCssToken(surfaceContrast);
+            boolean isHeroSection = StringUtils.hasText(heroSectionId) && heroSectionId.equalsIgnoreCase(sectionId);
 
             html.append("<section class=\"card ")
                     .append(escapeAttr(surfaceStyleClass))
@@ -181,16 +189,16 @@ public class LandingHtmlModule {
                     .append("\" data-surface-style=\"").append(escapeAttr(surfaceStyle))
                     .append("\" data-surface-contrast=\"").append(escapeAttr(surfaceContrast))
                     .append("\">")
-                    .append(sectionIndex == 0
-                            ? "<h1>" + escapeHtml(pageTitle) + "</h1>"
+                    .append(isHeroSection
+                            ? "<h1>" + escapeHtml(heroHeadline) + "</h1>"
                             : "<h2>" + escapeHtml(sectionName) + "</h2>");
-            if (sectionIndex == 0 && StringUtils.hasText(pageSummary)) {
-                html.append("<p>").append(escapeHtml(pageSummary)).append("</p>");
+            if (isHeroSection && StringUtils.hasText(sanitizedPageSummary)) {
+                html.append("<p>").append(escapeHtml(sanitizedPageSummary)).append("</p>");
             }
-            if (sectionIndex == 0) {
-                html.append(buildHeroCopyMarkup(heroCopy, submitLabel, submitTarget));
+            if (isHeroSection) {
+                html.append(buildHeroCopyMarkup(heroCopy, heroHeadline, submitLabel, submitTarget));
             }
-            if (sectionIndex > 0 && StringUtils.hasText(sectionObjective)) {
+            if (!isHeroSection && StringUtils.hasText(sectionObjective)) {
                 html.append("<p class=\"section-objective\">").append(escapeHtml(sectionObjective)).append("</p>");
             }
             html.append(buildBodySectionCopyMarkup(sectionId, bodySectionsCopy));
@@ -406,6 +414,21 @@ public class LandingHtmlModule {
         return sb.toString();
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractTypography(Map<String, Object> designPreset) {
+        if (designPreset == null || designPreset.isEmpty()) {
+            return Map.of();
+        }
+        if (!(designPreset.get("theme") instanceof Map<?, ?> rawTheme)) {
+            return Map.of();
+        }
+        Map<String, Object> theme = (Map<String, Object>) rawTheme;
+        if (!(theme.get("typography") instanceof Map<?, ?> rawTypography)) {
+            return Map.of();
+        }
+        return (Map<String, Object>) rawTypography;
+    }
+
     private String buildImageTag(Map<String, Object> image) {
         String sectionId = firstNonBlank(asTrimmedString(image.get("sectionId")), "section");
         String bindingKey = firstNonBlank(asTrimmedString(image.get("imageBindingKey")), "image");
@@ -434,7 +457,10 @@ public class LandingHtmlModule {
                 + "\" data-supports-form-conversion=\"" + supportsFormConversion + "\" />";
     }
 
-    private String buildHeroCopyMarkup(Map<String, Object> heroCopy, String fallbackSubmitLabel, String fallbackSubmitTarget) {
+    private String buildHeroCopyMarkup(Map<String, Object> heroCopy,
+                                       String heroHeadline,
+                                       String fallbackSubmitLabel,
+                                       String fallbackSubmitTarget) {
         if (heroCopy == null || heroCopy.isEmpty()) {
             return "";
         }
@@ -445,7 +471,7 @@ public class LandingHtmlModule {
         String microcopy = asTrimmedString(heroCopy.get("microcopy"));
         String ctaLabel = firstNonBlank(asTrimmedString(heroCopy.get("ctaLabel")), fallbackSubmitLabel);
         String ctaUrl = firstNonBlank(asTrimmedString(heroCopy.get("ctaUrl")), fallbackSubmitTarget);
-        if (StringUtils.hasText(promise)) {
+        if (StringUtils.hasText(promise) && !isNearDuplicate(promise, heroHeadline)) {
             sb.append("<p class=\"section-objective\">").append(escapeHtml(promise)).append("</p>");
         }
         if (StringUtils.hasText(supportingCopy)) {
@@ -465,6 +491,97 @@ public class LandingHtmlModule {
                     .append("</a></p>");
         }
         return sb.toString();
+    }
+
+    private String resolveHeroSectionId(List<Map<String, Object>> sections) {
+        if (sections == null || sections.isEmpty()) {
+            return null;
+        }
+        for (Map<String, Object> section : sections) {
+            String sectionId = asTrimmedString(section.get("sectionId"));
+            if (StringUtils.hasText(sectionId) && sectionId.toLowerCase(Locale.ROOT).contains("hero")) {
+                return sectionId;
+            }
+        }
+        for (Map<String, Object> section : sections) {
+            String contentType = asTrimmedString(section.get("contentType"));
+            String sectionId = asTrimmedString(section.get("sectionId"));
+            if ("hero".equalsIgnoreCase(contentType) && StringUtils.hasText(sectionId)) {
+                return sectionId;
+            }
+        }
+        return asTrimmedString(sections.get(0).get("sectionId"));
+    }
+
+    private String resolveHeroHeadline(Map<String, Object> copy, Map<String, Object> heroCopy, String fallbackHeadline) {
+        String heroHeadline = firstNonBlank(
+                asTrimmedString(copy.get("headline")),
+                asTrimmedString(heroCopy.get("headline")),
+                asTrimmedString(heroCopy.get("subheadline")),
+                asTrimmedString(heroCopy.get("promise")),
+                fallbackHeadline);
+        return compactHeadline(heroHeadline, 16);
+    }
+
+    private String compactHeadline(String text, int maxWords) {
+        if (!StringUtils.hasText(text)) {
+            return "";
+        }
+        String[] words = text.trim().split("\\s+");
+        if (words.length <= maxWords) {
+            return text.trim();
+        }
+        return String.join(" ", java.util.Arrays.copyOf(words, maxWords)).trim() + "…";
+    }
+
+    private String sanitizePageSummary(String pageSummary, String heroHeadline, Map<String, Object> heroCopy) {
+        if (!StringUtils.hasText(pageSummary)) {
+            return null;
+        }
+        String supportingCopy = heroCopy == null ? null : asTrimmedString(heroCopy.get("supportingCopy"));
+        String promise = heroCopy == null ? null : asTrimmedString(heroCopy.get("promise"));
+        if (isNearDuplicate(pageSummary, heroHeadline) || isNearDuplicate(pageSummary, supportingCopy) || isNearDuplicate(pageSummary, promise)) {
+            return null;
+        }
+        return pageSummary.trim();
+    }
+
+    private boolean isNearDuplicate(String left, String right) {
+        if (!StringUtils.hasText(left) || !StringUtils.hasText(right)) {
+            return false;
+        }
+        String leftNormalized = normalizeTextForComparison(left);
+        String rightNormalized = normalizeTextForComparison(right);
+        if (Objects.equals(leftNormalized, rightNormalized)) {
+            return true;
+        }
+        if (leftNormalized.contains(rightNormalized) || rightNormalized.contains(leftNormalized)) {
+            return true;
+        }
+        return tokenOverlapRatio(leftNormalized, rightNormalized) >= 0.72d;
+    }
+
+    private String normalizeTextForComparison(String value) {
+        return value == null
+                ? ""
+                : value.toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private double tokenOverlapRatio(String leftNormalized, String rightNormalized) {
+        List<String> leftTokens = List.of(leftNormalized.split(" "));
+        List<String> rightTokens = List.of(rightNormalized.split(" "));
+        if (leftTokens.isEmpty() || rightTokens.isEmpty()) {
+            return 0d;
+        }
+        long intersection = leftTokens.stream()
+                .distinct()
+                .filter(rightTokens::contains)
+                .count();
+        int maxSize = Math.max((int) leftTokens.stream().distinct().count(), (int) rightTokens.stream().distinct().count());
+        return maxSize == 0 ? 0d : ((double) intersection / maxSize);
     }
 
     private String buildBodySectionCopyMarkup(String sectionId, List<Map<String, Object>> bodySectionsCopy) {

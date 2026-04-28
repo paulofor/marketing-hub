@@ -217,4 +217,80 @@ class LandingHtmlModuleTest {
         assertFalse(html.contains("data-surface-style=\"band\""));
         assertFalse(html.contains("data-surface-contrast=\"soft\""));
     }
+
+    @Test
+    void assembleHtmlDocumentUsesHeroSectionInsteadOfFirstWireframeSectionForH1() {
+        Experiment experiment = new Experiment();
+        experiment.setName("Teste LHM Hero");
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId": "nav-identity", "sectionName": "Topo", "contentType": "hero", "surfaceSpec": {"surfaceToken": "surface-nav", "style": "band", "contrastMode": "normal"}},
+                      {"sectionId": "hero-split-form", "sectionName": "Hero", "contentType": "split", "surfaceSpec": {"surfaceToken": "surface-hero", "style": "solid", "contrastMode": "high"}}
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "submitTarget": "/api/flows/submissions",
+                      "submitLabel": "Enviar",
+                      "fields": [{"name": "nome", "type": "text", "required": true}]
+                    }
+                  }
+                }
+                """);
+        experiment.setLandingPageCopy("""
+                {
+                  "landingPageCopy": {
+                    "hero": {
+                      "headline": "Headline principal bem mais curta",
+                      "supportingCopy": "Resumo de apoio"
+                    }
+                  }
+                }
+                """);
+
+        String html = module.assembleHtmlDocument(experiment);
+
+        assertTrue(html.contains("data-section-id=\"hero-split-form\""));
+        assertTrue(html.contains("<h1>Headline principal bem mais curta</h1>"));
+        assertTrue(html.contains("data-section-id=\"nav-identity\""));
+        assertTrue(html.contains("<h2>Topo</h2>"));
+    }
+
+    @Test
+    void assembleHtmlDocumentAvoidsRepeatingPromiseWhenDuplicateOfHeroHeadline() {
+        Experiment experiment = new Experiment();
+        experiment.setName("Teste LHM Dedup");
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId": "hero", "sectionName": "Hero", "contentType": "split", "surfaceSpec": {"surfaceToken": "surface-hero", "style": "band", "contrastMode": "normal"}}
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "submitTarget": "/api/flows/submissions",
+                      "submitLabel": "Enviar",
+                      "fields": [{"name": "nome", "type": "text", "required": true}]
+                    }
+                  }
+                }
+                """);
+        experiment.setLandingPageCopy("""
+                {
+                  "landingPageCopy": {
+                    "hero": {
+                      "headline": "Mesma mensagem da promessa",
+                      "promise": "Mesma mensagem da promessa",
+                      "supportingCopy": "Apoio adicional"
+                    }
+                  }
+                }
+                """);
+
+        String html = module.assembleHtmlDocument(experiment);
+
+        assertTrue(html.contains("<h1>Mesma mensagem da promessa</h1>"));
+        assertFalse(html.contains("<p class=\"section-objective\">Mesma mensagem da promessa</p>"));
+    }
 }

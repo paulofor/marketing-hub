@@ -249,6 +249,49 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void prependsLandingHtmlGuidanceWithExplicitBindingChecklist() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                14L,
+                "landing-page-html",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt de html"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).contains("surfaceMatrix[]");
+        assertThat(userPrompt).contains("imageMatrix[]");
+        assertThat(userPrompt).contains("data-image-section-id");
+        assertThat(userPrompt).contains("data-image-binding-key");
+        assertThat(userPrompt).contains("missingSections");
+        assertThat(userPrompt).contains("extraSections");
+        assertThat(userPrompt).contains("missingImageBindings");
+        assertThat(userPrompt).contains("extraImageBindings");
+        assertThat(userPrompt).contains("só finalize quando `missingSections=[]`, `extraSections=[]`, `missingImageBindings=[]` e `extraImageBindings=[]`");
+        assertThat(userPrompt).contains("case-sensitive");
+    }
+
+    @Test
     void injectsStructuredCaseDataBlockIntoSectionTemplate() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

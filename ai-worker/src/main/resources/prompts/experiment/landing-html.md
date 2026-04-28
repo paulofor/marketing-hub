@@ -1,5 +1,5 @@
 template_id: landing-html
-template_version: v1
+template_version: v2
 artifact_target: landingPageHtml
 
 SYSTEM_INSTRUCTIONS
@@ -33,6 +33,21 @@ Regras fixas da etapa:
 18. Manter headline curta, títulos comerciais e layout compacto no mobile.
 19. Não usar taxonomia interna (`entryAsset`, `coreOffer` etc.) como rótulo visível da landing.
 20. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+21. Antes de começar a escrever o HTML, monte internamente a matriz obrigatória `surfaceMatrix[]` com `sectionId + surfaceToken + surfaceStyle + surfaceContrast` usando `landingPageWireframe.sectionOrder` + `landingPageDesignPreset.sectionPresets`.
+22. Antes de começar a escrever o HTML, monte internamente a matriz obrigatória `imageMatrix[]` com `sectionId + imageBindingKey` usando `landingPageImagePlanning.images[]`.
+23. Renderize explicitamente **todas** as seções de `landingPageWireframe.sectionOrder` e somente elas (proibido faltar ou sobrar `sectionId`).
+24. Cada `<section>` renderizada deve conter: `data-section-id`, `data-surface-token`, `data-surface-style` e `data-surface-contrast` coerentes com a `surfaceMatrix[]`.
+25. Para cada item de `imageMatrix[]`, renderize um nó visual explícito com `data-image-section-id="<sectionId>"` e `data-image-binding-key="<imageBindingKey>"` exatamente iguais ao planejamento.
+26. É proibido reutilizar o mesmo `imageBindingKey` em seção diferente daquela definida em `imageMatrix[]`.
+27. Não finalize sem executar checklist interno obrigatório de contrato:
+    - `missingSections = sectionOrder.sectionId - html[data-section-id]`
+    - `extraSections = html[data-section-id] - sectionOrder.sectionId`
+    - `missingImageBindings = imageMatrix - html[data-image-section-id + data-image-binding-key]`
+    - `extraImageBindings = html[data-image-section-id + data-image-binding-key] - imageMatrix`
+    - só finalize quando `missingSections=[]`, `extraSections=[]`, `missingImageBindings=[]` e `extraImageBindings=[]`.
+28. Se qualquer checklist interno falhar, reescreva o HTML completo antes de responder; não devolva versão parcial.
+29. Use os mesmos `sectionId` e `imageBindingKey` de forma **literal** (case-sensitive, sem renomear, traduzir ou normalizar).
+30. `consistencyChecks` deve refletir esse contrato com evidência objetiva para `IMAGE_PLAN_BINDING` e `SURFACE_SPEC_BINDING`.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

@@ -69,8 +69,18 @@ jobs:
             -Dliquibase.username=root \
             -Dliquibase.password=root
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Docker image
-        run: docker build -f backend/ads-service/Dockerfile -t ${BACKEND_IMAGE}:${{ github.sha }} .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/ads-service/Dockerfile
+          tags: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          load: true
+          cache-from: type=gha,scope=backend-image
+          cache-to: type=gha,mode=max,scope=backend-image
 
       - name: Save image as artifact
         run: docker save ${BACKEND_IMAGE}:${{ github.sha }} -o backend-image.tar

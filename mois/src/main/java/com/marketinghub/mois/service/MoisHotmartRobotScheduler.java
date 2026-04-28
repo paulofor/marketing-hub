@@ -20,6 +20,9 @@ public class MoisHotmartRobotScheduler {
 
     @Scheduled(cron = "${mois.robot.hotmart.cron:0 0 14 * * *}")
     public void run() {
+        log.info("MOIS Hotmart scheduler acionado (enabled={}, cron={})",
+                properties.isEnabled(),
+                properties.getCron());
         if (!properties.isEnabled()) {
             log.warn("MOIS Hotmart scheduler ignorado: robot desabilitado (cron={})", properties.getCron());
             return;

@@ -120,6 +120,17 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 - **Dono da ação:** Time do AI Worker + responsável da operação do experimento.
 - **Prazo:** imediata (na próxima janela de reprocessamento).
 
+#### 7) Confirmação MCP (amostras da execução mais recente do experimento 15)
+- **MCP Server utilizado:** `https://mcpserverdigi.shop/mcp` (JSON-RPC, ferramentas `db_query` e `java_module_logs`).
+- **Amostra 1 — tentativa com erro (`b244db1f-aa3d-41a5-9c65-5e68cf372016`):**
+  - `experiment_pipeline_generation_job.error_message` retornou `422` com mensagem literal de divergência de superfície.
+  - Em `request_body_json` da mesma tentativa (Prompt v2), o `landingPageWireframe.sectionOrder` trazia `footer-legal` com `contrastMode=normal`.
+  - No mesmo prompt, `landingPageDesignPreset.sectionPresets` trazia `footer-legal` com `contrastMode=soft`.
+- **Amostra 2 — estado mais recente persistido no experimento 15 (`experiment.landing_page_html`):**
+  - Extração do HTML persistido mostrou `data-section-id="footer-legal"` com `data-surface-contrast="soft"`.
+  - Isso confirma o contrato atual: `surfaceToken` vem do wireframe, enquanto `style/contrast` devem seguir o design preset por seção.
+- **Conclusão confirmada com MCP:** a diferença crítica observada na execução recente foi a seção `footer-legal` (`normal` no wireframe vs `soft` no design preset), validando que o worker precisa priorizar preset para `style/contrast` na etapa `LANDING_PAGE_HTML`.
+
 ### INC-0008 — LANDING_PAGE_HTML não validava surfaceSpec quando prompt vinha no formato “Prompt v2”
 
 - **Data/Hora (UTC):** 2026-04-28

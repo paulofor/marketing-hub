@@ -190,4 +190,26 @@ class LeadPortalPublicFlowControllerTest {
                 .andExpect(content().contentType("text/html;charset=UTF-8"))
                 .andExpect(content().string(nestedDocument));
     }
+
+    @Test
+    void getLandingPageBySlugExtractsInlineHtmlWhenPayloadHasJsonPrefix() throws Exception {
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
+        String nestedDocument = "<!doctype html><html lang=\"pt-BR\"><body><main><h1>Landing extraída</h1></main></body></html>";
+        String prefixedPayload = """
+                {"landingPageHtml":"{\\"htmlDocument\\":\\"texto quebrado\\"}"}
+                %s
+                """.formatted(nestedDocument);
+        flowRepository.save(LeadPortalFlow.builder()
+                .name("Fluxo Landing")
+                .slug("exp-18-landing")
+                .approved(true)
+                .marketNiche(niche)
+                .customFormHtml(prefixedPayload)
+                .build());
+
+        mockMvc.perform(get("/api/flows/exp-18-landing/page"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("text/html;charset=UTF-8"))
+                .andExpect(content().string(nestedDocument));
+    }
 }

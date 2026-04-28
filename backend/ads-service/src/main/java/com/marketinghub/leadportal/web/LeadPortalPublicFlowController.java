@@ -59,7 +59,27 @@ public class LeadPortalPublicFlowController {
         if (StringUtils.hasText(extractedFromHybrid)) {
             return extractedFromHybrid;
         }
+        String extractedFromInlineHtml = tryExtractInlineHtmlDocument(sourceHtml);
+        if (StringUtils.hasText(extractedFromInlineHtml)) {
+            return extractedFromInlineHtml;
+        }
         return sourceHtml;
+    }
+
+    private String tryExtractInlineHtmlDocument(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String lowered = value.toLowerCase();
+        int doctypeIndex = lowered.indexOf("<!doctype html");
+        if (doctypeIndex >= 0) {
+            return value.substring(doctypeIndex).trim();
+        }
+        int htmlIndex = lowered.indexOf("<html");
+        if (htmlIndex >= 0) {
+            return value.substring(htmlIndex).trim();
+        }
+        return null;
     }
 
     private boolean looksLikeJsonPayload(String value) {

@@ -606,6 +606,11 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 > - é proibido retornar envelope JSON, markdown, bloco ``` ou campo textual contendo JSON serializado;
 > - o backend do Lead Portal **não** deve tentar “desempacotar” HTML de payload misto/JSON: entradas fora de HTML puro devem ser rejeitadas.
 > - para atributos canônicos de binding/superfície no HTML (`data-section-id`, `data-surface-token`, `data-surface-style`, `data-surface-contrast`), o backend normaliza artefatos de serialização antes da validação estrita: aspas codificadas (`&quot;`, `&#34;`, `&#x22;`), versões escapadas com barra invertida (ex.: `\\&quot;`) e tokens de quebra de linha escapados (`\\n`, `\\r`, `\\t`). O warning operacional deve permanecer para correção definitiva no worker/prompt.
+>
+> **Atualização canônica (2026-04-28) — entrada/saída da etapa `landingPageHtml`:**
+> - para execução do job `LANDING_PAGE_HTML` no Worker IA, o conteúdo retornado pelo modelo deve chegar em `response.output_text` como **texto HTML bruto**;
+> - respostas no formato `{"landingPageHtml":{"htmlDocument":"..."}}` passam a ser consideradas **quebra de contrato de etapa** (não apenas variação de formato);
+> - o parse canônico da etapa deve priorizar texto HTML puro e rejeitar qualquer tentativa de interpretar JSON como fallback funcional.
 
 ```json
 {

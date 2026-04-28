@@ -75,6 +75,51 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0009 — Verificação da tentativa `b244db1f` (LANDING_PAGE_HTML com divergência de superfície)
+
+- **Data/Hora (UTC):** 2026-04-28
+- **Responsável:** Assistente Codex
+- **Módulo:** backend + ai-worker (integração de contrato)
+- **Ambiente:** Execução remota exibida no Marketing Hub (`experiments/15`)
+- **Execução/Teste:** Tentativa `b244db1f` (erro registrado em `28/04/2026, 10:14:37 BRT`)
+
+#### 1) Erro observado
+- **Sintoma:** etapa `LANDING_PAGE_HTML` terminou com erro de contrato de superfície.
+- **Endpoint/rota/fila:** fechamento do job em `POST /api/internal/experiment-pipeline/jobs/{jobId}/complete`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Divergência de superfície: landing-page-html deve reproduzir exatamente landing-page-wireframe.sectionOrder.surfaceSpec`.
+- **Payload enviado (literal):** `landingPageHtml.htmlDocument` concluído pelo worker, porém rejeitado na validação determinística do backend.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não disponível neste ambiente local (sem servidor MCP configurado no container).
+- **Dados de banco consultados via MCP:** não disponível neste ambiente local.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (contrato de superfície por seção para `landing-page-html`).
+- **Validação/regra que rejeitou:** comparação exata entre superfícies esperadas do wireframe e superfícies encontradas no HTML final.
+- **Causa raiz provável:** o HTML gerado para a tentativa não preservou correspondência 1:1 de `sectionId` + atributos `data-surface-*` exigidos pelo `sectionOrder.surfaceSpec` canônico.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** HTML final aceito sintaticamente, mas com conjunto de superfícies divergente do wireframe aprovado.
+- **O que a especificação esperava (literal):** todas as seções do `landingPageWireframe.sectionOrder` renderizadas no HTML com `data-section-id`, `data-surface-token`, `data-surface-style` e `data-surface-contrast` equivalentes.
+- **Diferença objetiva:** divergência de superfície (falta/sobra de seção e/ou atributos de superfície diferentes do wireframe/preset por seção).
+- **Ação corretiva recomendada:** regenerar `LANDING_PAGE_HTML` usando exatamente o wireframe/preset já aprovados e validar localmente a matriz `sectionId + surfaceSpec` antes do `/complete`.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** documentação operacional de incidente.
+- **Arquivos alterados:**
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** inclusão do registro formal da verificação da tentativa `b244db1f`, com diagnóstico estruturado 422 e ação corretiva orientada a contrato canônico.
+
+#### 5) Reteste
+- **Procedimento de reteste:** não executado neste container (somente registro e análise documental da tentativa remota).
+- **Resultado:** pendente de nova execução integrada no ambiente alvo.
+- **Evidências (logs/ids/prints):** print da UI com tentativa `b244db1f` e mensagem de erro de divergência de superfície.
+- **Status final:** Pendente (aguarda nova tentativa após regeneração do HTML).
+
+#### 6) Próximo passo
+- **Ação seguinte:** disparar nova execução de `LANDING_PAGE_HTML` no experimento 15 após confirmar alinhamento estrito de `surfaceSpec` por seção.
+- **Dono da ação:** Time do AI Worker + responsável da operação do experimento.
+- **Prazo:** imediata (na próxima janela de reprocessamento).
+
 ### INC-0008 — LANDING_PAGE_HTML não validava surfaceSpec quando prompt vinha no formato “Prompt v2”
 
 - **Data/Hora (UTC):** 2026-04-28

@@ -1261,6 +1261,46 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void synchronizesLandingHtmlSurfaceAttributesUsingDesignPresetWhenWireframeOmitsStyleAndContrast() throws Exception {
+        String htmlText = """
+                {
+                  "landingPageHtml": {
+                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero'></section><section data-section-id='proof'></section></body></html>",
+                    "summary": "ok",
+                    "formSpec": {"formId": "lead-capture-primary"},
+                    "imagePlacementContract": {"requiredDataAttributes": []},
+                    "consistencyChecks": []
+                  }
+                }
+                """;
+
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        String requestBody = """
+                {
+                  "model":"gpt-5.2",
+                  "input":[
+                    {"role":"user","content":"Prompt v2\\n1) Wireframe aprovado (JSON):\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"notes\\":\\"hero\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"notes\\":\\"proof\\"}}]}}\\n2) Texto da landing aprovado (JSON):\\n{}\\n3) Preset de design aprovado (JSON):\\n{\\"landingPageDesignPreset\\":{\\"sectionPresets\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceStyle\\":\\"band\\",\\"contrastMode\\":\\"high\\"},{\\"sectionId\\":\\"proof\\",\\"surfaceStyle\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}]}}"}
+                  ]
+                }
+                """;
+
+        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
+                UUID.randomUUID(), 38L, "landing-page-html", "gpt-5.2", "prompt", requestBody, Instant.now()));
+
+        Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
+        @SuppressWarnings("unchecked")
+        Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
+        String htmlDocument = String.valueOf(html.get("htmlDocument"));
+        assertThat(htmlDocument).contains("data-section-id='hero' data-surface-token=\"surface-hero\" data-surface-style=\"band\" data-surface-contrast=\"high\"");
+        assertThat(htmlDocument).contains("data-section-id='proof' data-surface-token=\"surface-proof\" data-surface-style=\"solid\" data-surface-contrast=\"normal\"");
+    }
+
+    @Test
     void failsFastWhenLandingHtmlCannotReproduceWireframeSurfaceSpec() {
         String htmlText = """
                 {

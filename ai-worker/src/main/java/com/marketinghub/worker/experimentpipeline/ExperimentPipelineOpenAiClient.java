@@ -548,6 +548,8 @@ public class ExperimentPipelineOpenAiClient {
         if (!StringUtils.hasText(wireframeJson)) {
             return List.of();
         }
+        String designPresetJson = extractDesignPresetJsonBlock(userPrompt);
+        Map<String, SectionVisualPresetContract> visualPresetBySection = extractSectionVisualPresetsBySection(designPresetJson);
         try {
             Map<String, Object> root = objectMapper.readValue(wireframeJson, new TypeReference<>() {});
             Object wireframeNode = root.get("landingPageWireframe");
@@ -571,8 +573,13 @@ public class ExperimentPipelineOpenAiClient {
                 }
                 Map<String, Object> surface = (Map<String, Object>) surfaceMap;
                 String surfaceToken = normalizeHtmlAttr(readString(surface, "surfaceToken"));
-                String style = normalizeHtmlAttr(readString(surface, "style"));
-                String contrastMode = normalizeHtmlAttr(readString(surface, "contrastMode"));
+                SectionVisualPresetContract visualPreset = visualPresetBySection.get(normalizeLookupKey(sectionId));
+                String style = normalizeHtmlAttr(firstNonBlank(
+                        visualPreset != null ? visualPreset.style() : null,
+                        readString(surface, "style")));
+                String contrastMode = normalizeHtmlAttr(firstNonBlank(
+                        visualPreset != null ? visualPreset.contrastMode() : null,
+                        readString(surface, "contrastMode")));
                 if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(surfaceToken)
                         || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
                     continue;
@@ -584,6 +591,91 @@ public class ExperimentPipelineOpenAiClient {
             log.warn("Falha ao extrair wireframe do prompt para validar surfaceSpec: {}", ex.getMessage());
             return List.of();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, SectionVisualPresetContract> extractSectionVisualPresetsBySection(String designPresetJson) {
+        if (!StringUtils.hasText(designPresetJson)) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> root = objectMapper.readValue(designPresetJson, new TypeReference<>() {});
+            Object designNode = root.get("landingPageDesignPreset");
+            Map<String, Object> designPreset = designNode instanceof Map<?, ?> map
+                    ? (Map<String, Object>) map
+                    : root;
+            Object rawSectionPresets = designPreset.get("sectionPresets");
+            if (!(rawSectionPresets instanceof List<?> sectionPresets)) {
+                return Map.of();
+            }
+            Map<String, SectionVisualPresetContract> visualPresets = new LinkedHashMap<>();
+            for (Object rawPreset : sectionPresets) {
+                if (!(rawPreset instanceof Map<?, ?> rawPresetMap)) {
+                    continue;
+                }
+                Map<String, Object> sectionPreset = (Map<String, Object>) rawPresetMap;
+                String sectionId = normalizeLookupKey(readString(sectionPreset, "sectionId"));
+                String style = normalizeHtmlAttr(readString(sectionPreset, "surfaceStyle"));
+                String contrastMode = normalizeHtmlAttr(readString(sectionPreset, "contrastMode"));
+                if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(style) || !StringUtils.hasText(contrastMode)) {
+                    continue;
+                }
+                visualPresets.put(sectionId, new SectionVisualPresetContract(style, contrastMode));
+            }
+            return visualPresets;
+        } catch (Exception ex) {
+            log.warn("Falha ao extrair design preset do prompt para validar surfaceSpec: {}", ex.getMessage());
+            return Map.of();
+        }
+    }
+
+    private String extractDesignPresetJsonBlock(String userPrompt) {
+        if (!StringUtils.hasText(userPrompt)) {
+            return null;
+        }
+        List<String> candidateMarkers = List.of(
+                "Preset de design da landing:",
+                "Preset de design aprovado (JSON):",
+                "3) Preset de design aprovado (JSON):");
+        for (String marker : candidateMarkers) {
+            int markerIndex = userPrompt.indexOf(marker);
+            if (markerIndex < 0) {
+                continue;
+            }
+            int jsonStart = userPrompt.indexOf('{', markerIndex);
+            if (jsonStart < 0) {
+                continue;
+            }
+            String jsonBlock = extractBalancedJsonObject(userPrompt, jsonStart);
+            if (StringUtils.hasText(jsonBlock)) {
+                return jsonBlock;
+            }
+        }
+        int designPresetKeyIndex = userPrompt.indexOf("\"landingPageDesignPreset\"");
+        if (designPresetKeyIndex < 0) {
+            return null;
+        }
+        int rootStart = userPrompt.lastIndexOf('{', designPresetKeyIndex);
+        if (rootStart < 0) {
+            return null;
+        }
+        return extractBalancedJsonObject(userPrompt, rootStart);
+    }
+
+    private String normalizeLookupKey(String value) {
+        return normalizeHtmlAttr(value).toLowerCase(Locale.ROOT);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 
     private String extractWireframeJsonBlock(String userPrompt) {
@@ -783,6 +875,9 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     private record SectionSurfaceContract(String sectionId, String surfaceToken, String style, String contrastMode) {
+    }
+
+    private record SectionVisualPresetContract(String style, String contrastMode) {
     }
 
     @SuppressWarnings("unchecked")

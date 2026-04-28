@@ -274,6 +274,7 @@ public class ExperimentPipelineOpenAiClient {
             log.info("OpenAI content for job {}: {}", job.id(), content);
             Map<String, Object> parsed = parseResponseContent(content, job);
             enforceLandingHtmlSurfaceBinding(parsed, payload, job, content);
+            enforceLandingHtmlImagePlanningBinding(parsed, payload, job, content);
             validateExpectedResponseContract(parsed, content, job);
             enrichConsistencyChecks(parsed, job);
             String sectionContent = objectMapper.writeValueAsString(parsed);
@@ -539,6 +540,39 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     @SuppressWarnings("unchecked")
+    private void enforceLandingHtmlImagePlanningBinding(Map<String, Object> parsed,
+                                                        Map<String, Object> requestPayload,
+                                                        ExperimentPipelineJobDto job,
+                                                        String rawContent) {
+        if (!isLandingHtmlSection(job) || parsed == null) {
+            return;
+        }
+        Object nestedPayload = parsed.get("landingPageHtml");
+        Map<String, Object> landingPayload = nestedPayload instanceof Map<?, ?> map
+                ? (Map<String, Object>) map
+                : parsed;
+        String htmlDocument = readString(landingPayload, LANDING_HTML_MARKER);
+        if (!StringUtils.hasText(htmlDocument)) {
+            return;
+        }
+        List<SectionImageBindingContract> expectedBindings = extractExpectedImageBindingsFromRequestPayload(requestPayload);
+        if (expectedBindings.isEmpty()) {
+            return;
+        }
+        List<SectionImageBindingContract> expectedSorted = expectedBindings.stream()
+                .sorted(java.util.Comparator.comparing(SectionImageBindingContract::sectionId))
+                .toList();
+        List<SectionImageBindingContract> actualSorted = extractImageBindingsFromHtml(htmlDocument).stream()
+                .sorted(java.util.Comparator.comparing(SectionImageBindingContract::sectionId))
+                .toList();
+        if (!expectedSorted.equals(actualSorted)) {
+            String reason = "Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-image-planning.images[].sectionId/imageBindingKey.";
+            logContractBreak(job, reason, rawContent, null);
+            throw new IllegalStateException(reason);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private List<SectionSurfaceContract> extractExpectedSurfacesFromRequestPayload(Map<String, Object> requestPayload) {
         String userPrompt = extractUserPromptFromRequestPayload(requestPayload);
         if (!StringUtils.hasText(userPrompt)) {
@@ -656,6 +690,79 @@ public class ExperimentPipelineOpenAiClient {
             return null;
         }
         int rootStart = userPrompt.lastIndexOf('{', designPresetKeyIndex);
+        if (rootStart < 0) {
+            return null;
+        }
+        return extractBalancedJsonObject(userPrompt, rootStart);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<SectionImageBindingContract> extractExpectedImageBindingsFromRequestPayload(Map<String, Object> requestPayload) {
+        String userPrompt = extractUserPromptFromRequestPayload(requestPayload);
+        if (!StringUtils.hasText(userPrompt)) {
+            return List.of();
+        }
+        String imagePlanningJson = extractImagePlanningJsonBlock(userPrompt);
+        if (!StringUtils.hasText(imagePlanningJson)) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> root = objectMapper.readValue(imagePlanningJson, new TypeReference<>() {});
+            Object planningNode = root.get("landingPageImagePlanning");
+            Map<String, Object> planning = planningNode instanceof Map<?, ?> map
+                    ? (Map<String, Object>) map
+                    : root;
+            Object imagesNode = planning.get("images");
+            if (!(imagesNode instanceof List<?> images)) {
+                return List.of();
+            }
+            Map<String, SectionImageBindingContract> bindingsBySection = new LinkedHashMap<>();
+            for (Object image : images) {
+                if (!(image instanceof Map<?, ?> imageMap)) {
+                    continue;
+                }
+                Map<String, Object> imageData = (Map<String, Object>) imageMap;
+                String sectionId = normalizeHtmlAttr(readString(imageData, "sectionId"));
+                String imageBindingKey = normalizeHtmlAttr(readString(imageData, "imageBindingKey"));
+                if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageBindingKey)) {
+                    continue;
+                }
+                bindingsBySection.put(sectionId, new SectionImageBindingContract(sectionId, imageBindingKey));
+            }
+            return new ArrayList<>(bindingsBySection.values());
+        } catch (Exception ex) {
+            log.warn("Falha ao extrair image planning do prompt para validar imageBindingKey: {}", ex.getMessage());
+            return List.of();
+        }
+    }
+
+    private String extractImagePlanningJsonBlock(String userPrompt) {
+        if (!StringUtils.hasText(userPrompt)) {
+            return null;
+        }
+        List<String> candidateMarkers = List.of(
+                "Planejamento de imagens da landing:",
+                "Planejamento de imagens aprovado (JSON):",
+                "4) Planejamento de imagens aprovado (JSON):");
+        for (String marker : candidateMarkers) {
+            int markerIndex = userPrompt.indexOf(marker);
+            if (markerIndex < 0) {
+                continue;
+            }
+            int jsonStart = userPrompt.indexOf('{', markerIndex);
+            if (jsonStart < 0) {
+                continue;
+            }
+            String jsonBlock = extractBalancedJsonObject(userPrompt, jsonStart);
+            if (StringUtils.hasText(jsonBlock)) {
+                return jsonBlock;
+            }
+        }
+        int planningKeyIndex = userPrompt.indexOf("\"landingPageImagePlanning\"");
+        if (planningKeyIndex < 0) {
+            return null;
+        }
+        int rootStart = userPrompt.lastIndexOf('{', planningKeyIndex);
         if (rootStart < 0) {
             return null;
         }
@@ -822,6 +929,24 @@ public class ExperimentPipelineOpenAiClient {
         return new ArrayList<>(contractsBySectionId.values());
     }
 
+    private List<SectionImageBindingContract> extractImageBindingsFromHtml(String htmlDocument) {
+        if (!StringUtils.hasText(htmlDocument)) {
+            return List.of();
+        }
+        Map<String, SectionImageBindingContract> contractsBySectionId = new LinkedHashMap<>();
+        Matcher tagMatcher = HTML_OPENING_TAG_PATTERN.matcher(htmlDocument);
+        while (tagMatcher.find()) {
+            String tag = tagMatcher.group();
+            String sectionId = normalizeHtmlAttr(readAttribute(tag, "data-image-section-id"));
+            String imageBindingKey = normalizeHtmlAttr(readAttribute(tag, "data-image-binding-key"));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(imageBindingKey)) {
+                continue;
+            }
+            contractsBySectionId.put(sectionId, new SectionImageBindingContract(sectionId, imageBindingKey));
+        }
+        return new ArrayList<>(contractsBySectionId.values());
+    }
+
     private String readAttribute(String tag, String attributeName) {
         if (!StringUtils.hasText(tag) || !StringUtils.hasText(attributeName)) {
             return "";
@@ -878,6 +1003,9 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     private record SectionVisualPresetContract(String style, String contrastMode) {
+    }
+
+    private record SectionImageBindingContract(String sectionId, String imageBindingKey) {
     }
 
     @SuppressWarnings("unchecked")

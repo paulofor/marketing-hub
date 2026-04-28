@@ -544,15 +544,7 @@ public class ExperimentPipelineOpenAiClient {
         if (!StringUtils.hasText(userPrompt)) {
             return List.of();
         }
-        int markerIndex = userPrompt.indexOf("Wireframe da landing:");
-        if (markerIndex < 0) {
-            return List.of();
-        }
-        int jsonStart = userPrompt.indexOf('{', markerIndex);
-        if (jsonStart < 0) {
-            return List.of();
-        }
-        String wireframeJson = extractBalancedJsonObject(userPrompt, jsonStart);
+        String wireframeJson = extractWireframeJsonBlock(userPrompt);
         if (!StringUtils.hasText(wireframeJson)) {
             return List.of();
         }
@@ -592,6 +584,39 @@ public class ExperimentPipelineOpenAiClient {
             log.warn("Falha ao extrair wireframe do prompt para validar surfaceSpec: {}", ex.getMessage());
             return List.of();
         }
+    }
+
+    private String extractWireframeJsonBlock(String userPrompt) {
+        if (!StringUtils.hasText(userPrompt)) {
+            return null;
+        }
+        List<String> candidateMarkers = List.of(
+                "Wireframe da landing:",
+                "Wireframe aprovado (JSON):",
+                "1) Wireframe aprovado (JSON):");
+        for (String marker : candidateMarkers) {
+            int markerIndex = userPrompt.indexOf(marker);
+            if (markerIndex < 0) {
+                continue;
+            }
+            int jsonStart = userPrompt.indexOf('{', markerIndex);
+            if (jsonStart < 0) {
+                continue;
+            }
+            String jsonBlock = extractBalancedJsonObject(userPrompt, jsonStart);
+            if (StringUtils.hasText(jsonBlock)) {
+                return jsonBlock;
+            }
+        }
+        int wireframeKeyIndex = userPrompt.indexOf("\"landingPageWireframe\"");
+        if (wireframeKeyIndex < 0) {
+            return null;
+        }
+        int rootStart = userPrompt.lastIndexOf('{', wireframeKeyIndex);
+        if (rootStart < 0) {
+            return null;
+        }
+        return extractBalancedJsonObject(userPrompt, rootStart);
     }
 
     @SuppressWarnings("unchecked")

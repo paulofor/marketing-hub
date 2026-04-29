@@ -28,13 +28,17 @@ public class LandingHtmlModule {
         if (experiment == null) {
             return "";
         }
+        String landingPageWireframe = requireArtifact(experiment.getLandingPageWireframe(), "landingPageWireframe");
+        String landingPageCopy = requireArtifact(experiment.getLandingPageCopy(), "landingPageCopy");
+        String landingPageDesignPreset = requireArtifact(experiment.getLandingPageDesignPreset(), "landingPageDesignPreset");
+        String landingPageImagePlanning = requireArtifact(experiment.getLandingPageImagePlanning(), "landingPageImagePlanning");
         StringBuilder sb = new StringBuilder();
         sb.append("\nPrompt v2 (inputs mínimos para LANDING_PAGE_HTML):\n");
         sb.append("Use apenas os 4 insumos abaixo como fonte de verdade para montar o HTML final.\n");
-        appendIfPresent(sb, "1) Wireframe aprovado (JSON)", experiment.getLandingPageWireframe());
-        appendIfPresent(sb, "2) Texto da landing aprovado (JSON)", experiment.getLandingPageCopy());
-        appendIfPresent(sb, "3) Preset de design aprovado (JSON)", experiment.getLandingPageDesignPreset());
-        String imageUrls = summarizeImageUrlsFromPlanning(experiment.getLandingPageImagePlanning());
+        appendIfPresent(sb, "1) Wireframe aprovado (JSON)", landingPageWireframe);
+        appendIfPresent(sb, "2) Texto da landing aprovado (JSON)", landingPageCopy);
+        appendIfPresent(sb, "3) Preset de design aprovado (JSON)", landingPageDesignPreset);
+        String imageUrls = summarizeImageUrlsFromPlanning(landingPageImagePlanning);
         if (StringUtils.hasText(imageUrls)) {
             sb.append("4) URLs de imagens aprovadas por seção:\n").append(imageUrls);
         } else {
@@ -48,7 +52,12 @@ public class LandingHtmlModule {
         if (experiment == null) {
             return "";
         }
-        Map<String, Object> wireframeRoot = safeReadObject(experiment.getLandingPageWireframe());
+        String landingPageWireframe = requireArtifact(experiment.getLandingPageWireframe(), "landingPageWireframe");
+        String landingPageCopy = requireArtifact(experiment.getLandingPageCopy(), "landingPageCopy");
+        String landingPageDesignPreset = requireArtifact(experiment.getLandingPageDesignPreset(), "landingPageDesignPreset");
+        String landingPageImagePlanning = requireArtifact(experiment.getLandingPageImagePlanning(), "landingPageImagePlanning");
+
+        Map<String, Object> wireframeRoot = safeReadObject(landingPageWireframe, "landingPageWireframe");
         Map<String, Object> wireframe = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
         Map<String, Object> formSpec = wireframe.get("formSpec") instanceof Map<?, ?> form
                 ? (Map<String, Object>) form
@@ -61,7 +70,7 @@ public class LandingHtmlModule {
                 .toList()
                 : List.of();
 
-        Map<String, Object> copyRoot = safeReadObject(experiment.getLandingPageCopy());
+        Map<String, Object> copyRoot = safeReadObject(landingPageCopy, "landingPageCopy");
         Map<String, Object> copy = unwrapSectionPayload(copyRoot, "landingPageCopy");
         Map<String, Object> heroCopy = copy.get("hero") instanceof Map<?, ?> rawHero
                 ? (Map<String, Object>) rawHero
@@ -102,8 +111,8 @@ public class LandingHtmlModule {
         String heroHeadline = resolveHeroHeadline(copy, heroCopy, pageTitle);
         String sanitizedPageSummary = sanitizePageSummary(pageSummary, heroHeadline, heroCopy);
 
-        List<Map<String, Object>> plannedImages = extractImages(experiment.getLandingPageImagePlanning());
-        Map<String, Object> designRoot = safeReadObject(experiment.getLandingPageDesignPreset());
+        List<Map<String, Object>> plannedImages = extractImages(landingPageImagePlanning);
+        Map<String, Object> designRoot = safeReadObject(landingPageDesignPreset, "landingPageDesignPreset");
         Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
         Map<String, Object> palette = extractPalette(designPreset);
         Map<String, Object> typography = extractTypography(designPreset);
@@ -206,43 +215,36 @@ public class LandingHtmlModule {
 
     @SuppressWarnings("unchecked")
     private String summarizeImageUrlsFromPlanning(String imagePlanningPayload) {
-        if (!StringUtils.hasText(imagePlanningPayload)) {
+        Map<String, Object> root = safeReadObject(imagePlanningPayload, "landingPageImagePlanning");
+        Map<String, Object> payload = unwrapSectionPayload(root, "landingPageImagePlanning");
+        if (!(payload.get("images") instanceof List<?> rawImages)) {
             return null;
         }
-        try {
-            Map<String, Object> root = objectMapper.readValue(imagePlanningPayload, Map.class);
-            Map<String, Object> payload = unwrapSectionPayload(root, "landingPageImagePlanning");
-            if (!(payload.get("images") instanceof List<?> rawImages)) {
-                return null;
+        StringBuilder sb = new StringBuilder();
+        int index = 0;
+        for (Object rawImage : rawImages) {
+            if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                continue;
             }
-            StringBuilder sb = new StringBuilder();
-            int index = 0;
-            for (Object rawImage : rawImages) {
-                if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
-                    continue;
-                }
-                Map<String, Object> image = (Map<String, Object>) rawImageMap;
-                String sectionId = asTrimmedString(image.get("sectionId"));
-                String bindingKey = asTrimmedString(image.get("imageBindingKey"));
-                String url = firstNonBlank(
-                        asTrimmedString(image.get("webUrl")),
-                        asTrimmedString(image.get("imageUrl")),
-                        asTrimmedString(image.get("sourceUrl")),
-                        asTrimmedString(image.get("url")));
-                if (!StringUtils.hasText(url)) {
-                    continue;
-                }
-                index++;
-                sb.append("- #").append(index)
-                        .append(" | sectionId=").append(StringUtils.hasText(sectionId) ? sectionId : "(sem sectionId)")
-                        .append(" | imageBindingKey=").append(StringUtils.hasText(bindingKey) ? bindingKey : "(sem binding)")
-                        .append(" | url=").append(url)
-                        .append("\n");
+            Map<String, Object> image = (Map<String, Object>) rawImageMap;
+            String sectionId = asTrimmedString(image.get("sectionId"));
+            String bindingKey = asTrimmedString(image.get("imageBindingKey"));
+            String url = firstNonBlank(
+                    asTrimmedString(image.get("webUrl")),
+                    asTrimmedString(image.get("imageUrl")),
+                    asTrimmedString(image.get("sourceUrl")),
+                    asTrimmedString(image.get("url")));
+            if (!StringUtils.hasText(url)) {
+                continue;
             }
-            return sb.length() > 0 ? sb.toString() : null;
-        } catch (Exception ex) {
-            return null;
+            index++;
+            sb.append("- #").append(index)
+                    .append(" | sectionId=").append(StringUtils.hasText(sectionId) ? sectionId : "(sem sectionId)")
+                    .append(" | imageBindingKey=").append(StringUtils.hasText(bindingKey) ? bindingKey : "(sem binding)")
+                    .append(" | url=").append(url)
+                    .append("\n");
         }
+        return sb.length() > 0 ? sb.toString() : null;
     }
 
     @SuppressWarnings("unchecked")
@@ -283,20 +285,17 @@ public class LandingHtmlModule {
         return null;
     }
 
-    private Map<String, Object> safeReadObject(String raw) {
-        if (!StringUtils.hasText(raw)) {
-            return Map.of();
-        }
+    private Map<String, Object> safeReadObject(String raw, String artifactKey) {
         try {
             return objectMapper.readValue(raw, Map.class);
         } catch (Exception ex) {
-            return Map.of();
+            throw new IllegalStateException("Artefato %s contém JSON inválido.".formatted(artifactKey), ex);
         }
     }
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> extractImages(String raw) {
-        Map<String, Object> root = safeReadObject(raw);
+        Map<String, Object> root = safeReadObject(raw, "landingPageImagePlanning");
         Map<String, Object> payload = unwrapSectionPayload(root, "landingPageImagePlanning");
         if (!(payload.get("images") instanceof List<?> rawImages)) {
             return List.of();
@@ -306,6 +305,13 @@ public class LandingHtmlModule {
                 .map(Map.class::cast)
                 .map(item -> (Map<String, Object>) item)
                 .toList();
+    }
+
+    private String requireArtifact(String raw, String artifactKey) {
+        if (!StringUtils.hasText(raw)) {
+            throw new IllegalStateException("Artefato obrigatório ausente: %s.".formatted(artifactKey));
+        }
+        return raw;
     }
 
     @SuppressWarnings("unchecked")

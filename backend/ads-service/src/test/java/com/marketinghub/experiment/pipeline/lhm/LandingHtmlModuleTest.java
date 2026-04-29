@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,6 +16,7 @@ class LandingHtmlModuleTest {
     void assembleHtmlDocumentIncludesCanonicalAsyncSubmitRuntime() {
         Experiment experiment = new Experiment();
         applyBaseCssContract(experiment);
+        applyImagePlanningContract(experiment);
         experiment.setName("Teste LHM");
         experiment.setLandingPageWireframe("""
                 {
@@ -45,10 +47,25 @@ class LandingHtmlModuleTest {
                 """);
         experiment.setLandingPageCopy("""
                 {
+                  "landingPageCopy": {}
+                }
+                """);
+        experiment.setLandingPageCopy("""
+                {
                   "landingPageCopy": {
                     "headline": "Headline de teste",
                     "summary": "Resumo de teste"
                   }
+                }
+                """);
+        experiment.setLandingPageCopy("""
+                {
+                  "landingPageCopy": {}
+                }
+                """);
+        experiment.setLandingPageCopy("""
+                {
+                  "landingPageCopy": {}
                 }
                 """);
 
@@ -69,6 +86,7 @@ class LandingHtmlModuleTest {
     void assembleHtmlDocumentKeepsExactSurfaceContractFromWireframe() {
         Experiment experiment = new Experiment();
         applyBaseCssContract(experiment);
+        applyImagePlanningContract(experiment);
         experiment.setName("Teste LHM Surface");
         experiment.setLandingPageWireframe("""
                 {
@@ -96,6 +114,7 @@ class LandingHtmlModuleTest {
                   }
                 }
                 """);
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{}}");
 
         String html = module.assembleHtmlDocument(experiment);
 
@@ -112,6 +131,7 @@ class LandingHtmlModuleTest {
     void assembleHtmlDocumentRendersBodyFaqAndCtaFromLandingCopy() {
         Experiment experiment = new Experiment();
         applyBaseCssContract(experiment);
+        applyImagePlanningContract(experiment);
         experiment.setName("Teste LHM Copy Completa");
         experiment.setLandingPageWireframe("""
                 {
@@ -171,6 +191,7 @@ class LandingHtmlModuleTest {
     @Test
     void assembleHtmlDocumentUsesDesignPresetForStyleAndContrastMode() {
         Experiment experiment = new Experiment();
+        applyImagePlanningContract(experiment);
         experiment.setName("Teste LHM Surface Preset");
         experiment.setLandingPageWireframe("""
                 {
@@ -212,6 +233,11 @@ class LandingHtmlModuleTest {
                   }
                 }
                 """);
+        experiment.setLandingPageCopy("""
+                {
+                  "landingPageCopy": {}
+                }
+                """);
 
         String html = module.assembleHtmlDocument(experiment);
 
@@ -228,6 +254,7 @@ class LandingHtmlModuleTest {
     void assembleHtmlDocumentUsesHeroSectionInsteadOfFirstWireframeSectionForH1() {
         Experiment experiment = new Experiment();
         applyBaseCssContract(experiment);
+        applyImagePlanningContract(experiment);
         experiment.setName("Teste LHM Hero");
         experiment.setLandingPageWireframe("""
                 {
@@ -268,6 +295,7 @@ class LandingHtmlModuleTest {
     void assembleHtmlDocumentAvoidsRepeatingPromiseWhenDuplicateOfHeroHeadline() {
         Experiment experiment = new Experiment();
         applyBaseCssContract(experiment);
+        applyImagePlanningContract(experiment);
         experiment.setName("Teste LHM Dedup");
         experiment.setLandingPageWireframe("""
                 {
@@ -302,6 +330,16 @@ class LandingHtmlModuleTest {
         assertFalse(html.contains("<p class=\"section-objective\">Mesma mensagem da promessa</p>"));
     }
 
+    @Test
+    void assembleHtmlDocumentThrowsWhenArtifactIsMissing() {
+        Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{}}");
+
+        assertThrows(IllegalStateException.class, () -> module.assembleHtmlDocument(experiment));
+    }
+
     private void applyBaseCssContract(Experiment experiment) {
         experiment.setLandingPageDesignPreset("""
                 {
@@ -309,6 +347,16 @@ class LandingHtmlModuleTest {
                     "lhmRuntime": {
                       "baseCss": "body{margin:0}.card{padding:16px}.surface-band{background:#fff}.surface-solid{background:#fff}.contrast-high{border-color:#bfd0ee}.contrast-soft{border-color:#e8edf6}"
                     }
+                  }
+                }
+                """);
+    }
+
+    private void applyImagePlanningContract(Experiment experiment) {
+        experiment.setLandingPageImagePlanning("""
+                {
+                  "landingPageImagePlanning": {
+                    "images": []
                   }
                 }
                 """);

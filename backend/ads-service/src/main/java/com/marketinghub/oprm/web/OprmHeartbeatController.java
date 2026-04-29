@@ -16,9 +16,8 @@ public class OprmHeartbeatController {
 
     @PostMapping
     public ResponseEntity<Void> heartbeat(@Valid @RequestBody OprmHeartbeatRequestDto request) {
-        log.info("oprm-heartbeat workerId={} workerVersion={} sentAt={} counters={}",
+        log.debug("oprm-heartbeat workerId={} workerVersion={} sentAt={} counters={}",
                 request.workerId(), request.workerVersion(), request.sentAt(), request.counters());
         return ResponseEntity.accepted().build();
     }
 }
-

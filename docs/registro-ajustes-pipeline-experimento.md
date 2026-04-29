@@ -75,6 +75,52 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0012 — Reincidência do 422 `showIdentity` no preset de design (ajuste no prompt do backend)
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (`ads-service`) + contrato `landingPageDesignPreset`
+- **Ambiente:** Execução remota exibida no Marketing Hub
+- **Execução/Teste:** Etapa **Preset de Design da Landing** com falha em `28/04/2026, 22:43:34 BRT`
+
+#### 1) Erro observado
+- **Sintoma:** a etapa `LANDING_PAGE_DESIGN_PRESET` continuou falhando com 422 por campo de prova de identidade inválido.
+- **Endpoint/rota/fila:** fechamento do job em `POST /api/internal/experiment-pipeline/jobs/{jobId}/complete`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Preset de design inválido: componentPresets.proof.showIdentity deve ser true para páginas de venda/captação`.
+- **Payload enviado (literal):** `landingPageDesignPreset.componentPresets.proof.showIdentity` ausente, `false` ou valor equivalente não aceito.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste registro (diagnóstico orientado pela mensagem literal de validação e análise de instruções de geração).
+- **Dados de banco consultados via MCP:** não executado neste registro.
+- **Trecho canônico consultado:** regra canônica exige `componentPresets.proof.showIdentity=true` para páginas de venda/captação.
+- **Validação/regra que rejeitou:** validação determinística no backend (`validateLandingDesignPresetArtifacts`) rejeita qualquer valor diferente de `true`.
+- **Causa raiz:** apesar de já existir reforço em prompt de worker, o caminho de instruções do próprio backend para geração de `LANDING_PAGE_DESIGN_PRESET` não trazia regra explícita bloqueante para `proof.showIdentity=true`, permitindo saída inválida em parte das tentativas.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** preset sem `componentPresets.proof.showIdentity=true` (ausente/false/inválido).
+- **O que a especificação esperava (literal):** `componentPresets.proof.showIdentity` obrigatório e fixo em `true` para venda/captação.
+- **Diferença objetiva:** divergência em campo booleano obrigatório de compatibilidade entre geração e validador.
+- **Ação corretiva recomendada:** incluir regra explícita e mandatória no bloco de instruções de geração do backend para impedir retorno sem `showIdentity=true`.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt (instrução de geração no backend) + documentação operacional.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** regra da seção `LANDING_PAGE_DESIGN_PRESET` foi atualizada para exigir de forma explícita: `componentPresets.proof.showIdentity = true` em páginas de venda/captação, alinhando prompt e validação 422.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução do teste unitário direcionado `ExperimentPipelineGenerationServiceTest` no módulo `backend/ads-service`.
+- **Resultado:** aprovado no ambiente local do container.
+- **Evidências (logs/ids/prints):** execução Maven concluída com sucesso para o teste alvo.
+- **Status final:** Parcial (ajuste aplicado e testado localmente; pendente confirmação em nova execução remota do pipeline).
+
+#### 6) Próximo passo
+- **Ação seguinte:** reprocessar a etapa **Preset de Design da Landing** no experimento afetado e confirmar ausência do 422 de `showIdentity`.
+- **Dono da ação:** Time de operação do pipeline + backend.
+- **Prazo:** imediato (próxima execução).
+
 ### INC-0011 — 422 no preset de design por `componentPresets.proof.showIdentity` inválido
 
 - **Data/Hora (UTC):** 2026-04-29

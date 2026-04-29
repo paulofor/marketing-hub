@@ -19,6 +19,7 @@ Documento operacional para leitura rápida, separando **quem é responsável por
 
 - **Estrutural (`wireframe`)**: `surfaceToken` + organização da página.
 - **Visual (`designPreset`)**: `surfaceStyle` + `contrastMode` por `sectionId`.
+- **Namespace CSS canônico do LHM**: classes emitidas no HTML determinístico devem seguir prefixo `lhm-` e corresponder aos seletores presentes em `landingPageDesignPreset.lhmRuntime.baseCss`.
 - **HTML final (`LHM`)**: combina os dois contratos e publica os `data-*` aderentes.
 
 ### Regra anti-duplicidade (fonte de verdade única por campo)

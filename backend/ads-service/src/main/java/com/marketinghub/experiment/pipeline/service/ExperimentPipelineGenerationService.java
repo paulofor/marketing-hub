@@ -2794,7 +2794,9 @@ public class ExperimentPipelineGenerationService {
                                 "type", "object",
                                 "additionalProperties", false,
                                 "properties", Map.of(
-                                        "baseCss", stringSchema(),
+                                        "baseCss", Map.of(
+                                                "type", "string",
+                                                "description", "CSS canônico do LHM. Deve cobrir classes .lhm-card, .lhm-surface-{band|solid|gradient-soft|image-tint} e .lhm-{normal|high|soft}."),
                                         "cssVersion", stringSchema(),
                                         "cssNotes", stringSchema()
                                 ),

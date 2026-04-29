@@ -119,7 +119,8 @@ class LandingHtmlModuleTest {
         String html = module.assembleHtmlDocument(experiment);
 
         assertTrue(html.contains("data-section-id=\"benefits\""));
-        assertTrue(html.contains("class=\"card surface-solid contrast-high\""));
+        assertTrue(html.contains("class=\"lhm-card lhm-surface-solid lhm-high\""));
+        assertFalse(html.contains("class=\"card surface-solid contrast-high\""));
         assertTrue(html.contains("data-surface-token=\"surface-benefits\""));
         assertTrue(html.contains("data-surface-style=\"solid\""));
         assertTrue(html.contains("data-surface-contrast=\"high\""));
@@ -242,7 +243,8 @@ class LandingHtmlModuleTest {
         String html = module.assembleHtmlDocument(experiment);
 
         assertTrue(html.contains("data-section-id=\"proof\""));
-        assertTrue(html.contains("class=\"card surface-solid contrast-high\""));
+        assertTrue(html.contains("class=\"lhm-card lhm-surface-solid lhm-high\""));
+        assertFalse(html.contains("class=\"card surface-solid contrast-high\""));
         assertTrue(html.contains("data-surface-token=\"surface-proof\""));
         assertTrue(html.contains("data-surface-style=\"solid\""));
         assertTrue(html.contains("data-surface-contrast=\"high\""));

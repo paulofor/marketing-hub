@@ -566,13 +566,15 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 
 Para garantir compatibilidade com o HTML emitido pelo LHM, o CSS canônico deve cobrir no mínimo os seletores abaixo (podendo estender):
 
-- layout base: `body`, `main`, `.card`;
+- layout base: `body`, `main`, `.lhm-card`;
 - tipografia/conteúdo: `h1`, `h2`, `p`, `ul`, `li`;
 - formulário: `form`, `.field`, `label`, `input`, `button`, `#form-feedback`;
 - FAQ: `.faq-list details`, `.faq-list summary`;
 - variações de superfície e contraste usadas pelo wireframe/design preset:
-  - `.surface-band`, `.surface-solid`, `.surface-gradient-soft`, `.surface-image-tint`;
-  - `.contrast-normal`, `.contrast-high`, `.contrast-soft`.
+  - `.lhm-surface-band`, `.lhm-surface-solid`, `.lhm-surface-gradient-soft`, `.lhm-surface-image-tint`;
+  - `.lhm-normal`, `.lhm-high`, `.lhm-soft`.
+
+> **Namespace canônico de classe (LHM):** o HTML determinístico deve usar classes prefixadas com `lhm-` para evitar colisão global e manter alinhamento 1:1 com `landingPageDesignPreset.lhmRuntime.baseCss`.
 
 Se o wireframe/design preset introduzir novos `surfaceStyle` ou `contrastMode`, o `baseCss` correspondente deve ser atualizado no mesmo ciclo de versão.
 

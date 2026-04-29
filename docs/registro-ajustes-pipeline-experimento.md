@@ -75,6 +75,52 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0011 — 422 no preset de design por `componentPresets.proof.showIdentity` inválido
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker + backend (contrato `landingPageDesignPreset`)
+- **Ambiente:** Execução remota exibida no Marketing Hub (`experiments/17`)
+- **Execução/Teste:** Etapa **Preset de Design da Landing** com falha em `28/04/2026 22:06:14 BRT`
+
+#### 1) Erro observado
+- **Sintoma:** etapa `LANDING_PAGE_DESIGN_PRESET` falhou antes de liberar a geração do HTML da landing.
+- **Endpoint/rota/fila:** fechamento do job em `POST /api/internal/experiment-pipeline/jobs/{jobId}/complete`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Preset de design inválido: componentPresets.proof.showIdentity deve ser true para páginas de venda/captação`.
+- **Payload enviado (literal):** `landingPageDesignPreset.componentPresets.proof.showIdentity` ausente, `false` ou equivalente inválido para a regra de venda/captação.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste registro (diagnóstico guiado por mensagem literal exibida na UI + regra determinística no backend).
+- **Dados de banco consultados via MCP:** não executado neste registro.
+- **Trecho canônico consultado:** `componentPresets.proof.showIdentity` é campo canônico e deve ser `true` para páginas de venda direta.
+- **Validação/regra que rejeitou:** validação no backend que lança 422 quando `showIdentity` não é `true`.
+- **Causa raiz:** prompt de geração do preset não explicitava com força bloqueante que `showIdentity` precisa vir fixo em `true` em cenários de venda/captação.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** preset sem `componentPresets.proof.showIdentity=true` (campo ausente/false/inválido).
+- **O que a especificação esperava (literal):** `componentPresets.proof.showIdentity` obrigatório e `true` para páginas de venda/captação.
+- **Diferença objetiva:** divergência booleana em campo bloqueante da seção de prova visual com identidade.
+- **Ação corretiva recomendada:** reforçar a instrução do prompt para obrigar `showIdentity=true` e impedir saída sem esse valor.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt + documentação operacional.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/resources/prompts/experiment/landing-design-preset.md`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** inclusão de regra explícita no prompt da etapa `landing-design-preset` exigindo `componentPresets.proof.showIdentity = true` para páginas de venda/captação, reduzindo recorrência do 422 no `/complete`.
+
+#### 5) Reteste
+- **Procedimento de reteste:** não executado neste container (sem execução integrada do job remoto neste turno).
+- **Resultado:** pendente de validação em nova execução da etapa no experimento.
+- **Evidências (logs/ids/prints):** captura da UI com erro literal em `28/04/2026 22:06:14 BRT` + regra de validação backend já mapeada no código.
+- **Status final:** Parcial.
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar a etapa **Preset de Design da Landing** no experimento 17 e confirmar progresso automático para **HTML da Landing** sem 422 de `showIdentity`.
+- **Dono da ação:** Time de operação do pipeline + AI Worker.
+- **Prazo:** imediato (próxima execução).
+
 ### INC-0010 — Verificação da tentativa `9f5de7ad` (LANDING_PAGE_HTML com divergência de binding de imagens)
 
 - **Data/Hora (UTC):** 2026-04-28

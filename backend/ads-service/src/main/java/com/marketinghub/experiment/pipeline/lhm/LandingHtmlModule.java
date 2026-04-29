@@ -150,11 +150,11 @@ public class LandingHtmlModule {
                     visualPreset != null ? visualPreset.contrastMode() : null,
                     asTrimmedString(surface.get("contrastMode")),
                     "normal");
-            String surfaceStyleClass = "surface-" + normalizeCssToken(surfaceStyle);
-            String surfaceContrastClass = "contrast-" + normalizeCssToken(surfaceContrast);
+            String surfaceStyleClass = "lhm-surface-" + normalizeCssToken(surfaceStyle);
+            String surfaceContrastClass = "lhm-" + normalizeCssToken(surfaceContrast);
             boolean isHeroSection = StringUtils.hasText(heroSectionId) && heroSectionId.equalsIgnoreCase(sectionId);
 
-            html.append("<section class=\"card ")
+            html.append("<section class=\"lhm-card ")
                     .append(escapeAttr(surfaceStyleClass))
                     .append(" ")
                     .append(escapeAttr(surfaceContrastClass))

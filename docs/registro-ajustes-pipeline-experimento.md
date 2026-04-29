@@ -75,6 +75,52 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0014 — Landing copy orientada por slots canônicos do wireframe
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** backend
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Ajuste estrutural solicitado para garantir posicionamento do texto por slot.
+
+#### 1) Erro observado
+- **Sintoma:** a etapa de geração de texto da landing não recebia instruções explícitas dos slots canônicos do wireframe e a validação não cobrava alinhamento obrigatório de `slotId`.
+- **Endpoint/rota/fila:** pipeline de geração (`LANDING_PAGE_COPY`).
+- **Status code:** n/a (risco de inconsistência sem bloqueio forte).
+- **Mensagem de erro literal:** n/a.
+- **Payload enviado (literal):** n/a.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não aplicável.
+- **Dados de banco consultados via MCP:** não aplicável.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (wireframe/copy como artefatos canônicos da landing).
+- **Validação/regra que rejeitou:** ausência de regra explícita para `slotId` vinculado a `copySlots`.
+- **Causa raiz:** schema e prompt da etapa `LANDING_PAGE_COPY` ainda permitiam saída sem vínculo obrigatório aos slots definidos pelo wireframe.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** body sections potencialmente sem `slotId` ou com `slotId` fora do wireframe.
+- **O que a especificação esperava (literal):** `bodySections[].slotId` alinhado a `landingPageWireframe.sectionOrder[].copySlots` da seção correspondente.
+- **Diferença objetiva:** faltava enforcement de contrato entre nome do slot no wireframe e nome do slot na copy.
+- **Ação corretiva recomendada:** incluir resumo de slots no prompt da etapa de copy e validar no backend o vínculo `sectionId + slotId`.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** contrato + validação + instrução de prompt.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** backend passou a anexar no prompt da etapa `LANDING_PAGE_COPY` o resumo de `copySlots` por `sectionId` do wireframe; validação de copy agora exige `slotId` quando houver slots canônicos e rejeita valores fora da lista permitida.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de testes unitários da montagem/renderização da landing e validação de compilação do módulo.
+- **Resultado:** concluído com sucesso.
+- **Evidências (logs/ids/prints):** build `ads-service` com testes `LandingHtmlModuleTest` aprovados.
+- **Status final:** Resolvido.
+
+#### 6) Próximo passo
+- **Ação seguinte:** acompanhar execuções reais do pipeline para confirmar que o modelo está retornando `slotId` aderente sem regressões.
+- **Dono da ação:** time backend + pipeline.
+- **Prazo:** próximo ciclo de execução assistida.
+
 ### INC-0013 — Correção arquitetural: regra de prompt mantida no AI Worker (não no backend)
 
 - **Data/Hora (UTC):** 2026-04-29

@@ -332,6 +332,49 @@ class LandingHtmlModuleTest {
         assertFalse(html.contains("<p class=\"section-objective\">Mesma mensagem da promessa</p>"));
     }
 
+
+    @Test
+    void assembleHtmlDocumentUsesWireframeCopySlotsToPositionBodyText() {
+        Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
+        applyImagePlanningContract(experiment);
+        experiment.setName("Teste LHM Slots");
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId": "mechanism_01", "sectionName": "Mecanismo", "contentType": "split", "copySlots": ["slot-mech-2", "slot-mech-1"], "surfaceSpec": {"surfaceToken": "surface-mech", "style": "solid", "contrastMode": "normal"}}
+                    ],
+                    "formSpec": {
+                      "formId": "lead-capture-primary",
+                      "submitTarget": "/api/flows/submissions",
+                      "submitLabel": "Enviar",
+                      "fields": [{"name": "nome", "type": "text", "required": true}]
+                    }
+                  }
+                }
+                """);
+        experiment.setLandingPageCopy("""
+                {
+                  "landingPageCopy": {
+                    "hero": {"headline":"h","promise":"p","ctaLabel":"c","ctaMatchNotes":"ok"},
+                    "bodySections": [
+                      {"sectionId": "mechanism_01", "slotId":"slot-mech-1", "sectionType": "mechanism", "title": "T1", "summary": "Primeiro", "messageMatchNotes": "ok"},
+                      {"sectionId": "mechanism_01", "slotId":"slot-mech-2", "sectionType": "mechanism", "title": "T2", "summary": "Segundo", "messageMatchNotes": "ok"}
+                    ],
+                    "ctaBlocks": [],
+                    "faq": [],
+                    "consistencyChecks": [{"check":"CTA_MATCH","status":"ok"},{"check":"PROMISE_MATCH","status":"ok"}],
+                    "pageGoal":"g","messageMatchSource":"s","primaryCTA":"cta"
+                  }
+                }
+                """);
+
+        String html = module.assembleHtmlDocument(experiment);
+
+        assertTrue(html.indexOf("Segundo") < html.indexOf("Primeiro"));
+    }
+
     @Test
     void assembleHtmlDocumentThrowsWhenArtifactIsMissing() {
         Experiment experiment = new Experiment();

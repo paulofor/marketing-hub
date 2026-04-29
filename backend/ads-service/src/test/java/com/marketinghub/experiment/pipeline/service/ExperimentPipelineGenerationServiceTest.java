@@ -426,6 +426,7 @@ class ExperimentPipelineGenerationServiceTest {
         Experiment experiment = new Experiment();
         experiment.setId(12L);
         experiment.setName("Experimento 12");
+        experiment.setAdImageBriefing("{\"adImageBriefing\":\"predecessor-ready\"}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":\"predecessor-ready\"}");
 
         when(experimentRepository.findById(12L)).thenReturn(Optional.of(experiment));
@@ -452,7 +453,7 @@ class ExperimentPipelineGenerationServiceTest {
                     && prompt.contains("Ângulo da campanha:")
                     && prompt.contains("Texto do anúncio:")
                     && prompt.contains("Briefing da imagem:")
-                    && prompt.contains("Textos da landing:")
+                    && !prompt.contains("Textos da landing:")
                     && !prompt.contains("Wireframe da landing:")
                     && !prompt.contains("Planejamento de imagens da landing:");
         }));
@@ -463,6 +464,7 @@ class ExperimentPipelineGenerationServiceTest {
         Experiment experiment = new Experiment();
         experiment.setId(13L);
         experiment.setName("Experimento 13");
+        experiment.setAdImageBriefing("{\"adImageBriefing\":\"persisted\"}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":\"persisted\"}");
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":\"persisted\"}");
         experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":\"persisted\"}");

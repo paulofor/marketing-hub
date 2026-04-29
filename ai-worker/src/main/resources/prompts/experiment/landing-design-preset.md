@@ -28,7 +28,8 @@ Regras:
 12. `theme.spacing.sectionGapMobile` deve ser `>= 48px`.
 13. `theme.palette.ctaPrimary` deve ter contraste AA com o fundo predominante da seção.
 14. O preset deve conter obrigatoriamente os tokens mínimos: `theme.palette`, `theme.typography`, `theme.spacing`, `theme.accessibility`, `componentPresets.cta`, `componentPresets.trust`.
-15. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
+15. Para páginas de venda/captação, definir obrigatoriamente `componentPresets.proof.showIdentity = true` (não omitir e não usar `false`).
+16. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

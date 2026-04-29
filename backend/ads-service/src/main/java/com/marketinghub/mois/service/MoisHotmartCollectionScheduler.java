@@ -21,6 +21,9 @@ public class MoisHotmartCollectionScheduler {
 
     @Scheduled(cron = "${integrations.mois.hotmart-collection.cron:0 0 22 * * *}")
     public void scheduleCollection() {
+        log.info("Iniciando execução do scheduler MOIS Hotmart (workspaceId={}, enabled={})",
+                properties.getWorkspaceId(), properties.isEnabled());
+
         if (!properties.isEnabled()) {
             return;
         }

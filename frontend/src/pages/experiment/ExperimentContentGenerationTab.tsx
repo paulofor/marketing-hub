@@ -95,18 +95,18 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     defaultQuantity: 4,
   },
   {
-    key: "landing-copy",
-    label: "Texto da Landing",
-    description:
-      "Produza blocos de copy para título, prova, benefícios e CTA da landing.",
-    defaultQuantity: 4,
-  },
-  {
     key: "landing-layout",
     label: "Layout da Landing",
     description:
       "Sugira estruturas visuais e ordem de seções para a página de conversão.",
     defaultQuantity: 2,
+  },
+  {
+    key: "landing-copy",
+    label: "Texto da Landing",
+    description:
+      "Produza blocos de copy para título, prova, benefícios e CTA da landing.",
+    defaultQuantity: 4,
   },
   {
     key: "landing-image-planning",
@@ -517,7 +517,7 @@ artifact {
 const LANDING_HTML_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
 Objetivo:
-Unificar os textos da landing + wireframe + planejamento de imagens em um HTML final pronto para renderização no formulário do experimento.
+Unificar o wireframe + textos da landing + planejamento de imagens em um HTML final pronto para renderização no formulário do experimento.
 
 Regras:
 1. Entregar documento HTML completo com CSS e JavaScript embutidos.
@@ -730,8 +730,8 @@ const REPORT_SECTION_ORDER: ContentGenerationSectionKey[] = [
   "campaign-angle",
   "ad-copy",
   "image-prompt",
-  "landing-copy",
   "landing-layout",
+  "landing-copy",
   "landing-image-planning",
   "landing-design-preset",
   "landing-html",
@@ -1800,8 +1800,8 @@ export default function ExperimentContentGenerationTab({
   useEffect(() => {
     const sectionsToLoad: HistorySectionKey[] = [
       "image-prompt",
-      "landing-copy",
       "landing-layout",
+      "landing-copy",
       "landing-image-planning",
       "landing-design-preset",
       "landing-html",

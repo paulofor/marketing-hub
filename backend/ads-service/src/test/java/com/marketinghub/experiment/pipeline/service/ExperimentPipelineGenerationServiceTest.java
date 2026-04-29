@@ -488,7 +488,7 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
-    void generateImagePlanningIncludesExplicitWireframeCoverageChecklistInPrompt() {
+    void generateImagePlanningUsesWorkerAiTemplateWithoutHardcodedChecklistInPrompt() {
         Experiment experiment = new Experiment();
         experiment.setId(131L);
         experiment.setName("Experimento 131");
@@ -525,9 +525,9 @@ class ExperimentPipelineGenerationServiceTest {
         verify(jobRepository).save(argThat(job -> {
             String prompt = job.getPrompt();
             return prompt != null
-                    && prompt.contains("Checklist de cobertura obrigatório")
-                    && prompt.contains("sectionId obrigatórias: hero, objection-anti-preco-pratica, faq-objections")
-                    && prompt.contains("images[].sectionId contém exatamente esta lista");
+                    && prompt.contains("Template do prompt desta etapa é mantido exclusivamente no módulo Worker AI.")
+                    && prompt.contains("Não gerar instruções hard-coded no backend para seção: landing-page-image-planning.")
+                    && !prompt.contains("Checklist de cobertura obrigatório");
         }));
     }
 

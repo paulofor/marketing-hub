@@ -11,7 +11,7 @@ Objetivo:
 - Não inventar sectionId que não exista no wireframe.
 
 Regras:
-1. Preencher `presetId`, `theme`, `sectionPresets`, `componentPresets`, `motion` e `consistencyChecks`.
+1. Preencher `presetId`, `lhmRuntime`, `theme`, `sectionPresets`, `componentPresets`, `motion` e `consistencyChecks`.
 2. `sectionPresets[]` deve cobrir todas as seções relevantes do wireframe.
 3. `surfaceStyle` só pode ser: `band`, `solid`, `gradient-soft`, `image-tint`.
 4. `contrastMode` só pode ser: `normal`, `high`, `soft`.
@@ -29,7 +29,12 @@ Regras:
 13. `theme.palette.ctaPrimary` deve ter contraste AA com o fundo predominante da seção.
 14. O preset deve conter obrigatoriamente os tokens mínimos: `theme.palette`, `theme.typography`, `theme.spacing`, `theme.accessibility`, `componentPresets.cta`, `componentPresets.trust`.
 15. Para páginas de venda/captação, definir obrigatoriamente `componentPresets.proof.showIdentity = true` (não omitir e não usar `false`).
-16. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
+16. `lhmRuntime` é obrigatório e deve conter:
+   - `baseCss`: string com o CSS base que sustenta classes/superfícies do preset.
+   - `cssVersion`: string de versão da malha CSS (ex.: `lhm-css-v1`).
+   - `cssNotes`: string curta explicando escopo e compatibilidade da versão.
+17. Nunca omitir `lhmRuntime` e nunca serializar esse bloco como texto/JSON escapado (deve ser objeto JSON real).
+18. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -39,6 +44,11 @@ Responda em JSON válido no formato:
 {
   "landingPageDesignPreset": {
     "presetId": "string",
+    "lhmRuntime": {
+      "baseCss": "string",
+      "cssVersion": "string",
+      "cssNotes": "string"
+    },
     "theme": {
       "palette": {
         "background": "string",

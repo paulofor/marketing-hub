@@ -759,3 +759,17 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 #### Reteste
 - `mvn -Dtest=ExperimentPipelineGenerationServiceTest test` executado com sucesso após atualização dos cenários.
+
+### INC-0012 — Prompt da etapa LANDING_PAGE_DESIGN_PRESET sem instrução explícita de `lhmRuntime`
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker (prompts)
+
+#### Ajuste aplicado
+- Atualizado o template `landing-design-preset.md` para instruir explicitamente que `lhmRuntime` é obrigatório e deve conter `baseCss`, `cssVersion` e `cssNotes`.
+- Adicionado o bloco `lhmRuntime` no `OUTPUT_CONTRACT` do prompt para orientar geração correta do objeto.
+- Adicionado teste no cliente de prompt para garantir presença das instruções de `lhmRuntime`.
+
+#### Reteste
+- Execução de `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` bloqueada por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages).

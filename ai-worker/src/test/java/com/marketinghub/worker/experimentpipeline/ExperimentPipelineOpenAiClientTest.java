@@ -249,6 +249,44 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void prependsLandingDesignPresetGuidanceWithLhmRuntimeBlock() {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                15L,
+                "landing-page-design-preset",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt do design preset"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).contains("landingPageDesignPreset");
+        assertThat(userPrompt).contains("lhmRuntime");
+        assertThat(userPrompt).contains("baseCss");
+        assertThat(userPrompt).contains("cssVersion");
+        assertThat(userPrompt).contains("cssNotes");
+    }
+
+    @Test
     void prependsLandingHtmlGuidanceWithExplicitBindingChecklist() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

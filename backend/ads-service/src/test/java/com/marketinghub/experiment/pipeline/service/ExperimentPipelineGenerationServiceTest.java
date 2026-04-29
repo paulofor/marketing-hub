@@ -610,6 +610,7 @@ class ExperimentPipelineGenerationServiceTest {
                 {
                   "landingPageDesignPreset": {
                     "presetId": "preset-88",
+                    "lhmRuntime": {"baseCss":".x{}","cssVersion":"v1","cssNotes":"baseline"},
                     "theme": {
                       "palette": {
                         "background":"#ffffff","surface":"#ffffff","textPrimary":"#111827","textMuted":"#6b7280","brandPrimary":"#2563eb","brandSecondary":"#1d4ed8","border":"#e5e7eb"
@@ -644,8 +645,8 @@ class ExperimentPipelineGenerationServiceTest {
                     "trustSignalsSpec": {"brandIdentityRequired": true, "privacyNoticeNearForm": true, "privacyPolicyUrl": "https://example.com/privacy", "legalFooterItems": ["empresa","contato","política de privacidade"]},
                     "accessibilitySpec": {"minTextContrast":"4.5:1","minTouchTargetPx":44,"formFieldMinHeightPx":44},
                     "sectionOrder": [
-                      {"sectionId":"hero","dropOffRisk":"medio","mobilePriorityScore":8,"surfaceSpec":{"surfaceToken":"surface-base","notes":"hero"}},
-                      {"sectionId":"proof","dropOffRisk":"medio","mobilePriorityScore":7,"surfaceSpec":{"surfaceToken":"surface-alt-1","notes":"proof"}}
+                      {"sectionId":"hero","dropOffRisk":"medio","mobilePriorityScore":8,"surfaceSpec":{"surfaceToken":"surface-base","style":"solid","contrastMode":"high","notes":"hero"}},
+                      {"sectionId":"proof","dropOffRisk":"medio","mobilePriorityScore":7,"surfaceSpec":{"surfaceToken":"surface-alt-1","style":"band","contrastMode":"normal","notes":"proof"}}
                     ]
                   }
                 }
@@ -1026,6 +1027,41 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void completeJobRejectsWireframeWhenSurfaceStyleIsMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(422L);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_WIREFRAME);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageWireframe": {
+                                    "readingFlowSpec": {"maxParagraphLinesMobile": 4, "bulletDensityPerSection": 3},
+                                    "conversionPathSpec": {"primaryAction": "Desbloquear", "ctaLabelCanonical": "Desbloquear"},
+                                    "proofPlan": {"requiredProofTypes": ["social-proof","metric-proof"], "proofSectionIds": ["hero"]},
+                                    "trustSignalsSpec": {"brandIdentityRequired": true, "privacyNoticeNearForm": true, "privacyPolicyUrl": "https://example.com/privacy", "legalFooterItems": ["empresa","contato","política de privacidade"]},
+                                    "accessibilitySpec": {"minTextContrast":"4.5:1","minTouchTargetPx":44,"formFieldMinHeightPx":44},
+                                    "sectionOrder": [
+                                      {
+                                        "sectionId": "hero",
+                                        "sectionName": "Hero",
+                                        "objective": "obj",
+                                        "contentType": "hero",
+                                        "mobilePriorityScore": 10,
+                                        "dropOffRisk": "baixo",
+                                        "surfaceSpec": {"surfaceToken": "surface-base", "contrastMode": "normal", "notes": "ok"}
+                                      }
+                                    ]
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("surfaceSpec.style"));
+    }
+
+    @Test
     void completeJobRejectsWireframeWhenCanonicalBlocksAreMissing() {
         Experiment experiment = new Experiment();
         experiment.setId(420L);
@@ -1044,7 +1080,7 @@ class ExperimentPipelineGenerationServiceTest {
                                         "contentType": "hero",
                                         "mobilePriorityScore": 9,
                                         "dropOffRisk": "alto",
-                                        "surfaceSpec": {"surfaceToken": "surface-base", "notes": "ok"}
+                                        "surfaceSpec": {"surfaceToken": "surface-base", "style": "band", "contrastMode": "normal", "notes": "ok"}
                                       }
                                     ],
                                     "consistencyChecks": [{"check":"CTA_MATCH","status":"PASS"}],
@@ -1102,6 +1138,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 {
                                   "landingPageDesignPreset": {
                                     "presetId": "preset-1",
+                                    "lhmRuntime": {"baseCss":".x{}","cssVersion":"v1","cssNotes":"baseline"},
                                     "theme": {
                                       "palette": {
                                         "background":"#fff","surface":"#fff","textPrimary":"#111","textMuted":"#666","brandPrimary":"#1d4ed8","brandSecondary":"#1e40af","border":"#e2e8f0"
@@ -1167,6 +1204,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 {
                                   "landingPageDesignPreset": {
                                     "presetId": "preset-421",
+                                    "lhmRuntime": {"baseCss":".x{}","cssVersion":"v1","cssNotes":"baseline"},
                                     "theme": {
                                       "palette": {
                                         "background":"#fff","surface":"#fff","textPrimary":"#111","textMuted":"#666","brandPrimary":"#1d4ed8","brandSecondary":"#1e40af","border":"#e2e8f0"
@@ -1192,6 +1230,62 @@ class ExperimentPipelineGenerationServiceTest {
 
         assertTrue(exception.getReason().contains("CTA_VISUAL_HIERARCHY"));
         assertTrue(exception.getReason().contains("MOBILE_READABILITY"));
+    }
+
+    @Test
+    void completeJobRejectsDesignPresetWhenLhmRuntimeIsMissing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(423L);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "readingFlowSpec": {"maxParagraphLinesMobile": 4, "bulletDensityPerSection": 3},
+                    "conversionPathSpec": {"primaryAction": "Desbloquear", "ctaLabelCanonical": "Desbloquear"},
+                    "proofPlan": {"requiredProofTypes": ["social-proof","metric-proof"], "proofSectionIds": ["hero"]},
+                    "trustSignalsSpec": {"brandIdentityRequired": true, "privacyNoticeNearForm": true, "privacyPolicyUrl": "https://example.com/privacy", "legalFooterItems": ["empresa","contato","política de privacidade"]},
+                    "accessibilitySpec": {"minTextContrast":"4.5:1","minTouchTargetPx":44,"formFieldMinHeightPx":44},
+                    "sectionOrder": [
+                      {"sectionId":"hero","dropOffRisk":"medio","mobilePriorityScore":8,"surfaceSpec":{"surfaceToken":"surface-base","style":"solid","contrastMode":"high","notes":"hero"}}
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageDesignPreset": {
+                                    "presetId": "preset-423",
+                                    "theme": {
+                                      "palette": {
+                                        "background":"#fff","surface":"#fff","textPrimary":"#111","textMuted":"#666","brandPrimary":"#1d4ed8","brandSecondary":"#1e40af","border":"#e2e8f0"
+                                      },
+                                      "typography": {"maxLineLength":"65ch","lineHeightBody":"1.6"},
+                                      "spacing": {"sectionGapMobile":"56px"},
+                                      "accessibility": {"textContrastBody":"4.5:1"}
+                                    },
+                                    "sectionPresets": [
+                                      {"sectionId":"hero","surfaceStyle":"solid","contrastMode":"high","layoutPreset":"hero-focus","emphasis":"primary","notes":"hero"}
+                                    ],
+                                    "componentPresets": {
+                                      "cta": {"stickyMobile":true},
+                                      "trust": {"showLegalFooter":true},
+                                      "proof": {"showIdentity": true}
+                                    },
+                                    "motion": {"enabled": false, "intensity": "none"},
+                                    "consistencyChecks": [
+                                      {"check":"THEME_CONTRAST","status":"PASS"},
+                                      {"check":"CTA_VISUAL_HIERARCHY","status":"PASS"},
+                                      {"check":"MOBILE_READABILITY","status":"PASS"}
+                                    ]
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("lhmRuntime"));
     }
 
     @Test
@@ -1349,6 +1443,7 @@ class ExperimentPipelineGenerationServiceTest {
                 {
                   "landingPageDesignPreset": {
                     "presetId": "preset-manual-html",
+                    "lhmRuntime": {"baseCss":".x{}","cssVersion":"v1","cssNotes":"baseline"},
                     "theme": {
                       "palette": {
                         "background":"#ffffff",

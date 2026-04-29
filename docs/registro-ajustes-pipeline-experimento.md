@@ -693,3 +693,69 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 #### 5) Próximo passo
 - Executar o pipeline, enviar o primeiro erro e preencher `INC-0002` com diagnóstico completo.
+
+### INC-0010 — Alinhamento de obrigatoriedade no schema de Design Preset e Wireframe
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (ads-service) + documentação
+- **Ambiente:** Repositório `marketing-hub`
+- **Execução/Teste:** Verificação de contrato das etapas `LANDING_PAGE_DESIGN_PRESET` e `LANDING_PAGE_WIREFRAME`
+
+#### 1) Erro observado
+- **Sintoma:** o contrato ativo do backend não refletia integralmente a obrigatoriedade canônica esperada para `lhmRuntime` e para campos visuais de `surfaceSpec`.
+- **Endpoint/rota/fila:** geração de schema para payloads das etapas de pipeline (`response_format` JSON Schema).
+- **Status code:** potencial de 422 em etapas posteriores por lacunas contratuais implícitas.
+- **Mensagem de erro literal:** não aplicável (ajuste preventivo por divergência de contrato identificada em revisão).
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não aplicável (ajuste estrutural de schema).
+- **Dados de banco consultados via MCP:** não aplicável.
+- **Trecho canônico consultado:** `landingPageDesignPreset` com `lhmRuntime.baseCss/cssVersion/cssNotes` e necessidade de superfície/contraste explícitos por seção.
+- **Validação/regra que motivou ajuste:** reduzir ambiguidade do contrato para evitar geração incompleta do preset e wireframe.
+- **Causa raiz:** `landingPageDesignPresetFieldSchema()` não exigia `lhmRuntime` e `landingPageWireframe` aceitava `surfaceSpec.style/contrastMode` como opcionais.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregava/aceitava (literal):**
+  - Design preset podia ser validado sem `lhmRuntime`.
+  - Wireframe podia ser validado com `surfaceSpec` contendo apenas `surfaceToken` e `notes`.
+- **O que a especificação esperava (literal):**
+  - `lhmRuntime` obrigatório com `baseCss`, `cssVersion` e `cssNotes`.
+  - `surfaceSpec` obrigatório com `surfaceToken`, `style`, `contrastMode` e `notes`.
+- **Diferença objetiva:** campos críticos de renderização CSS e contraste ainda opcionais no contrato técnico.
+- **Ação corretiva recomendada:** tornar obrigatórios no schema de geração para eliminar payload implícito.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** contrato/schema backend + registro documental.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:**
+  - incluído `lhmRuntime` no schema de `landingPageDesignPreset` com `required` de `baseCss`, `cssVersion` e `cssNotes`, além de inclusão de `lhmRuntime` no `required` da raiz do preset;
+  - atualizado `required` de `surfaceSpec` no schema de wireframe para exigir `surfaceToken`, `style`, `contrastMode` e `notes`.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de teste unitário direcionado do módulo de pipeline.
+- **Resultado:** execução bem-sucedida do teste selecionado.
+- **Evidências (logs/ids/prints):** `mvn -Dtest=ExperimentPipelineGenerationServiceTest test`.
+- **Status final:** Concluído.
+
+#### 6) Próximo passo
+- **Ação seguinte:** monitorar próximas execuções das etapas `LANDING_PAGE_WIREFRAME` e `LANDING_PAGE_DESIGN_PRESET` para confirmar redução de payloads implícitos.
+- **Dono da ação:** Time de operação do pipeline.
+- **Prazo:** imediato (próxima rodada de geração).
+
+### INC-0011 — Validações backend explícitas para `lhmRuntime` e `surfaceSpec` visual
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (ads-service)
+- **Execução/Teste:** endurecimento de validação no `completeJob` para `LANDING_PAGE_DESIGN_PRESET` e `LANDING_PAGE_WIREFRAME`
+
+#### Ajuste aplicado
+- Validação de wireframe passou a rejeitar seção sem `surfaceSpec.style` e sem `surfaceSpec.contrastMode`.
+- Validação de design preset passou a exigir `lhmRuntime` com `baseCss`, `cssVersion` e `cssNotes` no payload concluído.
+- Atualizados testes unitários para refletir o contrato obrigatório e adicionados cenários de rejeição dedicados.
+
+#### Reteste
+- `mvn -Dtest=ExperimentPipelineGenerationServiceTest test` executado com sucesso após atualização dos cenários.

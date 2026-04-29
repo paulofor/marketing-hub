@@ -1407,6 +1407,14 @@ public class ExperimentPipelineGenerationService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "Wireframe da landing com section sem surfaceSpec.surfaceToken");
             }
+            if (!StringUtils.hasText(asTrimmedString(surfaceSpec.get("style")))) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe da landing com section sem surfaceSpec.style");
+            }
+            if (!StringUtils.hasText(asTrimmedString(surfaceSpec.get("contrastMode")))) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe da landing com section sem surfaceSpec.contrastMode");
+            }
         }
         Map<String, Object> readingFlowSpec = requiredMap(wireframePayload, "readingFlowSpec",
                 "Wireframe incompleto: readingFlowSpec é obrigatório");
@@ -1510,6 +1518,20 @@ public class ExperimentPipelineGenerationService {
         }
         Map<String, Object> theme = requiredMap(designPayload, "theme",
                 "Preset de design incompleto: theme é obrigatório");
+        Map<String, Object> lhmRuntime = requiredMap(designPayload, "lhmRuntime",
+                "Preset de design incompleto: lhmRuntime é obrigatório");
+        if (!StringUtils.hasText(asTrimmedString(lhmRuntime.get("baseCss")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: lhmRuntime.baseCss é obrigatório");
+        }
+        if (!StringUtils.hasText(asTrimmedString(lhmRuntime.get("cssVersion")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: lhmRuntime.cssVersion é obrigatório");
+        }
+        if (!StringUtils.hasText(asTrimmedString(lhmRuntime.get("cssNotes")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: lhmRuntime.cssNotes é obrigatório");
+        }
         requiredMap(theme, "palette", "Preset de design incompleto: theme.palette é obrigatório");
         Map<String, Object> typography = requiredMap(theme, "typography",
                 "Preset de design incompleto: theme.typography é obrigatório");
@@ -2768,6 +2790,16 @@ public class ExperimentPipelineGenerationService {
                 "additionalProperties", false,
                 "properties", Map.of(
                         "presetId", stringSchema(),
+                        "lhmRuntime", Map.of(
+                                "type", "object",
+                                "additionalProperties", false,
+                                "properties", Map.of(
+                                        "baseCss", stringSchema(),
+                                        "cssVersion", stringSchema(),
+                                        "cssNotes", stringSchema()
+                                ),
+                                "required", List.of("baseCss", "cssVersion", "cssNotes")
+                        ),
                         "theme", Map.of(
                                 "type", "object",
                                 "additionalProperties", false,
@@ -2811,7 +2843,7 @@ public class ExperimentPipelineGenerationService {
                                         "intensity", Map.of("type", "string", "enum", List.of("none", "subtle", "moderate"))),
                                 "required", List.of("enabled", "intensity")),
                         "consistencyChecks", Map.of("type", "array", "minItems", 1, "items", consistencyCheckSchema())),
-                "required", List.of("presetId", "theme", "sectionPresets", "componentPresets", "motion", "consistencyChecks"));
+                "required", List.of("presetId", "lhmRuntime", "theme", "sectionPresets", "componentPresets", "motion", "consistencyChecks"));
     }
 
     private Map<String, Object> landingPageHtmlFieldSchema() {
@@ -3072,7 +3104,7 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("contrastMode", Map.of("type", "string", "enum", List.of("normal", "high", "soft"))),
                         Map.entry("notes", stringSchema())
                 ),
-                "required", List.of("surfaceToken", "notes")
+                "required", List.of("surfaceToken", "style", "contrastMode", "notes")
         );
         Map<String, Object> ctaSlotSchema = Map.of(
                 "type", "object",

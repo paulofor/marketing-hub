@@ -176,7 +176,7 @@ public class LandingHtmlModule {
             if (!isHeroSection && StringUtils.hasText(sectionObjective)) {
                 html.append("<p class=\"section-objective\">").append(escapeHtml(sectionObjective)).append("</p>");
             }
-            html.append(buildBodySectionCopyMarkup(sectionId, bodySectionsCopy));
+            html.append(buildBodySectionCopyMarkup(section, bodySectionsCopy));
             html.append(buildFaqMarkup(sectionId, faqCopy));
             html.append(buildCtaBlocksMarkup(sectionId, ctaBlocksCopy));
 
@@ -571,9 +571,26 @@ public class LandingHtmlModule {
         return maxSize == 0 ? 0d : ((double) intersection / maxSize);
     }
 
-    private String buildBodySectionCopyMarkup(String sectionId, List<Map<String, Object>> bodySectionsCopy) {
+    private String buildBodySectionCopyMarkup(Map<String, Object> section, List<Map<String, Object>> bodySectionsCopy) {
+        String sectionId = section == null ? null : asTrimmedString(section.get("sectionId"));
         if (!StringUtils.hasText(sectionId) || bodySectionsCopy == null || bodySectionsCopy.isEmpty()) {
             return "";
+        }
+
+        List<String> orderedSlotIds = extractCopySlots(section);
+        if (!orderedSlotIds.isEmpty()) {
+            StringBuilder slotted = new StringBuilder();
+            for (String slotId : orderedSlotIds) {
+                for (Map<String, Object> bodySection : bodySectionsCopy) {
+                    if (!slotId.equalsIgnoreCase(asTrimmedString(bodySection.get("slotId")))) {
+                        continue;
+                    }
+                    appendBodySectionBlock(slotted, bodySection);
+                }
+            }
+            if (slotted.length() > 0) {
+                return slotted.toString();
+            }
         }
         for (Map<String, Object> bodySection : bodySectionsCopy) {
             String bodySectionId = asTrimmedString(bodySection.get("sectionId"));
@@ -581,27 +598,43 @@ public class LandingHtmlModule {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            appendParagraph(sb, asTrimmedString(bodySection.get("summary")));
-            appendParagraph(sb, asTrimmedString(bodySection.get("copy")));
-            if (bodySection.get("bullets") instanceof List<?> rawBullets) {
-                StringBuilder bulletsMarkup = new StringBuilder();
-                for (Object rawBullet : rawBullets) {
-                    String bullet = asTrimmedString(rawBullet);
-                    if (!StringUtils.hasText(bullet)) {
-                        continue;
-                    }
-                    bulletsMarkup.append("<li>").append(escapeHtml(bullet)).append("</li>");
-                }
-                if (bulletsMarkup.length() > 0) {
-                    sb.append("<ul>").append(bulletsMarkup).append("</ul>");
-                }
-            }
-            appendParagraph(sb, asTrimmedString(bodySection.get("ctaSupport")));
+            appendBodySectionBlock(sb, bodySection);
             return sb.toString();
         }
         return "";
     }
 
+
+
+    @SuppressWarnings("unchecked")
+    private List<String> extractCopySlots(Map<String, Object> section) {
+        if (section == null || !(section.get("copySlots") instanceof List<?> rawSlots)) {
+            return List.of();
+        }
+        return rawSlots.stream()
+                .map(this::asTrimmedString)
+                .filter(StringUtils::hasText)
+                .toList();
+    }
+
+    private void appendBodySectionBlock(StringBuilder sb, Map<String, Object> bodySection) {
+        appendRichText(sb, asTrimmedString(bodySection.get("summary")));
+        appendRichText(sb, asTrimmedString(bodySection.get("copy")));
+        if (bodySection.get("bullets") instanceof List<?> rawBullets) {
+            StringBuilder bulletsMarkup = new StringBuilder();
+            for (Object rawBullet : rawBullets) {
+                String bullet = asTrimmedString(rawBullet);
+                if (!StringUtils.hasText(bullet)) {
+                    continue;
+                }
+                bulletsMarkup.append("<li>").append(escapeHtml(bullet)).append("</li>");
+            }
+            if (bulletsMarkup.length() > 0) {
+                sb.append("<ul>").append(bulletsMarkup).append("</ul>");
+            }
+        }
+        appendParagraph(sb, asTrimmedString(bodySection.get("ctaSupport")));
+    }
     private String buildFaqMarkup(String sectionId, List<Map<String, Object>> faqCopy) {
         if (!StringUtils.hasText(sectionId) || faqCopy == null || faqCopy.isEmpty()) {
             return "";
@@ -655,7 +688,7 @@ public class LandingHtmlModule {
                         .append(escapeHtml(ctaLabel))
                         .append("</a></p>");
             }
-            appendParagraph(sb, ctaSupport);
+            appendRichText(sb, ctaSupport);
         }
         return sb.toString();
     }
@@ -664,9 +697,48 @@ public class LandingHtmlModule {
         if (!StringUtils.hasText(text)) {
             return;
         }
-        sb.append("<p>").append(escapeHtml(text)).append("</p>");
+        appendRichText(sb, text);
     }
 
+
+    private void appendRichText(StringBuilder sb, String text) {
+        if (!StringUtils.hasText(text)) {
+            return;
+        }
+        String normalized = text.replace("\r\n", "\n").trim();
+        if (!StringUtils.hasText(normalized)) {
+            return;
+        }
+        String[] blocks = normalized.split("\n\s*\n");
+        for (String rawBlock : blocks) {
+            String block = rawBlock.trim();
+            if (!StringUtils.hasText(block)) {
+                continue;
+            }
+            if (block.lines().allMatch(line -> line.trim().matches("[-*]\\s+.+"))) {
+                sb.append("<ul>");
+                block.lines().forEach(line -> sb.append("<li>").append(formatInlineText(line.replaceFirst("^[-*]\\s+", ""))).append("</li>"));
+                sb.append("</ul>");
+                continue;
+            }
+            if (block.lines().allMatch(line -> line.trim().matches("\\d+[).]\\s+.+"))) {
+                sb.append("<ol>");
+                block.lines().forEach(line -> sb.append("<li>").append(formatInlineText(line.replaceFirst("^\\d+[).]\\s+", ""))).append("</li>"));
+                sb.append("</ol>");
+                continue;
+            }
+            String paragraph = block.replace("\n", "<br>");
+            sb.append("<p>").append(formatInlineText(paragraph)).append("</p>");
+        }
+    }
+
+    private String formatInlineText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String escaped = escapeHtml(value);
+        return escaped.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
+    }
     private String buildSubmissionScript(String formId) {
         return """
                 <script>

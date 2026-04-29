@@ -2965,6 +2965,7 @@ public class ExperimentPipelineGenerationService {
                 "additionalProperties", false,
                 "properties", Map.ofEntries(
                         Map.entry("sectionId", stringSchema()),
+                        Map.entry("slotId", stringSchema()),
                         Map.entry("sectionType", Map.of(
                                 "type", "string",
                                 "enum", List.of("hero", "pain", "mechanism", "proof", "offer", "cta", "faq", "bonus", "objection")
@@ -3138,6 +3139,7 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("uiNotes", stringSchema()),
                         Map.entry("messageMatchDependency", stringSchema()),
                         Map.entry("sectionDependsOn", stringSchema()),
+                        Map.entry("copySlots", Map.of("type", "array", "minItems", 1, "items", stringSchema())),
                         Map.entry("mobilePriorityScore", integerSchema(1, 10)),
                         Map.entry("dropOffRisk", Map.of("type", "string", "enum", List.of("baixo", "medio", "alto"))),
                         Map.entry("surfaceSpec", surfaceSpecSchema),

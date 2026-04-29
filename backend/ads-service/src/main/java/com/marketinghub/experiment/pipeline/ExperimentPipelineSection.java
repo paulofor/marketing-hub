@@ -6,8 +6,8 @@ public enum ExperimentPipelineSection {
     CAMPAIGN_ANGLE("campaign-angle", null),
     AD_COPY("ad-copy", CAMPAIGN_ANGLE),
     AD_IMAGE_BRIEFING("ad-image-briefing", AD_COPY),
-    LANDING_PAGE_COPY("landing-page-copy", AD_IMAGE_BRIEFING),
-    LANDING_PAGE_WIREFRAME("landing-page-wireframe", LANDING_PAGE_COPY),
+    LANDING_PAGE_WIREFRAME("landing-page-wireframe", AD_IMAGE_BRIEFING),
+    LANDING_PAGE_COPY("landing-page-copy", LANDING_PAGE_WIREFRAME),
     LANDING_PAGE_IMAGE_PLANNING("landing-page-image-planning", LANDING_PAGE_WIREFRAME),
     LANDING_PAGE_DESIGN_PRESET("landing-page-design-preset", LANDING_PAGE_IMAGE_PLANNING),
     LANDING_PAGE_HTML("landing-page-html", LANDING_PAGE_DESIGN_PRESET);

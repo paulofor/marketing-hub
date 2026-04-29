@@ -187,6 +187,24 @@ public class ExperimentPipelineGenerationService {
         return experimentMapper.toDto(experiment);
     }
 
+
+    @Transactional
+    public void resumeFlowAfterImagePlanningIfReady(Long experimentId) {
+        if (experimentId == null || !frameworkImageGenerationService.allPlanningImagesCompleted(experimentId)) {
+            return;
+        }
+        try {
+            generate(experimentId,
+                    ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET,
+                    new ExperimentPipelineGenerationRequest());
+        } catch (ResponseStatusException ex) {
+            if (ex.getStatusCode() != HttpStatus.CONFLICT) {
+                throw ex;
+            }
+            log.debug("Retomada automática ignorada para experimento {}: {}", experimentId, ex.getReason());
+        }
+    }
+
     @Transactional
     public List<ExperimentPipelineGenerationJobDto> listPendingJobs(int limit) {
         return jobRepository.findByStatusAndExperimentStatusInOrderByCreatedAtAsc(

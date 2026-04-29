@@ -11,14 +11,26 @@ public class MoisHotmartRobotScheduler {
     private static final Logger log = LoggerFactory.getLogger(MoisHotmartRobotScheduler.class);
 
     private final MoisHotmartRobotProperties properties;
-    public MoisHotmartRobotScheduler(MoisHotmartRobotProperties properties) {
+    private final MoisHotmartRobotService hotmartRobotService;
+
+    public MoisHotmartRobotScheduler(MoisHotmartRobotProperties properties,
+                                     MoisHotmartRobotService hotmartRobotService) {
         this.properties = properties;
+        this.hotmartRobotService = hotmartRobotService;
     }
 
-    @Scheduled(cron = "${mois.robot.hotmart.cron:0 */20 * * * *}")
+    @Scheduled(cron = "${mois.robot.hotmart.cron:0 0 * * * *}")
     public void run() {
         log.info("MOIS Hotmart scheduler heartbeat: agendamento ativo (enabled={}, cron={})",
                 properties.isEnabled(),
                 properties.getCron());
+
+        if (!properties.isEnabled()) {
+            log.info("MOIS Hotmart scheduler ignorado: robô desabilitado na configuração");
+            return;
+        }
+
+        log.info("MOIS Hotmart scheduler iniciando execução automática do robô");
+        hotmartRobotService.triggerScheduledRun();
     }
 }

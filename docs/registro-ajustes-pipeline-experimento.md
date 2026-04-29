@@ -75,6 +75,52 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0013 — Correção arquitetural: regra de prompt mantida no AI Worker (não no backend)
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker + backend
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Revisão da correção anterior após feedback de arquitetura.
+
+#### 1) Erro observado
+- **Sintoma:** ajuste anterior incluiu regra de prompt diretamente em código Java do backend.
+- **Endpoint/rota/fila:** n/a (erro de alocação arquitetural da regra).
+- **Status code:** n/a.
+- **Mensagem de erro literal:** feedback de revisão: "os prompts não deveriam estar em código. Deveria estar no resource do Worker AI".
+- **Payload enviado (literal):** n/a.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não aplicável para este ajuste.
+- **Dados de banco consultados via MCP:** não aplicável para este ajuste.
+- **Trecho canônico consultado:** responsabilidade de geração textual/prompt do artefato deve residir no worker de IA (arquivo de prompt versionado em resources).
+- **Validação/regra que rejeitou:** n/a.
+- **Causa raiz:** correção anterior foi aplicada no lugar errado (backend), apesar de já existir prompt equivalente em `ai-worker/src/main/resources/prompts/experiment/landing-design-preset.md`.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** n/a.
+- **O que a especificação esperava (literal):** n/a.
+- **Diferença objetiva:** regra funcional estava em camada inadequada de implementação (backend) em vez do resource do AI Worker.
+- **Ação corretiva recomendada:** remover a regra inserida no backend e manter a regra apenas no prompt canônico do AI Worker.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** arquitetura / organização de prompt + documentação operacional.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** revertida a linha de regra `showIdentity=true` adicionada no bloco de instruções do backend; a regra permanece no prompt oficial do AI Worker (`landing-design-preset.md`).
+
+#### 5) Reteste
+- **Procedimento de reteste:** validação estática dos arquivos alterados e conferência do prompt no worker.
+- **Resultado:** concluído.
+- **Evidências (logs/ids/prints):** backend sem a regra adicionada anteriormente; prompt do worker já contém a regra explícita no item 15.
+- **Status final:** Resolvido (arquitetura corrigida).
+
+#### 6) Próximo passo
+- **Ação seguinte:** executar novo ciclo remoto do pipeline para confirmar ausência do 422 com a regra aplicada exclusivamente no worker.
+- **Dono da ação:** Time AI Worker + operação.
+- **Prazo:** imediato.
+
 ### INC-0012 — Reincidência do 422 `showIdentity` no preset de design (ajuste no prompt do backend)
 
 - **Data/Hora (UTC):** 2026-04-29

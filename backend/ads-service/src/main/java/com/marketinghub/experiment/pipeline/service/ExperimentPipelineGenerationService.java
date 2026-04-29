@@ -1360,9 +1360,8 @@ public class ExperimentPipelineGenerationService {
             sb.append("8. typography.maxLineLength deve ficar entre 55ch e 75ch; lineHeightBody >= 1.5.\n");
             sb.append("9. spacing.sectionGapMobile não pode ser menor que 48px.\n");
             sb.append("10. consistencyChecks deve incluir THEME_CONTRAST, CTA_VISUAL_HIERARCHY e MOBILE_READABILITY.\n");
-            sb.append("11. Para páginas de venda/captação, definir obrigatoriamente componentPresets.proof.showIdentity = true (não omitir e não usar false).\n");
-            sb.append("12. Seções de alta intenção (hero/oferta/fechamento) devem usar emphasis=primary ou justificar em notes.\n");
-            sb.append("13. Não gerar HTML, CSS bruto ou JS nesta etapa; apenas preset estruturado.\n");
+            sb.append("11. Seções de alta intenção (hero/oferta/fechamento) devem usar emphasis=primary ou justificar em notes.\n");
+            sb.append("12. Não gerar HTML, CSS bruto ou JS nesta etapa; apenas preset estruturado.\n");
             return;
         }
 

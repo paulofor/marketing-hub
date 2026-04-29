@@ -19,7 +19,7 @@ public class MoisHotmartCollectionScheduler {
         this.properties = properties;
     }
 
-    @Scheduled(cron = "${integrations.mois.hotmart-collection.cron:0 10 3 * * *}")
+    @Scheduled(cron = "${integrations.mois.hotmart-collection.cron:0 0 22 * * *}")
     public void scheduleCollection() {
         if (!properties.isEnabled()) {
             return;

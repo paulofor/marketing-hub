@@ -15,7 +15,7 @@ public class MoisHotmartRobotScheduler {
         this.properties = properties;
     }
 
-    @Scheduled(cron = "${mois.robot.hotmart.cron:0 */20 * * * *}")
+    @Scheduled(cron = "${mois.robot.hotmart.cron:0 0 * * * *}")
     public void run() {
         log.info("MOIS Hotmart scheduler heartbeat: agendamento ativo (enabled={}, cron={})",
                 properties.isEnabled(),

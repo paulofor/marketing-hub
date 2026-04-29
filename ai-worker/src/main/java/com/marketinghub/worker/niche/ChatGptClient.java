@@ -83,6 +83,7 @@ public class ChatGptClient {
     private static final String COMPLETION_WINDOW = "24h";
     private static final Duration BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration BATCH_TIMEOUT = Duration.ofMinutes(2);
+    private static final Duration OPENAI_REQUEST_TIMEOUT = Duration.ofSeconds(30);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
 
     public ChatGptClient(WebClient.Builder builder,
@@ -363,7 +364,7 @@ public class ChatGptClient {
                 .body(BodyInserters.fromMultipartData(multipart))
                 .retrieve()
                 .bodyToMono(OpenAiFile.class)
-                .block();
+                .block(OPENAI_REQUEST_TIMEOUT);
         if (file == null || file.id() == null || file.id().isBlank()) {
             throw new IllegalStateException("OpenAI file upload failed for batch");
         }
@@ -380,7 +381,7 @@ public class ChatGptClient {
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(OpenAiBatch.class)
-                .block();
+                .block(OPENAI_REQUEST_TIMEOUT);
         if (batch == null || batch.id() == null) {
             throw new IllegalStateException("OpenAI batch creation failed");
         }
@@ -404,7 +405,7 @@ public class ChatGptClient {
                     .uri("/batches/{id}", current.id())
                     .retrieve()
                     .bodyToMono(OpenAiBatch.class)
-                    .block();
+                    .block(OPENAI_REQUEST_TIMEOUT);
             if (current == null) {
                 throw new IllegalStateException("OpenAI returned null batch while polling");
             }
@@ -431,7 +432,7 @@ public class ChatGptClient {
                 .uri("/files/{id}/content", fileId)
                 .retrieve()
                 .bodyToMono(String.class)
-                .block();
+                .block(OPENAI_REQUEST_TIMEOUT);
     }
 
     private Map<String, OpenAiResponse> parseBatchOutput(String content) {

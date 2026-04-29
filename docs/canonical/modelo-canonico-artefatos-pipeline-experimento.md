@@ -189,9 +189,9 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
    - `faq` deve conter no mínimo 3 perguntas com `question` e `answer` preenchidos.
    - `ctaBlocks` deve conter no mínimo 2 variações (por exemplo: `mid` e `final` ou `hero` e `final`).
 
-3. **Independência da etapa de wireframe (ordem canônica)**
-   - A geração de `landingPageCopy` acontece **antes** de `landingPageWireframe`; portanto, a copy **não pode depender** de `sectionOrder`, `ctaSlot` ou qualquer campo de wireframe inexistente nessa etapa.
-   - O alinhamento estrutural com layout acontece na etapa posterior (`landingPageWireframe`), preservando a promessa e a argumentação aprovadas na copy.
+3. **Dependência da etapa de wireframe (ordem canônica)**
+   - A geração de `landingPageCopy` acontece **depois** de `landingPageWireframe`; portanto, a copy **deve usar** os sinais estruturais definidos no wireframe (por exemplo, `sectionOrder`, `ctaSlot` e hierarquia de blocos) para manter consistência de narrativa e layout.
+   - O alinhamento estrutural com layout acontece no `landingPageWireframe` e é refinado na `landingPageCopy`, preservando promessa, argumentação e clareza comercial.
    - Toda `ctaUrl` deve ser resolvida (sem placeholders como `{slug}`).
 
 4. **Consistência de promessa e CTA**

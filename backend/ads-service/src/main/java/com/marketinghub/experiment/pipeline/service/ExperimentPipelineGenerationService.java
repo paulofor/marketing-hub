@@ -1049,6 +1049,9 @@ public class ExperimentPipelineGenerationService {
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
             appendImageBindingSummary(sb, experiment);
         }
+        if (section == ExperimentPipelineSection.LANDING_PAGE_COPY) {
+            appendWireframeSlotSummary(sb, experiment);
+        }
     }
 
     private void appendImageBindingSummary(StringBuilder sb, Experiment experiment) {
@@ -1069,6 +1072,19 @@ public class ExperimentPipelineGenerationService {
                     .append("\n");
         }
         sb.append("Para cada imagem acima, declare data-image-section-id, data-image-binding-key, data-image-role, data-conversion-role, data-attention-priority, data-visual-weight, data-distance-to-cta e data-supports-form-conversion.\n");
+    }
+
+    private void appendWireframeSlotSummary(StringBuilder sb, Experiment experiment) {
+        Map<String, List<String>> slotsBySection = loadWireframeCopySlots(experiment);
+        if (slotsBySection.isEmpty()) {
+            return;
+        }
+        sb.append("\nSlots canônicos de copy vindos do wireframe (obrigatório respeitar e retornar em bodySections[].slotId):\n");
+        slotsBySection.forEach((sectionId, slots) ->
+                sb.append("- sectionId=").append(sectionId)
+                        .append(" | copySlots=").append(String.join(", ", slots))
+                        .append("\n"));
+        sb.append("Regra: cada item de landingPageCopy.bodySections deve informar slotId e esse slotId deve existir na lista copySlots da seção correspondente.\n");
     }
 
     private List<String> loadWireframeSectionIds(Experiment experiment) {
@@ -1115,6 +1131,52 @@ public class ExperimentPipelineGenerationService {
         } catch (Exception ex) {
             log.warn("Falha inesperada ao carregar bindings de imagem para o prompt: {}", ex.getMessage());
             return List.of();
+        }
+    }
+
+    private Map<String, Set<String>> loadAllowedCopySlotsBySection(Experiment experiment) {
+        Map<String, List<String>> slotsBySection = loadWireframeCopySlots(experiment);
+        if (slotsBySection.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Set<String>> allowed = new LinkedHashMap<>();
+        slotsBySection.forEach((sectionId, slots) -> allowed.put(sectionId, new LinkedHashSet<>(slots)));
+        return allowed;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, List<String>> loadWireframeCopySlots(Experiment experiment) {
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> root = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+            Map<String, Object> payload = unwrapSectionPayload(root, "landingPageWireframe");
+            if (!(payload.get("sectionOrder") instanceof List<?> rawSections) || rawSections.isEmpty()) {
+                return Map.of();
+            }
+            Map<String, List<String>> slotsBySection = new LinkedHashMap<>();
+            for (Object rawSection : rawSections) {
+                if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
+                    continue;
+                }
+                Map<String, Object> section = (Map<String, Object>) rawSectionMap;
+                String sectionId = asTrimmedString(section.get("sectionId"));
+                if (!StringUtils.hasText(sectionId) || !(section.get("copySlots") instanceof List<?> rawSlots)) {
+                    continue;
+                }
+                List<String> slots = rawSlots.stream()
+                        .map(this::asTrimmedString)
+                        .filter(StringUtils::hasText)
+                        .toList();
+                if (!slots.isEmpty()) {
+                    slotsBySection.put(sectionId, slots);
+                }
+            }
+            return slotsBySection;
+        } catch (Exception ex) {
+            log.warn("Falha ao carregar copySlots do wireframe para o prompt: {}", ex.getMessage());
+            return Map.of();
         }
     }
 
@@ -1202,7 +1264,7 @@ public class ExperimentPipelineGenerationService {
             case AD_COPY -> experiment.setAdCopy(normalized);
             case AD_IMAGE_BRIEFING -> experiment.setAdImageBriefing(normalized);
             case LANDING_PAGE_COPY -> {
-                validateLandingCopyArtifacts(normalized);
+                validateLandingCopyArtifacts(experiment, normalized);
                 experiment.setLandingPageCopy(normalized);
             }
             case LANDING_PAGE_WIREFRAME -> {
@@ -1228,7 +1290,7 @@ public class ExperimentPipelineGenerationService {
     }
 
     @SuppressWarnings("unchecked")
-    private void validateLandingCopyArtifacts(String landingCopyContent) {
+    private void validateLandingCopyArtifacts(Experiment experiment, String landingCopyContent) {
         if (!StringUtils.hasText(landingCopyContent)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Copy da landing vazia");
         }
@@ -1251,6 +1313,7 @@ public class ExperimentPipelineGenerationService {
         }
 
         if (hasCanonicalHero) {
+            Map<String, Set<String>> allowedSlotsBySection = loadAllowedCopySlotsBySection(experiment);
             if (!(copyPayload.get("bodySections") instanceof List<?> rawBodySections) || rawBodySections.isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Copy da landing sem bodySections estruturado");
             }
@@ -1260,11 +1323,23 @@ public class ExperimentPipelineGenerationService {
                 }
                 Map<String, Object> bodySection = (Map<String, Object>) rawBodySectionMap;
                 String sectionId = asTrimmedString(bodySection.get("sectionId"));
+                String slotId = asTrimmedString(bodySection.get("slotId"));
                 String summary = asTrimmedString(bodySection.get("summary"));
                 String copy = asTrimmedString(bodySection.get("copy"));
                 if (!StringUtils.hasText(sectionId) || (!StringUtils.hasText(summary) && !StringUtils.hasText(copy))) {
                     throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                             "Copy da landing inválida em bodySections: cada item exige sectionId e summary/copy");
+                }
+                if (!allowedSlotsBySection.isEmpty()) {
+                    if (!StringUtils.hasText(slotId)) {
+                        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                                "Copy da landing inválida em bodySections: slotId é obrigatório quando wireframe define copySlots");
+                    }
+                    Set<String> allowedSlots = allowedSlotsBySection.get(sectionId);
+                    if (allowedSlots == null || allowedSlots.isEmpty() || !allowedSlots.contains(slotId)) {
+                        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                                "Copy da landing inválida em bodySections: slotId '" + slotId + "' não pertence aos copySlots da sectionId '" + sectionId + "'");
+                    }
                 }
             }
             if (!(copyPayload.get("consistencyChecks") instanceof List<?> rawChecks) || rawChecks.isEmpty()) {

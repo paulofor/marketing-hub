@@ -446,6 +446,11 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 ```json
 {
   "presetId": "string",
+  "lhmRuntime": {
+    "baseCss": "string",
+    "cssVersion": "string",
+    "cssNotes": "string"
+  },
   "theme": {
     "palette": {
       "background": "string",
@@ -551,6 +556,25 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
   ]
 }
 ```
+
+> **Atualização canônica (2026-04-29) — CSS base do LHM deve vir de artefato:**
+> - A malha CSS base da landing (`baseCss`) deve ser definida no `landingPageDesignPreset.lhmRuntime.baseCss` (ou, por compatibilidade temporária, em `landingPageDesignPreset.baseCss`).
+> - O `LandingHtmlModule` não deve definir regras de superfície/constraste/layout como decisão hardcoded fora dos JSONs canônicos.
+> - Ausência de `baseCss` é quebra de contrato e deve bloquear a renderização da etapa `landingPageHtml`.
+
+### Itens mínimos obrigatórios dentro de `lhmRuntime.baseCss`
+
+Para garantir compatibilidade com o HTML emitido pelo LHM, o CSS canônico deve cobrir no mínimo os seletores abaixo (podendo estender):
+
+- layout base: `body`, `main`, `.card`;
+- tipografia/conteúdo: `h1`, `h2`, `p`, `ul`, `li`;
+- formulário: `form`, `.field`, `label`, `input`, `button`, `#form-feedback`;
+- FAQ: `.faq-list details`, `.faq-list summary`;
+- variações de superfície e contraste usadas pelo wireframe/design preset:
+  - `.surface-band`, `.surface-solid`, `.surface-gradient-soft`, `.surface-image-tint`;
+  - `.contrast-normal`, `.contrast-high`, `.contrast-soft`.
+
+Se o wireframe/design preset introduzir novos `surfaceStyle` ou `contrastMode`, o `baseCss` correspondente deve ser atualizado no mesmo ciclo de versão.
 
 > `landingPageDesignPreset.sectionPresets` é a fonte canônica de `surfaceStyle` e `contrastMode` por `sectionId` para renderização final do HTML.
 > Após `complete` da etapa de design preset, o backend valida se `sectionPresets` cobre todas as `sectionId` do wireframe atual.

@@ -14,6 +14,7 @@ class LandingHtmlModuleTest {
     @Test
     void assembleHtmlDocumentIncludesCanonicalAsyncSubmitRuntime() {
         Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
         experiment.setName("Teste LHM");
         experiment.setLandingPageWireframe("""
                 {
@@ -67,6 +68,7 @@ class LandingHtmlModuleTest {
     @Test
     void assembleHtmlDocumentKeepsExactSurfaceContractFromWireframe() {
         Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
         experiment.setName("Teste LHM Surface");
         experiment.setLandingPageWireframe("""
                 {
@@ -109,6 +111,7 @@ class LandingHtmlModuleTest {
     @Test
     void assembleHtmlDocumentRendersBodyFaqAndCtaFromLandingCopy() {
         Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
         experiment.setName("Teste LHM Copy Completa");
         experiment.setLandingPageWireframe("""
                 {
@@ -196,6 +199,9 @@ class LandingHtmlModuleTest {
         experiment.setLandingPageDesignPreset("""
                 {
                   "landingPageDesignPreset": {
+                    "lhmRuntime": {
+                      "baseCss": "body{margin:0}.card{padding:16px}.surface-solid{background:#fff}.contrast-high{border-color:#bfd0ee}"
+                    },
                     "sectionPresets": [
                       {
                         "sectionId": "proof",
@@ -221,6 +227,7 @@ class LandingHtmlModuleTest {
     @Test
     void assembleHtmlDocumentUsesHeroSectionInsteadOfFirstWireframeSectionForH1() {
         Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
         experiment.setName("Teste LHM Hero");
         experiment.setLandingPageWireframe("""
                 {
@@ -260,6 +267,7 @@ class LandingHtmlModuleTest {
     @Test
     void assembleHtmlDocumentAvoidsRepeatingPromiseWhenDuplicateOfHeroHeadline() {
         Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
         experiment.setName("Teste LHM Dedup");
         experiment.setLandingPageWireframe("""
                 {
@@ -292,5 +300,17 @@ class LandingHtmlModuleTest {
 
         assertTrue(html.contains("<h1>Mesma mensagem da promessa</h1>"));
         assertFalse(html.contains("<p class=\"section-objective\">Mesma mensagem da promessa</p>"));
+    }
+
+    private void applyBaseCssContract(Experiment experiment) {
+        experiment.setLandingPageDesignPreset("""
+                {
+                  "landingPageDesignPreset": {
+                    "lhmRuntime": {
+                      "baseCss": "body{margin:0}.card{padding:16px}.surface-band{background:#fff}.surface-solid{background:#fff}.contrast-high{border-color:#bfd0ee}.contrast-soft{border-color:#e8edf6}"
+                    }
+                  }
+                }
+                """);
     }
 }

@@ -118,42 +118,8 @@ public class LandingHtmlModule {
                 .append("<meta charset=\"UTF-8\" />")
                 .append("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />")
                 .append("<title>").append(escapeHtml(pageTitle)).append("</title>")
-                .append("<style>")
-                .append(":root{--bg:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("background")), "#f3f5f9")))
-                .append(";--card:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("surface")), "#ffffff")))
-                .append(";--border:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("border")), "#e3e8f2")))
-                .append(";--text:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("textPrimary")), "#0f172a")))
-                .append(";--muted:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("textMuted")), "#475569")))
-                .append(";--brand:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("brandPrimary")), "#1d4ed8")))
-                .append(";--brand-dark:").append(escapeCss(firstNonBlank(asTrimmedString(palette.get("brandSecondary")), "#1e40af")))
-                .append(";--lh-body-line-height:").append(escapeCss(firstNonBlank(asTrimmedString(typography.get("lineHeightBody")), "1.55")))
-                .append(";--lh-max-line:").append(escapeCss(firstNonBlank(asTrimmedString(typography.get("maxLineLength")), "66ch")))
-                .append(";}")
-                .append("*{box-sizing:border-box;}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#f8fafc 0%,var(--bg) 100%);color:var(--text);line-height:var(--lh-body-line-height);}")
-                .append("main{max-width:980px;margin:0 auto;padding:28px 16px 64px;display:grid;gap:14px;}")
-                .append(".card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(15,23,42,.04);}")
-                .append(".card[data-surface-contrast='high']{border-color:#cdd8ee;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);}")
-                .append(".surface-band{background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);}")
-                .append(".surface-solid{background:#ffffff;}")
-                .append(".surface-gradient-soft{background:linear-gradient(135deg,#f8fbff 0%,#eef4ff 100%);}")
-                .append(".surface-image-tint{background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 100%);}")
-                .append(".contrast-high{border-color:#bfd0ee;box-shadow:0 12px 32px rgba(29,78,216,.08);}")
-                .append(".contrast-soft{border-color:#e8edf6;background:#fbfdff;}")
-                .append("h1{font-size:clamp(1.65rem,4vw,2.1rem);line-height:1.15;margin:0 0 10px;font-weight:800;letter-spacing:-0.02em;}")
-                .append("h2{font-size:clamp(1.25rem,3.2vw,1.55rem);line-height:1.25;margin:0 0 10px;font-weight:750;letter-spacing:-0.01em;}")
-                .append("p{margin:0 0 10px;color:var(--muted);font-size:.98rem;max-width:var(--lh-max-line);}")
-                .append(".section-objective{font-size:.95rem;color:#334155;background:#f8fafc;border:1px dashed #d6e1f5;border-radius:12px;padding:10px 12px;margin:0 0 12px;}")
-                .append("form{display:grid;gap:12px;background:#fbfdff;border:1px solid #dbe5f5;border-radius:14px;padding:14px;}")
-                .append(".field{display:grid;gap:6px;}.help{color:#64748b;font-size:.88rem;line-height:1.35;}")
-                .append("label{font-weight:700;font-size:.92rem;color:#0f172a;}input{width:100%;padding:11px 12px;border:1px solid #cfd8e6;border-radius:10px;background:#fff;font-size:1rem;outline:none;}")
-                .append("input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);}button{padding:12px 16px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;font-weight:800;cursor:pointer;letter-spacing:.01em;}")
-                .append(".hero-cta-link{display:inline-block;padding:10px 14px;border-radius:999px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;text-decoration:none;font-weight:800;}")
-                .append("ul{margin:0 0 12px 18px;padding:0;}li{margin-bottom:6px;color:#1e293b;}")
-                .append(".faq-list details{border:1px solid #dbe5f5;border-radius:12px;background:#fff;padding:10px 12px;margin:0 0 10px;}")
-                .append(".faq-list summary{cursor:pointer;font-weight:700;color:#0f172a;}")
-                .append("button:hover{filter:brightness(1.04);}img{max-width:100%;height:auto;border-radius:12px;display:block;margin-top:8px;}")
-                .append("#form-feedback{display:none;margin-top:2px;font-weight:700;color:#1e3a8a;}")
-                .append("</style></head><body><main>");
+                .append(buildBaseCss(designPreset))
+                .append("</head><body><main>");
 
         for (int sectionIndex = 0; sectionIndex < sections.size(); sectionIndex++) {
             Map<String, Object> section = sections.get(sectionIndex);
@@ -221,6 +187,21 @@ public class LandingHtmlModule {
 
         html.append("</main>").append(buildSubmissionScript(formId)).append("</body></html>");
         return html.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String buildBaseCss(Map<String, Object> designPreset) {
+        String cssFromContract = null;
+        if (designPreset != null) {
+            cssFromContract = asTrimmedString(designPreset.get("baseCss"));
+            if (!StringUtils.hasText(cssFromContract) && designPreset.get("lhmRuntime") instanceof Map<?, ?> runtimeMap) {
+                cssFromContract = asTrimmedString(((Map<String, Object>) runtimeMap).get("baseCss"));
+            }
+        }
+        if (StringUtils.hasText(cssFromContract)) {
+            return "<style>" + cssFromContract + "</style>";
+        }
+        throw new IllegalStateException("landingPageDesignPreset.lhmRuntime.baseCss (ou baseCss) é obrigatório para renderização LHM.");
     }
 
     @SuppressWarnings("unchecked")

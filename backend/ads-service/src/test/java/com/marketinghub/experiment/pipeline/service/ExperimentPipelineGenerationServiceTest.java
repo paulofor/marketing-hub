@@ -1325,7 +1325,7 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
-    void completeJobRejectsImagePlanningWhenRequiredChecksAreMissing() {
+    void completeJobRejectsImagePlanningWhenGenerationPromptIsMissing() {
         Experiment experiment = new Experiment();
         experiment.setId(413L);
         experiment.setLandingPageWireframe("""
@@ -1358,8 +1358,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 """,
                         null, null, null, null, null)));
 
-        assertTrue(exception.getReason().contains("IMAGE_MESSAGE_MATCH"));
-        assertTrue(exception.getReason().contains("CTA_CONTINUITY"));
+        assertTrue(exception.getReason().contains("generationPrompt é obrigatório"));
     }
 
     @Test
@@ -1651,6 +1650,7 @@ class ExperimentPipelineGenerationServiceTest {
         String payload = """
                 {
                   "landingPageImagePlanning": {
+                    "generationPrompt": "Gerar imagem hero com foco em dor e continuidade com o anúncio",
                     "consistencyChecks": [
                       {"check": "IMAGE_MESSAGE_MATCH", "status": "PASS"},
                       {"check": "CTA_CONTINUITY", "status": "PASS"}

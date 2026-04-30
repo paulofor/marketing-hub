@@ -4,6 +4,7 @@ import { Product } from "./useProducts";
 
 export interface CreateProduct {
   niche: string;
+  marketNicheId?: number;
   avatar: string;
   instagramAccountId?: number;
   explicitPain: string;

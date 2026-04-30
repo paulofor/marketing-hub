@@ -148,8 +148,15 @@ export default function NewProductPage() {
         value={form.aiCost}
         onChange={(e) => setForm({ ...form, aiCost: e.target.value })}
       />
-      <button className="btn btn-primary" onClick={submit}>
-        Salvar
+      <button className="btn btn-primary" onClick={submit} disabled={create.isPending}>
+        {create.isPending ? (
+          <>
+            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+            Salvando...
+          </>
+        ) : (
+          "Salvar"
+        )}
       </button>
     </div>
   );

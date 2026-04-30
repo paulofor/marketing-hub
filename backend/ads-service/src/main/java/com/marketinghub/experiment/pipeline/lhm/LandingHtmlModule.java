@@ -2,6 +2,8 @@ package com.marketinghub.experiment.pipeline.lhm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
  */
 @Component
 public class LandingHtmlModule {
+    private static final Logger log = LoggerFactory.getLogger(LandingHtmlModule.class);
 
     private final ObjectMapper objectMapper;
 
@@ -113,6 +116,8 @@ public class LandingHtmlModule {
         String sanitizedPageSummary = sanitizePageSummary(pageSummary, heroHeadline, heroCopy);
 
         List<Map<String, Object>> plannedImages = extractImages(landingPageImagePlanning);
+        log.info("LHM assemble start (experimentId={}): sections={}, plannedImages={}",
+                experiment.getId(), sections.size(), plannedImages.size());
         Map<String, Object> designRoot = safeReadObject(landingPageDesignPreset, "landingPageDesignPreset");
         Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
         Map<String, Object> palette = extractPalette(designPreset);
@@ -181,13 +186,17 @@ public class LandingHtmlModule {
             html.append(buildFaqMarkup(sectionId, faqCopy));
             html.append(buildCtaBlocksMarkup(sectionId, ctaBlocksCopy));
 
+            int sectionImageCount = 0;
             for (Map<String, Object> image : plannedImages) {
                 String imageSectionId = asTrimmedString(image.get("sectionId"));
                 if (!sectionId.equalsIgnoreCase(firstNonBlank(imageSectionId, ""))) {
                     continue;
                 }
+                sectionImageCount++;
                 html.append(buildImageTag(image));
             }
+            log.info("LHM section rendered (experimentId={}, sectionId={}): matchedImages={}",
+                    experiment.getId(), sectionId, sectionImageCount);
 
             if (containsFormBlock(sectionId, section)) {
                 html.append(buildFormMarkup(formId, submitTarget, submitLabel, formSpec));
@@ -420,10 +429,13 @@ public class LandingHtmlModule {
     private String buildImageTag(Map<String, Object> image) {
         String sectionId = asTrimmedString(image.get("sectionId"));
         if (!StringUtils.hasText(sectionId)) {
+            log.warn("LHM image descartada: sectionId ausente. payload={}", summarizeImagePayload(image));
             throw new IllegalStateException("landingPageImagePlanning.images[].sectionId é obrigatório para renderização LHM canônica.");
         }
         String bindingKey = slugifyBindingKey(asTrimmedString(image.get("imageBindingKey")));
         if (!StringUtils.hasText(bindingKey)) {
+            log.warn("LHM image descartada: imageBindingKey ausente/inválido (sectionId={}). payload={}",
+                    sectionId, summarizeImagePayload(image));
             throw new IllegalStateException("landingPageImagePlanning.images[].imageBindingKey é obrigatório para renderização LHM canônica.");
         }
         String imageRole = firstNonBlank(asTrimmedString(image.get("imageRole")), "image");
@@ -439,6 +451,7 @@ public class LandingHtmlModule {
                 asTrimmedString(image.get("sourceUrl")),
                 asTrimmedString(image.get("url")),
                 "https://images.unsplash.com/photo-1517836357463-d25dfeac3438");
+        log.info("LHM image binding resolved (sectionId={}, bindingKey={}): url={}", sectionId, bindingKey, url);
 
         return "<img src=\"" + escapeAttr(url) + "\" alt=\"" + escapeAttr(altText)
                 + "\" data-image-section-id=\"" + escapeAttr(sectionId)
@@ -449,6 +462,19 @@ public class LandingHtmlModule {
                 + "\" data-visual-weight=\"" + escapeAttr(visualWeight)
                 + "\" data-distance-to-cta=\"" + escapeAttr(distanceToCta)
                 + "\" data-supports-form-conversion=\"" + supportsFormConversion + "\" />";
+    }
+
+    private String summarizeImagePayload(Map<String, Object> image) {
+        if (image == null || image.isEmpty()) {
+            return "{}";
+        }
+        return "{sectionId=" + firstNonBlank(asTrimmedString(image.get("sectionId")), "(vazio)")
+                + ", imageBindingKey=" + firstNonBlank(asTrimmedString(image.get("imageBindingKey")), "(vazio)")
+                + ", webUrl=" + firstNonBlank(asTrimmedString(image.get("webUrl")), "(vazio)")
+                + ", imageUrl=" + firstNonBlank(asTrimmedString(image.get("imageUrl")), "(vazio)")
+                + ", sourceUrl=" + firstNonBlank(asTrimmedString(image.get("sourceUrl")), "(vazio)")
+                + ", url=" + firstNonBlank(asTrimmedString(image.get("url")), "(vazio)")
+                + "}";
     }
 
     private String slugifyBindingKey(String value) {

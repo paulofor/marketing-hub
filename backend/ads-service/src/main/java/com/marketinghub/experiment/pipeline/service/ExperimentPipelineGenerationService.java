@@ -3633,9 +3633,14 @@ public class ExperimentPipelineGenerationService {
                     experiment.getId(),
                     expectedBindingPairs,
                     actualBindingPairs);
+            String bindingPairsDiffMessage = String.format(
+                    "Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey. expectedBindingPairs=%s actualBindingPairs=%s",
+                    expectedBindingPairs,
+                    actualBindingPairs);
+            log.warn("Validação landing HTML (experimentId={}): {}", experiment.getId(), bindingPairsDiffMessage);
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey");
+                    bindingPairsDiffMessage);
         }
     }
 

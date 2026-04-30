@@ -37,6 +37,11 @@ Regras fixas da etapa:
     - não altere cobertura/ownership estrutural;
     - entregue o prompt final com instruções claras de execução visual.
 21. Se houver conflito entre criatividade e contrato estrutural, prevalece o contrato recebido do wireframe.
+22. Enfatize o framework de hipótese **DOR → RESULTADO** como eixo principal de cada imagem: a cena deve materializar a dor real atual e o estado transformado desejado.
+23. Toda imagem deve conectar pessoas reais ao contexto da dor e do resultado com sinais visuais concretos (expressão, ambiente, ação, consequência), evitando abstrações genéricas.
+24. O `imagePrompt` deve criar identificação imediata e inconsciente: quem vê precisa reconhecer “isso é sobre mim agora” (dor) e “é assim que quero ficar” (resultado).
+25. Evite metáforas vagas e símbolos desconectados; priorize situações humanas específicas, plausíveis e emocionalmente reconhecíveis no nicho/contexto recebido.
+26. Garanta contraste visual entre “antes/dor” e “depois/resultado” de forma ética e sem promessas irreais, mantendo continuidade com copy e oferta aprovadas.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

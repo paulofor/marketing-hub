@@ -216,6 +216,7 @@ export default function MoisAutoCollectionPage() {
                 <thead>
                   <tr>
                     <th>Título</th>
+                    <th>URL do produto</th>
                     <th>Status</th>
                     <th>Score</th>
                     <th>Origem</th>
@@ -234,6 +235,9 @@ export default function MoisAutoCollectionPage() {
                           <a href={item.url} target="_blank" rel="noreferrer">
                             Abrir fonte
                           </a>
+                        </td>
+                        <td>
+                          <div className="small text-break">{item.url}</div>
                         </td>
                         <td>
                           <span className="badge text-bg-light">{item.status}</span>

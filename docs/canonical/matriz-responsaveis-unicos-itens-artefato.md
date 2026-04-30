@@ -50,6 +50,8 @@ Definir, sem ambiguidade, **um único responsável canônico por campo/path** do
 | Path canônico | Dono canônico | Consumidores principais | Gate de validação |
 |---|---|---|---|
 | `landingPageWireframe.sectionOrder[*].sectionId` | `landing-page-wireframe` | `landingPageImagePlanning`, `landingPageDesignPreset`, `landingPageHtml` | validação de estrutura e cobertura por seção |
+| `landingPageWireframe.images[*].sectionId` | `landing-page-wireframe` | `landingPageImagePlanning`, `landingPageHtml` | validação de binding estrutural de imagem por seção |
+| `landingPageWireframe.images[*].imageBindingKey` | `landing-page-wireframe` | `landingPageImagePlanning`, `landingPageHtml` | validação de unicidade e vínculo por seção |
 | `landingPageWireframe.sectionOrder[*].surfaceSpec.surfaceToken` | `landing-page-wireframe` | `landingPageHtml` | validação de surface binding |
 | `landingPageWireframe.sectionOrder[*].surfaceSpec.notes` | `landing-page-wireframe` | `landingPageHtml` (suporte) | validação estrutural do wireframe |
 | `landingPageWireframe.formSpec.*` | `landing-page-wireframe` | `landingPageHtml`, apply-to-form | validação determinística de formulário |
@@ -60,10 +62,7 @@ Definir, sem ambiguidade, **um único responsável canônico por campo/path** do
 
 | Path canônico | Dono canônico | Consumidores principais | Gate de validação |
 |---|---|---|---|
-| `landingPageImagePlanning.images[*].sectionId` | `landing-page-image-planning` | `landingPageHtml` | cobertura obrigatória de todas as seções do wireframe |
-| `landingPageImagePlanning.images[*].imageBindingKey` | `landing-page-image-planning` | `landingPageHtml` | unicidade e vínculo por seção |
-| `landingPageImagePlanning.images[*].(webUrl/imageUrl/sourceUrl/url)` | `landing-page-image-planning` | `landingPageHtml` | validação de imagem canônica |
-| `landingPageImagePlanning.consistencyChecks` | `landing-page-image-planning` | backend (gate) | obrigatórios `IMAGE_MESSAGE_MATCH` + `CTA_CONTINUITY` |
+| `landingPageImagePlanning.generationPrompt` | `landing-page-image-planning` | worker de imagem | validação de prompt obrigatório e não vazio |
 
 ## 6) `landingPageDesignPreset`
 

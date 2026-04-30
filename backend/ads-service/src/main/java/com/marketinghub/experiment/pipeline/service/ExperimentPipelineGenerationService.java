@@ -1360,66 +1360,10 @@ public class ExperimentPipelineGenerationService {
         }
         Map<String, Object> planningRoot = readObject(imagePlanningContent, "Planejamento de imagens inválido");
         Map<String, Object> planningPayload = unwrapSectionPayload(planningRoot, "landingPageImagePlanning");
-        if (!(planningPayload.get("images") instanceof List<?> rawImages) || rawImages.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Planejamento de imagens sem images[] estruturado");
-        }
-        if (!(planningPayload.get("consistencyChecks") instanceof List<?> rawChecks) || rawChecks.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Planejamento de imagens sem consistencyChecks");
-        }
-        Set<String> checkNames = extractCheckNames(rawChecks);
-        if (!checkNames.contains("IMAGE_MESSAGE_MATCH") || !checkNames.contains("CTA_CONTINUITY")) {
+        String generationPrompt = asTrimmedString(planningPayload.get("generationPrompt"));
+        if (!StringUtils.hasText(generationPrompt)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Planejamento de imagens sem consistencyChecks obrigatórios: IMAGE_MESSAGE_MATCH e CTA_CONTINUITY");
-        }
-        Set<String> plannedSectionIds = new LinkedHashSet<>();
-        Set<String> bindingKeys = new LinkedHashSet<>();
-        for (Object rawImage : rawImages) {
-            if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
-                continue;
-            }
-            Map<String, Object> image = (Map<String, Object>) rawImageMap;
-            String sectionId = asTrimmedString(image.get("sectionId"));
-            String bindingKey = asTrimmedString(image.get("imageBindingKey"));
-            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(bindingKey)) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                        "Planejamento de imagens incompleto: cada item exige sectionId e imageBindingKey");
-            }
-            if (!bindingKeys.add(normalizeLookupKey(bindingKey))) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                        "Planejamento de imagens inválido: imageBindingKey duplicado em images[]");
-            }
-            plannedSectionIds.add(normalizeLookupKey(sectionId));
-        }
-
-        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
-            return;
-        }
-        Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
-        Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
-        if (!(wireframePayload.get("sectionOrder") instanceof List<?> rawSections) || rawSections.isEmpty()) {
-            return;
-        }
-        Set<String> expectedSectionIds = new LinkedHashSet<>();
-        for (Object rawSection : rawSections) {
-            if (!(rawSection instanceof Map<?, ?> rawSectionMap)) {
-                continue;
-            }
-            String sectionId = asTrimmedString(((Map<String, Object>) rawSectionMap).get("sectionId"));
-            if (StringUtils.hasText(sectionId)) {
-                expectedSectionIds.add(normalizeLookupKey(sectionId));
-            }
-        }
-        Set<String> missing = new LinkedHashSet<>(expectedSectionIds);
-        missing.removeAll(plannedSectionIds);
-        if (!missing.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Planejamento de imagens incompleto: faltam sectionId do wireframe em images[]. Faltando: " + missing);
-        }
-        Set<String> extras = new LinkedHashSet<>(plannedSectionIds);
-        extras.removeAll(expectedSectionIds);
-        if (!extras.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Planejamento de imagens inválido: sectionId fora do wireframe em images[]. Excedente: " + extras);
+                    "Planejamento de imagens inválido: generationPrompt é obrigatório");
         }
     }
 
@@ -2798,22 +2742,9 @@ public class ExperimentPipelineGenerationService {
                 "type", "object",
                 "additionalProperties", false,
                 "properties", Map.ofEntries(
-                        Map.entry("pageGoal", stringSchema()),
-                        Map.entry("visualDirectionSummary", stringSchema()),
-                        Map.entry("sequencingNotes", stringSchema()),
-                        Map.entry("ctaIntegrationNotes", stringSchema()),
-                        Map.entry("images", Map.of(
-                                "type", "array",
-                                "minItems", 4,
-                                "items", imageSchema
-                        )),
-                        Map.entry("consistencyChecks", Map.of(
-                                "type", "array",
-                                "minItems", 3,
-                                "items", consistencyCheckSchema()
-                        ))
+                        Map.entry("generationPrompt", stringSchema())
                 ),
-                "required", List.of("pageGoal", "images", "consistencyChecks")
+                "required", List.of("generationPrompt")
         );
     }
 

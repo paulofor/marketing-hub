@@ -13,9 +13,9 @@ Modelo conceitual interno obrigatório (não expor no output final):
 - `proofDevice`
 
 Regras fixas da etapa:
-1. Entregue `images[]` com no mínimo quatro itens ligados a `sectionId/sectionName` existentes do wireframe.
-2. `images[]` deve cobrir **100%** dos `sectionId` de `landingPageWireframe.sectionOrder` recebidos em `CASE_DATA` (incluindo seções de formulário, como `form-*`, quando existirem).
-3. É proibido omitir seção do wireframe em `images[]` e também é proibido inventar `sectionId` fora do wireframe.
+1. Esta etapa é responsável **somente** por criar o prompt final que será enviado ao modelo de imagem.
+2. Toda estrutura de imagem (`sectionId`, `imageBindingKey`, cobertura por seção, layout e bindings) é recebida do wireframe e **não pode ser alterada**.
+3. É proibido inventar, remover ou renomear bindings estruturais de imagem já definidos no wireframe.
 4. Cada item de imagem deve incluir vínculo de seção, objetivo visual e função de conversão.
 5. `imagePrompt` deve ser específico para a seção e coerente com o ângulo/copy aprovados.
 6. Defina `dimensions.desktop` e `dimensions.mobile`.
@@ -31,13 +31,12 @@ Regras fixas da etapa:
 16. Não hardcode mockup específico (ex.: “kit”, “PDF”) quando os insumos não indicarem isso.
 17. Reagir ao tipo concreto de oferta atual sem inventar objetos não presentes nos artefatos.
 18. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
-19. Antes de finalizar, execute checklist de cobertura obrigatório: compare `landingPageWireframe.sectionOrder[*].sectionId` com `images[*].sectionId` e só responda quando todos estiverem presentes, sem faltas e sem excedentes.
+19. Antes de finalizar, gere um `generationPrompt` único, operacional e pronto para uso pelo modelo de imagem.
 20. Fluxo obrigatório interno antes da resposta:
-    - extraia a lista literal `requiredSectionIds` de `landingPageWireframe.sectionOrder[*].sectionId`;
-    - monte `images[]` cobrindo 1:1 cada item de `requiredSectionIds`;
-    - valide internamente `missing = requiredSectionIds - images.sectionId` e `extras = images.sectionId - requiredSectionIds`;
-    - só finalize quando `missing=[]` e `extras=[]`.
-21. Se existir seção de objeção/oferta/faq no wireframe (ex.: `objection-*`, `offer-*`, `faq-*`), ela também é obrigatória em `images[]` e não pode ser omitida.
+    - use literalmente os bindings recebidos no `CASE_DATA`;
+    - não altere cobertura/ownership estrutural;
+    - entregue o prompt final com instruções claras de execução visual.
+21. Se houver conflito entre criatividade e contrato estrutural, prevalece o contrato recebido do wireframe.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -45,9 +44,4 @@ CASE_DATA
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato `landingPageImagePlanning`.
 Campos obrigatórios:
-- pageGoal
-- visualDirectionSummary
-- sequencingNotes
-- ctaIntegrationNotes
-- images[]
-- consistencyChecks[]
+- generationPrompt

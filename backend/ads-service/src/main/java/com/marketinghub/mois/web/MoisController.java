@@ -5,6 +5,7 @@ import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
+import com.marketinghub.mois.service.MoisCollectionPersistenceService;
 import com.marketinghub.mois.service.MoisModuleGateway;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class MoisController {
 
     private final MoisModuleGateway gateway;
+    private final MoisCollectionPersistenceService collectionPersistenceService;
 
     @PostMapping("/discovery-requests")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -130,7 +132,12 @@ public class MoisController {
             @RequestParam(required = false) String workspaceId,
             @RequestParam(required = false) String status
     ) {
-        return gateway.listCollectionJobs(workspaceId, status);
+        return new MoisWorkspaceDtos.CollectionJobListResponse(collectionPersistenceService
+                .listJobStates(workspaceId, status)
+                .items()
+                .stream()
+                .map(com.marketinghub.mois.dto.MoisCollectionPersistenceDtos.CollectionJobStateResponse::job)
+                .toList());
     }
 
     @GetMapping("/collection-jobs/{jobId}/references")

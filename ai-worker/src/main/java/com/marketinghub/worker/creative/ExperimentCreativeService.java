@@ -211,7 +211,6 @@ public class ExperimentCreativeService {
         req.setDescription(plan.description());
         req.setCta(resolveCallToAction(plan.ctaText()));
         req.setDestinationUrl(resolveDestinationUrl(experiment));
-        req.setLeadGenFormId(resolveLeadGenFormId(experiment));
         req.setStatus(CreativeStatus.DRAFT);
         return req;
     }
@@ -223,14 +222,6 @@ public class ExperimentCreativeService {
         return StringUtils.hasText(experiment.getFollowUpActionUrl())
                 ? experiment.getFollowUpActionUrl().trim()
                 : null;
-    }
-
-    private String resolveLeadGenFormId(Experiment experiment) {
-        if (experiment == null || experiment.getFacebookInstantForm() == null) {
-            return null;
-        }
-        String formId = experiment.getFacebookInstantForm().getFormId();
-        return StringUtils.hasText(formId) ? formId.trim() : null;
     }
 
     private String resolveCallToAction(String suggestion) {

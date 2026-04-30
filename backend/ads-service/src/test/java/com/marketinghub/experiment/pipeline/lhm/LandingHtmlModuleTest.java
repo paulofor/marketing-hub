@@ -385,6 +385,47 @@ class LandingHtmlModuleTest {
         assertThrows(IllegalStateException.class, () -> module.assembleHtmlDocument(experiment));
     }
 
+    @Test
+    void assembleHtmlDocumentThrowsWhenImageBindingKeyIsMissingFromCanonicalPlanning() {
+        Experiment experiment = new Experiment();
+        applyBaseCssContract(experiment);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {
+                        "sectionId": "hero",
+                        "sectionName": "Hero",
+                        "contentType": "hero",
+                        "surfaceSpec": {
+                          "surfaceToken": "surface-hero",
+                          "style": "band",
+                          "contrastMode": "normal"
+                        }
+                      }
+                    ],
+                    "formSpec": {"formId": "lead-capture-primary"}
+                  }
+                }
+                """);
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{}}");
+        experiment.setLandingPageImagePlanning("""
+                {
+                  "landingPageImagePlanning": {
+                    "images": [
+                      {
+                        "sectionId": "hero",
+                        "imageRole": "Hero Pain Anchor"
+                      }
+                    ]
+                  }
+                }
+                """);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> module.assembleHtmlDocument(experiment));
+        assertTrue(ex.getMessage().contains("imageBindingKey é obrigatório"));
+    }
+
     private void applyBaseCssContract(Experiment experiment) {
         experiment.setLandingPageDesignPreset("""
                 {

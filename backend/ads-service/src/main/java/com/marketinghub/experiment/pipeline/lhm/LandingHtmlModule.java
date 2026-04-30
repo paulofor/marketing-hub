@@ -418,12 +418,14 @@ public class LandingHtmlModule {
     }
 
     private String buildImageTag(Map<String, Object> image) {
-        String sectionId = firstNonBlank(asTrimmedString(image.get("sectionId")), "section");
-        String bindingKey = firstNonBlank(
-                slugifyBindingKey(asTrimmedString(image.get("imageBindingKey"))),
-                slugifyBindingKey(asTrimmedString(image.get("imageRole"))),
-                slugifyBindingKey(sectionId),
-                "image");
+        String sectionId = asTrimmedString(image.get("sectionId"));
+        if (!StringUtils.hasText(sectionId)) {
+            throw new IllegalStateException("landingPageImagePlanning.images[].sectionId é obrigatório para renderização LHM canônica.");
+        }
+        String bindingKey = slugifyBindingKey(asTrimmedString(image.get("imageBindingKey")));
+        if (!StringUtils.hasText(bindingKey)) {
+            throw new IllegalStateException("landingPageImagePlanning.images[].imageBindingKey é obrigatório para renderização LHM canônica.");
+        }
         String imageRole = firstNonBlank(asTrimmedString(image.get("imageRole")), "image");
         String conversionRole = firstNonBlank(asTrimmedString(image.get("conversionRole")), "support");
         String attentionPriority = firstNonBlank(asTrimmedString(image.get("attentionPriority")), "medium");

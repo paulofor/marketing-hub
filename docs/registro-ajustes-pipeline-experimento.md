@@ -75,6 +75,53 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0015 — LHM estrito ao artefato canônico de imagens (`sectionId/imageBindingKey`)
+
+- **Data/Hora (UTC):** 2026-04-30
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (`ads-service`)
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Geração de landing no fluxo **LHM + IA** com erro 422 por divergência de bindings de imagem.
+
+#### 1) Erro observado
+- **Sintoma:** backend rejeitou a saída de `landing-page-html` com `422 Unprocessable Entity`.
+- **Endpoint/rota/fila:** `POST /api/experiments/{id}/pipeline/landing-page-html/generate-with-lhm` e validação no fechamento do job `LANDING_PAGE_HTML`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey`.
+- **Payload enviado (literal):** HTML com `<img ...>` cujo par `sectionId/imageBindingKey` não reproduzia exatamente o planejado.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste registro local; diagnóstico baseado na validação determinística do backend e no fluxo LHM.
+- **Dados de banco consultados via MCP:** não executado neste registro local.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (vínculo explícito canônico entre `landingPageImagePlanning.images[]` e marcações da landing HTML).
+- **Validação/regra que rejeitou:** comparação estrita entre bindings esperados (do `landingPageImagePlanning`) e bindings extraídos do HTML final.
+- **Causa raiz:** o LHM ainda permitia fallback/síntese de `imageBindingKey` em cenário sem chave explícita, abrindo brecha para divergência em relação ao contrato canônico.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** HTML com bindings de imagem não exatamente equivalentes ao contrato de planejamento.
+- **O que a especificação esperava (literal):** igualdade exata de pares `sectionId/imageBindingKey` entre planejamento e HTML.
+- **Diferença objetiva:** ausência/variação de `imageBindingKey` explícito no insumo propagava saída não-canônica.
+- **Ação corretiva recomendada:** tornar o LHM estrito, exigindo `sectionId` e `imageBindingKey` obrigatórios no `landingPageImagePlanning` antes de renderizar `<img>`.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** validação determinística + reforço de contrato canônico.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/lhm/LandingHtmlModule.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/pipeline/lhm/LandingHtmlModuleTest.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** `buildImageTag` passou a falhar rápido (`IllegalStateException`) quando `sectionId` ou `imageBindingKey` estiver ausente no `landingPageImagePlanning.images[]`; removida síntese permissiva de binding key por fallback semântico.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução direcionada dos testes `LandingHtmlModuleTest` e `ExperimentPipelineGenerationServiceTest`.
+- **Resultado:** aprovado.
+- **Evidências (logs/ids/prints):** `BUILD SUCCESS` com `Tests run: 51, Failures: 0, Errors: 0, Skipped: 0`.
+- **Status final:** Resolvido.
+
+#### 6) Próximo passo
+- **Ação seguinte:** reexecutar geração do HTML no experimento com falha anterior para confirmar ausência de 422 por divergência de binding.
+- **Dono da ação:** time backend + operação de pipeline.
+- **Prazo:** imediato (próxima execução assistida).
+
 ### INC-0014 — Landing copy orientada por slots canônicos do wireframe
 
 - **Data/Hora (UTC):** 2026-04-29

@@ -3678,7 +3678,7 @@ public class ExperimentPipelineGenerationService {
         while (tagMatcher.find()) {
             String tag = tagMatcher.group();
             Map<String, String> attrs = parseHtmlAttributes(tag);
-            String sectionId = normalizeHtmlAttr(attrs.get("data-image-section-id"));
+            String sectionId = resolveImageSectionIdFromHtmlAttrs(attrs);
             String imageBindingKey = resolveBindingKeyFromHtmlAttrs(attrs);
             String imageRole = normalizeHtmlAttr(attrs.get("data-image-role"));
             String conversionRole = normalizeHtmlAttr(attrs.get("data-conversion-role"));
@@ -3745,6 +3745,14 @@ public class ExperimentPipelineGenerationService {
         }
         usedKeys.add(candidate);
         return candidate;
+    }
+
+    private String resolveImageSectionIdFromHtmlAttrs(Map<String, String> attrs) {
+        String sectionId = normalizeHtmlAttr(attrs.get("data-image-section-id"));
+        if (StringUtils.hasText(sectionId)) {
+            return sectionId;
+        }
+        return normalizeHtmlAttr(attrs.get("data-section-id"));
     }
 
     private String resolveBindingKeyFromHtmlAttrs(Map<String, String> attrs) {

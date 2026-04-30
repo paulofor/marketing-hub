@@ -41,6 +41,8 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 3. Orientações Práticas:
 
+- **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
+
 - **Erro 422 (Procedimento Obrigatório / SOP)**: Trate toda ocorrência de `422 Unprocessable Entity` como divergência entre payload gerado pelo modelo e contrato/validação do backend até prova em contrário.
   - **Fluxo obrigatório (sempre nesta ordem):**
     1. Acessar logs do backend via MCP Server (`https://mcpserverdigi.shop/mcp`, JSON-RPC).

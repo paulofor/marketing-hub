@@ -2,13 +2,17 @@ import { useState } from "react";
 import PageTitle from "../../components/PageTitle";
 import { useCreateProduct } from "../../api/product/useCreateProduct";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
+import { useNiches } from "../../api/niche/useNiches";
 
 export default function NewProductPage() {
   const create = useCreateProduct();
   const { data: accountsData } = useInstagramAccounts();
+  const { data: nichesData } = useNiches();
   const accounts = Array.isArray(accountsData) ? accountsData : [];
+  const niches = Array.isArray(nichesData) ? nichesData : [];
   const [form, setForm] = useState({
     niche: "",
+    marketNicheId: "",
     avatar: "",
     instagramAccountId: "",
     explicitPain: "",
@@ -27,6 +31,7 @@ export default function NewProductPage() {
   const submit = () => {
     create.mutate({
       ...form,
+      marketNicheId: Number(form.marketNicheId) || undefined,
       instagramAccountId: Number(form.instagramAccountId) || undefined,
       aiCost: Number(form.aiCost),
     });
@@ -35,12 +40,26 @@ export default function NewProductPage() {
   return (
     <div>
       <PageTitle>Novo Produto</PageTitle>
-      <input
-        className="form-control mb-2"
-        placeholder="Nicho"
-        value={form.niche}
-        onChange={(e) => setForm({ ...form, niche: e.target.value })}
-      />
+      <label className="form-label mb-1">Nicho *</label>
+      <select
+        className="form-select mb-2"
+        value={form.marketNicheId}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            marketNicheId: e.target.value,
+            niche:
+              niches.find((niche) => String(niche.id) === e.target.value)?.name ?? "",
+          })
+        }
+      >
+        <option value="">Selecione o Nicho</option>
+        {niches.map((niche) => (
+          <option key={niche.id} value={niche.id}>
+            {niche.name}
+          </option>
+        ))}
+      </select>
       <input
         className="form-control mb-2"
         placeholder="Avatar"

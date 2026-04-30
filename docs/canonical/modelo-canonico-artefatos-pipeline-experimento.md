@@ -300,6 +300,7 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
       "details": "string"
     }
   ],
+  "images": [{"sectionId":"string","sectionName":"string","imageBindingKey":"slug","objective":"string","imagePrompt":"string","negativePrompt":"string","layoutBinding":{"preferredDesktopPlacement":"left | right | center | background","preferredMobilePlacement":"above-copy | below-copy | inline | background","desktopAspectRatio":"string","mobileAspectRatio":"string"}}],
   "formSpec": {
     "formId": "string",
     "title": "string",
@@ -376,67 +377,13 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 
 ```json
 {
-  "pageGoal": "string",
-  "visualDirectionSummary": "string",
-  "sequencingNotes": "string",
-  "ctaIntegrationNotes": "string",
-  "images": [
-    {
-      "sectionId": "string",
-      "sectionName": "string",
-      "imageBindingKey": "slug",
-      "imageRole": "string",
-      "conversionRole": "string",
-      "emotionalJob": "string",
-      "sectionVisualGoal": "string",
-      "objective": "string",
-      "placement": "hero | benefit | mechanism | proof | offer | faq | cta",
-      "hierarchyLevel": "primary | secondary | support",
-      "attentionPriority": "high | medium | low",
-      "visualWeight": "primary | secondary | support",
-      "distanceToCTA": "near | medium | far",
-      "supportsFormConversion": "boolean",
-      "formRelationNotes": "string",
-      "imagePrompt": "string",
-      "negativePrompt": "string",
-      "generationHints": ["string"],
-      "visualStyle": "string",
-      "composition": "string",
-      "focalPoint": "string",
-      "supportingElements": ["string"],
-      "mood": "string",
-      "messageMatchNotes": "string",
-      "complianceNotes": "string",
-      "layoutBinding": {
-        "preferredDesktopPlacement": "left | right | center | background",
-        "preferredMobilePlacement": "above-copy | below-copy | inline | background",
-        "desktopAspectRatio": "string",
-        "mobileAspectRatio": "string",
-        "allowCrop": "boolean",
-        "safeCropZones": {
-          "top": "0..1",
-          "right": "0..1",
-          "bottom": "0..1",
-          "left": "0..1"
-        }
-      },
-      "dimensions": {
-        "desktop": "string",
-        "mobile": "string"
-      },
-      "safeMargins": "string",
-      "textOverlayGuidance": "string"
-    }
-  ],
-  "consistencyChecks": [
-    {
-      "check": "IMAGE_MESSAGE_MATCH | VISUAL_HIERARCHY | CTA_CONTINUITY",
-      "status": "PASS | FAIL | WARNING",
-      "details": "string"
-    }
-  ]
+  "generationPrompt": "string"
 }
 ```
+
+> **Responsabilidade canônica (vigente):**
+> - A etapa `landingPageImagePlanning` é responsável somente por gerar o prompt final de execução para o modelo de imagem.
+> - Os bindings estruturais de imagem (por seção) são definidos no `landingPageWireframe` e apenas consumidos nesta etapa.
 
 ## `landingPageDesignPreset`
 

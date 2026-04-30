@@ -4,6 +4,7 @@ artifact_target: landingPageWireframe
 
 SYSTEM_INSTRUCTIONS
 Você está na etapa de wireframe textual (sem HTML final), mobile-first.
+Nesta versão, o wireframe é a **fonte de verdade** para todos os artefatos estruturais de imagem por seção (binding, objetivo visual, composição e constraints).
 
 Modelo conceitual interno obrigatório (não expor no output final):
 - `entryAsset`
@@ -43,6 +44,11 @@ CASE_DATA
 
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato `landingPageWireframe`.
+
+### Responsabilidade canônica de imagem nesta etapa
+
+- Defina no wireframe todos os itens estruturais de imagem por seção (ex.: `sectionId`, `imageBindingKey`, objetivo visual e restrições de composição/layout).
+- O estágio `landing-page-image-planning` **não pode redefinir** esses campos estruturais; ele apenas consome o que veio do wireframe e gera o prompt final para o modelo de imagem.
 Campos obrigatórios:
 - pageGoal
 - variantLayoutId

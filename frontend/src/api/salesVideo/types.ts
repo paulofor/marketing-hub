@@ -223,3 +223,84 @@ export interface LandingVideoSlotHistory {
   publishedAt?: string | null;
   notes?: string | null;
 }
+
+
+export type SalesVideoConversionEventType =
+  | "VIEW"
+  | "LEAD"
+  | "QUALIFIED_LEAD"
+  | "CHECKOUT_STARTED"
+  | "PURCHASE";
+
+export interface SalesVideoCommercialPlaybook {
+  id: number;
+  profileId: number;
+  tenantId?: string | null;
+  nicheKey: string;
+  variantKey: string;
+  objectionText: string;
+  ctaText: string;
+  active: boolean;
+  createdBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface CreateSalesVideoCommercialPlaybookPayload {
+  nicheKey: string;
+  variantKey: string;
+  objectionText: string;
+  ctaText: string;
+  active?: boolean;
+  createdBy: string;
+}
+
+export interface SalesVideoConversionEvent {
+  id: number;
+  profileId: number;
+  scriptId?: number | null;
+  jobId?: number | null;
+  eventType: SalesVideoConversionEventType;
+  eventValue?: number | null;
+  currency?: string | null;
+  occurredAt: string;
+  source?: string | null;
+  metadataJson?: string | null;
+}
+
+export interface CreateSalesVideoConversionEventPayload {
+  scriptId?: number;
+  jobId?: number;
+  eventType: SalesVideoConversionEventType;
+  eventValue?: number;
+  currency?: string;
+  occurredAt?: string;
+  source?: string;
+  metadataJson?: string;
+}
+
+export interface SalesVideoVariantPerformance {
+  variantKey: string;
+  scriptId?: number | null;
+  providerName?: string | null;
+  views: number;
+  leads: number;
+  qualifiedLeads: number;
+  checkoutStarted: number;
+  purchases: number;
+  revenue: number;
+  conversionRatePercent: number;
+}
+
+export interface SalesVideoPerformanceSummary {
+  profileId: number;
+  from?: string | null;
+  to?: string | null;
+  totalViews: number;
+  totalLeads: number;
+  totalQualifiedLeads: number;
+  totalCheckoutStarted: number;
+  totalPurchases: number;
+  totalRevenue: number;
+  variants: SalesVideoVariantPerformance[];
+}

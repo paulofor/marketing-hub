@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1271,19 +1272,19 @@ public class MoisDomainService {
                 hasFailure = true;
                 continue;
             }
-            List<String> sourceUrls = resolveSourceUrls(normalizedSource, niche, safeLimitPerSource);
+            List<SourceLead> sourceLeads = resolveSourceLeads(normalizedSource, niche, safeLimitPerSource);
             for (int sourceRank = 1; sourceRank <= safeLimitPerSource; sourceRank++) {
                 index++;
                 SourceMetricSnapshot metrics = buildSourceMetricSnapshot(job, source, index);
                 NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
-                String sourceUrl = sourceRank <= sourceUrls.size()
-                        ? sourceUrls.get(sourceRank - 1)
-                        : buildCollectionSourceUrl(normalizedSource, niche, sourceRank);
+                SourceLead sourceLead = sourceRank <= sourceLeads.size()
+                        ? sourceLeads.get(sourceRank - 1)
+                        : new SourceLead(buildCollectionSourceUrl(normalizedSource, niche, sourceRank), null);
                 MoisWorkspaceDtos.CollectedReferenceResponse item = buildCollectedReference(
                         job,
                         normalizedSource,
                         niche,
-                        sourceUrl,
+                        sourceLead,
                         index,
                         sourceRank,
                         outcome,
@@ -1306,7 +1307,7 @@ public class MoisDomainService {
             MoisWorkspaceDtos.CollectionJobResponse job,
             String source,
             String niche,
-            String sourceUrl,
+            SourceLead sourceLead,
             int globalIndex,
             int sourceRank,
             SourceExecutionOutcome outcome,
@@ -1314,14 +1315,14 @@ public class MoisDomainService {
             NormalizedSuccessSignal normalized
     ) {
         String title = "HOTMART".equals(source)
-                ? "Oferta Hotmart #" + sourceRank + " • " + trimTo(niche, 50)
+                ? trimTo(firstNonBlank(sourceLead.title(), "Oferta Hotmart #" + sourceRank + " • " + trimTo(niche, 50)), 120)
                 : "Referência " + sourceRank + " (" + source + ")";
         return new MoisWorkspaceDtos.CollectedReferenceResponse(
                 UUID.randomUUID().toString(),
                 job.jobId(),
                 source,
                 title,
-                sourceUrl,
+                sourceLead.url(),
                 niche,
                 "ACTIVE",
                 false,
@@ -1348,21 +1349,21 @@ public class MoisDomainService {
         );
     }
 
-    private List<String> resolveSourceUrls(String source, String niche, int limitPerSource) {
+    private List<SourceLead> resolveSourceLeads(String source, String niche, int limitPerSource) {
         if ("HOTMART".equals(source)) {
-            List<String> hotmartUrls = fetchHotmartProductUrls(niche, limitPerSource);
-            if (!hotmartUrls.isEmpty()) {
-                return hotmartUrls;
+            List<SourceLead> hotmartLeads = fetchHotmartProductLeads(niche, limitPerSource);
+            if (!hotmartLeads.isEmpty()) {
+                return hotmartLeads;
             }
         }
-        List<String> fallback = new ArrayList<>();
+        List<SourceLead> fallback = new ArrayList<>();
         for (int sourceRank = 1; sourceRank <= limitPerSource; sourceRank++) {
-            fallback.add(buildCollectionSourceUrl(source, niche, sourceRank));
+            fallback.add(new SourceLead(buildCollectionSourceUrl(source, niche, sourceRank), null));
         }
         return fallback;
     }
 
-    private List<String> fetchHotmartProductUrls(String niche, int limitPerSource) {
+    private List<SourceLead> fetchHotmartProductLeads(String niche, int limitPerSource) {
         String marketplaceUrl = buildCollectionSourceUrl("HOTMART", niche, 1);
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -1375,20 +1376,26 @@ public class MoisDomainService {
             if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null) {
                 return List.of();
             }
-            Pattern linkPattern = Pattern.compile("\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\"");
-            Matcher matcher = linkPattern.matcher(response.body());
-            List<String> links = new ArrayList<>();
-            while (matcher.find() && links.size() < limitPerSource) {
-                String decoded = matcher.group(1).replace("\\/", "/").replace("\\u0026", "&");
-                if (!links.contains(decoded)) {
-                    links.add(decoded);
+            Pattern cardPattern = Pattern.compile("\"name\":\"([^\"]+)\".*?\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\"");
+            Matcher cardMatcher = cardPattern.matcher(response.body());
+            List<SourceLead> leads = new ArrayList<>();
+            Set<String> seenUrls = new HashSet<>();
+            while (cardMatcher.find() && leads.size() < limitPerSource) {
+                String title = cardMatcher.group(1).replace("\\u0026", "&").trim();
+                String decodedUrl = cardMatcher.group(2).replace("\\/", "/").replace("\\u0026", "&");
+                if (seenUrls.add(decodedUrl)) {
+                    leads.add(new SourceLead(decodedUrl, title));
                 }
             }
-            return links;
+            return leads;
         } catch (Exception ex) {
             log.warn("mois_hotmart_product_url_fetch_failed niche={} reason={}", niche, ex.getMessage());
             return List.of();
         }
+    }
+
+    private String firstNonBlank(String candidate, String fallback) {
+        return candidate == null || candidate.isBlank() ? fallback : candidate;
     }
 
     private String buildCollectionSourceUrl(String source, String niche, int sourceRank) {
@@ -1992,6 +1999,12 @@ public class MoisDomainService {
             double engagementRelative,
             double recurrenceScore,
             double evidenceScore
+    ) {
+    }
+
+    private record SourceLead(
+            String url,
+            String title
     ) {
     }
 

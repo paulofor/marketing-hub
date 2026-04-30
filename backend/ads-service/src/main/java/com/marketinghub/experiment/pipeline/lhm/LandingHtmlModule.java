@@ -5,6 +5,7 @@ import com.marketinghub.experiment.Experiment;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -418,7 +419,11 @@ public class LandingHtmlModule {
 
     private String buildImageTag(Map<String, Object> image) {
         String sectionId = firstNonBlank(asTrimmedString(image.get("sectionId")), "section");
-        String bindingKey = firstNonBlank(asTrimmedString(image.get("imageBindingKey")), "image");
+        String bindingKey = firstNonBlank(
+                slugifyBindingKey(asTrimmedString(image.get("imageBindingKey"))),
+                slugifyBindingKey(asTrimmedString(image.get("imageRole"))),
+                slugifyBindingKey(sectionId),
+                "image");
         String imageRole = firstNonBlank(asTrimmedString(image.get("imageRole")), "image");
         String conversionRole = firstNonBlank(asTrimmedString(image.get("conversionRole")), "support");
         String attentionPriority = firstNonBlank(asTrimmedString(image.get("attentionPriority")), "medium");
@@ -442,6 +447,22 @@ public class LandingHtmlModule {
                 + "\" data-visual-weight=\"" + escapeAttr(visualWeight)
                 + "\" data-distance-to-cta=\"" + escapeAttr(distanceToCta)
                 + "\" data-supports-form-conversion=\"" + supportsFormConversion + "\" />";
+    }
+
+    private String slugifyBindingKey(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^-|-$", "");
+        if (normalized.length() > 64) {
+            normalized = normalized.substring(0, 64).replaceAll("-+$", "");
+        }
+        return normalized.length() >= 3 ? normalized : "";
     }
 
     private String buildHeroCopyMarkup(Map<String, Object> heroCopy,

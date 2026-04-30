@@ -819,3 +819,36 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 #### Reteste
 - Execução de `mvn -Dtest=ExperimentPipelineOpenAiClientTest test` bloqueada por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages).
+
+### INC-0013 — Correção de 422 no LHM por divergência de `imageBindingKey` no HTML final
+
+- **Data/Hora (UTC):** 2026-04-29
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (ads-service) + documentação
+- **Execução/Teste:** ajuste no renderizador determinístico `LandingHtmlModule` para aderência ao contrato canônico de image binding
+
+#### 1) Erro observado
+- **Sintoma:** ao executar **Gerar HTML (LHM + IA)**, a chamada `POST /api/experiments/{id}/pipeline/landing-page-html/generate-with-lhm` retornava `422 Unprocessable Entity`.
+- **Mensagem de erro literal:** `Divergência de imagens: landing-page-html deve reproduzir o binding explícito canônico do landing-page-image-planning por sectionId/imageBindingKey`.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (vínculo explícito `sectionId/imageBindingKey` entre `landingPageImagePlanning` e `landing-page-html`).
+- **Validação backend relacionada:** comparação determinística entre pares esperados (`landingPageImagePlanning.images[*]`) e pares materializados no HTML publicado.
+- **Causa raiz:** o LHM estava escrevendo `data-image-binding-key` sem normalização canônica; em cenários com chave ausente/fora do padrão, o backend normalizava de forma diferente na validação e rejeitava o payload com 422.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo/LHM entregava (literal):** `data-image-binding-key` cru (ou fallback genérico) no HTML, sem slug canônico garantido.
+- **O que a especificação esperava (literal):** `data-image-binding-key` reproduzindo o binding canônico do planejamento (`sectionId/imageBindingKey`) com formato normalizado válido.
+- **Diferença objetiva:** chave de binding materializada no HTML podia divergir da chave canônica usada pela validação determinística.
+- **Ação corretiva recomendada:** normalizar `imageBindingKey` no próprio LHM com a mesma regra de slug canônico antes de renderizar o `<img>`.
+
+#### 4) Ajuste aplicado
+- **Arquivo alterado:** `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/lhm/LandingHtmlModule.java`
+- **Resumo técnico da mudança:**
+  - inclusão de normalização canônica (`slugifyBindingKey`) no LHM;
+  - `buildImageTag` agora prioriza `imageBindingKey` normalizado e fallback normalizado por `imageRole`/`sectionId`, evitando chave inválida/bruta no HTML final;
+  - mantém os demais atributos `data-image-*` inalterados.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de teste unitário do módulo LHM.
+- **Status final:** concluído após ajuste.

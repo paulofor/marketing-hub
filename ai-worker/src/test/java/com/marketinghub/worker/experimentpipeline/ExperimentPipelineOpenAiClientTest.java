@@ -243,8 +243,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("Responda em JSON válido e estritamente aderente ao artefato `landingPageImagePlanning`.");
         assertThat(userPrompt).contains("Campos obrigatórios:");
         assertThat(userPrompt).contains("- generationPrompt");
-        assertThat(userPrompt).contains("A etapa `landingPageImagePlanning` é responsável somente por gerar o prompt final de execução para o modelo de imagem.");
-        assertThat(userPrompt).contains("Os bindings estruturais de imagem (por seção) são definidos no `landingPageWireframe` e apenas consumidos nesta etapa.");
+        assertThat(userPrompt).contains("Esta etapa é responsável **somente** por criar o prompt final que será enviado ao modelo de imagem.");
+        assertThat(userPrompt).contains("Toda estrutura de imagem (`sectionId`, `imageBindingKey`, cobertura por seção, layout e bindings) é recebida do wireframe e **não pode ser alterada**.");
     }
 
     @Test

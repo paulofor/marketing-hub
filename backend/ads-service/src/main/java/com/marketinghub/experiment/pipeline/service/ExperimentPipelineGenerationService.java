@@ -1084,6 +1084,8 @@ public class ExperimentPipelineGenerationService {
                 sb.append("- sectionId=").append(sectionId)
                         .append(" | copySlots=").append(String.join(", ", slots))
                         .append("\n"));
+        sb.append("Regra crítica: slotId é identificador técnico de slot (NUNCA texto de copy).\n");
+        sb.append("Checklist obrigatório antes de responder: para cada bodySections[] confirmar sectionId preenchido e slotId pertencente a copySlots da mesma seção.\n");
         sb.append("Regra: cada item de landingPageCopy.bodySections deve informar slotId e esse slotId deve existir na lista copySlots da seção correspondente.\n");
     }
 

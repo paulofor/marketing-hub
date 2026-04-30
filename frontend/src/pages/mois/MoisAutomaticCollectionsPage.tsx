@@ -74,7 +74,11 @@ export default function MoisAutomaticCollectionsPage() {
                 <tbody>
                   {jobs.map((job) => (
                     <tr key={job.jobId}>
-                      <td>{job.jobId}</td>
+                      <td>
+                        <Link to={`/mois/automatic-collections/${job.jobId}`} className="fw-semibold text-decoration-none">
+                          {job.jobId}
+                        </Link>
+                      </td>
                       <td>
                         <span className="badge text-bg-light">{job.status}</span>
                       </td>

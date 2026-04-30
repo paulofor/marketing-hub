@@ -124,6 +124,7 @@ import MoisOfferBuilderPage from "./pages/mois/MoisOfferBuilderPage";
 import MoisResearchSourcesPage from "./pages/mois/MoisResearchSourcesPage";
 import MoisAutoCollectionPage from "./pages/mois/MoisAutoCollectionPage";
 import MoisAutomaticCollectionsPage from "./pages/mois/MoisAutomaticCollectionsPage";
+import MoisCollectionJobDetailPage from "./pages/mois/MoisCollectionJobDetailPage";
 import MdsWorkspacePage from "./pages/mds/MdsWorkspacePage";
 import MdsRequestDetailPage from "./pages/mds/MdsRequestDetailPage";
 import MdsArtifactsPage from "./pages/mds/MdsArtifactsPage";
@@ -278,6 +279,7 @@ export default function App() {
               <Route path="/mois/research-sources" element={<MoisResearchSourcesPage />} />
               <Route path="/mois/auto-collection" element={<MoisAutoCollectionPage />} />
               <Route path="/mois/automatic-collections" element={<MoisAutomaticCollectionsPage />} />
+              <Route path="/mois/automatic-collections/:jobId" element={<MoisCollectionJobDetailPage />} />
               <Route path="/mois/extraction" element={<MoisExtractionPage />} />
               <Route path="/mois/library" element={<MoisLibraryPage />} />
               <Route path="/mois/comparison" element={<MoisComparisonPage />} />

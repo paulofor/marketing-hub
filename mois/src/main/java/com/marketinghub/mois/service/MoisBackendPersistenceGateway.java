@@ -2,6 +2,8 @@ package com.marketinghub.mois.service;
 
 import com.marketinghub.mois.dto.MoisCollectionPersistenceDtos;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -15,6 +17,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
 public class MoisBackendPersistenceGateway {
+
+    private static final Logger log = LoggerFactory.getLogger(MoisBackendPersistenceGateway.class);
 
     private final MoisBackendPersistenceProperties properties;
     private final RestTemplateBuilder restTemplateBuilder;
@@ -35,10 +39,12 @@ public class MoisBackendPersistenceGateway {
         if (!isEnabled()) {
             return;
         }
-        exchange("/api/v1/mois/persistence/collection-jobs/" + jobId,
+        String path = "/api/v1/mois/persistence/collection-jobs/" + jobId;
+        log.info("MOIS backend persistence request (method={}, path={}, payload={})",
                 HttpMethod.PUT,
-                payload,
-                MoisCollectionPersistenceDtos.CollectionJobStateResponse.class);
+                path,
+                payload);
+        exchange(path, HttpMethod.PUT, payload, MoisCollectionPersistenceDtos.CollectionJobStateResponse.class);
     }
 
     public Optional<MoisCollectionPersistenceDtos.CollectionJobStateResponse> getCollectionJobState(String jobId) {

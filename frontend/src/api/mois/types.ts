@@ -162,6 +162,10 @@ export interface MoisCollectionJob {
   createdAt: string;
 }
 
+export interface MoisCollectionJobListResponse {
+  items: MoisCollectionJob[];
+}
+
 export interface MoisCollectedReference {
   referenceId: string;
   jobId: string;

@@ -75,6 +75,52 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0017 — Ajuste de prompt da etapa `LANDING_PAGE_COPY` para bloquear uso textual de `slotId`
+
+- **Data/Hora (UTC):** 2026-04-30
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (`ads-service`) + documentação operacional
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Ajuste solicitado após diagnóstico do experimento 18 para reforçar regra canônica de `slotId` em `bodySections`.
+
+#### 1) Erro observado
+- **Sintoma:** modelo preencheu `bodySections[].slotId` com texto semântico de copy, gerando rejeição `422` na validação de vínculo com `copySlots` do wireframe.
+- **Endpoint/rota/fila:** pipeline de geração (`LANDING_PAGE_COPY`).
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Copy da landing inválida em bodySections: slotId 'Problema: falta um processo simples e repetível que funcione todo mês' não pertence aos copySlots da sectionId 's0-pain'`.
+- **Payload enviado (literal):** `bodySections[].slotId` com frase de dor em vez de ID técnico.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** já consolidados no diagnóstico anterior do incidente (experimento 18).
+- **Dados de banco consultados via MCP:** não aplicável para este ajuste incremental.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (contrato de `landingPageCopy` dependente de `landingPageWireframe.sectionOrder[].copySlots`).
+- **Validação/regra que rejeitou:** `slotId` deve pertencer aos `copySlots` da mesma `sectionId`.
+- **Causa raiz:** instrução de prompt precisava enfatizar explicitamente que `slotId` é chave estrutural técnica e nunca campo textual.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `slotId` com texto de copy.
+- **O que a especificação esperava (literal):** `slotId` com identificador técnico existente em `copySlots(sectionId)`.
+- **Diferença objetiva:** uso semântico vs estrutural do mesmo campo.
+- **Ação corretiva recomendada:** reforçar prompt com regra crítica + checklist obrigatório de pertencimento de `slotId` antes da resposta.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt (instrução operacional montada no backend) + registro operacional.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** inclusão de instrução explícita no bloco de slots canônicos: `slotId` é identificador técnico (nunca texto de copy) e checklist obrigatório para validar `sectionId` + pertencimento de `slotId` em `copySlots` da seção antes de retornar `landingPageCopy`.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de teste unitário direcionado do módulo `ads-service`.
+- **Resultado:** aprovado.
+- **Evidências (logs/ids/prints):** `mvn -Dtest=ExperimentPipelineGenerationServiceTest test` com `BUILD SUCCESS`.
+- **Status final:** Resolvido.
+
+#### 6) Próximo passo
+- **Ação seguinte:** reprocessar a etapa `LANDING_PAGE_COPY` do experimento 18 para confirmar ausência de novo `422` por `slotId` inválido.
+- **Dono da ação:** time backend + operação do pipeline.
+- **Prazo:** próxima execução assistida.
+
 ### INC-0016 — Realocação de ownership de imagem: wireframe (estrutura) vs image-planning (prompt)
 
 - **Data/Hora (UTC):** 2026-04-30

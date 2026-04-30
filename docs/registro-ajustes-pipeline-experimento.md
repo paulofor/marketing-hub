@@ -75,6 +75,57 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0016 — Realocação de ownership de imagem: wireframe (estrutura) vs image-planning (prompt)
+
+- **Data/Hora (UTC):** 2026-04-30
+- **Responsável:** Assistente Codex
+- **Módulo:** docs + ai-worker + backend (`ads-service`)
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Ajuste solicitado após revisão do PR anterior para consolidar responsabilidade da etapa de imagem apenas na geração do prompt final.
+
+#### 1) Erro observado
+- **Sintoma:** ambiguidades de ownership entre `landingPageWireframe` e `landingPageImagePlanning` para campos estruturais de imagem.
+- **Endpoint/rota/fila:** pipeline de geração (`LANDING_PAGE_WIREFRAME` e `LANDING_PAGE_IMAGE_PLANNING`).
+- **Status code:** risco de 422 por drift contratual (sem incidente específico desta execução local).
+- **Mensagem de erro literal:** n/a.
+- **Payload enviado (literal):** n/a.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado neste ajuste documental/contratual.
+- **Dados de banco consultados via MCP:** não executado neste ajuste documental/contratual.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` e matrizes canônicas de responsabilidade.
+- **Validação/regra que rejeitou:** desalinhamento potencial de ownership entre schema/prompt/validação.
+- **Causa raiz:** fronteira entre responsabilidades de estrutura de imagem e geração de prompt estava distribuída entre etapas.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** n/a.
+- **O que a especificação esperava (literal):** n/a.
+- **Diferença objetiva:** necessidade de explicitar owner único para estrutura de imagem (wireframe) e restringir image-planning ao `generationPrompt`.
+- **Ação corretiva recomendada:** sincronizar cânone, matrizes, prompts e validação/backend schema com a nova fronteira de ownership.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** contrato canônico + prompts + validação/schema backend.
+- **Arquivos alterados:**
+  - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
+  - `docs/canonical/matriz-responsabilidades-pipeline-landing.md`
+  - `docs/canonical/matriz-responsaveis-unicos-itens-artefato.md`
+  - `ai-worker/src/main/resources/prompts/experiment/landing-wireframe.md`
+  - `ai-worker/src/main/resources/prompts/experiment/landing-image-planning.md`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** wireframe passou a ser descrito como fonte de verdade da estrutura de imagem; `landingPageImagePlanning` foi reduzido a `generationPrompt` (prompt final para modelo de imagem); validação/backend schema da etapa de planning passou a exigir apenas `generationPrompt`.
+
+#### 5) Reteste
+- **Procedimento de reteste:** compilação do módulo backend alterado.
+- **Resultado:** aprovado.
+- **Evidências (logs/ids/prints):** `mvn -DskipTests compile` em `backend/ads-service` com `BUILD SUCCESS`.
+- **Status final:** Resolvido.
+
+#### 6) Próximo passo
+- **Ação seguinte:** executar rodada completa do pipeline de experimento para verificar aderência ponta-a-ponta com payload real do worker.
+- **Dono da ação:** time backend + ai-worker.
+- **Prazo:** próximo ciclo assistido.
+
 ### INC-0015 — LHM estrito ao artefato canônico de imagens (`sectionId/imageBindingKey`)
 
 - **Data/Hora (UTC):** 2026-04-30

@@ -210,7 +210,7 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
-    void prependsLandingImagePlanningGuidanceRequiringFullWireframeCoverage() {
+    void prependsLandingImagePlanningGuidanceAlignedWithCanonicalContract() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
                 WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
@@ -240,12 +240,11 @@ class ExperimentPipelineOpenAiClientTest {
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
         String userPrompt = String.valueOf(input.get(0).get("content"));
-        assertThat(userPrompt).contains("`images[]` deve cobrir **100%** dos `sectionId` de `landingPageWireframe.sectionOrder`");
-        assertThat(userPrompt).contains("incluindo seções de formulário");
-        assertThat(userPrompt).contains("é proibido inventar `sectionId` fora do wireframe");
-        assertThat(userPrompt).contains("checklist de cobertura obrigatório");
-        assertThat(userPrompt).contains("extraia a lista literal `requiredSectionIds`");
-        assertThat(userPrompt).contains("só finalize quando `missing=[]` e `extras=[]`");
+        assertThat(userPrompt).contains("Responda em JSON válido e estritamente aderente ao artefato `landingPageImagePlanning`.");
+        assertThat(userPrompt).contains("Campos obrigatórios:");
+        assertThat(userPrompt).contains("- generationPrompt");
+        assertThat(userPrompt).contains("A etapa `landingPageImagePlanning` é responsável somente por gerar o prompt final de execução para o modelo de imagem.");
+        assertThat(userPrompt).contains("Os bindings estruturais de imagem (por seção) são definidos no `landingPageWireframe` e apenas consumidos nesta etapa.");
     }
 
     @Test

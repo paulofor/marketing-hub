@@ -32,7 +32,7 @@ public class MoisBackendPersistenceGateway {
     }
 
     public boolean isEnabled() {
-        return StringUtils.hasText(properties.getBaseUrl());
+        return properties.isEnabled() && StringUtils.hasText(properties.getBaseUrl());
     }
 
     public void upsertCollectionJobState(String jobId, MoisCollectionPersistenceDtos.CollectionJobStateResponse payload) {

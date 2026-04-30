@@ -15,8 +15,13 @@ import { useSalesVideoScripts } from "../../api/salesVideo/useSalesVideoScripts"
 import { useLandingVideoSlotHistory } from "../../api/salesVideo/useLandingVideoSlotHistory";
 import { useRetrySalesVideoJob } from "../../api/salesVideo/useRetrySalesVideoJob";
 import { useUpdateSalesVideoCompliance } from "../../api/salesVideo/useUpdateSalesVideoCompliance";
+import { useSalesVideoCommercialPlaybooks } from "../../api/salesVideo/useSalesVideoCommercialPlaybooks";
+import { useCreateSalesVideoCommercialPlaybook } from "../../api/salesVideo/useCreateSalesVideoCommercialPlaybook";
+import { useCreateSalesVideoConversionEvent } from "../../api/salesVideo/useCreateSalesVideoConversionEvent";
+import { useSalesVideoPerformanceSummary } from "../../api/salesVideo/useSalesVideoPerformanceSummary";
 import {
   LandingVideoSlot,
+  SalesVideoConversionEventType,
   SalesVideoExecutionMode,
   SalesVideoJob,
   SalesVideoProviderFamily,
@@ -84,6 +89,29 @@ export default function SalesVideoProfileDetailPage() {
   const updateSlot = useUpdateLandingVideoSlot(landingId);
   const retryJob = useRetrySalesVideoJob();
   const updateCompliance = useUpdateSalesVideoCompliance(profileId);
+  const { data: commercialPlaybooks } = useSalesVideoCommercialPlaybooks(profileId);
+  const { data: performanceSummary } = useSalesVideoPerformanceSummary(profileId);
+  const createCommercialPlaybook = useCreateSalesVideoCommercialPlaybook(profileId);
+  const createConversionEvent = useCreateSalesVideoConversionEvent(profileId);
+  const CONVERSION_EVENT_TYPES: SalesVideoConversionEventType[] = [
+    "VIEW",
+    "LEAD",
+    "QUALIFIED_LEAD",
+    "CHECKOUT_STARTED",
+    "PURCHASE",
+  ];
+  const [playbookForm, setPlaybookForm] = useState({
+    nicheKey: "",
+    variantKey: "default",
+    objectionText: "",
+    ctaText: "",
+  });
+  const [conversionForm, setConversionForm] = useState({
+    eventType: "VIEW" as SalesVideoConversionEventType,
+    eventValue: "",
+    currency: "BRL",
+    source: "manual-admin",
+  });
   const RETRY_REASONS: SalesVideoRetryReason[] = [
     "MANUAL_INTERVENTION",
     "PROVIDER_FAILURE",
@@ -243,6 +271,27 @@ export default function SalesVideoProfileDetailPage() {
       toast.error(message);
     }
   };
+  const handleCommercialPlaybookSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await createCommercialPlaybook.mutateAsync({
+      nicheKey: playbookForm.nicheKey,
+      variantKey: playbookForm.variantKey,
+      objectionText: playbookForm.objectionText,
+      ctaText: playbookForm.ctaText,
+      createdBy: tenantContext.userEmail,
+    });
+    toast.success("Playbook comercial criado");
+  };
+  const handleConversionEventSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await createConversionEvent.mutateAsync({
+      eventType: conversionForm.eventType,
+      eventValue: conversionForm.eventValue ? Number(conversionForm.eventValue) : undefined,
+      currency: conversionForm.currency || undefined,
+      source: conversionForm.source || undefined,
+    });
+    toast.success("Evento de conversão registrado");
+  };
 
   const parseNumber = (value: string) => {
     if (!value.trim()) return undefined;
@@ -355,6 +404,77 @@ export default function SalesVideoProfileDetailPage() {
               <strong>Landing:</strong> {profile.landingPageId ?? "—"}
             </div>
           </div>
+        </div>
+      </section>
+      <section className="mb-4">
+        <h2 className="h5">Comercial (Playbooks + Conversão)</h2>
+        <div className="row g-3">
+          <div className="col-lg-6">
+            <div className="card p-3 h-100">
+              <h3 className="h6">Novo playbook comercial</h3>
+              <form className="row g-2" onSubmit={handleCommercialPlaybookSubmit}>
+                <div className="col-md-6">
+                  <label className="form-label">Nicho *</label>
+                  <input className="form-control" required value={playbookForm.nicheKey} onChange={(e) => setPlaybookForm((p) => ({ ...p, nicheKey: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Variação *</label>
+                  <input className="form-control" required value={playbookForm.variantKey} onChange={(e) => setPlaybookForm((p) => ({ ...p, variantKey: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Objeção *</label>
+                  <textarea className="form-control" required value={playbookForm.objectionText} onChange={(e) => setPlaybookForm((p) => ({ ...p, objectionText: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">CTA *</label>
+                  <textarea className="form-control" required value={playbookForm.ctaText} onChange={(e) => setPlaybookForm((p) => ({ ...p, ctaText: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <button className="btn btn-primary" type="submit" disabled={createCommercialPlaybook.isPending}>
+                    {createCommercialPlaybook.isPending && <span className="spinner-border spinner-border-sm me-2" />}
+                    {createCommercialPlaybook.isPending ? "Salvando..." : "Salvar playbook"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div className="col-lg-6">
+            <div className="card p-3 h-100">
+              <h3 className="h6">Registrar conversão</h3>
+              <form className="row g-2" onSubmit={handleConversionEventSubmit}>
+                <div className="col-md-6">
+                  <label className="form-label">Evento *</label>
+                  <select className="form-select" value={conversionForm.eventType} onChange={(e) => setConversionForm((p) => ({ ...p, eventType: e.target.value as SalesVideoConversionEventType }))}>
+                    {CONVERSION_EVENT_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Valor (opcional)</label>
+                  <input className="form-control" type="number" value={conversionForm.eventValue} onChange={(e) => setConversionForm((p) => ({ ...p, eventValue: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Moeda</label>
+                  <input className="form-control" value={conversionForm.currency} onChange={(e) => setConversionForm((p) => ({ ...p, currency: e.target.value }))} />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Origem</label>
+                  <input className="form-control" value={conversionForm.source} onChange={(e) => setConversionForm((p) => ({ ...p, source: e.target.value }))} />
+                </div>
+                <div className="col-12">
+                  <button className="btn btn-primary" type="submit" disabled={createConversionEvent.isPending}>
+                    {createConversionEvent.isPending && <span className="spinner-border spinner-border-sm me-2" />}
+                    {createConversionEvent.isPending ? "Registrando..." : "Registrar evento"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div className="card p-3 mt-3">
+          <h3 className="h6">Resumo de performance</h3>
+          <p className="mb-1">Views: {performanceSummary?.totalViews ?? 0} · Leads: {performanceSummary?.totalLeads ?? 0} · Compras: {performanceSummary?.totalPurchases ?? 0}</p>
+          <p className="mb-2">Receita: {(performanceSummary?.totalRevenue ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+          <small className="text-muted">Playbooks cadastrados: {commercialPlaybooks?.length ?? 0}</small>
         </div>
       </section>
 

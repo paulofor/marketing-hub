@@ -5,6 +5,7 @@ import type {
   MoisCollectedReferenceLineageResponse,
   MoisCollectedReferenceListResponse,
   MoisCollectionJob,
+  MoisCollectionJobListResponse,
   MoisCreateCollectionJobPayload,
 } from "./types";
 
@@ -24,6 +25,19 @@ export function useCreateMoisCollectionJob() {
     },
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({ queryKey: ["mois", "collection-jobs", data.workspaceId] });
+    },
+  });
+}
+
+export function useMoisCollectionJobs(workspaceId: string, status = "") {
+  return useQuery({
+    queryKey: ["mois", "collection-jobs", workspaceId, status],
+    enabled: workspaceId.trim().length > 0,
+    queryFn: async () => {
+      const { data } = await axios.get<MoisCollectionJobListResponse>("/api/v1/mois/collection-jobs", {
+        params: { workspaceId, status: status || undefined },
+      });
+      return data.items;
     },
   });
 }

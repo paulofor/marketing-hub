@@ -8,9 +8,18 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "integrations.backend.persistence")
 public class MoisBackendPersistenceProperties {
 
+    private boolean enabled = false;
     private String baseUrl = "";
     private Duration connectTimeout = Duration.ofSeconds(2);
     private Duration readTimeout = Duration.ofSeconds(5);
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public String getBaseUrl() {
         return baseUrl;

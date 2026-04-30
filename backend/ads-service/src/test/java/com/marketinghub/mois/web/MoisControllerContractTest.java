@@ -4,6 +4,8 @@ import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
+import com.marketinghub.mois.dto.MoisCollectionPersistenceDtos;
+import com.marketinghub.mois.service.MoisCollectionPersistenceService;
 import com.marketinghub.mois.service.MoisModuleGateway;
 import java.time.Instant;
 import java.util.List;
@@ -36,6 +38,9 @@ class MoisControllerContractTest {
 
     @MockBean
     private MoisModuleGateway gateway;
+
+    @MockBean
+    private MoisCollectionPersistenceService collectionPersistenceService;
 
     @Test
     void shouldAcceptDiscoveryRequest() throws Exception {
@@ -434,19 +439,25 @@ class MoisControllerContractTest {
 
     @Test
     void shouldListCollectionJobsContract() throws Exception {
-        when(gateway.listCollectionJobs(eq("workspace-001"), eq("QUEUED")))
-                .thenReturn(new MoisWorkspaceDtos.CollectionJobListResponse(List.of(
-                        new MoisWorkspaceDtos.CollectionJobResponse(
-                                "mois-collect-001",
-                                "workspace-001",
-                                "nutricao",
-                                "perda de gordura",
-                                "QUEUED",
-                                "LAST_7_DAYS",
-                                50,
-                                60,
-                                List.of("META_AD_LIBRARY"),
-                                Instant.parse("2026-04-25T12:00:00Z")
+        when(collectionPersistenceService.listJobStates(eq("workspace-001"), eq("QUEUED")))
+                .thenReturn(new MoisCollectionPersistenceDtos.CollectionJobStateListResponse(List.of(
+                        new MoisCollectionPersistenceDtos.CollectionJobStateResponse(
+                                new MoisWorkspaceDtos.CollectionJobResponse(
+                                        "mois-collect-001",
+                                        "workspace-001",
+                                        "nutricao",
+                                        "perda de gordura",
+                                        "QUEUED",
+                                        "LAST_7_DAYS",
+                                        50,
+                                        60,
+                                        List.of("META_AD_LIBRARY"),
+                                        Instant.parse("2026-04-25T12:00:00Z")
+                                ),
+                                List.of(),
+                                java.util.Map.of(),
+                                null,
+                                List.of()
                         )
                 )));
 

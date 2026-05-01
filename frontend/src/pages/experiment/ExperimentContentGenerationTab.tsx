@@ -1869,7 +1869,9 @@ export default function ExperimentContentGenerationTab({
     if (waitingRequest.status === "FAILED") {
       setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
       toast.error(
-        `Fila automática interrompida: ${getSectionLabel(autoQueue.waitingFor)} finalizou com erro.`,
+        `Fila automática interrompida: ${getSectionLabel(
+          autoQueue.waitingFor,
+        )} finalizou com erro. Nenhuma nova tentativa será iniciada automaticamente.`,
       );
       return;
     }
@@ -2636,16 +2638,41 @@ export default function ExperimentContentGenerationTab({
                     </small>
                   ) : null}
                   {request.errorMessage ? (
-                    <small className="text-danger">
-                      Último erro: {backendError?.message ?? request.errorMessage}
-                      {backendError?.timestamp ? (
-                        <>
-                          {" "}
-                          · retornado pelo backend em{" "}
-                          {formatDateTimeWithTimezone(backendError.timestamp)}
-                        </>
+                    <div className="alert alert-danger py-2 px-3 mb-0 small">
+                      <div className="fw-semibold">
+                        Último erro completo da etapa
+                      </div>
+                      {backendError ? (
+                        <ul className="mb-2 ps-3">
+                          <li>
+                            <strong>Status:</strong> {backendError.status}
+                          </li>
+                          <li>
+                            <strong>Erro:</strong> {backendError.error}
+                          </li>
+                          <li>
+                            <strong>Mensagem:</strong> {backendError.message}
+                          </li>
+                          {backendError.path ? (
+                            <li>
+                              <strong>Path:</strong> {backendError.path}
+                            </li>
+                          ) : null}
+                          {backendError.timestamp ? (
+                            <li>
+                              <strong>Timestamp:</strong>{" "}
+                              {formatDateTimeWithTimezone(
+                                backendError.timestamp,
+                              )}
+                            </li>
+                          ) : null}
+                        </ul>
                       ) : null}
-                    </small>
+                      <div className="fw-semibold">Payload bruto do erro</div>
+                      <pre className="mb-0 mt-1 text-danger small text-wrap">
+                        {request.errorMessage}
+                      </pre>
+                    </div>
                   ) : null}
                 </div>
               );

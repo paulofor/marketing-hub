@@ -1191,7 +1191,8 @@ public class ExperimentPipelineGenerationService {
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
             appendImageBindingSummary(sb, experiment);
         }
-        if (section == ExperimentPipelineSection.LANDING_PAGE_COPY) {
+        if (section == ExperimentPipelineSection.LANDING_PAGE_COPY
+                || section == ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING) {
             appendWireframeSlotSummary(sb, experiment);
         }
     }
@@ -1235,14 +1236,16 @@ public class ExperimentPipelineGenerationService {
         if (slotsBySection.isEmpty()) {
             return;
         }
-        sb.append("\nSlots canônicos de copy vindos do wireframe (obrigatório respeitar e retornar em bodySections[].slotId):\n");
+        sb.append("\nSlots canônicos de copy vindos do wireframe (obrigatório respeitar):\n");
         slotsBySection.forEach((sectionId, slots) ->
                 sb.append("- sectionId=").append(sectionId)
                         .append(" | copySlots=").append(String.join(", ", slots))
                         .append("\n"));
         sb.append("Regra crítica: slotId é identificador técnico de slot (NUNCA texto de copy).\n");
-        sb.append("Checklist obrigatório antes de responder: para cada bodySections[] confirmar sectionId preenchido e slotId pertencente a copySlots da mesma seção.\n");
-        sb.append("Regra: cada item de landingPageCopy.bodySections deve informar slotId e esse slotId deve existir na lista copySlots da seção correspondente.\n");
+        sb.append("Proibido usar aliases semânticos como slotId (ex.: headline, subheadline, promise, hero.headline).\n");
+        sb.append("Checklist obrigatório antes de responder: para cada item gerado confirmar sectionId preenchido e slotId pertencente a copySlots da mesma seção.\n");
+        sb.append("Regra na copy: cada item de landingPageCopy.bodySections deve informar slotId e esse slotId deve existir na lista copySlots da seção correspondente.\n");
+        sb.append("Regra no planejamento de imagens: cada item de landingPageImagePlanning.images[] deve informar slotId canônico literal do wireframe/copy da mesma seção.\n");
     }
 
     private List<String> loadWireframeSectionIds(Experiment experiment) {

@@ -2,7 +2,6 @@ package com.marketinghub.worker.experimentpipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.util.UrlUtils;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,16 +39,16 @@ public class ExperimentPipelineBackendClient {
     public List<ExperimentPipelineJobDto> listPending(int limit) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/experiment-pipeline/jobs/pending");
         String uri = url + "?limit=" + Math.max(1, limit);
+        log.info("Fetching pending experiment pipeline jobs from {}", uri);
         List<ExperimentPipelineJobDto> payload = webClient.get()
                 .uri(uri)
                 .exchangeToFlux(response -> handleListResponse(uri, response.statusCode(), response))
                 .collectList()
-                .onErrorResume(err -> {
-                    log.error("Failed to fetch pending experiment pipeline jobs", err);
-                    return Mono.just(Collections.emptyList());
-                })
+                .doOnError(err -> log.error("Failed to fetch pending experiment pipeline jobs from {}", uri, err))
                 .block();
-        return payload != null ? payload : List.of();
+        List<ExperimentPipelineJobDto> result = payload != null ? payload : List.of();
+        log.info("Backend returned {} pending experiment pipeline job(s)", result.size());
+        return result;
     }
 
     public ExperimentPipelineJobDto claim(UUID jobId, String workerId) {

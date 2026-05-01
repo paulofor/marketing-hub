@@ -136,6 +136,7 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
   "bodySections": [
     {
       "sectionId": "string",
+      "slotId": "string",
       "sectionType": "string",
       "title": "string",
       "summary": "string",
@@ -192,6 +193,7 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 3. **Dependência da etapa de wireframe (ordem canônica)**
    - A geração de `landingPageCopy` acontece **depois** de `landingPageWireframe`; portanto, a copy **deve usar** os sinais estruturais definidos no wireframe (por exemplo, `sectionOrder`, `ctaSlot` e hierarquia de blocos) para manter consistência de narrativa e layout.
    - O alinhamento estrutural com layout acontece no `landingPageWireframe` e é refinado na `landingPageCopy`, preservando promessa, argumentação e clareza comercial.
+   - Quando o wireframe definir `sectionOrder[].copySlots`, cada item de `landingPageCopy.bodySections` deve usar `sectionId` + `slotId` existentes nesse wireframe (sem inventar slots e sem usar texto livre em `slotId`).
    - Toda `ctaUrl` deve ser resolvida (sem placeholders como `{slug}`).
 
 4. **Consistência de promessa e CTA**

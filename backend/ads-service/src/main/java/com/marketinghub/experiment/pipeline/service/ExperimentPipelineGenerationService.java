@@ -1437,6 +1437,7 @@ public class ExperimentPipelineGenerationService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "Wireframe da landing inválido: sectionId duplicado em sectionOrder (" + sectionId + ")");
             }
+            validateSprint2SlotDefs(sectionId, section);
             String dropOffRisk = asTrimmedString(section.get("dropOffRisk"));
             Integer mobilePriorityScore = asInteger(section.get("mobilePriorityScore"));
             if ("alto".equalsIgnoreCase(dropOffRisk) && (mobilePriorityScore == null || mobilePriorityScore < 8)) {
@@ -1548,6 +1549,32 @@ public class ExperimentPipelineGenerationService {
         if (formFieldMinHeightPx == null || formFieldMinHeightPx < 44) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Wireframe inválido: accessibilitySpec.formFieldMinHeightPx deve ser >= 44");
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private void validateSprint2SlotDefs(String sectionId, Map<String, Object> section) {
+        if (!(section.get("slotDefs") instanceof List<?> rawSlotDefs) || rawSlotDefs.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Wireframe inválido: sectionId '" + sectionId + "' sem slotDefs estruturado");
+        }
+        Set<String> slotKeys = new LinkedHashSet<>();
+        for (Object rawSlotDef : rawSlotDefs) {
+            if (!(rawSlotDef instanceof Map<?, ?> rawSlotDefMap)) {
+                continue;
+            }
+            Map<String, Object> slotDef = (Map<String, Object>) rawSlotDefMap;
+            String slotKey = asTrimmedString(slotDef.get("slotKey"));
+            String componentKey = asTrimmedString(slotDef.get("componentKey"));
+            if (!StringUtils.hasText(slotKey) || !StringUtils.hasText(componentKey)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe inválido: slotDefs da sectionId '" + sectionId + "' exige slotKey e componentKey");
+            }
+            if (!slotKeys.add(normalizeLookupKey(slotKey))) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Wireframe inválido: slotKey duplicado em slotDefs da sectionId '" + sectionId + "' (" + slotKey + ")");
+            }
         }
     }
 
@@ -3251,6 +3278,20 @@ public class ExperimentPipelineGenerationService {
                         Map.entry("messageMatchDependency", stringSchema()),
                         Map.entry("sectionDependsOn", stringSchema()),
                         Map.entry("copySlots", Map.of("type", "array", "minItems", 1, "items", stringSchema())),
+                        Map.entry("slotDefs", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", Map.of(
+                                        "type", "object",
+                                        "additionalProperties", false,
+                                        "properties", Map.of(
+                                                "slotKey", stringSchema(),
+                                                "componentKey", stringSchema(),
+                                                "required", Map.of("type", "boolean")
+                                        ),
+                                        "required", List.of("slotKey", "componentKey", "required")
+                                )
+                        )),
                         Map.entry("mobilePriorityScore", integerSchema(1, 10)),
                         Map.entry("dropOffRisk", Map.of("type", "string", "enum", List.of("baixo", "medio", "alto"))),
                         Map.entry("surfaceSpec", surfaceSpecSchema),

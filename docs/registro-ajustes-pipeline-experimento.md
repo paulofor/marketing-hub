@@ -1106,3 +1106,34 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 #### 6) Próximo passo
 - Reprocessar etapa `LANDING_PAGE_COPY` do experimento 19 e confirmar ausência de novo `422` por `slotId` fora de `copySlots`.
+
+### INC-0020 — Diagnóstico de 422 na etapa LANDING_PAGE_IMAGE_PLANNING (experimento 19, 17:24 BRT)
+
+- **Data/Hora (BRT):** 2026-05-01 17:24:37
+- **Responsável:** Assistente Codex
+- **Módulo:** backend + ai-worker + operação de pipeline (diagnóstico)
+- **Execução/Teste:** análise do erro de fechamento do job da etapa de planejamento de imagem
+
+#### 1) Erro observado
+- **Sintoma:** etapa de planejamento de imagens falhando com `422` ao concluir job.
+- **Mensagem literal:** `Planejamento de imagens inválido: slotId 'hero.headline' não pertence aos copySlots da sectionId 's1_hero_match'`.
+- **Path literal:** `/api/internal/experiment-pipeline/jobs/5b118aca-403f-45b0-9b6d-3cbc81082c0c/complete`.
+
+#### 2) Diagnóstico (contrato + validação backend)
+- O backend valida em `landingPageImagePlanning.images[]` que `slotId` deve pertencer aos `copySlots` da mesma `sectionId`.
+- A validação lança `422` literal quando `slotId` não está na lista permitida da seção.
+- O contrato canônico da etapa também determina que cada item de `images[]` deve conter `sectionId`, `slotId`, `imageBindingKey` e `imagePrompt`, e que o `slotId` precisa existir no wireframe/copy da mesma seção.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `images[].sectionId = "s1_hero_match"` com `images[].slotId = "hero.headline"`.
+- **O que a especificação esperava (literal):** `images[].slotId` igual ao identificador técnico presente em `landingPageWireframe.sectionOrder[sectionId="s1_hero_match"].copySlots`.
+- **Diferença objetiva:** valor semântico/alias (`hero.headline`) no lugar do id técnico canônico de slot definido no wireframe/copy.
+- **Ação corretiva recomendada:** reforçar prompt da etapa de image planning para exigir lookup literal de `copySlots` por `sectionId` e proibir aliases semânticos em `slotId`.
+
+#### 4) Ajuste aplicado
+- Registro formal do incidente no documento de ajustes do pipeline para rastreabilidade operacional.
+- Diretriz reforçada para o ai-worker: `slotId` deve ser sempre canônico e literal do wireframe/copy da seção correspondente, sem transformação semântica.
+
+#### 5) Próximo passo
+- Reprocessar a etapa `LANDING_PAGE_IMAGE_PLANNING` do experimento 19.
+- Confirmar ausência de novo `422` por `slotId` fora de `copySlots`.

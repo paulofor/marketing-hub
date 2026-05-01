@@ -94,6 +94,7 @@ public class ExperimentPipelineGenerationService {
     private static final String GERAR_COM_IA_MODEL = "GERAR_COM_IA";
     private static final String LHM_WORKER_ID = "lhm-inline";
     private static final String LANDING_HTML_AUDIT_FEATURE_FLAG = "lhm.audit.gate.enabled";
+    private static final String LANDING_HTML_REGISTRY_FEATURE_FLAG = "lhm.registry.enabled";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
     private static final Set<ExperimentPipelineGenerationJobStatus> ACTIVE_JOB_STATUSES = Set.of(
@@ -363,6 +364,7 @@ public class ExperimentPipelineGenerationService {
             monitoringPayload.put("qualityAudit", qualityAuditReport);
             boolean auditGateEnabled = Boolean.parseBoolean(System.getProperty(LANDING_HTML_AUDIT_FEATURE_FLAG, "false"));
             monitoringPayload.put("qualityAuditGateEnabled", auditGateEnabled);
+            monitoringPayload.put("registryEnabled", Boolean.parseBoolean(System.getProperty(LANDING_HTML_REGISTRY_FEATURE_FLAG, "false")));
             if (auditGateEnabled) {
                 ensureLandingHtmlQualityGate(qualityAuditReport);
             }

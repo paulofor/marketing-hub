@@ -1279,7 +1279,7 @@ public class MoisDomainService {
                 NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
                 SourceLead sourceLead = sourceRank <= sourceLeads.size()
                         ? sourceLeads.get(sourceRank - 1)
-                        : new SourceLead(buildCollectionSourceUrl(normalizedSource, niche, sourceRank), null);
+                        : new SourceLead(buildCollectionSourceUrl(normalizedSource, niche, sourceRank), null, null, null, null);
                 MoisWorkspaceDtos.CollectedReferenceResponse item = buildCollectedReference(
                         job,
                         normalizedSource,
@@ -1317,6 +1317,25 @@ public class MoisDomainService {
         String title = "HOTMART".equals(source)
                 ? trimTo(firstNonBlank(sourceLead.title(), "Oferta Hotmart #" + sourceRank + " • " + trimTo(niche, 50)), 120)
                 : "Referência " + sourceRank + " (" + source + ")";
+        Map<String, String> rawMetadata = new LinkedHashMap<>();
+        rawMetadata.put("status", "ACTIVE");
+        rawMetadata.put("timeWindow", job.timeWindow());
+        rawMetadata.put("attempts", String.valueOf(outcome.attempts()));
+        rawMetadata.put("retries", String.valueOf(outcome.retries()));
+        rawMetadata.put("latencyMs", String.valueOf(outcome.latencyMs()));
+        rawMetadata.put("engagementRaw", String.valueOf(metrics.engagementRaw()));
+        rawMetadata.put("recurrenceRaw", String.valueOf(metrics.recurrenceRaw()));
+        rawMetadata.put("evidenceRaw", String.valueOf(metrics.evidenceRaw()));
+        rawMetadata.put("normalizationPolicy", "v1:0.45*engagement+0.35*recurrence+0.20*evidence");
+        if (sourceLead.hotmartDescription() != null && !sourceLead.hotmartDescription().isBlank()) {
+            rawMetadata.put("hotmartDescription", trimTo(sourceLead.hotmartDescription(), 220));
+        }
+        if (sourceLead.hotmartProducer() != null && !sourceLead.hotmartProducer().isBlank()) {
+            rawMetadata.put("hotmartProducer", trimTo(sourceLead.hotmartProducer(), 120));
+        }
+        if (sourceLead.hotmartImageUrl() != null && !sourceLead.hotmartImageUrl().isBlank()) {
+            rawMetadata.put("hotmartImageUrl", trimTo(sourceLead.hotmartImageUrl(), 260));
+        }
         return new MoisWorkspaceDtos.CollectedReferenceResponse(
                 UUID.randomUUID().toString(),
                 job.jobId(),
@@ -1335,17 +1354,7 @@ public class MoisDomainService {
                 normalized.recurrenceScore(),
                 normalized.evidenceScore(),
                 job.createdAt().minusSeconds(globalIndex * 120L),
-                Map.of(
-                        "status", "ACTIVE",
-                        "timeWindow", job.timeWindow(),
-                        "attempts", String.valueOf(outcome.attempts()),
-                        "retries", String.valueOf(outcome.retries()),
-                        "latencyMs", String.valueOf(outcome.latencyMs()),
-                        "engagementRaw", String.valueOf(metrics.engagementRaw()),
-                        "recurrenceRaw", String.valueOf(metrics.recurrenceRaw()),
-                        "evidenceRaw", String.valueOf(metrics.evidenceRaw()),
-                        "normalizationPolicy", "v1:0.45*engagement+0.35*recurrence+0.20*evidence"
-                )
+                rawMetadata
         );
     }
 
@@ -1358,7 +1367,7 @@ public class MoisDomainService {
         }
         List<SourceLead> fallback = new ArrayList<>();
         for (int sourceRank = 1; sourceRank <= limitPerSource; sourceRank++) {
-            fallback.add(new SourceLead(buildCollectionSourceUrl(source, niche, sourceRank), null));
+            fallback.add(new SourceLead(buildCollectionSourceUrl(source, niche, sourceRank), null, null, null, null));
         }
         return fallback;
     }
@@ -1376,15 +1385,20 @@ public class MoisDomainService {
             if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null) {
                 return List.of();
             }
-            Pattern cardPattern = Pattern.compile("\"name\":\"([^\"]+)\".*?\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\"");
+            Pattern cardPattern = Pattern.compile(
+                    "\"name\":\"([^\"]+)\".*?\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\".*?\"description\":\"([^\"]*)\".*?\"producerName\":\"([^\"]*)\".*?\"image\":\"([^\"]*)\""
+            );
             Matcher cardMatcher = cardPattern.matcher(response.body());
             List<SourceLead> leads = new ArrayList<>();
             Set<String> seenUrls = new HashSet<>();
             while (cardMatcher.find() && leads.size() < limitPerSource) {
                 String title = cardMatcher.group(1).replace("\\u0026", "&").trim();
                 String decodedUrl = cardMatcher.group(2).replace("\\/", "/").replace("\\u0026", "&");
+                String description = cardMatcher.group(3).replace("\\/", "/").replace("\\u0026", "&").trim();
+                String producer = cardMatcher.group(4).replace("\\/", "/").replace("\\u0026", "&").trim();
+                String imageUrl = cardMatcher.group(5).replace("\\/", "/").replace("\\u0026", "&").trim();
                 if (seenUrls.add(decodedUrl)) {
-                    leads.add(new SourceLead(decodedUrl, title));
+                    leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl));
                 }
             }
             return leads;
@@ -2004,7 +2018,10 @@ public class MoisDomainService {
 
     private record SourceLead(
             String url,
-            String title
+            String title,
+            String hotmartDescription,
+            String hotmartProducer,
+            String hotmartImageUrl
     ) {
     }
 

@@ -1,5 +1,7 @@
 package com.marketinghub.worker.experimentpipeline;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.List;
@@ -18,6 +20,7 @@ public class ExperimentPipelineGenerationWorkerService {
     private final ExperimentPipelineBackendClient backendClient;
     private final ExperimentPipelineOpenAiClient openAiClient;
     private final String workerId;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ExperimentPipelineGenerationWorkerService(ExperimentPipelineBackendClient backendClient,
                                                      ExperimentPipelineOpenAiClient openAiClient,
@@ -52,6 +55,14 @@ public class ExperimentPipelineGenerationWorkerService {
                 backendClient.updateStage(claimed.id(), "SENT_TO_OPENAI");
                 backendClient.updateStage(claimed.id(), "WAITING_OPENAI");
                 ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(claimed);
+                backendClient.recordGenerationLog(
+                        claimed.id(),
+                        payload.requestBodyJson(),
+                        payload.rawResponse(),
+                        extractModel(payload.requestBodyJson()),
+                        payload.inputTokens(),
+                        payload.outputTokens(),
+                        payload.costUsd());
                 log.info("Job {} received OpenAI output; completing job in backend", claimed.id());
                 completeInBackendWithRetry(claimed.id(), payload);
                 log.info("Job {} completed successfully", claimed.id());
@@ -65,6 +76,23 @@ public class ExperimentPipelineGenerationWorkerService {
     }
 
 
+
+    private String extractModel(String requestBodyJson) {
+        if (!StringUtils.hasText(requestBodyJson)) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(requestBodyJson);
+            JsonNode modelNode = root.get("model");
+            if (modelNode != null && !modelNode.isNull()) {
+                String model = modelNode.asText();
+                return model != null && !model.isBlank() ? model : null;
+            }
+        } catch (Exception ex) {
+            log.debug("Could not extract model from requestBodyJson", ex);
+        }
+        return null;
+    }
     private void completeInBackendWithRetry(java.util.UUID jobId,
                                             ExperimentPipelineJobCompletionPayload payload) {
         final int maxAttempts = 3;

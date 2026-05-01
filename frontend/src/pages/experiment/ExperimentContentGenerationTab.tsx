@@ -158,6 +158,7 @@ interface SectionRequestState {
 
 interface ParsedBackendError {
   timestamp?: string;
+  error?: string;
   message?: string;
   status?: number;
   path?: string;

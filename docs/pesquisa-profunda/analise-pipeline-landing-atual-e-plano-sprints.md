@@ -177,6 +177,14 @@ Adotar formalmente o fluxo:
 - Redução mensurável de incidentes 422 por divergência estrutural de landing.
 - HTML final sem inferência de blocos principais fora do contrato.
 
+
+### Registro no plano — Sprint 2 (2026-05-01)
+
+- ✅ Validação backend de `landingPageWireframe` endurecida para exigir `slotDefs` por seção com `slotKey` + `componentKey` únicos, reduzindo ambiguidade estrutural antes das próximas etapas.
+- ✅ Schema JSON da etapa `LANDING_PAGE_WIREFRAME` atualizado para exigir `slotDefs[]` tipado, alinhando solicitação de modelo com contrato canônico.
+- ✅ LHM atualizado para resolver slots priorizando `slotDefs.slotKey` (com fallback legado para `copySlots`), reforçando composição determinística por contrato explícito.
+- ✅ Plano da Sprint 2 atualizado com rastreabilidade do que foi implementado.
+
 ## Sprint 3 — Auditorias pós-render + qualidade comercial
 
 **Objetivo:** transformar qualidade visual/comercial em gate automatizado.

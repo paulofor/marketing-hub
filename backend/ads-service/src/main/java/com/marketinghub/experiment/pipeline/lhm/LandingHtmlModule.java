@@ -657,7 +657,21 @@ public class LandingHtmlModule {
 
     @SuppressWarnings("unchecked")
     private List<String> extractCopySlots(Map<String, Object> section) {
-        if (section == null || !(section.get("copySlots") instanceof List<?> rawSlots)) {
+        if (section == null) {
+            return List.of();
+        }
+        if (section.get("slotDefs") instanceof List<?> rawSlotDefs) {
+            List<String> slotKeys = rawSlotDefs.stream()
+                    .filter(Map.class::isInstance)
+                    .map(Map.class::cast)
+                    .map(item -> asTrimmedString(((Map<String, Object>) item).get("slotKey")))
+                    .filter(StringUtils::hasText)
+                    .toList();
+            if (!slotKeys.isEmpty()) {
+                return slotKeys;
+            }
+        }
+        if (!(section.get("copySlots") instanceof List<?> rawSlots)) {
             return List.of();
         }
         return rawSlots.stream()

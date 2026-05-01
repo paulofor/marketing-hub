@@ -227,6 +227,13 @@ Adotar formalmente o fluxo:
 - Queda sustentada de retrabalho em `LANDING_PAGE_HTML`.
 - Redução de tempo de publicação com aumento de consistência visual.
 
+
+### Registro no plano — Sprint 4 (2026-05-01)
+
+- ✅ Feature flags de rollout operacional consolidadas no backend para LHM: `lhm.registry.enabled` e `lhm.audit.gate.enabled`, com rastreabilidade no payload de monitoramento da etapa `LANDING_PAGE_HTML`.
+- ✅ Endpoint de observabilidade criado em `GET /api/experiments/pipeline/operational-metrics`, com métricas por etapa: taxa de falha, retrabalho, tempo médio, taxa de placeholder e score médio de qualidade.
+- ✅ Playbook de incidentes de contrato (400/422) documentado com diagnóstico padronizado de payload literal vs esperado em `docs/pesquisa-profunda/playbook-incidentes-400-422-pipeline.md`.
+
 ---
 
 ## 6) Backlog técnico recomendado (priorização)

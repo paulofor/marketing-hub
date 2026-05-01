@@ -1147,7 +1147,7 @@ class ExperimentPipelineGenerationServiceTest {
                                       },
                                       "typography": {"maxLineLength":"65ch","lineHeightBody":"1.6"},
                                       "spacing": {"sectionGapMobile":"56px"},
-                                      "accessibility": {"textContrastBody":"4.5:1"}
+                                      "accessibility": {"textContrastBody":"4.5:1","focusRing":"0 0 0 3px rgba(37,99,235,0.45)"}
                                     },
                                     "sectionPresets": [
                                       {"sectionId":"hero","surfaceStyle":"solid","contrastMode":"high","layoutPreset":"hero-focus","emphasis":"primary","notes":"hero"}
@@ -1155,7 +1155,9 @@ class ExperimentPipelineGenerationServiceTest {
                                     "componentPresets": {
                                       "cta": {"stickyMobile":true},
                                       "trust": {"showLegalFooter":true},
-                                      "proof": {"showIdentity": true}
+                                      "proof": {"showIdentity": true},
+                                      "primitives": [{"key":"hero-title","className":"lhm-hero-title","notes":"ok"},{"key":"section-title","className":"lhm-section-title","notes":"ok"},{"key":"body","className":"lhm-body","notes":"ok"},{"key":"btn-primary","className":"lhm-btn-primary","notes":"ok"},{"key":"btn-secondary","className":"lhm-btn-secondary","notes":"ok"},{"key":"field","className":"lhm-field","notes":"ok"},{"key":"card","className":"lhm-card","notes":"ok"},{"key":"faq-item","className":"lhm-faq-item","notes":"ok"}],
+                                      "registry": [{"componentKey":"hero-form-split","templatePartial":"hero-form-split","notes":"ok"},{"componentKey":"proof","templatePartial":"proof","notes":"ok"},{"componentKey":"offer-cards","templatePartial":"offer-cards","notes":"ok"},{"componentKey":"faq","templatePartial":"faq","notes":"ok"}]
                                     },
                                     "motion": {"enabled": false, "intensity": "none"},
                                     "consistencyChecks": [
@@ -1213,7 +1215,7 @@ class ExperimentPipelineGenerationServiceTest {
                                       },
                                       "typography": {"maxLineLength":"65ch","lineHeightBody":"1.6"},
                                       "spacing": {"sectionGapMobile":"56px"},
-                                      "accessibility": {"textContrastBody":"4.5:1"}
+                                      "accessibility": {"textContrastBody":"4.5:1","focusRing":"0 0 0 3px rgba(37,99,235,0.45)"}
                                     },
                                     "sectionPresets": [
                                       {"sectionId":"hero","surfaceStyle":"solid","contrastMode":"high","layoutPreset":"hero-focus","emphasis":"primary","notes":"hero"}
@@ -1221,7 +1223,9 @@ class ExperimentPipelineGenerationServiceTest {
                                     "componentPresets": {
                                       "cta": {"stickyMobile":true},
                                       "trust": {"showLegalFooter":true},
-                                      "proof": {"showIdentity": true}
+                                      "proof": {"showIdentity": true},
+                                      "primitives": [{"key":"hero-title","className":"lhm-hero-title","notes":"ok"},{"key":"section-title","className":"lhm-section-title","notes":"ok"},{"key":"body","className":"lhm-body","notes":"ok"},{"key":"btn-primary","className":"lhm-btn-primary","notes":"ok"},{"key":"btn-secondary","className":"lhm-btn-secondary","notes":"ok"},{"key":"field","className":"lhm-field","notes":"ok"},{"key":"card","className":"lhm-card","notes":"ok"},{"key":"faq-item","className":"lhm-faq-item","notes":"ok"}],
+                                      "registry": [{"componentKey":"hero-form-split","templatePartial":"hero-form-split","notes":"ok"},{"componentKey":"proof","templatePartial":"proof","notes":"ok"},{"componentKey":"offer-cards","templatePartial":"offer-cards","notes":"ok"},{"componentKey":"faq","templatePartial":"faq","notes":"ok"}]
                                     },
                                     "motion": {"enabled": false, "intensity": "none"},
                                     "consistencyChecks": [{"check":"THEME_CONTRAST","status":"PASS"}]
@@ -1457,7 +1461,7 @@ class ExperimentPipelineGenerationServiceTest {
                       },
                       "typography": {"maxLineLength":"64ch","lineHeightBody":"1.6"},
                       "spacing": {"sectionGapMobile":"56px"},
-                      "accessibility": {"textContrastBody":"4.5:1"}
+                      "accessibility": {"textContrastBody":"4.5:1","focusRing":"0 0 0 3px rgba(37,99,235,0.45)"}
                     },
                     "sectionPresets": [
                       {
@@ -1472,7 +1476,9 @@ class ExperimentPipelineGenerationServiceTest {
                     "componentPresets": {
                       "cta": {"stickyMobile": true},
                       "trust": {"showLegalFooter": true},
-                      "proof": {"showIdentity": true}
+                      "proof": {"showIdentity": true},
+                      "primitives": [{"key":"hero-title","className":"lhm-hero-title","notes":"ok"},{"key":"section-title","className":"lhm-section-title","notes":"ok"},{"key":"body","className":"lhm-body","notes":"ok"},{"key":"btn-primary","className":"lhm-btn-primary","notes":"ok"},{"key":"btn-secondary","className":"lhm-btn-secondary","notes":"ok"},{"key":"field","className":"lhm-field","notes":"ok"},{"key":"card","className":"lhm-card","notes":"ok"},{"key":"faq-item","className":"lhm-faq-item","notes":"ok"}],
+                      "registry": [{"componentKey":"hero-form-split","templatePartial":"hero-form-split","notes":"ok"},{"componentKey":"proof","templatePartial":"proof","notes":"ok"},{"componentKey":"offer-cards","templatePartial":"offer-cards","notes":"ok"},{"componentKey":"faq","templatePartial":"faq","notes":"ok"}]
                     },
                     "motion": {"enabled": false, "intensity": "none"},
                     "consistencyChecks": [

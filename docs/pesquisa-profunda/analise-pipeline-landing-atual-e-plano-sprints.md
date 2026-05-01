@@ -126,6 +126,19 @@ Adotar formalmente o fluxo:
 - CTA e formulário respeitam ranges mínimos de legibilidade e touch target.
 - Nenhum fallback silencioso em parse de artefato crítico.
 
+### Registro de implementação — Sprint 1 (2026-05-01)
+
+- ✅ **Prompt em arquivo versionado (backend/resources)** para etapa `landing-page-design-preset`, com instruções explícitas de primitives, registry e regra anti-fallback silencioso.
+- ✅ **Schema JSON endurecido** da etapa `LANDING_PAGE_DESIGN_PRESET` com novos contratos obrigatórios:
+  - `theme.accessibility.focusRing`;
+  - `componentPresets.primitives[]` com estrutura declarativa;
+  - `componentPresets.registry[]` com mapeamento `componentKey -> templatePartial`.
+- ✅ **Validação backend pós-geração (fonte canônica)** reforçada para bloquear artefatos sem:
+  - primitives mandatórias (`hero-title`, `section-title`, `body`, `btn-primary`, `btn-secondary`, `field`, `card`, `faq-item`);
+  - registry mínimo (`hero-form-split`, `proof`, `offer-cards`, `faq`);
+  - token de foco (`theme.accessibility.focusRing`).
+- ✅ **Matriz de responsabilidade preservada**: ownership estrutural segue no wireframe, visual detalhado permanece no design preset e enforcement é feito no backend antes de seguir para render/publish.
+
 ## Sprint 2 — Determinismo forte de composição (slots e seções)
 
 **Objetivo:** retirar heurística estrutural do Java e migrar para contrato explícito.

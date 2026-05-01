@@ -33,9 +33,12 @@ import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
 import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.openai.OpenAiResponse;
 import com.marketinghub.openai.service.OpenAiPricingService;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -60,8 +63,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -1042,15 +1047,35 @@ public class ExperimentPipelineGenerationService {
     private void appendSectionPrompt(StringBuilder sb,
                                      Experiment experiment,
                                      ExperimentPipelineSection section) {
-        sb.append("\nTemplate do prompt desta etapa é mantido exclusivamente no módulo Worker AI.\n");
-        sb.append("Não gerar instruções hard-coded no backend para seção: ").append(section.path()).append(".\n");
-        sb.append("Use apenas os dados do experimento e as dependências já persistidas para compor a resposta.\n");
+        String promptTemplate = loadPromptTemplate(section);
+        if (StringUtils.hasText(promptTemplate)) {
+            sb.append("\nTemplate canônico da etapa (arquivo versionado):\n");
+            sb.append(promptTemplate.trim()).append("\n");
+        } else {
+            sb.append("\nTemplate do prompt desta etapa é mantido exclusivamente no módulo Worker AI.\n");
+            sb.append("Não gerar instruções hard-coded no backend para seção: ").append(section.path()).append(".\n");
+            sb.append("Use apenas os dados do experimento e as dependências já persistidas para compor a resposta.\n");
+        }
 
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
             appendImageBindingSummary(sb, experiment);
         }
         if (section == ExperimentPipelineSection.LANDING_PAGE_COPY) {
             appendWireframeSlotSummary(sb, experiment);
+        }
+    }
+
+    private String loadPromptTemplate(ExperimentPipelineSection section) {
+        String resourcePath = "prompts/experiment-pipeline/" + section.path() + "/user.md";
+        ClassPathResource resource = new ClassPathResource(resourcePath);
+        if (!resource.exists()) {
+            return null;
+        }
+        try (InputStream inputStream = resource.getInputStream()) {
+            return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            log.warn("Falha ao carregar template de prompt {}: {}", resourcePath, ex.getMessage());
+            return null;
         }
     }
 
@@ -1585,6 +1610,7 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Preset de design inválido: componentPresets.proof.showIdentity deve ser true para páginas de venda/captação");
         }
+        validateSprint1DesignSystemContracts(componentPresets, theme);
 
         if (!(designPayload.get("consistencyChecks") instanceof List<?> rawChecks) || rawChecks.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
@@ -1652,6 +1678,64 @@ public class ExperimentPipelineGenerationService {
         if (!extras.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "Preset de design inválido: sectionPresets contém sectionId fora do wireframe. Excedente: " + extras);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateSprint1DesignSystemContracts(Map<String, Object> componentPresets, Map<String, Object> theme) {
+        Set<String> requiredPrimitiveKeys = Set.of(
+                "hero-title", "section-title", "body", "btn-primary", "btn-secondary", "field", "card", "faq-item");
+        Set<String> requiredRegistryKeys = Set.of("hero-form-split", "proof", "offer-cards", "faq");
+
+        Object rawPrimitives = componentPresets.get("primitives");
+        if (!(rawPrimitives instanceof List<?> primitives) || primitives.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: componentPresets.primitives é obrigatório");
+        }
+        Set<String> primitiveKeys = new LinkedHashSet<>();
+        for (Object rawPrimitive : primitives) {
+            if (!(rawPrimitive instanceof Map<?, ?> rawPrimitiveMap)) {
+                continue;
+            }
+            String key = asTrimmedString(((Map<String, Object>) rawPrimitiveMap).get("key"));
+            if (StringUtils.hasText(key)) {
+                primitiveKeys.add(key);
+            }
+        }
+        if (!primitiveKeys.containsAll(requiredPrimitiveKeys)) {
+            Set<String> missing = new LinkedHashSet<>(requiredPrimitiveKeys);
+            missing.removeAll(primitiveKeys);
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: componentPresets.primitives sem chaves obrigatórias " + missing);
+        }
+
+        Object rawRegistry = componentPresets.get("registry");
+        if (!(rawRegistry instanceof List<?> registry) || registry.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: componentPresets.registry é obrigatório");
+        }
+        Set<String> registryKeys = new LinkedHashSet<>();
+        for (Object rawEntry : registry) {
+            if (!(rawEntry instanceof Map<?, ?> rawEntryMap)) {
+                continue;
+            }
+            String key = asTrimmedString(((Map<String, Object>) rawEntryMap).get("componentKey"));
+            if (StringUtils.hasText(key)) {
+                registryKeys.add(key);
+            }
+        }
+        if (!registryKeys.containsAll(requiredRegistryKeys)) {
+            Set<String> missing = new LinkedHashSet<>(requiredRegistryKeys);
+            missing.removeAll(registryKeys);
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design incompleto: componentPresets.registry sem componentKey obrigatório " + missing);
+        }
+
+        Map<String, Object> accessibility = requiredMap(theme, "accessibility",
+                "Preset de design incompleto: theme.accessibility é obrigatório");
+        if (!StringUtils.hasText(asTrimmedString(accessibility.get("focusRing")))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Preset de design inválido: theme.accessibility.focusRing é obrigatório");
         }
     }
 
@@ -2780,8 +2864,25 @@ public class ExperimentPipelineGenerationService {
                 "type", "object",
                 "additionalProperties", true,
                 "properties", Map.of(
-                        "textContrastBody", stringSchema()),
-                "required", List.of("textContrastBody"));
+                        "textContrastBody", stringSchema(),
+                        "focusRing", stringSchema()),
+                "required", List.of("textContrastBody", "focusRing"));
+        Map<String, Object> primitiveSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "key", stringSchema(),
+                        "className", stringSchema(),
+                        "notes", stringSchema()),
+                "required", List.of("key", "className", "notes"));
+        Map<String, Object> registryItemSchema = Map.of(
+                "type", "object",
+                "additionalProperties", false,
+                "properties", Map.of(
+                        "componentKey", stringSchema(),
+                        "templatePartial", stringSchema(),
+                        "notes", stringSchema()),
+                "required", List.of("componentKey", "templatePartial", "notes"));
         Map<String, Object> sectionPresetSchema = Map.of(
                 "type", "object",
                 "additionalProperties", false,
@@ -2843,8 +2944,10 @@ public class ExperimentPipelineGenerationService {
                                                 "additionalProperties", true,
                                                 "properties", Map.of(
                                                         "stickyMobile", Map.of("type", "boolean")),
-                                                "required", List.of("stickyMobile"))),
-                                "required", List.of("proof", "trust", "cta")),
+                                                "required", List.of("stickyMobile")),
+                                        "primitives", Map.of("type", "array", "minItems", 8, "items", primitiveSchema),
+                                        "registry", Map.of("type", "array", "minItems", 4, "items", registryItemSchema)),
+                                "required", List.of("proof", "trust", "cta", "primitives", "registry")),
                         "motion", Map.of(
                                 "type", "object",
                                 "additionalProperties", false,

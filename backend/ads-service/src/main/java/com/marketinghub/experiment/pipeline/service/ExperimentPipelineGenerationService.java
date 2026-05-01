@@ -93,6 +93,7 @@ public class ExperimentPipelineGenerationService {
     private static final String LHM_MODEL = "LHM";
     private static final String GERAR_COM_IA_MODEL = "GERAR_COM_IA";
     private static final String LHM_WORKER_ID = "lhm-inline";
+    private static final String LANDING_HTML_AUDIT_FEATURE_FLAG = "lhm.audit.gate.enabled";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration STALE_PROCESSING_TIMEOUT = Duration.ofMinutes(20);
     private static final Set<ExperimentPipelineGenerationJobStatus> ACTIVE_JOB_STATUSES = Set.of(
@@ -358,6 +359,13 @@ public class ExperimentPipelineGenerationService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "LHM não conseguiu montar HTML válido para este experimento");
             }
+            Map<String, Object> qualityAuditReport = auditLandingHtmlQuality(experiment, assembledHtml);
+            monitoringPayload.put("qualityAudit", qualityAuditReport);
+            boolean auditGateEnabled = Boolean.parseBoolean(System.getProperty(LANDING_HTML_AUDIT_FEATURE_FLAG, "false"));
+            monitoringPayload.put("qualityAuditGateEnabled", auditGateEnabled);
+            if (auditGateEnabled) {
+                ensureLandingHtmlQualityGate(qualityAuditReport);
+            }
             applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, assembledHtml);
             completeInlineGenerationJob(monitoringJob, assembledHtml, assembledHtml, BigDecimal.ZERO);
             return experimentMapper.toDto(experiment);
@@ -392,6 +400,127 @@ public class ExperimentPipelineGenerationService {
         monitoringPayload.put("canonicalInputs", inputs);
 
         return monitoringPayload;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> auditLandingHtmlQuality(Experiment experiment, String html) {
+        String normalized = html == null ? "" : html;
+        int checks = 0;
+        int passed = 0;
+        List<String> failures = new ArrayList<>();
+
+        Matcher imgMatcher = IMG_TAG_PATTERN.matcher(normalized);
+        int informativeImages = 0;
+        int imagesWithAlt = 0;
+        int imagesWithPerfAttrs = 0;
+        while (imgMatcher.find()) {
+            Map<String, String> attrs = parseHtmlAttributes(imgMatcher.group());
+            String role = normalizeHtmlAttr(attrs.get("data-image-role"));
+            String alt = normalizeHtmlAttr(attrs.get("alt"));
+            if (!"decorative".equalsIgnoreCase(role)) {
+                informativeImages++;
+                if (StringUtils.hasText(alt)) {
+                    imagesWithAlt++;
+                }
+            }
+            boolean hasLoading = StringUtils.hasText(normalizeHtmlAttr(attrs.get("loading")));
+            boolean hasDecoding = StringUtils.hasText(normalizeHtmlAttr(attrs.get("decoding")));
+            boolean hasSizes = StringUtils.hasText(normalizeHtmlAttr(attrs.get("sizes")));
+            if (hasLoading && hasDecoding && hasSizes) {
+                imagesWithPerfAttrs++;
+            }
+        }
+
+        checks++;
+        if (informativeImages == 0 || imagesWithAlt == informativeImages) {
+            passed++;
+        } else {
+            failures.add("Imagens informativas sem alt textual");
+        }
+
+        checks++;
+        if (imagesWithPerfAttrs >= Math.max(1, informativeImages)) {
+            passed++;
+        } else {
+            failures.add("Imagens sem loading/decoding/sizes completos");
+        }
+
+        checks++;
+        boolean hasVisibleLabel = Pattern.compile("<label\\b[^>]*>\\s*[^<]{2,}", Pattern.CASE_INSENSITIVE).matcher(normalized).find();
+        if (hasVisibleLabel) {
+            passed++;
+        } else {
+            failures.add("Formulário sem label visível");
+        }
+
+        checks++;
+        boolean hasFocusStyle = Pattern.compile(":focus-visible|:focus\\s*\\{", Pattern.CASE_INSENSITIVE).matcher(normalized).find();
+        if (hasFocusStyle) {
+            passed++;
+        } else {
+            failures.add("Ausência de foco perceptível (:focus/:focus-visible)");
+        }
+
+        checks++;
+        boolean hasNarrativeCoverage = hasNarrativeCoverage(experiment);
+        if (hasNarrativeCoverage) {
+            passed++;
+        } else {
+            failures.add("Copy sem cobertura explícita Dor→Resultado→Mecanismo→Prova→Oferta");
+        }
+
+        int score = Math.round((passed * 100.0f) / checks);
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("framework", "sprint3-post-render-audit-v1");
+        report.put("checkedAt", Instant.now().toString());
+        report.put("score", score);
+        report.put("minimumScore", 75);
+        report.put("checks", checks);
+        report.put("passed", passed);
+        report.put("failures", failures);
+        report.put("hardFail", !failures.isEmpty() && score < 75);
+        report.put("experimentId", experiment != null ? experiment.getId() : null);
+        report.put("imageStats", Map.of(
+                "informativeImages", informativeImages,
+                "imagesWithAlt", imagesWithAlt,
+                "imagesWithPerfAttrs", imagesWithPerfAttrs));
+        return report;
+    }
+
+    private void ensureLandingHtmlQualityGate(Map<String, Object> qualityAuditReport) {
+        if (!(qualityAuditReport.get("score") instanceof Number scoreNumber)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Relatório de auditoria da landing inválido: score ausente.");
+        }
+        int score = scoreNumber.intValue();
+        if (score < 75) {
+            Object failures = qualityAuditReport.get("failures");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Qualidade comercial da landing reprovada (score=" + score + "). Falhas: " + failures);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean hasNarrativeCoverage(Experiment experiment) {
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageCopy())) {
+            return false;
+        }
+        try {
+            Map<String, Object> root = readObject(experiment.getLandingPageCopy(), "Copy da landing inválida");
+            Map<String, Object> payload = unwrapSectionPayload(root, "landingPageCopy");
+            if (!(payload.get("bodySections") instanceof List<?> rawSections)) {
+                return false;
+            }
+            String corpus = objectMapper.writeValueAsString(payload).toLowerCase(Locale.ROOT);
+            boolean dor = corpus.contains("dor");
+            boolean resultado = corpus.contains("resultado");
+            boolean mecanismo = corpus.contains("mecanismo");
+            boolean prova = corpus.contains("prova");
+            boolean oferta = corpus.contains("oferta");
+            return dor && resultado && mecanismo && prova && oferta && !rawSections.isEmpty();
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     @Transactional

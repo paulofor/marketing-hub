@@ -168,6 +168,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.structuredContent.module").value("backend"))
                 .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(2))
+                .andExpect(jsonPath("$.result.content[0].text").value(org.hamcrest.Matchers.containsString("line-2")))
                 .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("line-2"))
                 .andExpect(jsonPath("$.result.structuredContent.lines[1]").value("line-3"));
     }

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/mcp")
@@ -264,13 +265,25 @@ public class McpController {
 
         try {
             Map<String, Object> result = moduleLogService.readModuleLogs(module, lines);
-            return successToolResult(id, result,
-                    "Read " + result.get("returnedLines") + " log lines from module " + result.get("module"));
+            return successToolResult(id, result, buildJavaModuleLogsText(result));
         } catch (IllegalArgumentException ex) {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
             return error(id, -32603, "Failed to read module logs: " + ex.getMessage());
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String buildJavaModuleLogsText(Map<String, Object> result) {
+        String header = "Read " + result.get("returnedLines") + " log lines from module " + result.get("module");
+        Object rawLines = result.get("lines");
+        if (!(rawLines instanceof List<?> lines) || lines.isEmpty()) {
+            return header;
+        }
+        String logLines = lines.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining("\n"));
+        return header + "\n" + logLines;
     }
 
     private Map<String, Object> callMetaDocsTool(Object id, Map<String, Object> arguments) {

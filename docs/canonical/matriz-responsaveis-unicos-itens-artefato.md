@@ -62,7 +62,10 @@ Definir, sem ambiguidade, **um único responsável canônico por campo/path** do
 
 | Path canônico | Dono canônico | Consumidores principais | Gate de validação |
 |---|---|---|---|
-| `landingPageImagePlanning.generationPrompt` | `landing-page-image-planning` | worker de imagem | validação de prompt obrigatório e não vazio |
+| `landingPageImagePlanning.images[*].sectionId` | `landing-page-image-planning` | worker de imagem, `landingPageHtml` | validação de referência estrutural da seção |
+| `landingPageImagePlanning.images[*].slotId` | `landing-page-image-planning` | worker de imagem | validação de vínculo com `wireframe.sectionOrder[*].copySlots[*].slotId` e copy da seção |
+| `landingPageImagePlanning.images[*].imageBindingKey` | `landing-page-image-planning` | worker de imagem, `landingPageHtml` | validação do vínculo canônico de imagem |
+| `landingPageImagePlanning.images[*].imagePrompt` | `landing-page-image-planning` | worker de imagem | validação de prompt obrigatório por imagem |
 
 ## 6) `landingPageDesignPreset`
 

@@ -1043,3 +1043,29 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 #### 5) Reteste
 - **Procedimento de reteste:** execução de teste unitário do módulo LHM.
 - **Status final:** concluído após ajuste.
+### INC-0005 — Planejamento de imagens volta a exigir prompts por item (`images[]`)
+
+- **Data:** 2026-05-01
+- **Módulo:** backend + ai-worker + documentação canônica
+- **Sintoma:** experimento 19 com `landingPageImagePlanning` persistido sem `images[]`, impedindo a criação de jobs em `framework_image_generation_job`.
+- **Causa raiz:** contrato/schema da etapa `landingPageImagePlanning` havia sido reduzido para `generationPrompt` obrigatório, permitindo persistência sem prompts por imagem.
+- **Ação corretiva aplicada:**
+  1. Backend passou a exigir `images[]` no schema da etapa `LANDING_PAGE_IMAGE_PLANNING`.
+  2. Validação de fechamento da etapa passou a exigir, em cada item, `sectionId`, `imageBindingKey` e `imagePrompt`.
+  3. Prompt canônico do ai-worker para a etapa passou a declarar explicitamente `images[].imagePrompt` como saída obrigatória.
+  4. Documentação canônica atualizada para refletir responsabilidade da etapa em gerar prompts por imagem.
+- **Resultado esperado:** etapa de planejamento sempre entrega os prompts executáveis por item; etapa de geração de imagem passa a somente consumir esses prompts, chamar o modelo de imagem e registrar os URLs finais (incluindo Cloudflare/web URL) no fluxo de jobs.
+
+### INC-0006 — Planejamento de imagens vinculado a `slotId` do wireframe + copy
+
+- **Data:** 2026-05-01
+- **Módulo:** backend + ai-worker + documentação canônica
+- **Sintoma:** planejamento de imagens podia sair com prompt por item sem vínculo explícito com o slot de copy aprovado na landing, gerando risco de desalinhamento mensagem↔imagem.
+- **Causa raiz:** contrato anterior não exigia `slotId` em `landingPageImagePlanning.images[]` e não validava pertinência do slot contra `wireframe.sectionOrder[*].copySlots`.
+- **Ação corretiva aplicada:**
+  1. Schema/validação backend passou a exigir `slotId` por imagem junto de `sectionId`, `imageBindingKey` e `imagePrompt`.
+  2. Backend passou a validar que `slotId` pertence aos `copySlots` da mesma `sectionId` no wireframe.
+  3. Mantida validação estrutural de quantidade e pares `sectionId/imageBindingKey` contra `wireframe.images[]`.
+  4. Prompt do ai-worker atualizado para orientar uso explícito da copy do `slotId` correspondente na composição do `imagePrompt`.
+  5. Documentação canônica e matriz de responsabilidades atualizadas para refletir o novo contrato.
+- **Resultado esperado:** cada prompt de imagem nasce ancorado ao slot de copy correto, preservando coerência dor→resultado por seção e eliminando deriva entre wireframe, copy e planejamento visual.

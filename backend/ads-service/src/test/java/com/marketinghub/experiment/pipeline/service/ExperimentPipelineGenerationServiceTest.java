@@ -1334,7 +1334,7 @@ class ExperimentPipelineGenerationServiceTest {
                 {
                   "landingPageWireframe": {
                     "sectionOrder": [
-                      {"sectionId": "hero", "surfaceSpec": {"surfaceToken": "surface-base", "notes": "hero"}}
+                      {"sectionId": "hero", "surfaceSpec": {"surfaceToken": "surface-base", "notes": "hero"}, "copySlots":[{"slotId":"hero-main","purpose":"headline"}]}
                     ]
                   }
                 }
@@ -1347,7 +1347,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 {
                                   "landingPageImagePlanning": {
                                     "images": [
-                                      {"sectionId":"hero","imageBindingKey":"hero-anchor"}
+                                      {"sectionId":"hero","slotId":"hero-main","imageBindingKey":"hero-anchor"}
                                     ],
                                     "consistencyChecks": [
                                       {"check":"VISUAL_HIERARCHY","status":"PASS"}
@@ -1360,7 +1360,43 @@ class ExperimentPipelineGenerationServiceTest {
                                 """,
                         null, null, null, null, null)));
 
-        assertTrue(exception.getReason().contains("generationPrompt é obrigatório"));
+        assertTrue(exception.getReason().contains("images[] exige sectionId, slotId, imageBindingKey e imagePrompt"));
+    }
+
+    @Test
+    void completeJobRejectsImagePlanningWhenBindingsDoNotMatchWireframeQuantity() {
+        Experiment experiment = new Experiment();
+        experiment.setId(414L);
+        experiment.setLandingPageWireframe("""
+                {
+                  "landingPageWireframe": {
+                    "sectionOrder": [
+                      {"sectionId": "hero", "surfaceSpec": {"surfaceToken": "surface-base", "notes": "hero"}, "copySlots":[{"slotId":"hero-main","purpose":"headline"}]},
+                      {"sectionId": "proof", "surfaceSpec": {"surfaceToken": "surface-base", "notes": "proof"}, "copySlots":[{"slotId":"proof-main","purpose":"proof"}]}
+                    ],
+                    "images": [
+                      {"sectionId":"hero","imageBindingKey":"hero-anchor"},
+                      {"sectionId":"proof","imageBindingKey":"proof-anchor"}
+                    ]
+                  }
+                }
+                """);
+        ExperimentPipelineGenerationJob job = createJobForSection(experiment, ExperimentPipelineSection.LANDING_PAGE_IMAGE_PLANNING);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(job.getId(), new ExperimentPipelineGenerationJobCompletionRequest(
+                        """
+                                {
+                                  "landingPageImagePlanning": {
+                                    "images": [
+                                      {"sectionId":"hero","slotId":"hero-main","imageBindingKey":"hero-anchor","imagePrompt":"Prompt hero"}
+                                    ]
+                                  }
+                                }
+                                """,
+                        null, null, null, null, null)));
+
+        assertTrue(exception.getReason().contains("quantidade e bindings de images[] devem corresponder ao wireframe"));
     }
 
     @Test
@@ -1663,6 +1699,7 @@ class ExperimentPipelineGenerationServiceTest {
                       {
                         "sectionId": "s0-hero-variant",
                         "sectionName": "Hero",
+                        "slotId": "hero-main",
                         "imageRole": "Hero Pain Anchor",
                         "conversionRole": "grab-attention",
                         "emotionalJob": "urgencia",

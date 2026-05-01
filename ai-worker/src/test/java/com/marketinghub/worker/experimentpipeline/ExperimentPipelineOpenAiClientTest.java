@@ -152,6 +152,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("complianceNotes");
         assertThat(userPrompt).contains("Quando `CASE_DATA` incluir `landingPageWireframe` com `copySlots`");
         assertThat(userPrompt).contains("cada item de `bodySections` deve informar `sectionId` + `slotId` exatamente como definidos no wireframe");
+        assertThat(userPrompt).contains("não usar `purpose` como `slotId` (ex.: `headline`, `subheadline`, `promise`)");
         assertThat(userPrompt).contains("Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual");
     }
 

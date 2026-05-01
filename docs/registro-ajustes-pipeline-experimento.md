@@ -1069,3 +1069,40 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
   4. Prompt do ai-worker atualizado para orientar uso explícito da copy do `slotId` correspondente na composição do `imagePrompt`.
   5. Documentação canônica e matriz de responsabilidades atualizadas para refletir o novo contrato.
 - **Resultado esperado:** cada prompt de imagem nasce ancorado ao slot de copy correto, preservando coerência dor→resultado por seção e eliminando deriva entre wireframe, copy e planejamento visual.
+
+### INC-0019 — Validação confirmada em log para 422 de `slotId` na etapa LANDING_PAGE_COPY (experimento 19)
+
+- **Data/Hora (UTC):** 2026-05-01
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker + operação de pipeline (diagnóstico)
+- **Execução/Teste:** confirmação da hipótese por evidência direta em log/telemetria via MCP
+
+#### 1) Erro observado
+- **Sintoma:** etapa de texto da landing falhando com `422` ao concluir job.
+- **Mensagem literal:** `Copy da landing inválida em bodySections: slotId 'headline' não pertence aos copySlots da sectionId 's1-hero'`.
+- **Path literal:** `/api/internal/experiment-pipeline/jobs/f8629983-915f-42e4-88c2-37f05bde1125/complete`.
+
+#### 2) Diagnóstico (MCP + logs)
+- Consulta MCP em `experiment_pipeline_generation_job` (experimento `19`, status `FAILED`) retornou `error_message` literal com o mesmo `422` acima, timestamp backend `2026-05-01T14:06:26.567559167-03:00`.
+- Foram encontradas recorrências equivalentes no mesmo experimento:
+  - `slotId 'Headline'` em `sectionId 's1_hero_preview'`;
+  - `slotId 'headline'` em `sectionId 's1-hero-proof'`.
+- Conclusão: hipótese confirmada por log; o padrão recorrente é uso de alias semântico (`headline`) em vez de `copySlots[].slotId` canônico.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `bodySections[].slotId = "headline"` (ou `"Headline"`).
+- **O que a especificação esperava (literal):** `bodySections[].slotId` igual ao identificador técnico existente em `landingPageWireframe.sectionOrder[].copySlots` da mesma `sectionId`.
+- **Diferença objetiva:** valor semântico/alias no lugar de id técnico canônico.
+- **Ação corretiva recomendada:** instrução explícita no prompt proibindo alias de `purpose` como `slotId` e exigindo valor literal do wireframe.
+
+#### 4) Ajuste aplicado
+- Prompt de `landing-copy` reforçado com regra explícita anti-alias (`slotId` técnico literal; não usar `headline/subheadline/promise`).
+- Teste de prompt atualizado para garantir presença da regra.
+- Diagnóstico operacional formalizado em `docs/diagnosticos/erro-422-experimento-19-2026-05-01.md`.
+
+#### 5) Evidências (comandos)
+- `curl -sS https://mcpserverdigi.shop/mcp ... tools/call db_query` (consulta em `experiment_pipeline_generation_job` para `experiment_id=19`).
+- `curl -sS https://mcpserverdigi.shop/mcp ... tools/call java_module_logs` (backend/ai-worker).
+
+#### 6) Próximo passo
+- Reprocessar etapa `LANDING_PAGE_COPY` do experimento 19 e confirmar ausência de novo `422` por `slotId` fora de `copySlots`.

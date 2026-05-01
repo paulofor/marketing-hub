@@ -35,6 +35,7 @@ Regras fixas da etapa:
 20. `ctaUrl` nunca pode conter placeholders (ex.: `{slug}`); sempre retornar URL resolvida para o fluxo atual.
 21. Quando `CASE_DATA` incluir `landingPageWireframe` com `copySlots`, cada item de `bodySections` deve informar `sectionId` + `slotId` exatamente como definidos no wireframe (sem inventar ids e sem reutilizar slots de hero).
 22. Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual para manter compatibilidade de contrato com o backend.
+22.1. `slotId` deve ser sempre o identificador técnico literal do `copySlots[].slotId` da mesma `sectionId`; não usar `purpose` como `slotId` (ex.: `headline`, `subheadline`, `promise`) e não usar aliases genéricos.
 23. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
 24. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
 

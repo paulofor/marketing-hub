@@ -203,6 +203,17 @@ Adotar formalmente o fluxo:
 - Job `LANDING_PAGE_HTML` só conclui com score mínimo aprovado.
 - Relatório de auditoria anexado ao histórico do job.
 
+### Registro no plano — Sprint 3 (2026-05-01)
+
+- ✅ Gate de qualidade pós-render implementado no backend para `LANDING_PAGE_HTML`, bloqueando conclusão quando `score < 75`.
+- ✅ Auditoria automática incluída no fluxo LHM com checks mínimos obrigatórios de:
+  - `alt` em imagens informativas;
+  - atributos de performance em imagens (`loading`, `decoding`, `sizes`);
+  - presença de `label` visível em formulário;
+  - foco perceptível (`:focus`/`:focus-visible`);
+  - continuidade de narrativa comercial (`Dor → Resultado → Mecanismo → Prova → Oferta`) usando `landingPageCopy`.
+- ✅ Relatório de auditoria (`qualityAudit`) anexado ao payload de monitoramento do job para rastreabilidade no histórico da execução.
+
 ## Sprint 4 — Operação, observabilidade e rollout seguro
 
 **Objetivo:** escalar com segurança e aprendizado contínuo.

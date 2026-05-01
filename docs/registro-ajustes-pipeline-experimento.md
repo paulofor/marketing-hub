@@ -75,6 +75,53 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0018 — Alinhamento canônico de `slotId` na `landingPageCopy` para reduzir 422 sem reprocessamento
+
+- **Data/Hora (UTC):** 2026-05-01
+- **Responsável:** Assistente Codex
+- **Módulo:** ai-worker + documentação canônica
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Revisão pós-feedback para sincronizar prompt e schema canônico do artefato `landingPageCopy`.
+
+#### 1) Erro observado
+- **Sintoma:** geração da etapa de copy retornava `slotId` inválido para a `sectionId`, provocando `422`.
+- **Endpoint/rota/fila:** fechamento de job do pipeline `LANDING_PAGE_COPY`.
+- **Status code:** 422.
+- **Mensagem de erro literal:** `Copy da landing inválida em bodySections: slotId '<valor>' não pertence aos copySlots da sectionId '<sectionId>'`.
+- **Payload enviado (literal):** `bodySections[].slotId` fora da lista de `copySlots` da seção correspondente.
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não executado nesta revisão local (baseado em erro já capturado no histórico da execução).
+- **Dados de banco consultados via MCP:** não aplicável nesta revisão documental/prompt.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (`landingPageCopy` + dependência de wireframe).
+- **Validação/regra que rejeitou:** compatibilidade de `slotId` com `copySlots(sectionId)` no backend.
+- **Causa raiz:** desalinhamento entre instruções de prompt e contrato canônico/validação para mapeamento estrutural de `bodySections`.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** `slotId` não pertencente aos `copySlots` da seção (ou textual sem vínculo estrutural).
+- **O que a especificação esperava (literal):** `slotId` técnico existente em `landingPageWireframe.sectionOrder[].copySlots` para a mesma `sectionId`.
+- **Diferença objetiva:** valor inválido/não canônico em campo estrutural.
+- **Ação corretiva recomendada:** reforçar prompt + schema canônico para exigir `slotId` e instruir fallback controlado (`consistencyChecks=FAIL`) sem inventar dados.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt + schema canônico + registro operacional.
+- **Arquivos alterados:**
+  - `ai-worker/src/main/resources/prompts/experiment/landing-copy.md`
+  - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** inclusão explícita de `slotId` no schema canônico de `landingPageCopy.bodySections`; reforço no prompt para mapear `sectionId`+`slotId` ao wireframe e orientação anti-reprocessamento para registrar `FAIL` em `consistencyChecks` quando faltar dado estrutural válido em vez de inventar slot.
+
+#### 5) Reteste
+- **Procedimento de reteste:** validação estática de consistência entre prompt e contrato canônico + revisão de diff.
+- **Resultado:** aprovado para alinhamento documental/contratual.
+- **Evidências (logs/ids/prints):** diff dos três arquivos alterados e commit no branch.
+- **Status final:** Resolvido.
+
+#### 6) Próximo passo
+- **Ação seguinte:** executar nova rodada da etapa `LANDING_PAGE_COPY` em experimento real monitorando ausência de `422` por `slotId`.
+- **Dono da ação:** operação do pipeline + ai-worker.
+- **Prazo:** próxima execução assistida.
+
 ### INC-0017 — Ajuste de prompt da etapa `LANDING_PAGE_COPY` para bloquear uso textual de `slotId`
 
 - **Data/Hora (UTC):** 2026-04-30

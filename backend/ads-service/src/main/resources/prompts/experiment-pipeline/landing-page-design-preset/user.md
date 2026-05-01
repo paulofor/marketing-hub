@@ -6,6 +6,9 @@ Regras mandatórias da Sprint 1:
 - Não usar fallback silencioso: qualquer decisão de fallback deve ser descrita em `consistencyChecks[*].details`.
 - Preencher tokens obrigatórios em `theme`: tipografia, spacing, radius, shadow, focus-ring e cores de superfície/contraste.
 - Garantir legibilidade e toque mínimo de CTA/form com foco visual perceptível.
+- Incorporar no preset os padrões da seção "Padrões de CSS e componentes por elemento" de `docs/pesquisa-profunda/pesquisa-profunda-html-estilos.md`, cobrindo explicitamente os elementos: `<p>`, `<h1>`, `<h2>`, `<h3>`, `<ul>/<li>`, `<button>`/CTA, `<form>`, `<label>`, `<input>`, `<img>`.
+- Para cada elemento acima, declarar no preset os atributos visuais relevantes (tipografia, espaçamento, dimensão, contraste, foco, superfície, etc.) e os tokens correspondentes.
+- A etapa deve exigir resposta estritamente aderente ao schema JSON canônico de `landingPageDesignPreset`, sem campos fora do contrato.
 
 Saída:
 - Apenas JSON válido aderente ao schema da etapa.

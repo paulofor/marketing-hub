@@ -389,6 +389,7 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 
 > Artefato canônico para separar decisão de estética/tema da etapa final de composição HTML.
 > O objetivo é permitir evolução visual com previsibilidade, sem transformar o LHM em camada de ideação livre.
+> Toda execução desta etapa via modelo deve solicitar resposta estritamente em JSON válido aderente ao schema canônico da própria etapa.
 
 ```json
 {
@@ -457,6 +458,16 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
     }
   ],
   "componentPresets": {
+    "primitives": {
+      "hero-title": { "tokens": ["string"], "attributes": ["string"] },
+      "section-title": { "tokens": ["string"], "attributes": ["string"] },
+      "body": { "tokens": ["string"], "attributes": ["string"] },
+      "btn-primary": { "tokens": ["string"], "attributes": ["string"] },
+      "btn-secondary": { "tokens": ["string"], "attributes": ["string"] },
+      "field": { "tokens": ["string"], "attributes": ["string"] },
+      "card": { "tokens": ["string"], "attributes": ["string"] },
+      "faq-item": { "tokens": ["string"], "attributes": ["string"] }
+    },
     "hero": {
       "titleMaxWidth": "string",
       "summaryMaxWidth": "string",
@@ -503,6 +514,13 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
   ]
 }
 ```
+
+### Cobertura obrigatória de elementos (fonte de verdade: pesquisa profunda)
+
+O `landingPageDesignPreset` deve registrar, via `componentPresets.primitives` e tokens de `theme`, cobertura explícita para os elementos:
+`<p>`, `<h1>`, `<h2>`, `<h3>`, `<ul>/<li>`, `<button>`/CTA, `<form>`, `<label>`, `<input>`, `<img>`.
+
+Para cada elemento, o preset deve declarar atributos visuais trabalhados (tipografia, espaçamento, dimensão, contraste, foco, superfície e comportamento responsivo quando aplicável) e os tokens correspondentes. A referência de padrões é a seção **"Padrões de CSS e componentes por elemento"** de `docs/pesquisa-profunda/pesquisa-profunda-html-estilos.md`.
 
 > **Atualização canônica (2026-04-29) — CSS base do LHM deve vir de artefato:**
 > - A malha CSS base da landing (`baseCss`) deve ser definida no `landingPageDesignPreset.lhmRuntime.baseCss` (ou, por compatibilidade temporária, em `landingPageDesignPreset.baseCss`).

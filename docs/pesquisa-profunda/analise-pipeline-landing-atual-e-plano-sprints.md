@@ -111,33 +111,57 @@ Adotar formalmente o fluxo:
 
 ## 5) Plano de melhoria por sprints
 
-## Sprint 1 — Fundamentos de design system e contrato de render
+## Sprint 1 — Governança canônica + contratos por etapa (evolução do pipeline ponta a ponta)
 
-**Objetivo:** criar base visual premium com pouca ruptura.
+**Objetivo:** evoluir o pipeline atual completo (do anúncio até LHM) com governança canônica obrigatória, responsabilidade única por artefato e validação rígida pós-geração.
+
+**Pipeline-alvo da Sprint 1 (ordem obrigatória)**
+1. `Ângulo Campanha`
+2. `Texto do Anúncio`
+3. `Prompt da Imagem (Anúncio)`
+4. `Layout da Landing (wireframe/slots)`
+5. `Texto da Landing (copy da landing)`
+6. `Planejamento de Imagens da Landing`
+   - etapa interna para o modelo gerador de imagens produzir assets a partir dos prompts planejados
+7. `Preset Design da Landing`
+8. `Criação da Landing Determinística (LHM)`
+
+**Regras mandatórias incorporadas na Sprint 1**
+- Documento canônico é a **fonte de verdade** para contratos, validações e critérios de aceite.
+- Matriz de responsabilidade mantida com **responsável único por artefato** em cada etapa.
+- Toda etapa com chamada de modelo deve exigir **Schema JSON explícito** no contrato de geração.
+- Prompts do modelo devem ficar em arquivos versionados em `/ai-worker/src/main/resources/prompts/experiment`.
+- Toda saída gerada por modelo deve passar por **validação no backend após geração**, com aderência ao canônico, antes de liberar próxima etapa.
 
 **Entregas**
-- Definir pacote mínimo de primitives no LHM: `hero-title`, `section-title`, `body`, `btn-primary|secondary`, `field`, `card`, `faq-item`.
-- Consolidar tokens obrigatórios no `landingPageDesignPreset` (tipografia, spacing, radius, shadow, focus-ring, cores de superfície/contraste).
-- Formalizar mapeamento `componentKey -> template parcial` (registry inicial) para blocos mais comuns (`hero-form-split`, `proof`, `offer-cards`, `faq`).
-- Bloquear render quando faltar token crítico ou slot obrigatório.
+- Revisão da Sprint 1 para cobrir o pipeline completo, não apenas blocos internos de landing.
+- Inclusão da matriz de responsabilidade por etapa/artefato com gate de transição.
+- Padronização de solicitação de Schema JSON nas etapas com IA (entrada/saída tipada, sem ambiguidade).
+- Diretriz explícita de armazenamento de prompts em `/ai-worker/src/main/resources/prompts/experiment`.
+- Validação backend pós-geração definida como obrigatória em todas as etapas do pipeline.
+
+**Matriz de responsabilidade (Sprint 1)**
+- `Ângulo Campanha` → artefato: estratégia de ângulo (owner único: etapa de ângulo).
+- `Texto do Anúncio` → artefato: copy de anúncio (owner único: etapa de texto do anúncio).
+- `Prompt da Imagem (Anúncio)` → artefato: prompt visual de anúncio (owner único: etapa de prompt de imagem).
+- `Layout da Landing` → artefato: wireframe/slots (owner único: etapa de layout).
+- `Texto da Landing` → artefato: copy por slots/seções (owner único: etapa de copy da landing).
+- `Planejamento de Imagens da Landing` → artefato: plano de assets + prompts de geração (owner único: etapa de image planning).
+- `Preset Design da Landing` → artefato: tokens/primitives/registry (owner único: etapa de design preset).
+- `LHM` → artefato: HTML final determinístico (owner único: etapa de renderização LHM).
 
 **Critérios de aceite**
-- 100% das novas landings usam tokens em vez de CSS hardcoded ad-hoc.
-- CTA e formulário respeitam ranges mínimos de legibilidade e touch target.
-- Nenhum fallback silencioso em parse de artefato crítico.
+- 100% das etapas com IA executam com Schema JSON explícito e validável.
+- 100% dos prompts das etapas de IA referenciam arquivos em `/ai-worker/src/main/resources/prompts/experiment`.
+- 100% dos artefatos gerados por IA passam por validação backend pós-geração com base canônica antes de avançar etapa.
+- Nenhuma etapa assume responsabilidade por artefato de outra (matriz preservada e auditável).
 
-### Registro de implementação — Sprint 1 (2026-05-01)
+### Registro no plano — Sprint 1 (2026-05-01)
 
-- ✅ **Prompt em arquivo versionado (backend/resources)** para etapa `landing-page-design-preset`, com instruções explícitas de primitives, registry e regra anti-fallback silencioso.
-- ✅ **Schema JSON endurecido** da etapa `LANDING_PAGE_DESIGN_PRESET` com novos contratos obrigatórios:
-  - `theme.accessibility.focusRing`;
-  - `componentPresets.primitives[]` com estrutura declarativa;
-  - `componentPresets.registry[]` com mapeamento `componentKey -> templatePartial`.
-- ✅ **Validação backend pós-geração (fonte canônica)** reforçada para bloquear artefatos sem:
-  - primitives mandatórias (`hero-title`, `section-title`, `body`, `btn-primary`, `btn-secondary`, `field`, `card`, `faq-item`);
-  - registry mínimo (`hero-form-split`, `proof`, `offer-cards`, `faq`);
-  - token de foco (`theme.accessibility.focusRing`).
-- ✅ **Matriz de responsabilidade preservada**: ownership estrutural segue no wireframe, visual detalhado permanece no design preset e enforcement é feito no backend antes de seguir para render/publish.
+- ✅ Sprint 1 revisada para refletir a evolução do **pipeline completo**: Ângulo Campanha → Texto do Anúncio → Prompt da Imagem → Layout da Landing → Texto da Landing → Planejamento de Imagens → Preset Design → LHM.
+- ✅ Regras obrigatórias consolidadas no plano: canônico como fonte de verdade, responsabilidade única por artefato, Schema JSON por etapa com IA, prompts em `/ai-worker/src/main/resources/prompts/experiment`, validação backend pós-geração.
+- ✅ Matriz de responsabilidade adicionada na Sprint 1 para rastreabilidade de ownership por etapa/artefato e prevenção de sobreposição de responsabilidade.
+- ✅ Critérios de aceite atualizados para transformar as regras acima em gates objetivos de execução da sprint.
 
 ## Sprint 2 — Determinismo forte de composição (slots e seções)
 

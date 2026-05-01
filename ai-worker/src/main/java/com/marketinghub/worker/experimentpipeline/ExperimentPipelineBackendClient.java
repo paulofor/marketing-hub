@@ -65,11 +65,13 @@ public class ExperimentPipelineBackendClient {
 
     public void complete(UUID jobId, ExperimentPipelineJobCompletionPayload payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/experiment-pipeline/jobs/", jobId.toString(), "/complete");
-        log.info("POST /complete do pipeline (jobId={}, url={}, keys={}, landingHtmlDiag={})",
+        log.info("POST /complete do pipeline (jobId={}, url={}, keys={}, landingHtmlDiag={}, requestBodyJsonRaw={}, rawResponseRaw={})",
                 jobId,
                 url,
                 summarizeCompletionPayloadKeys(payload),
-                summarizeLandingHtmlDiagnostic(payload));
+                summarizeLandingHtmlDiagnostic(payload),
+                summarizeRawPayload(payload != null ? payload.requestBodyJson() : null),
+                summarizeRawPayload(payload != null ? payload.rawResponse() : null));
         try {
             webClient.post()
                     .uri(url)
@@ -125,6 +127,15 @@ public class ExperimentPipelineBackendClient {
                             "GET %s failed with status %s: %s".formatted(uri, status, body))));
         }
         return response.bodyToFlux(ExperimentPipelineJobDto.class);
+    }
+
+
+    private String summarizeRawPayload(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return "[empty]";
+        }
+        String compact = rawJson.replaceAll("\s+", " ").trim();
+        return compact.length() > 2000 ? compact.substring(0, 2000) + "..." : compact;
     }
 
     private String summarizeCompletionPayloadKeys(ExperimentPipelineJobCompletionPayload payload) {

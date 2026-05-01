@@ -1,6 +1,7 @@
 package com.marketinghub.worker.experimentpipeline;
 
 import java.net.InetAddress;
+import java.time.Duration;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class ExperimentPipelineGenerationWorkerService {
                 backendClient.updateStage(claimed.id(), "WAITING_OPENAI");
                 ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(claimed);
                 log.info("Job {} received OpenAI output; completing job in backend", claimed.id());
-                backendClient.complete(claimed.id(), payload);
+                completeInBackendWithRetry(claimed.id(), payload);
                 log.info("Job {} completed successfully", claimed.id());
             } catch (Exception ex) {
                 String error = buildFailureReason(ex);
@@ -63,6 +64,38 @@ public class ExperimentPipelineGenerationWorkerService {
         log.info("Experiment pipeline worker cycle finished");
     }
 
+
+    private void completeInBackendWithRetry(java.util.UUID jobId,
+                                            ExperimentPipelineJobCompletionPayload payload) {
+        final int maxAttempts = 3;
+        Duration backoff = Duration.ofSeconds(2);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                backendClient.complete(jobId, payload);
+                return;
+            } catch (WebClientResponseException ex) {
+                boolean transientHttp = ex.getStatusCode().value() == 429
+                        || ex.getStatusCode().is5xxServerError();
+                if (!transientHttp || attempt == maxAttempts) {
+                    throw ex;
+                }
+                log.warn("Failed to complete job {} in backend (attempt {}/{} status={}). Retrying in {}s",
+                        jobId, attempt, maxAttempts, ex.getStatusCode().value(), backoff.toSeconds());
+            } catch (Exception ex) {
+                if (attempt == maxAttempts) {
+                    throw ex;
+                }
+                log.warn("Failed to complete job {} in backend (attempt {}/{}). Retrying in {}s",
+                        jobId, attempt, maxAttempts, backoff.toSeconds(), ex);
+            }
+            try {
+                Thread.sleep(backoff.toMillis());
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Retry interrupted while completing job " + jobId, interrupted);
+            }
+        }
+    }
     private String resolveWorkerId(String configuredWorkerId) {
         if (configuredWorkerId != null && !configuredWorkerId.isBlank()) {
             return configuredWorkerId.trim();

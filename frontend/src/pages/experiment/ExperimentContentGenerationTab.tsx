@@ -1886,20 +1886,10 @@ export default function ExperimentContentGenerationTab({
     }
 
     const [nextSectionKey, ...remaining] = autoQueue.pending;
-    const nextSectionRequest = mergedRequestsBySection[nextSectionKey];
-    if (nextSectionRequest.status !== "IDLE") {
-      setAutoQueue({
-        isActive: true,
-        waitingFor: nextSectionKey,
-        pending: remaining,
-      });
-      return;
-    }
 
     if (
       autoQueue.waitingFor === "landing-image-planning" &&
-      (nextSectionKey === "landing-design-preset" ||
-        nextSectionKey === "landing-html")
+      nextSectionKey === "landing-design-preset"
     ) {
       const stillLoadingImageStatuses =
         frameworkImageStatusQuery.isLoading || frameworkImageStatusQuery.isFetching;
@@ -2008,7 +1998,7 @@ export default function ExperimentContentGenerationTab({
     }
   }
 
-  const handleGenerateLandingDualHtml = useCallback(async () => {
+  const handleGenerateLandingLhm = useCallback(async () => {
     const nowIso = new Date().toISOString();
     try {
       setIsGeneratingWithLhm(true);
@@ -2018,21 +2008,14 @@ export default function ExperimentContentGenerationTab({
           status: "PROCESSING",
           requestedAt: nowIso,
           startedAt: nowIso,
-          executionSource: "LHM_IA",
-          stageLabel: "Gerando duas variantes públicas (LHM + IA)",
+          executionSource: "LHM",
+          stageLabel: "Gerando variante determinística (LHM)",
         },
       }));
       await axios.post(
         `/api/experiments/${experimentId}/pipeline/landing-page-html/generate-with-lhm`,
       );
-      await axios.post(
-        `/api/experiments/${experimentId}/pipeline/landing-page-html/generate`,
-        {
-          quantity: 1,
-          promptTemplate: SECTION_PROMPT_DEFAULTS["landing-html"],
-        },
-      );
-      toast.success("Landing HTML gerado nas duas variantes: LHM (determinístico) e IA.");
+      toast.success("Landing HTML gerado na variante determinística (LHM).");
       setRequestsBySection((previous) => ({
         ...previous,
         "landing-html": {
@@ -2040,7 +2023,7 @@ export default function ExperimentContentGenerationTab({
           requestedAt: previous["landing-html"]?.requestedAt ?? nowIso,
           startedAt: previous["landing-html"]?.startedAt ?? nowIso,
           completedAt: new Date().toISOString(),
-          executionSource: "LHM_IA",
+          executionSource: "LHM",
           stageLabel: "Finalizada",
         },
       }));
@@ -2056,7 +2039,7 @@ export default function ExperimentContentGenerationTab({
           requestedAt: previous["landing-html"]?.requestedAt ?? nowIso,
           startedAt: previous["landing-html"]?.startedAt ?? nowIso,
           completedAt: new Date().toISOString(),
-          executionSource: "LHM_IA",
+          executionSource: "LHM",
           stageLabel: "Falhou",
           errorMessage: summary,
         },
@@ -2072,9 +2055,9 @@ export default function ExperimentContentGenerationTab({
       const sectionIndex = CONTENT_GENERATION_SECTIONS.findIndex(
         (item) => item.key === section.key,
       );
-      const queuedSections = CONTENT_GENERATION_SECTIONS.slice(
-        sectionIndex + 1,
-      ).map((item) => item.key);
+      const queuedSections = CONTENT_GENERATION_SECTIONS.slice(sectionIndex + 1)
+        .map((item) => item.key)
+        .filter((key) => key !== "landing-html");
 
       setAutoQueue({
         isActive: queuedSections.length > 0,
@@ -2325,56 +2308,43 @@ export default function ExperimentContentGenerationTab({
                     <p className="text-muted mb-0">{section.description}</p>
                     {section.key === "landing-html" ? (
                       <p className="small text-body-secondary mt-2 mb-0">
-                        Nesta etapa, o sistema gera duas versões públicas da landing
-                        com a mesma entrada canônica: uma determinística (LHM) e outra via IA.
+                        Geração manual do HTML final da landing. Execute LHM e IA em botões separados.
                       </p>
                     ) : null}
                   </div>
                   <div className="d-flex align-items-start flex-wrap gap-2">
                     {section.key === "landing-html" ? (
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={() => void handleGenerateLandingDualHtml()}
-                        disabled={
-                          isGeneratingWithLhm ||
-                          isGeneratingSection ||
-                          autoQueue.isActive ||
-                          isLandingFlowBlockedByImageGeneration
-                        }
-                        title="Gera as duas versões públicas do HTML final com a mesma entrada: LHM determinístico + IA."
-                      >
-                        {isGeneratingWithLhm ? (
-                          <span className="d-inline-flex align-items-center gap-1">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Gerando LHM + IA...
-                          </span>
-                        ) : autoQueue.isActive ? (
-                          <span className="d-inline-flex align-items-center gap-1">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Fila em execução...
-                          </span>
-                        ) : isLandingFlowBlockedByImageGeneration ? (
-                          <span className="d-inline-flex align-items-center gap-1">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Gerando imagens...
-                          </span>
-                        ) : (
-                          "Gerar HTML (LHM + IA)"
-                        )}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-outline-info btn-sm"
+                          onClick={() => void handleGenerateLandingLhm()}
+                          disabled={
+                            isGeneratingWithLhm ||
+                            isGeneratingSection ||
+                            autoQueue.isActive ||
+                            isLandingFlowBlockedByImageGeneration
+                          }
+                          title="Gera somente a variante determinística com LHM."
+                        >
+                          {isGeneratingWithLhm ? "Gerando com LHM..." : "Gerar com LHM"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => void handleGenerateSection(section)}
+                          disabled={
+                            isGeneratingSection ||
+                            isGeneratingWithLhm ||
+                            autoQueue.isActive ||
+                            isLandingFlowBlockedByImageGeneration
+                          }
+                          title='Solicita ao Worker IA a geração da etapa "HTML da Landing".'
+                        >
+                          {isGeneratingSection &&
+                          pendingGenerationSection === section.key ? "Gerando com IA..." : "Gerar com IA"}
+                        </button>
+                      </>
                     ) : (
                       <button
                         type="button"

@@ -33,8 +33,8 @@ Regras fixas da etapa:
 18. `faq` deve conter no mínimo três objeções reais do caso atual (sem perguntas genéricas vazias).
 19. `ctaBlocks` deve conter no mínimo duas variações posicionais de CTA (ex.: hero+final ou mid+final), mantendo coerência com `primaryCTA`.
 20. `ctaUrl` nunca pode conter placeholders (ex.: `{slug}`); sempre retornar URL resolvida para o fluxo atual.
-21. Esta etapa acontece **antes** do wireframe: a copy **não pode depender** de campos, `sectionId` ou estrutura do `landingPageWireframe`.
-22. Estruture a copy com ids e blocos semânticos canônicos próprios, para o wireframe posterior mapear layout sem alterar promessa/argumentação.
+21. Quando `CASE_DATA` incluir `landingPageWireframe` com `copySlots`, cada item de `bodySections` deve informar `sectionId` + `slotId` exatamente como definidos no wireframe (sem inventar ids e sem reutilizar slots de hero).
+22. Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual para manter compatibilidade de contrato com o backend.
 23. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
 24. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
 
@@ -68,13 +68,14 @@ Campos obrigatórios:
 - primaryCTA
 - complianceNotes
 - hero { eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy, ctaLabel, ctaUrl, ctaMatchNotes }
-- bodySections[] com sectionId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
+- bodySections[] com sectionId, slotId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
 - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
 - faq[] com question, answer, objectionTag
 - consistencyChecks[] com check, status (PASS/FAIL/WARNING), details
 
 Critérios mínimos de aceite no próprio output:
 - `bodySections.length >= 4`
+- Se `landingPageWireframe.copySlots` existir, `bodySections[i].slotId` deve pertencer aos copySlots da `sectionId` correspondente.
 - cada `bodySections[i].bullets.length >= 3`
 - `faq.length >= 3`
 - `ctaBlocks.length >= 2`

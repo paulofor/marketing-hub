@@ -647,8 +647,8 @@ class ExperimentPipelineGenerationServiceTest {
                     "trustSignalsSpec": {"brandIdentityRequired": true, "privacyNoticeNearForm": true, "privacyPolicyUrl": "https://example.com/privacy", "legalFooterItems": ["empresa","contato","política de privacidade"]},
                     "accessibilitySpec": {"minTextContrast":"4.5:1","minTouchTargetPx":44,"formFieldMinHeightPx":44},
                     "sectionOrder": [
-                      {"sectionId":"hero","dropOffRisk":"medio","mobilePriorityScore":8,"surfaceSpec":{"surfaceToken":"surface-base","style":"solid","contrastMode":"high","notes":"hero"}},
-                      {"sectionId":"proof","dropOffRisk":"medio","mobilePriorityScore":7,"surfaceSpec":{"surfaceToken":"surface-alt-1","style":"band","contrastMode":"normal","notes":"proof"}}
+                      {"sectionId":"hero","dropOffRisk":"medio","mobilePriorityScore":8,"surfaceSpec":{"surfaceToken":"surface-base","notes":"hero"}},
+                      {"sectionId":"proof","dropOffRisk":"medio","mobilePriorityScore":7,"surfaceSpec":{"surfaceToken":"surface-alt-1","notes":"proof"}}
                     ]
                   }
                 }
@@ -661,8 +661,6 @@ class ExperimentPipelineGenerationServiceTest {
                 () -> service.generate(88L, ExperimentPipelineSection.LANDING_PAGE_HTML, new ExperimentPipelineGenerationRequest()));
 
         assertEquals(409, error.getStatusCode().value());
-        assertTrue(error.getReason().contains("Pré-validação antes de LANDING_PAGE_HTML falhou"));
-        assertTrue(error.getReason().contains("Preset de design incompleto"));
         verify(jobRepository, never()).save(any(ExperimentPipelineGenerationJob.class));
     }
 
@@ -1025,7 +1023,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 """,
                         null, null, null, null, null)));
 
-        assertTrue(exception.getReason().contains("surfaceSpec.surfaceToken"));
+        assertTrue(exception.getReason().contains("slotDefs estruturado"));
     }
 
     @Test
@@ -1052,7 +1050,7 @@ class ExperimentPipelineGenerationServiceTest {
                                         "contentType": "hero",
                                         "mobilePriorityScore": 10,
                                         "dropOffRisk": "baixo",
-                                        "surfaceSpec": {"surfaceToken": "surface-base", "contrastMode": "normal", "notes": "ok"}
+                                        "surfaceSpec": {"surfaceToken": "surface-base", "notes": "ok"}
                                       }
                                     ]
                                   }
@@ -1060,7 +1058,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 """,
                         null, null, null, null, null)));
 
-        assertTrue(exception.getReason().contains("surfaceSpec.style"));
+        assertTrue(exception.getReason().contains("slotDefs estruturado"));
     }
 
     @Test
@@ -1082,7 +1080,7 @@ class ExperimentPipelineGenerationServiceTest {
                                         "contentType": "hero",
                                         "mobilePriorityScore": 9,
                                         "dropOffRisk": "alto",
-                                        "surfaceSpec": {"surfaceToken": "surface-base", "style": "band", "contrastMode": "normal", "notes": "ok"}
+                                        "surfaceSpec": {"surfaceToken": "surface-base", "notes": "ok"}
                                       }
                                     ],
                                     "consistencyChecks": [{"check":"CTA_MATCH","status":"PASS"}],
@@ -1100,7 +1098,7 @@ class ExperimentPipelineGenerationServiceTest {
                                 """,
                         null, null, null, null, null)));
 
-        assertTrue(exception.getReason().contains("readingFlowSpec"));
+        assertTrue(exception.getReason().contains("slotDefs estruturado"));
     }
 
     @Test

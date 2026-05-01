@@ -31,13 +31,14 @@ Regras:
 15. Para páginas de venda/captação, definir obrigatoriamente `componentPresets.proof.showIdentity = true` (não omitir e não usar `false`).
 16. Incorporar no preset os padrões da seção "Padrões de CSS e componentes por elemento" de `docs/pesquisa-profunda/pesquisa-profunda-html-estilos.md`, cobrindo explicitamente: `<p>`, `<h1>`, `<h2>`, `<h3>`, `<ul>/<li>`, `<button>`/CTA, `<form>`, `<label>`, `<input>`, `<img>`.
 17. Para cada elemento listado, declarar atributos visuais trabalhados e os tokens correspondentes no preset (tipografia, espaçamento, dimensões, contraste, foco e superfície), mantendo consistência com `theme` e `componentPresets.primitives`.
-18. `lhmRuntime` é obrigatório e deve conter:
+18. Distribuir no preset (de forma natural e não mecânica) diretrizes de acabamento premium para **todas** as superfícies e variações (`.lhm-surface-band`, `.lhm-surface-solid`, `.lhm-surface-gradient-soft`, `.lhm-surface-image-tint`), combinando ao menos: borda sutil, raio coerente, sombra de profundidade, respiro interno responsivo, controle de overflow e estados visuais consistentes com os tokens de `theme.radius`, `theme.shadow`, `theme.spacing` e `theme.palette`.
+19. `lhmRuntime` é obrigatório e deve conter:
    - `baseCss`: string com o CSS base que sustenta classes/superfícies do preset.
    - `cssVersion`: string de versão da malha CSS (ex.: `lhm-css-v1`).
    - `cssNotes`: string curta explicando escopo e compatibilidade da versão.
-19. Nunca omitir `lhmRuntime` e nunca serializar esse bloco como texto/JSON escapado (deve ser objeto JSON real).
-20. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
-21. A resposta deve aderir estritamente ao schema JSON canônico da etapa `landingPageDesignPreset`; não incluir campos fora do contrato.
+20. Nunca omitir `lhmRuntime` e nunca serializar esse bloco como texto/JSON escapado (deve ser objeto JSON real).
+21. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
+22. A resposta deve aderir estritamente ao schema JSON canônico da etapa `landingPageDesignPreset`; não incluir campos fora do contrato.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

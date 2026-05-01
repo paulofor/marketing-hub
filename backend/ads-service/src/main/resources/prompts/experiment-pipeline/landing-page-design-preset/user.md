@@ -8,6 +8,7 @@ Regras mandatórias da Sprint 1:
 - Garantir legibilidade e toque mínimo de CTA/form com foco visual perceptível.
 - Incorporar no preset os padrões da seção "Padrões de CSS e componentes por elemento" de `docs/pesquisa-profunda/pesquisa-profunda-html-estilos.md`, cobrindo explicitamente os elementos: `<p>`, `<h1>`, `<h2>`, `<h3>`, `<ul>/<li>`, `<button>`/CTA, `<form>`, `<label>`, `<input>`, `<img>`.
 - Para cada elemento acima, declarar no preset os atributos visuais relevantes (tipografia, espaçamento, dimensão, contraste, foco, superfície, etc.) e os tokens correspondentes.
+- Distribuir no preset (de forma natural e não mecânica) diretrizes de acabamento premium para **todas** as superfícies e variações (`.lhm-surface-band`, `.lhm-surface-solid`, `.lhm-surface-gradient-soft`, `.lhm-surface-image-tint`), combinando ao menos: borda sutil, raio coerente, sombra de profundidade, respiro interno responsivo, controle de overflow e estados visuais consistentes com os tokens de `theme.radius`, `theme.shadow`, `theme.spacing` e `theme.palette`.
 - A etapa deve exigir resposta estritamente aderente ao schema JSON canônico de `landingPageDesignPreset`, sem campos fora do contrato.
 
 Saída:

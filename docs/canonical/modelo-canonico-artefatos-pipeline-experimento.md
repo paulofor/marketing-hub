@@ -379,13 +379,22 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 
 ```json
 {
-  "generationPrompt": "string"
+  "images": [
+    {
+      "sectionId": "string",
+      "slotId": "string",
+      "imageBindingKey": "string",
+      "imagePrompt": "string"
+    }
+  ]
 }
 ```
 
 > **Responsabilidade canônica (vigente):**
-> - A etapa `landingPageImagePlanning` é responsável somente por gerar o prompt final de execução para o modelo de imagem.
+> - A etapa `landingPageImagePlanning` é responsável por gerar os prompts finais por imagem (`images[].imagePrompt`) que serão enviados ao modelo de imagem.
 > - Os bindings estruturais de imagem (por seção) são definidos no `landingPageWireframe` e apenas consumidos nesta etapa.
+> - O output mínimo obrigatório desta etapa é a lista `images[]` com `sectionId`, `slotId`, `imageBindingKey` e `imagePrompt` em todos os itens.
+> - `slotId` deve existir no wireframe/copy da mesma `sectionId`, para manter vínculo explícito entre prompt visual e copy aprovada.
 
 ## `landingPageDesignPreset`
 

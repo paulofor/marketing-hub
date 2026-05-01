@@ -1518,10 +1518,90 @@ public class ExperimentPipelineGenerationService {
         }
         Map<String, Object> planningRoot = readObject(imagePlanningContent, "Planejamento de imagens inválido");
         Map<String, Object> planningPayload = unwrapSectionPayload(planningRoot, "landingPageImagePlanning");
-        String generationPrompt = asTrimmedString(planningPayload.get("generationPrompt"));
-        if (!StringUtils.hasText(generationPrompt)) {
+        Object rawImages = planningPayload.get("images");
+        if (!(rawImages instanceof List<?> images) || images.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Planejamento de imagens inválido: generationPrompt é obrigatório");
+                    "Planejamento de imagens inválido: images[] com prompts é obrigatório");
+        }
+        for (Object rawImage : images) {
+            if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Planejamento de imagens inválido: cada item de images[] deve ser objeto");
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> image = (Map<String, Object>) rawImageMap;
+            String sectionId = asTrimmedString(image.get("sectionId"));
+            String slotId = asTrimmedString(image.get("slotId"));
+            String imageBindingKey = asTrimmedString(image.get("imageBindingKey"));
+            String imagePrompt = asTrimmedString(image.get("imagePrompt"));
+            if (!StringUtils.hasText(sectionId) || !StringUtils.hasText(slotId) || !StringUtils.hasText(imageBindingKey) || !StringUtils.hasText(imagePrompt)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Planejamento de imagens inválido: images[] exige sectionId, slotId, imageBindingKey e imagePrompt");
+            }
+        }
+        Map<String, Set<String>> allowedSlotsBySection = loadAllowedCopySlotsBySection(experiment);
+        if (!allowedSlotsBySection.isEmpty()) {
+            for (Object rawImage : images) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> image = (Map<String, Object>) rawImage;
+                String sectionId = asTrimmedString(image.get("sectionId"));
+                String slotId = asTrimmedString(image.get("slotId"));
+                Set<String> allowedSlots = allowedSlotsBySection.get(sectionId);
+                if (allowedSlots == null || allowedSlots.isEmpty() || !allowedSlots.contains(slotId)) {
+                    throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "Planejamento de imagens inválido: slotId '" + slotId
+                                    + "' não pertence aos copySlots da sectionId '" + sectionId + "'");
+                }
+            }
+        }
+        List<String> expectedBindings = loadWireframeImageBindings(experiment);
+        if (!expectedBindings.isEmpty()) {
+            Set<String> plannedBindings = new LinkedHashSet<>();
+            for (Object rawImage : images) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> image = (Map<String, Object>) rawImage;
+                String sectionId = asTrimmedString(image.get("sectionId"));
+                String imageBindingKey = asTrimmedString(image.get("imageBindingKey"));
+                plannedBindings.add(sectionId + "/" + imageBindingKey);
+            }
+            Set<String> missing = new LinkedHashSet<>(expectedBindings);
+            missing.removeAll(plannedBindings);
+            Set<String> extra = new LinkedHashSet<>(plannedBindings);
+            extra.removeAll(expectedBindings);
+            if (!missing.isEmpty() || !extra.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Planejamento de imagens inválido: quantidade e bindings de images[] devem corresponder ao wireframe. missing="
+                                + missing + " extra=" + extra);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> loadWireframeImageBindings(Experiment experiment) {
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> wireframeRoot = readObject(experiment.getLandingPageWireframe(), "Wireframe da landing inválido");
+            Map<String, Object> wireframePayload = unwrapSectionPayload(wireframeRoot, "landingPageWireframe");
+            if (!(wireframePayload.get("images") instanceof List<?> rawImages) || rawImages.isEmpty()) {
+                return List.of();
+            }
+            Set<String> bindings = new LinkedHashSet<>();
+            for (Object rawImage : rawImages) {
+                if (!(rawImage instanceof Map<?, ?> rawImageMap)) {
+                    continue;
+                }
+                Map<String, Object> image = (Map<String, Object>) rawImageMap;
+                String sectionId = asTrimmedString(image.get("sectionId"));
+                String imageBindingKey = asTrimmedString(image.get("imageBindingKey"));
+                if (StringUtils.hasText(sectionId) && StringUtils.hasText(imageBindingKey)) {
+                    bindings.add(sectionId + "/" + imageBindingKey);
+                }
+            }
+            return List.copyOf(bindings);
+        } catch (RuntimeException ex) {
+            return List.of();
         }
     }
 
@@ -2910,6 +2990,7 @@ public class ExperimentPipelineGenerationService {
                 "properties", Map.ofEntries(
                         Map.entry("sectionId", stringSchema()),
                         Map.entry("sectionName", stringSchema()),
+                        Map.entry("slotId", stringSchema()),
                         Map.entry("imageBindingKey", Map.of("type", "string", "pattern", "^[a-z0-9_\\-]{3,64}$")),
                         Map.entry("imageRole", stringSchema()),
                         Map.entry("conversionRole", stringSchema()),
@@ -2964,6 +3045,7 @@ public class ExperimentPipelineGenerationService {
                 "required", List.of(
                         "sectionId",
                         "sectionName",
+                        "slotId",
                         "imageBindingKey",
                         "imageRole",
                         "conversionRole",
@@ -2986,9 +3068,14 @@ public class ExperimentPipelineGenerationService {
                 "type", "object",
                 "additionalProperties", false,
                 "properties", Map.ofEntries(
+                        Map.entry("images", Map.of(
+                                "type", "array",
+                                "minItems", 1,
+                                "items", imageSchema
+                        )),
                         Map.entry("generationPrompt", stringSchema())
                 ),
-                "required", List.of("generationPrompt")
+                "required", List.of("images")
         );
     }
 

@@ -243,8 +243,10 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).contains("Responda em JSON válido e estritamente aderente ao artefato `landingPageImagePlanning`.");
         assertThat(userPrompt).contains("Campos obrigatórios:");
-        assertThat(userPrompt).contains("- generationPrompt");
-        assertThat(userPrompt).contains("Esta etapa é responsável **somente** por criar o prompt final que será enviado ao modelo de imagem.");
+        assertThat(userPrompt).contains("- images[] (mínimo 1 item)");
+        assertThat(userPrompt).contains("- images[].slotId");
+        assertThat(userPrompt).contains("- images[].imagePrompt");
+        assertThat(userPrompt).contains("Esta etapa é responsável **somente** por criar o prompt final");
         assertThat(userPrompt).contains("Toda estrutura de imagem (`sectionId`, `imageBindingKey`, cobertura por seção, layout e bindings) é recebida do wireframe e **não pode ser alterada**.");
     }
 

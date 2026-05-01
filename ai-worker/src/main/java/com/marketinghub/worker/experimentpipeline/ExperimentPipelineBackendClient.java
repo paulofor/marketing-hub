@@ -2,6 +2,7 @@ package com.marketinghub.worker.experimentpipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.util.UrlUtils;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +66,13 @@ public class ExperimentPipelineBackendClient {
 
     public void complete(UUID jobId, ExperimentPipelineJobCompletionPayload payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/experiment-pipeline/jobs/", jobId.toString(), "/complete");
-        log.info("POST /complete do pipeline (jobId={}, url={}, keys={}, landingHtmlDiag={})",
+        log.info("POST /complete do pipeline (jobId={}, url={}, keys={}, landingHtmlDiag={}, requestBodyJsonRaw={}, rawResponseRaw={})",
                 jobId,
                 url,
                 summarizeCompletionPayloadKeys(payload),
-                summarizeLandingHtmlDiagnostic(payload));
+                summarizeLandingHtmlDiagnostic(payload),
+                summarizeRawPayload(payload != null ? payload.requestBodyJson() : null),
+                summarizeRawPayload(payload != null ? payload.rawResponse() : null));
         try {
             webClient.post()
                     .uri(url)
@@ -92,6 +95,35 @@ public class ExperimentPipelineBackendClient {
             }
             throw ex;
         }
+    }
+
+
+    public void recordGenerationLog(UUID jobId,
+                                    String requestBodyJson,
+                                    String rawResponse,
+                                    String model,
+                                    Integer inputTokens,
+                                    Integer outputTokens,
+                                    BigDecimal costUsd) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/ai/generations/internal");
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("domain", "experiment-pipeline");
+        body.put("referenceId", jobId != null ? jobId.toString() : null);
+        body.put("prompt", requestBodyJson);
+        body.put("rawResponse", rawResponse);
+        body.put("model", model);
+        body.put("inputTokens", inputTokens);
+        body.put("outputTokens", outputTokens);
+        body.put("costUsd", costUsd);
+        webClient.post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .doOnSuccess(ignored -> log.info("Generation log persisted for experiment pipeline job {}", jobId))
+                .doOnError(err -> log.warn("Failed to persist generation log for experiment pipeline job {}", jobId, err))
+                .onErrorResume(err -> Mono.empty())
+                .block();
     }
 
     public void fail(UUID jobId, String errorMessage) {
@@ -125,6 +157,15 @@ public class ExperimentPipelineBackendClient {
                             "GET %s failed with status %s: %s".formatted(uri, status, body))));
         }
         return response.bodyToFlux(ExperimentPipelineJobDto.class);
+    }
+
+
+    private String summarizeRawPayload(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return "[empty]";
+        }
+        String compact = rawJson.replaceAll("\s+", " ").trim();
+        return compact.length() > 2000 ? compact.substring(0, 2000) + "..." : compact;
     }
 
     private String summarizeCompletionPayloadKeys(ExperimentPipelineJobCompletionPayload payload) {

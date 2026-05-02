@@ -83,6 +83,7 @@ export default function ExperimentDetailPage() {
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -190,6 +191,23 @@ export default function ExperimentDetailPage() {
           "Não foi possível liberar o experimento para o Facebook.")
         : "Não foi possível liberar o experimento para o Facebook.";
       toast.error(message);
+    }
+  };
+
+  const handleStartWireframe = async () => {
+    try {
+      setIsStartingWireframe(true);
+      await axios.post(`/api/experiments/${expId}/geralanding/wireframe/start`);
+      toast.success("Solicitação para iniciar o WireFrame registrada.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível iniciar o WireFrame.")
+        : "Não foi possível iniciar o WireFrame.";
+      toast.error(message);
+    } finally {
+      setIsStartingWireframe(false);
     }
   };
 
@@ -1296,7 +1314,30 @@ export default function ExperimentDetailPage() {
         </Tabs.Content>
         <Tabs.Content value="gera-landing" asChild>
           <div className="card">
-            <div className="card-body text-muted">Em breve.</div>
+            <div className="card-body d-flex flex-column gap-3">
+              <h5 className="card-title mb-0">Gera WireFrame</h5>
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleStartWireframe}
+                  disabled={isStartingWireframe}
+                >
+                  {isStartingWireframe ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
+                      Iniciando...
+                    </>
+                  ) : (
+                    "Iniciar"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </Tabs.Content>
         <Tabs.Content value="sample-emails" asChild>

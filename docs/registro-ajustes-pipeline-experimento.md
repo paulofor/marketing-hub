@@ -75,6 +75,53 @@ Registrar, de forma rastreável, cada erro identificado em execução, o diagnó
 
 > Novas entradas sempre no topo.
 
+### INC-0019 — Reforço da ordem de camadas CSS no preset para preservar acabamento premium
+
+- **Data/Hora (UTC):** 2026-05-02
+- **Responsável:** Assistente Codex
+- **Módulo:** backend (`ads-service`) + ai-worker + documentação operacional
+- **Ambiente:** Repositório local (`/workspace/marketing-hub`)
+- **Execução/Teste:** Revisão pós-feedback do PR "Reforça instruções de ordem de camadas CSS no preset de landing".
+
+#### 1) Erro observado
+- **Sintoma:** o visual de presets com acabamento premium era degradado por sobrescritas destrutivas quando o modelo alterava a ordem das classes/camadas CSS no `lhmRuntime.baseCss`.
+- **Endpoint/rota/fila:** etapa `LANDING_PAGE_DESIGN_PRESET` do pipeline de experimento.
+- **Status code:** sem novo código HTTP nesta revisão local (ajuste preventivo de qualidade visual).
+- **Mensagem de erro literal:** n/a.
+- **Payload enviado (literal):** n/a (problema identificado no resultado visual/CSS gerado).
+
+#### 2) Diagnóstico (MCP + Cânone)
+- **Logs consultados via MCP:** não aplicável nesta revisão (sem incidente HTTP novo).
+- **Dados de banco consultados via MCP:** não aplicável.
+- **Trecho canônico consultado:** `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (artefato `landingPageDesignPreset`).
+- **Validação/regra que rejeitou:** n/a.
+- **Causa raiz:** falta de instrução suficientemente forte sobre precedência e ordem de camadas CSS na geração do preset.
+
+#### 3) Divergência (formato obrigatório para 422)
+- **O que o modelo entregou (literal):** CSS com ordem inconsistente de camadas (potencialmente aplicando efeitos/conteúdo antes de base/superfície).
+- **O que a especificação esperava (literal):** ordem controlada de camadas (`base → componentes → utilitários → overrides`; superfícies/background antes de conteúdo/efeitos).
+- **Diferença objetiva:** ausência de garantia explícita de precedência de camadas no prompt.
+- **Ação corretiva recomendada:** reforçar regra mandatória em ambos os prompts (backend e ai-worker) para travar ordem e minimizar sobrescrita destrutiva.
+
+#### 4) Ajuste aplicado
+- **Tipo de ajuste:** prompt + registro operacional.
+- **Arquivos alterados:**
+  - `backend/ads-service/src/main/resources/prompts/experiment-pipeline/landing-page-design-preset/user.md`
+  - `ai-worker/src/main/resources/prompts/experiment/landing-design-preset.md`
+  - `docs/registro-ajustes-pipeline-experimento.md`
+- **Resumo técnico da mudança:** inclusão de diretriz mandatória para preservar ordem de declarações e camadas no `lhmRuntime.baseCss`, com foco em manter superfícies/background antes de conteúdo/efeitos e evitar degradação de acabamento premium.
+
+#### 5) Reteste
+- **Procedimento de reteste:** execução de teste unitário direcionado no backend + tentativa de teste direcionado no ai-worker.
+- **Resultado:** backend aprovado; ai-worker bloqueado por dependência privada não resolvida no ambiente.
+- **Evidências (logs/ids/prints):** `mvn -q -f backend/ads-service/pom.xml -Dtest=PromptAttributeServiceTest test` (sucesso) e `mvn -q -f ai-worker/pom.xml -Dtest=PromptTemplateRendererTest test` (falha 401 ao resolver `com.marketinghub:ads-service`).
+- **Status final:** Parcial.
+
+#### 6) Próximo passo
+- **Ação seguinte:** validar em execução real da etapa `LANDING_PAGE_DESIGN_PRESET` se a ordem de camadas permanece estável em múltiplos nichos/layouts e monitorar regressão visual.
+- **Dono da ação:** time ai-worker + backend + operação do pipeline.
+- **Prazo:** próximo ciclo assistido de experimento.
+
 ### INC-0018 — Alinhamento canônico de `slotId` na `landingPageCopy` para reduzir 422 sem reprocessamento
 
 - **Data/Hora (UTC):** 2026-05-01

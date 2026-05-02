@@ -41,6 +41,12 @@ Regras:
 22. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
 23. A resposta deve aderir estritamente ao schema JSON canônico da etapa `landingPageDesignPreset`; não incluir campos fora do contrato.
 
+24. Em `lhmRuntime.baseCss`, separar responsabilidades de estilo para evitar conflitos de cascata:
+   - `.lhm-card` controla apenas estrutura/componente (padding, raio, borda, sombra, blur) e deve consumir variáveis (`--lhm-card-bg`, `--lhm-card-border`, `--lhm-card-text`, `--lhm-card-shadow`) sem hardcode destrutivo de `background`.
+   - `.lhm-surface-*` define aparência de superfície por meio dessas variáveis (especialmente `--lhm-card-bg` e `--lhm-card-border`), sem competir com a estrutura do card.
+   - `.lhm-high`, `.lhm-normal` e `.lhm-soft` precisam produzir contraste visual distinto entre si (texto principal, texto secundário/muted e links), proibido manter as três classes com a mesma cor final.
+   - Garantir uma base comum para superfícies (`.lhm-surface`) aplicada às variações (`.lhm-surface-band`, `.lhm-surface-solid`, `.lhm-surface-gradient-soft`, `.lhm-surface-image-tint`) para preservar `position`, `overflow` e consistência de renderização.
+
 CASE_DATA
 {{CASE_DATA_BLOCK}}
 

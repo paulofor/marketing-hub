@@ -1233,6 +1233,9 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="landing" className="nav-link">
             Landing
           </Tabs.Trigger>
+          <Tabs.Trigger value="gera-landing" className="nav-link">
+            Gera landing
+          </Tabs.Trigger>
           <Tabs.Trigger value="sample-emails" className="nav-link">
             E-mails de amostra
           </Tabs.Trigger>
@@ -1290,6 +1293,11 @@ export default function ExperimentDetailPage() {
         </Tabs.Content>
         <Tabs.Content value="landing" asChild>
           <LandingTab experiment={data} />
+        </Tabs.Content>
+        <Tabs.Content value="gera-landing" asChild>
+          <div className="card">
+            <div className="card-body text-muted">Em breve.</div>
+          </div>
         </Tabs.Content>
         <Tabs.Content value="sample-emails" asChild>
           <SampleEmailsTab

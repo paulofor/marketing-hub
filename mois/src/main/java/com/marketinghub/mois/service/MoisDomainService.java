@@ -1359,8 +1359,12 @@ public class MoisDomainService {
         if ("HOTMART".equals(source)) {
             List<SourceLead> hotmartLeads = fetchHotmartProductLeads(niche, limitPerSource);
             if (!hotmartLeads.isEmpty()) {
+                log.info("mois_hotmart_leads_resolved niche={} leadsCount={} limitPerSource={}",
+                        niche, hotmartLeads.size(), limitPerSource);
                 return hotmartLeads;
             }
+            log.warn("mois_hotmart_leads_fallback_activated niche={} reason=no_hotmart_leads_resolved limitPerSource={}",
+                    niche, limitPerSource);
         }
         List<SourceLead> fallback = new ArrayList<>();
         for (int sourceRank = 1; sourceRank <= limitPerSource; sourceRank++) {
@@ -1371,6 +1375,8 @@ public class MoisDomainService {
 
     private List<SourceLead> fetchHotmartProductLeads(String niche, int limitPerSource) {
         String marketplaceUrl = buildCollectionSourceUrl("HOTMART", niche, 1);
+        log.info("mois_hotmart_product_url_fetch_started niche={} url={} limitPerSource={}",
+                niche, marketplaceUrl, limitPerSource);
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(marketplaceUrl))
@@ -1380,6 +1386,8 @@ public class MoisDomainService {
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null) {
+                log.warn("mois_hotmart_product_url_fetch_rejected niche={} statusCode={} hasBody={}",
+                        niche, response.statusCode(), response.body() != null);
                 return List.of();
             }
             Pattern cardPattern = Pattern.compile(
@@ -1398,6 +1406,8 @@ public class MoisDomainService {
                     leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl));
                 }
             }
+            log.info("mois_hotmart_product_url_fetch_finished niche={} statusCode={} parsedLeads={} responseLength={}",
+                    niche, response.statusCode(), leads.size(), response.body().length());
             return leads;
         } catch (Exception ex) {
             log.warn("mois_hotmart_product_url_fetch_failed niche={} reason={}", niche, ex.getMessage());

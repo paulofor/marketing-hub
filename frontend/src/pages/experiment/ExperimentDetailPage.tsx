@@ -14,7 +14,6 @@ import { getExperimentStageLabel } from "./stageLabels";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
-import EmailsTab from "./EmailsTab";
 import SampleEmailsTab from "./SampleEmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -30,7 +29,6 @@ import {
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
 import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
-import DeliverablesTab from "./DeliverablesTab";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
@@ -1235,19 +1233,11 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="landing" className="nav-link">
             Landing
           </Tabs.Trigger>
-          {hasEmailSteps ? (
-            <Tabs.Trigger value="emails" className="nav-link">
-              E-mails
-            </Tabs.Trigger>
-          ) : null}
           <Tabs.Trigger value="sample-emails" className="nav-link">
             E-mails de amostra
           </Tabs.Trigger>
           <Tabs.Trigger value="lead-portal" className="nav-link">
             Portal do Lead
-          </Tabs.Trigger>
-          <Tabs.Trigger value="deliverables" className="nav-link">
-            Entregáveis
           </Tabs.Trigger>
           <Tabs.Trigger value="content-structure" className="nav-link">
             Estrutura de conteúdo
@@ -1301,17 +1291,6 @@ export default function ExperimentDetailPage() {
         <Tabs.Content value="landing" asChild>
           <LandingTab experiment={data} />
         </Tabs.Content>
-        {hasEmailSteps ? (
-          <Tabs.Content value="emails" asChild>
-            <EmailsTab
-              experimentId={expId}
-              requestedEmails={data.emailsToGenerate}
-              journeyId={journeyAssignments?.journeyId ?? undefined}
-              steps={templateSteps}
-              experimentName={data.name}
-            />
-          </Tabs.Content>
-        ) : null}
         <Tabs.Content value="sample-emails" asChild>
           <SampleEmailsTab
             experimentId={expId}
@@ -1323,9 +1302,6 @@ export default function ExperimentDetailPage() {
         </Tabs.Content>
         <Tabs.Content value="lead-portal" asChild>
           <LeadPortalFlowTab experiment={data} />
-        </Tabs.Content>
-        <Tabs.Content value="deliverables" asChild>
-          <DeliverablesTab experiment={data} nicheName={niche?.name} />
         </Tabs.Content>
         <Tabs.Content value="content-structure" asChild>
           <ExperimentContentGenerationTab

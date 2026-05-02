@@ -17,7 +17,6 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 
 class MoisDomainServiceTest {
 
@@ -27,9 +26,7 @@ class MoisDomainServiceTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        MoisBackendPersistenceProperties properties = new MoisBackendPersistenceProperties();
-        properties.setBaseUrl("");
-        service = new MoisDomainService(new MoisBackendPersistenceGateway(properties, new RestTemplateBuilder()));
+        service = new MoisDomainService();
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/oferta-a", new HtmlHandler("""
                 <html><head><title>Oferta A</title></head>

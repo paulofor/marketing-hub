@@ -1,4 +1,4 @@
-{prompt-regra-geral}
+{prompt-regras-globais}
 
 
 template_id: landing-wireframe

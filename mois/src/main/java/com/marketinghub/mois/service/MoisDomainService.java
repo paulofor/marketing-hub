@@ -1375,8 +1375,9 @@ public class MoisDomainService {
 
     private List<SourceLead> fetchHotmartProductLeads(String niche, int limitPerSource) {
         String marketplaceUrl = buildCollectionSourceUrl("HOTMART", niche, 1);
-        log.info("mois_hotmart_product_url_fetch_started niche={} url={} limitPerSource={}",
-                niche, marketplaceUrl, limitPerSource);
+        String httpMethod = "GET";
+        log.info("mois_hotmart_product_url_fetch_started niche={} method={} url={} limitPerSource={}",
+                niche, httpMethod, marketplaceUrl, limitPerSource);
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(marketplaceUrl))
@@ -1386,8 +1387,8 @@ public class MoisDomainService {
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null) {
-                log.warn("mois_hotmart_product_url_fetch_rejected niche={} statusCode={} hasBody={}",
-                        niche, response.statusCode(), response.body() != null);
+                log.warn("mois_hotmart_product_url_fetch_rejected niche={} method={} requestedUrl={} finalUrl={} statusCode={} hasBody={}",
+                        niche, httpMethod, marketplaceUrl, response.uri(), response.statusCode(), response.body() != null);
                 return List.of();
             }
             Pattern cardPattern = Pattern.compile(
@@ -1406,8 +1407,8 @@ public class MoisDomainService {
                     leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl));
                 }
             }
-            log.info("mois_hotmart_product_url_fetch_finished niche={} statusCode={} parsedLeads={} responseLength={}",
-                    niche, response.statusCode(), leads.size(), response.body().length());
+            log.info("mois_hotmart_product_url_fetch_finished niche={} method={} requestedUrl={} finalUrl={} statusCode={} parsedLeads={} responseLength={}",
+                    niche, httpMethod, marketplaceUrl, response.uri(), response.statusCode(), leads.size(), response.body().length());
             return leads;
         } catch (Exception ex) {
             log.warn("mois_hotmart_product_url_fetch_failed niche={} reason={}", niche, ex.getMessage());

@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: Gera Landing API
+  version: 1.0.0
+  description: |
+    Contrato Swagger para disparo da etapa de wireframe no Gera Landing,
+    incluindo envio explícito do prompt montado, código da etapa e código do experimento.
+servers:
+  - url: http://191.252.181.168:8000
+paths:
+  /api/experiments/{experimentId}/geralanding/wireframe/start:
+    post:
+      tags:
+        - Gera Landing
+      summary: Inicia geração de wireframe da landing
+      description: |
+        Inicia a etapa de wireframe do Gera Landing para um experimento.
+        O payload documentado abaixo inclui os campos solicitados para rastreabilidade da execução.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          description: ID numérico interno do experimento.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeraLandingWireframeStartRequest'
+            examples:
+              exemploPadrao:
+                summary: Exemplo de disparo com prompt e códigos
+                value:
+                  experimentCode: EXP-2026-0019
+                  stageCode: LANDING_PAGE_WIREFRAME
+                  prompt:
+                    templateId: geralanding/wireframe/v1
+                    content: |
+                      [PROMPT FINAL MONTADO]
+                      Gerar wireframe da landing conforme regras globais e artefatos do experimento.
+      responses:
+        '202':
+          description: Etapa aceita para processamento assíncrono.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Experimento não encontrado.
+components:
+  schemas:
+    GeraLandingWireframeStartRequest:
+      type: object
+      required:
+        - experimentCode
+        - stageCode
+        - prompt
+      properties:
+        experimentCode:
+          type: string
+          description: Código legível do experimento (ex.: EXP-2026-0019).
+        stageCode:
+          type: string
+          description: Código da etapa do pipeline.
+          enum:
+            - LANDING_PAGE_WIREFRAME
+        prompt:
+          type: object
+          required:
+            - content
+          properties:
+            templateId:
+              type: string
+              description: Identificador da versão do template de prompt usado.
+            content:
+              type: string
+              description: Prompt final montado enviado ao motor de geração.

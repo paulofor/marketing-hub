@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-03-create-gera-landing-stage-execution
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: gera_landing_stage_execution
+      changes:
+        - createTable:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stage_code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: execution_requested_at
+                  type: DATETIME(3)
+                  defaultValueComputed: CURRENT_TIMESTAMP(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: prompt_template_id
+                  type: VARCHAR(191)
+              - column:
+                  name: prompt_content
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: gera_landing_stage_execution
+            columnNames: experiment_id, stage_code, execution_requested_at
+            constraintName: pk_gera_landing_stage_execution
+        - addForeignKeyConstraint:
+            baseTableName: gera_landing_stage_execution
+            baseColumnNames: experiment_id
+            referencedTableName: experiment
+            referencedColumnNames: id
+            constraintName: fk_gera_landing_stage_execution_experiment
+            onDelete: CASCADE
+        - createIndex:
+            tableName: gera_landing_stage_execution
+            indexName: idx_gera_landing_stage_execution_experiment
+            columns:
+              - column:
+                  name: experiment_id

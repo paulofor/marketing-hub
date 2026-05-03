@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: |
     Contrato Swagger para disparo da etapa de wireframe no Gera Landing,
-    incluindo envio explícito do prompt montado, código da etapa e código do experimento.
+    incluindo envio explícito do prompt montado e código da etapa.
 servers:
   - url: http://191.252.181.168:8000
 paths:
@@ -15,7 +15,7 @@ paths:
       summary: Inicia geração de wireframe da landing
       description: |
         Inicia a etapa de wireframe do Gera Landing para um experimento.
-        O payload documentado abaixo inclui os campos solicitados para rastreabilidade da execução.
+        O experimento é identificado exclusivamente pelo experimentId na URL; o payload contém apenas dados da etapa.
       parameters:
         - name: experimentId
           in: path
@@ -32,9 +32,8 @@ paths:
               $ref: '#/components/schemas/GeraLandingWireframeStartRequest'
             examples:
               exemploPadrao:
-                summary: Exemplo de disparo com prompt e códigos
+                summary: Exemplo de disparo com prompt e código da etapa
                 value:
-                  experimentCode: EXP-2026-0019
                   stageCode: LANDING_PAGE_WIREFRAME
                   prompt:
                     templateId: geralanding/wireframe/v1
@@ -53,13 +52,9 @@ components:
     GeraLandingWireframeStartRequest:
       type: object
       required:
-        - experimentCode
         - stageCode
         - prompt
       properties:
-        experimentCode:
-          type: string
-          description: Código legível do experimento (ex.: EXP-2026-0019).
         stageCode:
           type: string
           description: Código da etapa do pipeline.

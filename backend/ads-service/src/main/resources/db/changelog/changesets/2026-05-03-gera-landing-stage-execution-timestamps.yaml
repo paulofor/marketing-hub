@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-03-add-gera-landing-stage-execution-timestamps
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: created_at
+                  type: DATETIME(3)
+                  defaultValueComputed: CURRENT_TIMESTAMP(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processing_started_at
+                  type: DATETIME(3)
+              - column:
+                  name: completed_at
+                  type: DATETIME(3)

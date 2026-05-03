@@ -31,6 +31,15 @@ public class GeraLandingStageExecution {
     @Column(name = "execution_requested_at", nullable = false, updatable = false)
     private Instant executionRequestedAt;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "processing_started_at")
+    private Instant processingStartedAt;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "experiment_id", nullable = false, insertable = false, updatable = false)
     private Experiment experiment;

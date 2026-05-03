@@ -5,6 +5,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class GeraLandingStageExecutionService {
 
     @Transactional
     public GeraLandingStartResponse registerInitialExecution(Long experimentId) {
+        Instant now = Instant.now();
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
 
@@ -30,6 +32,8 @@ public class GeraLandingStageExecutionService {
                 .experimentId(experiment.getId())
                 .experiment(experiment)
                 .stageCode("landing-page-wireframe")
+                .executionRequestedAt(now)
+                .createdAt(now)
                 .promptTemplateId("manual/start")
                 .promptContent("Início manual via interface do experimento.")
                 .status("INICIADO")
@@ -41,6 +45,7 @@ public class GeraLandingStageExecutionService {
 
     @Transactional
     public void registerWorkerPromptExecution(GeraLandingWorkerPromptRequest request) {
+        Instant now = Instant.now();
         Experiment experiment = experimentRepository.findById(request.experimentId())
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + request.experimentId()));
 
@@ -48,6 +53,8 @@ public class GeraLandingStageExecutionService {
                 .experimentId(experiment.getId())
                 .experiment(experiment)
                 .stageCode(request.stageCode())
+                .executionRequestedAt(now)
+                .createdAt(now)
                 .promptTemplateId(request.executionId())
                 .promptContent(request.promptContent())
                 .status("INICIADO")

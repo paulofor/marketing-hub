@@ -1,18 +1,19 @@
-# Registros de execução — Gera Landing
+# Registros — Gera Landing
 
-## 2026-05-03 — Separação de marcos de data/hora
+> Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
+> Neste documento que o arquivo `docs/gera-landing/registros.md` segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 
-Para a tabela `gera_landing_stage_execution`, foram definidos três marcos distintos de data/hora para suportar o ciclo de execução por etapa:
+- 2026-05-01 23:33:32 (UTC-3): criado o pacote `com.marketinghub.geralanding` no backend (`ads-service`) para centralizar os componentes do módulo Gera Landing.
+- 2026-05-02 00:00:00 (UTC-3): adicionados o card **Gera WireFrame** e o botão **Iniciar** na aba "Gera landing" da tela de experimento no frontend; o botão agora envia POST para `/api/experiments/{experimentId}/geralanding/wireframe/start` no backend (package `com.marketinghub.geralanding`) com retorno `202 Accepted` sem processamento adicional neste momento.
 
-- `created_at` → momento de **criação** do registro.
-- `processing_started_at` → momento de **início do processamento**.
-- `completed_at` → momento de **conclusão**.
+- 2026-05-03 09:00:00 (UTC-3): no `ai-worker`, refatorado `GeraLandingService` para expor métodos tipados de leitura de `campaignAngle`, `adCopy`, `adImageBriefing` e `experimentMetadata` com DTOs existentes; criado `LandingPageWireframeDto` no pacote `geralanding` para encapsular `landingPageWireframe`.
+- 2026-05-03 10:45:00 (UTC-3): integração do disparo do botão **Iniciar** com geração real de wireframe no backend (`GeraLandingWireframeController`), delegando para `ExperimentPipelineGenerationService.generate(..., LANDING_PAGE_WIREFRAME, ...)`; no `ai-worker`, adicionada montagem de prompt por etapa em `prompts/geralanding/{etapa}.md` com resolução de placeholders `{prompt-*}` e `{dados-*}` e registro do prompt final no banco via endpoint `/api/ai/generations/internal` (tabela `ai_worker_generation`) com chave de rastreio no formato `exp:{experimentId}|etapa:{etapa}|exec:{execucaoId}|job:{jobId}`.
+- 2026-05-03 11:05:00 (UTC-3): ajuste de aderência de teste unitário no `ai-worker`: o cabeçalho do prompt base `prompts/geralanding/regras-globais.md` foi alterado de `Regras globais:` para `REGRAS GLOBAIS:` para compatibilizar com a asserção de `GeraLandingServiceTest.deveMontarPromptEtapaComPromptEDados`.
+- 2026-05-03 14:20:00 (UTC-3): adicionada documentação Swagger em `docs/gera-landing/swagger-gera-landing-wireframe.yaml` para a etapa de wireframe com envio explícito de `prompt` (prompt montado), `stageCode` (código da etapa) e `experimentCode` (código do experimento).
 
-### Implementação desta entrega
-
-Nesta etapa foi implementado apenas o primeiro marco (**criação**):
-
-- inclusão das colunas no schema via Liquibase;
-- preenchimento de `created_at` no momento da persistência inicial.
-
-Os marcos de processamento e conclusão ficam preparados no modelo para ativação nas próximas etapas.
+- 2026-05-03 14:55:00 (UTC-3): no backend (`ads-service`), endpoint `POST /api/experiments/{experimentId}/geralanding/wireframe/start` passou a receber payload validado (`stageCode`, `prompt.templateId`, `prompt.content`) e registrar execução em banco na tabela `gera_landing_stage_execution` (chave composta: `experiment_id`, `stage_code`, `execution_requested_at`), permitindo reaproveitamento para outras etapas além de wireframe e mantendo rastreabilidade por data-hora de execução.
+- 2026-05-03 15:05:00 (UTC-3): consolidação final do PR: persistência de execuções do Gera Landing estabilizada em estrutura genérica por etapa (`gera_landing_stage_execution`), com validação de payload no endpoint de início de wireframe e rastreabilidade por chave composta (`experiment_id`, `stage_code`, `execution_requested_at`), deixando a base pronta para inclusão das próximas etapas do fluxo Gera Landing.
+- 2026-05-03 15:25:00 (UTC-3): corrigida a sintaxe YAML do changelog `2026-05-03-gera-landing-wireframe-execution.yaml` no backend (`ads-service`), ajustando `preConditions` para sequência válida (`onFail`, `onError`, `dbms:mysql` e `not tableExists`) e eliminando a falha de parse do Liquibase no GitHub Actions.
+- 2026-05-03 16:40:00 (UTC-3): implementação do handoff backend↔worker para auditoria de prompt montado no Gera Landing: no backend (`ads-service`) foi criado o endpoint interno `POST /api/internal/geralanding/stage-executions` (`GeraLandingInternalController`) com DTO validado (`GeraLandingWorkerPromptRequest`) e serviço `GeraLandingStageExecutionService.registerWorkerPromptExecution(...)`; no `ai-worker`, `ExperimentPipelineBackendClient` ganhou `registerGeraLandingPrompt(...)` e `GeraLandingService` passou a enviar `experimentId`, `stageCode`, `executionId` e `promptContent` para esse endpoint após montar o prompt.
+- 2026-05-03 18:35:00 (UTC-3): início do wireframe ajustado para registrar execução inicial em `gera_landing_stage_execution` com os novos campos `status` e `id_job` (status inicial `INICIADO` e `idJob` UUID), retornando `202 Accepted` com `{ idJob, status }` para o frontend exibir código e status ao usuário no feedback de sucesso.
+- 2026-05-03 18:55:00 (UTC-3): adicionadas colunas dedicadas de ciclo de vida em `gera_landing_stage_execution` para separar os momentos de `created_at` (criação), `processing_started_at` (início de processamento) e `completed_at` (conclusão); nesta etapa o backend passou a persistir explicitamente `created_at` na criação do registro, mantendo os demais marcos preparados para evolução posterior.

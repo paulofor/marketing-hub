@@ -147,6 +147,29 @@ public class ExperimentPipelineBackendClient {
                 .block();
     }
 
+    public void registerGeraLandingPrompt(Long experimentId,
+                                          String stageCode,
+                                          String executionId,
+                                          String promptContent) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("experimentId", experimentId);
+        body.put("stageCode", stageCode);
+        body.put("executionId", executionId);
+        body.put("promptContent", promptContent);
+        webClient.post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .doOnSuccess(ignored -> log.info("GeraLanding prompt execution persisted (experimentId={}, stageCode={}, executionId={})",
+                        experimentId, stageCode, executionId))
+                .doOnError(err -> log.warn("Failed to persist GeraLanding prompt execution (experimentId={}, stageCode={}, executionId={})",
+                        experimentId, stageCode, executionId, err))
+                .onErrorResume(err -> Mono.empty())
+                .block();
+    }
+
     private Flux<ExperimentPipelineJobDto> handleListResponse(String uri,
                                                               HttpStatusCode status,
                                                               org.springframework.web.reactive.function.client.ClientResponse response) {

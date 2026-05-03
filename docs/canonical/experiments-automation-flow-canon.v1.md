@@ -142,6 +142,24 @@ Critério de conformidade:
 
 - se não houver artefato predecessor concluído no mesmo `experimentId`, o pipeline deve operar sem esse contexto (nunca buscar em outro experimento).
 
+
+## 6.2 Fluxo canônico da ação manual `gera-landing` (etapa wireframe)
+
+Quando o usuário aciona o botão de geração de wireframe na UI (`gera-landing`), o sistema deve seguir **obrigatoriamente** esta sequência:
+
+1. **Frontend** envia requisição ao backend com `experimentId` e metadados da etapa (`stageCode`, `prompt`).
+2. **Backend** registra a solicitação em `gera_landing_stage_execution` com `experiment_id`, `stage_code`, `execution_requested_at`, `prompt_template_id` e `prompt_content`.
+3. **Backend** enfileira/agenda a execução no pipeline para consumo assíncrono pelo Worker AI (sem acesso direto ao banco pelo worker).
+4. **Worker AI** executa scheduler periódico e consulta endpoint do backend para buscar jobs pendentes de `gera-landing`/pipeline.
+5. Ao receber o job, **Worker AI** monta o prompt final da etapa e envia ao backend a telemetria de geração (`experimentId`, `stage`, `executionId`, `prompt montado`).
+6. **Backend** persiste o registro final da execução com vínculo ao experimento e auditoria de prompt para rastreabilidade.
+
+Regras mandatórias:
+
+- Todo o tráfego entre frontend/worker e dados de experimento passa pelo backend; acesso direto ao banco é proibido para workers.
+- O vínculo por `experimentId` é obrigatório em todas as leituras/escritas para impedir contaminação entre experimentos.
+- A UI deve tratar a ação como assíncrona, mantendo feedback de progresso e bloqueio de cliques duplicados até o `accepted` do backend.
+
 ## 7. Critérios de retomada
 
 Uma fila em `BLOCKED` só pode voltar para `RUNNING` quando:

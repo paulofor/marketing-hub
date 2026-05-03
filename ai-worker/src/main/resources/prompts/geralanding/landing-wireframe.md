@@ -1,3 +1,6 @@
+{prompt-regra-geral}
+
+
 template_id: landing-wireframe
 template_version: v1
 artifact_target: landingPageWireframe

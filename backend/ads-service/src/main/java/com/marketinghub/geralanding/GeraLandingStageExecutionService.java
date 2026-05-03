@@ -33,4 +33,11 @@ public class GeraLandingStageExecutionService {
                 .build();
         executionRepository.save(execution);
     }
+
+    @Transactional
+    public void registerWorkerPromptExecution(GeraLandingWorkerPromptRequest request) {
+        register(request.experimentId(), new GeraLandingStageStartRequest(
+                request.stageCode(),
+                new GeraLandingStageStartRequest.Prompt(request.executionId(), request.promptContent())));
+    }
 }

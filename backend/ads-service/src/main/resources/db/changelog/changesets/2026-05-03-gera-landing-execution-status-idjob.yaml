@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-03-add-status-idjob-gera-landing-stage-execution
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: status
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: INICIADO
+                  constraints:
+                    nullable: false
+              - column:
+                  name: id_job
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false

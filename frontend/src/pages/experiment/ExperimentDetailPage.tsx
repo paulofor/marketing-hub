@@ -197,8 +197,13 @@ export default function ExperimentDetailPage() {
   const handleStartWireframe = async () => {
     try {
       setIsStartingWireframe(true);
-      await axios.post(`/api/experiments/${expId}/geralanding/wireframe/start`);
-      toast.success("Solicitação para iniciar o WireFrame registrada.");
+      const { data: startResponse } = await axios.post<{
+        idJob: string;
+        status: string;
+      }>(`/api/experiments/${expId}/geralanding/wireframe/start`);
+      toast.success(
+        `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
+      );
     } catch (error) {
       const message = axios.isAxiosError(error)
         ? (error.response?.data?.message ??

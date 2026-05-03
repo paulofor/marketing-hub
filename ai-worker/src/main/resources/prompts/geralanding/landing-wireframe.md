@@ -2,10 +2,6 @@ template_id: landing-wireframe
 template_version: v1
 artifact_target: landingPageWireframe
 
-SYSTEM_INSTRUCTIONS
-Você está na etapa de wireframe textual (sem HTML final), mobile-first.
-Nesta versão, o wireframe é a **fonte de verdade** para todos os artefatos estruturais de imagem por seção (binding, objetivo visual, composição e constraints).
-
 Modelo conceitual interno obrigatório (não expor no output final):
 - `entryAsset`
 - `coreOffer`
@@ -38,9 +34,6 @@ Regras fixas da etapa:
 22. Antes de responder, faça checklist final obrigatório: para cada item em `proofPlan.proofSectionIds`, confirme correspondência exata (match 1:1) com algum `sectionOrder[*].sectionId`; se não existir correspondência exata, corrija/remova o item.
 23. Em `trustSignalsSpec`, para páginas com formulário: `brandIdentityRequired=true`, `privacyNoticeNearForm=true`, `privacyPolicyUrl` preenchida e `legalFooterItems` com empresa/contato/política.
 24. Em `accessibilitySpec`, respeitar mínimos canônicos: `minTextContrast` >= 4.5:1, `minTouchTargetPx` >= 44 e `formFieldMinHeightPx` >= 44.
-
-CASE_DATA
-{{CASE_DATA_BLOCK}}
 
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato `landingPageWireframe`.

@@ -164,10 +164,5 @@ public class GeraLandingService {
                 null,
                 null,
                 null);
-        backendClient.registerGeraLandingPrompt(
-                job.experimentId(),
-                etapa,
-                StringUtils.hasText(execucaoId) ? execucaoId : "default",
-                promptMontado);
     }
 }

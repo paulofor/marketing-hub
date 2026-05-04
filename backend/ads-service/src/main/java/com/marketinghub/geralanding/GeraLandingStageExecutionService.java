@@ -69,8 +69,10 @@ public class GeraLandingStageExecutionService {
         GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(idJob)
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
 
+        Instant now = Instant.now();
         execution.setPrompt(request.prompt());
-        execution.setStatus("RECEBIDO");
+        execution.setProcessingStartedAt(now);
+        execution.setStatus("EM_PROCESSAMENTO");
         executionRepository.save(execution);
     }
 
@@ -79,6 +81,7 @@ public class GeraLandingStageExecutionService {
         return executionRepository.findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")
                 .stream()
                 .map(execution -> new GeraLandingPendingExecutionResponse(
+                        execution.getExperimentId(),
                         execution.getIdJob(),
                         execution.getStageCode()))
                 .toList();

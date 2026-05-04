@@ -34,6 +34,13 @@ public class GeraLandingInternalController {
         return ResponseEntity.accepted().build();
     }
 
+    @PostMapping("/stage-executions/receive-prompt")
+    public ResponseEntity<Void> receivePromptDirect(@Valid @RequestBody GeraLandingPromptReceiveDirectRequest request) {
+        executionService.receivePrompt(request.idJob(),
+                new GeraLandingPromptReceiveRequest(request.experimentId(), request.stageCode(), request.prompt()));
+        return ResponseEntity.accepted().build();
+    }
+
     @GetMapping("/stage-executions/pending")
     public ResponseEntity<List<GeraLandingPendingExecutionResponse>> listPendingExecutions() {
         return ResponseEntity.ok(executionService.listPendingExecutions());

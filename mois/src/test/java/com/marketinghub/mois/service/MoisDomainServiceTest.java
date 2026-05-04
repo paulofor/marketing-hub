@@ -246,9 +246,10 @@ class MoisDomainServiceTest {
 
     @Test
     void shouldCreateAndListCollectionJobsInMoisModule() {
+        String workspaceId = "workspace-001-" + java.util.UUID.randomUUID();
         MoisWorkspaceDtos.CollectionJobResponse created = service.createCollectionJob(
                 new MoisWorkspaceDtos.CreateCollectionJobRequest(
-                        "workspace-001",
+                        workspaceId,
                         "nutricao",
                         "perda de gordura",
                         List.of("CLICKBANK", "JVZOO"),
@@ -260,11 +261,11 @@ class MoisDomainServiceTest {
                 )
         );
 
-        MoisWorkspaceDtos.CollectionJobListResponse jobs = service.listCollectionJobs("workspace-001", "COMPLETED");
+        MoisWorkspaceDtos.CollectionJobListResponse jobs = service.listCollectionJobs(workspaceId, "COMPLETED");
 
         assertThat(created.jobId()).startsWith("mois-collect-");
         assertThat(jobs.items()).hasSize(1);
-        assertThat(jobs.items().getFirst().workspaceId()).isEqualTo("workspace-001");
+        assertThat(jobs.items().getFirst().workspaceId()).isEqualTo(workspaceId);
         assertThat(created.status()).isEqualTo("COMPLETED");
     }
 
@@ -393,9 +394,10 @@ class MoisDomainServiceTest {
 
     @Test
     void shouldExposeCollectionOpsSummaryWithRetriesAndLatency() {
+        String workspaceId = "workspace-ops-" + java.util.UUID.randomUUID();
         service.createCollectionJob(
                 new MoisWorkspaceDtos.CreateCollectionJobRequest(
-                        "workspace-ops",
+                        workspaceId,
                         "nutricao",
                         "perda de gordura",
                         List.of("META_AD_LIBRARY", "CLICKBANK"),
@@ -407,8 +409,8 @@ class MoisDomainServiceTest {
                 )
         );
 
-        MoisWorkspaceDtos.CollectionOpsSummaryResponse summary = service.getCollectionOpsSummary("workspace-ops");
-        assertThat(summary.workspaceId()).isEqualTo("workspace-ops");
+        MoisWorkspaceDtos.CollectionOpsSummaryResponse summary = service.getCollectionOpsSummary(workspaceId);
+        assertThat(summary.workspaceId()).isEqualTo(workspaceId);
         assertThat(summary.totalJobs()).isEqualTo(1);
         assertThat(summary.completedJobs()).isEqualTo(1);
         assertThat(summary.totalRetries()).isGreaterThanOrEqualTo(1);

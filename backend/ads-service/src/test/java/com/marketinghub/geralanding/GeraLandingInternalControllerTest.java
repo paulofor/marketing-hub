@@ -7,9 +7,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+import java.util.UUID;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = GeraLandingInternalController.class)
@@ -54,5 +60,17 @@ class GeraLandingInternalControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldListPendingExecutions() throws Exception {
+        UUID idJob = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        when(executionService.listPendingExecutions())
+                .thenReturn(List.of(new GeraLandingPendingExecutionResponse(idJob, "landing-page-wireframe")));
+
+        mockMvc.perform(get("/api/internal/geralanding/stage-executions/pending"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].idJob").value(idJob.toString()))
+                .andExpect(jsonPath("$[0].stageCode").value("landing-page-wireframe"));
     }
 }

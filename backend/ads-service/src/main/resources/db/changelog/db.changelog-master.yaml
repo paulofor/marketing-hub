@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-04-gera-landing-fix-prompt-column-type.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-05-04-gera-landing-add-prompt-column.yaml
       relativeToChangelogFile: true
   - include:

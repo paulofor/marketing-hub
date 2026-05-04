@@ -66,7 +66,10 @@ public class MoisDomainService {
     private final Map<String, MoisWorkspaceDtos.LibraryBlockResponse> libraryBlocksById = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.ComparisonResponse> comparisonsById = new ConcurrentHashMap<>();
     private final Map<String, MoisWorkspaceDtos.BuildOfferResponse> offersById = new ConcurrentHashMap<>();
-    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
 
     private static final String MODULE_NAME = "MOIS";
     private static final String CREATED_BY = "mois-system";
@@ -1386,27 +1389,17 @@ public class MoisDomainService {
                     .header("User-Agent", "Mozilla/5.0 (compatible; MarketingHub-MOIS/1.0)")
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 300 && response.statusCode() < 400) {
+                String redirectTarget = response.headers().firstValue("location").orElse("<missing-location-header>");
+                log.warn("mois_hotmart_product_url_fetch_redirect niche={} method={} requestedUrl={} finalUrl={} statusCode={} location={}",
+                        niche, httpMethod, marketplaceUrl, response.uri(), response.statusCode(), redirectTarget);
+            }
             if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null) {
                 log.warn("mois_hotmart_product_url_fetch_rejected niche={} method={} requestedUrl={} finalUrl={} statusCode={} hasBody={}",
                         niche, httpMethod, marketplaceUrl, response.uri(), response.statusCode(), response.body() != null);
                 return List.of();
             }
-            Pattern cardPattern = Pattern.compile(
-                    "\"name\":\"([^\"]+)\".*?\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\".*?\"description\":\"([^\"]*)\".*?\"producerName\":\"([^\"]*)\".*?\"image\":\"([^\"]*)\""
-            );
-            Matcher cardMatcher = cardPattern.matcher(response.body());
-            List<SourceLead> leads = new ArrayList<>();
-            Set<String> seenUrls = new HashSet<>();
-            while (cardMatcher.find() && leads.size() < limitPerSource) {
-                String title = cardMatcher.group(1).replace("\\u0026", "&").trim();
-                String decodedUrl = cardMatcher.group(2).replace("\\/", "/").replace("\\u0026", "&");
-                String description = cardMatcher.group(3).replace("\\/", "/").replace("\\u0026", "&").trim();
-                String producer = cardMatcher.group(4).replace("\\/", "/").replace("\\u0026", "&").trim();
-                String imageUrl = cardMatcher.group(5).replace("\\/", "/").replace("\\u0026", "&").trim();
-                if (seenUrls.add(decodedUrl)) {
-                    leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl));
-                }
-            }
+            List<SourceLead> leads = parseHotmartMarketplaceLeads(response.body(), limitPerSource);
             log.info("mois_hotmart_product_url_fetch_finished niche={} method={} requestedUrl={} finalUrl={} statusCode={} parsedLeads={} responseLength={}",
                     niche, httpMethod, marketplaceUrl, response.uri(), response.statusCode(), leads.size(), response.body().length());
             return leads;
@@ -1416,6 +1409,51 @@ public class MoisDomainService {
         }
     }
 
+
+    private List<SourceLead> parseHotmartMarketplaceLeads(String body, int limitPerSource) {
+        List<SourceLead> leads = new ArrayList<>();
+        Set<String> seenUrls = new HashSet<>();
+
+        Pattern richCardPattern = Pattern.compile(
+                "\"name\":\"([^\"]+)\".*?\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\".*?\"description\":\"([^\"]*)\".*?\"producerName\":\"([^\"]*)\".*?\"image\":\"([^\"]*)\""
+        );
+        Matcher richCardMatcher = richCardPattern.matcher(body);
+        while (richCardMatcher.find() && leads.size() < limitPerSource) {
+            String title = decodeHotmartValue(richCardMatcher.group(1));
+            String decodedUrl = decodeHotmartValue(richCardMatcher.group(2));
+            String description = decodeHotmartValue(richCardMatcher.group(3));
+            String producer = decodeHotmartValue(richCardMatcher.group(4));
+            String imageUrl = decodeHotmartValue(richCardMatcher.group(5));
+            if (seenUrls.add(decodedUrl)) {
+                leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl));
+            }
+        }
+
+        if (leads.size() >= limitPerSource) {
+            return leads;
+        }
+
+        Pattern fallbackUrlPattern = Pattern.compile(
+                "https:\\\\/\\\\/www\\\\.hotmart\\\\.com\\\\/product\\\\/[a-zA-Z0-9\\\\-_/]+|https://www\\.hotmart\\.com/product/[a-zA-Z0-9\\-_/]+",
+                Pattern.CASE_INSENSITIVE
+        );
+        Matcher fallbackUrlMatcher = fallbackUrlPattern.matcher(body);
+        while (fallbackUrlMatcher.find() && leads.size() < limitPerSource) {
+            String url = decodeHotmartValue(fallbackUrlMatcher.group());
+            if (seenUrls.add(url)) {
+                leads.add(new SourceLead(url, null, null, null, null));
+            }
+        }
+
+        return leads;
+    }
+
+    private String decodeHotmartValue(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replace("\\/", "/").replace("\\u0026", "&").trim();
+    }
     private String firstNonBlank(String candidate, String fallback) {
         return candidate == null || candidate.isBlank() ? fallback : candidate;
     }

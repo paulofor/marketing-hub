@@ -16,6 +16,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-04-28-mois-collection-job-state-persistence.yaml
+      relativeToChangelogFile: true
   - include:
       file: changesets/2026-05-04-mois-collected-reference-persistence.yaml
       relativeToChangelogFile: true

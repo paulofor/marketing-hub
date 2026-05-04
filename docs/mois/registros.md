@@ -40,3 +40,8 @@
   - sincronização relacional por job em `mois_collected_reference` (delete + batch insert);
   - agregação executiva de destaques por fonte (`collection-highlights/by-source`) com ordenação por score médio e cálculo de sinal predominante.
 - Registro operacional para rastrear revisão da PR "Persist collected references and add source-highlight aggregation endpoint" após feedback de qualidade.
+
+## 2026-05-04 09:55:00 UTC-3
+- Corrigida a resolução de include do Liquibase no `db.changelog-master.yaml` do `backend/ads-service`.
+- O changeset `changesets/2026-04-28-mois-collection-job-state-persistence.yaml` passou a declarar `relativeToChangelogFile: true`, evitando falha de parsing em CI com mensagem de arquivo não encontrado no classpath.
+- Registro criado para rastrear o incidente reportado no build Maven/Liquibase e sua correção.

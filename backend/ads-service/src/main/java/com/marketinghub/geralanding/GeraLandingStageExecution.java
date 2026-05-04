@@ -9,7 +9,6 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "gera_landing_stage_execution")
-@IdClass(GeraLandingStageExecutionId.class)
 @Getter
 @Setter
 @Builder
@@ -17,15 +16,12 @@ import java.time.Instant;
 @AllArgsConstructor
 public class GeraLandingStageExecution {
 
-    @Id
     @Column(name = "experiment_id", nullable = false)
     private Long experimentId;
 
-    @Id
     @Column(name = "stage_code", nullable = false, length = 100)
     private String stageCode;
 
-    @Id
     @CreationTimestamp
     @Column(name = "execution_requested_at", nullable = false, updatable = false)
     private Instant executionRequestedAt;
@@ -57,6 +53,7 @@ public class GeraLandingStageExecution {
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
+    @Id
     @Column(name = "id_job", nullable = false, length = 36)
     private String idJob;
 }

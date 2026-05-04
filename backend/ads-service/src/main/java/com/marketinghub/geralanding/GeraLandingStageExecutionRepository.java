@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraLandingStageExecution, GeraLandingStageExecutionId> {
+public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraLandingStageExecution, String> {
     Optional<GeraLandingStageExecution> findTopByIdJobOrderByExecutionRequestedAtDesc(String idJob);
 
     Optional<GeraLandingStageExecution> findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(Long experimentId,

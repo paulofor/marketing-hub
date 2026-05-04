@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineBackendClient;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
 import java.time.Instant;
 import java.util.UUID;
@@ -14,7 +13,7 @@ import org.mockito.Mockito;
 
 class GeraLandingServiceTest {
 
-    private final ExperimentPipelineBackendClient backendClient = Mockito.mock(ExperimentPipelineBackendClient.class);
+    private final GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
     private final GeraLandingService service = new GeraLandingService(new ObjectMapper(), backendClient);
 
     @Test
@@ -37,14 +36,12 @@ class GeraLandingServiceTest {
         String prompt = service.montarERegistrarPromptEtapa(job, "test-placeholder", "exec-7");
 
         assertThat(prompt).contains("Resultado claro");
-        verify(backendClient).recordGenerationLog(
-                Mockito.eq(job.id()),
-                Mockito.eq(prompt),
-                Mockito.contains("exp:10|etapa:test-placeholder|exec:exec-7|job:"),
-                Mockito.eq("gpt-4.1"),
-                Mockito.isNull(),
-                Mockito.isNull(),
-                Mockito.isNull());
+        verify(backendClient)
+                .receivePrompt(
+                        Mockito.eq("exec-7"),
+                        Mockito.eq(10L),
+                        Mockito.eq("test-placeholder"),
+                        Mockito.eq(prompt));
     }
 
     @Test

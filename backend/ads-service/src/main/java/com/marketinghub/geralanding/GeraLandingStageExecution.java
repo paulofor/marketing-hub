@@ -51,6 +51,10 @@ public class GeraLandingStageExecution {
     @Column(name = "prompt_content", nullable = false)
     private String promptContent;
 
+    @Lob
+    @Column(name = "prompt")
+    private String prompt;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 

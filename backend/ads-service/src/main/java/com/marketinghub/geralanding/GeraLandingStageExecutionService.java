@@ -62,4 +62,14 @@ public class GeraLandingStageExecutionService {
                 .build();
         executionRepository.save(execution);
     }
+
+    @Transactional
+    public void receivePrompt(UUID idJob, GeraLandingPromptReceiveRequest request) {
+        GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(idJob)
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+
+        execution.setPrompt(request.prompt());
+        execution.setStatus("RECEBIDO");
+        executionRepository.save(execution);
+    }
 }

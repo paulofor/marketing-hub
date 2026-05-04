@@ -2,10 +2,13 @@ package com.marketinghub.geralanding;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/internal/geralanding")
@@ -20,6 +23,13 @@ public class GeraLandingInternalController {
     @PostMapping("/stage-executions")
     public ResponseEntity<Void> registerWorkerPrompt(@Valid @RequestBody GeraLandingWorkerPromptRequest request) {
         executionService.registerWorkerPromptExecution(request);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/stage-executions/{idJob}/receive-prompt")
+    public ResponseEntity<Void> receivePrompt(@PathVariable UUID idJob,
+                                              @Valid @RequestBody GeraLandingPromptReceiveRequest request) {
+        executionService.receivePrompt(idJob, request);
         return ResponseEntity.accepted().build();
     }
 }

@@ -16,6 +16,8 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-04-28-mois-collection-job-state-persistence.yaml
+  - include:
+      file: changesets/2026-05-04-mois-collected-reference-persistence.yaml
       relativeToChangelogFile: true
   - include:
       file: V2037_04_26__widen_experiment_pipeline_job_section_mysql5.sql

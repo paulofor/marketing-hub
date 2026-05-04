@@ -43,4 +43,12 @@ public class MoisCollectionPersistenceController {
     ) {
         return service.listJobStates(workspaceId, status);
     }
+
+    @GetMapping("/collection-highlights/by-source")
+    public MoisCollectionPersistenceDtos.SourceHighlightListResponse listSourceHighlights(
+            @RequestParam(required = false) String workspaceId,
+            @RequestParam(required = false) String status
+    ) {
+        return service.summarizeBySource(workspaceId, status);
+    }
 }

@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-04-mois-collected-reference-persistence
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: mois_collected_reference
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_collected_reference (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                job_id VARCHAR(80) NOT NULL,
+                workspace_id VARCHAR(80) NULL,
+                reference_id VARCHAR(80) NOT NULL,
+                source VARCHAR(64) NULL,
+                title VARCHAR(512) NULL,
+                url VARCHAR(1024) NULL,
+                niche VARCHAR(255) NULL,
+                status VARCHAR(32) NULL,
+                favorite BIT(1) NOT NULL DEFAULT b'0',
+                imported_reference_id VARCHAR(80) NULL,
+                success_score INT NOT NULL,
+                success_signal VARCHAR(255) NULL,
+                confidence_level VARCHAR(32) NULL,
+                ranking_position INT NOT NULL,
+                engagement_relative DECIMAL(8,4) NOT NULL,
+                recurrence_score DECIMAL(8,4) NOT NULL,
+                evidence_score DECIMAL(8,4) NOT NULL,
+                collected_at TIMESTAMP NULL,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_collected_reference_job_reference (job_id, reference_id),
+                KEY idx_mois_collected_reference_workspace_source (workspace_id, source),
+                KEY idx_mois_collected_reference_workspace_score (workspace_id, success_score),
+                KEY idx_mois_collected_reference_collected_at (collected_at)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

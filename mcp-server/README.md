@@ -54,6 +54,8 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 
 > Em produção, configure explicitamente os `MCP_LOG_*_PATH` via variáveis de ambiente (arquivo `.env` do host) para apontar para o destino de log aprovado.
 
+Timeout de leitura HTTP por módulo: `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`).
+
 Limite máximo por chamada: `MCP_LOG_MAX_LINES` (default `500`).
 
 ## Ferramentas de diagnóstico Meta

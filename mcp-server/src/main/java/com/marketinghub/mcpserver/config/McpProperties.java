@@ -28,6 +28,7 @@ public record McpProperties(
             @NotBlank String leadPortalPaymentPath,
             @NotBlank String mdsPath,
             @NotBlank String moisPath,
+            @Positive int fetchTimeoutSeconds,
             @Positive int maxLines
     ) {
     }

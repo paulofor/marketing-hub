@@ -41,6 +41,26 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 3. Orientações Práticas:
 
+- **Teste de acesso ao banco via MCP (comando validado)**: comando usado na rodada que retornou 100% de sucesso (10/10 respostas HTTP 200 e sem erro JSON-RPC) para validar conectividade com o banco via tool `db_health`:
+  ```bash
+  python - <<'PY'
+  import json,subprocess,statistics
+  url='https://mcpserverdigi.shop/mcp'
+  payload={"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"db_health","arguments":{}}}
+  times=[]; codes=[]; errs=0
+  for _ in range(10):
+      cmd=['curl','-sS','-o','/tmp/mcp_db_test.json','-w','%{http_code} %{time_total}',url,'-H','Content-Type: application/json','--data',json.dumps(payload)]
+      out=subprocess.check_output(cmd,text=True).strip().split()
+      code=int(out[0]); t=float(out[1]); codes.append(code); times.append(t)
+      body=open('/tmp/mcp_db_test.json').read()
+      if '"error"' in body or code != 200:
+          errs += 1
+  print('codes=',codes)
+  print('errors=',errs)
+  print('avg_s=',round(statistics.mean(times),3),'max_s=',round(max(times),3))
+  PY
+  ```
+
 - **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
 
 - **Erro 422 (Procedimento Obrigatório / SOP)**: Trate toda ocorrência de `422 Unprocessable Entity` como divergência entre payload gerado pelo modelo e contrato/validação do backend até prova em contrário.

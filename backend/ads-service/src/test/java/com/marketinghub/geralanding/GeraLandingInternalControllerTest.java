@@ -73,4 +73,23 @@ class GeraLandingInternalControllerTest {
                 .andExpect(jsonPath("$[0].idJob").value(idJob))
                 .andExpect(jsonPath("$[0].stageCode").value("landing-page-wireframe"));
     }
+
+    @Test
+    void shouldAcceptReceivePromptUsingBodyIdJob() throws Exception {
+        String payload = """
+                {
+                  "idJob": "11111111-1111-1111-1111-111111111111",
+                  "experimentId": 77,
+                  "stageCode": "landing-page-wireframe",
+                  "prompt": "prompt final"
+                }
+                """;
+
+        mockMvc.perform(post("/api/internal/geralanding/stage-executions/receive-prompt")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isAccepted());
+
+        verify(executionService).receivePrompt(any(String.class), any(GeraLandingPromptReceiveRequest.class));
+    }
 }

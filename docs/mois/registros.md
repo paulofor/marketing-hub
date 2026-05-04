@@ -28,3 +28,8 @@
   - hidratar estado por workspace/status (`hydrateCollectionState`);
   - hidratar estado por job (`hydrateCollectionStateByJob`).
 - Serialização JSON ajustada com descoberta automática de módulos Jackson para suportar `Instant` no payload de persistência.
+
+## 2026-05-03 23:36:48 UTC-3
+- Ajustados os testes unitários `MoisDomainServiceTest` para evitar flakiness causado por estado persistido de coletas do mesmo `workspaceId` entre execuções.
+- Nos cenários de listagem de jobs e sumário operacional, os `workspaceId` agora são gerados com sufixo UUID por teste, garantindo isolamento sem depender de limpeza externa.
+- Resultado esperado: os asserts de cardinalidade (`totalJobs` e tamanho da lista) voltam a refletir apenas os dados criados no próprio teste.

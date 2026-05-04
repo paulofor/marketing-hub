@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info:
+  title: Gera Landing Etapas API
+  version: 1.1.0
+  description: |
+    Contrato Swagger para todas as etapas do Gera Landing no backend (pacote `com.marketinghub.geralanding`).
+servers:
+  - url: http://191.252.181.168:8000
+paths:
+  /api/experiments/{experimentId}/geralanding/wireframe/start:
+    post:
+      tags:
+        - Gera Landing
+      summary: Inicia geração manual de wireframe
+      description: |
+        Registra uma execução inicial da etapa de wireframe para o experimento.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          description: ID numérico interno do experimento.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '202':
+          description: Etapa aceita para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeraLandingStartResponse'
+        '404':
+          description: Experimento não encontrado.
+
+  /api/internal/geralanding/stage-executions:
+    post:
+      tags:
+        - Gera Landing Internal
+      summary: Registra execução iniciada por worker
+      description: |
+        Cria uma execução de etapa no backend com base no prompt produzido pelo worker.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeraLandingWorkerPromptRequest'
+      responses:
+        '202':
+          description: Execução registrada com sucesso.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Experimento não encontrado.
+
+  /api/internal/geralanding/stage-executions/{idJob}/receive-prompt:
+    post:
+      tags:
+        - Gera Landing Internal
+      summary: Recebe prompt final para execução existente
+      description: |
+        Atualiza uma execução existente pelo `idJob`, persistindo prompt e marcando status em processamento.
+      parameters:
+        - name: idJob
+          in: path
+          required: true
+          description: Identificador do job da execução.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeraLandingPromptReceiveRequest'
+      responses:
+        '202':
+          description: Prompt recebido e execução atualizada.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
+  /api/internal/geralanding/stage-executions/pending:
+    get:
+      tags:
+        - Gera Landing Internal
+      summary: Lista execuções pendentes
+      description: |
+        Retorna até 20 execuções com status `INICIADO` ordenadas pela data da requisição.
+      responses:
+        '200':
+          description: Lista de execuções pendentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeraLandingPendingExecutionResponse'
+
+components:
+  schemas:
+    GeraLandingStartResponse:
+      type: object
+      properties:
+        idJob:
+          type: string
+          description: Identificador do job criado para a execução.
+        status:
+          type: string
+          description: Status inicial da execução.
+
+    GeraLandingWorkerPromptRequest:
+      type: object
+      required:
+        - experimentId
+        - stageCode
+        - executionId
+        - promptContent
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+          description: ID do experimento.
+        stageCode:
+          type: string
+          description: Código da etapa a ser registrada.
+        executionId:
+          type: string
+          description: Identificador da execução no worker.
+        promptContent:
+          type: string
+          description: Conteúdo do prompt gerado pelo worker.
+
+    GeraLandingPromptReceiveRequest:
+      type: object
+      required:
+        - experimentId
+        - stageCode
+        - prompt
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+          description: ID do experimento.
+        stageCode:
+          type: string
+          description: Código da etapa.
+        prompt:
+          type: string
+          description: Prompt final que será persistido na execução.
+
+    GeraLandingPendingExecutionResponse:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        idJob:
+          type: string
+        stageCode:
+          type: string

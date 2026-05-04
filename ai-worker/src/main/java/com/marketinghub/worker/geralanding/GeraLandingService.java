@@ -81,9 +81,9 @@ public class GeraLandingService {
         return resolverPlaceholders(template, dadosPayload);
     }
 
-    public String montarERegistrarPromptEtapa(ExperimentPipelineJobDto job, String etapa, String execucaoId) throws IOException {
+    public String montarERegistrarPromptEtapa(ExperimentPipelineJobDto job, String etapa) throws IOException {
         String promptMontado = montarPromptEtapa(job, etapa);
-        registrarPromptMontado(job, etapa, execucaoId, promptMontado);
+        registrarPromptMontado(job, etapa, promptMontado);
         return promptMontado;
     }
 
@@ -153,20 +153,15 @@ public class GeraLandingService {
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 
-    private void registrarPromptMontado(ExperimentPipelineJobDto job, String etapa, String execucaoId, String promptMontado) {
+    private void registrarPromptMontado(ExperimentPipelineJobDto job, String etapa, String promptMontado) {
         if (job == null || promptMontado == null || promptMontado.isBlank()) {
             return;
         }
-        String referencia = "exp:%s|etapa:%s|exec:%s|job:%s".formatted(
+        String referencia = "exp:%s|etapa:%s|job:%s".formatted(
                 job.experimentId(),
                 etapa,
-                StringUtils.hasText(execucaoId) ? execucaoId : "default",
                 job.id());
         log.info("Registrando prompt montado com referencia={}", referencia);
-        if (!StringUtils.hasText(execucaoId)) {
-            log.warn("Não foi possível enviar prompt montado: execucaoId ausente. referencia={}", referencia);
-            return;
-        }
-        backendClient.receivePrompt(execucaoId, job.experimentId(), etapa, promptMontado);
+        backendClient.receivePrompt(job.id().toString(), job.experimentId(), etapa, promptMontado);
     }
 }

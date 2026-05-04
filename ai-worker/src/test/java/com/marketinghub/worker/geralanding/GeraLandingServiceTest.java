@@ -33,12 +33,12 @@ class GeraLandingServiceTest {
     void deveRegistrarPromptMontadoComChaveDeRastreio() throws Exception {
         ExperimentPipelineJobDto job = novoJob();
 
-        String prompt = service.montarERegistrarPromptEtapa(job, "test-placeholder", "exec-7");
+        String prompt = service.montarERegistrarPromptEtapa(job, "test-placeholder");
 
         assertThat(prompt).contains("Resultado claro");
         verify(backendClient)
                 .receivePrompt(
-                        Mockito.eq("exec-7"),
+                        Mockito.eq(job.id().toString()),
                         Mockito.eq(10L),
                         Mockito.eq("test-placeholder"),
                         Mockito.eq(prompt));

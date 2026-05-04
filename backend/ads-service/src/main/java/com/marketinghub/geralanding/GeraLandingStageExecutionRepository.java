@@ -8,5 +8,8 @@ import java.util.Optional;
 public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraLandingStageExecution, GeraLandingStageExecutionId> {
     Optional<GeraLandingStageExecution> findTopByIdJobOrderByExecutionRequestedAtDesc(String idJob);
 
+    Optional<GeraLandingStageExecution> findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(Long experimentId,
+                                                                                                           String stageCode);
+
     List<GeraLandingStageExecution> findTop20ByStatusOrderByExecutionRequestedAtAsc(String status);
 }

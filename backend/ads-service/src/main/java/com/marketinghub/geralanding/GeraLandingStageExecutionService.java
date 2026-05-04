@@ -77,6 +77,7 @@ public class GeraLandingStageExecutionService {
                 request.prompt() != null ? request.prompt().length() : 0);
 
         GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(idJob)
+                .or(() -> fallbackExecutionByExperimentAndStage(request))
                 .orElseThrow(() -> {
                     log.error(
                             "GeraLanding execution not found before prompt persistence. idJob={}, experimentId={}, stageCode={}",
@@ -99,6 +100,17 @@ public class GeraLandingStageExecutionService {
         execution.setStatus("EM_PROCESSAMENTO");
         executionRepository.save(execution);
         log.info("GeraLanding prompt persisted. idJob={}, newStatus={}", idJob, execution.getStatus());
+    }
+
+    private java.util.Optional<GeraLandingStageExecution> fallbackExecutionByExperimentAndStage(
+            GeraLandingPromptReceiveRequest request) {
+        log.warn(
+                "Primary lookup by idJob failed. Trying fallback by experiment/stage. experimentId={}, stageCode={}",
+                request.experimentId(),
+                request.stageCode());
+        return executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                request.experimentId(),
+                request.stageCode());
     }
 
     @Transactional(readOnly = true)

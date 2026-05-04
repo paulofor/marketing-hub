@@ -44,12 +44,11 @@ public class GeraLandingBackendClient {
     }
 
     public void receivePrompt(String idJob, Long experimentId, String stageCode, String prompt) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
-                "/internal/geralanding/stage-executions/receive-prompt");
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
+                "/internal/geralanding/stage-executions");
         webClient.post()
-                .uri(url)
+                .uri(baseUrl + "/{idJob}/receive-prompt", idJob)
                 .bodyValue(Map.of(
-                        "idJob", idJob,
                         "experimentId", experimentId,
                         "stageCode", stageCode,
                         "prompt", prompt))

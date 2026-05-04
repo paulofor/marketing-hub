@@ -46,6 +46,13 @@ public class GeraLandingBackendClient {
     public void receivePrompt(String idJob, Long experimentId, String stageCode, String prompt) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");
+        log.info(
+                "Sending gera-landing prompt. endpoint={}/{{idJob}}/receive-prompt, idJob={}, experimentId={}, stageCode={}, promptLength={}",
+                baseUrl,
+                idJob,
+                experimentId,
+                stageCode,
+                prompt != null ? prompt.length() : 0);
         webClient.post()
                 .uri(baseUrl + "/{idJob}/receive-prompt", idJob)
                 .bodyValue(Map.of(

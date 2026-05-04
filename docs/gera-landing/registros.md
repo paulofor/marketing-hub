@@ -29,3 +29,47 @@
 - 2026-05-04 11:05:00 (UTC-3): identificado em produção, via MCP (`information_schema.columns`), que `gera_landing_stage_execution.prompt` estava com tipo físico `tinytext` em vez de `LONGTEXT`, causando falha `500` no `POST /api/internal/geralanding/stage-executions/{idJob}/receive-prompt` ao persistir prompts longos do `ai-worker`; no backend (`ads-service`) foi criado o changeset incremental `2026-05-04-gera-landing-fix-prompt-column-type.yaml` com `modifyDataType` para `LONGTEXT` e inclusão no `db.changelog-master.yaml` para correção retroativa de ambiente.
 - 2026-05-04 13:40:00 (UTC-3): no backend (`ads-service`), registrado ajuste operacional de diagnóstico no fluxo `POST /api/internal/geralanding/stage-executions/{idJob}/receive-prompt`: foram adicionados logs estruturados em `GeraLandingStageExecutionService.receivePrompt(...)` antes do ponto de falha para capturar `idJob`, `experimentId`, `stageCode`, tamanho do prompt, resultado do lookup da execução e confirmação de persistência/atualização de status; em conjunto, o contrato interno foi mantido com `idJob` textual (`String`) para alinhamento com armazenamento em `CHAR(36)` na tabela `gera_landing_stage_execution`.
 - 2026-05-04 14:06:28 (UTC-3): no `ai-worker`, corrigido o contrato de leitura de pendências do Gera Landing para tratar `idJob` como texto no endpoint interno `GET /api/internal/geralanding/stage-executions/pending`, removendo desserialização como `UUID` que gerava `DecodingException`; adicionalmente, adicionado guard clause no `GeraLandingExecutionService` para ignorar e logar pendências inválidas sem `idJob`/`stageCode`, evitando chamadas de retorno com identificador ausente para `POST /api/internal/geralanding/stage-executions/{idJob}/receive-prompt`.
+
+- 2026-05-04 23:59:00 (UTC-3): registrado no histórico canônico o **Registro 001 — Estruturação canônica inicial (modelo + fluxo 01)**, consolidando no módulo Gera Landing a referência do documento `docs/gera-landing/modelo-canonico-gera-landing.md`, a separação explícita entre **PARTE A (Modelo de Dados)** e **PARTE B (Fluxos Canônicos)** e a formalização do **Fluxo 01** (geração de prompts pelo Worker AI), com objetivo de governança e rastreabilidade para evolução futura.
+
+---
+
+## Registro 001 — Estruturação canônica inicial (modelo + fluxo 01) [forma detalhada]
+
+- **Data de registro**: 2026-05-04
+- **Documento canônico de referência**: `docs/gera-landing/modelo-canonico-gera-landing.md`
+- **Contexto**: consolidação da base canônica inicial do módulo Gera Landing.
+
+### Entregas registradas
+
+1. Definição canônica da tabela de controle de jobs `gera_landing_stage_execution`, incluindo:
+   - finalidade funcional;
+   - campos, tipos e obrigatoriedade;
+   - chaves e restrições;
+   - regras de consistência para contrato e persistência.
+
+2. Separação explícita do conteúdo canônico em duas dimensões:
+   - **PARTE A — MODELO DE DADOS CANÔNICO**;
+   - **PARTE B — FLUXOS CANÔNICOS DO MÓDULO**.
+
+3. Registro do **Fluxo 01 — geração de prompts pelo Worker AI (geralanding)**, com detalhamento de:
+   - criação do job no backend com status inicial;
+   - agendamento/polling do Worker AI;
+   - consulta de pendências;
+   - processamento por etapa;
+   - montagem de prompt;
+   - envio ao backend;
+   - persistência e transição de status.
+
+### Objetivo de governança deste registro
+
+- Manter histórico explícito de evolução documental do módulo Gera Landing.
+- Facilitar rastreabilidade entre decisões canônicas de modelo e fluxos operacionais.
+- Preparar o módulo para próximos registros de fluxos adicionais sem mistura de responsabilidades no mesmo bloco textual.
+
+### Próximos registros esperados
+
+- Inclusão de novos fluxos canônicos (Fluxo 02, Fluxo 03, ...), conforme evolução do módulo.
+- Versionamento de mudanças de contrato entre backend e Worker AI quando houver alteração em payload, estados ou regras de validação.
+
+- 2026-05-04 23:59:30 (UTC-3): ajuste de registro conforme orientação: manter anotação breve apenas sobre a entrega realizada (criação do canônico do Gera Landing com separação entre modelo de dados e fluxo 01 do Worker AI), sem detalhamento extenso no histórico.

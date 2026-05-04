@@ -6,7 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "gera_landing_stage_execution")
@@ -59,5 +58,5 @@ public class GeraLandingStageExecution {
     private String status;
 
     @Column(name = "id_job", nullable = false, length = 36)
-    private UUID idJob;
+    private String idJob;
 }

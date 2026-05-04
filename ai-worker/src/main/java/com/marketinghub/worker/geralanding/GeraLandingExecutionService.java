@@ -57,7 +57,7 @@ public class GeraLandingExecutionService {
                     null,
                     "{}",
                     Instant.now());
-            geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage, execution.idJob());
+            geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
         } catch (Exception ex) {

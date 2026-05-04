@@ -37,7 +37,11 @@ public class GeraLandingExecutionService {
     }
 
     private void processExecution(GeraLandingStageExecutionDto execution) {
-        if (execution == null || !StringUtils.hasText(execution.stageCode())) {
+        if (execution == null || !StringUtils.hasText(execution.stageCode()) || !StringUtils.hasText(execution.idJob())) {
+            log.warn("Skipping gera-landing execution with missing required fields. experimentId={}, stageCode={}, idJob={}",
+                    execution != null ? execution.experimentId() : null,
+                    execution != null ? execution.stageCode() : null,
+                    execution != null ? execution.idJob() : null);
             return;
         }
         String normalizedStage = execution.stageCode().trim().toLowerCase(Locale.ROOT);
@@ -53,7 +57,7 @@ public class GeraLandingExecutionService {
                     null,
                     "{}",
                     Instant.now());
-            String promptMontado = geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage, execution.idJob() != null ? execution.idJob().toString() : null);
+            String promptMontado = geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage, execution.idJob());
             backendClient.receivePrompt(execution.idJob(), execution.experimentId(), execution.stageCode(), promptMontado);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());

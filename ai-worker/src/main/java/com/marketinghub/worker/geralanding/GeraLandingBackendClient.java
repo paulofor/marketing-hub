@@ -3,7 +3,6 @@ package com.marketinghub.worker.geralanding;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,9 +43,9 @@ public class GeraLandingBackendClient {
         return result;
     }
 
-    public void receivePrompt(UUID idJob, Long experimentId, String stageCode, String prompt) {
+    public void receivePrompt(String idJob, Long experimentId, String stageCode, String prompt) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
-                "/internal/geralanding/stage-executions/", idJob.toString(), "/receive-prompt");
+                "/internal/geralanding/stage-executions/", idJob, "/receive-prompt");
         webClient.post()
                 .uri(url)
                 .bodyValue(Map.of(

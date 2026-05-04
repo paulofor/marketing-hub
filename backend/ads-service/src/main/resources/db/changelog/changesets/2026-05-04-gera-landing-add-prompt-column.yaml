@@ -3,8 +3,8 @@ databaseChangeLog:
       id: 2026-05-04-add-prompt-column-gera-landing-stage-execution
       author: codex
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
         - not:

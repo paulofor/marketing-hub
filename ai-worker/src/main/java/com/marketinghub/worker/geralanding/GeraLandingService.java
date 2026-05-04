@@ -7,7 +7,6 @@ import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdCopy;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdImageBriefing;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.CampaignAngle;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.ExperimentMetadata;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineBackendClient;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -42,9 +40,9 @@ public class GeraLandingService {
     private static final String EXPERIMENT_METADATA = "experimentMetadata";
 
     private final ObjectMapper objectMapper;
-    private final ExperimentPipelineBackendClient backendClient;
+    private final GeraLandingBackendClient backendClient;
 
-    public GeraLandingService(ObjectMapper objectMapper, ExperimentPipelineBackendClient backendClient) {
+    public GeraLandingService(ObjectMapper objectMapper, GeraLandingBackendClient backendClient) {
         this.objectMapper = objectMapper;
         this.backendClient = backendClient;
     }
@@ -164,14 +162,11 @@ public class GeraLandingService {
                 etapa,
                 StringUtils.hasText(execucaoId) ? execucaoId : "default",
                 job.id());
-        UUID referenceJobId = job.id() != null ? job.id() : UUID.randomUUID();
-        backendClient.recordGenerationLog(
-                referenceJobId,
-                promptMontado,
-                referencia,
-                job.model(),
-                null,
-                null,
-                null);
+        log.info("Registrando prompt montado com referencia={}", referencia);
+        if (!StringUtils.hasText(execucaoId)) {
+            log.warn("Não foi possível enviar prompt montado: execucaoId ausente. referencia={}", referencia);
+            return;
+        }
+        backendClient.receivePrompt(execucaoId, job.experimentId(), etapa, promptMontado);
     }
 }

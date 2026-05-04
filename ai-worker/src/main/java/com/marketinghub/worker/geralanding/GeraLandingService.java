@@ -20,6 +20,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,6 +29,8 @@ import org.springframework.core.io.ClassPathResource;
 
 @Service
 public class GeraLandingService {
+
+    private static final Logger log = LoggerFactory.getLogger(GeraLandingService.class);
 
     private static final String GERALANDING_PROMPT_BASE_PATH = "prompts/geralanding/";
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(prompt|dados)-([a-zA-Z0-9_-]+)}");
@@ -69,6 +73,11 @@ public class GeraLandingService {
         if (!StringUtils.hasText(etapa)) {
             throw new IllegalArgumentException("Nome da etapa é obrigatório");
         }
+        log.info(
+                "Montando prompt da etapa. experimentoId={}, jobId={}, etapa={}",
+                job != null ? job.experimentId() : null,
+                job != null ? job.id() : null,
+                etapa);
         String template = carregarPromptBase(etapa.trim() + ".md");
         Map<String, Object> dadosPayload = obterDadosDoJob(job);
         return resolverPlaceholders(template, dadosPayload);

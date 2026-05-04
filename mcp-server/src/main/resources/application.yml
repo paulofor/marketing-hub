@@ -17,6 +17,9 @@ spring:
       minimum-idle: ${DB_MIN_IDLE:0}
 
 management:
+  health:
+    db:
+      enabled: false
   endpoint:
     health:
       probes:
@@ -40,6 +43,8 @@ mcp:
     mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}
     mois-path: ${MCP_LOG_MOIS_PATH:http://177.153.62.107:8094/manage/logfile}
     fetch-timeout-seconds: ${MCP_LOG_FETCH_TIMEOUT_SECONDS:45}
+    fetch-attempts: ${MCP_LOG_FETCH_ATTEMPTS:3}
+    fetch-retry-delay-millis: ${MCP_LOG_FETCH_RETRY_DELAY_MILLIS:400}
     max-lines: ${MCP_LOG_MAX_LINES:500}
     http-tail-range-bytes: ${MCP_LOG_HTTP_TAIL_RANGE_BYTES:262144}
   meta:

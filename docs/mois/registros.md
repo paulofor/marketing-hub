@@ -17,3 +17,14 @@
   - manter a extração rica (título, link, descrição, produtor e imagem) quando os blocos completos estiverem presentes;
   - aplicar fallback de extração por URL de produto (`https://www.hotmart.com/product/...`) quando o HTML/JSON vier com estrutura parcial.
 - O objetivo é manter geração de leads mesmo quando a Hotmart altera o shape do payload da vitrine.
+
+## 2026-05-03 23:24:00 UTC-3
+- Reintroduzida a etapa de persistência de estado de coleta no MOIS via backend principal, usando os endpoints:
+  - `PUT /api/v1/mois/persistence/collection-jobs/{jobId}`
+  - `GET /api/v1/mois/persistence/collection-jobs/{jobId}`
+  - `GET /api/v1/mois/persistence/collection-jobs?workspaceId=&status=`
+- O `MoisDomainService` deixou de operar exclusivamente em memória para coleção e passou a:
+  - salvar progresso/resultado do job (`persistCollectionState`);
+  - hidratar estado por workspace/status (`hydrateCollectionState`);
+  - hidratar estado por job (`hydrateCollectionStateByJob`).
+- Serialização JSON ajustada com descoberta automática de módulos Jackson para suportar `Instant` no payload de persistência.

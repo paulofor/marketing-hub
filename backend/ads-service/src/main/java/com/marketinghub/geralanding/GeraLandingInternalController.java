@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/internal/geralanding")
@@ -29,7 +28,7 @@ public class GeraLandingInternalController {
     }
 
     @PostMapping("/stage-executions/{idJob}/receive-prompt")
-    public ResponseEntity<Void> receivePrompt(@PathVariable UUID idJob,
+    public ResponseEntity<Void> receivePrompt(@PathVariable String idJob,
                                               @Valid @RequestBody GeraLandingPromptReceiveRequest request) {
         executionService.receivePrompt(idJob, request);
         return ResponseEntity.accepted().build();

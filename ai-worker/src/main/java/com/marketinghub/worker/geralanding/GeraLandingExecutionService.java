@@ -51,11 +51,10 @@ public class GeraLandingExecutionService {
                     execution.stageCode(),
                     null,
                     null,
-                    execution.promptContent(),
+                    "{}",
                     Instant.now());
-            String promptMontado = geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage, execution.idJob());
-            UUID idJob = UUID.fromString(execution.idJob());
-            backendClient.receivePrompt(idJob, execution.experimentId(), execution.stageCode(), promptMontado);
+            String promptMontado = geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage, execution.idJob() != null ? execution.idJob().toString() : null);
+            backendClient.receivePrompt(execution.idJob(), execution.experimentId(), execution.stageCode(), promptMontado);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
         } catch (Exception ex) {

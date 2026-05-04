@@ -1,5 +1,7 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-04-gera-landing-add-prompt-column.yaml
+  - include:
       file: changesets/2026-05-03-gera-landing-stage-execution-timestamps.yaml
       relativeToChangelogFile: true
   - include:

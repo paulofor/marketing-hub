@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-04-fix-prompt-column-type-gera-landing-stage-execution
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: gera_landing_stage_execution
+            columnName: prompt
+      changes:
+        - modifyDataType:
+            tableName: gera_landing_stage_execution
+            columnName: prompt
+            newDataType: LONGTEXT

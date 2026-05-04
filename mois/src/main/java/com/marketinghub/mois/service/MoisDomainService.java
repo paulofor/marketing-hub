@@ -5,10 +5,13 @@ import com.marketinghub.mois.domain.MoisDomainModels.DiscoveryStatus;
 import com.marketinghub.mois.domain.MoisDomainModels.OfferCard;
 import com.marketinghub.mois.domain.MoisDomainModels.SourceSnapshot;
 import com.marketinghub.mois.dto.MoisArtifactDtos;
+import com.marketinghub.mois.dto.MoisCollectionPersistenceDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -70,12 +73,14 @@ public class MoisDomainService {
             .connectTimeout(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
+    private final ObjectMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
 
     private static final String MODULE_NAME = "MOIS";
     private static final String CREATED_BY = "mois-system";
     private static final String DEFAULT_STAGE = "COLETA";
     private volatile boolean collectionRolloutEnabled = true;
     private final Set<String> rolloutAllowedWorkspaces = ConcurrentHashMap.newKeySet();
+    private final String backendBaseUrl = System.getenv().getOrDefault("BACKEND_URL", "http://191.252.181.168:8000");
 
     public MoisDomainService() {
         loadCollectionRolloutFromEnv();
@@ -1898,15 +1903,134 @@ public class MoisDomainService {
     }
 
     private void hydrateCollectionState(String workspaceId, String status) {
-        // persistence gateway removed; state remains in-memory only
+        StringBuilder uriBuilder = new StringBuilder(backendBaseUrl)
+                .append("/api/v1/mois/persistence/collection-jobs");
+        boolean first = true;
+        if (workspaceId != null && !workspaceId.isBlank()) {
+            uriBuilder.append(first ? "?" : "&")
+                    .append("workspaceId=")
+                    .append(URLEncoder.encode(workspaceId, StandardCharsets.UTF_8));
+            first = false;
+        }
+        if (status != null && !status.isBlank()) {
+            uriBuilder.append(first ? "?" : "&")
+                    .append("status=")
+                    .append(URLEncoder.encode(status, StandardCharsets.UTF_8));
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(uriBuilder.toString()))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200 || response.body() == null || response.body().isBlank()) {
+                return;
+            }
+            MoisCollectionPersistenceDtos.CollectionJobStateListResponse persisted = objectMapper.readValue(
+                    response.body(),
+                    MoisCollectionPersistenceDtos.CollectionJobStateListResponse.class
+            );
+            for (MoisCollectionPersistenceDtos.CollectionJobStateResponse item : persisted.items()) {
+                mergePersistedState(item);
+            }
+        } catch (Exception ex) {
+            log.warn("mois_collection_state_hydrate_failed workspaceId={} status={} reason={}",
+                    workspaceId, status, ex.getMessage());
+        }
     }
 
     private void hydrateCollectionStateByJob(String jobId) {
-        // persistence gateway removed; state remains in-memory only
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(backendBaseUrl + "/api/v1/mois/persistence/collection-jobs/" + URLEncoder.encode(jobId, StandardCharsets.UTF_8)))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200 || response.body() == null || response.body().isBlank()) {
+                return;
+            }
+            MoisCollectionPersistenceDtos.CollectionJobStateResponse state = objectMapper.readValue(
+                    response.body(),
+                    MoisCollectionPersistenceDtos.CollectionJobStateResponse.class
+            );
+            mergePersistedState(state);
+        } catch (Exception ex) {
+            log.warn("mois_collection_state_hydrate_by_job_failed jobId={} reason={}", jobId, ex.getMessage());
+        }
     }
 
     private void persistCollectionState(String jobId) {
-        // persistence gateway removed; state remains in-memory only
+        MoisWorkspaceDtos.CollectionJobResponse job = collectionJobs.get(jobId);
+        if (job == null) {
+            return;
+        }
+        MoisCollectionPersistenceDtos.CollectionJobStateResponse state = new MoisCollectionPersistenceDtos.CollectionJobStateResponse(
+                job,
+                collectedReferencesByJob.getOrDefault(jobId, List.of()),
+                collectedReferenceLineage.entrySet().stream()
+                        .filter(entry -> Objects.equals(entry.getValue().jobId(), jobId))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                toRuntimeStatsResponse(collectionJobRuntimeStats.get(jobId)),
+                collectionOpsByWorkspace.getOrDefault(job.workspaceId(), Map.of()).entrySet().stream()
+                        .map(entry -> entry.getValue().toResponse())
+                        .toList()
+        );
+        try {
+            String payload = objectMapper.writeValueAsString(state);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(backendBaseUrl + "/api/v1/mois/persistence/collection-jobs/" + URLEncoder.encode(jobId, StandardCharsets.UTF_8)))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(payload))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("mois_collection_state_persist_failed jobId={} statusCode={} body={}",
+                        jobId, response.statusCode(), response.body());
+            }
+        } catch (Exception ex) {
+            log.warn("mois_collection_state_persist_exception jobId={} reason={}", jobId, ex.getMessage());
+        }
+    }
+
+    private void mergePersistedState(MoisCollectionPersistenceDtos.CollectionJobStateResponse state) {
+        if (state == null || state.job() == null) {
+            return;
+        }
+        String jobId = state.job().jobId();
+        collectionJobs.put(jobId, state.job());
+        collectedReferencesByJob.put(jobId, state.references() == null ? List.of() : state.references());
+        if (state.lineageByReferenceId() != null) {
+            collectedReferenceLineage.putAll(state.lineageByReferenceId());
+        }
+        if (state.runtime() != null) {
+            collectionJobRuntimeStats.put(jobId, new CollectionJobRuntimeStats(
+                    jobId,
+                    state.runtime().retries(),
+                    state.runtime().latencyMs(),
+                    state.runtime().finishedAt()
+            ));
+        }
+        if (state.sourceOps() != null && !state.sourceOps().isEmpty()) {
+            Map<String, SourceOpsStats> ops = new ConcurrentHashMap<>();
+            for (MoisWorkspaceDtos.CollectionSourceOpsSummaryResponse summary : state.sourceOps()) {
+                ops.put(summary.source(), SourceOpsStats.copyOf(summary));
+            }
+            collectionOpsByWorkspace.put(state.job().workspaceId(), ops);
+        }
+    }
+
+    private MoisCollectionPersistenceDtos.RuntimeStatsResponse toRuntimeStatsResponse(CollectionJobRuntimeStats runtimeStats) {
+        if (runtimeStats == null) {
+            return null;
+        }
+        return new MoisCollectionPersistenceDtos.RuntimeStatsResponse(
+                runtimeStats.retries(),
+                runtimeStats.latencyMs(),
+                runtimeStats.finishedAt()
+        );
     }
 
     private void loadCollectionRolloutFromEnv() {

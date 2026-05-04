@@ -6,6 +6,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,5 +72,15 @@ public class GeraLandingStageExecutionService {
         execution.setPrompt(request.prompt());
         execution.setStatus("RECEBIDO");
         executionRepository.save(execution);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GeraLandingPendingExecutionResponse> listPendingExecutions() {
+        return executionRepository.findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")
+                .stream()
+                .map(execution -> new GeraLandingPendingExecutionResponse(
+                        execution.getIdJob(),
+                        execution.getStageCode()))
+                .toList();
     }
 }

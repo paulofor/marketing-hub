@@ -104,7 +104,7 @@ O `docker-compose.yml` deste diretório sobe dois containers:
 - `mcp-server` (interno, exposto apenas na rede Docker em `8096`);
 - `nginx` (público, escutando na porta `80` e fazendo proxy para o MCP).
 
-O compose aguarda o health-check do `mcp-server` (`/actuator/health`) antes de subir o Nginx, reduzindo erros de timeout durante boot.
+O compose aguarda o health-check de liveness do `mcp-server` (`/actuator/health/liveness`) antes de subir o Nginx, evitando bloquear o proxy quando apenas a conectividade com banco estiver degradada.
 
 ### Tolerância a indisponibilidade temporária do banco
 

@@ -51,6 +51,8 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `http://191.252.102.54:8092/api/v1/logs/runtime?lines=200`);
 - `MCP_LOG_MDS_PATH` (default `http://177.153.62.107:8091/actuator/logfile`);
 - `MCP_LOG_MOIS_PATH` (default `http://177.153.62.107:8094/manage/logfile`).
+- `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`);
+- `MCP_LOG_HTTP_TAIL_RANGE_BYTES` (default `262144`), usado para enviar `Range: bytes=-N` nas leituras HTTP de logs e reduzir timeout em arquivos grandes.
 
 > Em produção, configure explicitamente os `MCP_LOG_*_PATH` via variáveis de ambiente (arquivo `.env` do host) para apontar para o destino de log aprovado.
 
@@ -102,7 +104,7 @@ O `docker-compose.yml` deste diretório sobe dois containers:
 - `mcp-server` (interno, exposto apenas na rede Docker em `8096`);
 - `nginx` (público, escutando na porta `80` e fazendo proxy para o MCP).
 
-O compose aguarda o health-check do `mcp-server` (`/actuator/health`) antes de subir o Nginx, reduzindo erros de timeout durante boot.
+O compose aguarda o health-check de liveness do `mcp-server` (`/actuator/health/liveness`) antes de subir o Nginx, evitando bloquear o proxy quando apenas a conectividade com banco estiver degradada.
 
 ### Tolerância a indisponibilidade temporária do banco
 

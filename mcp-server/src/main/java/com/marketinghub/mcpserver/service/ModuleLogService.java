@@ -26,10 +26,12 @@ public class ModuleLogService {
     private final McpProperties properties;
     private final HttpClient httpClient;
     private final Duration logFetchTimeout;
+    private final long httpTailRangeBytes;
 
     public ModuleLogService(McpProperties properties) {
         this.properties = properties;
         this.logFetchTimeout = Duration.ofSeconds(properties.logs().fetchTimeoutSeconds());
+        this.httpTailRangeBytes = properties.logs().httpTailRangeBytes();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(logFetchTimeout)
                 .build();
@@ -88,6 +90,7 @@ public class ModuleLogService {
 
         HttpRequest request = HttpRequest.newBuilder(URI.create(configuredUrl))
                 .timeout(logFetchTimeout)
+                .header("Range", "bytes=-" + httpTailRangeBytes)
                 .GET()
                 .build();
 

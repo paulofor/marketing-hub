@@ -29,6 +29,8 @@ public record McpProperties(
             @NotBlank String mdsPath,
             @NotBlank String moisPath,
             @Positive int fetchTimeoutSeconds,
+            @Positive int fetchAttempts,
+            @Positive int fetchRetryDelayMillis,
             @Positive int maxLines,
             @Positive int httpTailRangeBytes
     ) {

@@ -52,6 +52,8 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_MDS_PATH` (default `http://177.153.62.107:8091/actuator/logfile`);
 - `MCP_LOG_MOIS_PATH` (default `http://177.153.62.107:8094/manage/logfile`).
 - `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`);
+- `MCP_LOG_FETCH_ATTEMPTS` (default `3`), número de tentativas para leitura HTTP de logs;
+- `MCP_LOG_FETCH_RETRY_DELAY_MILLIS` (default `400`), intervalo entre tentativas de leitura HTTP;
 - `MCP_LOG_HTTP_TAIL_RANGE_BYTES` (default `262144`), usado para enviar `Range: bytes=-N` nas leituras HTTP de logs e reduzir timeout em arquivos grandes.
 
 > Em produção, configure explicitamente os `MCP_LOG_*_PATH` via variáveis de ambiente (arquivo `.env` do host) para apontar para o destino de log aprovado.

@@ -27,4 +27,19 @@ public final class MoisCollectionPersistenceDtos {
 
     public record CollectionJobStateListResponse(List<CollectionJobStateResponse> items) {
     }
+
+    public record SourceHighlightResponse(
+            String source,
+            int totalReferences,
+            double averageSuccessScore,
+            double averageEngagementRelative,
+            double averageRecurrenceScore,
+            double averageEvidenceScore,
+            int favorites,
+            String topSuccessSignal
+    ) {
+    }
+
+    public record SourceHighlightListResponse(List<SourceHighlightResponse> items) {
+    }
 }

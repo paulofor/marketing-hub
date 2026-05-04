@@ -6,7 +6,10 @@ import com.marketinghub.mois.dto.MoisCollectionPersistenceDtos;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,6 +50,7 @@ public class MoisCollectionPersistenceService {
                 writeState(state),
                 Timestamp.from(Instant.now())
         );
+        persistCollectedReferences(jobId, workspaceId, state.references());
 
         return state;
     }
@@ -98,5 +102,91 @@ public class MoisCollectionPersistenceService {
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Falha ao desserializar estado de coleta MOIS", ex);
         }
+    }
+
+    private void persistCollectedReferences(
+            String jobId,
+            String workspaceId,
+            List<com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse> references
+    ) {
+        jdbcTemplate.update("DELETE FROM mois_collected_reference WHERE job_id = ?", jobId);
+        if (references == null || references.isEmpty()) {
+            return;
+        }
+        jdbcTemplate.batchUpdate(
+                """
+                        INSERT INTO mois_collected_reference (
+                          job_id, workspace_id, reference_id, source, title, url, niche, status, favorite,
+                          imported_reference_id, success_score, success_signal, confidence_level, ranking_position,
+                          engagement_relative, recurrence_score, evidence_score, collected_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                references,
+                references.size(),
+                (ps, item) -> {
+                    ps.setString(1, jobId);
+                    ps.setString(2, workspaceId);
+                    ps.setString(3, item.referenceId());
+                    ps.setString(4, item.source());
+                    ps.setString(5, item.title());
+                    ps.setString(6, item.url());
+                    ps.setString(7, item.niche());
+                    ps.setString(8, item.status());
+                    ps.setBoolean(9, item.favorite());
+                    ps.setString(10, item.importedReferenceId());
+                    ps.setInt(11, item.successScore());
+                    ps.setString(12, item.successSignal());
+                    ps.setString(13, item.confidenceLevel());
+                    ps.setInt(14, item.rankingPosition());
+                    ps.setDouble(15, item.engagementRelative());
+                    ps.setDouble(16, item.recurrenceScore());
+                    ps.setDouble(17, item.evidenceScore());
+                    ps.setTimestamp(18, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
+                    ps.setTimestamp(19, Timestamp.from(Instant.now()));
+                }
+        );
+    }
+
+    public MoisCollectionPersistenceDtos.SourceHighlightListResponse summarizeBySource(String workspaceId, String status) {
+        List<MoisCollectionPersistenceDtos.CollectionJobStateResponse> states = listJobStates(workspaceId, status).items();
+        Map<String, List<com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse>> bySource = new HashMap<>();
+        for (MoisCollectionPersistenceDtos.CollectionJobStateResponse state : states) {
+            if (state.references() == null) {
+                continue;
+            }
+            for (com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse reference : state.references()) {
+                bySource.computeIfAbsent(reference.source() == null ? "UNKNOWN" : reference.source(), key -> new ArrayList<>())
+                        .add(reference);
+            }
+        }
+        List<MoisCollectionPersistenceDtos.SourceHighlightResponse> items = bySource.entrySet().stream()
+                .map(entry -> toSourceHighlight(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(MoisCollectionPersistenceDtos.SourceHighlightResponse::averageSuccessScore).reversed())
+                .toList();
+        return new MoisCollectionPersistenceDtos.SourceHighlightListResponse(items);
+    }
+
+    private MoisCollectionPersistenceDtos.SourceHighlightResponse toSourceHighlight(
+            String source,
+            List<com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse> references
+    ) {
+        int total = references.size();
+        int favorites = (int) references.stream().filter(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse::favorite).count();
+        double avgSuccess = references.stream().mapToInt(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse::successScore).average().orElse(0);
+        double avgEngagement = references.stream().mapToDouble(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse::engagementRelative).average().orElse(0);
+        double avgRecurrence = references.stream().mapToDouble(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse::recurrenceScore).average().orElse(0);
+        double avgEvidence = references.stream().mapToDouble(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse::evidenceScore).average().orElse(0);
+        String topSignal = references.stream()
+                .filter(r -> r.successSignal() != null && !r.successSignal().isBlank())
+                .collect(java.util.stream.Collectors.groupingBy(
+                        com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse::successSignal,
+                        java.util.stream.Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("N/A");
+        return new MoisCollectionPersistenceDtos.SourceHighlightResponse(
+                source, total, avgSuccess, avgEngagement, avgRecurrence, avgEvidence, favorites, topSignal
+        );
     }
 }

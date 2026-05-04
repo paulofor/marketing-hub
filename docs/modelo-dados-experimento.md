@@ -141,6 +141,8 @@ Regras operacionais associadas:
 - o agendamento diário usa o contrato já existente de `collection-jobs` do MOIS, com filtro de temperatura via `minSuccessScore` configurável;
 - cada tentativa do robô deve ser persistida (sucesso ou falha) para auditoria operacional e rastreabilidade de execução.
 - o estado consolidado de cada `collection-job` (job, referências, lineage e runtime) deve ser persistido no backend principal em `mois_collection_job_state`, eliminando dependência de memória volátil no serviço de persistência.
+- as referências coletadas por entidade devem ser persistidas relacionalmente em `mois_collected_reference` com chave única (`job_id`, `reference_id`) para consulta histórica por fonte e workspace.
+- o backend disponibiliza agregação executiva de destaques por fonte via `GET /api/v1/mois/persistence/collection-highlights/by-source` a partir dos estados persistidos dos jobs.
 
 ## Atualização incremental — MDS Sprint 1 (orquestração e persistência base)
 

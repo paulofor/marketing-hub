@@ -33,3 +33,10 @@
 - Ajustados os testes unitários `MoisDomainServiceTest` para evitar flakiness causado por estado persistido de coletas do mesmo `workspaceId` entre execuções.
 - Nos cenários de listagem de jobs e sumário operacional, os `workspaceId` agora são gerados com sufixo UUID por teste, garantindo isolamento sem depender de limpeza externa.
 - Resultado esperado: os asserts de cardinalidade (`totalJobs` e tamanho da lista) voltam a refletir apenas os dados criados no próprio teste.
+
+## 2026-05-04 10:40:00 UTC-3
+- Endurecida a entrega de persistência MOIS com cobertura de testes unitários no backend (`MoisCollectionPersistenceServiceTest`).
+- Validado via testes o comportamento de:
+  - sincronização relacional por job em `mois_collected_reference` (delete + batch insert);
+  - agregação executiva de destaques por fonte (`collection-highlights/by-source`) com ordenação por score médio e cálculo de sinal predominante.
+- Registro operacional para rastrear revisão da PR "Persist collected references and add source-highlight aggregation endpoint" após feedback de qualidade.

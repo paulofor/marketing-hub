@@ -22,15 +22,16 @@ import java.util.stream.Stream;
 public class ModuleLogService {
 
     private static final int DEFAULT_LINES = 200;
-    private static final Duration LOG_FETCH_TIMEOUT = Duration.ofSeconds(10);
 
     private final McpProperties properties;
     private final HttpClient httpClient;
+    private final Duration logFetchTimeout;
 
     public ModuleLogService(McpProperties properties) {
         this.properties = properties;
+        this.logFetchTimeout = Duration.ofSeconds(properties.logs().fetchTimeoutSeconds());
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(LOG_FETCH_TIMEOUT)
+                .connectTimeout(logFetchTimeout)
                 .build();
     }
 
@@ -86,7 +87,7 @@ public class ModuleLogService {
         response.put("source", "http");
 
         HttpRequest request = HttpRequest.newBuilder(URI.create(configuredUrl))
-                .timeout(LOG_FETCH_TIMEOUT)
+                .timeout(logFetchTimeout)
                 .GET()
                 .build();
 

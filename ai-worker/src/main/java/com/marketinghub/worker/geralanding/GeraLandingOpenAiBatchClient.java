@@ -68,7 +68,7 @@ public class GeraLandingOpenAiBatchClient {
         } catch (WebClientResponseException ex) {
             HttpStatusCode statusCode = ex.getStatusCode();
             log.error("Falha HTTP OpenAI no gera-landing [jobId={}, stage={}, status={}, responseBody={}]",
-                    job.id(), job.stage(), statusCode.value(), ex.getResponseBodyAsString());
+                    job.id(), job.section(), statusCode.value(), ex.getResponseBodyAsString());
             throw new IllegalStateException("Falha HTTP ao gerar conteúdo de gera-landing", ex);
         } catch (Exception ex) {
             throw new IllegalStateException("Falha ao gerar conteúdo de gera-landing", ex);

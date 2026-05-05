@@ -30,21 +30,21 @@ Registrar cada execução de etapa do fluxo Gera Landing, com:
 - status e identificador do job;
 - timestamps de ciclo de vida da execução.
 
-### Definição canônica dos campos
+### Definição canônica dos campos (aderente ao código e Liquibase atual)
 
 | Campo | Tipo (MySQL 5.7) | Obrigatório | Regra canônica |
 |---|---|---:|---|
 | `experiment_id` | `BIGINT` | Sim | Identificador do experimento. FK para `experiment.id`. |
 | `stage_code` | `VARCHAR(100)` | Sim | Código da etapa do Gera Landing (ex.: `landing-page-wireframe`). |
-| `execution_requested_at` | `DATETIME(3)` | Sim | Momento da solicitação da execução da etapa. Compõe chave primária. Default `CURRENT_TIMESTAMP(3)`. |
-| `prompt_template_id` | `VARCHAR(191)` | Não | Identificador do template de prompt usado na execução. |
-| `prompt_content` | `TINYTEXT` | Sim | Conteúdo de prompt recebido no início da execução da etapa. |
-| `status` | `VARCHAR(50)` | Sim | Estado atual da execução (ex.: `INICIADO`, `EM_PROCESSAMENTO`). Default inicial `INICIADO`. |
-| `id_job` | `BINARY(36)` | Sim | Identificador do job da execução armazenado em binário; API mantém representação textual do UUID. |
+| `execution_requested_at` | `DATETIME(3)` | Sim | Momento da solicitação da execução da etapa. Default `CURRENT_TIMESTAMP(3)`. |
+| `prompt_template_id` | `VARCHAR(191)` | Não | Identificador técnico do template/origem do prompt inicial da execução. |
+| `prompt_content` | `LONGTEXT` | Sim | Conteúdo de prompt recebido no início da execução da etapa. |
+| `status` | `VARCHAR(50)` | Sim | Estado atual da execução. Valor inicial: `INICIADO`. |
+| `id_job` | `CHAR(36)` | Sim | Identificador do job em formato textual UUID. É a chave primária atual. |
 | `created_at` | `DATETIME(3)` | Sim | Momento de criação do registro no banco. Default `CURRENT_TIMESTAMP(3)`. |
 | `processing_started_at` | `DATETIME(3)` | Não | Momento em que o processamento efetivo da execução iniciou. |
 | `completed_at` | `DATETIME(3)` | Não | Momento de conclusão da execução da etapa. |
-| `prompt` | `TINYTEXT` | Não | Prompt final montado pelo Worker AI para a execução da etapa. |
+| `prompt` | `LONGTEXT` | Não | Prompt final montado pelo Worker AI para a execução da etapa. |
 
 ### Chaves e restrições
 
@@ -52,11 +52,16 @@ Registrar cada execução de etapa do fluxo Gera Landing, com:
 - **Chave estrangeira**: `experiment_id` referencia `experiment.id` com `ON DELETE CASCADE`.
 - **Índice auxiliar**: `idx_gera_landing_stage_execution_experiment` em `experiment_id`.
 
-### Regras canônicas de contrato e consistência (modelo)
+### Validação da PARTE A contra implementação atual
 
-- `id_job` é persistido como **binário** (`BINARY(36)`) no banco; backend converte para/desde `String` UTF-8 nos contratos de API e integração com Worker.
-- `prompt_content` e `prompt` seguem `TINYTEXT` conforme o schema atual; qualquer evolução de capacidade deve partir de mudança explícita de banco.
-- O critério de pendência oficial é `status = INICIADO`.
+Resultado da verificação: **PARTE A foi ajustada para refletir exatamente o estado atual do código e do schema**.
+
+Principais confirmações:
+
+- `prompt_content` e `prompt` estão em `LONGTEXT` no schema vigente.
+- `id_job` está em `CHAR(36)` no schema, mesmo com mapeamento JPA em `byte[]` (conversão UTF-8 no serviço).
+- chave primária ativa é `id_job`.
+- pendência oficial continua sendo `status = INICIADO`.
 
 ---
 
@@ -72,8 +77,13 @@ Registrar cada execução de etapa do fluxo Gera Landing, com:
 
 ### 1) Criação do job no backend com status inicial
 
-1. O backend registra execução inicial da etapa (atualmente `landing-page-wireframe`) em `gera_landing_stage_execution`.
-2. O registro nasce com `status = INICIADO`, `id_job` UUID convertido para `BINARY(36)`, `created_at` e `execution_requested_at`.
+1. O backend registra execução inicial da etapa `landing-page-wireframe` em `gera_landing_stage_execution`.
+2. O registro nasce com:
+   - `status = INICIADO`;
+   - `id_job` gerado por UUID;
+   - `execution_requested_at` e `created_at` preenchidos com timestamp atual;
+   - `prompt_template_id = manual/start`;
+   - `prompt_content = "Início manual via interface do experimento."`.
 3. Este status inicial é a condição de elegibilidade para o polling do Worker AI.
 
 ### 2) Agendamento do Worker AI (polling contínuo)
@@ -85,8 +95,9 @@ Registrar cada execução de etapa do fluxo Gera Landing, com:
 ### 3) Busca de jobs pendentes no endpoint interno do backend
 
 1. O Worker AI chama `GET /api/internal/geralanding/stage-executions/pending?limit={n}`.
-2. O backend retorna lista com payload mínimo por item: `experimentId`, `idJob`, `stageCode`.
+2. O backend retorna lista com payload por item: `experimentId`, `idJob`, `stageCode`.
 3. O backend monta essa lista buscando somente registros com `status = INICIADO`, ordenados por `execution_requested_at` ascendente.
+4. Observação importante de implementação: o parâmetro `limit` enviado pelo Worker não é aplicado no serviço backend atual, que usa `findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")`.
 
 ### 4) Loop de processamento no Worker AI
 
@@ -95,21 +106,22 @@ Para cada item retornado no lote:
 1. O Worker valida presença de `stageCode` e `idJob`; itens inválidos são ignorados com log de aviso.
 2. O `stageCode` é normalizado (`trim + lowerCase`).
 3. Nesta versão canônica, apenas `landing-page-wireframe` entra no fluxo de geração; outras etapas são ignoradas sem erro.
+4. O contexto é montado como `GeraLandingPromptContext(experimentId, idJob, stageCode, Collections.emptyMap())`.
 
 ### 5) Montagem do prompt da etapa no Worker AI
 
-1. O Worker usa o próprio item de pendência (`experimentId`, `idJob`, `stageCode`) para montar um contexto interno de prompt, sem dependência de `ExperimentPipelineJobDto`.
-2. A montagem usa `GeraLandingService.montarERegistrarPromptEtapa(...)`, que:
-   - carrega template base em `prompts/geralanding/{etapa}.md`;
-   - resolve placeholders `{prompt-*}` com inclusão recursiva de outros prompts;
-   - resolve placeholders `{dados-*}` a partir do payload do job (serializado de forma legível);
-   - protege contra referência circular de prompts.
-3. Após montar, o Worker registra log técnico de geração via endpoint interno já existente de `ai_worker_generation` (rastreabilidade de auditoria do prompt montado).
+1. O Worker chama `GeraLandingService.montarERegistrarPromptEtapa(context, etapa)`.
+2. A montagem usa:
+   - template base em `prompts/geralanding/{etapa}.md`;
+   - resolução de placeholders `{prompt-*}` com inclusão recursiva de outros prompts;
+   - resolução de placeholders `{dados-*}` via serialização JSON pretty do mapa `dados` do contexto.
+3. Proteção aplicada: referência circular entre prompts gera erro explícito (`IllegalStateException`).
+4. Como o fluxo atual cria `context.dados` vazio, placeholders `{dados-*}` resultam em string vazia na versão corrente.
 
 ### 6) Envio do prompt montado para persistência no backend
 
-1. O Worker chama `POST /api/internal/geralanding/stage-executions/{idJob}/receive-prompt`.
-2. O `idJob` do path **deve ser exatamente o mesmo** recebido no item de pendência retornado por `GET /pending` (sem gerar novo UUID local para callback).
+1. Após montar o prompt, o Worker chama `POST /api/internal/geralanding/stage-executions/{idJob}/receive-prompt`.
+2. O `idJob` do path **é exatamente o mesmo** recebido no item de pendência retornado por `GET /pending`.
 3. Body enviado pelo Worker:
    - `experimentId`
    - `stageCode`
@@ -118,20 +130,20 @@ Para cada item retornado no lote:
 
 ### 7) Persistência final no backend e atualização de status
 
-1. O backend localiza a execução por `idJob` usando a ocorrência mais recente (`findTopByIdJobOrderByExecutionRequestedAtDesc`).
-2. Em caso de ausência da execução, retorna erro de entidade não encontrada e registra log de diagnóstico.
-3. Em caso de sucesso, persiste:
+1. O backend tenta localizar a execução por `idJob` usando `findTopByIdJobOrderByExecutionRequestedAtDesc`.
+2. Se não encontrar, aplica fallback por `experimentId + stageCode` (`findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc`).
+3. Em caso de ausência em ambos os critérios, retorna erro de entidade não encontrada e registra log de diagnóstico.
+4. Em caso de sucesso, persiste:
    - `prompt` com o texto final montado;
    - `processing_started_at` com timestamp atual;
    - `status = EM_PROCESSAMENTO`.
-4. O backend responde `202 Accepted` ao Worker.
-5. O endpoint de pendências deve sempre retornar `experimentId`, `idJob` e `stageCode` para permitir processamento e rastreabilidade ponta a ponta.
+5. O endpoint responde `202 Accepted` ao Worker.
 
 ## Escopo desta versão
 
 Este documento cobre:
 
-- **PARTE A (Modelo)**: modelo canônico da tabela `gera_landing_stage_execution`;
-- **PARTE B (Fluxos)**: fluxo 01 de geração/persistência de prompts pelo Worker AI.
+- **PARTE A (Modelo)**: modelo canônico da tabela `gera_landing_stage_execution` validado contra Liquibase e backend;
+- **PARTE B (Fluxos)**: fluxo 01 de geração/persistência de prompts pelo Worker AI, com comportamento real atual (incluindo limitações já observadas em código).
 
 Evoluções de novas etapas do Gera Landing e novos estados do ciclo devem ser versionadas neste mesmo cânone.

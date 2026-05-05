@@ -18,3 +18,12 @@
   - implementar uma classe `*Service` com a lógica de geração;
   - criar um `*Scheduler` com `@Scheduled` para executar o serviço periodicamente;
   - encapsular qualquer cliente do ChatGPT dentro do mesmo pacote.
+
+## Compilação do módulo
+- O `pom.xml` deste módulo fica em `ai-worker/pom.xml` e **não** existe reactor Maven na raiz do repositório.
+- Para compilar corretamente a partir da raiz do projeto, use:
+  - `mvn -f ai-worker/pom.xml -DskipTests compile`
+- Alternativamente:
+  - `cd ai-worker && mvn -DskipTests compile`
+- Se ocorrer erro de dependência `com.marketinghub:ads-service:0.0.1-SNAPSHOT`, publique/instale primeiro a dependência localmente:
+  - `mvn -f backend/ads-service/pom.xml -DskipTests install`

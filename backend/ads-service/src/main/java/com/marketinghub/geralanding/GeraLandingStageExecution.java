@@ -55,5 +55,5 @@ public class GeraLandingStageExecution {
 
     @Id
     @Column(name = "id_job", nullable = false, length = 36)
-    private String idJob;
+    private byte[] idJob;
 }

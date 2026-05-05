@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-05-mois-collected-reference-hotmart-highlights
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_collected_reference
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_collected_reference
+                ADD COLUMN hotmart_description VARCHAR(220) NULL AFTER evidence_score,
+                ADD COLUMN hotmart_producer VARCHAR(120) NULL AFTER hotmart_description,
+                ADD COLUMN hotmart_image_url VARCHAR(260) NULL AFTER hotmart_producer,
+                ADD COLUMN hotmart_highlight VARCHAR(220) NULL AFTER hotmart_image_url;

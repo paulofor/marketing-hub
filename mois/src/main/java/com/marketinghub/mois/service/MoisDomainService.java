@@ -1284,7 +1284,7 @@ public class MoisDomainService {
                 NormalizedSuccessSignal normalized = normalizeSuccessSignal(metrics, job.minSuccessScore());
                 SourceLead sourceLead = sourceRank <= sourceLeads.size()
                         ? sourceLeads.get(sourceRank - 1)
-                        : new SourceLead(buildCollectionSourceUrl(normalizedSource, niche, sourceRank), null, null, null, null);
+                        : new SourceLead(buildCollectionSourceUrl(normalizedSource, niche, sourceRank), null, null, null, null, null);
                 MoisWorkspaceDtos.CollectedReferenceResponse item = buildCollectedReference(
                         job,
                         normalizedSource,
@@ -1341,6 +1341,9 @@ public class MoisDomainService {
         if (sourceLead.hotmartImageUrl() != null && !sourceLead.hotmartImageUrl().isBlank()) {
             rawMetadata.put("hotmartImageUrl", trimTo(sourceLead.hotmartImageUrl(), 260));
         }
+        if (sourceLead.hotmartHighlight() != null && !sourceLead.hotmartHighlight().isBlank()) {
+            rawMetadata.put("hotmartHighlight", trimTo(sourceLead.hotmartHighlight(), 220));
+        }
         return new MoisWorkspaceDtos.CollectedReferenceResponse(
                 UUID.randomUUID().toString(),
                 job.jobId(),
@@ -1376,7 +1379,7 @@ public class MoisDomainService {
         }
         List<SourceLead> fallback = new ArrayList<>();
         for (int sourceRank = 1; sourceRank <= limitPerSource; sourceRank++) {
-            fallback.add(new SourceLead(buildCollectionSourceUrl(source, niche, sourceRank), null, null, null, null));
+            fallback.add(new SourceLead(buildCollectionSourceUrl(source, niche, sourceRank), null, null, null, null, null));
         }
         return fallback;
     }
@@ -1429,8 +1432,9 @@ public class MoisDomainService {
             String description = decodeHotmartValue(richCardMatcher.group(3));
             String producer = decodeHotmartValue(richCardMatcher.group(4));
             String imageUrl = decodeHotmartValue(richCardMatcher.group(5));
+            String highlight = deriveHotmartHighlight(title, description);
             if (seenUrls.add(decodedUrl)) {
-                leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl));
+                leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl, highlight));
             }
         }
 
@@ -1446,7 +1450,7 @@ public class MoisDomainService {
         while (fallbackUrlMatcher.find() && leads.size() < limitPerSource) {
             String url = decodeHotmartValue(fallbackUrlMatcher.group());
             if (seenUrls.add(url)) {
-                leads.add(new SourceLead(url, null, null, null, null));
+                leads.add(new SourceLead(url, null, null, null, null, null));
             }
         }
 
@@ -1458,6 +1462,24 @@ public class MoisDomainService {
             return null;
         }
         return value.replace("\\/", "/").replace("\\u0026", "&").trim();
+    }
+
+    private String deriveHotmartHighlight(String title, String description) {
+        if (description != null && !description.isBlank()) {
+            String normalized = description.replaceAll("\\s+", " ").trim();
+            int sentenceEnd = normalized.indexOf('.');
+            if (sentenceEnd > 0) {
+                return normalized.substring(0, sentenceEnd + 1);
+            }
+            if (normalized.length() > 220) {
+                return normalized.substring(0, 220);
+            }
+            return normalized;
+        }
+        if (title != null && !title.isBlank()) {
+            return title.trim();
+        }
+        return null;
     }
     private String firstNonBlank(String candidate, String fallback) {
         return candidate == null || candidate.isBlank() ? fallback : candidate;
@@ -2122,7 +2144,8 @@ public class MoisDomainService {
             String title,
             String hotmartDescription,
             String hotmartProducer,
-            String hotmartImageUrl
+            String hotmartImageUrl,
+            String hotmartHighlight
     ) {
     }
 

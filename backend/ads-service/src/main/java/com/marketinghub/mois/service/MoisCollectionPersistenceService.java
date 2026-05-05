@@ -118,8 +118,9 @@ public class MoisCollectionPersistenceService {
                         INSERT INTO mois_collected_reference (
                           job_id, workspace_id, reference_id, source, title, url, niche, status, favorite,
                           imported_reference_id, success_score, success_signal, confidence_level, ranking_position,
-                          engagement_relative, recurrence_score, evidence_score, collected_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          engagement_relative, recurrence_score, evidence_score, hotmart_description,
+                          hotmart_producer, hotmart_image_url, hotmart_highlight, collected_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 references,
                 references.size(),
@@ -141,10 +142,21 @@ public class MoisCollectionPersistenceService {
                     ps.setDouble(15, item.engagementRelative());
                     ps.setDouble(16, item.recurrenceScore());
                     ps.setDouble(17, item.evidenceScore());
-                    ps.setTimestamp(18, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
-                    ps.setTimestamp(19, Timestamp.from(Instant.now()));
+                    ps.setString(18, metadataValue(item, "hotmartDescription"));
+                    ps.setString(19, metadataValue(item, "hotmartProducer"));
+                    ps.setString(20, metadataValue(item, "hotmartImageUrl"));
+                    ps.setString(21, metadataValue(item, "hotmartHighlight"));
+                    ps.setTimestamp(22, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
+                    ps.setTimestamp(23, Timestamp.from(Instant.now()));
                 }
         );
+    }
+
+    private String metadataValue(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse item, String key) {
+        if (item.rawMetadata() == null) {
+            return null;
+        }
+        return item.rawMetadata().get(key);
     }
 
     public MoisCollectionPersistenceDtos.SourceHighlightListResponse summarizeBySource(String workspaceId, String status) {

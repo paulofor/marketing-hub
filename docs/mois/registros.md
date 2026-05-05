@@ -45,3 +45,11 @@
 - Corrigida a resolução de include do Liquibase no `db.changelog-master.yaml` do `backend/ads-service`.
 - O changeset `changesets/2026-04-28-mois-collection-job-state-persistence.yaml` passou a declarar `relativeToChangelogFile: true`, evitando falha de parsing em CI com mensagem de arquivo não encontrado no classpath.
 - Registro criado para rastrear o incidente reportado no build Maven/Liquibase e sua correção.
+
+## 2026-05-05 00:20:00 UTC-3
+- Implementada extração de destaque Hotmart no MOIS com derivação de `hotmartHighlight` a partir da descrição/título durante o parse do marketplace.
+- A persistência relacional foi ampliada para gravar metadados Hotmart diretamente em `mois_collected_reference` (`hotmart_description`, `hotmart_producer`, `hotmart_image_url`, `hotmart_highlight`), reduzindo dependência de leitura de `payload_json`.
+- Criado changeset Liquibase MySQL 5.7 em YAML para adicionar as colunas de destaque e incluído no `db.changelog-master.yaml`.
+- Documento de modelo de dados atualizado para registrar o novo contrato de persistência dos destaques Hotmart.
+- Validação executada: testes unitários direcionados em `backend/ads-service` (`MoisCollectionPersistenceServiceTest`) e `mois` (`MoisHotmartRobotServiceTest`) concluídos com sucesso.
+- Commit relacionado: `ae3a077`.

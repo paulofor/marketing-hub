@@ -45,6 +45,7 @@ import ExperimentAdSetWorkflowPage from "./pages/experiment/ExperimentAdSetWorkf
 import ExperimentAdSetJobDetailPage from "./pages/experiment/ExperimentAdSetJobDetailPage";
 import ExperimentFacebookApiLogsPage from "./pages/experiment/ExperimentFacebookApiLogsPage";
 import ExperimentPipelineJobsPage from "./pages/experiment/ExperimentPipelineJobsPage";
+import ExperimentGeraLandingExecutionDetailPage from "./pages/experiment/ExperimentGeraLandingExecutionDetailPage";
 import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
@@ -213,6 +214,7 @@ export default function App() {
                 <Route path="adset-workflow" element={<ExperimentAdSetWorkflowPage />} />
                 <Route path="facebook-api-logs" element={<ExperimentFacebookApiLogsPage />} />
                 <Route path="pipeline-jobs" element={<ExperimentPipelineJobsPage />} />
+                <Route path="geralanding/stage-executions/:jobId" element={<ExperimentGeraLandingExecutionDetailPage />} />
                 <Route path="adset-workflow/jobs/:jobId" element={<ExperimentAdSetJobDetailPage />} />
               </Route>
               <Route path="/hypotheses" element={<HypothesisListPage />} />

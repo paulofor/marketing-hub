@@ -1372,7 +1372,14 @@ export default function ExperimentDetailPage() {
                       <tbody>
                         {geraLandingExecutions.map((execution) => (
                           <tr key={execution.idJob}>
-                            <td>{execution.idJob}</td>
+                            <td>
+                              <Link
+                                to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                className="fw-semibold text-decoration-none"
+                              >
+                                {execution.idJob}
+                              </Link>
+                            </td>
                             <td>{execution.status}</td>
                             <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
                           </tr>

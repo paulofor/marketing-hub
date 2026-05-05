@@ -33,7 +33,7 @@ class GeraLandingStageExecutionServiceTest {
     @Test
     void shouldFallbackToExperimentAndStageWhenLookupByIdJobFails() {
         GeraLandingPromptReceiveRequest request =
-                new GeraLandingPromptReceiveRequest(19L, "landing-page-wireframe", "prompt final");
+                new GeraLandingPromptReceiveRequest(19L, "landing-page-wireframe", "prompt final", null);
 
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(19L)
@@ -61,7 +61,7 @@ class GeraLandingStageExecutionServiceTest {
     @Test
     void shouldUseIdJobLookupWhenItExists() {
         GeraLandingPromptReceiveRequest request =
-                new GeraLandingPromptReceiveRequest(19L, "landing-page-wireframe", "prompt final");
+                new GeraLandingPromptReceiveRequest(19L, "landing-page-wireframe", "prompt final", null);
 
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(19L)

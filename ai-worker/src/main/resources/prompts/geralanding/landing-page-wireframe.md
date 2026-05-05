@@ -63,3 +63,6 @@ Campos obrigatórios:
 Observação canônica:
 - Em `surfaceSpec` do wireframe, trate `surfaceToken` + `notes` como núcleo obrigatório estrutural.
 - `style` e `contrastMode` são responsabilidade da etapa `landingPageDesignPreset.sectionPresets`.
+
+Formato de resposta:
+- Precisamos da resposta em Json-Schema.

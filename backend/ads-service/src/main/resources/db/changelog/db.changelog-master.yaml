@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-05-gera-landing-prompt-longtext-hardening.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-05-05-gera-landing-ensure-id-job-primary-key.yaml
       relativeToChangelogFile: true
 

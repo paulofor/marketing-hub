@@ -3,8 +3,12 @@ package com.marketinghub.worker.geralanding;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineOpenAiClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,15 +24,18 @@ public class GeraLandingExecutionService {
     private final GeraLandingBackendClient backendClient;
     private final GeraLandingService geraLandingService;
     private final ExperimentPipelineOpenAiClient openAiClient;
+    private final ObjectMapper objectMapper;
     private final int pendingLimit;
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
                                        ExperimentPipelineOpenAiClient openAiClient,
+                                       ObjectMapper objectMapper,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.backendClient = backendClient;
         this.geraLandingService = geraLandingService;
         this.openAiClient = openAiClient;
+        this.objectMapper = objectMapper;
         this.pendingLimit = Math.max(1, pendingLimit);
     }
 
@@ -71,7 +78,7 @@ public class GeraLandingExecutionService {
                     execution.experimentId(),
                     execution.stageCode(),
                     "gpt-5.2",
-                    prompt,
+                    buildOpenAiRequestBody(prompt),
                     prompt,
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());
@@ -83,5 +90,23 @@ public class GeraLandingExecutionService {
             log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId(), ex);
         }
+    }
+
+    private String buildOpenAiRequestBody(String prompt) throws JsonProcessingException {
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "object");
+        schema.put("additionalProperties", true);
+
+        Map<String, Object> format = new LinkedHashMap<>();
+        format.put("type", "json_schema");
+        format.put("name", "experiment_pipeline_landing_page_copy");
+        format.put("schema", schema);
+        format.put("strict", true);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", "gpt-5.2");
+        body.put("input", List.of(Map.of("role", "user", "content", prompt)));
+        body.put("text", Map.of("format", format));
+        return objectMapper.writeValueAsString(body);
     }
 }

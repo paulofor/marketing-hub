@@ -285,6 +285,7 @@ public class ExperimentPipelineOpenAiClient {
                     sectionContent,
                     objectMapper.writeValueAsString(response),
                     buildTrackedRequestBodyJson(payload, templateTrace),
+                    response.id(),
                     inputTokens,
                     outputTokens,
                     OpenAiCostEstimator.estimateUsd(effectiveModel, response.usage()));

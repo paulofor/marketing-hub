@@ -53,6 +53,22 @@ public class GeraLandingStageExecution {
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
+    @Column(name = "openai_job_id", length = 120)
+    private String openAiJobId;
+
+    @Lob
+    @Column(name = "model_response", columnDefinition = "LONGTEXT")
+    private String modelResponse;
+
+    @Column(name = "input_tokens")
+    private Integer inputTokens;
+
+    @Column(name = "output_tokens")
+    private Integer outputTokens;
+
+    @Column(name = "cost_usd", precision = 12, scale = 6)
+    private java.math.BigDecimal costUsd;
+
     @Id
     @Column(name = "id_job", nullable = false, length = 36)
     private byte[] idJob;

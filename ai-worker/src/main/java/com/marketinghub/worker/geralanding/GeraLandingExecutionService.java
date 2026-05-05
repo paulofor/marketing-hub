@@ -1,7 +1,11 @@
 package com.marketinghub.worker.geralanding;
 
+import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
+import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
+import com.marketinghub.worker.experimentpipeline.ExperimentPipelineOpenAiClient;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,17 +19,24 @@ public class GeraLandingExecutionService {
 
     private final GeraLandingBackendClient backendClient;
     private final GeraLandingService geraLandingService;
+    private final ExperimentPipelineOpenAiClient openAiClient;
     private final int pendingLimit;
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
+                                       ExperimentPipelineOpenAiClient openAiClient,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.backendClient = backendClient;
         this.geraLandingService = geraLandingService;
+        this.openAiClient = openAiClient;
         this.pendingLimit = Math.max(1, pendingLimit);
     }
 
     public void processPendingExecutions() {
+        if (!openAiClient.isEnabled()) {
+            log.warn("GeraLanding generation skipped: OpenAI client is disabled");
+            return;
+        }
         List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit);
         log.info("GeraLanding execution worker found {} pending execution(s)", pending.size());
         for (GeraLandingStageExecutionDto execution : pending) {
@@ -51,11 +62,25 @@ public class GeraLandingExecutionService {
                     execution.idJob(),
                     execution.stageCode(),
                     java.util.Collections.emptyMap());
-            geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
+            String prompt = geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
+
+            ExperimentPipelineJobDto openAiJob = new ExperimentPipelineJobDto(
+                    UUID.fromString(execution.idJob()),
+                    execution.experimentId(),
+                    execution.stageCode(),
+                    "gpt-5.2",
+                    prompt,
+                    prompt,
+                    null);
+            log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());
+            ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(openAiJob);
+            backendClient.receiveResult(execution.idJob(), execution.experimentId(), execution.stageCode(), payload);
+            log.info("Resultado OpenAI registrado para gera-landing executionId={} (experimentId={})",
+                    execution.idJob(), execution.experimentId());
         } catch (Exception ex) {
-            log.error("Falha ao montar prompt da etapa wireframe para executionId={} (experimentId={})",
+            log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId(), ex);
         }
     }

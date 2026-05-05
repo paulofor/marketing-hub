@@ -1,5 +1,6 @@
 package com.marketinghub.worker.geralanding;
 
+import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,26 @@ public class GeraLandingBackendClient {
                         "experimentId", experimentId,
                         "stageCode", stageCode,
                         "prompt", prompt))
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
+
+
+
+    public void receiveResult(String idJob, Long experimentId, String stageCode, ExperimentPipelineJobCompletionPayload payload) {
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
+                "/internal/geralanding/stage-executions");
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("experimentId", experimentId);
+        body.put("stageCode", stageCode);
+        body.put("modelResponse", payload != null ? payload.responseContent() : null);
+        body.put("inputTokens", payload != null ? payload.inputTokens() : null);
+        body.put("outputTokens", payload != null ? payload.outputTokens() : null);
+        body.put("costUsd", payload != null ? payload.costUsd() : null);
+        webClient.post()
+                .uri(baseUrl + "/{idJob}/receive-result", idJob)
+                .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block();

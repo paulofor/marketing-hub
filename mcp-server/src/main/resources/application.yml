@@ -21,13 +21,21 @@ management:
     db:
       enabled: false
   endpoint:
+    logfile:
+      enabled: true
     health:
       probes:
         enabled: true
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,logfile
+      path-mapping:
+        logfile: mcp-runtime-log
+
+logging:
+  file:
+    name: ${LOG_FILE_NAME:/tmp/mcp-server.log}
 
 mcp:
   server-name: ${MCP_SERVER_NAME:marketing-hub-mcp}

@@ -105,7 +105,10 @@ public class GeraLandingExecutionService {
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", "gpt-5.2");
-        body.put("input", List.of(Map.of("role", "user", "content", prompt)));
+        body.put("input", List.of(
+                Map.of("role", "system", "content", "Você é especialista em execução de pipeline de experimento."),
+                Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", prompt)))
+        ));
         body.put("text", Map.of("format", format));
         return objectMapper.writeValueAsString(body);
     }

@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineOpenAiClient;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,7 @@ class GeraLandingExecutionServiceTest {
     void processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult() throws Exception {
         GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
-        ExperimentPipelineOpenAiClient openAiClient = Mockito.mock(ExperimentPipelineOpenAiClient.class);
+        GeraLandingOpenAiBatchClient openAiClient = Mockito.mock(GeraLandingOpenAiBatchClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
 
         when(openAiClient.isEnabled()).thenReturn(true);

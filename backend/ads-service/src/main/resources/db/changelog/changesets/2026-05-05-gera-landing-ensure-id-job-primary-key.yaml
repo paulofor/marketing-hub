@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-05-ensure-id-job-primary-key-gera-landing-stage-execution
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - columnExists:
+            tableName: gera_landing_stage_execution
+            columnName: id_job
+        - sqlCheck:
+            expectedResult: "0"
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.KEY_COLUMN_USAGE
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'gera_landing_stage_execution'
+                AND CONSTRAINT_NAME = 'PRIMARY'
+                AND COLUMN_NAME = 'id_job';
+      changes:
+        - dropPrimaryKey:
+            tableName: gera_landing_stage_execution
+        - addPrimaryKey:
+            tableName: gera_landing_stage_execution
+            columnNames: id_job
+            constraintName: pk_gera_landing_stage_execution

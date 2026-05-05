@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,10 +42,10 @@ public class GeraLandingStageExecutionService {
                 .promptTemplateId("manual/start")
                 .promptContent("Início manual via interface do experimento.")
                 .status("INICIADO")
-                .idJob(UUID.randomUUID().toString())
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
         GeraLandingStageExecution saved = executionRepository.save(execution);
-        return new GeraLandingStartResponse(saved.getIdJob().toString(), saved.getStatus());
+        return new GeraLandingStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
     }
 
     @Transactional
@@ -62,7 +63,7 @@ public class GeraLandingStageExecutionService {
                 .promptTemplateId(request.executionId())
                 .promptContent(request.promptContent())
                 .status("INICIADO")
-                .idJob(UUID.randomUUID().toString())
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
         executionRepository.save(execution);
     }
@@ -76,7 +77,7 @@ public class GeraLandingStageExecutionService {
                 request.stageCode(),
                 request.prompt() != null ? request.prompt().length() : 0);
 
-        GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(idJob)
+        GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
                 .or(() -> fallbackExecutionByExperimentAndStage(request))
                 .orElseThrow(() -> {
                     log.error(
@@ -117,10 +118,18 @@ public class GeraLandingStageExecutionService {
     public List<GeraLandingPendingExecutionResponse> listPendingExecutions() {
         return executionRepository.findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")
                 .stream()
-                .map(execution -> new GeraLandingPendingExecutionResponse(
-                        execution.getExperimentId(),
-                        execution.getIdJob(),
-                        execution.getStageCode()))
+                        .map(execution -> new GeraLandingPendingExecutionResponse(
+                                execution.getExperimentId(),
+                                fromDatabaseIdJob(execution.getIdJob()),
+                                execution.getStageCode()))
                 .toList();
+    }
+
+    private byte[] toDatabaseIdJob(String idJob) {
+        return idJob.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String fromDatabaseIdJob(byte[] idJob) {
+        return new String(idJob, StandardCharsets.UTF_8);
     }
 }

@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +41,11 @@ class GeraLandingStageExecutionServiceTest {
                 .executionRequestedAt(Instant.parse("2026-05-04T00:00:00Z"))
                 .createdAt(Instant.parse("2026-05-04T00:00:00Z"))
                 .status("INICIADO")
-                .idJob("real-id-job")
+                .idJob("real-id-job".getBytes(StandardCharsets.UTF_8))
                 .promptContent("prompt base")
                 .build();
 
-        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-corrompido"))
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-corrompido".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.empty());
         when(executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(19L,
                 "landing-page-wireframe")).thenReturn(Optional.of(execution));
@@ -68,11 +69,11 @@ class GeraLandingStageExecutionServiceTest {
                 .executionRequestedAt(Instant.parse("2026-05-04T00:00:00Z"))
                 .createdAt(Instant.parse("2026-05-04T00:00:00Z"))
                 .status("INICIADO")
-                .idJob("id-ok")
+                .idJob("id-ok".getBytes(StandardCharsets.UTF_8))
                 .promptContent("prompt base")
                 .build();
 
-        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-ok"))
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-ok".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
 
         service.receivePrompt("id-ok", request);

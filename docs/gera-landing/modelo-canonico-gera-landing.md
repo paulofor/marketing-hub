@@ -38,24 +38,24 @@ Registrar cada execução de etapa do fluxo Gera Landing, com:
 | `stage_code` | `VARCHAR(100)` | Sim | Código da etapa do Gera Landing (ex.: `landing-page-wireframe`). |
 | `execution_requested_at` | `DATETIME(3)` | Sim | Momento da solicitação da execução da etapa. Compõe chave primária. Default `CURRENT_TIMESTAMP(3)`. |
 | `prompt_template_id` | `VARCHAR(191)` | Não | Identificador do template de prompt usado na execução. |
-| `prompt_content` | `LONGTEXT` | Sim | Conteúdo de prompt recebido no início da execução da etapa. |
+| `prompt_content` | `TINYTEXT` | Sim | Conteúdo de prompt recebido no início da execução da etapa. |
 | `status` | `VARCHAR(50)` | Sim | Estado atual da execução (ex.: `INICIADO`, `EM_PROCESSAMENTO`). Default inicial `INICIADO`. |
-| `id_job` | `CHAR(36)` | Sim | Identificador textual do job da execução (UUID em formato string). |
+| `id_job` | `BINARY(36)` | Sim | Identificador do job da execução armazenado em binário; API mantém representação textual do UUID. |
 | `created_at` | `DATETIME(3)` | Sim | Momento de criação do registro no banco. Default `CURRENT_TIMESTAMP(3)`. |
 | `processing_started_at` | `DATETIME(3)` | Não | Momento em que o processamento efetivo da execução iniciou. |
 | `completed_at` | `DATETIME(3)` | Não | Momento de conclusão da execução da etapa. |
-| `prompt` | `LONGTEXT` | Não | Prompt final montado pelo Worker AI para a execução da etapa. |
+| `prompt` | `TINYTEXT` | Não | Prompt final montado pelo Worker AI para a execução da etapa. |
 
 ### Chaves e restrições
 
-- **Chave primária composta**: `experiment_id`, `stage_code`, `execution_requested_at`.
+- **Chave primária**: `id_job`.
 - **Chave estrangeira**: `experiment_id` referencia `experiment.id` com `ON DELETE CASCADE`.
 - **Índice auxiliar**: `idx_gera_landing_stage_execution_experiment` em `experiment_id`.
 
 ### Regras canônicas de contrato e consistência (modelo)
 
-- `id_job` deve ser tratado como **texto** (`String`) nos contratos de API e no Worker, mantendo aderência com `CHAR(36)` da tabela.
-- `prompt_content` e `prompt` devem permanecer em `LONGTEXT` para suportar prompts extensos.
+- `id_job` é persistido como **binário** (`BINARY(36)`) no banco; backend converte para/desde `String` UTF-8 nos contratos de API e integração com Worker.
+- `prompt_content` e `prompt` seguem `TINYTEXT` conforme o schema atual; qualquer evolução de capacidade deve partir de mudança explícita de banco.
 - O critério de pendência oficial é `status = INICIADO`.
 
 ---
@@ -73,7 +73,7 @@ Registrar cada execução de etapa do fluxo Gera Landing, com:
 ### 1) Criação do job no backend com status inicial
 
 1. O backend registra execução inicial da etapa (atualmente `landing-page-wireframe`) em `gera_landing_stage_execution`.
-2. O registro nasce com `status = INICIADO`, `id_job` UUID textual, `created_at` e `execution_requested_at`.
+2. O registro nasce com `status = INICIADO`, `id_job` UUID convertido para `BINARY(36)`, `created_at` e `execution_requested_at`.
 3. Este status inicial é a condição de elegibilidade para o polling do Worker AI.
 
 ### 2) Agendamento do Worker AI (polling contínuo)

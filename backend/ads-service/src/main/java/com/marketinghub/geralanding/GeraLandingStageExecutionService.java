@@ -145,6 +145,31 @@ public class GeraLandingStageExecutionService {
     }
 
     @Transactional(readOnly = true)
+    public GeraLandingStageExecutionDetailResponse getStageExecutionDetail(Long experimentId, String idJob) {
+        GeraLandingStageExecution execution = executionRepository
+                .findTopByExperimentIdAndIdJobOrderByExecutionRequestedAtDesc(experimentId, toDatabaseIdJob(idJob))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+
+        return new GeraLandingStageExecutionDetailResponse(
+                fromDatabaseIdJob(execution.getIdJob()),
+                execution.getExperimentId(),
+                execution.getStageCode(),
+                execution.getExecutionRequestedAt(),
+                execution.getCreatedAt(),
+                execution.getProcessingStartedAt(),
+                execution.getCompletedAt(),
+                execution.getPromptTemplateId(),
+                execution.getPromptContent(),
+                execution.getPrompt(),
+                execution.getStatus(),
+                execution.getOpenAiJobId(),
+                execution.getModelResponse(),
+                execution.getInputTokens(),
+                execution.getOutputTokens(),
+                execution.getCostUsd());
+    }
+
+    @Transactional(readOnly = true)
     public List<GeraLandingPendingExecutionResponse> listPendingExecutions() {
         return executionRepository.findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")
                 .stream()

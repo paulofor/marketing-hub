@@ -30,6 +30,13 @@ public class GeraLandingWireframeController {
     return ResponseEntity.ok(response);
   }
 
+  @GetMapping("/stage-executions/{idJob}")
+  public ResponseEntity<GeraLandingStageExecutionDetailResponse> getStageExecutionDetail(
+      @PathVariable Long experimentId,
+      @PathVariable String idJob) {
+    return ResponseEntity.ok(executionService.getStageExecutionDetail(experimentId, idJob));
+  }
+
   @PostMapping("/wireframe/start")
   public ResponseEntity<GeraLandingStartResponse> startWireframe(@PathVariable Long experimentId) {
     GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId);

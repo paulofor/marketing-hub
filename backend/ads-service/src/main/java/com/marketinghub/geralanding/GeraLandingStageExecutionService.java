@@ -97,6 +97,7 @@ public class GeraLandingStageExecutionService {
 
         Instant now = Instant.now();
         execution.setPrompt(request.prompt());
+        execution.setOpenAiJobId(request.openAiJobId());
         execution.setProcessingStartedAt(now);
         execution.setStatus("EM_PROCESSAMENTO");
         executionRepository.save(execution);
@@ -114,6 +115,22 @@ public class GeraLandingStageExecutionService {
                 request.stageCode());
     }
 
+
+
+
+    @Transactional
+    public void receiveResult(String idJob, GeraLandingResultReceiveRequest request) {
+        GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
+                .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+        execution.setModelResponse(request.modelResponse());
+        execution.setInputTokens(request.inputTokens());
+        execution.setOutputTokens(request.outputTokens());
+        execution.setCostUsd(request.costUsd());
+        execution.setCompletedAt(Instant.now());
+        execution.setStatus("CONCLUIDO");
+        executionRepository.save(execution);
+    }
 
     @Transactional(readOnly = true)
     public List<GeraLandingExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode) {

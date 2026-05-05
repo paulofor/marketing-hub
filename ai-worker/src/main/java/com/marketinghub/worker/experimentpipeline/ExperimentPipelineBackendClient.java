@@ -150,13 +150,15 @@ public class ExperimentPipelineBackendClient {
     public void registerGeraLandingPrompt(Long experimentId,
                                           String stageCode,
                                           String executionId,
-                                          String promptContent) {
+                                          String promptContent,
+                                          String openAiJobId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
         body.put("executionId", executionId);
         body.put("promptContent", promptContent);
+        body.put("openAiJobId", openAiJobId);
         webClient.post()
                 .uri(url)
                 .bodyValue(body)
@@ -168,6 +170,23 @@ public class ExperimentPipelineBackendClient {
                         experimentId, stageCode, executionId, err))
                 .onErrorResume(err -> Mono.empty())
                 .block();
+    }
+
+
+
+    public void registerGeraLandingResult(Long experimentId,
+                                          String stageCode,
+                                          String executionId,
+                                          ExperimentPipelineJobCompletionPayload payload) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/", executionId, "/receive-result");
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("experimentId", experimentId);
+        body.put("stageCode", stageCode);
+        body.put("modelResponse", payload.responseContent());
+        body.put("inputTokens", payload.inputTokens());
+        body.put("outputTokens", payload.outputTokens());
+        body.put("costUsd", payload.costUsd());
+        webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(Void.class).onErrorResume(err -> Mono.empty()).block();
     }
 
     private Flux<ExperimentPipelineJobDto> handleListResponse(String uri,

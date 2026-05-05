@@ -5,6 +5,8 @@ import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/mcp")
 public class McpController {
+
+    private static final Logger logger = LoggerFactory.getLogger(McpController.class);
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
@@ -195,6 +199,7 @@ public class McpController {
 
         try {
             Map<String, Object> arguments = extractArguments(params);
+            logger.info("MCP tool call recebido: tool={} requestId={} argumentKeys={}", toolName, id, arguments.keySet());
             return switch (toolName) {
                 case "db_health" -> successToolResult(id, databaseDiagnosticsService.checkConnection(),
                         "Database connectivity status");
@@ -209,7 +214,11 @@ public class McpController {
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP tool call inválido: tool={} requestId={} motivo={}", toolName, id, ex.getMessage());
             return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha inesperada em MCP tool call: tool={} requestId={}", toolName, id, ex);
+            return error(id, -32603, "Unexpected tool failure: " + ex.getMessage());
         }
     }
 

@@ -38,6 +38,7 @@ import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import LandingTab from "./LandingTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
+import { useGeraLandingStageExecutions } from "../../api/experiment/useGeraLandingStageExecutions";
 
 type ChecklistItem = {
   id: string;
@@ -84,6 +85,11 @@ export default function ExperimentDetailPage() {
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
+  const {
+    data: geraLandingExecutions,
+    isLoading: isLoadingGeraLandingExecutions,
+    refetch: refetchGeraLandingExecutions,
+  } = useGeraLandingStageExecutions(expId);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -204,6 +210,7 @@ export default function ExperimentDetailPage() {
       toast.success(
         `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
       );
+      void refetchGeraLandingExecutions();
     } catch (error) {
       const message = axios.isAxiosError(error)
         ? (error.response?.data?.message ??
@@ -1318,29 +1325,62 @@ export default function ExperimentDetailPage() {
           <LandingTab experiment={data} />
         </Tabs.Content>
         <Tabs.Content value="gera-landing" asChild>
-          <div className="card">
-            <div className="card-body d-flex flex-column gap-3">
-              <h5 className="card-title mb-0">Gera WireFrame</h5>
-              <div>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleStartWireframe}
-                  disabled={isStartingWireframe}
-                >
-                  {isStartingWireframe ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                      Iniciando...
-                    </>
-                  ) : (
-                    "Iniciar"
-                  )}
-                </button>
+          <div className="d-flex flex-column gap-3">
+            <div className="card">
+              <div className="card-body d-flex flex-column gap-3">
+                <h5 className="card-title mb-0">Gera WireFrame</h5>
+                <div>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleStartWireframe}
+                    disabled={isStartingWireframe}
+                  >
+                    {isStartingWireframe ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Iniciar"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-body d-flex flex-column gap-3">
+                <h5 className="card-title mb-0">Execuções da etapa</h5>
+                {isLoadingGeraLandingExecutions ? (
+                  <p className="text-muted mb-0">Carregando execuções...</p>
+                ) : !geraLandingExecutions || geraLandingExecutions.length === 0 ? (
+                  <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-sm align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col">Job ID</th>
+                          <th scope="col">Status</th>
+                          <th scope="col">Data-hora</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {geraLandingExecutions.map((execution) => (
+                          <tr key={execution.idJob}>
+                            <td>{execution.idJob}</td>
+                            <td>{execution.status}</td>
+                            <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>

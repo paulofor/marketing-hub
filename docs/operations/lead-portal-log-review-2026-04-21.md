@@ -57,4 +57,5 @@ Resultado: sem `ERROR` no arquivo atual, apenas 3 `WARN` de inicialização.
 1. Planejar decisão canônica: manter MySQL 5.7 com dialect legado suportado **ou** migrar para MySQL 8 (registrar em ADR/cânone).
 2. Remover configuração explícita de dialect no `lead-portal/backend`.
 3. Testar e, se aprovado, definir `spring.jpa.open-in-view=false` no Lead Portal backend.
+   - Atualização: `spring.jpa.open-in-view=false` foi definido em `lead-portal/backend/src/main/resources/application.properties` para evitar Open Session in View habilitado por padrão.
 4. Se houver runbook usando `/api/actuator/*`, atualizar para `/api/ops-lp-observability-v2/*` para evitar falso diagnóstico de erro.

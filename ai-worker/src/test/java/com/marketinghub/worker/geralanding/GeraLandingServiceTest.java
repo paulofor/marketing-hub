@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
-import java.time.Instant;
-import java.util.UUID;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -18,9 +16,9 @@ class GeraLandingServiceTest {
 
     @Test
     void deveMontarPromptEtapaComPromptEDados() throws Exception {
-        ExperimentPipelineJobDto job = novoJob();
+        GeraLandingPromptContext context = novoContexto();
 
-        String prompt = service.montarPromptEtapa(job, "test-placeholder");
+        String prompt = service.montarPromptEtapa(context, "test-placeholder");
 
         assertThat(prompt)
                 .contains("REGRAS GLOBAIS")
@@ -31,14 +29,14 @@ class GeraLandingServiceTest {
 
     @Test
     void deveRegistrarPromptMontadoComChaveDeRastreio() throws Exception {
-        ExperimentPipelineJobDto job = novoJob();
+        GeraLandingPromptContext context = novoContexto();
 
-        String prompt = service.montarERegistrarPromptEtapa(job, "test-placeholder");
+        String prompt = service.montarERegistrarPromptEtapa(context, "test-placeholder");
 
         assertThat(prompt).contains("Resultado claro");
         verify(backendClient)
                 .receivePrompt(
-                        Mockito.eq(job.id().toString()),
+                        Mockito.eq("id-job-original"),
                         Mockito.eq(10L),
                         Mockito.eq("test-placeholder"),
                         Mockito.eq(prompt));
@@ -51,21 +49,14 @@ class GeraLandingServiceTest {
                 .hasMessageContaining("Prompt não encontrado");
     }
 
-    private ExperimentPipelineJobDto novoJob() {
-        return new ExperimentPipelineJobDto(
-                UUID.randomUUID(),
+    private GeraLandingPromptContext novoContexto() {
+        return new GeraLandingPromptContext(
                 10L,
+                "id-job-original",
                 "landing-page-wireframe",
-                "gpt-4.1",
-                null,
-                """
-                        {
-                          "adCopy": {
-                            "headline": "Resultado claro",
-                            "ctaText": "Começar agora"
-                          }
-                        }
-                        """,
-                Instant.now());
+                Map.of(
+                        "adCopy", Map.of(
+                                "headline", "Resultado claro",
+                                "ctaText", "Começar agora")));
     }
 }

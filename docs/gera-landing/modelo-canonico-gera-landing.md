@@ -98,7 +98,7 @@ Para cada item retornado no lote:
 
 ### 5) Montagem do prompt da etapa no Worker AI
 
-1. O Worker cria um `ExperimentPipelineJobDto` interno para acionar o serviço de montagem.
+1. O Worker usa o próprio item de pendência (`experimentId`, `idJob`, `stageCode`) para montar um contexto interno de prompt, sem dependência de `ExperimentPipelineJobDto`.
 2. A montagem usa `GeraLandingService.montarERegistrarPromptEtapa(...)`, que:
    - carrega template base em `prompts/geralanding/{etapa}.md`;
    - resolve placeholders `{prompt-*}` com inclusão recursiva de outros prompts;
@@ -109,11 +109,12 @@ Para cada item retornado no lote:
 ### 6) Envio do prompt montado para persistência no backend
 
 1. O Worker chama `POST /api/internal/geralanding/stage-executions/{idJob}/receive-prompt`.
-2. Body enviado pelo Worker:
+2. O `idJob` do path **deve ser exatamente o mesmo** recebido no item de pendência retornado por `GET /pending` (sem gerar novo UUID local para callback).
+3. Body enviado pelo Worker:
    - `experimentId`
    - `stageCode`
    - `prompt`
-3. O contrato do endpoint exige os três campos (`@NotNull` / `@NotBlank`).
+4. O contrato do endpoint exige os três campos (`@NotNull` / `@NotBlank`).
 
 ### 7) Persistência final no backend e atualização de status
 

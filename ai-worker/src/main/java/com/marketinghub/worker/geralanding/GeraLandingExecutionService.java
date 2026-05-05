@@ -1,10 +1,7 @@
 package com.marketinghub.worker.geralanding;
 
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,15 +46,12 @@ public class GeraLandingExecutionService {
             return;
         }
         try {
-            ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
-                    UUID.randomUUID(),
+            GeraLandingPromptContext context = new GeraLandingPromptContext(
                     execution.experimentId(),
+                    execution.idJob(),
                     execution.stageCode(),
-                    null,
-                    null,
-                    "{}",
-                    Instant.now());
-            geraLandingService.montarERegistrarPromptEtapa(job, normalizedStage);
+                    java.util.Collections.emptyMap());
+            geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
         } catch (Exception ex) {

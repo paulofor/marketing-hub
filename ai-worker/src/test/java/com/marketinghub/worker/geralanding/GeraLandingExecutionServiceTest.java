@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineOpenAiClient;
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ class GeraLandingExecutionServiceTest {
         GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         ExperimentPipelineOpenAiClient openAiClient = Mockito.mock(ExperimentPipelineOpenAiClient.class);
+        ObjectMapper objectMapper = new ObjectMapper();
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -26,7 +28,8 @@ class GeraLandingExecutionServiceTest {
         when(openAiClient.generate(any())).thenReturn(new ExperimentPipelineJobCompletionPayload(
                 "{\"ok\":true}", "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
 
-        GeraLandingExecutionService service = new GeraLandingExecutionService(backendClient, geraLandingService, openAiClient, 20);
+        GeraLandingExecutionService service =
+                new GeraLandingExecutionService(backendClient, geraLandingService, openAiClient, objectMapper, 20);
         service.processPendingExecutions();
 
         verify(openAiClient).generate(any());

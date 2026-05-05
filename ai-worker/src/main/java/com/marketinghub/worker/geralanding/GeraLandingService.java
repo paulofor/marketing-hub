@@ -81,6 +81,12 @@ public class GeraLandingService {
 
     public String montarERegistrarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
         String promptMontado = montarPromptEtapa(context, etapa);
+        log.info(
+                "Prompt da etapa após tratamento. experimentoId={}, jobId={}, etapa={}, prompt={}",
+                context != null ? context.experimentId() : null,
+                context != null ? context.idJob() : null,
+                etapa,
+                promptMontado);
         registrarPromptMontado(context, etapa, promptMontado);
         return promptMontado;
     }

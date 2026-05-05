@@ -2,7 +2,6 @@ package com.marketinghub.worker.geralanding;
 
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
 import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineOpenAiClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
@@ -23,13 +22,13 @@ public class GeraLandingExecutionService {
 
     private final GeraLandingBackendClient backendClient;
     private final GeraLandingService geraLandingService;
-    private final ExperimentPipelineOpenAiClient openAiClient;
+    private final GeraLandingOpenAiBatchClient openAiClient;
     private final ObjectMapper objectMapper;
     private final int pendingLimit;
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
-                                       ExperimentPipelineOpenAiClient openAiClient,
+                                       GeraLandingOpenAiBatchClient openAiClient,
                                        ObjectMapper objectMapper,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.backendClient = backendClient;
@@ -73,12 +72,15 @@ public class GeraLandingExecutionService {
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
 
+            String openAiRequestBody = buildOpenAiRequestBody(prompt);
+            log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
+
             ExperimentPipelineJobDto openAiJob = new ExperimentPipelineJobDto(
                     UUID.fromString(execution.idJob()),
                     execution.experimentId(),
                     execution.stageCode(),
                     "gpt-5.2",
-                    buildOpenAiRequestBody(prompt),
+                    openAiRequestBody,
                     prompt,
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());

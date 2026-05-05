@@ -1,13 +1,11 @@
 package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdCopy;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdImageBriefing;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.CampaignAngle;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.ExperimentMetadata;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
@@ -47,53 +45,52 @@ public class GeraLandingService {
         this.backendClient = backendClient;
     }
 
-    public CampaignAngle obterCampaignAngle(ExperimentPipelineJobDto job) throws JsonProcessingException {
-        return objectMapper.convertValue(obterMapa(job, CAMPAIGN_ANGLE), CampaignAngle.class);
+    public CampaignAngle obterCampaignAngle(GeraLandingPromptContext context) {
+        return objectMapper.convertValue(obterMapa(context, CAMPAIGN_ANGLE), CampaignAngle.class);
     }
 
-    public AdCopy obterAdCopy(ExperimentPipelineJobDto job) throws JsonProcessingException {
-        return objectMapper.convertValue(obterMapa(job, AD_COPY), AdCopy.class);
+    public AdCopy obterAdCopy(GeraLandingPromptContext context) {
+        return objectMapper.convertValue(obterMapa(context, AD_COPY), AdCopy.class);
     }
 
-    public AdImageBriefing obterAdImageBriefing(ExperimentPipelineJobDto job) throws JsonProcessingException {
-        return objectMapper.convertValue(obterMapa(job, AD_IMAGE_BRIEFING), AdImageBriefing.class);
+    public AdImageBriefing obterAdImageBriefing(GeraLandingPromptContext context) {
+        return objectMapper.convertValue(obterMapa(context, AD_IMAGE_BRIEFING), AdImageBriefing.class);
     }
 
-    public LandingPageWireframeDto obterLandingPageWireframe(ExperimentPipelineJobDto job) throws JsonProcessingException {
-        return new LandingPageWireframeDto(obterMapa(job, LANDING_PAGE_WIREFRAME));
+    public LandingPageWireframeDto obterLandingPageWireframe(GeraLandingPromptContext context) {
+        return new LandingPageWireframeDto(obterMapa(context, LANDING_PAGE_WIREFRAME));
     }
 
-    public ExperimentMetadata obterExperimentMetadata(ExperimentPipelineJobDto job) throws JsonProcessingException {
-        return objectMapper.convertValue(obterMapa(job, EXPERIMENT_METADATA), ExperimentMetadata.class);
+    public ExperimentMetadata obterExperimentMetadata(GeraLandingPromptContext context) {
+        return objectMapper.convertValue(obterMapa(context, EXPERIMENT_METADATA), ExperimentMetadata.class);
     }
 
-    public String montarPromptEtapa(ExperimentPipelineJobDto job, String etapa) throws IOException {
+    public String montarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
         if (!StringUtils.hasText(etapa)) {
             throw new IllegalArgumentException("Nome da etapa é obrigatório");
         }
         log.info(
                 "Montando prompt da etapa. experimentoId={}, jobId={}, etapa={}",
-                job != null ? job.experimentId() : null,
-                job != null ? job.id() : null,
+                context != null ? context.experimentId() : null,
+                context != null ? context.idJob() : null,
                 etapa);
         String template = carregarPromptBase(etapa.trim() + ".md");
-        Map<String, Object> dadosPayload = obterDadosDoJob(job);
+        Map<String, Object> dadosPayload = obterDadosDoJob(context);
         return resolverPlaceholders(template, dadosPayload);
     }
 
-    public String montarERegistrarPromptEtapa(ExperimentPipelineJobDto job, String etapa) throws IOException {
-        String promptMontado = montarPromptEtapa(job, etapa);
-        registrarPromptMontado(job, etapa, promptMontado);
+    public String montarERegistrarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
+        String promptMontado = montarPromptEtapa(context, etapa);
+        registrarPromptMontado(context, etapa, promptMontado);
         return promptMontado;
     }
 
-    private Map<String, Object> obterMapa(ExperimentPipelineJobDto job, String campo) throws JsonProcessingException {
-        if (job == null || job.requestBodyJson() == null || job.requestBodyJson().isBlank()) {
+    private Map<String, Object> obterMapa(GeraLandingPromptContext context, String campo) {
+        if (context == null || context.dados() == null || context.dados().isEmpty()) {
             return Collections.emptyMap();
         }
 
-        Map<String, Object> payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {});
-        Object valor = payload.get(campo);
+        Object valor = context.dados().get(campo);
         if (valor instanceof Map<?, ?> map) {
             return (Map<String, Object>) map;
         }
@@ -101,11 +98,11 @@ public class GeraLandingService {
         return Collections.emptyMap();
     }
 
-    private Map<String, Object> obterDadosDoJob(ExperimentPipelineJobDto job) throws JsonProcessingException {
-        if (job == null || !StringUtils.hasText(job.requestBodyJson())) {
+    private Map<String, Object> obterDadosDoJob(GeraLandingPromptContext context) {
+        if (context == null || context.dados() == null) {
             return Collections.emptyMap();
         }
-        return objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {});
+        return context.dados();
     }
 
     private String resolverPlaceholders(String template, Map<String, Object> dadosPayload) throws IOException {
@@ -153,15 +150,15 @@ public class GeraLandingService {
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 
-    private void registrarPromptMontado(ExperimentPipelineJobDto job, String etapa, String promptMontado) {
-        if (job == null || promptMontado == null || promptMontado.isBlank()) {
+    private void registrarPromptMontado(GeraLandingPromptContext context, String etapa, String promptMontado) {
+        if (context == null || promptMontado == null || promptMontado.isBlank()) {
             return;
         }
         String referencia = "exp:%s|etapa:%s|job:%s".formatted(
-                job.experimentId(),
+                context.experimentId(),
                 etapa,
-                job.id());
+                context.idJob());
         log.info("Registrando prompt montado com referencia={}", referencia);
-        backendClient.receivePrompt(job.id().toString(), job.experimentId(), etapa, promptMontado);
+        backendClient.receivePrompt(context.idJob(), context.experimentId(), etapa, promptMontado);
     }
 }

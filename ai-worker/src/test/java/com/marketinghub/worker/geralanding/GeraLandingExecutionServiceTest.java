@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 class GeraLandingExecutionServiceTest {
 
     @Test
-    void processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult() {
+    void processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult() throws Exception {
         GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         ExperimentPipelineOpenAiClient openAiClient = Mockito.mock(ExperimentPipelineOpenAiClient.class);

@@ -60,10 +60,10 @@ public class GeraLandingStageExecutionService {
                 .stageCode(request.stageCode())
                 .executionRequestedAt(now)
                 .createdAt(now)
-                .promptTemplateId(request.executionId())
+                .promptTemplateId(request.jobId())
                 .promptContent(request.promptContent())
                 .status("INICIADO")
-                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .idJob(toDatabaseIdJob(request.jobId()))
                 .build();
         executionRepository.save(execution);
     }

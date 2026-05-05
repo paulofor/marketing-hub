@@ -32,7 +32,7 @@ class GeraLandingInternalControllerTest {
                 {
                   "experimentId": 77,
                   "stageCode": "landing-page-wireframe",
-                  "executionId": "exec-2026-05-03-01",
+                  "jobId": "exec-2026-05-03-01",
                   "promptContent": "prompt montado"
                 }
                 """;
@@ -51,7 +51,7 @@ class GeraLandingInternalControllerTest {
                 {
                   "experimentId": 77,
                   "stageCode": "landing-page-wireframe",
-                  "executionId": "exec-2026-05-03-01"
+                  "jobId": "exec-2026-05-03-01"
                 }
                 """;
 

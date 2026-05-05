@@ -1,7 +1,5 @@
 package com.marketinghub.worker.experimentpipeline;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.List;
@@ -10,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
@@ -20,7 +17,6 @@ public class ExperimentPipelineGenerationWorkerService {
     private final ExperimentPipelineBackendClient backendClient;
     private final ExperimentPipelineOpenAiClient openAiClient;
     private final String workerId;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ExperimentPipelineGenerationWorkerService(ExperimentPipelineBackendClient backendClient,
                                                      ExperimentPipelineOpenAiClient openAiClient,
@@ -57,14 +53,6 @@ public class ExperimentPipelineGenerationWorkerService {
                 String expectedModel = "gpt-5.2";
                 backendClient.registerGeraLandingPrompt(claimed.experimentId(), claimed.section(), claimed.id().toString(), claimed.requestBodyJson(), expectedModel);
                 ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(claimed);
-                backendClient.recordGenerationLog(
-                        claimed.id(),
-                        payload.requestBodyJson(),
-                        payload.rawResponse(),
-                        extractModel(payload.requestBodyJson()),
-                        payload.inputTokens(),
-                        payload.outputTokens(),
-                        payload.costUsd());
                 backendClient.registerGeraLandingResult(claimed.experimentId(), claimed.section(), claimed.id().toString(), payload);
                 log.info("Job {} received OpenAI output; completing job in backend", claimed.id());
                 completeInBackendWithRetry(claimed.id(), payload);
@@ -78,24 +66,6 @@ public class ExperimentPipelineGenerationWorkerService {
         log.info("Experiment pipeline worker cycle finished");
     }
 
-
-
-    private String extractModel(String requestBodyJson) {
-        if (!StringUtils.hasText(requestBodyJson)) {
-            return null;
-        }
-        try {
-            JsonNode root = objectMapper.readTree(requestBodyJson);
-            JsonNode modelNode = root.get("model");
-            if (modelNode != null && !modelNode.isNull()) {
-                String model = modelNode.asText();
-                return model != null && !model.isBlank() ? model : null;
-            }
-        } catch (Exception ex) {
-            log.debug("Could not extract model from requestBodyJson", ex);
-        }
-        return null;
-    }
     private void completeInBackendWithRetry(java.util.UUID jobId,
                                             ExperimentPipelineJobCompletionPayload payload) {
         final int maxAttempts = 3;

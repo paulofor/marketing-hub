@@ -1,0 +1,110 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-06-add-gera-landing-openai-job-id
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: openai_job_id
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: openai_job_id
+                  type: VARCHAR(120)
+
+  - changeSet:
+      id: 2026-05-06-add-gera-landing-model-response
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: model_response
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: model_response
+                  type: LONGTEXT
+
+  - changeSet:
+      id: 2026-05-06-add-gera-landing-input-tokens
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: input_tokens
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: input_tokens
+                  type: INT
+
+  - changeSet:
+      id: 2026-05-06-add-gera-landing-output-tokens
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: output_tokens
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: output_tokens
+                  type: INT
+
+  - changeSet:
+      id: 2026-05-06-add-gera-landing-cost-usd
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: cost_usd
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: cost_usd
+                  type: DECIMAL(12,6)

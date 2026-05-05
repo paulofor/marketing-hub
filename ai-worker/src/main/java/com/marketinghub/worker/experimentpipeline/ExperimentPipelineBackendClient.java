@@ -149,14 +149,14 @@ public class ExperimentPipelineBackendClient {
 
     public void registerGeraLandingPrompt(Long experimentId,
                                           String stageCode,
-                                          String executionId,
+                                          String jobId,
                                           String promptContent,
                                           String openAiJobId) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
-        body.put("executionId", executionId);
+        body.put("jobId", jobId);
         body.put("promptContent", promptContent);
         body.put("openAiJobId", openAiJobId);
         webClient.post()
@@ -164,10 +164,10 @@ public class ExperimentPipelineBackendClient {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Void.class)
-                .doOnSuccess(ignored -> log.info("GeraLanding prompt execution persisted (experimentId={}, stageCode={}, executionId={})",
-                        experimentId, stageCode, executionId))
-                .doOnError(err -> log.warn("Failed to persist GeraLanding prompt execution (experimentId={}, stageCode={}, executionId={})",
-                        experimentId, stageCode, executionId, err))
+                .doOnSuccess(ignored -> log.info("GeraLanding prompt execution persisted (experimentId={}, stageCode={}, jobId={})",
+                        experimentId, stageCode, jobId))
+                .doOnError(err -> log.warn("Failed to persist GeraLanding prompt execution (experimentId={}, stageCode={}, jobId={})",
+                        experimentId, stageCode, jobId, err))
                 .onErrorResume(err -> Mono.empty())
                 .block();
     }
@@ -176,9 +176,9 @@ public class ExperimentPipelineBackendClient {
 
     public void registerGeraLandingResult(Long experimentId,
                                           String stageCode,
-                                          String executionId,
+                                          String jobId,
                                           ExperimentPipelineJobCompletionPayload payload) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/", executionId, "/receive-result");
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/", jobId, "/receive-result");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);

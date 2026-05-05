@@ -114,6 +114,19 @@ public class GeraLandingStageExecutionService {
                 request.stageCode());
     }
 
+
+    @Transactional(readOnly = true)
+    public List<GeraLandingExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode) {
+        return executionRepository
+                .findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(experimentId, stageCode)
+                .stream()
+                .map(execution -> new GeraLandingExecutionSummaryResponse(
+                        fromDatabaseIdJob(execution.getIdJob()),
+                        execution.getStatus(),
+                        execution.getExecutionRequestedAt()))
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<GeraLandingPendingExecutionResponse> listPendingExecutions() {
         return executionRepository.findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")

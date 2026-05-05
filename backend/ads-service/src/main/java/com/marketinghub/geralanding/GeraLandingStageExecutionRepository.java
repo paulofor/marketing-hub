@@ -12,4 +12,7 @@ public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraL
                                                                                                            String stageCode);
 
     List<GeraLandingStageExecution> findTop20ByStatusOrderByExecutionRequestedAtAsc(String status);
+
+    List<GeraLandingStageExecution>
+    findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(Long experimentId, String stageCode);
 }

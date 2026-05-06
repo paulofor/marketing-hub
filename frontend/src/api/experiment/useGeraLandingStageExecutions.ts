@@ -5,6 +5,7 @@ export interface GeraLandingStageExecutionItem {
   idJob: string;
   status: string;
   executionRequestedAt: string;
+  costUsd?: number;
 }
 
 export interface GeraLandingStageExecutionDetail extends GeraLandingStageExecutionItem {

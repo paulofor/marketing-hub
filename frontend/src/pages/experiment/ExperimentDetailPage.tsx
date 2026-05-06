@@ -41,6 +41,7 @@ import { useExperimentFacebookRelease } from "../../api/experiment/useExperiment
 import {
   useGeraLandingStageExecutionDetail,
   useGeraLandingStageExecutions,
+  type GeraLandingStageExecutionItem,
 } from "../../api/experiment/useGeraLandingStageExecutions";
 
 type ChecklistItem = {
@@ -259,6 +260,21 @@ export default function ExperimentDetailPage() {
   const runningGeraLandingJobId = (pendingGeraLandingExecutions ?? []).find((execution) =>
     isRunningExecution(execution.status),
   )?.idJob;
+
+  const formatCurrencyUsd = (value?: number | null) =>
+    value != null
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(value)
+      : "—";
+
+  const resolveExecutionCostUsd = (execution: GeraLandingStageExecutionItem) => execution.costUsd ?? null;
+
+  const totalCompletedGeraLandingCostUsd = completedHistoryGeraLandingExecutions.reduce(
+    (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+    0,
+  );
   const { data: runningGeraLandingJobDetail } = useGeraLandingStageExecutionDetail(
     expId,
     runningGeraLandingJobId,
@@ -1387,7 +1403,12 @@ export default function ExperimentDetailPage() {
           <div className="d-flex flex-column gap-3">
             <div className="card">
               <div className="card-body d-flex flex-column gap-3">
-                <h5 className="card-title mb-0">Gera WireFrame</h5>
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                  <h5 className="card-title mb-0">Gera WireFrame</h5>
+                  <span className="badge text-bg-light border fs-6 fw-semibold">
+                    Total execuções: {formatCurrencyUsd(totalCompletedGeraLandingCostUsd)}
+                  </span>
+                </div>
                 <div className="d-flex flex-column gap-3">
                   <button
                     type="button"
@@ -1420,6 +1441,7 @@ export default function ExperimentDetailPage() {
                             <th scope="col">Job ID</th>
                             <th scope="col">Status</th>
                             <th scope="col">Data-hora</th>
+                            <th scope="col" className="text-end">Custo</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1435,6 +1457,7 @@ export default function ExperimentDetailPage() {
                               </td>
                               <td>{execution.status}</td>
                               <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                              <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1456,6 +1479,7 @@ export default function ExperimentDetailPage() {
                               <th scope="col">Job ID</th>
                               <th scope="col">Status</th>
                               <th scope="col">Data-hora</th>
+                              <th scope="col" className="text-end">Custo</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1471,6 +1495,7 @@ export default function ExperimentDetailPage() {
                                 </td>
                                 <td>{execution.status}</td>
                                 <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                                <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
                               </tr>
                             ))}
                           </tbody>

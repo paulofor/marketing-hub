@@ -1,0 +1,11 @@
+services:
+  mois-hotmart-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marketinghub/mois-hotmart-collector:0.1.0-snapshot
+    container_name: mois-hotmart-collector
+    environment:
+      - MOIS_HOTMART_PORT=8096
+    ports:
+      - "8096:8096"

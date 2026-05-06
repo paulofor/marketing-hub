@@ -102,3 +102,23 @@
   - `enrichedLeads`, `totalLeads`, `limitPerSource` e `bodyLength`.
 - Objetivo: diferenciar com evidência de log quando a coleta está encontrando cards ricos (com descrição/produtor/imagem) versus quando está caindo majoritariamente no fallback por URL, cenário que explica campos de produto nulos na persistência relacional.
 - Commit relacionado: `a5c4341`.
+
+## 2026-05-06 12:13:34 UTC-3
+- Criado o submódulo independente `mois-hotmart-collector` para coleta Hotmart com aplicação, container e imagem Docker separados do MOIS principal.
+- Publicado contrato inicial do submódulo com endpoints:
+  - `GET /api/v1/mois-hotmart/health`
+  - `POST /api/v1/mois-hotmart/collections`
+- Estrutura inicial preparada para evolução para automação Playwright com sessão persistida, mantendo desacoplamento operacional do núcleo de domínio do MOIS.
+- Registro adicionado para atender solicitação explícita de documentação em `docs/mois/registros.md`.
+- Commit relacionado: `52082a1`.
+
+## 2026-05-06 12:17:38 UTC-3
+- Ajustado o submódulo `mois-hotmart-collector` para privilegiar distribuição como JAR executável.
+- `pom.xml` atualizado com repackage explícito do Spring Boot e geração de artefato final `target/mois-hotmart-collector.jar` com `executable=true`.
+- Adicionado script `run-local-jar.sh` para execução direta do JAR e README atualizado com fluxo recomendado `mvn clean package` + execução do jar.
+
+## 2026-05-06 12:38:09 UTC-3
+- Evoluído o submódulo `mois-hotmart-collector` para coleta com Playwright em modo headless por padrão.
+- `HotmartCollectorService` atualizado para abrir Chromium headless, navegar para `https://app.hotmart.com/market/search` e extrair links de produtos (`/market/products/`) até o limite solicitado.
+- `collector.playwright.headless` parametrizado (default `true`) com opção de override para debug local.
+- Teste de controller isolado com `@MockBean` para evitar dependência de rede/browser durante testes unitários.

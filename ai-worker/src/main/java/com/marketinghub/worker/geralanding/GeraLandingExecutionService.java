@@ -1,7 +1,5 @@
 package com.marketinghub.worker.geralanding;
 
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
@@ -82,7 +80,7 @@ public class GeraLandingExecutionService {
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
 
-            ExperimentPipelineJobDto openAiJob = new ExperimentPipelineJobDto(
+            GeraLandingJobDto openAiJob = new GeraLandingJobDto(
                     UUID.fromString(execution.idJob()),
                     execution.experimentId(),
                     execution.stageCode(),
@@ -91,7 +89,7 @@ public class GeraLandingExecutionService {
                     prompt,
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());
-            ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(openAiJob);
+            GeraLandingJobCompletionPayload payload = openAiClient.generate(openAiJob);
             backendClient.receiveResult(execution.idJob(), execution.experimentId(), execution.stageCode(), payload);
             log.info("Resultado OpenAI registrado para gera-landing executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());

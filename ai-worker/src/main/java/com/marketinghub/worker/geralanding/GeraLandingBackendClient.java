@@ -1,6 +1,5 @@
 package com.marketinghub.worker.geralanding;
 
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class GeraLandingBackendClient {
 
 
 
-    public void receiveResult(String idJob, Long experimentId, String stageCode, ExperimentPipelineJobCompletionPayload payload) {
+    public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionPayload payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();

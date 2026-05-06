@@ -34,10 +34,21 @@ function JsonNode({
   const spacing = { marginLeft: depth === 0 ? 0 : 12 };
 
   if (value === null || typeof value !== "object") {
+    const isString = typeof value === "string";
+
     return (
       <div style={spacing} className="small">
         {label ? <strong>{label}: </strong> : null}
-        <code>{JSON.stringify(value)}</code>
+        {isString ? (
+          <pre
+            className="mb-0 d-inline"
+            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+          >
+            {value}
+          </pre>
+        ) : (
+          <code>{JSON.stringify(value)}</code>
+        )}
       </div>
     );
   }

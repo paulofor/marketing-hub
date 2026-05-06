@@ -211,10 +211,10 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.tools[8].name").value("meta_graph_debug_token"))
-                .andExpect(jsonPath("$.result.tools[9].name").value("github_actions_list_workflows"))
-                .andExpect(jsonPath("$.result.tools[10].name").value("github_actions_list_runs"))
-                .andExpect(jsonPath("$.result.tools[11].name").value("github_actions_get_run_summary"));
+                .andExpect(jsonPath("$.result.tools[7].name").value("meta_graph_debug_token"))
+                .andExpect(jsonPath("$.result.tools[8].name").value("github_actions_list_workflows"))
+                .andExpect(jsonPath("$.result.tools[9].name").value("github_actions_list_runs"))
+                .andExpect(jsonPath("$.result.tools[10].name").value("github_actions_get_run_summary"));
     }
 
 

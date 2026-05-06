@@ -3,6 +3,7 @@ package com.marketinghub.mcpserver.controller;
 import com.marketinghub.mcpserver.config.McpProperties;
 import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
+import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -37,15 +38,18 @@ public class McpController {
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
     private final ModuleLogService moduleLogService;
     private final MetaDiagnosticsService metaDiagnosticsService;
+    private final GithubActionsService githubActionsService;
 
     public McpController(McpProperties properties,
                          DatabaseDiagnosticsService databaseDiagnosticsService,
                          ModuleLogService moduleLogService,
-                         MetaDiagnosticsService metaDiagnosticsService) {
+                         MetaDiagnosticsService metaDiagnosticsService,
+                         GithubActionsService githubActionsService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
         this.metaDiagnosticsService = metaDiagnosticsService;
+        this.githubActionsService = githubActionsService;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -171,6 +175,39 @@ public class McpController {
                                                     "description", "Token a ser validado.")),
                                     "required", List.of("input_token"),
                                     "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "github_actions_list_workflows",
+                            "description", "Lista workflows do repositório no GitHub Actions.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "per_page", Map.of("type", "integer", "minimum", 1, "maximum", 100,
+                                                    "description", "Quantidade de workflows por página. Padrão: 20.")),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "github_actions_list_runs",
+                            "description", "Lista execuções (runs) de workflows do repositório no GitHub Actions.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "branch", Map.of("type", "string", "description", "Filtro por branch."),
+                                            "status", Map.of("type", "string", "description", "Filtro por status/conclusion."),
+                                            "per_page", Map.of("type", "integer", "minimum", 1, "maximum", 100,
+                                                    "description", "Quantidade de runs por página. Padrão: 20.")),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "github_actions_get_run_summary",
+                            "description", "Verifica se um workflow run executou com sucesso e retorna erros por job/step quando houver falha.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "run_id", Map.of("type", "integer", "minimum", 1,
+                                                    "description", "ID do workflow run no GitHub Actions.")),
+                                    "required", List.of("run_id"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -211,6 +248,9 @@ public class McpController {
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
                 case "meta_graph_debug_token" -> callMetaGraphDebugTokenTool(id, arguments);
+                case "github_actions_list_workflows" -> callGithubActionsListWorkflows(id, arguments);
+                case "github_actions_list_runs" -> callGithubActionsListRuns(id, arguments);
+                case "github_actions_get_run_summary" -> callGithubActionsGetRunSummary(id, arguments);
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
@@ -339,6 +379,51 @@ public class McpController {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
             return error(id, -32603, "Failed to execute Meta debug_token: " + ex.getMessage());
+        }
+    }
+
+
+    private Map<String, Object> callGithubActionsListWorkflows(Object id, Map<String, Object> arguments) {
+        Integer perPage = intArgument(arguments, "per_page");
+
+        try {
+            Map<String, Object> result = githubActionsService.listWorkflows(perPage);
+            return successToolResult(id, result, "GitHub workflows listed");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to list GitHub workflows: " + ex.getMessage());
+        }
+    }
+
+    private Map<String, Object> callGithubActionsListRuns(Object id, Map<String, Object> arguments) {
+        String branch = stringArgument(arguments, "branch");
+        String status = stringArgument(arguments, "status");
+        Integer perPage = intArgument(arguments, "per_page");
+
+        try {
+            Map<String, Object> result = githubActionsService.listRuns(branch, status, perPage);
+            return successToolResult(id, result, "GitHub workflow runs listed");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to list GitHub workflow runs: " + ex.getMessage());
+        }
+    }
+
+
+    private Map<String, Object> callGithubActionsGetRunSummary(Object id, Map<String, Object> arguments) {
+        Integer runIdArg = intArgument(arguments, "run_id");
+        Long runId = runIdArg == null ? null : runIdArg.longValue();
+
+        try {
+            Map<String, Object> result = githubActionsService.getRunSummary(runId);
+            return successToolResult(id, result,
+                    Boolean.TRUE.equals(result.get("failed")) ? "Workflow run FAILED" : "Workflow run status fetched");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to fetch workflow run summary: " + ex.getMessage());
         }
     }
 

@@ -62,3 +62,9 @@ mcp:
     access-token: ${MCP_META_GRAPH_ACCESS_TOKEN:}
     debug-access-token: ${MCP_META_GRAPH_DEBUG_ACCESS_TOKEN:${MCP_META_GRAPH_ACCESS_TOKEN:}}
     docs-allowed-hosts: ${MCP_META_DOCS_ALLOWED_HOSTS:developers.facebook.com,business.facebook.com,www.facebook.com}
+  github:
+    enabled: ${MCP_GITHUB_ENABLED:false}
+    api-base-url: ${MCP_GITHUB_API_BASE_URL:https://api.github.com}
+    owner: ${MCP_GITHUB_OWNER:}
+    repo: ${MCP_GITHUB_REPO:}
+    token: ${MCP_GITHUB_TOKEN:}

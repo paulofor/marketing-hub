@@ -52,6 +52,10 @@ class McpControllerTest {
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
         registry.add("mcp.meta.graph-version", () -> "v23.0");
         registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
+        registry.add("mcp.github.enabled", () -> "false");
+        registry.add("mcp.github.api-base-url", () -> "https://api.github.com");
+        registry.add("mcp.github.owner", () -> "marketinghub");
+        registry.add("mcp.github.repo", () -> "marketing-hub");
     }
 
     @BeforeEach
@@ -207,9 +211,23 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":12,"method":"tools/list","params":{}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.tools[5].name").value("meta_docs_get"))
-                .andExpect(jsonPath("$.result.tools[6].name").value("meta_graph_get"))
-                .andExpect(jsonPath("$.result.tools[7].name").value("meta_graph_debug_token"));
+                .andExpect(jsonPath("$.result.tools[8].name").value("meta_graph_debug_token"))
+                .andExpect(jsonPath("$.result.tools[9].name").value("github_actions_list_workflows"))
+                .andExpect(jsonPath("$.result.tools[10].name").value("github_actions_list_runs"))
+                .andExpect(jsonPath("$.result.tools[11].name").value("github_actions_get_run_summary"));
+    }
+
+
+    @Test
+    void shouldRejectGithubToolWhenDisabled() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":14,"method":"tools/call","params":{"name":"github_actions_get_run_summary","arguments":{"run_id":123}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.error.code").value(-32602))
+                .andExpect(jsonPath("$.error.message").value("github tools are disabled (set mcp.github.enabled=true)"));
     }
 
     @Test
@@ -254,6 +272,10 @@ class McpControllerApiKeyEnabledTest {
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
         registry.add("mcp.meta.graph-version", () -> "v23.0");
         registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
+        registry.add("mcp.github.enabled", () -> "false");
+        registry.add("mcp.github.api-base-url", () -> "https://api.github.com");
+        registry.add("mcp.github.owner", () -> "marketinghub");
+        registry.add("mcp.github.repo", () -> "marketing-hub");
     }
 
     @Test

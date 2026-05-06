@@ -17,7 +17,8 @@ public record McpProperties(
         @NotBlank String serverVersion,
         String apiKey,
         @NotNull @Valid Logs logs,
-        @NotNull @Valid Meta meta
+        @NotNull @Valid Meta meta,
+        @NotNull @Valid Github github
 ) {
     public record Logs(
             @NotBlank String backendPath,
@@ -45,4 +46,14 @@ public record McpProperties(
             @NotEmpty List<@NotBlank String> docsAllowedHosts
     ) {
     }
+
+    public record Github(
+            boolean enabled,
+            @NotBlank String apiBaseUrl,
+            @NotBlank String owner,
+            @NotBlank String repo,
+            String token
+    ) {
+    }
 }
+

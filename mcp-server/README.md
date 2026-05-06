@@ -21,6 +21,9 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
 - `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
 - `meta_graph_debug_token`: executa `debug_token` para validar tokens.
+- `github_actions_list_workflows`: lista workflows do repositório configurado no GitHub Actions.
+- `github_actions_list_runs`: lista execuções (runs) de workflows do repositório configurado no GitHub Actions.
+- `github_actions_get_run_summary`: verifica se uma execução terminou com sucesso e detalha jobs/steps com falha.
 
 ## Executar localmente
 
@@ -76,7 +79,21 @@ As tools Meta podem ser ativadas/desativadas por configuração:
 Quando `MCP_META_ENABLED=false`, as tools `meta_*` continuam aparecendo em `tools/list`, mas `tools/call` retorna:
 `meta tools are disabled (set mcp.meta.enabled=true)`.
 
-### Troubleshooting de conexão com MySQL
+#
+## Ferramentas de diagnóstico GitHub Actions
+
+As tools GitHub podem ser ativadas/desativadas por configuração:
+
+- `MCP_GITHUB_ENABLED` (default `false`);
+- `MCP_GITHUB_API_BASE_URL` (default `https://api.github.com`);
+- `MCP_GITHUB_OWNER` (owner do repositório, obrigatório quando habilitado);
+- `MCP_GITHUB_REPO` (nome do repositório, obrigatório quando habilitado);
+- `MCP_GITHUB_TOKEN` (token para autenticação na API do GitHub, obrigatório quando habilitado).
+
+Quando `MCP_GITHUB_ENABLED=false`, as tools `github_actions_*` continuam aparecendo em `tools/list`, mas `tools/call` retorna:
+`github tools are disabled (set mcp.github.enabled=true)`.
+
+## Troubleshooting de conexão com MySQL
 
 Se aparecer erro como `Access denied for user 'marketing_hub_user'@'interface.vps-kinghost.net'`, o host configurado está incorreto.
 

@@ -177,7 +177,7 @@ public class GeraLandingService {
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 
-    private void registrarPromptMontado(GeraLandingPromptContext context, String etapa, String promptMontado) {
+    private void registrarPromptMontado(GeraLandingPromptContext context, String etapa, String promptMontado) throws IOException {
         if (context == null || promptMontado == null || promptMontado.isBlank()) {
             return;
         }
@@ -186,6 +186,14 @@ public class GeraLandingService {
                 etapa,
                 context.idJob());
         log.info("Registrando prompt montado com referencia={}", referencia);
-        backendClient.receivePrompt(context.idJob(), context.experimentId(), etapa, promptMontado);
+        String promptMarkdownContent = carregarPromptMarkdownCru(etapa);
+        backendClient.receivePrompt(
+                context.idJob(),
+                context.experimentId(),
+                etapa,
+                promptMontado,
+                null,
+                null,
+                promptMarkdownContent);
     }
 }

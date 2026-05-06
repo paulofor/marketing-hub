@@ -41,7 +41,7 @@ class GeraLandingWireframeControllerTest {
 
     @Test
     void shouldListStageExecutionsOrderedByMostRecentFirst() throws Exception {
-        when(executionService.listExperimentStageExecutions(99L, "landing-page-wireframe"))
+        when(executionService.listExperimentStageExecutions(99L, "landing-page-wireframe", true))
                 .thenReturn(List.of(
                         new GeraLandingExecutionSummaryResponse("job-2", "EM_PROCESSAMENTO", Instant.parse("2026-05-05T00:40:00Z")),
                         new GeraLandingExecutionSummaryResponse("job-1", "INICIADO", Instant.parse("2026-05-05T00:35:00Z"))));
@@ -52,6 +52,21 @@ class GeraLandingWireframeControllerTest {
                 .andExpect(jsonPath("$[0].status").value("EM_PROCESSAMENTO"))
                 .andExpect(jsonPath("$[1].idJob").value("job-1"));
 
-        verify(executionService).listExperimentStageExecutions(eq(99L), eq("landing-page-wireframe"));
+        verify(executionService).listExperimentStageExecutions(eq(99L), eq("landing-page-wireframe"), eq(true));
+    }
+
+    @Test
+    void shouldListOnlyNonCompletedExecutionsWhenRequested() throws Exception {
+        when(executionService.listExperimentStageExecutions(99L, "landing-page-wireframe", false))
+                .thenReturn(List.of(
+                        new GeraLandingExecutionSummaryResponse("job-2", "EM_PROCESSAMENTO", Instant.parse("2026-05-05T00:40:00Z"))));
+
+        mockMvc.perform(get("/api/experiments/{experimentId}/geralanding/stage-executions", 99L)
+                        .param("includeCompleted", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].idJob").value("job-2"))
+                .andExpect(jsonPath("$[0].status").value("EM_PROCESSAMENTO"));
+
+        verify(executionService).listExperimentStageExecutions(eq(99L), eq("landing-page-wireframe"), eq(false));
     }
 }

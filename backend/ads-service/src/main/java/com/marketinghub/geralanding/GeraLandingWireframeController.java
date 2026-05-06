@@ -24,9 +24,10 @@ public class GeraLandingWireframeController {
   @GetMapping("/stage-executions")
   public ResponseEntity<List<GeraLandingExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
-      @RequestParam(defaultValue = "landing-page-wireframe") String stageCode) {
+      @RequestParam(defaultValue = "landing-page-wireframe") String stageCode,
+      @RequestParam(defaultValue = "true") boolean includeCompleted) {
     List<GeraLandingExecutionSummaryResponse> response =
-        executionService.listExperimentStageExecutions(experimentId, stageCode);
+        executionService.listExperimentStageExecutions(experimentId, stageCode, includeCompleted);
     return ResponseEntity.ok(response);
   }
 

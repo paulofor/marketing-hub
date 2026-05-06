@@ -38,7 +38,10 @@ import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import LandingTab from "./LandingTab";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
-import { useGeraLandingStageExecutions } from "../../api/experiment/useGeraLandingStageExecutions";
+import {
+  useGeraLandingStageExecutionDetail,
+  useGeraLandingStageExecutions,
+} from "../../api/experiment/useGeraLandingStageExecutions";
 
 type ChecklistItem = {
   id: string;
@@ -86,10 +89,15 @@ export default function ExperimentDetailPage() {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const {
-    data: geraLandingExecutions,
-    isLoading: isLoadingGeraLandingExecutions,
-    refetch: refetchGeraLandingExecutions,
-  } = useGeraLandingStageExecutions(expId);
+    data: pendingGeraLandingExecutions,
+    isLoading: isLoadingPendingGeraLandingExecutions,
+    refetch: refetchPendingGeraLandingExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-wireframe", false);
+  const {
+    data: completedGeraLandingExecutions,
+    isLoading: isLoadingCompletedGeraLandingExecutions,
+    refetch: refetchCompletedGeraLandingExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-wireframe", true);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -210,7 +218,10 @@ export default function ExperimentDetailPage() {
       toast.success(
         `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
       );
-      void refetchGeraLandingExecutions();
+      void Promise.all([
+        refetchPendingGeraLandingExecutions(),
+        refetchCompletedGeraLandingExecutions(),
+      ]);
     } catch (error) {
       const message = axios.isAxiosError(error)
         ? (error.response?.data?.message ??
@@ -246,6 +257,41 @@ export default function ExperimentDetailPage() {
     resetCampaigns.isPending;
   const readinessIssues = readinessSummary?.issues ?? [];
   const hasReadinessIssues = readinessIssues.length > 0;
+  const isRunningExecution = (status?: string | null) => {
+    const normalizedStatus = (status ?? "").trim().toUpperCase();
+    return ["EM_PROCESSAMENTO", "PROCESSING", "RUNNING", "IN_PROGRESS", "PENDING"].includes(
+      normalizedStatus,
+    );
+  };
+  const hasRunningGeraLandingExecution = (pendingGeraLandingExecutions ?? []).some((execution) =>
+    isRunningExecution(execution.status),
+  );
+  const runningGeraLandingJobId = (pendingGeraLandingExecutions ?? []).find((execution) =>
+    isRunningExecution(execution.status),
+  )?.idJob;
+  const { data: runningGeraLandingJobDetail } = useGeraLandingStageExecutionDetail(
+    expId,
+    runningGeraLandingJobId,
+    {
+      enabled: Boolean(runningGeraLandingJobId),
+      refetchInterval: 10000,
+    },
+  );
+
+  useEffect(() => {
+    if (!runningGeraLandingJobId || !runningGeraLandingJobDetail) return;
+    if (runningGeraLandingJobDetail.status?.toUpperCase() === "CONCLUIDO") {
+      void Promise.all([
+        refetchPendingGeraLandingExecutions(),
+        refetchCompletedGeraLandingExecutions(),
+      ]);
+    }
+  }, [
+    runningGeraLandingJobDetail,
+    runningGeraLandingJobId,
+    refetchPendingGeraLandingExecutions,
+    refetchCompletedGeraLandingExecutions,
+  ]);
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {
@@ -1329,12 +1375,12 @@ export default function ExperimentDetailPage() {
             <div className="card">
               <div className="card-body d-flex flex-column gap-3">
                 <h5 className="card-title mb-0">Gera WireFrame</h5>
-                <div>
+                <div className="d-flex flex-column gap-3">
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-primary align-self-start"
                     onClick={handleStartWireframe}
-                    disabled={isStartingWireframe}
+                    disabled={isStartingWireframe || hasRunningGeraLandingExecution}
                   >
                     {isStartingWireframe ? (
                       <>
@@ -1349,16 +1395,49 @@ export default function ExperimentDetailPage() {
                       "Iniciar"
                     )}
                   </button>
+                  {isLoadingPendingGeraLandingExecutions ? (
+                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
+                  ) : !pendingGeraLandingExecutions || pendingGeraLandingExecutions.length === 0 ? (
+                    <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Job ID</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Data-hora</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pendingGeraLandingExecutions.map((execution) => (
+                            <tr key={execution.idJob}>
+                              <td>
+                                <Link
+                                  to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                  className="fw-semibold text-decoration-none"
+                                >
+                                  {execution.idJob}
+                                </Link>
+                              </td>
+                              <td>{execution.status}</td>
+                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             <div className="card">
               <div className="card-body d-flex flex-column gap-3">
-                <h5 className="card-title mb-0">Execuções da etapa</h5>
-                {isLoadingGeraLandingExecutions ? (
+                <h5 className="card-title mb-0">Histórico de execuções concluídas</h5>
+                {isLoadingCompletedGeraLandingExecutions ? (
                   <p className="text-muted mb-0">Carregando execuções...</p>
-                ) : !geraLandingExecutions || geraLandingExecutions.length === 0 ? (
-                  <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+                ) : !completedGeraLandingExecutions || completedGeraLandingExecutions.length === 0 ? (
+                  <p className="text-muted mb-0">Nenhuma execução concluída registrada para esta etapa.</p>
                 ) : (
                   <div className="table-responsive">
                     <table className="table table-sm align-middle mb-0">
@@ -1370,7 +1449,7 @@ export default function ExperimentDetailPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {geraLandingExecutions.map((execution) => (
+                        {completedGeraLandingExecutions.map((execution) => (
                           <tr key={execution.idJob}>
                             <td>
                               <Link

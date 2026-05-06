@@ -29,24 +29,31 @@ export interface GeraLandingStageExecutionDetail extends GeraLandingStageExecuti
 export function useGeraLandingStageExecutions(
   experimentId: string,
   stageCode = "landing-page-wireframe",
+  includeCompleted = true,
 ) {
   return useQuery({
-    queryKey: ["geralanding-stage-executions", experimentId, stageCode],
+    queryKey: ["geralanding-stage-executions", experimentId, stageCode, includeCompleted],
     enabled: Boolean(experimentId),
+    refetchInterval: includeCompleted ? false : 10000,
     queryFn: async () => {
       const { data } = await axios.get<GeraLandingStageExecutionItem[]>(
         `/api/experiments/${experimentId}/geralanding/stage-executions`,
-        { params: { stageCode } },
+        { params: { stageCode, includeCompleted } },
       );
       return data;
     },
   });
 }
 
-export function useGeraLandingStageExecutionDetail(experimentId?: string, jobId?: string) {
+export function useGeraLandingStageExecutionDetail(
+  experimentId?: string,
+  jobId?: string,
+  options?: { enabled?: boolean; refetchInterval?: number | false },
+) {
   return useQuery({
     queryKey: ["geralanding-stage-execution-detail", experimentId, jobId],
-    enabled: Boolean(experimentId && jobId),
+    enabled: options?.enabled ?? Boolean(experimentId && jobId),
+    refetchInterval: options?.refetchInterval,
     queryFn: async () => {
       const { data } = await axios.get<GeraLandingStageExecutionDetail>(
         `/api/experiments/${experimentId}/geralanding/stage-executions/${jobId}`,

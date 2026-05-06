@@ -96,6 +96,19 @@ public class GeraLandingExecutionService {
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());
             GeraLandingJobCompletionPayload payload = openAiClient.generate(openAiJob);
+            log.info(
+                    "Resposta OpenAI recebida para gera-landing executionId={} (experimentId={}, openAiJobId={}, inputTokens={}, outputTokens={}, costUsd={}, responseContentLength={}, rawResponseLength={})",
+                    execution.idJob(),
+                    execution.experimentId(),
+                    payload != null ? payload.openAiJobId() : null,
+                    payload != null ? payload.inputTokens() : null,
+                    payload != null ? payload.outputTokens() : null,
+                    payload != null ? payload.costUsd() : null,
+                    payload != null && payload.responseContent() != null ? payload.responseContent().length() : null,
+                    payload != null && payload.rawResponse() != null ? payload.rawResponse().length() : null);
+            if (payload != null && StringUtils.hasText(payload.responseContent())) {
+                log.info("Resposta OpenAI (responseContent) executionId={}: {}", execution.idJob(), payload.responseContent());
+            }
             backendClient.receiveResult(execution.idJob(), execution.experimentId(), execution.stageCode(), payload);
             log.info("Resultado OpenAI registrado para gera-landing executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());

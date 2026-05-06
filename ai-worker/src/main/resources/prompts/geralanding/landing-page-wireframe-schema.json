@@ -65,6 +65,7 @@
           "contentType",
           "copySource",
           "uiNotes",
+          "uiTags",
           "messageMatchDependency",
           "sectionDependsOn",
           "mobilePriorityScore",

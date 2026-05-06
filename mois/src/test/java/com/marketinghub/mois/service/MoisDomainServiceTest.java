@@ -437,6 +437,25 @@ class MoisDomainServiceTest {
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> service.createCollectionJob(request));
     }
 
+
+    @Test
+    void shouldExtractHotmartHighlightedProductNamesFromMarketplacePayload() throws Exception {
+        String hotmartPayload = """
+                {"name":"Produto Alpha","fullLink":"https:\\/\\/www.hotmart.com\\/product\\/produto-alpha\","description":"Transforme sua rotina com método validado.","producerName":"Produtor A","image":"https:\\/\\/cdn.hotmart.com\\/produto-alpha.jpg"}
+                {"name":"Produto Beta","fullLink":"https:\\/\\/www.hotmart.com\\/product\\/produto-beta\","description":"Ganhe clareza e performance.","producerName":"Produtor B","image":"https:\\/\\/cdn.hotmart.com\\/produto-beta.jpg"}
+                """;
+
+        var method = MoisDomainService.class.getDeclaredMethod("parseHotmartMarketplaceLeads", String.class, int.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<Object> leads = (List<Object>) method.invoke(service, hotmartPayload, 10);
+
+        assertThat(leads).hasSize(2);
+        assertThat(leads.get(0).toString()).contains("Produto Alpha");
+        assertThat(leads.get(1).toString()).contains("Produto Beta");
+    }
+
     private static class HtmlHandler implements HttpHandler {
         private final String body;
 

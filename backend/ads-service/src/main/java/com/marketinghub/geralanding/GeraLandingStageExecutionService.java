@@ -139,9 +139,17 @@ public class GeraLandingStageExecutionService {
     }
 
     @Transactional(readOnly = true)
-    public List<GeraLandingExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode) {
-        return executionRepository
-                .findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(experimentId, stageCode)
+    public List<GeraLandingExecutionSummaryResponse> listExperimentStageExecutions(
+            Long experimentId,
+            String stageCode,
+            boolean includeCompleted) {
+        List<GeraLandingStageExecution> executions = includeCompleted
+                ? executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(experimentId, stageCode)
+                : executionRepository.findTop20ByExperimentIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
+                        experimentId,
+                        stageCode,
+                        "CONCLUIDO");
+        return executions
                 .stream()
                 .map(execution -> new GeraLandingExecutionSummaryResponse(
                         fromDatabaseIdJob(execution.getIdJob()),

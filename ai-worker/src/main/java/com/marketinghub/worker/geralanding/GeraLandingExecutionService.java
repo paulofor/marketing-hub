@@ -125,6 +125,11 @@ public class GeraLandingExecutionService {
         } catch (Exception ex) {
             log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId(), ex);
+            try {
+                backendClient.receiveFailure(execution.idJob(), execution.experimentId(), execution.stageCode(), ex.getMessage());
+            } catch (Exception callbackEx) {
+                log.error("Falha ao registrar erro de execução no backend para executionId={}", execution.idJob(), callbackEx);
+            }
         }
     }
 

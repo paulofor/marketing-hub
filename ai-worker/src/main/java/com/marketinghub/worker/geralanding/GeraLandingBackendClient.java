@@ -95,6 +95,21 @@ public class GeraLandingBackendClient {
                 .block();
     }
 
+    public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage) {
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
+                "/internal/geralanding/stage-executions");
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("experimentId", experimentId);
+        body.put("stageCode", stageCode);
+        body.put("errorMessage", errorMessage);
+        webClient.post()
+                .uri(baseUrl + "/{idJob}/receive-result", idJob)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
+
     private Flux<GeraLandingStageExecutionDto> handleListResponse(String uri,
                                                                   HttpStatusCode status,
                                                                   org.springframework.web.reactive.function.client.ClientResponse response) {

@@ -76,6 +76,7 @@ public class GeraLandingOpenAiBatchClient {
     }
 
     private OpenAiResponse callOpenAi(Map<String, Object> payload) {
+        log.info("callOpenAI [gera-landing] requestPayload={}", safeJson(payload));
         OpenAiResponse response = webClient.post()
                 .uri("/responses")
                 .bodyValue(payload)
@@ -88,6 +89,7 @@ public class GeraLandingOpenAiBatchClient {
         if (response.hasError()) {
             throw new IllegalStateException(response.errorMessage());
         }
+        log.info("callOpenAI [gera-landing] responseBody={}", safeJson(response));
         return response;
     }
 

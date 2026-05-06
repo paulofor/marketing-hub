@@ -2,6 +2,7 @@ package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -10,6 +11,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -23,17 +25,21 @@ public class GeraLandingExecutionService {
     private final GeraLandingOpenAiBatchClient openAiClient;
     private final ObjectMapper objectMapper;
     private final int pendingLimit;
+    private final Resource wireframeSchemaResource;
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
                                        GeraLandingOpenAiBatchClient openAiClient,
                                        ObjectMapper objectMapper,
-                                       @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
+                                       @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,
+                                       @Value("classpath:prompts/geralanding/landing-page-wireframe-schema.json")
+                                       Resource wireframeSchemaResource) {
         this.backendClient = backendClient;
         this.geraLandingService = geraLandingService;
         this.openAiClient = openAiClient;
         this.objectMapper = objectMapper;
         this.pendingLimit = Math.max(1, pendingLimit);
+        this.wireframeSchemaResource = wireframeSchemaResource;
     }
 
     public void processPendingExecutions() {
@@ -119,14 +125,10 @@ public class GeraLandingExecutionService {
         //     }
         //   }
         // }
-        Map<String, Object> schema = new LinkedHashMap<>();
-        schema.put("type", "object");
-        schema.put("additionalProperties", true);
-
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", "experiment_pipeline_landing_page_copy");
-        format.put("schema", schema);
+        format.put("schema", readWireframeSchema());
         format.put("strict", true);
 
         String resolvedModel = StringUtils.hasText(model) ? model.trim() : "gpt-5.2";
@@ -143,5 +145,14 @@ public class GeraLandingExecutionService {
         ));
         body.put("text", Map.of("format", format));
         return objectMapper.writeValueAsString(body);
+    }
+
+    private Map<String, Object> readWireframeSchema() throws JsonProcessingException {
+        try {
+            return objectMapper.readValue(wireframeSchemaResource.getInputStream(), Map.class);
+        } catch (IOException ex) {
+            throw new JsonProcessingException("Falha ao carregar schema do wireframe em classpath:prompts/geralanding/landing-page-wireframe-schema.json") {
+            };
+        }
     }
 }

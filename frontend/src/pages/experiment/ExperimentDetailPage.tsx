@@ -240,8 +240,21 @@ export default function ExperimentDetailPage() {
       normalizedStatus,
     );
   };
+  const isCompletedExecution = (status?: string | null) => {
+    const normalizedStatus = (status ?? "").trim().toUpperCase();
+    return ["CONCLUIDO", "CONCLUÍDO", "COMPLETED", "SUCCESS", "SUCCEEDED", "DONE"].includes(
+      normalizedStatus,
+    );
+  };
   const hasRunningGeraLandingExecution = (pendingGeraLandingExecutions ?? []).some((execution) =>
     isRunningExecution(execution.status),
+  );
+  const completedHistoryGeraLandingExecutions = useMemo(
+    () =>
+      (completedGeraLandingExecutions ?? []).filter((execution) =>
+        isCompletedExecution(execution.status),
+      ),
+    [completedGeraLandingExecutions],
   );
   const runningGeraLandingJobId = (pendingGeraLandingExecutions ?? []).find((execution) =>
     isRunningExecution(execution.status),
@@ -1436,7 +1449,7 @@ export default function ExperimentDetailPage() {
                 <h5 className="card-title mb-0">Histórico de execuções concluídas</h5>
                 {isLoadingCompletedGeraLandingExecutions ? (
                   <p className="text-muted mb-0">Carregando execuções...</p>
-                ) : !completedGeraLandingExecutions || completedGeraLandingExecutions.length === 0 ? (
+                ) : completedHistoryGeraLandingExecutions.length === 0 ? (
                   <p className="text-muted mb-0">Nenhuma execução concluída registrada para esta etapa.</p>
                 ) : (
                   <div className="table-responsive">
@@ -1449,7 +1462,7 @@ export default function ExperimentDetailPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {completedGeraLandingExecutions.map((execution) => (
+                        {completedHistoryGeraLandingExecutions.map((execution) => (
                           <tr key={execution.idJob}>
                             <td>
                               <Link

@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "pageGoal": { "type": "string" },
+    "variantLayoutId": { "type": "string" },
+    "sectionOrder": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "mobilePriorityNotes": { "type": "string" },
+    "ctaPlacementNotes": { "type": "string" },
+    "formPlacementNotes": { "type": "string" },
+    "readingFlowSpec": { "type": "object", "additionalProperties": true },
+    "conversionPathSpec": { "type": "object", "additionalProperties": true },
+    "proofPlan": { "type": "object", "additionalProperties": true },
+    "trustSignalsSpec": { "type": "object", "additionalProperties": true },
+    "accessibilitySpec": { "type": "object", "additionalProperties": true },
+    "consistencyChecks": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "formSpec": { "type": "object", "additionalProperties": true }
+  },
+  "required": [
+    "pageGoal",
+    "variantLayoutId",
+    "sectionOrder",
+    "mobilePriorityNotes",
+    "ctaPlacementNotes",
+    "formPlacementNotes",
+    "readingFlowSpec",
+    "conversionPathSpec",
+    "proofPlan",
+    "trustSignalsSpec",
+    "accessibilitySpec",
+    "consistencyChecks",
+    "formSpec"
+  ]
+}

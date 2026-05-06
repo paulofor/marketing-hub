@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.core.io.ClassPathResource;
 
 class GeraLandingExecutionServiceTest {
 
@@ -27,7 +28,13 @@ class GeraLandingExecutionServiceTest {
                 "{\"ok\":true}", "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
 
         GeraLandingExecutionService service =
-                new GeraLandingExecutionService(backendClient, geraLandingService, openAiClient, objectMapper, 20);
+                new GeraLandingExecutionService(
+                        backendClient,
+                        geraLandingService,
+                        openAiClient,
+                        objectMapper,
+                        20,
+                        new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"));
         service.processPendingExecutions();
 
         verify(openAiClient).generate(any());

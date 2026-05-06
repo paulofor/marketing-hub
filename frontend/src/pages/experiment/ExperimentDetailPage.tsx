@@ -1441,45 +1441,44 @@ export default function ExperimentDetailPage() {
                       </table>
                     </div>
                   )}
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <div className="card-body d-flex flex-column gap-3">
-                <h5 className="card-title mb-0">Histórico de execuções concluídas</h5>
-                {isLoadingCompletedGeraLandingExecutions ? (
-                  <p className="text-muted mb-0">Carregando execuções...</p>
-                ) : completedHistoryGeraLandingExecutions.length === 0 ? (
-                  <p className="text-muted mb-0">Nenhuma execução concluída registrada para esta etapa.</p>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="table table-sm align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th scope="col">Job ID</th>
-                          <th scope="col">Status</th>
-                          <th scope="col">Data-hora</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {completedHistoryGeraLandingExecutions.map((execution) => (
-                          <tr key={execution.idJob}>
-                            <td>
-                              <Link
-                                to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
-                                className="fw-semibold text-decoration-none"
-                              >
-                                {execution.idJob}
-                              </Link>
-                            </td>
-                            <td>{execution.status}</td>
-                            <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções concluídas</h6>
+                    {isLoadingCompletedGeraLandingExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : completedHistoryGeraLandingExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">Nenhuma execução concluída registrada para esta etapa.</p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {completedHistoryGeraLandingExecutions.map((execution) => (
+                              <tr key={execution.idJob}>
+                                <td>
+                                  <Link
+                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                    className="fw-semibold text-decoration-none"
+                                  >
+                                    {execution.idJob}
+                                  </Link>
+                                </td>
+                                <td>{execution.status}</td>
+                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>

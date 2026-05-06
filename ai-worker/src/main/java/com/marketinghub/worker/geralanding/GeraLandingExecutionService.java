@@ -75,6 +75,7 @@ public class GeraLandingExecutionService {
                     execution.stageCode(),
                     java.util.Collections.emptyMap());
             String prompt = geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
+            String promptMarkdownContent = geraLandingService.carregarPromptMarkdownCru(normalizedStage);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
 
@@ -85,6 +86,15 @@ public class GeraLandingExecutionService {
                     "Você é especialista em execução de pipeline de experimento.");
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
+            String schemaJson = objectMapper.writeValueAsString(readWireframeSchema());
+            backendClient.receivePrompt(
+                    execution.idJob(),
+                    execution.experimentId(),
+                    execution.stageCode(),
+                    prompt,
+                    openAiRequestBody,
+                    schemaJson,
+                    promptMarkdownContent);
 
             GeraLandingJobDto openAiJob = new GeraLandingJobDto(
                     UUID.fromString(execution.idJob()),

@@ -92,6 +92,13 @@ public class GeraLandingService {
         return promptMontado;
     }
 
+    public String carregarPromptMarkdownCru(String etapa) throws IOException {
+        if (!StringUtils.hasText(etapa)) {
+            throw new IllegalArgumentException("Nome da etapa é obrigatório");
+        }
+        return carregarPromptBase(etapa.trim() + ".md");
+    }
+
     private Map<String, Object> obterMapa(GeraLandingPromptContext context, String campo) {
         if (context == null || context.dados() == null || context.dados().isEmpty()) {
             return Collections.emptyMap();

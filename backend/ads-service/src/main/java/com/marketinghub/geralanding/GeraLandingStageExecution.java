@@ -50,6 +50,18 @@ public class GeraLandingStageExecution {
     @Column(name = "prompt", columnDefinition = "LONGTEXT")
     private String prompt;
 
+    @Lob
+    @Column(name = "openai_request_body", columnDefinition = "LONGTEXT")
+    private String openAiRequestBody;
+
+    @Lob
+    @Column(name = "schema_json", columnDefinition = "LONGTEXT")
+    private String schemaJson;
+
+    @Lob
+    @Column(name = "prompt_markdown_content", columnDefinition = "LONGTEXT")
+    private String promptMarkdownContent;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 

@@ -98,6 +98,9 @@ public class GeraLandingStageExecutionService {
         Instant now = Instant.now();
         execution.setPrompt(request.prompt());
         execution.setOpenAiJobId(request.openAiJobId());
+        execution.setOpenAiRequestBody(request.openAiRequestBody());
+        execution.setSchemaJson(request.schemaJson());
+        execution.setPromptMarkdownContent(request.promptMarkdownContent());
         execution.setProcessingStartedAt(now);
         execution.setStatus("EM_PROCESSAMENTO");
         executionRepository.save(execution);
@@ -124,6 +127,9 @@ public class GeraLandingStageExecutionService {
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
         execution.setModelResponse(request.modelResponse());
+        if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {
+            execution.setOpenAiJobId(request.openAiJobId());
+        }
         execution.setInputTokens(request.inputTokens());
         execution.setOutputTokens(request.outputTokens());
         execution.setCostUsd(request.costUsd());
@@ -161,6 +167,9 @@ public class GeraLandingStageExecutionService {
                 execution.getPromptTemplateId(),
                 execution.getPromptContent(),
                 execution.getPrompt(),
+                execution.getOpenAiRequestBody(),
+                execution.getSchemaJson(),
+                execution.getPromptMarkdownContent(),
                 execution.getStatus(),
                 execution.getOpenAiJobId(),
                 execution.getModelResponse(),

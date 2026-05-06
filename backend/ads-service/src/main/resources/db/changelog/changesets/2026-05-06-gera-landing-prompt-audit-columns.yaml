@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-06-gera-landing-prompt-audit-columns
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: openai_request_body
+                  type: LONGTEXT
+              - column:
+                  name: schema_json
+                  type: LONGTEXT
+              - column:
+                  name: prompt_markdown_content
+                  type: LONGTEXT

@@ -6,6 +6,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.nio.charset.StandardCharsets;
@@ -127,6 +128,7 @@ public class GeraLandingStageExecutionService {
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
         execution.setModelResponse(request.modelResponse());
+        execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
         if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {
             execution.setOpenAiJobId(request.openAiJobId());
         }
@@ -134,7 +136,7 @@ public class GeraLandingStageExecutionService {
         execution.setOutputTokens(request.outputTokens());
         execution.setCostUsd(request.costUsd());
         execution.setCompletedAt(Instant.now());
-        execution.setStatus("CONCLUIDO");
+        execution.setStatus(StringUtils.hasText(request.errorMessage()) ? "FALHA" : "CONCLUIDO");
         executionRepository.save(execution);
     }
 
@@ -181,6 +183,7 @@ public class GeraLandingStageExecutionService {
                 execution.getStatus(),
                 execution.getOpenAiJobId(),
                 execution.getModelResponse(),
+                execution.getErrorMessage(),
                 execution.getInputTokens(),
                 execution.getOutputTokens(),
                 execution.getCostUsd());

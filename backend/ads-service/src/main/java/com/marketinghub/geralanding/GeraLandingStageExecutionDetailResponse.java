@@ -20,6 +20,7 @@ public record GeraLandingStageExecutionDetailResponse(
         String status,
         String openAiJobId,
         String modelResponse,
+        String errorMessage,
         Integer inputTokens,
         Integer outputTokens,
         BigDecimal costUsd) {

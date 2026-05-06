@@ -7,7 +7,8 @@ import java.math.BigDecimal;
 public record GeraLandingResultReceiveRequest(
         @NotNull Long experimentId,
         @NotBlank String stageCode,
-        @NotBlank String modelResponse,
+        String modelResponse,
+        String errorMessage,
         String openAiJobId,
         Integer inputTokens,
         Integer outputTokens,

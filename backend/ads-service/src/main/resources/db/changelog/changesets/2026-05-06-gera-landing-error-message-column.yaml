@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-06-gera-landing-error-message-column
+      author: codex
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - dbms:
+              type: mysql
+          - not:
+              columnExists:
+                tableName: gera_landing_stage_execution
+                columnName: error_message
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: error_message
+                  type: LONGTEXT
+                  remarks: Mensagem de erro da execução no worker AI quando status for FALHA.

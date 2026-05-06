@@ -40,6 +40,13 @@ class MetaToolsServiceTest {
                         "system-token",
                         "system-token",
                         List.of("developers.facebook.com")
+                ),
+                new McpProperties.Github(
+                        false,
+                        "https://api.github.com",
+                        "owner",
+                        "repo",
+                        "token"
                 )
         );
         service = new MetaToolsService(properties, restTemplate, new ObjectMapper());

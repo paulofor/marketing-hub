@@ -80,6 +80,14 @@ class ModuleLogServiceTest {
                 List.of("developers.facebook.com")
         );
 
-        return new McpProperties("marketing-hub-mcp", "1.0.0", "", logs, meta);
+        McpProperties.Github github = new McpProperties.Github(
+                false,
+                "https://api.github.com",
+                "owner",
+                "repo",
+                ""
+        );
+
+        return new McpProperties("marketing-hub-mcp", "1.0.0", "", logs, meta, github);
     }
 }

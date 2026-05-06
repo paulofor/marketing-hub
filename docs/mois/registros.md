@@ -102,3 +102,12 @@
   - `enrichedLeads`, `totalLeads`, `limitPerSource` e `bodyLength`.
 - Objetivo: diferenciar com evidência de log quando a coleta está encontrando cards ricos (com descrição/produtor/imagem) versus quando está caindo majoritariamente no fallback por URL, cenário que explica campos de produto nulos na persistência relacional.
 - Commit relacionado: `a5c4341`.
+
+## 2026-05-06 12:13:34 UTC-3
+- Criado o submódulo independente `mois-hotmart-collector` para coleta Hotmart com aplicação, container e imagem Docker separados do MOIS principal.
+- Publicado contrato inicial do submódulo com endpoints:
+  - `GET /api/v1/mois-hotmart/health`
+  - `POST /api/v1/mois-hotmart/collections`
+- Estrutura inicial preparada para evolução para automação Playwright com sessão persistida, mantendo desacoplamento operacional do núcleo de domínio do MOIS.
+- Registro adicionado para atender solicitação explícita de documentação em `docs/mois/registros.md`.
+- Commit relacionado: `52082a1`.

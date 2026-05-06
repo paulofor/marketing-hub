@@ -3,6 +3,7 @@ import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useGeraLandingStageExecutionDetail } from "../../api/experiment/useGeraLandingStageExecutions";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
+import MarkdownContentViewer from "../../components/MarkdownContentViewer";
 
 function formatDateTime(value?: string) {
   if (!value) return "—";
@@ -79,7 +80,7 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               </div>
               <div>
                 <h6>Conteúdo do arquivo .md usado no prompt</h6>
-                <CollapsibleJsonViewer content={detailQuery.data.promptMarkdownContent} />
+                <MarkdownContentViewer content={detailQuery.data.promptMarkdownContent} />
               </div>
               <div>
                 <h6>Model response</h6>

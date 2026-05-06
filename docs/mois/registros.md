@@ -122,3 +122,13 @@
 - `HotmartCollectorService` atualizado para abrir Chromium headless, navegar para `https://app.hotmart.com/market/search` e extrair links de produtos (`/market/products/`) até o limite solicitado.
 - `collector.playwright.headless` parametrizado (default `true`) com opção de override para debug local.
 - Teste de controller isolado com `@MockBean` para evitar dependência de rede/browser durante testes unitários.
+
+## 2026-05-06 20:50:00 UTC
+- Atendida a solicitação de tornar o deploy do `mois-hotmart-collector` automático via GitHub Actions.
+- Criado workflow dedicado `.github/workflows/mois-hotmart-collector-ci.yml` com pipeline completo:
+  1. testes Maven (`mvn -B test`),
+  2. build e push da imagem para GHCR,
+  3. deploy automático por SSH no mesmo host do MOIS principal (`177.153.62.107`) usando `docker compose`.
+- README do submódulo atualizado para documentar o novo fluxo de deploy automático.
+- Registro criado conforme solicitação explícita: `docs/mois/registros.md`.
+- Commit relacionado: `88064ce`.

@@ -53,3 +53,33 @@ Exemplo:
 ```bash
 java -jar target/mois-hotmart-collector.jar --collector.playwright.headless=false
 ```
+
+
+## Deploy automático (GitHub Actions)
+
+O deploy deste módulo agora é automático via workflow:
+
+- Arquivo: `.github/workflows/mois-hotmart-collector-ci.yml`
+- Fluxo em `push` na `main` para alterações em `mois-hotmart-collector/**`:
+  1. roda testes (`mvn test`),
+  2. builda e publica imagem no GHCR,
+  3. faz deploy no mesmo host do MOIS principal (`177.153.62.107`).
+
+## Deploy no mesmo host do MOIS principal
+
+Use o script central do repositório para build/push/deploy:
+
+```bash
+cd /workspace/marketing-hub
+DEPLOY_HOST=ubuntu@191.252.120.96 \
+IMAGE_TAG=2026.05.06-1 \
+IMAGE_REPO=marketinghub/mois-hotmart-collector \
+bash ./scripts/deploy-mois-hotmart-collector.sh
+```
+
+### O que o script faz
+
+1. Build da imagem Docker do módulo `mois-hotmart-collector`.
+2. Push da imagem para o registry configurado.
+3. Copia `docker-compose.deploy.yml` para o host remoto.
+4. Executa `docker compose up -d` no mesmo host usado pelo MOIS principal.

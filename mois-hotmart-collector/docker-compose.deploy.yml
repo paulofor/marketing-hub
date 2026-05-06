@@ -1,0 +1,8 @@
+services:
+  mois-hotmart-collector:
+    image: ${MOIS_HOTMART_COLLECTOR_IMAGE}
+    build: null
+    container_name: mois-hotmart-collector
+    restart: unless-stopped
+    ports:
+      - "8095:8080"

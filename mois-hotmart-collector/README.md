@@ -15,9 +15,20 @@ Submódulo separado do MOIS para automatização da coleta de produtos quentes n
 
 ## Execução local
 
+### Modo desenvolvimento
+
 ```bash
 mvn spring-boot:run
 ```
+
+### Modo JAR executável (recomendado para este módulo)
+
+```bash
+mvn clean package
+./run-local-jar.sh
+```
+
+> O build gera `target/mois-hotmart-collector.jar` como JAR executável (fat jar Spring Boot).
 
 ## Docker
 

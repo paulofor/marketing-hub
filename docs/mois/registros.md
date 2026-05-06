@@ -111,3 +111,8 @@
 - Estrutura inicial preparada para evolução para automação Playwright com sessão persistida, mantendo desacoplamento operacional do núcleo de domínio do MOIS.
 - Registro adicionado para atender solicitação explícita de documentação em `docs/mois/registros.md`.
 - Commit relacionado: `52082a1`.
+
+## 2026-05-06 12:17:38 UTC-3
+- Ajustado o submódulo `mois-hotmart-collector` para privilegiar distribuição como JAR executável.
+- `pom.xml` atualizado com repackage explícito do Spring Boot e geração de artefato final `target/mois-hotmart-collector.jar` com `executable=true`.
+- Adicionado script `run-local-jar.sh` para execução direta do JAR e README atualizado com fluxo recomendado `mvn clean package` + execução do jar.

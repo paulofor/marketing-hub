@@ -43,6 +43,7 @@ public class GeraLandingOpenAiBatchClient {
     }
 
     public GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) {
+        log.info("GeraLandingOpenAiBatchClient.generate started [job={}]", safeJson(job));
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
         }

@@ -81,7 +81,7 @@ public class GeraLandingOpenAiBatchClient {
             return new GeraLandingJobCompletionPayload(
                     modelResponse,
                     rawOutput,
-                    job.originalPrompt(),
+                    job.requestBodyJson(),
                     response.id(),
                     inputTokens,
                     outputTokens,

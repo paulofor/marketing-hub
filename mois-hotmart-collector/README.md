@@ -41,3 +41,15 @@ docker compose up --build
 
 Sim. Este módulo roda em Linux (host ou container) com Java 21+ instalado.
 O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de permissão de execução direta no arquivo JAR.
+
+
+## Playwright (headless padrão)
+
+- O coletor agora usa Playwright em **modo headless por padrão** (`collector.playwright.headless=true`).
+- Para depuração local, rode com `collector.playwright.headless=false`.
+
+Exemplo:
+
+```bash
+java -jar target/mois-hotmart-collector.jar --collector.playwright.headless=false
+```

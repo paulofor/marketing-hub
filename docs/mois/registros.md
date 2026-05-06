@@ -116,3 +116,9 @@
 - Ajustado o submódulo `mois-hotmart-collector` para privilegiar distribuição como JAR executável.
 - `pom.xml` atualizado com repackage explícito do Spring Boot e geração de artefato final `target/mois-hotmart-collector.jar` com `executable=true`.
 - Adicionado script `run-local-jar.sh` para execução direta do JAR e README atualizado com fluxo recomendado `mvn clean package` + execução do jar.
+
+## 2026-05-06 12:38:09 UTC-3
+- Evoluído o submódulo `mois-hotmart-collector` para coleta com Playwright em modo headless por padrão.
+- `HotmartCollectorService` atualizado para abrir Chromium headless, navegar para `https://app.hotmart.com/market/search` e extrair links de produtos (`/market/products/`) até o limite solicitado.
+- `collector.playwright.headless` parametrizado (default `true`) com opção de override para debug local.
+- Teste de controller isolado com `@MockBean` para evitar dependência de rede/browser durante testes unitários.

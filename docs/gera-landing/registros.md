@@ -83,3 +83,5 @@
 - 2026-05-06 10:20:00 (UTC-3): ajuste pós-review no frontend da aba **Gera landing** (`frontend/src/pages/experiment/ExperimentDetailPage.tsx`) para refinar a exibição de custos conforme solicitação: a coluna **Custo** foi mantida apenas na tabela de **Histórico de execuções concluídas** (por linha) e o total agregado das execuções concluídas foi mantido no destaque superior do card **Gera WireFrame**; também foi atualizado o contrato tipado da listagem (`costUsd` em `GeraLandingStageExecutionItem`) para consumir o valor retornado pela API quando disponível.
 
 - ##Finalização do Fluxo de Gera Wireframe
+
+- 2026-05-06 09:35:00 (UTC-3): registro pós-review no frontend da aba **Gera landing** (`frontend/src/pages/experiment/ExperimentDetailPage.tsx`): corrigida a exibição de custo no histórico e totalização do card **Gera WireFrame** com resolução robusta de campos de custo (`costUsd`, `totalCostUsd`, `cost`, `totalCost`) e parsing seguro de valores string; mantida a atualização automática do histórico ao término do job sem recarregar a página.

@@ -89,6 +89,7 @@ export default function ExperimentDetailPage() {
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
+  const hadRunningGeraLandingExecutionRef = useRef(false);
   const {
     data: pendingGeraLandingExecutions,
     isLoading: isLoadingPendingGeraLandingExecutions,
@@ -269,7 +270,29 @@ export default function ExperimentDetailPage() {
         }).format(value)
       : "—";
 
-  const resolveExecutionCostUsd = (execution: GeraLandingStageExecutionItem) => execution.costUsd ?? null;
+  const resolveExecutionCostUsd = (execution: GeraLandingStageExecutionItem) => {
+    const candidateValues = [
+      execution.costUsd,
+      (execution as GeraLandingStageExecutionItem & { totalCostUsd?: number | string | null })
+        .totalCostUsd,
+      (execution as GeraLandingStageExecutionItem & { cost?: number | string | null }).cost,
+      (execution as GeraLandingStageExecutionItem & { totalCost?: number | string | null })
+        .totalCost,
+    ];
+
+    for (const candidate of candidateValues) {
+      if (candidate == null) continue;
+      if (typeof candidate === "number" && Number.isFinite(candidate)) return candidate;
+      if (typeof candidate === "string") {
+        const normalizedCandidate = candidate.replace(",", ".").trim();
+        if (!normalizedCandidate) continue;
+        const parsedCandidate = Number(normalizedCandidate);
+        if (Number.isFinite(parsedCandidate)) return parsedCandidate;
+      }
+    }
+
+    return null;
+  };
 
   const totalCompletedGeraLandingCostUsd = completedHistoryGeraLandingExecutions.reduce(
     (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
@@ -286,7 +309,7 @@ export default function ExperimentDetailPage() {
 
   useEffect(() => {
     if (!runningGeraLandingJobId || !runningGeraLandingJobDetail) return;
-    if (runningGeraLandingJobDetail.status?.toUpperCase() === "CONCLUIDO") {
+    if (isCompletedExecution(runningGeraLandingJobDetail.status)) {
       void Promise.all([
         refetchPendingGeraLandingExecutions(),
         refetchCompletedGeraLandingExecutions(),
@@ -298,6 +321,18 @@ export default function ExperimentDetailPage() {
     refetchPendingGeraLandingExecutions,
     refetchCompletedGeraLandingExecutions,
   ]);
+
+  useEffect(() => {
+    if (hasRunningGeraLandingExecution) {
+      hadRunningGeraLandingExecutionRef.current = true;
+      return;
+    }
+
+    if (!hadRunningGeraLandingExecutionRef.current) return;
+
+    hadRunningGeraLandingExecutionRef.current = false;
+    void refetchCompletedGeraLandingExecutions();
+  }, [hasRunningGeraLandingExecution, refetchCompletedGeraLandingExecutions]);
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const preset = presets?.find((p) => p.id === data.metricPresetId);

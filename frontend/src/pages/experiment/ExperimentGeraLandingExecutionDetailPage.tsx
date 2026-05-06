@@ -12,9 +12,20 @@ function formatDateTime(value?: string) {
   return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function extractModelFromRequestBody(raw?: string) {
+  if (!raw) return "—";
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.model === "string" && parsed.model.trim() ? parsed.model : "—";
+  } catch {
+    return "—";
+  }
+}
+
 export default function ExperimentGeraLandingExecutionDetailPage() {
   const { id: experimentId, jobId } = useParams();
   const detailQuery = useGeraLandingStageExecutionDetail(experimentId, jobId);
+  const modelUsed = extractModelFromRequestBody(detailQuery.data?.openAiRequestBody);
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -52,6 +63,7 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <div className="col-md-6"><strong>Status:</strong> {detailQuery.data.status}</div>
                 <div className="col-md-6"><strong>Stage:</strong> {detailQuery.data.stageCode}</div>
                 <div className="col-md-6"><strong>OpenAI Job ID:</strong> {detailQuery.data.openAiJobId ?? "—"}</div>
+                <div className="col-md-6"><strong>Modelo usado:</strong> {modelUsed}</div>
                 <div className="col-md-6"><strong>Solicitado em:</strong> {formatDateTime(detailQuery.data.executionRequestedAt)}</div>
                 <div className="col-md-6"><strong>Criado em:</strong> {formatDateTime(detailQuery.data.createdAt)}</div>
                 <div className="col-md-6"><strong>Processamento iniciado:</strong> {formatDateTime(detailQuery.data.processingStartedAt)}</div>

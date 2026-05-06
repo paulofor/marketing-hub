@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-06-mois-collected-reference-product-fields
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_collected_reference
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_collected_reference
+                ADD COLUMN product_name VARCHAR(260) NULL AFTER title,
+                ADD COLUMN product_url VARCHAR(512) NULL AFTER url,
+                ADD COLUMN producer_name VARCHAR(191) NULL AFTER hotmart_producer,
+                ADD COLUMN sales_page_url VARCHAR(512) NULL AFTER product_url;
+
+              UPDATE mois_collected_reference
+                 SET product_name = COALESCE(NULLIF(title, ''), product_name),
+                     product_url = COALESCE(NULLIF(url, ''), product_url),
+                     sales_page_url = COALESCE(NULLIF(url, ''), sales_page_url),
+                     producer_name = COALESCE(NULLIF(hotmart_producer, ''), producer_name)
+               WHERE product_name IS NULL
+                  OR product_url IS NULL
+                  OR sales_page_url IS NULL
+                  OR producer_name IS NULL;

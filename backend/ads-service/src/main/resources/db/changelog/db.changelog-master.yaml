@@ -40,6 +40,9 @@ databaseChangeLog:
       file: changesets/2026-05-05-mois-collected-reference-hotmart-highlights.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-05-06-mois-collected-reference-product-fields.yaml
+      relativeToChangelogFile: true
+  - include:
       file: V2037_04_26__widen_experiment_pipeline_job_section_mysql5.sql
       relativeToChangelogFile: true
   - include:

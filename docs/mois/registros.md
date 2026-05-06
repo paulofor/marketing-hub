@@ -53,3 +53,15 @@
 - Documento de modelo de dados atualizado para registrar o novo contrato de persistência dos destaques Hotmart.
 - Validação executada: testes unitários direcionados em `backend/ads-service` (`MoisCollectionPersistenceServiceTest`) e `mois` (`MoisHotmartRobotServiceTest`) concluídos com sucesso.
 - Commit relacionado: `ae3a077`.
+
+## 2026-05-06 09:35:00 UTC-3
+- Registrada evolução da persistência relacional do MOIS para tornar `mois_collected_reference` operacionalmente útil para análise comercial de produtos Hotmart.
+- Novos campos adicionados e preenchidos no fluxo de coleta/persistência:
+  - `product_name`
+  - `product_url`
+  - `producer_name`
+  - `sales_page_url`
+- A escrita desses campos no backend agora usa fallback determinístico entre campos principais e metadados (`rawMetadata`) para reduzir lacunas em registros parcialmente estruturados.
+- Incluído changeset Liquibase incremental (MySQL 5.7, YAML) com backfill dos registros já persistidos para reaproveitar `title`, `url` e `hotmart_producer` quando disponíveis.
+- Objetivo: permitir consulta SQL direta sem depender de parsing do `payload_json` para identificar nome do produto, URL pública, produtor e página de vendas.
+- Commit relacionado: `66c7cda`.

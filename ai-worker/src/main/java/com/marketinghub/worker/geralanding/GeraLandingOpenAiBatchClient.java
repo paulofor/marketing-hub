@@ -2,8 +2,6 @@ package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobCompletionPayload;
-import com.marketinghub.worker.experimentpipeline.ExperimentPipelineJobDto;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import java.util.Map;
@@ -44,7 +42,8 @@ public class GeraLandingOpenAiBatchClient {
         return enabled;
     }
 
-    public ExperimentPipelineJobCompletionPayload generate(ExperimentPipelineJobDto job) {
+    public GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) {
+        log.info("GeraLandingOpenAiBatchClient.generate started [job={}]", safeJson(job));
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
         }
@@ -57,7 +56,7 @@ public class GeraLandingOpenAiBatchClient {
             }
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
-            return new ExperimentPipelineJobCompletionPayload(
+            return new GeraLandingJobCompletionPayload(
                     modelResponse,
                     safeJson(response),
                     safeJson(payload),

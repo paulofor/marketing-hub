@@ -25,7 +25,7 @@ mvn spring-boot:run
 
 ```bash
 mvn clean package
-./run-local-jar.sh
+bash ./run-local-jar.sh
 ```
 
 > O build gera `target/mois-hotmart-collector.jar` como JAR executável (fat jar Spring Boot).
@@ -35,3 +35,9 @@ mvn clean package
 ```bash
 docker compose up --build
 ```
+
+
+## Compatibilidade Linux
+
+Sim. Este módulo roda em Linux (host ou container) com Java 21+ instalado.
+O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de permissão de execução direta no arquivo JAR.

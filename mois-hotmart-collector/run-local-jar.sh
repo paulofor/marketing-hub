@@ -9,4 +9,9 @@ if [[ ! -f "$JAR_PATH" ]]; then
   exit 1
 fi
 
-exec "$JAR_PATH"
+if ! command -v java >/dev/null 2>&1; then
+  echo "Java não encontrado no PATH. Instale Java 21+ para executar o coletor."
+  exit 1
+fi
+
+exec java -jar "$JAR_PATH"

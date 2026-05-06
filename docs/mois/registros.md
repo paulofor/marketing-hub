@@ -65,3 +65,12 @@
 - Incluído changeset Liquibase incremental (MySQL 5.7, YAML) com backfill dos registros já persistidos para reaproveitar `title`, `url` e `hotmart_producer` quando disponíveis.
 - Objetivo: permitir consulta SQL direta sem depender de parsing do `payload_json` para identificar nome do produto, URL pública, produtor e página de vendas.
 - Commit relacionado: `66c7cda`.
+
+## 2026-05-05 22:49:17 UTC-3
+- Adicionada telemetria de diagnóstico no parser de marketplace Hotmart (`parseHotmartMarketplaceLeads`) para investigar lacunas de metadados de produto no MOIS.
+- O parser agora registra um resumo estruturado (`mois_hotmart_parse_summary`) com:
+  - `richCardMatches` e `richCardDuplicates`;
+  - `fallbackMatches` e `fallbackDuplicates`;
+  - `enrichedLeads`, `totalLeads`, `limitPerSource` e `bodyLength`.
+- Objetivo: diferenciar com evidência de log quando a coleta está encontrando cards ricos (com descrição/produtor/imagem) versus quando está caindo majoritariamente no fallback por URL, cenário que explica campos de produto nulos na persistência relacional.
+- Commit relacionado: `a5c4341`.

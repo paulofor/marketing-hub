@@ -1421,12 +1421,18 @@ public class MoisDomainService {
     private List<SourceLead> parseHotmartMarketplaceLeads(String body, int limitPerSource) {
         List<SourceLead> leads = new ArrayList<>();
         Set<String> seenUrls = new HashSet<>();
+        int richCardMatches = 0;
+        int richCardDuplicates = 0;
+        int fallbackMatches = 0;
+        int fallbackDuplicates = 0;
+        int enrichedLeads = 0;
 
         Pattern richCardPattern = Pattern.compile(
                 "\"name\":\"([^\"]+)\".*?\"fullLink\":\"(https:\\\\/\\\\/www\\.hotmart\\.com\\\\/product\\\\/[^\"]+)\".*?\"description\":\"([^\"]*)\".*?\"producerName\":\"([^\"]*)\".*?\"image\":\"([^\"]*)\""
         );
         Matcher richCardMatcher = richCardPattern.matcher(body);
         while (richCardMatcher.find() && leads.size() < limitPerSource) {
+            richCardMatches++;
             String title = decodeHotmartValue(richCardMatcher.group(1));
             String decodedUrl = decodeHotmartValue(richCardMatcher.group(2));
             String description = decodeHotmartValue(richCardMatcher.group(3));
@@ -1434,11 +1440,18 @@ public class MoisDomainService {
             String imageUrl = decodeHotmartValue(richCardMatcher.group(5));
             String highlight = deriveHotmartHighlight(title, description);
             if (seenUrls.add(decodedUrl)) {
+                if (title != null || description != null || producer != null || imageUrl != null || highlight != null) {
+                    enrichedLeads++;
+                }
                 leads.add(new SourceLead(decodedUrl, title, description, producer, imageUrl, highlight));
+            } else {
+                richCardDuplicates++;
             }
         }
 
         if (leads.size() >= limitPerSource) {
+            log.info("mois_hotmart_parse_summary limitPerSource={} richCardMatches={} richCardDuplicates={} fallbackMatches={} fallbackDuplicates={} enrichedLeads={} totalLeads={} bodyLength={}",
+                    limitPerSource, richCardMatches, richCardDuplicates, fallbackMatches, fallbackDuplicates, enrichedLeads, leads.size(), body.length());
             return leads;
         }
 
@@ -1448,12 +1461,17 @@ public class MoisDomainService {
         );
         Matcher fallbackUrlMatcher = fallbackUrlPattern.matcher(body);
         while (fallbackUrlMatcher.find() && leads.size() < limitPerSource) {
+            fallbackMatches++;
             String url = decodeHotmartValue(fallbackUrlMatcher.group());
             if (seenUrls.add(url)) {
                 leads.add(new SourceLead(url, null, null, null, null, null));
+            } else {
+                fallbackDuplicates++;
             }
         }
 
+        log.info("mois_hotmart_parse_summary limitPerSource={} richCardMatches={} richCardDuplicates={} fallbackMatches={} fallbackDuplicates={} enrichedLeads={} totalLeads={} bodyLength={}",
+                limitPerSource, richCardMatches, richCardDuplicates, fallbackMatches, fallbackDuplicates, enrichedLeads, leads.size(), body.length());
         return leads;
     }
 

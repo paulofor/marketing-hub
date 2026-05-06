@@ -1441,7 +1441,6 @@ export default function ExperimentDetailPage() {
                             <th scope="col">Job ID</th>
                             <th scope="col">Status</th>
                             <th scope="col">Data-hora</th>
-                            <th scope="col" className="text-end">Custo</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1457,7 +1456,6 @@ export default function ExperimentDetailPage() {
                               </td>
                               <td>{execution.status}</td>
                               <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                              <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
                             </tr>
                           ))}
                         </tbody>

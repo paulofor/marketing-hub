@@ -27,6 +27,8 @@
           },
           "copySource": { "type": "string" },
           "uiNotes": { "type": "string" },
+          "uiTags": { "type": "string" },
+          "uiSizes": { "type": "string" },
           "messageMatchDependency": { "type": "string" },
           "sectionDependsOn": {
             "type": "array",

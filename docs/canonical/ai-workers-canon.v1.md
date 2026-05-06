@@ -14,11 +14,11 @@ Este documento cobre:
 
 ## 3. Regra canônica de timeout para OpenAI Batch
 
-Para toda integração do **Worker AI** com OpenAI em **modo batch**, o timeout de acesso/processamento deve ser **sempre de 20 minutos**.
+Para toda integração do **Worker AI** com OpenAI em **modo batch**, o timeout de acesso/processamento deve ser **sempre de 30 minutos**.
 
 Regras mandatórias:
 
-1. valor canônico fixo: `20 minutos` (`PT20M`);
+1. valor canônico fixo: `30 minutos` (`PT30M`);
 2. não é permitido reduzir esse timeout em código, configuração local ou variável de ambiente;
 3. qualquer exceção futura exige nova versão deste cânone e atualização explícita dos módulos consumidores.
 

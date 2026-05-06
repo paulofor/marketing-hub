@@ -27,18 +27,20 @@ public class GeraLandingOpenAiBatchClient {
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
     private final boolean enabled;
-    private final int maxPollAttempts;
+    private final Duration batchTimeout;
     private final Duration pollInterval;
 
     public GeraLandingOpenAiBatchClient(WebClient.Builder builder,
                                         ObjectMapper objectMapper,
                                         @Value("${openai.api-key:}") String apiKey,
                                         @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                        @Value("${openai.batch.max-poll-attempts:40}") int maxPollAttempts,
+                                        @Value("${openai.batch-timeout:PT30M}") Duration batchTimeout,
                                         @Value("${openai.batch.poll-interval-ms:3000}") long pollIntervalMs) {
         this.objectMapper = objectMapper;
         this.enabled = StringUtils.hasText(apiKey);
-        this.maxPollAttempts = Math.max(1, maxPollAttempts);
+        this.batchTimeout = batchTimeout != null && !batchTimeout.isNegative() && !batchTimeout.isZero()
+                ? batchTimeout
+                : Duration.ofMinutes(30);
         this.pollInterval = Duration.ofMillis(Math.max(500, pollIntervalMs));
         WebClient.Builder clientBuilder = builder.clone().baseUrl(baseUrl);
         if (enabled) {
@@ -126,7 +128,10 @@ public class GeraLandingOpenAiBatchClient {
     }
 
     private BatchResponse pollUntilCompleted(String batchId) throws InterruptedException {
-        for (int attempt = 1; attempt <= maxPollAttempts; attempt++) {
+        long timeoutMillis = batchTimeout.toMillis();
+        long intervalMillis = pollInterval.toMillis();
+        long maxAttempts = Math.max(1, (timeoutMillis + intervalMillis - 1) / intervalMillis);
+        for (long attempt = 1; attempt <= maxAttempts; attempt++) {
             BatchResponse batch = webClient.get().uri("/batches/{id}", batchId)
                     .retrieve().bodyToMono(BatchResponse.class).block();
             if (batch == null) {
@@ -141,7 +146,8 @@ public class GeraLandingOpenAiBatchClient {
             }
             Thread.sleep(pollInterval.toMillis());
         }
-        throw new IllegalStateException("Timeout aguardando conclusão do batch " + batchId);
+        throw new IllegalStateException("Timeout aguardando conclusão do batch " + batchId
+                + " após " + batchTimeout);
     }
 
     private String downloadFileContent(String fileId) {

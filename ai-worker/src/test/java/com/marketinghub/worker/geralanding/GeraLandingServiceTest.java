@@ -39,7 +39,10 @@ class GeraLandingServiceTest {
                         Mockito.eq("id-job-original"),
                         Mockito.eq(10L),
                         Mockito.eq("test-placeholder"),
-                        Mockito.eq(prompt));
+                        Mockito.eq(prompt),
+                        Mockito.isNull(),
+                        Mockito.isNull(),
+                        Mockito.anyString());
     }
 
     @Test

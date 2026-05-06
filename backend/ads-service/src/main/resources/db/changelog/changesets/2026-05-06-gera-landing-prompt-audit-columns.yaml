@@ -3,8 +3,8 @@ databaseChangeLog:
       id: 2026-05-06-gera-landing-prompt-audit-columns
       author: codex
       preConditions:
-        onFail: MARK_RAN
-        onError: HALT
+        - onFail: MARK_RAN
+        - onError: HALT
         - dbms:
             type: mysql
       changes:

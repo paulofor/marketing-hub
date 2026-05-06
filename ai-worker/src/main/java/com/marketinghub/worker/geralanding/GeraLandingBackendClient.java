@@ -43,7 +43,13 @@ public class GeraLandingBackendClient {
         return result;
     }
 
-    public void receivePrompt(String idJob, Long experimentId, String stageCode, String prompt) {
+    public void receivePrompt(String idJob,
+                              Long experimentId,
+                              String stageCode,
+                              String prompt,
+                              String openAiRequestBody,
+                              String schemaJson,
+                              String promptMarkdownContent) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");
         log.info(
@@ -53,12 +59,16 @@ public class GeraLandingBackendClient {
                 experimentId,
                 stageCode,
                 prompt != null ? prompt.length() : 0);
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("experimentId", experimentId);
+        body.put("stageCode", stageCode);
+        body.put("prompt", prompt);
+        body.put("openAiRequestBody", openAiRequestBody);
+        body.put("schemaJson", schemaJson);
+        body.put("promptMarkdownContent", promptMarkdownContent);
         webClient.post()
                 .uri(baseUrl + "/{idJob}/receive-prompt", idJob)
-                .bodyValue(Map.of(
-                        "experimentId", experimentId,
-                        "stageCode", stageCode,
-                        "prompt", prompt))
+                .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block();
@@ -76,6 +86,7 @@ public class GeraLandingBackendClient {
         body.put("inputTokens", payload != null ? payload.inputTokens() : null);
         body.put("outputTokens", payload != null ? payload.outputTokens() : null);
         body.put("costUsd", payload != null ? payload.costUsd() : null);
+        body.put("openAiJobId", payload != null ? payload.openAiJobId() : null);
         webClient.post()
                 .uri(baseUrl + "/{idJob}/receive-result", idJob)
                 .bodyValue(body)

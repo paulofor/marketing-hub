@@ -16,6 +16,9 @@ export interface GeraLandingStageExecutionDetail extends GeraLandingStageExecuti
   promptTemplateId?: string;
   promptContent?: string;
   prompt?: string;
+  openAiRequestBody?: string;
+  schemaJson?: string;
+  promptMarkdownContent?: string;
   openAiJobId?: string;
   modelResponse?: string;
   inputTokens?: number;

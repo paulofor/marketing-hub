@@ -70,6 +70,18 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <CollapsibleJsonViewer content={detailQuery.data.prompt} />
               </div>
               <div>
+                <h6>OpenAI request body (prompt cru enviado)</h6>
+                <CollapsibleJsonViewer content={detailQuery.data.openAiRequestBody} />
+              </div>
+              <div>
+                <h6>Schema JSON enviado para o modelo</h6>
+                <CollapsibleJsonViewer content={detailQuery.data.schemaJson} />
+              </div>
+              <div>
+                <h6>Conteúdo do arquivo .md usado no prompt</h6>
+                <CollapsibleJsonViewer content={detailQuery.data.promptMarkdownContent} />
+              </div>
+              <div>
                 <h6>Model response</h6>
                 <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
               </div>

@@ -37,7 +37,7 @@ public class GeraLandingInternalController {
     @PostMapping("/stage-executions/receive-prompt")
     public ResponseEntity<Void> receivePromptDirect(@Valid @RequestBody GeraLandingPromptReceiveDirectRequest request) {
         executionService.receivePrompt(request.idJob(),
-                new GeraLandingPromptReceiveRequest(request.experimentId(), request.stageCode(), request.prompt(), null));
+                new GeraLandingPromptReceiveRequest(request.experimentId(), request.stageCode(), request.prompt(), null, null, null, null));
         return ResponseEntity.accepted().build();
     }
 

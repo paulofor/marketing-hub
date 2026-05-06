@@ -60,6 +60,8 @@ public class GeraLandingExecutionService {
         }
         String normalizedStage = execution.stageCode().trim().toLowerCase(Locale.ROOT);
         if (!STAGE_WIREFRAME.equals(normalizedStage)) {
+            log.info("Skipping gera-landing executionId={} because stageCode {} is not supported (expected {})",
+                    execution.idJob(), execution.stageCode(), STAGE_WIREFRAME);
             return;
         }
         try {
@@ -72,7 +74,12 @@ public class GeraLandingExecutionService {
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
 
-            String openAiRequestBody = buildOpenAiRequestBody(prompt);
+            String openAiRequestBody = buildOpenAiRequestBody(
+                    "gpt-5.2",
+                    prompt,
+                    "gera-landing-pipeline",
+                    "Você é especialista em execução de pipeline de experimento.");
+            log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
 
             ExperimentPipelineJobDto openAiJob = new ExperimentPipelineJobDto(
@@ -94,7 +101,26 @@ public class GeraLandingExecutionService {
         }
     }
 
-    private String buildOpenAiRequestBody(String prompt) throws JsonProcessingException {
+    private String buildOpenAiRequestBody(String model,
+                                          String prompt,
+                                          String systemName,
+                                          String systemMessage) throws JsonProcessingException {
+        // Exemplo oficial (OpenAI Responses API) para referência do formato esperado:
+        // {
+        //   "model": "gpt-5.2",
+        //   "input": [
+        //     {"role": "system", "content": "Você é especialista em execução de pipeline de experimento."},
+        //     {"role": "user", "content": [{"type": "input_text", "text": "SEU PROMPT AQUI"}]}
+        //   ],
+        //   "text": {
+        //     "format": {
+        //       "type": "json_schema",
+        //       "name": "experiment_pipeline_landing_page_copy",
+        //       "schema": {"type": "object", "additionalProperties": true},
+        //       "strict": true
+        //     }
+        //   }
+        // }
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
         schema.put("additionalProperties", true);
@@ -105,10 +131,16 @@ public class GeraLandingExecutionService {
         format.put("schema", schema);
         format.put("strict", true);
 
+        String resolvedModel = StringUtils.hasText(model) ? model.trim() : "gpt-5.2";
+        String resolvedSystemName = StringUtils.hasText(systemName) ? systemName.trim() : "system";
+        String resolvedSystemMessage = StringUtils.hasText(systemMessage)
+                ? systemMessage.trim()
+                : "Você é especialista em execução de pipeline de experimento.";
+
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", "gpt-5.2");
+        body.put("model", resolvedModel);
         body.put("input", List.of(
-                Map.of("role", "system", "content", "Você é especialista em execução de pipeline de experimento."),
+                Map.of("role", "system", "content", "[" + resolvedSystemName + "] " + resolvedSystemMessage),
                 Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", prompt)))
         ));
         body.put("text", Map.of("format", format));

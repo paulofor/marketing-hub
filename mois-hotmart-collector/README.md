@@ -54,6 +54,17 @@ Exemplo:
 java -jar target/mois-hotmart-collector.jar --collector.playwright.headless=false
 ```
 
+
+## Deploy automático (GitHub Actions)
+
+O deploy deste módulo agora é automático via workflow:
+
+- Arquivo: `.github/workflows/mois-hotmart-collector-ci.yml`
+- Fluxo em `push` na `main` para alterações em `mois-hotmart-collector/**`:
+  1. roda testes (`mvn test`),
+  2. builda e publica imagem no GHCR,
+  3. faz deploy no mesmo host do MOIS principal (`177.153.62.107`).
+
 ## Deploy no mesmo host do MOIS principal
 
 Use o script central do repositório para build/push/deploy:

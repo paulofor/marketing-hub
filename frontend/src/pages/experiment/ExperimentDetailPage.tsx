@@ -234,29 +234,6 @@ export default function ExperimentDetailPage() {
     }
   };
 
-  if (isLoading) return <p>Carregando...</p>;
-  if (!data) return <p>Não encontrado</p>;
-  const preset = presets?.find((p) => p.id === data.metricPresetId);
-  const resetPreviewSummary: ExperimentCampaignResetSummary =
-    resetPreviewData ?? { campaigns: 0, adSets: 0, ads: 0, creatives: 0 };
-  const totalItemsToReset =
-    resetPreviewSummary.campaigns +
-    resetPreviewSummary.adSets +
-    resetPreviewSummary.ads +
-    resetPreviewSummary.creatives;
-  const hasItemsToReset = totalItemsToReset > 0;
-  const previewErrorMessage = isResetPreviewError
-    ? resetPreviewError && resetPreviewError instanceof Error
-      ? resetPreviewError.message
-      : "Não foi possível carregar a prévia do reset."
-    : null;
-  const confirmResetDisabled =
-    isFetchingResetPreview ||
-    !hasItemsToReset ||
-    Boolean(previewErrorMessage) ||
-    resetCampaigns.isPending;
-  const readinessIssues = readinessSummary?.issues ?? [];
-  const hasReadinessIssues = readinessIssues.length > 0;
   const isRunningExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
     return ["EM_PROCESSAMENTO", "PROCESSING", "RUNNING", "IN_PROGRESS", "PENDING"].includes(
@@ -292,6 +269,29 @@ export default function ExperimentDetailPage() {
     refetchPendingGeraLandingExecutions,
     refetchCompletedGeraLandingExecutions,
   ]);
+  if (isLoading) return <p>Carregando...</p>;
+  if (!data) return <p>Não encontrado</p>;
+  const preset = presets?.find((p) => p.id === data.metricPresetId);
+  const resetPreviewSummary: ExperimentCampaignResetSummary =
+    resetPreviewData ?? { campaigns: 0, adSets: 0, ads: 0, creatives: 0 };
+  const totalItemsToReset =
+    resetPreviewSummary.campaigns +
+    resetPreviewSummary.adSets +
+    resetPreviewSummary.ads +
+    resetPreviewSummary.creatives;
+  const hasItemsToReset = totalItemsToReset > 0;
+  const previewErrorMessage = isResetPreviewError
+    ? resetPreviewError && resetPreviewError instanceof Error
+      ? resetPreviewError.message
+      : "Não foi possível carregar a prévia do reset."
+    : null;
+  const confirmResetDisabled =
+    isFetchingResetPreview ||
+    !hasItemsToReset ||
+    Boolean(previewErrorMessage) ||
+    resetCampaigns.isPending;
+  const readinessIssues = readinessSummary?.issues ?? [];
+  const hasReadinessIssues = readinessIssues.length > 0;
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {

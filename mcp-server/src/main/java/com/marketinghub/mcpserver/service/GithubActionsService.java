@@ -139,22 +139,22 @@ public class GithubActionsService {
             }
         }
 
-        return Map.of(
-                "run_id", runId,
-                "workflow_name", stringValue(runPayload.get("name")),
-                "display_title", stringValue(runPayload.get("display_title")),
-                "status", stringValue(runPayload.get("status")),
-                "conclusion", stringValue(runPayload.get("conclusion")),
-                "run_attempt", runPayload.get("run_attempt"),
-                "event", stringValue(runPayload.get("event")),
-                "branch", stringValue(runPayload.get("head_branch")),
-                "html_url", stringValue(runPayload.get("html_url")),
-                "run_api_url", runApiUrl,
-                "jobs_api_url", jobsApiUrl,
-                "failed", "failure".equalsIgnoreCase(stringValue(runPayload.get("conclusion"))),
-                "failed_jobs", failedJobs,
-                "has_job_errors", !failedJobs.isEmpty()
-        );
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("run_id", runId);
+        result.put("workflow_name", stringValue(runPayload.get("name")));
+        result.put("display_title", stringValue(runPayload.get("display_title")));
+        result.put("status", stringValue(runPayload.get("status")));
+        result.put("conclusion", stringValue(runPayload.get("conclusion")));
+        result.put("run_attempt", runPayload.get("run_attempt"));
+        result.put("event", stringValue(runPayload.get("event")));
+        result.put("branch", stringValue(runPayload.get("head_branch")));
+        result.put("html_url", stringValue(runPayload.get("html_url")));
+        result.put("run_api_url", runApiUrl);
+        result.put("jobs_api_url", jobsApiUrl);
+        result.put("failed", "failure".equalsIgnoreCase(stringValue(runPayload.get("conclusion"))));
+        result.put("failed_jobs", failedJobs);
+        result.put("has_job_errors", !failedJobs.isEmpty());
+        return result;
     }
 
     private String stringValue(Object value) {

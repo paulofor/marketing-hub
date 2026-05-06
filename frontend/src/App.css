@@ -52,3 +52,47 @@
   transform: translateY(-2px);
   box-shadow: 0 0.75rem 2rem -1rem rgba(88, 102, 242, 0.45);
 }
+
+.markdown-content-viewer {
+  color: var(--bs-body-color);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.markdown-content-viewer > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content-viewer pre {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.875rem;
+  overflow-x: auto;
+}
+
+.markdown-content-viewer code {
+  background-color: rgba(15, 23, 42, 0.08);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.35rem;
+}
+
+.markdown-content-viewer pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-content-viewer table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.markdown-content-viewer th,
+.markdown-content-viewer td {
+  border: 1px solid var(--bs-border-color);
+  padding: 0.5rem;
+  vertical-align: top;
+}

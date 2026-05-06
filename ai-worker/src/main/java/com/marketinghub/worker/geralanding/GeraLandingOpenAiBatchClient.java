@@ -1,10 +1,8 @@
 package com.marketinghub.worker.geralanding;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,8 +46,7 @@ public class GeraLandingOpenAiBatchClient {
             throw new IllegalStateException("OpenAI API key não configurada");
         }
         try {
-            Map<String, Object> payload = objectMapper.readValue(job.requestBodyJson(), new TypeReference<>() {});
-            OpenAiResponse response = callOpenAi(payload);
+            OpenAiResponse response = callOpenAi(job.prompt());
             String modelResponse = response.firstText();
             if (!StringUtils.hasText(modelResponse)) {
                 throw new IllegalStateException("Modelo não retornou conteúdo para gera-landing");
@@ -59,7 +56,7 @@ public class GeraLandingOpenAiBatchClient {
             return new GeraLandingJobCompletionPayload(
                     modelResponse,
                     safeJson(response),
-                    safeJson(payload),
+                    job.prompt(),
                     response.id(),
                     inputTokens,
                     outputTokens,
@@ -74,11 +71,12 @@ public class GeraLandingOpenAiBatchClient {
         }
     }
 
-    private OpenAiResponse callOpenAi(Map<String, Object> payload) {
-        log.info("callOpenAI [gera-landing] requestPayload={}", safeJson(payload));
+    private OpenAiResponse callOpenAi(String openAiRequestBody) {
+        log.info("callOpenAI [gera-landing] requestPayload={}", openAiRequestBody);
         OpenAiResponse response = webClient.post()
                 .uri("/responses")
-                .bodyValue(payload)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .bodyValue(openAiRequestBody)
                 .retrieve()
                 .bodyToMono(OpenAiResponse.class)
                 .block();

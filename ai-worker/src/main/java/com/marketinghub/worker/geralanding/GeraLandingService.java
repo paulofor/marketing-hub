@@ -76,7 +76,8 @@ public class GeraLandingService {
                 etapa);
         String template = carregarPromptBase(etapa.trim() + ".md");
         Map<String, Object> dadosPayload = obterDadosDoJob(context);
-        return resolverPlaceholders(template, dadosPayload);
+        String resolvedPrompt = resolverPlaceholders(template, dadosPayload);
+        return formatarPromptUsuario(etapa, resolvedPrompt);
     }
 
     public String montarERegistrarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
@@ -148,6 +149,19 @@ public class GeraLandingService {
         return resolved;
     }
 
+
+
+    private String formatarPromptUsuario(String etapa, String promptResolvido) {
+        String etapaNormalizada = StringUtils.hasText(etapa) ? etapa.trim() : "desconhecida";
+        String promptLimpo = promptResolvido == null ? "" : promptResolvido.trim();
+        return """
+                # Tarefa
+                Você deve executar a etapa `%s` do pipeline de landing page e responder estritamente no formato solicitado.
+
+                # Instruções do usuário
+                %s
+                """.formatted(etapaNormalizada, promptLimpo);
+    }
     private String carregarPromptBase(String fileName) throws IOException {
         ClassPathResource resource = new ClassPathResource(GERALANDING_PROMPT_BASE_PATH + fileName);
         if (!resource.exists()) {

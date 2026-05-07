@@ -43,14 +43,14 @@ public class WireframeProvisionalHtmlAssembler {
                 String uiSizes = asText(section.get("uiSizes"));
                 String uiSizeTexts = asText(section.get("uiSizeTexts"));
                 if (StringUtils.hasText(uiTags)) {
-                    sectionsHtml.append(uiTags.trim()).append("\n");
+                    sectionsHtml.append(sanitizeUiTags(uiTags)).append("\n");
                 }
                 if (StringUtils.hasText(uiSizeTexts)) {
                     sectionsHtml.append(buildLoremPreview(uiSizeTexts));
                 }
                 if (StringUtils.hasText(uiSizes)) {
                     css.append("/* ").append(asText(section.get("sectionId"), "section")).append(" */\n")
-                            .append(uiSizes.trim()).append("\n\n");
+                            .append(normalizeUiSizes(uiSizes)).append("\n\n");
                 }
             }
             if (!StringUtils.hasText(sectionsHtml.toString())) {
@@ -77,6 +77,62 @@ public class WireframeProvisionalHtmlAssembler {
         }
     }
 
+
+    @SuppressWarnings("unchecked")
+    private String normalizeUiSizes(String uiSizes) {
+        if (!StringUtils.hasText(uiSizes)) {
+            return "";
+        }
+        String trimmed = uiSizes.trim();
+        if (!trimmed.startsWith("{")) {
+            return trimmed;
+        }
+        try {
+            Map<String, Object> jsonCss = objectMapper.readValue(trimmed, Map.class);
+            StringBuilder css = new StringBuilder();
+            for (Map.Entry<String, Object> entry : jsonCss.entrySet()) {
+                appendCssRule(css, entry.getKey(), entry.getValue());
+            }
+            return css.toString();
+        } catch (Exception ignored) {
+            return trimmed;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void appendCssRule(StringBuilder css, String selector, Object value) {
+        if (!(value instanceof Map<?, ?> rawProps) || !StringUtils.hasText(selector)) {
+            return;
+        }
+        css.append(selector.trim()).append(" {\n");
+        for (Map.Entry<?, ?> prop : rawProps.entrySet()) {
+            String name = prop.getKey() == null ? null : toKebabCase(String.valueOf(prop.getKey()).trim());
+            String val = prop.getValue() == null ? null : String.valueOf(prop.getValue()).trim();
+            if (StringUtils.hasText(name) && StringUtils.hasText(val)) {
+                css.append("  ").append(name).append(": ").append(val).append(";\n");
+            }
+        }
+        css.append("}\n");
+    }
+
+    private String toKebabCase(String input) {
+        if (!StringUtils.hasText(input)) {
+            return "";
+        }
+        return input.replaceAll("([a-z0-9])([A-Z])", "$1-$2").toLowerCase();
+    }
+
+    private String sanitizeUiTags(String uiTags) {
+        if (!StringUtils.hasText(uiTags)) {
+            return "";
+        }
+        String cleaned = uiTags.trim();
+        cleaned = cleaned.replaceAll("(?is)<!doctype[^>]*>", "");
+        cleaned = cleaned.replaceAll("(?is)</?html[^>]*>", "");
+        cleaned = cleaned.replaceAll("(?is)</?head[^>]*>", "");
+        cleaned = cleaned.replaceAll("(?is)</?body[^>]*>", "");
+        return cleaned.trim();
+    }
     private String asText(Object value) {
         return asText(value, null);
     }

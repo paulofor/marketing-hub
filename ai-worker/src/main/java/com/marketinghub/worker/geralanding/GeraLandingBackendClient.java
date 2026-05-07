@@ -3,6 +3,7 @@ package com.marketinghub.worker.geralanding;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,89 @@ public class GeraLandingBackendClient {
         List<GeraLandingStageExecutionDto> result = payload != null ? payload : List.of();
         log.info("Backend returned {} pending gera-landing stage execution(s)", result.size());
         return result;
+    }
+
+    public Map<String, Object> loadPromptData(Long experimentId) {
+        if (experimentId == null) {
+            return Map.of();
+        }
+        String experimentUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId);
+        Map<String, Object> experiment = webClient.get()
+                .uri(experimentUrl)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .onErrorReturn(Map.of())
+                .block();
+        if (experiment == null || experiment.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("campaignAngle", parseJsonField(experiment.get("campaignAngle")));
+        payload.put("adCopy", parseJsonField(experiment.get("adCopy")));
+        payload.put("adImageBriefing", parseJsonField(experiment.get("adImageBriefing")));
+        payload.put("NICHE_NAME", resolveNicheName(experiment.get("nicheId")));
+        populateHypothesisFields(payload, experiment.get("nicheId"), experiment.get("hypothesisId"));
+        return payload;
+    }
+
+    private void populateHypothesisFields(Map<String, Object> payload, Object nicheId, Object hypothesisId) {
+        if (nicheId == null || hypothesisId == null) {
+            return;
+        }
+        String hypothesesUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/niches/" + nicheId + "/hypotheses");
+        List<Map<String, Object>> hypotheses = webClient.get()
+                .uri(hypothesesUrl)
+                .retrieve()
+                .bodyToFlux(Map.class)
+                .collectList()
+                .onErrorReturn(List.of())
+                .block();
+        if (hypotheses == null || hypotheses.isEmpty()) {
+            return;
+        }
+        String hypothesisIdText = String.valueOf(hypothesisId);
+        hypotheses.stream()
+                .filter(item -> hypothesisIdText.equalsIgnoreCase(String.valueOf(item.get("id"))))
+                .findFirst()
+                .ifPresent(hypothesis -> {
+                    Object framework = hypothesis.get("framework");
+                    if (framework instanceof Map<?, ?> map) {
+                        Object pain = map.get("pain");
+                        Object result = map.get("result");
+                        if (pain != null) {
+                            payload.put("PAIN_JSON", pain);
+                        }
+                        if (result != null) {
+                            payload.put("RESULT_JSON", result);
+                        }
+                    }
+                });
+    }
+
+    private String resolveNicheName(Object nicheId) {
+        if (nicheId == null) {
+            return "";
+        }
+        String nicheUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/niches/" + nicheId);
+        Map<String, Object> niche = webClient.get()
+                .uri(nicheUrl)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .onErrorReturn(Map.of())
+                .block();
+        return niche != null && niche.get("name") != null ? String.valueOf(niche.get("name")) : "";
+    }
+
+    private Object parseJsonField(Object value) {
+        if (!(value instanceof String raw) || raw.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().readValue(raw, Map.class);
+        } catch (Exception ex) {
+            return raw;
+        }
     }
 
     public void receivePrompt(String idJob,

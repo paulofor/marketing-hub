@@ -14,6 +14,7 @@ import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ public class GeraLandingService {
 
     private static final String GERALANDING_PROMPT_BASE_PATH = "prompts/geralanding/";
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(prompt|dados)-([a-zA-Z0-9_-]+)}");
+    private static final Pattern MUSTACHE_PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{([A-Za-z0-9_\\-.]+)}}");
 
     private static final String CAMPAIGN_ANGLE = "campaignAngle";
     private static final String AD_COPY = "adCopy";
@@ -122,6 +124,9 @@ public class GeraLandingService {
     private String resolverPlaceholders(String template, Map<String, Object> dadosPayload) throws IOException {
         String resolved = template;
         Set<String> stack = new LinkedHashSet<>();
+        Set<String> placeholdersDados = new HashSet<>();
+        Set<String> placeholdersPrompt = new HashSet<>();
+        Set<String> placeholdersMustache = new HashSet<>();
         Deque<String> pending = new ArrayDeque<>();
         pending.push(template);
         while (!pending.isEmpty()) {
@@ -136,24 +141,55 @@ public class GeraLandingService {
                 String token = tipo + ":" + nome;
                 String replacement;
                 if ("prompt".equals(tipo)) {
+                    placeholdersPrompt.add(nome);
                     if (!stack.add(token)) {
                         throw new IllegalStateException("Referência circular de prompts detectada: " + token);
                     }
                     replacement = resolverPlaceholders(carregarPromptBase(nome + ".md"), dadosPayload);
                     stack.remove(token);
                 } else {
+                    placeholdersDados.add(nome);
                     Object dado = dadosPayload.get(nome);
-                    replacement = dado == null ? "" : objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(dado);
+                    replacement = renderPlaceholderValue(dado);
                 }
                 matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
             }
             matcher.appendTail(buffer);
             resolved = buffer.toString();
+            resolved = resolverMustachePlaceholders(resolved, dadosPayload, placeholdersMustache);
             if (found) {
                 pending.push(resolved);
             }
         }
+        log.info("Placeholders tratados na resolução de prompt. promptRefs={}, dadosRefs={}, mustacheRefs={}",
+                placeholdersPrompt, placeholdersDados, placeholdersMustache);
         return resolved;
+    }
+
+    private String resolverMustachePlaceholders(String template,
+                                                Map<String, Object> dadosPayload,
+                                                Set<String> placeholdersMustache) throws IOException {
+        Matcher matcher = MUSTACHE_PLACEHOLDER_PATTERN.matcher(template);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String nome = matcher.group(1);
+            placeholdersMustache.add(nome);
+            Object dado = dadosPayload.get(nome);
+            String replacement = renderPlaceholderValue(dado);
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString();
+    }
+
+    private String renderPlaceholderValue(Object dado) throws JsonProcessingException {
+        if (dado == null) {
+            return "";
+        }
+        if (dado instanceof String valor) {
+            return valor;
+        }
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(dado);
     }
 
 

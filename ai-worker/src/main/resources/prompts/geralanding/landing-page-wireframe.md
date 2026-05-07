@@ -7,7 +7,6 @@ Estamos Trabalhando nesse contexto:
 		<mecanismo/>
 		<prova/>
 		<oferta/>
-
 		<experimento>
 			<angulo-campanha/>
 			<copyAnuncio/>

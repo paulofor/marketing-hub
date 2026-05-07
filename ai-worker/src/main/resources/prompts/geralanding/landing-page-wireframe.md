@@ -1,3 +1,34 @@
+Estamos Trabalhando nesse contexto:
+
+<nicho>
+	<hipotese>
+		<dor/>
+		<ressultado/>
+		<mecanismo/>
+		<prova/>
+		<oferta/>
+
+		<experimento>
+			<angulo-campanha/>
+			<copyAnuncio>
+			<briefingImagem>
+			<landingWrieframe>
+			<landingCopy>
+			<landingPromptImagem>
+				<imagem>
+			<landingPromptImagem>
+			<landingPresetDesign>
+			<landingHtml>
+		</experimento>
+	<hipotese>
+</nicho>
+
+Nicho: {{NICHE_NAME}}
+
+Dor: {{PAIN_JSON}}
+
+Resultado: {{RESULT_JSON}}
+
 
 {prompt-regras-globais}
 

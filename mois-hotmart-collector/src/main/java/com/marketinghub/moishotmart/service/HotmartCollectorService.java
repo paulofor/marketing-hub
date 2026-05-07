@@ -22,15 +22,21 @@ public class HotmartCollectorService {
     private final boolean headless;
     private final String hotmartMarketUrl;
     private final String hotmartSessionCookie;
+    private final String hotmartUsername;
+    private final String hotmartPassword;
 
     public HotmartCollectorService(
             @Value("${collector.playwright.headless:true}") boolean headless,
             @Value("${collector.hotmart.search-url:https://app.hotmart.com/market/search}") String hotmartMarketUrl,
-            @Value("${collector.hotmart.session-cookie:}") String hotmartSessionCookie
+            @Value("${collector.hotmart.session-cookie:}") String hotmartSessionCookie,
+            @Value("${collector.hotmart.username:}") String hotmartUsername,
+            @Value("${collector.hotmart.password:}") String hotmartPassword
     ) {
         this.headless = headless;
         this.hotmartMarketUrl = hotmartMarketUrl;
         this.hotmartSessionCookie = hotmartSessionCookie;
+        this.hotmartUsername = hotmartUsername;
+        this.hotmartPassword = hotmartPassword;
     }
 
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
@@ -39,10 +45,15 @@ public class HotmartCollectorService {
         List<HotmartProductSnapshot> products = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
         String message = "Coleta executada com Playwright em modo headless=" + headless + ".";
-        if (hotmartSessionCookie == null || hotmartSessionCookie.isBlank()) {
+        boolean hasSessionCookie = hotmartSessionCookie != null && !hotmartSessionCookie.isBlank();
+        boolean hasCredentials = hotmartUsername != null && !hotmartUsername.isBlank()
+                && hotmartPassword != null && !hotmartPassword.isBlank();
+
+        if (!hasSessionCookie && !hasCredentials) {
             return new HotmartCollectionResponse(
                     "COLLECTION_SKIPPED",
-                    "Sessão Hotmart ausente. Configure collector.hotmart.session-cookie.",
+                    "Autenticação Hotmart ausente. Configure collector.hotmart.session-cookie "
+                            + "ou collector.hotmart.username/password.",
                     products
             );
         }
@@ -50,12 +61,18 @@ public class HotmartCollectorService {
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(headless));
             BrowserContext context = browser.newContext();
-            context.addCookies(List.of(new Cookie("hotmart_session", hotmartSessionCookie)
-                    .setDomain(".hotmart.com")
-                    .setPath("/")
-                    .setHttpOnly(true)
-                    .setSecure(true)));
             Page page = context.newPage();
+
+            if (hasSessionCookie) {
+                context.addCookies(List.of(new Cookie("hotmart_session", hotmartSessionCookie)
+                        .setDomain(".hotmart.com")
+                        .setPath("/")
+                        .setHttpOnly(true)
+                        .setSecure(true)));
+            } else {
+                performLogin(page);
+            }
+
             page.navigate(hotmartMarketUrl, new Page.NavigateOptions()
                     .setTimeout(60_000)
                     .setWaitUntil(WaitUntilState.NETWORKIDLE));
@@ -86,5 +103,16 @@ public class HotmartCollectorService {
         }
 
         return new HotmartCollectionResponse(status, message, products);
+    }
+
+    private void performLogin(Page page) {
+        page.navigate("https://app.hotmart.com/login", new Page.NavigateOptions()
+                .setTimeout(60_000)
+                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+        page.locator("input[type='email'], input[name='email']").first().fill(hotmartUsername);
+        page.locator("input[type='password'], input[name='password']").first().fill(hotmartPassword);
+        page.locator("button[type='submit']").first().click();
+        page.waitForTimeout(3_000);
     }
 }

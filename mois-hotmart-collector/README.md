@@ -53,7 +53,8 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 - Para depuração local, rode com `collector.playwright.headless=false`.
 - A coleta autenticada usa:
   - `collector.hotmart.search-url` (default: `https://app.hotmart.com/market/search`)
-  - `collector.hotmart.session-cookie` (obrigatório para área logada)
+  - `collector.hotmart.session-cookie` (opção 1 para área logada)
+  - `collector.hotmart.username` + `collector.hotmart.password` (opção 2 para login automático)
 - Agendamento automático:
   - `collector.scheduler.enabled=true`
   - `collector.scheduler.cron=0 0 * * * *` (**executa de hora em hora**)

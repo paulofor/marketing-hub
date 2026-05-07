@@ -11,9 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -113,6 +115,7 @@ class GeraLandingStageExecutionServiceTest {
         service.receiveResult("id-ok", request);
 
         assertEquals("{\"landingPageWireframe\":{\"sectionOrder\":[]}}", experiment.getLandingPageWireframe());
+        assertTrue(Arrays.equals("id-ok".getBytes(StandardCharsets.UTF_8), experiment.getLandingPageWireframeJobId()));
         verify(experimentRepository).save(experiment);
     }
 }

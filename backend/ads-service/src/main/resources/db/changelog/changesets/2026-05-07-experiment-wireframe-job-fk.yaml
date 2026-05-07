@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-07-experiment-wireframe-job-fk
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: landing_page_wireframe_job_id
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: landing_page_wireframe_job_id
+                  type: BINARY(36)
+        - addForeignKeyConstraint:
+            baseTableName: experiment
+            baseColumnNames: landing_page_wireframe_job_id
+            referencedTableName: gera_landing_stage_execution
+            referencedColumnNames: id_job
+            constraintName: fk_experiment_wireframe_job
+            onDelete: SET NULL
+            onUpdate: RESTRICT

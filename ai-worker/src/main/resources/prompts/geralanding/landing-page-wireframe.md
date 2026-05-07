@@ -61,7 +61,7 @@ Regras fixas da etapa:
 5. Quando definir um elemento <ul> em uiTags, defina também quantos <li> ele deve ter.
 5. Em uiSizes você vai definir o tamanho de cada tag ( uiTags ) definindo como fica a apresentação na tela use codificação css.
 6. Em uiSizeTexts você vai definir para cada tag de texto de ( uiTags ) o tamanho do texto em caracteres: máximo e mínimo.
-6. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
+1. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 7. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
 8. `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
 9. Não exija nem produza campos fora do schema canônico atual (ex.: `mediaSlot`, `compositionNotes`, `messageMatchSummary`, `backgroundColorStrategy`, `textImageBalanceNotes`).

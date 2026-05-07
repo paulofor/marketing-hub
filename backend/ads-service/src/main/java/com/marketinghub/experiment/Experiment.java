@@ -184,6 +184,9 @@ public class Experiment {
     @Column(name = "landing_page_wireframe", columnDefinition = "LONGTEXT")
     private String landingPageWireframe;
 
+    @Column(name = "landing_page_wireframe_job_id", columnDefinition = "BINARY(36)")
+    private byte[] landingPageWireframeJobId;
+
     @Column(name = "landing_page_image_planning", columnDefinition = "LONGTEXT")
     private String landingPageImagePlanning;
 

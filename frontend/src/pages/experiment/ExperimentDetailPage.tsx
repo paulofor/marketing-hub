@@ -78,7 +78,31 @@ const formatPipelineJson = (rawValue?: string | null) => {
 };
 
 async function copyToClipboard(content: string) {
-  await navigator.clipboard.writeText(content);
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(content);
+    return;
+  }
+
+  if (typeof document === "undefined") {
+    throw new Error("Clipboard indisponível neste ambiente.");
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = content;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-1000px";
+  textarea.style.left = "-1000px";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!copied) {
+    throw new Error("Falha ao copiar conteúdo.");
+  }
 }
 
 export default function ExperimentDetailPage() {
@@ -114,6 +138,7 @@ export default function ExperimentDetailPage() {
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
+  const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const hadRunningGeraLandingExecutionRef = useRef(false);
   const {
@@ -1656,8 +1681,10 @@ export default function ExperimentDetailPage() {
                         <button
                           type="button"
                           className="btn btn-outline-secondary btn-sm"
+                          disabled={copyingCardKey === card.key}
                           onClick={async () => {
                             try {
+                              setCopyingCardKey(card.key);
                               await copyToClipboard(formattedValue);
                               setCopiedCardKey(card.key);
                               window.setTimeout(() => {
@@ -1669,9 +1696,20 @@ export default function ExperimentDetailPage() {
                               toast.error(
                                 "Não foi possível copiar esta etapa para a área de transferência.",
                               );
+                            } finally {
+                              setCopyingCardKey((current) =>
+                                current === card.key ? null : current,
+                              );
                             }
                           }}
                         >
+                          {copyingCardKey === card.key ? (
+                            <span
+                              className="spinner-border spinner-border-sm me-1"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                          ) : null}
                           {copiedCardKey === card.key ? "Copiado!" : "Copiar etapa"}
                         </button>
                       ) : null}

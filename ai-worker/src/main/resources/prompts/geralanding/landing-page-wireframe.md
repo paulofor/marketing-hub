@@ -11,8 +11,8 @@ Estamos Trabalhando nesse contexto:
 		<experimento>
 			<campaignAngle/>
 			<adCopy/>
-			<briefingImagem/>
-			<landingWrieframe/>
+			<adImageBriefing/>
+			<landingPageWireframe/>
 			<landingCopy/>
 			<landingPromptImagem/>
 				<listaImagem/>

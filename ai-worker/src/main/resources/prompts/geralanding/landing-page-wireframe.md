@@ -57,7 +57,7 @@ Regras fixas da etapa:
 1. `pageGoal` deve explicitar a ação principal esperada da página.
 2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
 3. `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` (âncora estrutural) + `uiNotes`.
-4. Em uiTags você vai definir as tags html que vão compor a seção esccreve em html cada tag com seu id.
+4. Em uiTags você vai definir as tags html que vão compor a seção esccreve em html cada tag com seu id. Somente da seção atual.
 5. Em uiSizes você vai definir o tamanho de cada tag ( uiTags ) definindo como fica a apresentação na tela use codificação css.
 6. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 7. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.

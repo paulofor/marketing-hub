@@ -32,7 +32,7 @@ class MetaToolsServiceTest {
                 "marketing-hub-mcp",
                 "1.0.0",
                 null,
-                new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", 45, 3, 400, 500, 262144),
+                new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", "i", 45, 3, 400, 500, 262144),
                 new McpProperties.Meta(
                         true,
                         "https://graph.facebook.com",

@@ -196,6 +196,7 @@ public class ModuleLogService {
             case "lead-portal-payment" -> properties.logs().leadPortalPaymentPath();
             case "mds" -> properties.logs().mdsPath();
             case "mois" -> properties.logs().moisPath();
+            case "mois-hotmart" -> properties.logs().moisHotmartPath();
             default -> throw new IllegalArgumentException("Unknown module: " + module);
         };
     }
@@ -208,10 +209,10 @@ public class ModuleLogService {
         String normalized = module.trim().toLowerCase();
         return switch (normalized) {
             case "backend", "ai-worker", "lead-portal", "facebook-ads", "email-service", "lead-portal-payment",
-                 "mds", "mois" -> normalized;
+                 "mds", "mois", "mois-hotmart" -> normalized;
             default -> throw new IllegalArgumentException(
                     "module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, " +
-                            "lead-portal-payment, mds, mois");
+                            "lead-portal-payment, mds, mois, mois-hotmart");
         };
     }
 

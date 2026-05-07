@@ -29,6 +29,7 @@ public record McpProperties(
             @NotBlank String leadPortalPaymentPath,
             @NotBlank String mdsPath,
             @NotBlank String moisPath,
+            @NotBlank String moisHotmartPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

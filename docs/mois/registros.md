@@ -139,3 +139,33 @@
   - `management.endpoints.web.base-path=${ACTUATOR_BASE_PATH:/internal/ops-monitor}`
 - Mantida exposição apenas dos endpoints `health`, `info` e `loggers`, preservando o objetivo operacional de monitoramento e ajuste de nível de logs em runtime.
 - README do submódulo atualizado para refletir o novo path padrão e orientar customização por variável de ambiente.
+
+## 2026-05-07 01:34:12 UTC-3
+- Revisada a implementação do coletor Hotmart no módulo `mois` para uso de área logada (`https://app.hotmart.com/market/search`) com suporte a navegação headless via Playwright.
+- Adicionada configuração por ambiente para operação autenticada:
+  - `MOIS_HOTMART_SEARCH_URL`
+  - `MOIS_HOTMART_USE_PLAYWRIGHT`
+  - `MOIS_HOTMART_SESSION_COOKIE`
+- Ajustado o fluxo para fallback seguro quando a sessão autenticada não estiver disponível, evitando quebra do job de coleta e mantendo rastreabilidade por log.
+- Dependência `com.microsoft.playwright:playwright` adicionada ao módulo `mois` para habilitar renderização e extração em página JS-driven.
+- Registro criado por solicitação explícita: `registre o trabalho em /docs/mois/registros.md`.
+- Commit relacionado: `93a04c8`.
+
+## 2026-05-07 01:37:00 UTC-3
+- Correção de escopo: os ajustes de coleta Hotmart com Playwright/sessão autenticada foram realocados do módulo `mois` para o projeto correto `mois-hotmart-collector`.
+- Revertida a alteração indevida no `mois` principal (`MoisDomainService` + `mois/pom.xml`) para preservar a separação arquitetural entre núcleo de domínio MOIS e coletor especializado.
+- No `mois-hotmart-collector`, adicionadas configurações de coleta autenticada:
+  - `collector.hotmart.search-url`
+  - `collector.hotmart.session-cookie`
+  - reutilização de `collector.playwright.headless`
+- O serviço do coletor agora encerra com `COLLECTION_SKIPPED` quando a sessão não está configurada, evitando falsa execução "ok" sem autenticação real.
+
+## 2026-05-07 01:40:00 UTC-3
+- Ajustado o `mois-hotmart-collector` para execução automática **de hora em hora**, evitando dependência de disparo manual único.
+- Habilitado agendamento no aplicativo com `@EnableScheduling`.
+- Criado scheduler `HotmartCollectorScheduler` com cron padrão `0 0 * * * *` e controles por configuração:
+  - `collector.scheduler.enabled`
+  - `collector.scheduler.cron`
+  - `collector.scheduler.source`
+  - `collector.scheduler.max-products`
+- Mantida possibilidade de override por variáveis de ambiente (`COLLECTOR_SCHEDULER_*`).

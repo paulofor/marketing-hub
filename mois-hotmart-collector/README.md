@@ -51,6 +51,13 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 
 - O coletor agora usa Playwright em **modo headless por padrão** (`collector.playwright.headless=true`).
 - Para depuração local, rode com `collector.playwright.headless=false`.
+- A coleta autenticada usa:
+  - `collector.hotmart.search-url` (default: `https://app.hotmart.com/market/search`)
+  - `collector.hotmart.session-cookie` (obrigatório para área logada)
+- Agendamento automático:
+  - `collector.scheduler.enabled=true`
+  - `collector.scheduler.cron=0 0 * * * *` (**executa de hora em hora**)
+  - `collector.scheduler.max-products=25`
 
 Exemplo:
 

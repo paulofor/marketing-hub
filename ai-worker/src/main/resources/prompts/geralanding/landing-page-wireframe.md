@@ -58,6 +58,7 @@ Regras fixas da etapa:
 2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
 3. `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` (âncora estrutural) + `uiNotes`.
 4. Em uiTags você vai definir as tags html que vão compor a seção esccreve em html cada tag com seu id. Somente da seção atual.
+5. Quando definir um elemento <ul> em uiTags, defina também quantos <li> ele deve ter.
 5. Em uiSizes você vai definir o tamanho de cada tag ( uiTags ) definindo como fica a apresentação na tela use codificação css.
 6. Em uiSizeTexts você vai definir para cada tag de texto de ( uiTags ) o tamanho do texto em caracteres: máximo e mínimo.
 6. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.

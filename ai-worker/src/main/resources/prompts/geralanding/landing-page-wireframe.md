@@ -1,6 +1,8 @@
 
 {prompt-regras-globais}
 
+Copy do Anuncio:
+{dados-adCopy}
 
 template_id: landing-wireframe
 template_version: v1

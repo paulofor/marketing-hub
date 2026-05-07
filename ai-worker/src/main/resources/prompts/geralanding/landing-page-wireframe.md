@@ -17,7 +17,7 @@ Regras fixas da etapa:
 1. `pageGoal` deve explicitar a ação principal esperada da página.
 2. `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
 3. `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` (âncora estrutural) + `uiNotes`.
-4. Em uiTags você vai definir as tags html que vão compor a seção
+4. Em uiTags você vai definir as tags html que vão compor a seção esccreve em html cada tag com seu id.
 5. Em uiSizes você vai definir o tamanho de cada tag ( uiTags ) definindo como fica a apresentação na tela use codificação css.
 6. Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 7. Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
@@ -25,8 +25,7 @@ Regras fixas da etapa:
 9. Não exija nem produza campos fora do schema canônico atual (ex.: `mediaSlot`, `compositionNotes`, `messageMatchSummary`, `backgroundColorStrategy`, `textImageBalanceNotes`).
 10. `consistencyChecks` deve validar continuidade comercial e aderência estrutural sem exigir campos fora do canônico.
 11. Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
-12. Não converter para HTML final nesta etapa.
-13. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
+12. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 14. Manter hero compacto e alta densidade útil acima da dobra no mobile.
 15. Reduzir distância entre promessa, prova, CTA e entendimento da oferta nas primeiras seções.
 16. A seção de oferta deve acomodar `entryAsset` e `coreOffer` quando ambos existirem, sem assumir nomes fixos.

@@ -3,14 +3,14 @@ Estamos Trabalhando nesse contexto:
 ```xml
 <nicho>
 	<hipotese>
-		<dor/>
-		<resultado/>
+		<pain/>
+		<result/>
 		<mecanismo/>
-		<prova/>
+		<proof/>
 		<oferta/>
 		<experimento>
-			<angulo-campanha/>
-			<copyAnuncio/>
+			<campaignAngle/>
+			<adCopy/>
 			<briefingImagem/>
 			<landingWrieframe/>
 			<landingCopy/>

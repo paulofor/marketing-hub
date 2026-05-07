@@ -22,10 +22,16 @@ function extractModelFromRequestBody(raw?: string) {
   }
 }
 
+function buildProvisionalHtmlUrl(html?: string) {
+  if (!html?.trim()) return undefined;
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+}
+
 export default function ExperimentGeraLandingExecutionDetailPage() {
   const { id: experimentId, jobId } = useParams();
   const detailQuery = useGeraLandingStageExecutionDetail(experimentId, jobId);
   const modelUsed = extractModelFromRequestBody(detailQuery.data?.openAiRequestBody);
+  const provisionalHtmlUrl = buildProvisionalHtmlUrl(detailQuery.data?.provisionalHtml);
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -97,6 +103,16 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               <div>
                 <h6>Model response</h6>
                 <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
+              </div>
+              <div>
+                <h6>HTML provisório</h6>
+                {provisionalHtmlUrl ? (
+                  <a href={provisionalHtmlUrl} target="_blank" rel="noopener noreferrer">
+                    Abrir HTML provisório em nova aba
+                  </a>
+                ) : (
+                  <p className="text-muted mb-0">Nenhum HTML provisório disponível para este registro.</p>
+                )}
               </div>
             </div>
           )}

@@ -30,6 +30,9 @@ class GeraLandingStageExecutionServiceTest {
     @Mock
     private GeraLandingStageExecutionRepository executionRepository;
 
+    @Mock
+    private WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler;
+
     @InjectMocks
     private GeraLandingStageExecutionService service;
 
@@ -111,10 +114,12 @@ class GeraLandingStageExecutionServiceTest {
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-ok".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
         when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
+        when(wireframeProvisionalHtmlAssembler.assemble(request.modelResponse())).thenReturn("<html>provisorio</html>");
 
         service.receiveResult("id-ok", request);
 
         assertEquals("{\"landingPageWireframe\":{\"sectionOrder\":[]}}", experiment.getLandingPageWireframe());
+        assertEquals("<html>provisorio</html>", execution.getProvisionalHtml());
         assertTrue(Arrays.equals("id-ok".getBytes(StandardCharsets.UTF_8), experiment.getLandingPageWireframeJobId()));
         verify(experimentRepository).save(experiment);
     }

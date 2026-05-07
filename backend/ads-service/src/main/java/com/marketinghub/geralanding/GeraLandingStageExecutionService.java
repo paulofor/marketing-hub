@@ -20,12 +20,15 @@ public class GeraLandingStageExecutionService {
 
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
+    private final WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler;
 
     public GeraLandingStageExecutionService(
             ExperimentRepository experimentRepository,
-            GeraLandingStageExecutionRepository executionRepository) {
+            GeraLandingStageExecutionRepository executionRepository,
+            WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
+        this.wireframeProvisionalHtmlAssembler = wireframeProvisionalHtmlAssembler;
     }
 
     @Transactional
@@ -128,7 +131,10 @@ public class GeraLandingStageExecutionService {
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
         execution.setModelResponse(request.modelResponse());
-        execution.setProvisionalHtml(request.provisionalHtml());
+        String provisionalHtml = StringUtils.hasText(request.provisionalHtml())
+                ? request.provisionalHtml()
+                : wireframeProvisionalHtmlAssembler.assemble(request.modelResponse());
+        execution.setProvisionalHtml(provisionalHtml);
         execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
         if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {
             execution.setOpenAiJobId(request.openAiJobId());

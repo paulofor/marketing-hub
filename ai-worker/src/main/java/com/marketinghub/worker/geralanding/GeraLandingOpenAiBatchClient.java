@@ -1,6 +1,7 @@
 package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -164,10 +165,16 @@ public class GeraLandingOpenAiBatchClient {
         String firstLine = jsonlOutput.lines().filter(StringUtils::hasText).findFirst()
                 .orElseThrow(() -> new IllegalStateException("Saída do batch sem linhas"));
         BatchOutputLine line = objectMapper.readValue(firstLine, BatchOutputLine.class);
-        if (line.response() == null || line.response().body() == null) {
+        if (line.status_code() != null && line.status_code() >= 400) {
+            String rawErrorBody = line.response() != null ? line.response().rawBody() : null;
+            throw new IllegalStateException("OpenAI retornou erro no batch. status=" + line.status_code()
+                    + ", custom_id=" + line.custom_id()
+                    + ", body=" + rawErrorBody);
+        }
+        if (line.response() == null || line.response().body() == null || line.response().body().isNull()) {
             throw new IllegalStateException("Linha de saída do batch sem response.body");
         }
-        return line.response().body();
+        return objectMapper.treeToValue(line.response().body(), OpenAiResponse.class);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -180,5 +187,9 @@ public class GeraLandingOpenAiBatchClient {
     private record BatchOutputLine(String custom_id, Integer status_code, BatchHttpResponse response) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record BatchHttpResponse(OpenAiResponse body) {}
+    private record BatchHttpResponse(JsonNode body) {
+        String rawBody() {
+            return body != null ? body.toString() : null;
+        }
+    }
 }

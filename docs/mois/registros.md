@@ -159,3 +159,13 @@
   - `collector.hotmart.session-cookie`
   - reutilização de `collector.playwright.headless`
 - O serviço do coletor agora encerra com `COLLECTION_SKIPPED` quando a sessão não está configurada, evitando falsa execução "ok" sem autenticação real.
+
+## 2026-05-07 01:40:00 UTC-3
+- Ajustado o `mois-hotmart-collector` para execução automática **de hora em hora**, evitando dependência de disparo manual único.
+- Habilitado agendamento no aplicativo com `@EnableScheduling`.
+- Criado scheduler `HotmartCollectorScheduler` com cron padrão `0 0 * * * *` e controles por configuração:
+  - `collector.scheduler.enabled`
+  - `collector.scheduler.cron`
+  - `collector.scheduler.source`
+  - `collector.scheduler.max-products`
+- Mantida possibilidade de override por variáveis de ambiente (`COLLECTOR_SCHEDULER_*`).

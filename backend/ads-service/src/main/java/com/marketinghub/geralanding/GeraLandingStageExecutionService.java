@@ -157,7 +157,8 @@ public class GeraLandingStageExecutionService {
                 .map(execution -> new GeraLandingExecutionSummaryResponse(
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStatus(),
-                        execution.getExecutionRequestedAt()))
+                        execution.getExecutionRequestedAt(),
+                        execution.getCostUsd()))
                 .toList();
     }
 

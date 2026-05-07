@@ -36,6 +36,7 @@ import ExperimentReportPanel from "./ExperimentReportPanel";
 import ExperimentLearningPanel from "./ExperimentLearningPanel";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import LandingTab from "./LandingTab";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
@@ -76,6 +77,10 @@ const formatPipelineJson = (rawValue?: string | null) => {
   }
 };
 
+async function copyToClipboard(content: string) {
+  await navigator.clipboard.writeText(content);
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -108,6 +113,7 @@ export default function ExperimentDetailPage() {
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const hadRunningGeraLandingExecutionRef = useRef(false);
   const {
@@ -1644,15 +1650,35 @@ export default function ExperimentDetailPage() {
               return (
                 <div className="card" key={card.key}>
                   <div className="card-body">
-                    <h5 className="card-title mb-1">{card.title}</h5>
+                    <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                      <h5 className="card-title mb-1">{card.title}</h5>
+                      {formattedValue ? (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={async () => {
+                            try {
+                              await copyToClipboard(formattedValue);
+                              setCopiedCardKey(card.key);
+                              window.setTimeout(() => {
+                                setCopiedCardKey((current) =>
+                                  current === card.key ? null : current,
+                                );
+                              }, 1600);
+                            } catch {
+                              toast.error(
+                                "Não foi possível copiar esta etapa para a área de transferência.",
+                              );
+                            }
+                          }}
+                        >
+                          {copiedCardKey === card.key ? "Copiado!" : "Copiar etapa"}
+                        </button>
+                      ) : null}
+                    </div>
                     <p className="text-muted small mb-3">{card.description}</p>
                     {formattedValue ? (
-                      <pre
-                        className="bg-body-secondary rounded p-3 small mb-0 overflow-auto"
-                        style={{ maxHeight: 340 }}
-                      >
-                        {formattedValue}
-                      </pre>
+                      <CollapsibleJsonViewer content={formattedValue} />
                     ) : (
                       <div className="alert alert-secondary mb-0" role="alert">
                         Sem conteúdo salvo para esta etapa.

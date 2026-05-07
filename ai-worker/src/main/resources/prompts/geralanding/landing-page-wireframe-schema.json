@@ -28,6 +28,7 @@
           "copySource": { "type": "string" },
           "uiNotes": { "type": "string" },
           "uiTags": { "type": "string" },
+          "uiSizeTexts" : { "type": "string" },
           "uiSizes": { "type": "string" },
           "messageMatchDependency": { "type": "string" },
           "sectionDependsOn": {
@@ -66,6 +67,7 @@
           "copySource",
           "uiNotes",
           "uiTags",
+          "uiSizeTexts",
           "uiSizes",
           "messageMatchDependency",
           "sectionDependsOn",

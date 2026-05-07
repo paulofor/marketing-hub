@@ -12,6 +12,10 @@ Submódulo separado do MOIS para automatização da coleta de produtos quentes n
 
 - `GET /api/v1/mois-hotmart/health`
 - `POST /api/v1/mois-hotmart/collections`
+- `GET /internal/ops-monitor/health`
+- `GET /internal/ops-monitor/loggers`
+
+> O path base dos endpoints de observabilidade pode (e deve) ser customizado via variável de ambiente `ACTUATOR_BASE_PATH`.
 
 ## Execução local
 

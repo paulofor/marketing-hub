@@ -132,3 +132,10 @@
 - README do submódulo atualizado para documentar o novo fluxo de deploy automático.
 - Registro criado conforme solicitação explícita: `docs/mois/registros.md`.
 - Commit relacionado: `88064ce`.
+
+## 2026-05-06 22:38:07 UTC-3
+- Ajustado o endpoint base do Actuator no `mois-hotmart-collector` para reduzir previsibilidade de rota pública de observabilidade.
+- O base path deixou de ser fixo em `/actuator` e passou a usar configuração externa:
+  - `management.endpoints.web.base-path=${ACTUATOR_BASE_PATH:/internal/ops-monitor}`
+- Mantida exposição apenas dos endpoints `health`, `info` e `loggers`, preservando o objetivo operacional de monitoramento e ajuste de nível de logs em runtime.
+- README do submódulo atualizado para refletir o novo path padrão e orientar customização por variável de ambiente.

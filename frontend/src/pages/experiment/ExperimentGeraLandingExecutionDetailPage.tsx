@@ -98,6 +98,20 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <h6>Model response</h6>
                 <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
               </div>
+              <div>
+                <h6>HTML provisório</h6>
+                {detailQuery.data.provisionalHtml?.trim() ? (
+                  <Link
+                    to={`/experiments/${experimentId}/geralanding/stage-executions/${detailQuery.data.idJob}/provisional-html`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Abrir HTML provisório em nova aba
+                  </Link>
+                ) : (
+                  <p className="text-muted mb-0">Nenhum HTML provisório disponível para este registro.</p>
+                )}
+              </div>
             </div>
           )}
         </div>

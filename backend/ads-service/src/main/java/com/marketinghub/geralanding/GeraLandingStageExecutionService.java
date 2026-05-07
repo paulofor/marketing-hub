@@ -139,6 +139,20 @@ public class GeraLandingStageExecutionService {
         execution.setCompletedAt(Instant.now());
         execution.setStatus(StringUtils.hasText(request.errorMessage()) ? "FALHA" : "CONCLUIDO");
         executionRepository.save(execution);
+        persistWireframeOnExperiment(request);
+    }
+
+    private void persistWireframeOnExperiment(GeraLandingResultReceiveRequest request) {
+        if (!"landing-page-wireframe".equalsIgnoreCase(request.stageCode())) {
+            return;
+        }
+        if (!StringUtils.hasText(request.modelResponse()) || StringUtils.hasText(request.errorMessage())) {
+            return;
+        }
+        Experiment experiment = experimentRepository.findById(request.experimentId())
+                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + request.experimentId()));
+        experiment.setLandingPageWireframe(request.modelResponse());
+        experimentRepository.save(experiment);
     }
 
     @Transactional(readOnly = true)

@@ -1,5 +1,6 @@
 package com.marketinghub.geralanding;
 
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,5 +81,38 @@ class GeraLandingStageExecutionServiceTest {
 
         verify(executionRepository, never()).findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(any(), any());
         verify(executionRepository).save(any(GeraLandingStageExecution.class));
+    }
+
+    @Test
+    void shouldPersistLandingPageWireframeOnExperimentWhenWireframeResultArrives() {
+        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
+                31L,
+                "landing-page-wireframe",
+                "{\"landingPageWireframe\":{\"sectionOrder\":[]}}",
+                null,
+                null,
+                "job-openai-1",
+                100,
+                200,
+                null);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(31L)
+                .stageCode("landing-page-wireframe")
+                .executionRequestedAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .status("EM_PROCESSAMENTO")
+                .idJob("id-ok".getBytes(StandardCharsets.UTF_8))
+                .build();
+        Experiment experiment = new Experiment();
+        experiment.setId(31L);
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-ok".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
+
+        service.receiveResult("id-ok", request);
+
+        assertEquals("{\"landingPageWireframe\":{\"sectionOrder\":[]}}", experiment.getLandingPageWireframe());
+        verify(experimentRepository).save(experiment);
     }
 }

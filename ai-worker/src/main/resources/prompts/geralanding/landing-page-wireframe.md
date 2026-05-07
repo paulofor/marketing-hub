@@ -10,17 +10,17 @@ Estamos Trabalhando nesse contexto:
 
 		<experimento>
 			<angulo-campanha/>
-			<copyAnuncio>
-			<briefingImagem>
-			<landingWrieframe>
-			<landingCopy>
-			<landingPromptImagem>
-				<imagem>
-			<landingPromptImagem>
-			<landingPresetDesign>
-			<landingHtml>
+			<copyAnuncio/>
+			<briefingImagem/>
+			<landingWrieframe/>
+			<landingCopy/>
+			<landingPromptImagem/>
+				<listaImagem/>
+			<landingPromptImagem/>
+			<landingPresetDesign/>
+			<landingHtml/>
 		</experimento>
-	<hipotese>
+	</hipotese>
 </nicho>
 
 Nicho: {{NICHE_NAME}}

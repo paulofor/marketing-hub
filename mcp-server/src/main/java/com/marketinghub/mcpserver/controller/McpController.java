@@ -67,11 +67,12 @@ public class McpController {
     public ResponseEntity<Map<String, Object>> handleRequest(@RequestBody Map<String, Object> request,
                                                              HttpServletRequest httpServletRequest) {
         Object id = request.get("id");
+        String method = String.valueOf(request.getOrDefault("method", ""));
+        logger.info("Nova requisição MCP recebida: requestId={} method={} remoteAddr={} userAgent={}",
+                id, method, httpServletRequest.getRemoteAddr(), httpServletRequest.getHeader("User-Agent"));
         if (!isAuthorized(httpServletRequest)) {
             return ResponseEntity.status(401).body(error(id, -32001, "Unauthorized"));
         }
-
-        String method = String.valueOf(request.getOrDefault("method", ""));
 
         return switch (method) {
             case "initialize" -> ResponseEntity.ok(success(id, Map.of(

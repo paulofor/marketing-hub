@@ -251,10 +251,14 @@ export default function ExperimentDetailPage() {
   const hasRunningGeraLandingExecution = (pendingGeraLandingExecutions ?? []).some((execution) =>
     isRunningExecution(execution.status),
   );
-  const completedHistoryGeraLandingExecutions = useMemo(
+  const hasFailedExecution = (status?: string | null) => {
+    const normalizedStatus = (status ?? "").trim().toUpperCase();
+    return ["FALHA", "FAILED", "ERROR", "ERRO"].includes(normalizedStatus);
+  };
+  const historyGeraLandingExecutions = useMemo(
     () =>
-      (completedGeraLandingExecutions ?? []).filter((execution) =>
-        isCompletedExecution(execution.status),
+      (completedGeraLandingExecutions ?? []).filter(
+        (execution) => isCompletedExecution(execution.status) || hasFailedExecution(execution.status),
       ),
     [completedGeraLandingExecutions],
   );
@@ -294,7 +298,7 @@ export default function ExperimentDetailPage() {
     return null;
   };
 
-  const totalCompletedGeraLandingCostUsd = completedHistoryGeraLandingExecutions.reduce(
+  const totalCompletedGeraLandingCostUsd = historyGeraLandingExecutions.reduce(
     (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
     0,
   );
@@ -1499,11 +1503,11 @@ export default function ExperimentDetailPage() {
                   )}
 
                   <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                    <h6 className="mb-0">Histórico de execuções concluídas</h6>
+                    <h6 className="mb-0">Histórico de execuções</h6>
                     {isLoadingCompletedGeraLandingExecutions ? (
                       <p className="text-muted mb-0">Carregando execuções...</p>
-                    ) : completedHistoryGeraLandingExecutions.length === 0 ? (
-                      <p className="text-muted mb-0">Nenhuma execução concluída registrada para esta etapa.</p>
+                    ) : historyGeraLandingExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
                     ) : (
                       <div className="table-responsive">
                         <table className="table table-sm align-middle mb-0">
@@ -1516,7 +1520,7 @@ export default function ExperimentDetailPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {completedHistoryGeraLandingExecutions.map((execution) => (
+                            {historyGeraLandingExecutions.map((execution) => (
                               <tr key={execution.idJob}>
                                 <td>
                                   <Link

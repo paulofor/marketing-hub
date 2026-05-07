@@ -8,6 +8,7 @@ public record GeraLandingResultReceiveRequest(
         @NotNull Long experimentId,
         @NotBlank String stageCode,
         String modelResponse,
+        String provisionalHtml,
         String errorMessage,
         String openAiJobId,
         Integer inputTokens,

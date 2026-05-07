@@ -128,6 +128,7 @@ public class GeraLandingStageExecutionService {
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
         execution.setModelResponse(request.modelResponse());
+        execution.setProvisionalHtml(request.provisionalHtml());
         execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
         if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {
             execution.setOpenAiJobId(request.openAiJobId());
@@ -183,6 +184,7 @@ public class GeraLandingStageExecutionService {
                 execution.getStatus(),
                 execution.getOpenAiJobId(),
                 execution.getModelResponse(),
+                execution.getProvisionalHtml(),
                 execution.getErrorMessage(),
                 execution.getInputTokens(),
                 execution.getOutputTokens(),

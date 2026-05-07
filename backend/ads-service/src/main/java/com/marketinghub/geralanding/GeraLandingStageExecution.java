@@ -73,6 +73,10 @@ public class GeraLandingStageExecution {
     private String modelResponse;
 
     @Lob
+    @Column(name = "provisional_html", columnDefinition = "LONGTEXT")
+    private String provisionalHtml;
+
+    @Lob
     @Column(name = "error_message", columnDefinition = "LONGTEXT")
     private String errorMessage;
 

@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-07-gera-landing-provisional-html-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: gera_landing_stage_execution
+              columnName: provisional_html
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: provisional_html
+                  type: LONGTEXT
+                  remarks: HTML provisório gerado para a etapa atual.

@@ -152,7 +152,8 @@ Quando o usuário aciona o botão de geração de wireframe na UI (`gera-landing
 3. **Backend** enfileira/agenda a execução no pipeline para consumo assíncrono pelo Worker AI (sem acesso direto ao banco pelo worker).
 4. **Worker AI** executa scheduler periódico e consulta endpoint do backend para buscar jobs pendentes de `gera-landing`/pipeline.
 5. Ao receber o job, **Worker AI** monta o prompt final da etapa e envia ao backend a telemetria de geração (`experimentId`, `stage`, `executionId`, `prompt montado`).
-6. **Backend** persiste o registro final da execução com vínculo ao experimento e auditoria de prompt para rastreabilidade.
+6. Ao finalizar `landing-page-wireframe`, **Worker AI** envia a saída literal do modelo ao backend no callback de resultado.
+7. **Backend** persiste o registro final da execução com vínculo ao experimento e auditoria de prompt para rastreabilidade, e também grava a saída no campo `experiment.landing_page_wireframe` do `experimentId` em processamento.
 
 Regras mandatórias:
 

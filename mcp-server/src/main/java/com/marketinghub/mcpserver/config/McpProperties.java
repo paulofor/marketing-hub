@@ -48,13 +48,22 @@ public record McpProperties(
     ) {
     }
 
-    public record Github(
+        public record Github(
             boolean enabled,
             @NotBlank String apiBaseUrl,
-            @NotBlank String owner,
-            @NotBlank String repo,
+            String owner,
+            String repo,
             String token
     ) {
+        @jakarta.validation.constraints.AssertTrue(message = "mcp.github.owner must not be blank when mcp.github.enabled=true")
+        private boolean isOwnerValid() {
+            return !enabled || (owner != null && !owner.isBlank());
+        }
+
+        @jakarta.validation.constraints.AssertTrue(message = "mcp.github.repo must not be blank when mcp.github.enabled=true")
+        private boolean isRepoValid() {
+            return !enabled || (repo != null && !repo.isBlank());
+        }
     }
 }
 

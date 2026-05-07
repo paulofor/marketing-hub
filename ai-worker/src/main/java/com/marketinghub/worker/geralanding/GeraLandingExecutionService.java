@@ -73,7 +73,7 @@ public class GeraLandingExecutionService {
                     execution.experimentId(),
                     execution.idJob(),
                     execution.stageCode(),
-                    java.util.Collections.emptyMap());
+                    backendClient.loadPromptData(execution.experimentId()));
             String prompt = geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
             String promptMarkdownContent = geraLandingService.carregarPromptMarkdownCru(normalizedStage);
             log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",

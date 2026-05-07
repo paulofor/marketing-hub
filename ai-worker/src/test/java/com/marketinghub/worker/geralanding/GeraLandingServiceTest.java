@@ -28,6 +28,27 @@ class GeraLandingServiceTest {
     }
 
     @Test
+    void deveResolverPlaceholdersMustacheNoPromptDeWireframe() throws Exception {
+        GeraLandingPromptContext context = new GeraLandingPromptContext(
+                10L,
+                "id-job-original",
+                "landing-page-wireframe",
+                Map.of(
+                        "NICHE_NAME", "E-commerce",
+                        "PAIN_JSON", Map.of("title", "Baixa conversão"),
+                        "RESULT_JSON", Map.of("title", "Mais vendas")));
+
+        String prompt = service.montarPromptEtapa(context, "landing-page-wireframe");
+
+        assertThat(prompt).contains("Nicho: E-commerce");
+        assertThat(prompt).contains("Baixa conversão");
+        assertThat(prompt).contains("Mais vendas");
+        assertThat(prompt).doesNotContain("{{NICHE_NAME}}");
+        assertThat(prompt).doesNotContain("{{PAIN_JSON}}");
+        assertThat(prompt).doesNotContain("{{RESULT_JSON}}");
+    }
+
+    @Test
     void deveRegistrarPromptMontadoComChaveDeRastreio() throws Exception {
         GeraLandingPromptContext context = novoContexto();
 

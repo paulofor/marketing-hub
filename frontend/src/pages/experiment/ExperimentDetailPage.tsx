@@ -56,6 +56,26 @@ type ChecklistItem = {
   actionLoading?: boolean;
 };
 
+type PipelineContentCard = {
+  key: string;
+  title: string;
+  description: string;
+  rawValue?: string | null;
+};
+
+const formatPipelineJson = (rawValue?: string | null) => {
+  if (!rawValue || rawValue.trim().length === 0) {
+    return null;
+  }
+
+  const trimmed = rawValue.trim();
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2);
+  } catch {
+    return trimmed;
+  }
+};
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -112,6 +132,54 @@ export default function ExperimentDetailPage() {
   const resetCampaigns = useExperimentCampaignReset(expId);
   const releaseExperiment = useExperimentFacebookRelease(expId);
   const hasCompleteTargeting = readinessSummary?.hasCompleteTargeting ?? false;
+  const pipelineContentCards = useMemo<PipelineContentCard[]>(
+    () => [
+      {
+        key: "campaign-angle",
+        title: "Etapa 1 · Campaign Angle",
+        description: "Conteúdo bruto salvo na coluna campaign_angle.",
+        rawValue: data?.campaignAngle,
+      },
+      {
+        key: "ad-copy",
+        title: "Etapa 2 · Ad Copy",
+        description: "Conteúdo bruto salvo na coluna ad_copy.",
+        rawValue: data?.adCopy,
+      },
+      {
+        key: "wireframe",
+        title: "Etapa 3 · Landing Wireframe",
+        description: "Conteúdo bruto salvo na coluna landing_page_wireframe.",
+        rawValue: data?.landingPageWireframe,
+      },
+      {
+        key: "copy",
+        title: "Etapa 4 · Landing Copy",
+        description: "Conteúdo bruto salvo na coluna landing_page_copy.",
+        rawValue: data?.landingPageCopy,
+      },
+      {
+        key: "image-planning",
+        title: "Etapa 5 · Planejamento de Imagens",
+        description: "Conteúdo bruto salvo na coluna landing_page_image_planning.",
+        rawValue: data?.landingPageImagePlanning,
+      },
+      {
+        key: "landing-html",
+        title: "Etapa 6 · Landing HTML",
+        description: "Conteúdo bruto salvo na coluna landing_page_html.",
+        rawValue: data?.landingPageHtml,
+      },
+    ],
+    [
+      data?.adCopy,
+      data?.campaignAngle,
+      data?.landingPageCopy,
+      data?.landingPageHtml,
+      data?.landingPageImagePlanning,
+      data?.landingPageWireframe,
+    ],
+  );
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -1389,6 +1457,9 @@ export default function ExperimentDetailPage() {
           <Tabs.Trigger value="content-structure" className="nav-link">
             Estrutura de conteúdo
           </Tabs.Trigger>
+          <Tabs.Trigger value="conteudo" className="nav-link">
+            Conteúdo
+          </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="overview" asChild>
           <div className="d-flex flex-column gap-3">
@@ -1565,6 +1636,33 @@ export default function ExperimentDetailPage() {
             campaignAngle={data?.campaignAngle}
             adCopy={data?.adCopy}
           />
+        </Tabs.Content>
+        <Tabs.Content value="conteudo" asChild>
+          <div className="d-flex flex-column gap-3">
+            {pipelineContentCards.map((card) => {
+              const formattedValue = formatPipelineJson(card.rawValue);
+              return (
+                <div className="card" key={card.key}>
+                  <div className="card-body">
+                    <h5 className="card-title mb-1">{card.title}</h5>
+                    <p className="text-muted small mb-3">{card.description}</p>
+                    {formattedValue ? (
+                      <pre
+                        className="bg-body-secondary rounded p-3 small mb-0 overflow-auto"
+                        style={{ maxHeight: 340 }}
+                      >
+                        {formattedValue}
+                      </pre>
+                    ) : (
+                      <div className="alert alert-secondary mb-0" role="alert">
+                        Sem conteúdo salvo para esta etapa.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </Tabs.Content>
         </Tabs.Root>
       </div>

@@ -29,10 +29,6 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
   const detailQuery = useGeraLandingStageExecutionDetail(experimentId, jobId);
   const modelUsed = extractModelFromRequestBody(detailQuery.data?.openAiRequestBody);
   const provisionalHtml = detailQuery.data?.provisionalHtml?.trim() ?? "";
-  const provisionalHtmlDownloadHref = provisionalHtml
-    ? `data:text/html;charset=utf-8,${encodeURIComponent(provisionalHtml)}`
-    : "";
-  const provisionalHtmlFileName = `provisional-html-${detailQuery.data?.idJob ?? "geralanding"}.html`;
 
   const buildJsonDownloadProps = (fieldName: string, value?: string | null) => {
     if (!value) return null;
@@ -40,6 +36,15 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
     const fileName = `${fieldName}-${detailQuery.data?.idJob ?? "geralanding"}.json`;
     return {
       href: `data:application/json;charset=utf-8,${encodeURIComponent(value)}`,
+      fileName,
+    };
+  };
+
+  const buildHtmlDownloadProps = (fieldName: string, value?: string | null) => {
+    if (!value) return null;
+    const fileName = `${fieldName}-${detailQuery.data?.idJob ?? "geralanding"}.html`;
+    return {
+      href: `data:text/html;charset=utf-8,${encodeURIComponent(value)}`,
       fileName,
     };
   };
@@ -245,7 +250,21 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
               </div>
               <div>
-                <h6>HTML provisório</h6>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <h6 className="mb-0">HTML provisório</h6>
+                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => handleCopyJson("provisionalHtml", provisionalHtml)}>
+                    {copiedField === "provisionalHtml" ? "Copiado!" : "Copiar HTML"}
+                  </button>
+                  {(() => {
+                    const download = buildHtmlDownloadProps("provisional-html", provisionalHtml);
+                    if (!download) return null;
+                    return (
+                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                        Baixar HTML
+                      </a>
+                    );
+                  })()}
+                </div>
                 {provisionalHtml ? (
                   <div className="d-flex flex-column gap-2">
                     <Link
@@ -255,9 +274,9 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                     >
                       Abrir HTML provisório em nova aba
                     </Link>
-                    <a href={provisionalHtmlDownloadHref} download={provisionalHtmlFileName}>
-                      Baixar HTML provisório
-                    </a>
+                    <pre className="border rounded bg-light p-3 mb-0 small overflow-auto" style={{ maxHeight: "320px" }}>
+                      <code>{provisionalHtml}</code>
+                    </pre>
                   </div>
                 ) : (
                   <p className="text-muted mb-0">Nenhum HTML provisório disponível para este registro.</p>

@@ -40,6 +40,34 @@ bash ./run-local-jar.sh
 docker compose up --build
 ```
 
+### Configuração por `.env` (local e deploy)
+
+O módulo foi preparado para receber configuração **em tempo de execução** via variáveis de ambiente no Docker Compose.
+
+Crie/edite um arquivo `.env` no mesmo diretório do compose em uso:
+
+- Local: `mois-hotmart-collector/.env`
+- Host de deploy: `/opt/marketinghub/mois-hotmart-collector/.env`
+
+Exemplo:
+
+```env
+# Autenticação Hotmart (opção 1: login/senha)
+COLLECTOR_HOTMART_USERNAME=seu_usuario
+COLLECTOR_HOTMART_PASSWORD=sua_senha
+
+# Autenticação Hotmart (opção 2: cookie de sessão)
+COLLECTOR_HOTMART_SESSION_COOKIE=
+
+# Agendamento (execução automática)
+COLLECTOR_SCHEDULER_ENABLED=true
+COLLECTOR_SCHEDULER_CRON=0 0 * * * *
+COLLECTOR_SCHEDULER_SOURCE=hotmart-market
+COLLECTOR_SCHEDULER_MAX_PRODUCTS=25
+```
+
+> Observação: o padrão operacional é execução **agendada** (não manual), de hora em hora.
+
 
 ## Compatibilidade Linux
 
@@ -59,6 +87,20 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
   - `collector.scheduler.enabled=true`
   - `collector.scheduler.cron=0 0 * * * *` (**executa de hora em hora**)
   - `collector.scheduler.max-products=25`
+
+## Variáveis de ambiente suportadas
+
+| Variável | Descrição | Padrão |
+|---|---|---|
+| `MOIS_HOTMART_PORT` | Porta HTTP da aplicação | `8096` |
+| `COLLECTOR_HOTMART_SEARCH_URL` | URL de busca Hotmart para coleta | `https://app.hotmart.com/market/search` |
+| `COLLECTOR_HOTMART_SESSION_COOKIE` | Cookie de sessão Hotmart (alternativa ao login/senha) | vazio |
+| `COLLECTOR_HOTMART_USERNAME` | Usuário Hotmart para login automatizado | vazio |
+| `COLLECTOR_HOTMART_PASSWORD` | Senha Hotmart para login automatizado | vazio |
+| `COLLECTOR_SCHEDULER_ENABLED` | Habilita/desabilita execução automática | `true` |
+| `COLLECTOR_SCHEDULER_CRON` | Expressão cron da execução automática | `0 0 * * * *` |
+| `COLLECTOR_SCHEDULER_SOURCE` | Identificador da fonte usada no job agendado | `hotmart-market` |
+| `COLLECTOR_SCHEDULER_MAX_PRODUCTS` | Limite de produtos por execução agendada | `25` |
 
 Exemplo:
 

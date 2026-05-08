@@ -74,6 +74,15 @@ Regras fixas da etapa:
 - Manter hero compacto e alta densidade útil acima da dobra no mobile.
 - Permitir respiros visuais entre blocos para legibilidade, porém evitar grandes áreas vazias; distribua conteúdo e elementos para não criar “buracos” extensos no layout (especialmente no mobile).
 - Reduzir distância entre promessa, prova, CTA e entendimento da oferta nas primeiras seções.
+- Mobile-first obrigatório (prioridade total): projetar cada seção primeiro para viewport entre 320px e 430px; desktop é adaptação posterior.
+- Em mobile, **proibir layout de duas colunas simultâneas para conteúdo principal** (texto + imagem lado a lado no mesmo nível). Empilhar sempre em coluna única, com ordem narrativa: promessa → explicação curta → prova/lista → CTA.
+- Cada seção deve nascer com sequência vertical explícita em `uiNotes` (ordem de leitura mobile), evitando alternância confusa esquerda/direita entre blocos consecutivos.
+- Limitar blocos de texto no mobile: no máximo 1 título + 1 parágrafo curto + 1 lista curta por seção (quando aplicável). Quebrar conteúdo longo em novas seções ao invés de condensar.
+- Para listas (`<ul>`), usar itens curtos e escaneáveis no mobile (frases objetivas), evitando listas extensas que empurrem o CTA para muito abaixo.
+- Toda seção com imagem deve definir em `uiSizes` comportamento mobile sem “vazios”: imagem com largura fluida (`width: 100%`), altura proporcional e alinhamento consistente com o bloco de texto da seção.
+- Em mobile, evitar espaços verticais excessivos: definir espaçamentos progressivos e compactos entre título, texto, lista, imagem e CTA, sem áreas mortas grandes entre seções.
+- Reforçar densidade de conversão no mobile: o primeiro CTA principal deve aparecer até o final da segunda seção e se repetir em pontos de prova/oferta sem quebrar fluidez.
+- Em `mobilePriorityScore`, seções críticas de conversão (hero, prova principal, oferta e CTA) devem receber prioridade alta e tratamento de layout compacto orientado a ação.
 - A seção de oferta deve acomodar `entryAsset` e `coreOffer` quando ambos existirem, sem assumir nomes fixos.
 - Se não houver distinção clara entre ativo inicial e oferta principal, projetar seção única coerente (sem forçar duas camadas artificiais).
 - Não usar nomenclaturas internas (`entryAsset`, `coreOffer` etc.) como rótulo visível do wireframe; usar linguagem comercial apropriada ao caso.

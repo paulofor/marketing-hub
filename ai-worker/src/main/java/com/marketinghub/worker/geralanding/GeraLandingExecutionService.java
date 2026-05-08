@@ -119,6 +119,9 @@ public class GeraLandingExecutionService {
             if (payload != null && StringUtils.hasText(payload.responseContent())) {
                 log.info("Resposta OpenAI (responseContent) executionId={}: {}", execution.idJob(), payload.responseContent());
             }
+            if (payload != null && StringUtils.hasText(payload.openAiJobId())) {
+                backendClient.receiveDispatch(execution.idJob(), execution.experimentId(), execution.stageCode(), payload.openAiJobId());
+            }
             backendClient.receiveResult(execution.idJob(), execution.experimentId(), execution.stageCode(), payload);
             log.info("Resultado OpenAI registrado para gera-landing executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());

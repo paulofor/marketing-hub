@@ -39,6 +39,7 @@ class GeraLandingExecutionServiceTest {
         service.processPendingExecutions();
 
         verify(openAiClient).generate(any());
+        verify(backendClient).receiveDispatch(any(), any(), any(), any());
         verify(backendClient).receiveResult(any(), any(), any(), any());
         verify(backendClient, never()).receiveFailure(any(), any(), any(), any());
     }

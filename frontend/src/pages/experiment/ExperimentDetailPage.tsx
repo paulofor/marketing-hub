@@ -337,7 +337,7 @@ export default function ExperimentDetailPage() {
 
   const isRunningExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
-    return ["EM_PROCESSAMENTO", "PROCESSING", "RUNNING", "IN_PROGRESS", "PENDING"].includes(
+    return ["AGUARDANDO_ENVIO_OPENAI", "EM_PROCESSAMENTO", "PROCESSING", "RUNNING", "IN_PROGRESS", "PENDING"].includes(
       normalizedStatus,
     );
   };

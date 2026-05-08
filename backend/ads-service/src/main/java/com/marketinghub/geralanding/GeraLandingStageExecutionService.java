@@ -17,6 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class GeraLandingStageExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingStageExecutionService.class);
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_ENVIO_OPENAI";
+    private static final String STATUS_PROCESSING = "EM_PROCESSAMENTO";
+    private static final String STATUS_FAILED = "FALHA";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
 
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
@@ -45,7 +50,7 @@ public class GeraLandingStageExecutionService {
                 .createdAt(now)
                 .promptTemplateId("manual/start")
                 .promptContent("Início manual via interface do experimento.")
-                .status("INICIADO")
+                .status(STATUS_STARTED)
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
         GeraLandingStageExecution saved = executionRepository.save(execution);
@@ -66,7 +71,7 @@ public class GeraLandingStageExecutionService {
                 .createdAt(now)
                 .promptTemplateId(request.jobId())
                 .promptContent(request.promptContent())
-                .status("INICIADO")
+                .status(STATUS_STARTED)
                 .idJob(toDatabaseIdJob(request.jobId()))
                 .build();
         executionRepository.save(execution);
@@ -106,9 +111,19 @@ public class GeraLandingStageExecutionService {
         execution.setSchemaJson(request.schemaJson());
         execution.setPromptMarkdownContent(request.promptMarkdownContent());
         execution.setProcessingStartedAt(now);
-        execution.setStatus("EM_PROCESSAMENTO");
+        execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);
         executionRepository.save(execution);
         log.info("GeraLanding prompt persisted. idJob={}, newStatus={}", idJob, execution.getStatus());
+    }
+
+    @Transactional
+    public void markAsSentToOpenAi(String idJob, GeraLandingDispatchReceiveRequest request) {
+        GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
+                .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+        execution.setOpenAiJobId(request.openAiJobId());
+        execution.setStatus(STATUS_PROCESSING);
+        executionRepository.save(execution);
     }
 
     private java.util.Optional<GeraLandingStageExecution> fallbackExecutionByExperimentAndStage(
@@ -143,7 +158,7 @@ public class GeraLandingStageExecutionService {
         execution.setOutputTokens(request.outputTokens());
         execution.setCostUsd(request.costUsd());
         execution.setCompletedAt(Instant.now());
-        execution.setStatus(StringUtils.hasText(request.errorMessage()) ? "FALHA" : "CONCLUIDO");
+        execution.setStatus(StringUtils.hasText(request.errorMessage()) ? STATUS_FAILED : STATUS_COMPLETED);
         executionRepository.save(execution);
         persistWireframeOnExperiment(request, execution);
     }
@@ -172,7 +187,7 @@ public class GeraLandingStageExecutionService {
                 : executionRepository.findTop20ByExperimentIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
                         experimentId,
                         stageCode,
-                        "CONCLUIDO");
+                        STATUS_COMPLETED);
         return executions
                 .stream()
                 .map(execution -> new GeraLandingExecutionSummaryResponse(
@@ -215,7 +230,7 @@ public class GeraLandingStageExecutionService {
 
     @Transactional(readOnly = true)
     public List<GeraLandingPendingExecutionResponse> listPendingExecutions() {
-        return executionRepository.findTop20ByStatusOrderByExecutionRequestedAtAsc("INICIADO")
+        return executionRepository.findTop20ByStatusInOrderByExecutionRequestedAtAsc(List.of(STATUS_STARTED, STATUS_WAITING_OPENAI_DISPATCH))
                 .stream()
                         .map(execution -> new GeraLandingPendingExecutionResponse(
                                 execution.getExperimentId(),

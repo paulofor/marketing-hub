@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe</title>
+<style>
+*{box-sizing:border-box;} body{margin:0;font-family:Arial,sans-serif;line-height:1.4;color:#111;} img{display:block;} section{border-bottom:1px solid #eee;}
+#s1-form{background:#fde68a;color:#1f2937;border:2px solid #f59e0b;} #lead-form{background:#fff7ed;padding:12px;border-radius:10px;}
+#s1-hero-preview{padding:24px 16px;}
+#s1-wrap{display:grid;grid-template-columns:1fr;gap:16px;max-width:1100px;margin:0 auto;}
+@media(min-width:960px){#s1-wrap{grid-template-columns:1.2fr 0.8fr;align-items:start;}}
+#s1-h1{font-size:clamp(24px,4vw,40px);line-height:1.1;}
+#s1-sub{font-size:16px;line-height:1.4;margin-top:10px;}
+#s1-bullets{margin-top:12px;padding-left:18px;}
+#s1-bullets li{font-size:15px;line-height:1.35;margin:8px 0;}
+#s1-proofline{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+#s1-proofline span{font-size:13px;}
+#s1-visual{margin-top:14px;display:grid;grid-template-columns:1fr;gap:10px;}
+#s1-img-mock{width:100%;max-width:520px;height:auto;}
+#s1-mini{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:520px;}
+#s1-mini span{height:42px;border-radius:8px;}
+#s1-form{border-radius:14px;padding:14px;position:relative;}
+#lead-form{display:grid;gap:10px;}
+#f-submit{min-height:48px;border-radius:12px;font-size:16px;}
+#f-privacy{font-size:12px;line-height:1.35;}
+
+#s2-proof-preview{padding:22px 16px;}
+#s2-wrap{max-width:1100px;margin:0 auto;}
+#s2-h2{font-size:clamp(20px,3vw,28px);line-height:1.2;}
+#s2-p{font-size:15px;line-height:1.5;margin-top:8px;max-width:70ch;}
+#s2-cards{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px;}
+@media(min-width:960px){#s2-cards{grid-template-columns:1fr 1fr;}}
+#s2-cards article{border-radius:14px;padding:14px;}
+#s2-img-pdf{width:100%;height:auto;max-height:320px;object-fit:contain;margin-top:10px;}
+#s2-kit-list{margin-top:10px;padding-left:18px;}
+#s2-kit-list li{margin:8px 0;font-size:15px;line-height:1.35;}
+#s2-note{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+#s2-note span{font-size:13px;}
+#s2-cta{margin-top:14px;}
+#s2-cta-btn{display:inline-block;padding:12px 14px;border-radius:12px;min-height:44px;}
+
+#s3-how-it-works{padding:22px 16px;}
+#s3-wrap{max-width:1100px;margin:0 auto;}
+#s3-h2{font-size:clamp(20px,3vw,28px);line-height:1.2;}
+#s3-steps{margin-top:12px;display:grid;gap:10px;padding-left:18px;}
+#s3-steps li{border-radius:12px;padding:12px;}
+#s3-steps h3{font-size:16px;margin:0;}
+#s3-steps p{font-size:14px;line-height:1.45;margin-top:6px;}
+
+#s4-why-this-helps{padding:22px 16px;}
+#s4-wrap{max-width:1100px;margin:0 auto;}
+#s4-h2{font-size:clamp(20px,3vw,28px);line-height:1.2;}
+#s4-split{margin-top:12px;display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:960px){#s4-split{grid-template-columns:1fr 1fr;}}
+#s4-split > div{border-radius:14px;padding:14px;}
+#s4-split h3{font-size:16px;margin:0;}
+#s4-split ul{margin-top:10px;padding-left:18px;}
+#s4-split li{margin:8px 0;font-size:15px;line-height:1.35;}
+
+#s5-offer-includes{padding:22px 16px;}
+#s5-wrap{max-width:1100px;margin:0 auto;}
+#s5-h2{font-size:clamp(20px,3vw,28px);line-height:1.2;}
+#s5-p{font-size:15px;line-height:1.5;margin-top:8px;max-width:75ch;}
+#s5-grid{margin-top:12px;display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:960px){#s5-grid{grid-template-columns:1.1fr 0.9fr;align-items:start;}}
+#s5-col-copy > div{border-radius:14px;padding:14px;margin-bottom:12px;}
+#s5-col-copy h3{font-size:16px;margin:0;}
+#s5-col-copy ul{margin-top:10px;padding-left:18px;}
+#s5-col-copy li{margin:8px 0;font-size:15px;line-height:1.35;}
+#s5-img-bundle{width:100%;height:auto;max-height:420px;object-fit:contain;border-radius:14px;}
+#s5-visual-caption{font-size:12px;line-height:1.35;margin-top:8px;}
+#s5-cta{margin-top:10px;}
+#s5-cta-btn{display:inline-block;padding:12px 14px;border-radius:12px;min-height:44px;}
+
+#s6-faq{padding:22px 16px;}
+#s6-wrap{max-width:900px;margin:0 auto;}
+#s6-h2{font-size:clamp(20px,3vw,28px);line-height:1.2;}
+#s6-acc{margin-top:12px;display:grid;gap:10px;}
+#s6-acc details{border-radius:14px;padding:12px;}
+#s6-acc summary{font-size:15px;min-height:44px;cursor:pointer;}
+#s6-acc p{font-size:14px;line-height:1.5;margin-top:8px;}
+
+#s7-final-cta{padding:26px 16px;}
+#s7-wrap{max-width:900px;margin:0 auto;border-radius:16px;padding:16px;}
+#s7-h2{font-size:clamp(20px,3vw,28px);line-height:1.2;}
+#s7-bullets{margin-top:10px;padding-left:18px;}
+#s7-bullets li{margin:8px 0;font-size:15px;line-height:1.35;}
+#s7-cta{margin-top:12px;}
+#s7-cta-btn{display:inline-block;padding:12px 14px;border-radius:12px;min-height:44px;width:100%;}
+@media(min-width:700px){#s7-cta-btn{width:auto;}}
+
+</style>
+</head>
+<body>
+<section style="background:#0f172a;color:#f8fafc;" id="s1-hero-preview"><div id="s1-wrap"><div id="s1-copy"><h1 id="s1-h1">Lorem ipsum dolor sit amet</h1><p id="s1-sub">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p><ul id="s1-bullets"><li id="s1-b1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s1-b2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s1-b3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul><div id="s1-proofline"><span id="s1-proof-a">Lorem ipsum</span><span id="s1-proof-b">Lorem ipsum</span></div><div id="s1-visual"><img id="s1-img-mock"  alt="Lorem ipsum preview" src="https://via.placeholder.com/800x500?text=Lorem+Ipsum"  style="background:#fef3c7;border:2px dashed #475569;padding:8px;border-radius:12px;"/><div id="s1-mini"><span id="s1-mini-1">Lorem ipsum</span><span id="s1-mini-2">Lorem ipsum</span><span id="s1-mini-3">Lorem ipsum</span><span id="s1-mini-4">Lorem ipsum</span><span id="s1-mini-5">Lorem ipsum</span></div></div></div><div id="s1-form"><h2 id="s1-form-title">Lorem ipsum dolor sit amet</h2><form id="lead-form"><div id="f-fields"></div><button id="f-submit" type="button">Lorem ipsum dolor sit amet</button><p id="f-privacy">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></form></div></div></section>
+<section style="background:#f8fafc;color:#0f172a;" id="s2-proof-preview"><div id="s2-wrap"><h2 id="s2-h2">Lorem ipsum dolor sit amet</h2><p id="s2-p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p><div id="s2-cards"><article id="s2-card-pdf"><h3 id="s2-pdf-h">Lorem ipsum dolor sit amet</h3><p id="s2-pdf-p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p><img id="s2-img-pdf"  alt="Lorem ipsum preview" src="https://via.placeholder.com/800x500?text=Lorem+Ipsum"  style="background:#fee2e2;border:2px dashed #475569;padding:8px;border-radius:12px;"/></article><article id="s2-card-kit"><h3 id="s2-kit-h">Lorem ipsum dolor sit amet</h3><ul id="s2-kit-list"><li id="s2-k1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s2-k2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s2-k3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s2-k4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s2-k5">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul></article></div><div id="s2-note"><span id="s2-note-a">Lorem ipsum</span><span id="s2-note-b">Lorem ipsum</span></div><div id="s2-cta"><a id="s2-cta-btn" href="#lead-form">Lorem ipsum dolor sit amet</a></div></div></section>
+<section style="background:#0f172a;color:#f8fafc;" id="s3-how-it-works"><div id="s3-wrap"><h2 id="s3-h2">Lorem ipsum dolor sit amet</h2><ol id="s3-steps"><li id="s3-s1"><h3 id="s3-s1h">Lorem ipsum dolor sit amet</h3><p id="s3-s1p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></li><li id="s3-s2"><h3 id="s3-s2h">Lorem ipsum dolor sit amet</h3><p id="s3-s2p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></li><li id="s3-s3"><h3 id="s3-s3h">Lorem ipsum dolor sit amet</h3><p id="s3-s3p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></li></ol></div></section>
+<section style="background:#f8fafc;color:#0f172a;" id="s4-why-this-helps"><div id="s4-wrap"><h2 id="s4-h2">Lorem ipsum dolor sit amet</h2><div id="s4-split"><div id="s4-left"><h3 id="s4-lh">Lorem ipsum dolor sit amet</h3><ul id="s4-ll"><li id="s4-l1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s4-l2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s4-l3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul></div><div id="s4-right"><h3 id="s4-rh">Lorem ipsum dolor sit amet</h3><ul id="s4-rl"><li id="s4-r1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s4-r2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s4-r3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul></div></div></div></section>
+<section style="background:#0f172a;color:#f8fafc;" id="s5-offer-includes"><div id="s5-wrap"><h2 id="s5-h2">Lorem ipsum dolor sit amet</h2><p id="s5-p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p><div id="s5-grid"><div id="s5-col-copy"><div id="s5-block-a"><h3 id="s5-ah">Lorem ipsum dolor sit amet</h3><ul id="s5-al"><li id="s5-a1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s5-a2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s5-a3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul></div><div id="s5-block-b"><h3 id="s5-bh">Lorem ipsum dolor sit amet</h3><ul id="s5-bl"><li id="s5-b1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s5-b2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s5-b3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s5-b4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s5-b5">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul></div></div><div id="s5-col-visual"><img id="s5-img-bundle"  alt="Lorem ipsum preview" src="https://via.placeholder.com/800x500?text=Lorem+Ipsum"  style="background:#ede9fe;border:2px dashed #475569;padding:8px;border-radius:12px;"/><p id="s5-visual-caption">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></div></div><div id="s5-cta"><a id="s5-cta-btn" href="#lead-form">Lorem ipsum dolor sit amet</a></div></div></section>
+<section style="background:#f8fafc;color:#0f172a;" id="s6-faq"><div id="s6-wrap"><h2 id="s6-h2">Lorem ipsum dolor sit amet</h2><div id="s6-acc"><details id="s6-q1"><summary id="s6-q1s">Lorem ipsum dolor sit amet?</summary><p id="s6-q1p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details><details id="s6-q2"><summary id="s6-q2s">Lorem ipsum dolor sit amet?</summary><p id="s6-q2p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details><details id="s6-q3"><summary id="s6-q3s">Lorem ipsum dolor sit amet?</summary><p id="s6-q3p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details><details id="s6-q4"><summary id="s6-q4s">Lorem ipsum dolor sit amet?</summary><p id="s6-q4p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details><details id="s6-q5"><summary id="s6-q5s">Lorem ipsum dolor sit amet?</summary><p id="s6-q5p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details><details id="s6-q6"><summary id="s6-q6s">Lorem ipsum dolor sit amet?</summary><p id="s6-q6p">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p></details></div></div></section>
+<section style="background:#0f172a;color:#f8fafc;" id="s7-final-cta"><div id="s7-wrap"><h2 id="s7-h2">Lorem ipsum dolor sit amet</h2><ul id="s7-bullets"><li id="s7-b1">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s7-b2">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li><li id="s7-b3">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li></ul><div id="s7-cta"><a id="s7-cta-btn" href="#lead-form">Lorem ipsum dolor sit amet</a></div></div></section>
+</body>
+</html>

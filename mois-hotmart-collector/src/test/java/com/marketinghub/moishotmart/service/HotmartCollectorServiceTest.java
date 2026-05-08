@@ -14,6 +14,8 @@ class HotmartCollectorServiceTest {
                 "https://app.hotmart.com/market/search",
                 "",
                 "",
+                "",
+                "",
                 ""
         );
 

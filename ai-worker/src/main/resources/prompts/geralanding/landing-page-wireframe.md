@@ -60,6 +60,7 @@ Regras fixas da etapa:
 - Em uiTags você vai definir as tags html que vão compor a seção esccreve em html cada tag com seu id. Somente da seção atual.
 - Quando definir um elemento <ul> em uiTags, defina também quantos <li> ele deve ter.
 - Em uiSizes você vai definir o tamanho de cada tag ( uiTags ) definindo como fica a apresentação na tela use codificação css.
+- Em uiSizes, para cada `<img>` definido em `uiTags`, especifique obrigatoriamente largura, altura, proporção e comportamento responsivo (desktop/mobile), para manter a composição estaticamente atraente.
 - Em uiSizeTexts você vai definir para cada tag de texto de ( uiTags ) o tamanho do texto em caracteres: máximo e mínimo.
 - Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 - Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.

@@ -61,7 +61,9 @@ public class HotmartCollectorService {
         }
 
         try (Playwright playwright = Playwright.create()) {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(headless));
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(headless)
+                    .setArgs(List.of("--no-sandbox", "--disable-dev-shm-usage")));
             BrowserContext context = browser.newContext();
             Page page = context.newPage();
 

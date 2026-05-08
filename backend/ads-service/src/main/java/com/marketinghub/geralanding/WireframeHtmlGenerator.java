@@ -49,7 +49,13 @@ public class WireframeHtmlGenerator {
     private static String toKebabCase(String s){return s.replaceAll("([a-z])([A-Z])","$1-$2").toLowerCase();}
     private static int findStringEnd(String s,int st){for(int i=st;i<s.length();i++)if(s.charAt(i)=='"'&&s.charAt(i-1)!='\\')return i;throw new IllegalArgumentException();}
     private static int findMatchingBrace(String s,int open){int d=0;boolean t=false;for(int i=open;i<s.length();i++){char c=s.charAt(i);if(c=='"'&&s.charAt(i-1)!='\\')t=!t;if(!t){if(c=='{')d++;else if(c=='}'){d--;if(d==0)return i;}}}throw new IllegalArgumentException();}
-    private static String applyAlternatingSectionStyle(String h,int idx){return h;}
+    private static String applyAlternatingSectionStyle(String h,int idx){
+        String background = idx % 2 == 0 ? "#ffffff" : "#111827";
+        String textColor = idx % 2 == 0 ? "#111827" : "#f9fafb";
+        String borderColor = idx % 2 == 0 ? "#e5e7eb" : "#374151";
+        String sectionStyle = "background:"+background+";color:"+textColor+";border-bottom:1px solid "+borderColor+";";
+        return h.replaceAll("<section(\\s|>)", "<section style=\""+sectionStyle+"\"$1");
+    }
     private static String fillTextPlaceholders(String h){String t=h.replaceAll("<(h1|h2|h3)([^>]*)></\\1>","<$1$2>Lorem ipsum dolor sit amet</$1>");String p=t.replaceAll("<p([^>]*)></p>","<p$1>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>");String sp=p.replaceAll("<span([^>]*)></span>","<span$1>Lorem ipsum</span>");String su=sp.replaceAll("<summary([^>]*)></summary>","<summary$1>Lorem ipsum dolor sit amet?</summary>");String li=su.replaceAll("<li([^>]*)></li>","<li$1>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</li>");String a=li.replaceAll("<a([^>]*)></a>","<a$1 href=\"#lead-form\">Lorem ipsum dolor sit amet</a>");String b=a.replaceAll("<button([^>]*)></button>","<button$1 type=\"button\">Lorem ipsum dolor sit amet</button>");return b.replaceAll("<img([^>]*)/>","<img$1 alt=\"Lorem ipsum preview\" src=\"https://via.placeholder.com/800x500?text=Lorem+Ipsum\" />");}
     private static String colorizeImageSlots(String h){String[] p={"#dbeafe","#dcfce7","#fee2e2","#ede9fe","#fef3c7"};Matcher m=Pattern.compile("<img([^>]*)/>").matcher(h);StringBuffer o=new StringBuffer();while(m.find()){String a=m.group(1);String id=extractId(a);String bg=p[Math.abs(id.hashCode())%p.length];String r="<img"+a+" style=\"background:"+bg+";border:2px dashed #475569;padding:8px;border-radius:12px;\"/>";m.appendReplacement(o,Matcher.quoteReplacement(r));}m.appendTail(o);return o.toString();}
     private static String extractId(String a){Matcher m=Pattern.compile("id=\"([^\"]+)\"").matcher(a);return m.find()?m.group(1):"img";}

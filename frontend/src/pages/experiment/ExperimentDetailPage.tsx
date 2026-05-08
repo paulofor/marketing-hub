@@ -140,6 +140,8 @@ export default function ExperimentDetailPage() {
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
+  const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
+    useState<GeraLandingStageExecutionItem | null>(null);
   const hadRunningGeraLandingExecutionRef = useRef(false);
   const {
     data: pendingGeraLandingExecutions,
@@ -316,10 +318,16 @@ export default function ExperimentDetailPage() {
         idJob: string;
         status: string;
       }>(`/api/experiments/${expId}/geralanding/wireframe/start`);
+      const localExecutionRequestedAt = new Date().toISOString();
+      setOptimisticWireframeExecution({
+        idJob: startResponse.idJob,
+        status: startResponse.status,
+        executionRequestedAt: localExecutionRequestedAt,
+      });
       toast.success(
         `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
       );
-      void Promise.all([
+      await Promise.all([
         refetchPendingGeraLandingExecutions(),
         refetchCompletedGeraLandingExecutions(),
       ]);
@@ -347,12 +355,40 @@ export default function ExperimentDetailPage() {
       normalizedStatus,
     );
   };
-  const hasRunningGeraLandingExecution = (pendingGeraLandingExecutions ?? []).some((execution) =>
-    isRunningExecution(execution.status),
+  const mergedPendingGeraLandingExecutions = useMemo(() => {
+    if (!optimisticWireframeExecution) {
+      return pendingGeraLandingExecutions ?? [];
+    }
+    const alreadyPresent = (pendingGeraLandingExecutions ?? []).some(
+      (execution) => execution.idJob === optimisticWireframeExecution.idJob,
+    );
+    if (alreadyPresent) {
+      return pendingGeraLandingExecutions ?? [];
+    }
+    return [optimisticWireframeExecution, ...(pendingGeraLandingExecutions ?? [])];
+  }, [optimisticWireframeExecution, pendingGeraLandingExecutions]);
+
+  useEffect(() => {
+    if (!optimisticWireframeExecution) {
+      return;
+    }
+    const persistedExecution = (pendingGeraLandingExecutions ?? []).some(
+      (execution) => execution.idJob === optimisticWireframeExecution.idJob,
+    );
+    if (persistedExecution) {
+      setOptimisticWireframeExecution(null);
+    }
+  }, [optimisticWireframeExecution, pendingGeraLandingExecutions]);
+
+  const hasRunningGeraLandingExecution = mergedPendingGeraLandingExecutions.some(
+    (execution) => isRunningExecution(execution.status),
   );
   const runningGeraLandingExecutions = useMemo(
-    () => (pendingGeraLandingExecutions ?? []).filter((execution) => isRunningExecution(execution.status)),
-    [pendingGeraLandingExecutions],
+    () =>
+      mergedPendingGeraLandingExecutions.filter((execution) =>
+        isRunningExecution(execution.status),
+      ),
+    [mergedPendingGeraLandingExecutions],
   );
   const hasFailedExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
@@ -367,7 +403,7 @@ export default function ExperimentDetailPage() {
     );
     return [...failedFromPending, ...completedHistory];
   }, [completedGeraLandingExecutions, pendingGeraLandingExecutions]);
-  const runningGeraLandingJobId = (pendingGeraLandingExecutions ?? []).find((execution) =>
+  const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
     isRunningExecution(execution.status),
   )?.idJob;
 

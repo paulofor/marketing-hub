@@ -350,17 +350,23 @@ export default function ExperimentDetailPage() {
   const hasRunningGeraLandingExecution = (pendingGeraLandingExecutions ?? []).some((execution) =>
     isRunningExecution(execution.status),
   );
+  const runningGeraLandingExecutions = useMemo(
+    () => (pendingGeraLandingExecutions ?? []).filter((execution) => isRunningExecution(execution.status)),
+    [pendingGeraLandingExecutions],
+  );
   const hasFailedExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
     return ["FALHA", "FAILED", "ERROR", "ERRO"].includes(normalizedStatus);
   };
-  const historyGeraLandingExecutions = useMemo(
-    () =>
-      (completedGeraLandingExecutions ?? []).filter(
-        (execution) => isCompletedExecution(execution.status) || hasFailedExecution(execution.status),
-      ),
-    [completedGeraLandingExecutions],
-  );
+  const historyGeraLandingExecutions = useMemo(() => {
+    const completedHistory = (completedGeraLandingExecutions ?? []).filter(
+      (execution) => isCompletedExecution(execution.status) || hasFailedExecution(execution.status),
+    );
+    const failedFromPending = (pendingGeraLandingExecutions ?? []).filter((execution) =>
+      hasFailedExecution(execution.status),
+    );
+    return [...failedFromPending, ...completedHistory];
+  }, [completedGeraLandingExecutions, pendingGeraLandingExecutions]);
   const runningGeraLandingJobId = (pendingGeraLandingExecutions ?? []).find((execution) =>
     isRunningExecution(execution.status),
   )?.idJob;
@@ -1572,7 +1578,7 @@ export default function ExperimentDetailPage() {
                   </button>
                   {isLoadingPendingGeraLandingExecutions ? (
                     <p className="text-muted mb-0">Carregando jobs da etapa...</p>
-                  ) : !pendingGeraLandingExecutions || pendingGeraLandingExecutions.length === 0 ? (
+                  ) : runningGeraLandingExecutions.length === 0 ? (
                     <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
                   ) : (
                     <div className="table-responsive">
@@ -1585,7 +1591,7 @@ export default function ExperimentDetailPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {pendingGeraLandingExecutions.map((execution) => (
+                          {runningGeraLandingExecutions.map((execution) => (
                             <tr key={execution.idJob}>
                               <td>
                                 <Link

@@ -83,7 +83,12 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
 
       <div className="d-flex justify-content-between align-items-start">
         <div>
-          <PageTitle icon={experimentIcon}>Detalhe da execução Gera Landing</PageTitle>
+          <PageTitle icon={experimentIcon}>
+            Detalhe da execução Gera Landing
+            {detailQuery.data?.stageCode ? (
+              <span className="badge text-bg-primary ms-3 align-middle">{detailQuery.data.stageCode}</span>
+            ) : null}
+          </PageTitle>
           <p className="text-muted mb-0">Visualização completa do registro da tabela gera_landing_stage_execution.</p>
         </div>
         <Link to={`/experiments/${experimentId}`} className="btn btn-outline-secondary">
@@ -115,14 +120,14 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <div className="col-md-6"><strong>Stage:</strong> {detailQuery.data.stageCode}</div>
                 <div className="col-md-6"><strong>OpenAI Job ID:</strong> {detailQuery.data.openAiJobId ?? "—"}</div>
                 <div className="col-md-6"><strong>Modelo usado:</strong> {modelUsed}</div>
-                <div className="col-md-6"><strong>Solicitado em:</strong> {formatDateTime(detailQuery.data.executionRequestedAt)}</div>
                 <div className="col-md-6"><strong>Criado em:</strong> {formatDateTime(detailQuery.data.createdAt)}</div>
-                <div className="col-md-6"><strong>Processamento iniciado:</strong> {formatDateTime(detailQuery.data.processingStartedAt)}</div>
                 <div className="col-md-6"><strong>Concluído em:</strong> {formatDateTime(detailQuery.data.completedAt)}</div>
+                <div className="col-md-6"><strong>Solicitado em:</strong> {formatDateTime(detailQuery.data.executionRequestedAt)}</div>
                 <div className="col-md-6"><strong>Input tokens:</strong> {detailQuery.data.inputTokens ?? "—"}</div>
+                <div className="col-md-6"><strong>Processamento iniciado:</strong> {formatDateTime(detailQuery.data.processingStartedAt)}</div>
                 <div className="col-md-6"><strong>Output tokens:</strong> {detailQuery.data.outputTokens ?? "—"}</div>
-                <div className="col-md-6"><strong>Custo USD:</strong> {detailQuery.data.costUsd ?? "—"}</div>
                 <div className="col-md-6"><strong>Prompt template ID:</strong> {detailQuery.data.promptTemplateId ?? "—"}</div>
+                <div className="col-md-6"><strong>Custo USD:</strong> {detailQuery.data.costUsd ?? "—"}</div>
               </div>
 
               <div>

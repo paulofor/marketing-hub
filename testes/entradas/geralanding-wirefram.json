@@ -1,1 +1,276 @@
-{"pageGoal":"Fazer o visitante preencher o briefing de 2 minutos e gerar imediatamente a amostra personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens).","variantLayoutId":"proof-first","messageMatchSummary":"Promessa central idêntica ao anúncio: gerar um preview rápido (briefing 2 min → amostra ~3 min) para ajudar o personal a mostrar valor antes do “quanto custa?” e conduzir conversas com próximo passo claro. CTA e linha de match repetidos acima da dobra e nas seções de prova/oferta.","mobilePriorityNotes":"Mobile-first (320–430px): layout sempre em coluna única. Hero compacto com CTA + prova de rapidez; formulário exposto até o fim da 2ª seção. Imagens com width:100% e altura proporcional para evitar vazios. Cada seção limita a 1 título + 1 parágrafo curto + 1 lista curta. CTA reaparece em prova/oferta e em rodapé.","ctaPlacementNotes":"CTA principal aparece no Hero e novamente ao lado do formulário (seção 2), depois em mecanismo (seção 5) e CTA final (seção 8). Labels consistentes com o anúncio; variações apenas de microcopy (ex.: “Gerar agora”).","formPlacementNotes":"Formulário exibido na 2ª seção (logo após hero) para capturar intenção alta. Em mobile: formulário completo (sem modal). Em desktop: permitir bloco de formulário com comportamento sticky dentro da seção 2 (sem duas colunas no mobile). Após envio, mostrar successState com link/botão para baixar/abrir a amostra e orientação do próximo passo (usar mini-kit hoje).","sectionOrder":[{"sectionId":"s1-hero","sectionName":"Hero: promessa + prova de rapidez (preview)","objective":"Bater message match do anúncio e explicar em 1 tela o que o usuário ganha e quão rápido; empurrar para o formulário/CTA sem fricção.","contentType":"hero","copySource":"campaignAngle.singleMindedPromise + campaignAngle.landingMatchLine + adCopy.V1/V3 (preview ~3 min; briefing 2 min; PDF 1 página c/ marca d’água; mini-kit 5 itens)","uiNotes":"Mobile reading flow: 1) headline (resultado) 2) subheadline (briefing 2 min → preview ~3 min) 3) bullets (o que entrega) 4) mockup imagem (PDF+mini-kit) 5) CTA primário. Desktop: manter ordem, imagem abaixo do texto se necessário para evitar duas colunas no mobile; em desktop pode centralizar e aumentar mockup.","uiTags":"<section id=\"s1-hero\"><div id=\"s1-wrap\"><h1 id=\"s1-title\"></h1><p id=\"s1-subtitle\"></p><ul id=\"s1-bullets\"><li id=\"s1-bullets-1\"></li><li id=\"s1-bullets-2\"></li><li id=\"s1-bullets-3\"></li></ul><img id=\"s1-mockup-img\" alt=\"Mockup de uma amostra em PDF com marca d’água e mini-kit com 5 itens\" /><a id=\"s1-cta\" href=\"#s2-form\"></a><p id=\"s1-microtrust\"></p></div></section>","uiSizeTexts":"#s1-title{min:28,max:72} #s1-subtitle{min:60,max:140} #s1-bullets-1{min:35,max:75} #s1-bullets-2{min:35,max:75} #s1-bullets-3{min:35,max:75} #s1-cta{min:22,max:70} #s1-microtrust{min:40,max:120}","uiSizes":"#s1-hero{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;box-sizing:border-box;padding:16px}#s1-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s1-title{display:block}#s1-subtitle{display:block}#s1-bullets{display:flex;flex-direction:column;gap:6px;margin:0;padding:0}#s1-bullets-1{display:block}#s1-bullets-2{display:block}#s1-bullets-3{display:block}#s1-mockup-img{display:block;width:100%;height:auto;min-height:180px;max-height:320px;box-sizing:border-box;margin:6px 0 0 0}#s1-cta{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;margin:6px 0 0 0;padding:12px 14px}#s1-microtrust{display:block}","messageMatchDependency":"Deve repetir literalmente o CTA do anúncio e a prova de rapidez (briefing 2 min → preview ~3 min) + entregáveis (PDF 1 página com marca d’água + mini-kit 5 itens).","sectionDependsOn":[],"mobilePriorityScore":10,"dropOffRisk":"medio","surfaceSpec":{"surfaceToken":"entryAsset+proofDevice-hero","notes":"Âncora de message match + prova imediata: mockup do PDF com marca d’água e mini-kit visível; microtrust com ‘preview antes de decidir’."},"ctaSlot":{"hasCta":true,"ctaLabel":"Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF","ctaVariant":"primary","matchAdCta":"campaignAngle.primaryCTA","notes":"Linka para o formulário (s2). Mantém frase completa para máxima continuidade com o anúncio."}},{"sectionId":"s2-form","sectionName":"Formulário: briefing de 2 minutos","objective":"Capturar dados mínimos para gerar a amostra (alta intenção) e reduzir ansiedade com nota de privacidade e o que acontece após enviar.","contentType":"form","copySource":"campaignAngle.primaryCTA + campaignAngle.proofSummary (amostra em ~3 min; PDF com marca d’água; mini-kit 5 itens)","uiNotes":"Mobile reading flow: 1) título curto 2) parágrafo (o que acontece após enviar) 3) formulário (campos em stack) 4) consentimento/privacidade 5) botão enviar 6) nota ‘leva ~2 min’. Desktop: mesma ordem; permitir container do formulário com sensação de ‘card’.","uiTags":"<section id=\"s2-form\"><div id=\"s2-wrap\"><h2 id=\"s2-title\"></h2><p id=\"s2-desc\"></p><form id=\"s2-briefing-form\"><label id=\"s2-label-name\" for=\"s2-input-name\"></label><input id=\"s2-input-name\" /><label id=\"s2-label-email\" for=\"s2-input-email\"></label><input id=\"s2-input-email\" /><label id=\"s2-label-whats\" for=\"s2-input-whats\"></label><input id=\"s2-input-whats\" /><label id=\"s2-label-city\" for=\"s2-input-city\"></label><input id=\"s2-input-city\" /><label id=\"s2-label-niche\" for=\"s2-input-niche\"></label><input id=\"s2-input-niche\" /><label id=\"s2-label-goal\" for=\"s2-input-goal\"></label><input id=\"s2-input-goal\" /><label id=\"s2-label-price\" for=\"s2-input-price\"></label><input id=\"s2-input-price\" /><label id=\"s2-label-tone\" for=\"s2-input-tone\"></label><input id=\"s2-input-tone\" /><div id=\"s2-consent\"><input id=\"s2-consent-checkbox\" /><p id=\"s2-consent-text\"></p></div><button id=\"s2-submit\" type=\"submit\"></button><p id=\"s2-privacy\"></p></form><div id=\"s2-success\" ><h3 id=\"s2-success-title\"></h3><p id=\"s2-success-desc\"></p><a id=\"s2-success-open\" href=\"#\"></a></div></div></section>","uiSizeTexts":"#s2-title{min:18,max:52} #s2-desc{min:70,max:180} #s2-label-name{min:6,max:28} #s2-label-email{min:6,max:28} #s2-label-whats{min:6,max:28} #s2-label-city{min:6,max:28} #s2-label-niche{min:6,max:28} #s2-label-goal{min:6,max:28} #s2-label-price{min:6,max:28} #s2-label-tone{min:6,max:28} #s2-consent-text{min:40,max:140} #s2-submit{min:18,max:70} #s2-privacy{min:60,max:160} #s2-success-title{min:18,max:60} #s2-success-desc{min:60,max:160} #s2-success-open{min:18,max:60}","uiSizes":"#s2-form{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s2-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s2-briefing-form{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s2-label-name{display:block}#s2-input-name{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-email{display:block}#s2-input-email{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-whats{display:block}#s2-input-whats{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-city{display:block}#s2-input-city{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-niche{display:block}#s2-input-niche{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-goal{display:block}#s2-input-goal{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-price{display:block}#s2-input-price{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-label-tone{display:block}#s2-input-tone{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:10px 12px}#s2-consent{display:flex;flex-direction:row;align-items:flex-start;gap:10px;box-sizing:border-box}#s2-consent-checkbox{display:block;width:44px;height:44px;box-sizing:border-box}#s2-consent-text{display:block}#s2-submit{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:12px 14px}#s2-privacy{display:block}#s2-success{display:none;flex-direction:column;gap:8px;box-sizing:border-box;padding:12px}#s2-success-open{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:12px 14px}","messageMatchDependency":"Formulário deve manter o mesmo CTA e reforçar ‘preview/amostra com marca d’água’ + ‘mini-kit (5 itens)’ para reduzir risco de “comprar no escuro”.","sectionDependsOn":["s1-hero"],"mobilePriorityScore":10,"dropOffRisk":"medio","surfaceSpec":{"surfaceToken":"activationLayer-form","notes":"Contrato de ativação: briefing curto para gerar o preview automaticamente; privacidade próxima ao botão; successState com acesso à amostra."},"ctaSlot":{"hasCta":true,"ctaLabel":"Gerar minha amostra agora (PDF com marca d’água)","ctaVariant":"primary","matchAdCta":"Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF","notes":"Botão de submit pode usar microcopy mais curto, mas a frase completa aparece no hero e perto do formulário para manter match."}},{"sectionId":"s3-proof-preview","sectionName":"Prova: você vê o que recebe (preview)","objective":"Reduzir ceticismo mostrando visualmente o output (PDF 1 página com marca d’água + mini-kit 5 itens) e o tempo total.","contentType":"proof","copySource":"adCopy.V3 (preview antes de decidir) + campaignAngle.proofSummary","uiNotes":"Mobile reading flow: 1) título ‘Veja o preview’ 2) parágrafo curto (não compra no escuro) 3) imagem (mockup grande do PDF com marca d’água + miniaturas do mini-kit) 4) bullets (o que vem no mini-kit) 5) CTA secundário (ancora para form).","uiTags":"<section id=\"s3-proof-preview\"><div id=\"s3-wrap\"><h2 id=\"s3-title\"></h2><p id=\"s3-desc\"></p><img id=\"s3-preview-img\" alt=\"Exemplo de amostra em PDF (1 página) com marca d’água e mini-kit com 5 itens\" /><ul id=\"s3-bullets\"><li id=\"s3-bullets-1\"></li><li id=\"s3-bullets-2\"></li><li id=\"s3-bullets-3\"></li></ul><a id=\"s3-cta\" href=\"#s2-form\"></a></div></section>","uiSizeTexts":"#s3-title{min:18,max:52} #s3-desc{min:60,max:150} #s3-bullets-1{min:25,max:70} #s3-bullets-2{min:25,max:70} #s3-bullets-3{min:25,max:70} #s3-cta{min:18,max:60}","uiSizes":"#s3-proof-preview{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s3-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s3-preview-img{display:block;width:100%;height:auto;min-height:200px;max-height:360px;box-sizing:border-box;margin:4px 0 0 0}#s3-bullets{display:flex;flex-direction:column;gap:6px;margin:0;padding:0}#s3-cta{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:12px 14px}","messageMatchDependency":"Repetir ‘preview em ~3 min’ e ‘PDF 1 página com marca d’água + mini-kit (5 itens)’ exatamente como no anúncio.","sectionDependsOn":["s1-hero","s2-form"],"mobilePriorityScore":9,"dropOffRisk":"baixo","surfaceSpec":{"surfaceToken":"proofDevice-preview-visual","notes":"Prova visual do entregável: mockup realista e marca d’água evidente; miniaturas dos 5 itens para tangibilizar valor."},"ctaSlot":{"hasCta":true,"ctaLabel":"Preencher briefing e ver minha amostra","ctaVariant":"secondary","matchAdCta":"Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF","notes":"CTA de reforço para quem rolou sem preencher; sempre volta ao formulário."}},{"sectionId":"s4-pain-contrast","sectionName":"Dor: o ‘quanto custa?’ cedo demais (e o que isso causa)","objective":"Nomear a dor do personal (conversa vira preço e some) e criar contraste com a saída (mostrar valor antes do preço).","contentType":"split","copySource":"Dor.surface + campaignAngle.primaryPain + adCopy.V2","uiNotes":"Mobile reading flow: 1) título (dor) 2) parágrafo curto (efeito: perde tempo/agenda) 3) imagem (chat genérico com ‘Quanto custa?’ repetido) 4) bullets (sintomas) 5) linha de transição ‘por isso o preview ajuda’.","uiTags":"<section id=\"s4-pain-contrast\"><div id=\"s4-wrap\"><h2 id=\"s4-title\"></h2><p id=\"s4-desc\"></p><img id=\"s4-chat-img\" alt=\"Ilustração de conversa por mensagem com a pergunta 'Quanto custa?' repetida\" /><ul id=\"s4-bullets\"><li id=\"s4-bullets-1\"></li><li id=\"s4-bullets-2\"></li><li id=\"s4-bullets-3\"></li></ul><p id=\"s4-bridge\"></p></div></section>","uiSizeTexts":"#s4-title{min:18,max:58} #s4-desc{min:70,max:170} #s4-bullets-1{min:25,max:75} #s4-bullets-2{min:25,max:75} #s4-bullets-3{min:25,max:75} #s4-bridge{min:50,max:120}","uiSizes":"#s4-pain-contrast{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s4-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s4-chat-img{display:block;width:100%;height:auto;min-height:180px;max-height:320px;box-sizing:border-box}#s4-bullets{display:flex;flex-direction:column;gap:6px;margin:0;padding:0}#s4-bridge{display:block}","messageMatchDependency":"Manter alinhamento com o anúncio: a dor é ‘virar preço cedo’ e a solução é ‘mostrar valor rápido com preview’ (não prometer agenda cheia garantida).","sectionDependsOn":["s3-proof-preview"],"mobilePriorityScore":7,"dropOffRisk":"medio","surfaceSpec":{"surfaceToken":"pain-surface-context","notes":"Contextualiza a dor com evidência visual (chat) e sintomas objetivos; prepara terreno para o mecanismo sem jargão."},"ctaSlot":{"hasCta":false,"ctaLabel":"","ctaVariant":"","matchAdCta":"","notes":"Sem CTA aqui para não interromper; CTA já está acima e retorna no mecanismo/oferta."}},{"sectionId":"s5-mechanism-8w","sectionName":"Como funciona: briefing → ciclo de 8 semanas (gerado) → uso no WhatsApp","objective":"Explicar o mecanismo de forma simples e repetível (sem jargão) e conectar com o uso imediato para conduzir 3 conversas com próximo passo claro.","contentType":"timeline","copySource":"campaignAngle.mechanismSummary","uiNotes":"Mobile reading flow: 1) título ‘Como funciona’ 2) parágrafo curto (IA gera a partir do briefing) 3) imagem (fluxo em 3 passos com setas) 4) bullets (3 blocos do ciclo: convite/roteiro/começo guiado) 5) CTA para preencher briefing.","uiTags":"<section id=\"s5-mechanism-8w\"><div id=\"s5-wrap\"><h2 id=\"s5-title\"></h2><p id=\"s5-desc\"></p><img id=\"s5-flow-img\" alt=\"Diagrama em 3 passos: Briefing 2 min, Preview ~3 min, Materiais prontos para usar no WhatsApp\" /><ul id=\"s5-bullets\"><li id=\"s5-bullets-1\"></li><li id=\"s5-bullets-2\"></li><li id=\"s5-bullets-3\"></li></ul><a id=\"s5-cta\" href=\"#s2-form\"></a></div></section>","uiSizeTexts":"#s5-title{min:18,max:52} #s5-desc{min:70,max:170} #s5-bullets-1{min:30,max:90} #s5-bullets-2{min:30,max:90} #s5-bullets-3{min:30,max:90} #s5-cta{min:18,max:60}","uiSizes":"#s5-mechanism-8w{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s5-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s5-flow-img{display:block;width:100%;height:auto;min-height:190px;max-height:340px;box-sizing:border-box}#s5-bullets{display:flex;flex-direction:column;gap:6px;margin:0;padding:0}#s5-cta{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:12px 14px}","messageMatchDependency":"Não transformar ‘IA/8 semanas’ em promessa principal; ligar explicitamente ao resultado do anúncio: mostrar valor antes do preço + conduzir conversa com próximo passo claro.","sectionDependsOn":["s4-pain-contrast"],"mobilePriorityScore":8,"dropOffRisk":"medio","surfaceSpec":{"surfaceToken":"mechanism-explainer","notes":"Diagrama simples em 3 passos + 3 bullets do que o ciclo organiza; reduz incerteza de ‘como vou usar?’."},"ctaSlot":{"hasCta":true,"ctaLabel":"Preencher briefing e gerar meu preview","ctaVariant":"secondary","matchAdCta":"Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF","notes":"Reforço de ação após entendimento do mecanismo."}},{"sectionId":"s6-offer-includes","sectionName":"O que você recebe (Amostra + mini-kit)","objective":"Detalhar a oferta com clareza comercial (entregáveis) e tornar o valor tangível sem prometer resultados individuais.","contentType":"proof","copySource":"campaignAngle.proofSummary (amostra 1 página com marca d’água + mini-kit 5 itens)","uiNotes":"Mobile reading flow: 1) título ‘O que vem’ 2) parágrafo curto 3) imagem (grid visual dos 5 itens + PDF) 4) bullets (lista dos itens) 5) nota de uso imediato (hoje) sem consultoria.","uiTags":"<section id=\"s6-offer-includes\"><div id=\"s6-wrap\"><h2 id=\"s6-title\"></h2><p id=\"s6-desc\"></p><img id=\"s6-includes-img\" alt=\"Mockup do PDF de amostra e cinco cartões representando os itens do mini-kit\" /><ul id=\"s6-bullets\"><li id=\"s6-bullets-1\"></li><li id=\"s6-bullets-2\"></li><li id=\"s6-bullets-3\"></li><li id=\"s6-bullets-4\"></li><li id=\"s6-bullets-5\"></li></ul><p id=\"s6-note\"></p></div></section>","uiSizeTexts":"#s6-title{min:18,max:52} #s6-desc{min:70,max:170} #s6-bullets-1{min:18,max:70} #s6-bullets-2{min:18,max:70} #s6-bullets-3{min:18,max:70} #s6-bullets-4{min:18,max:70} #s6-bullets-5{min:18,max:70} #s6-note{min:50,max:130}","uiSizes":"#s6-offer-includes{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s6-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s6-includes-img{display:block;width:100%;height:auto;min-height:200px;max-height:360px;box-sizing:border-box}#s6-bullets{display:flex;flex-direction:column;gap:6px;margin:0;padding:0}#s6-note{display:block}","messageMatchDependency":"Entregáveis devem bater com anúncio: Amostra Personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens) para uso imediato.","sectionDependsOn":["s5-mechanism-8w"],"mobilePriorityScore":8,"dropOffRisk":"medio","surfaceSpec":{"surfaceToken":"coreOffer-tangibilize","notes":"Torna a oferta concreta com visual de ‘o que vem na caixa’ (PDF + 5 cards)."},"ctaSlot":{"hasCta":false,"ctaLabel":"","ctaVariant":"","matchAdCta":"","notes":"Sem CTA para manter seção curta; CTA final e formulário já fazem o fechamento."}},{"sectionId":"s7-faq-objections","sectionName":"FAQ (objeções rápidas)","objective":"Remover fricções típicas: ‘é pago?’, ‘vai ter consultoria?’, ‘quanto tempo leva?’, ‘posso ver antes?’, ‘o que acontece com meus dados?’.","contentType":"faq","copySource":"Regras globais de compliance + campaignAngle.proofSummary + form/trust notes","uiNotes":"Mobile reading flow: 1) título 2) 3–5 perguntas em acordeão (curtas) 3) linha final puxando para o briefing.","uiTags":"<section id=\"s7-faq-objections\"><div id=\"s7-wrap\"><h2 id=\"s7-title\"></h2><div id=\"s7-faq\"><div id=\"s7-faq-1\"><h3 id=\"s7-faq-1-q\"></h3><p id=\"s7-faq-1-a\"></p></div><div id=\"s7-faq-2\"><h3 id=\"s7-faq-2-q\"></h3><p id=\"s7-faq-2-a\"></p></div><div id=\"s7-faq-3\"><h3 id=\"s7-faq-3-q\"></h3><p id=\"s7-faq-3-a\"></p></div><div id=\"s7-faq-4\"><h3 id=\"s7-faq-4-q\"></h3><p id=\"s7-faq-4-a\"></p></div><div id=\"s7-faq-5\"><h3 id=\"s7-faq-5-q\"></h3><p id=\"s7-faq-5-a\"></p></div></div><p id=\"s7-bridge\"></p></div></section>","uiSizeTexts":"#s7-title{min:18,max:52} #s7-faq-1-q{min:12,max:60} #s7-faq-1-a{min:40,max:180} #s7-faq-2-q{min:12,max:60} #s7-faq-2-a{min:40,max:180} #s7-faq-3-q{min:12,max:60} #s7-faq-3-a{min:40,max:180} #s7-faq-4-q{min:12,max:60} #s7-faq-4-a{min:40,max:180} #s7-faq-5-q{min:12,max:60} #s7-faq-5-a{min:40,max:180} #s7-bridge{min:30,max:110}","uiSizes":"#s7-faq-objections{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s7-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s7-faq{display:flex;flex-direction:column;gap:8px;box-sizing:border-box}#s7-faq-1{display:flex;flex-direction:column;gap:4px}#s7-faq-2{display:flex;flex-direction:column;gap:4px}#s7-faq-3{display:flex;flex-direction:column;gap:4px}#s7-faq-4{display:flex;flex-direction:column;gap:4px}#s7-faq-5{display:flex;flex-direction:column;gap:4px}","messageMatchDependency":"FAQ deve reforçar ‘preview com marca d’água’ e ‘sem consultoria/call’ (automático) e tempo (briefing 2 min; geração ~3 min).","sectionDependsOn":["s6-offer-includes"],"mobilePriorityScore":6,"dropOffRisk":"baixo","surfaceSpec":{"surfaceToken":"objection-handling","notes":"Acordeão compacto; remove objeções de preço/tempo/privacidade/expectativa de atendimento humano."},"ctaSlot":{"hasCta":false,"ctaLabel":"","ctaVariant":"","matchAdCta":"","notes":""}},{"sectionId":"s8-final-cta","sectionName":"CTA final + rodapé de confiança","objective":"Última chamada para preencher o briefing, reforçar privacidade/identidade e fechar a página sem ruído.","contentType":"cta","copySource":"campaignAngle.primaryCTA + trustSignalsSpec (privacidade/empresa/contato)","uiNotes":"Mobile reading flow: 1) título curto 2) parágrafo (resumo do que recebe e tempo) 3) imagem (mockup final do PDF+mini-kit) 4) CTA 5) nota de privacidade 6) footer legal.","uiTags":"<section id=\"s8-final-cta\"><div id=\"s8-wrap\"><h2 id=\"s8-title\"></h2><p id=\"s8-desc\"></p><img id=\"s8-mockup-img\" alt=\"Mockup final da amostra em PDF com marca d’água e mini-kit com cinco itens\" /><a id=\"s8-cta\" href=\"#s2-form\"></a><p id=\"s8-privacy\"></p><footer id=\"s8-footer\"><p id=\"s8-footer-company\"></p><p id=\"s8-footer-contact\"></p><a id=\"s8-footer-privacy\" href=\"/privacidade\"></a></footer></div></section>","uiSizeTexts":"#s8-title{min:18,max:52} #s8-desc{min:70,max:170} #s8-cta{min:22,max:70} #s8-privacy{min:60,max:160} #s8-footer-company{min:20,max:90} #s8-footer-contact{min:20,max:90} #s8-footer-privacy{min:10,max:40}","uiSizes":"#s8-final-cta{display:flex;flex-direction:column;box-sizing:border-box;padding:16px}#s8-wrap{display:flex;flex-direction:column;gap:10px;box-sizing:border-box}#s8-mockup-img{display:block;width:100%;height:auto;min-height:180px;max-height:320px;box-sizing:border-box}#s8-cta{display:block;width:100%;height:auto;min-height:44px;box-sizing:border-box;padding:12px 14px}#s8-footer{display:flex;flex-direction:column;gap:6px;box-sizing:border-box;margin:8px 0 0 0;padding:8px 0 0 0}#s8-footer-privacy{display:block;width:auto;height:auto;min-height:44px;box-sizing:border-box;padding:10px 0}","messageMatchDependency":"Fechar com o mesmo CTA do anúncio e reforçar que é ‘amostra/preview’ (com marca d’água) + mini-kit.","sectionDependsOn":["s7-faq-objections"],"mobilePriorityScore":9,"dropOffRisk":"baixo","surfaceSpec":{"surfaceToken":"closing-loop-trust","notes":"Reforço final com imagem do produto digital e bloco de confiança (privacidade + itens legais)."},"ctaSlot":{"hasCta":true,"ctaLabel":"Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF","ctaVariant":"primary","matchAdCta":"campaignAngle.primaryCTA","notes":"Último CTA espelha exatamente o anúncio para máxima continuidade."}}],"consistencyChecks":[{"check":"CTA do anúncio combina com a ação principal da landing (briefing → gerar amostra)","status":"PASS","details":"CTA principal repetido no hero e no CTA final; formulário é a ação central."},{"check":"Promessa central consistente (preview rápido + mostrar valor antes do preço)","status":"PASS","details":"Hero, prova e mecanismo reforçam briefing 2 min → amostra ~3 min e uso para conduzir conversas sem briga de preço."},{"check":"Sem promessas absolutas/garantias e sem linguagem de consultoria/call","status":"PASS","details":"Wireframe posiciona como geração automática de materiais; evita ‘gestão’ e ‘acompanhamento humano’."},{"check":"Mobile-first: sem duas colunas para conteúdo principal","status":"PASS","details":"Todas as seções definidas como fluxo vertical único; imagens full width."},{"check":"Prova em pelo menos 2 tipos distintos","status":"PASS","details":"Prova visual do preview (mockups) + prova de processo/tempo (fluxo 2 min → ~3 min)."}] }
+{
+  "pageGoal": "Fazer o visitante preencher o briefing de 2 minutos e gerar agora uma Amostra Personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens), confirmando o valor antes do preço e criando o próximo passo claro para 3 conversas.",
+  "variantLayoutId": "form-first",
+  "messageMatchSummary": "A landing repete a promessa central do anúncio: “Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens)”, com prova rápida (preview em ~3 min) e linguagem de ‘ver antes de decidir’.",
+  "mobilePriorityNotes": "Mobile-first: hero compacto com CTA + formulário acima da dobra (ou até o fim do 1º scroll). Seções em coluna única (sem duas colunas no mobile). Repetir CTA após prova/preview e após ‘o que você recebe’. Espaçamento vertical curto para não empurrar CTA. Imagens sempre com width:100% e altura proporcional, sem áreas vazias.",
+  "ctaPlacementNotes": "CTA principal no Hero e repetido em: (1) seção de prova/preview; (2) seção ‘o que você recebe’; (3) seção final de CTA. CTA secundário (ver exemplo do PDF) pode existir como link interno para a seção de prova, sem competir com o CTA principal.",
+  "formPlacementNotes": "Formulário exposto imediatamente no topo (form-first), logo após o hero (ou integrado ao hero). No mobile, formulário aparece ainda no primeiro scroll. Em desktop, formulário em card à direita do texto do hero (mas no mobile empilha). Sem sticky agressivo; apenas um botão CTA fixo no rodapé do mobile pode ser considerado no HTML depois (não aqui).",
+  "sectionOrder": [
+    {
+      "sectionId": "s1-hero",
+      "sectionName": "Hero (promessa + prova rápida + CTA)",
+      "objective": "Garantir message match com o anúncio e explicar em 5–7 segundos o que a pessoa ganha (amostra em PDF + mini-kit) e por que agora (preview em ~3 min), conduzindo ao CTA principal.",
+      "contentType": "hero",
+      "copySource": "campaignAngle.singleMindedPromise + campaignAngle.proofSummary + campaignAngle.cta",
+      "uiNotes": "Ordem de leitura (mobile): H1 (promessa) → subtítulo (briefing 2 min / preview ~3 min) → bullets (o que resolve) → mockup (PDF com marca d’água + 5 itens) → CTA principal (âncora para formulário na seção seguinte). Manter tudo compacto e sem parágrafos longos.",
+      "uiTags": "<section id=\"s1-hero\"><div id=\"s1-wrap\"><h1 id=\"s1-title\"></h1><p id=\"s1-subtitle\"></p><ul id=\"s1-bullets\"><li id=\"s1-bullets-1\"></li><li id=\"s1-bullets-2\"></li><li id=\"s1-bullets-3\"></li></ul><img id=\"s1-hero-image\" /><div id=\"s1-cta-wrap\"><a id=\"s1-cta-primary\"></a><p id=\"s1-cta-microcopy\"></p></div></div></section>",
+      "uiSizeTexts": "s1-title{min:42,max:78};s1-subtitle{min:90,max:140};s1-bullets-1{min:35,max:65};s1-bullets-2{min:35,max:70};s1-bullets-3{min:35,max:70};s1-cta-primary{min:28,max:78};s1-cta-microcopy{min:40,max:95}",
+      "uiSizes": "s1-hero{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:16px;padding-left:16px;margin:0 auto;max-width:1120px;}s1-wrap{position:relative;display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s1-title{display:block;width:100%;margin:0;}s1-subtitle{display:block;width:100%;margin:0;}s1-bullets{display:block;width:100%;margin:0;padding-left:18px;}s1-bullets-1{display:list-item;width:100%;}s1-bullets-2{display:list-item;width:100%;}s1-bullets-3{display:list-item;width:100%;}s1-hero-image{display:block;width:100%;height:220px;min-height:200px;max-height:320px;box-sizing:border-box;margin:6px 0 0 0;}s1-cta-wrap{display:flex;flex-direction:column;gap:6px;width:100%;}s1-cta-primary{display:block;width:100%;height:52px;box-sizing:border-box;}s1-cta-microcopy{display:block;width:100%;margin:0;}",
+      "messageMatchDependency": "Deve repetir literalmente a ação do anúncio: “Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF”.",
+      "sectionDependsOn": [],
+      "mobilePriorityScore": 10,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "entryAsset.hero-message-match",
+        "notes": "Âncora do message match. Visual: mockup do PDF 1 página com marca d’água + miniaturas do mini-kit (5 itens)."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "notes": "Leva para o formulário (s2) via âncora/scroll. Em desktop, pode abrir foco no 1º campo do formulário."
+      }
+    },
+    {
+      "sectionId": "s2-form",
+      "sectionName": "Formulário (briefing de 2 minutos)",
+      "objective": "Capturar os dados mínimos para gerar a amostra em PDF + mini-kit, reduzindo fricção e reforçando privacidade e ‘preview antes de decidir’.",
+      "contentType": "form",
+      "copySource": "campaignAngle.primaryCTA + campaignAngle.landingMatchLine",
+      "uiNotes": "Ordem (mobile): título curto → 1 frase de instrução → campos (um por linha) → consentimento → botão gerar. Manter o formulário como card com respiro, sem textos longos.",
+      "uiTags": "<section id=\"s2-form\"><div id=\"s2-wrap\"><h2 id=\"s2-title\"></h2><p id=\"s2-subtitle\"></p><form id=\"s2-briefing-form\"><label id=\"s2-field-1-label\" for=\"s2-field-1\"></label><input id=\"s2-field-1\" /><label id=\"s2-field-2-label\" for=\"s2-field-2\"></label><input id=\"s2-field-2\" /><label id=\"s2-field-3-label\" for=\"s2-field-3\"></label><input id=\"s2-field-3\" /><label id=\"s2-field-4-label\" for=\"s2-field-4\"></label><input id=\"s2-field-4\" /><label id=\"s2-field-5-label\" for=\"s2-field-5\"></label><select id=\"s2-field-5\"><option id=\"s2-field-5-opt-1\"></option><option id=\"s2-field-5-opt-2\"></option><option id=\"s2-field-5-opt-3\"></option></select><div id=\"s2-consent-wrap\"><input id=\"s2-consent\" /><label id=\"s2-consent-label\" for=\"s2-consent\"></label></div><button id=\"s2-submit\"></button><p id=\"s2-privacy-note\"></p></form></div></section>",
+      "uiSizeTexts": "s2-title{min:28,max:52};s2-subtitle{min:70,max:120};s2-field-1-label{min:10,max:30};s2-field-2-label{min:10,max:30};s2-field-3-label{min:10,max:34};s2-field-4-label{min:10,max:34};s2-field-5-label{min:12,max:34};s2-consent-label{min:55,max:120};s2-submit{min:28,max:78};s2-privacy-note{min:45,max:110};s2-field-5-opt-1{min:6,max:20};s2-field-5-opt-2{min:6,max:20};s2-field-5-opt-3{min:6,max:20}",
+      "uiSizes": "s2-form{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:12px;padding-right:16px;padding-bottom:18px;padding-left:16px;margin:0 auto;max-width:1120px;}s2-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s2-title{display:block;width:100%;margin:0;}s2-subtitle{display:block;width:100%;margin:0;}s2-briefing-form{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;padding-top:12px;padding-right:12px;padding-bottom:12px;padding-left:12px;}s2-field-1-label{display:block;width:100%;}s2-field-1{display:block;width:100%;height:48px;box-sizing:border-box;}s2-field-2-label{display:block;width:100%;}s2-field-2{display:block;width:100%;height:48px;box-sizing:border-box;}s2-field-3-label{display:block;width:100%;}s2-field-3{display:block;width:100%;height:48px;box-sizing:border-box;}s2-field-4-label{display:block;width:100%;}s2-field-4{display:block;width:100%;height:48px;box-sizing:border-box;}s2-field-5-label{display:block;width:100%;}s2-field-5{display:block;width:100%;height:48px;box-sizing:border-box;}s2-consent-wrap{display:flex;flex-direction:row;align-items:center;gap:10px;width:100%;box-sizing:border-box;}s2-consent{display:block;width:20px;height:20px;box-sizing:border-box;}s2-consent-label{display:block;width:100%;}s2-submit{display:block;width:100%;height:52px;box-sizing:border-box;}s2-privacy-note{display:block;width:100%;margin:0;}",
+      "messageMatchDependency": "CTA e promessa devem manter ‘briefing de 2 minutos’ + ‘amostra personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens)’.",
+      "sectionDependsOn": [
+        "s1-hero"
+      ],
+      "mobilePriorityScore": 10,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "activationLayer.form-capture",
+        "notes": "Contrato de ativação: capturar briefing curto para geração automática. Reforçar privacidade e ‘preview’ no microcopy."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Gerar minha amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "notes": "Botão de submit. Mantém intenção do anúncio; label pode ser variante curta mantendo o mesmo significado."
+      }
+    },
+    {
+      "sectionId": "s3-proof-preview",
+      "sectionName": "Prova/Preview (o que você vai ver em ~3 min)",
+      "objective": "Reduzir ceticismo mostrando exatamente o que é gerado (PDF 1 página com marca d’água + mini-kit 5 itens) e reforçar a prova de velocidade (briefing 2 min → preview ~3 min).",
+      "contentType": "proof",
+      "copySource": "campaignAngle.proofSummary",
+      "uiNotes": "Ordem (mobile): título (preview em ~3 min) → parágrafo curto (você vê antes de decidir) → imagem grande (mockup do PDF com marca d’água visível + 5 cards do kit) → bullets do que contém → CTA repetido (scroll para o formulário).",
+      "uiTags": "<section id=\"s3-proof-preview\"><div id=\"s3-wrap\"><h2 id=\"s3-title\"></h2><p id=\"s3-subtitle\"></p><img id=\"s3-preview-image\" /><ul id=\"s3-bullets\"><li id=\"s3-bullets-1\"></li><li id=\"s3-bullets-2\"></li><li id=\"s3-bullets-3\"></li></ul><div id=\"s3-cta-wrap\"><a id=\"s3-cta-primary\"></a><p id=\"s3-cta-note\"></p></div></div></section>",
+      "uiSizeTexts": "s3-title{min:26,max:52};s3-subtitle{min:70,max:120};s3-bullets-1{min:28,max:60};s3-bullets-2{min:28,max:60};s3-bullets-3{min:28,max:65};s3-cta-primary{min:28,max:78};s3-cta-note{min:35,max:90}",
+      "uiSizes": "s3-proof-preview{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:18px;padding-right:16px;padding-bottom:18px;padding-left:16px;margin:0 auto;max-width:1120px;}s3-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s3-title{display:block;width:100%;margin:0;}s3-subtitle{display:block;width:100%;margin:0;}s3-preview-image{display:block;width:100%;height:240px;min-height:220px;max-height:360px;box-sizing:border-box;margin:4px 0 0 0;}s3-bullets{display:block;width:100%;margin:0;padding-left:18px;}s3-bullets-1{display:list-item;width:100%;}s3-bullets-2{display:list-item;width:100%;}s3-bullets-3{display:list-item;width:100%;}s3-cta-wrap{display:flex;flex-direction:column;gap:6px;width:100%;}s3-cta-primary{display:block;width:100%;height:52px;box-sizing:border-box;}s3-cta-note{display:block;width:100%;margin:0;}",
+      "messageMatchDependency": "Refletir ‘Preview antes de decidir’ + ‘em ~3 minutos’ + ‘PDF com marca d’água + mini-kit (5 itens)’.",
+      "sectionDependsOn": [
+        "s2-form"
+      ],
+      "mobilePriorityScore": 9,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "proofDevice.preview-visual",
+        "notes": "Dispositivo de prova: mostrar mockup realista do PDF com marca d’água + 5 itens (cards) e o tempo (~3 min)."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencher o briefing e gerar minha amostra",
+        "ctaVariant": "secondary",
+        "matchAdCta": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "notes": "Link/âncora de retorno ao formulário (s2)."
+      }
+    },
+    {
+      "sectionId": "s4-problem-context",
+      "sectionName": "Contexto da dor (por que vira ‘quanto custa?’)",
+      "objective": "Conectar com a dor do personal (conversa vira preço, perda de tempo, pouca previsibilidade) e preparar o terreno para o mecanismo sem jargão.",
+      "contentType": "split",
+      "copySource": "Dor.surface + Dor.root (resumo)",
+      "uiNotes": "Ordem (mobile): título (a conversa vira preço) → parágrafo curto (por que acontece) → imagem contextual (chat genérico/WhatsApp-like com ‘Quanto custa?’) → bullets (efeitos práticos) sem exagero.",
+      "uiTags": "<section id=\"s4-problem-context\"><div id=\"s4-wrap\"><h2 id=\"s4-title\"></h2><p id=\"s4-paragraph\"></p><img id=\"s4-problem-image\" /><ul id=\"s4-bullets\"><li id=\"s4-bullets-1\"></li><li id=\"s4-bullets-2\"></li><li id=\"s4-bullets-3\"></li></ul></div></section>",
+      "uiSizeTexts": "s4-title{min:26,max:52};s4-paragraph{min:90,max:160};s4-bullets-1{min:30,max:70};s4-bullets-2{min:30,max:70};s4-bullets-3{min:30,max:70}",
+      "uiSizes": "s4-problem-context{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:18px;padding-right:16px;padding-bottom:18px;padding-left:16px;margin:0 auto;max-width:1120px;}s4-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s4-title{display:block;width:100%;margin:0;}s4-paragraph{display:block;width:100%;margin:0;}s4-problem-image{display:block;width:100%;height:220px;min-height:200px;max-height:320px;box-sizing:border-box;margin:4px 0 0 0;}s4-bullets{display:block;width:100%;margin:0;padding-left:18px;}s4-bullets-1{display:list-item;width:100%;}s4-bullets-2{display:list-item;width:100%;}s4-bullets-3{display:list-item;width:100%;}",
+      "messageMatchDependency": "A dor deve ser a mesma do anúncio: conversa cai no ‘quanto custa?’ cedo demais; sem jargão e sem prometer resultado garantido.",
+      "sectionDependsOn": [
+        "s3-proof-preview"
+      ],
+      "mobilePriorityScore": 7,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "pain-contrast.contextual-scene",
+        "notes": "Cena concreta da dor: chat genérico repetindo ‘Quanto custa?’ e o personal perdendo controle da conversa."
+      },
+      "ctaSlot": {
+        "hasCta": false,
+        "ctaLabel": "",
+        "ctaVariant": "",
+        "matchAdCta": "",
+        "notes": "Sem CTA aqui para evitar repetição excessiva; CTA já aparece em s3 e volta em s5."
+      }
+    },
+    {
+      "sectionId": "s5-mechanism-8weeks",
+      "sectionName": "Como funciona (sem jargão): Ciclo de Evolução de 8 semanas",
+      "objective": "Explicar o mecanismo de forma simples: materiais que organizam convite + conversa + começo guiado para valor ser percebido antes do preço e nas primeiras semanas.",
+      "contentType": "timeline",
+      "copySource": "campaignAngle.mechanismSummary",
+      "uiNotes": "Ordem (mobile): título (como funciona) → parágrafo curto (IA gera a partir do briefing) → imagem (infográfico simples em 3 blocos) → bullets (3 partes do ciclo) → CTA (voltar ao briefing).",
+      "uiTags": "<section id=\"s5-mechanism-8weeks\"><div id=\"s5-wrap\"><h2 id=\"s5-title\"></h2><p id=\"s5-paragraph\"></p><img id=\"s5-mechanism-image\" /><ul id=\"s5-bullets\"><li id=\"s5-bullets-1\"></li><li id=\"s5-bullets-2\"></li><li id=\"s5-bullets-3\"></li></ul><a id=\"s5-cta-primary\"></a></div></section>",
+      "uiSizeTexts": "s5-title{min:26,max:52};s5-paragraph{min:90,max:160};s5-bullets-1{min:38,max:85};s5-bullets-2{min:38,max:90};s5-bullets-3{min:38,max:95};s5-cta-primary{min:28,max:78}",
+      "uiSizes": "s5-mechanism-8weeks{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:18px;padding-right:16px;padding-bottom:18px;padding-left:16px;margin:0 auto;max-width:1120px;}s5-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s5-title{display:block;width:100%;margin:0;}s5-paragraph{display:block;width:100%;margin:0;}s5-mechanism-image{display:block;width:100%;height:240px;min-height:220px;max-height:360px;box-sizing:border-box;margin:4px 0 0 0;}s5-bullets{display:block;width:100%;margin:0;padding-left:18px;}s5-bullets-1{display:list-item;width:100%;}s5-bullets-2{display:list-item;width:100%;}s5-bullets-3{display:list-item;width:100%;}s5-cta-primary{display:block;width:100%;height:52px;box-sizing:border-box;margin-top:6px;}",
+      "messageMatchDependency": "Não transformar ‘IA/8 semanas’ em promessa principal; manter como explicação do ‘como’ depois da promessa/preview.",
+      "sectionDependsOn": [
+        "s4-problem-context"
+      ],
+      "mobilePriorityScore": 8,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "mechanism.simple-3steps",
+        "notes": "Infográfico em 3 blocos: (1) convite claro, (2) roteiro curto de WhatsApp, (3) começo guiado D0–D7 + check-ins."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencher o briefing de 2 minutos",
+        "ctaVariant": "secondary",
+        "matchAdCta": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "notes": "Âncora para s2-form."
+      }
+    },
+    {
+      "sectionId": "s6-deliverables",
+      "sectionName": "O que você recebe (Amostra + mini-kit 5 itens)",
+      "objective": "Concretizar a oferta (entregáveis) e aumentar percepção de valor sem prometer gestão humana. Tornar fácil imaginar o uso hoje.",
+      "contentType": "proof",
+      "copySource": "campaignAngle.proofSummary (lista de entregáveis) + campaignAngle.landingMatchLine",
+      "uiNotes": "Ordem (mobile): título (o que vem) → imagem (packshot digital: PDF + 5 cards) → bullets curtos (itens) → nota de ‘amostra com marca d’água’ → CTA.",
+      "uiTags": "<section id=\"s6-deliverables\"><div id=\"s6-wrap\"><h2 id=\"s6-title\"></h2><img id=\"s6-offer-image\" /><ul id=\"s6-bullets\"><li id=\"s6-bullets-1\"></li><li id=\"s6-bullets-2\"></li><li id=\"s6-bullets-3\"></li><li id=\"s6-bullets-4\"></li><li id=\"s6-bullets-5\"></li></ul><p id=\"s6-note\"></p><a id=\"s6-cta-primary\"></a></div></section>",
+      "uiSizeTexts": "s6-title{min:22,max:52};s6-bullets-1{min:18,max:55};s6-bullets-2{min:18,max:55};s6-bullets-3{min:18,max:55};s6-bullets-4{min:18,max:55};s6-bullets-5{min:18,max:55};s6-note{min:40,max:110};s6-cta-primary{min:28,max:78}",
+      "uiSizes": "s6-deliverables{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:18px;padding-right:16px;padding-bottom:18px;padding-left:16px;margin:0 auto;max-width:1120px;}s6-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s6-title{display:block;width:100%;margin:0;}s6-offer-image{display:block;width:100%;height:260px;min-height:240px;max-height:380px;box-sizing:border-box;margin:4px 0 0 0;}s6-bullets{display:block;width:100%;margin:0;padding-left:18px;}s6-bullets-1{display:list-item;width:100%;}s6-bullets-2{display:list-item;width:100%;}s6-bullets-3{display:list-item;width:100%;}s6-bullets-4{display:list-item;width:100%;}s6-bullets-5{display:list-item;width:100%;}s6-note{display:block;width:100%;margin:0;}s6-cta-primary{display:block;width:100%;height:52px;box-sizing:border-box;margin-top:6px;}",
+      "messageMatchDependency": "Deixar explícito ‘PDF 1 página (com marca d’água)’ e ‘mini-kit (5 itens)’, conforme anúncio.",
+      "sectionDependsOn": [
+        "s5-mechanism-8weeks"
+      ],
+      "mobilePriorityScore": 9,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "coreOffer.packshot-deliverables",
+        "notes": "Imagem tipo packshot: mockup do PDF com marca d’água + 5 cards representando os itens do mini-kit."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Gerar minha amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "notes": "Âncora para s2-form; reforça ação após entender entregáveis."
+      }
+    },
+    {
+      "sectionId": "s7-faq",
+      "sectionName": "FAQ (objeções rápidas)",
+      "objective": "Remover objeções comuns (tempo, privacidade, o que é marca d’água, se precisa aparecer em vídeo, etc.) sem criar fricção.",
+      "contentType": "faq",
+      "copySource": "Objeções implícitas do ângulo + compliance",
+      "uiNotes": "Ordem (mobile): título → 4 perguntas em accordion (compacto). Respostas curtas (até 3–4 linhas). Sem links excessivos.",
+      "uiTags": "<section id=\"s7-faq\"><div id=\"s7-wrap\"><h2 id=\"s7-title\"></h2><div id=\"s7-qa-1\"><h3 id=\"s7-q1\"></h3><p id=\"s7-a1\"></p></div><div id=\"s7-qa-2\"><h3 id=\"s7-q2\"></h3><p id=\"s7-a2\"></p></div><div id=\"s7-qa-3\"><h3 id=\"s7-q3\"></h3><p id=\"s7-a3\"></p></div><div id=\"s7-qa-4\"><h3 id=\"s7-q4\"></h3><p id=\"s7-a4\"></p></div></div></section>",
+      "uiSizeTexts": "s7-title{min:18,max:44};s7-q1{min:18,max:60};s7-a1{min:60,max:170};s7-q2{min:18,max:60};s7-a2{min:60,max:170};s7-q3{min:18,max:60};s7-a3{min:60,max:170};s7-q4{min:18,max:60};s7-a4{min:60,max:170}",
+      "uiSizes": "s7-faq{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:18px;padding-right:16px;padding-bottom:18px;padding-left:16px;margin:0 auto;max-width:1120px;}s7-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s7-title{display:block;width:100%;margin:0;}s7-qa-1{display:block;width:100%;box-sizing:border-box;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;}s7-q1{display:block;width:100%;margin:0;}s7-a1{display:block;width:100%;margin:6px 0 0 0;}s7-qa-2{display:block;width:100%;box-sizing:border-box;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;}s7-q2{display:block;width:100%;margin:0;}s7-a2{display:block;width:100%;margin:6px 0 0 0;}s7-qa-3{display:block;width:100%;box-sizing:border-box;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;}s7-q3{display:block;width:100%;margin:0;}s7-a3{display:block;width:100%;margin:6px 0 0 0;}s7-qa-4{display:block;width:100%;box-sizing:border-box;padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;}s7-q4{display:block;width:100%;margin:0;}s7-a4{display:block;width:100%;margin:6px 0 0 0;}",
+      "messageMatchDependency": "FAQ não pode prometer consultoria/call/gestão humana; reforçar geração automática e preview.",
+      "sectionDependsOn": [
+        "s6-deliverables"
+      ],
+      "mobilePriorityScore": 6,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "trust.faq-objection-handling",
+        "notes": "Objeções: tempo, privacidade, o que é amostra com marca d’água, como usar no WhatsApp."
+      },
+      "ctaSlot": {
+        "hasCta": false,
+        "ctaLabel": "",
+        "ctaVariant": "",
+        "matchAdCta": "",
+        "notes": "Sem CTA para manter FAQ compacto; CTA final vem na próxima seção."
+      }
+    },
+    {
+      "sectionId": "s8-final-cta",
+      "sectionName": "CTA final (repetição simples)",
+      "objective": "Fechar a página com reforço de promessa + ação clara para quem rolou até o fim.",
+      "contentType": "cta",
+      "copySource": "campaignAngle.primaryCTA + campaignAngle.primaryPromise",
+      "uiNotes": "Ordem (mobile): título (ação) → 1 frase de reforço (preview em ~3 min) → imagem pequena (selo/mini packshot) → CTA principal (âncora para s2).",
+      "uiTags": "<section id=\"s8-final-cta\"><div id=\"s8-wrap\"><h2 id=\"s8-title\"></h2><p id=\"s8-paragraph\"></p><img id=\"s8-cta-image\" /><a id=\"s8-cta-primary\"></a><p id=\"s8-footnote\"></p></div></section>",
+      "uiSizeTexts": "s8-title{min:22,max:52};s8-paragraph{min:60,max:120};s8-cta-primary{min:28,max:78};s8-footnote{min:40,max:110}",
+      "uiSizes": "s8-final-cta{position:relative;display:block;width:100%;box-sizing:border-box;padding-top:18px;padding-right:16px;padding-bottom:22px;padding-left:16px;margin:0 auto;max-width:1120px;}s8-wrap{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box;}s8-title{display:block;width:100%;margin:0;}s8-paragraph{display:block;width:100%;margin:0;}s8-cta-image{display:block;width:100%;height:180px;min-height:160px;max-height:260px;box-sizing:border-box;margin:4px 0 0 0;}s8-cta-primary{display:block;width:100%;height:52px;box-sizing:border-box;}s8-footnote{display:block;width:100%;margin:0;}",
+      "messageMatchDependency": "Repetir ‘briefing de 2 minutos’ e ‘amostra em PDF’ para continuidade e lembrança da oferta.",
+      "sectionDependsOn": [
+        "s7-faq"
+      ],
+      "mobilePriorityScore": 8,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "continuityLayer.final-cta-recap",
+        "notes": "Recapitulação final com packshot reduzido e reforço do tempo (preview rápido) para decisão."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "notes": "Âncora para s2-form; mantém literalidade do CTA do anúncio."
+      }
+    }
+  ],
+  "consistencyChecks": [
+    {
+      "check": "Message match (anúncio → hero → CTA)",
+      "status": "PASS",
+      "details": "CTA e promessa repetem ‘briefing de 2 minutos’ e ‘amostra personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens)’; prova ‘preview em ~3 min’ aparece cedo."
+    },
+    {
+      "check": "Mobile-first: sem duas colunas simultâneas no conteúdo principal",
+      "status": "PASS",
+      "details": "Todas as seções foram desenhadas como coluna única; imagens empilhadas abaixo do texto."
+    },
+    {
+      "check": "Primeiro CTA até o fim da 2ª seção",
+      "status": "PASS",
+      "details": "CTA no hero (s1) e submit no formulário (s2)."
+    },
+    {
+      "check": "Sem promessas absolutas / sem consultoria humana",
+      "status": "PASS",
+      "details": "Wireframe posiciona geração automática e preview, sem garantias de agenda cheia e sem linguagem de acompanhamento humano."
+    },
+    {
+      "check": "Prova planejada em múltiplos tipos",
+      "status": "PASS",
+      "details": "Prova visual do preview (mockup com marca d’água) + prova de concretude do entregável (packshot/itens do kit) + prova de velocidade (2 min → ~3 min)."
+    }
+  ],
+  "bodyAttributes": [
+    {
+      "attribute": "style",
+      "value": "margin:0;padding:0;box-sizing:border-box;",
+      "notes": "Remove margens padrão e garante base consistente para alinhamento e densidade no mobile."
+    },
+    {
+      "attribute": "data-variant-layout",
+      "value": "form-first",
+      "notes": "Sinaliza ao runtime/preset de design que este wireframe prioriza formulário no topo."
+    },
+    {
+      "attribute": "data-niche",
+      "value": "personal-trainer",
+      "notes": "Permite instrumentação/analytics e personalização mínima sem alterar a promessa."
+    }
+  ]
+}

@@ -60,7 +60,7 @@ class GeraLandingStageExecutionServiceTest {
 
         ArgumentCaptor<GeraLandingStageExecution> captor = ArgumentCaptor.forClass(GeraLandingStageExecution.class);
         verify(executionRepository).save(captor.capture());
-        assertEquals("EM_PROCESSAMENTO", captor.getValue().getStatus());
+        assertEquals("AGUARDANDO_ENVIO_OPENAI", captor.getValue().getStatus());
         assertEquals("prompt final", captor.getValue().getPrompt());
     }
 

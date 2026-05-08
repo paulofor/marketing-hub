@@ -50,6 +50,13 @@ public class GeraLandingInternalController {
         return ResponseEntity.accepted().build();
     }
 
+    @PostMapping("/stage-executions/{idJob}/receive-dispatch")
+    public ResponseEntity<Void> receiveDispatch(@PathVariable String idJob,
+                                                @Valid @RequestBody GeraLandingDispatchReceiveRequest request) {
+        executionService.markAsSentToOpenAi(idJob, request);
+        return ResponseEntity.accepted().build();
+    }
+
     @GetMapping("/stage-executions/pending")
     public ResponseEntity<List<GeraLandingPendingExecutionResponse>> listPendingExecutions() {
         return ResponseEntity.ok(executionService.listPendingExecutions());

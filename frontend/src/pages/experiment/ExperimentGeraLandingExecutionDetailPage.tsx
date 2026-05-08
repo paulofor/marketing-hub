@@ -34,6 +34,16 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
     : "";
   const provisionalHtmlFileName = `provisional-html-${detailQuery.data?.idJob ?? "geralanding"}.html`;
 
+  const buildJsonDownloadProps = (fieldName: string, value?: string | null) => {
+    if (!value) return null;
+
+    const fileName = `${fieldName}-${detailQuery.data?.idJob ?? "geralanding"}.json`;
+    return {
+      href: `data:application/json;charset=utf-8,${encodeURIComponent(value)}`,
+      fileName,
+    };
+  };
+
   const handleCopyJson = async (label: string, value?: string | null) => {
     if (!value) return;
 
@@ -115,6 +125,15 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   >
                     {copiedField === "promptContent" ? "Copiado!" : "Copiar JSON"}
                   </button>
+                  {(() => {
+                    const download = buildJsonDownloadProps("prompt-content", detailQuery.data.promptContent);
+                    if (!download) return null;
+                    return (
+                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                        Baixar JSON
+                      </a>
+                    );
+                  })()}
                 </div>
                 <CollapsibleJsonViewer content={detailQuery.data.promptContent} />
               </div>
@@ -128,6 +147,15 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   >
                     {copiedField === "prompt" ? "Copiado!" : "Copiar JSON"}
                   </button>
+                  {(() => {
+                    const download = buildJsonDownloadProps("prompt", detailQuery.data.prompt);
+                    if (!download) return null;
+                    return (
+                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                        Baixar JSON
+                      </a>
+                    );
+                  })()}
                 </div>
                 <CollapsibleJsonViewer content={detailQuery.data.prompt} />
               </div>
@@ -141,6 +169,15 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   >
                     {copiedField === "openAiRequestBody" ? "Copiado!" : "Copiar JSON"}
                   </button>
+                  {(() => {
+                    const download = buildJsonDownloadProps("openai-request-body", detailQuery.data.openAiRequestBody);
+                    if (!download) return null;
+                    return (
+                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                        Baixar JSON
+                      </a>
+                    );
+                  })()}
                 </div>
                 <CollapsibleJsonViewer content={detailQuery.data.openAiRequestBody} />
               </div>
@@ -154,6 +191,15 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   >
                     {copiedField === "schemaJson" ? "Copiado!" : "Copiar JSON"}
                   </button>
+                  {(() => {
+                    const download = buildJsonDownloadProps("schema-json", detailQuery.data.schemaJson);
+                    if (!download) return null;
+                    return (
+                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                        Baixar JSON
+                      </a>
+                    );
+                  })()}
                 </div>
                 <CollapsibleJsonViewer content={detailQuery.data.schemaJson} />
               </div>
@@ -171,6 +217,15 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   >
                     {copiedField === "modelResponse" ? "Copiado!" : "Copiar JSON"}
                   </button>
+                  {(() => {
+                    const download = buildJsonDownloadProps("model-response", detailQuery.data.modelResponse);
+                    if (!download) return null;
+                    return (
+                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                        Baixar JSON
+                      </a>
+                    );
+                  })()}
                 </div>
                 <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
               </div>

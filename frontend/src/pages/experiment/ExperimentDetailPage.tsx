@@ -401,7 +401,15 @@ export default function ExperimentDetailPage() {
     const failedFromPending = (pendingGeraLandingExecutions ?? []).filter((execution) =>
       hasFailedExecution(execution.status),
     );
-    return [...failedFromPending, ...completedHistory];
+
+    return [...failedFromPending, ...completedHistory].sort((leftExecution, rightExecution) => {
+      const leftTimestamp = Date.parse(leftExecution.executionRequestedAt ?? "");
+      const rightTimestamp = Date.parse(rightExecution.executionRequestedAt ?? "");
+      const normalizedLeftTimestamp = Number.isNaN(leftTimestamp) ? 0 : leftTimestamp;
+      const normalizedRightTimestamp = Number.isNaN(rightTimestamp) ? 0 : rightTimestamp;
+
+      return normalizedRightTimestamp - normalizedLeftTimestamp;
+    });
   }, [completedGeraLandingExecutions, pendingGeraLandingExecutions]);
   const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
     isRunningExecution(execution.status),

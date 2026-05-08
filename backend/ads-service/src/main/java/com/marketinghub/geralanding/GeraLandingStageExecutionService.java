@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GeraLandingStageExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingStageExecutionService.class);
     private static final String STATUS_STARTED = "INICIADO";
-    private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_ENVIO_OPENAI";
+    private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_PROCESSING = "EM_PROCESSAMENTO";
     private static final String STATUS_FAILED = "FALHA";
     private static final String STATUS_COMPLETED = "CONCLUIDO";

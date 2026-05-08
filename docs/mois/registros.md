@@ -180,3 +180,9 @@
   - reforço da diretriz: execução automática agendada (de hora em hora), sem depender de disparo manual.
 - Registro criado por solicitação explícita: "e registre o trabalho em /docs/mois/registros.md".
 - Commits relacionados: `3ac1f55` (compose) e `329d8b0` (documentação).
+
+## 2026-05-08 14:15:35 UTC-3
+- Criada a estrutura `testes` no submódulo `mois-hotmart-collector` com a classe `HotmartAuthMain` para validação isolada de autenticação Hotmart via username/password.
+- A classe lê `HOTMART_USERNAME` e `HOTMART_PASSWORD` do ambiente, executa login em `https://app.hotmart.com/login` com Playwright e imprime a URL resultante após submissão.
+- Objetivo: facilitar teste operacional de autenticação sem acoplamento ao fluxo completo de coleta agendada.
+- Commit relacionado: `9195df7`.

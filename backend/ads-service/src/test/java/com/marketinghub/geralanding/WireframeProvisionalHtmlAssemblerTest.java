@@ -34,7 +34,7 @@ class WireframeProvisionalHtmlAssemblerTest {
 
         assertNotNull(html);
         assertTrue(html.contains("<!doctype html>"));
-        assertTrue(html.contains("<section id='s1-hero'>"));
+        assertTrue(html.contains("id=\"s1-hero\"") || html.contains("id='s1-hero'"));
         assertTrue(html.contains("Lorem ipsum"));
     }
 

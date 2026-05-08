@@ -72,6 +72,7 @@ Regras fixas da etapa:
 - Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
 - Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 - Manter hero compacto e alta densidade útil acima da dobra no mobile.
+- Permitir respiros visuais entre blocos para legibilidade, porém evitar grandes áreas vazias; distribua conteúdo e elementos para não criar “buracos” extensos no layout (especialmente no mobile).
 - Reduzir distância entre promessa, prova, CTA e entendimento da oferta nas primeiras seções.
 - A seção de oferta deve acomodar `entryAsset` e `coreOffer` quando ambos existirem, sem assumir nomes fixos.
 - Se não houver distinção clara entre ativo inicial e oferta principal, projetar seção única coerente (sem forçar duas camadas artificiais).

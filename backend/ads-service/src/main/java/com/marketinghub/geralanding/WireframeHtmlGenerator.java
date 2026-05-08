@@ -403,7 +403,7 @@ public class WireframeHtmlGenerator {
                         .append("}\n");
                 } else {
                     css.append(normalizeSelectorList(selector))
-                        .append("{\n")
+                        .append(" {\n")
                         .append(parseDeclarations(declarationObject))
                         .append("}\n");
                 }
@@ -437,7 +437,7 @@ public class WireframeHtmlGenerator {
                 String declarations = nestedObject.substring(i + 1, objectEnd);
 
                 output.append(normalizeSelectorList(selector))
-                    .append("{\n")
+                    .append(" {\n")
                     .append(parseDeclarations(declarations))
                     .append("}\n");
 

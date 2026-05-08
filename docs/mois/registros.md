@@ -169,3 +169,14 @@
   - `collector.scheduler.source`
   - `collector.scheduler.max-products`
 - Mantida possibilidade de override por variáveis de ambiente (`COLLECTOR_SCHEDULER_*`).
+
+## 2026-05-07 21:26:03 UTC-3
+- Registrada atualização operacional do módulo `mois-hotmart-collector` para configuração por ambiente em runtime via Docker Compose + `.env`.
+- `docker-compose.yml` e `docker-compose.deploy.yml` passaram a encaminhar explicitamente variáveis de autenticação Hotmart e de agendamento (`COLLECTOR_HOTMART_*` e `COLLECTOR_SCHEDULER_*`) para o container.
+- README do módulo foi atualizado com:
+  - path recomendado do `.env` local e no host de deploy (`/opt/marketinghub/mois-hotmart-collector/.env`);
+  - exemplo completo de variáveis para autenticação e scheduler;
+  - tabela de variáveis suportadas;
+  - reforço da diretriz: execução automática agendada (de hora em hora), sem depender de disparo manual.
+- Registro criado por solicitação explícita: "e registre o trabalho em /docs/mois/registros.md".
+- Commits relacionados: `3ac1f55` (compose) e `329d8b0` (documentação).

@@ -2,15 +2,29 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "pageGoal": { "type": "string" },
+    "pageGoal": {
+      "type": "string"
+    },
     "variantLayoutId": {
       "type": "string",
-      "enum": ["form-first", "proof-first", "story-first"]
+      "enum": [
+        "form-first",
+        "proof-first",
+        "story-first"
+      ]
     },
-    "messageMatchSummary": { "type": "string" },
-    "mobilePriorityNotes": { "type": "string" },
-    "ctaPlacementNotes": { "type": "string" },
-    "formPlacementNotes": { "type": "string" },
+    "messageMatchSummary": {
+      "type": "string"
+    },
+    "mobilePriorityNotes": {
+      "type": "string"
+    },
+    "ctaPlacementNotes": {
+      "type": "string"
+    },
+    "formPlacementNotes": {
+      "type": "string"
+    },
     "sectionOrder": {
       "type": "array",
       "minItems": 4,
@@ -18,45 +32,107 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "sectionId": { "type": "string" },
-          "sectionName": { "type": "string" },
-          "objective": { "type": "string" },
+          "sectionId": {
+            "type": "string"
+          },
+          "sectionName": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          },
           "contentType": {
             "type": "string",
-            "enum": ["hero", "form", "split", "proof", "timeline", "faq", "cta"]
+            "enum": [
+              "hero",
+              "form",
+              "split",
+              "proof",
+              "timeline",
+              "faq",
+              "cta"
+            ]
           },
-          "copySource": { "type": "string" },
-          "uiNotes": { "type": "string" },
-          "uiTags": { "type": "string" },
-          "uiSizeTexts" : { "type": "string" },
-          "uiSizes": { "type": "string" },
-          "messageMatchDependency": { "type": "string" },
+          "copySource": {
+            "type": "string"
+          },
+          "uiNotes": {
+            "type": "string"
+          },
+          "uiTags": {
+            "type": "string"
+          },
+          "uiSizeTexts": {
+            "type": "string"
+          },
+          "uiSizes": {
+            "type": "string"
+          },
+          "messageMatchDependency": {
+            "type": "string"
+          },
           "sectionDependsOn": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "mobilePriorityScore": { "type": "integer", "minimum": 1, "maximum": 10 },
-          "dropOffRisk": { "type": "string", "enum": ["baixo", "medio", "alto"] },
+          "mobilePriorityScore": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "dropOffRisk": {
+            "type": "string",
+            "enum": [
+              "baixo",
+              "medio",
+              "alto"
+            ]
+          },
           "surfaceSpec": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "surfaceToken": { "type": "string" },
-              "notes": { "type": "string" }
+              "surfaceToken": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
             },
-            "required": ["surfaceToken", "notes"]
+            "required": [
+              "surfaceToken",
+              "notes"
+            ]
           },
           "ctaSlot": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "hasCta": { "type": "boolean" },
-              "ctaLabel": { "type": "string" },
-              "ctaVariant": { "type": "string" },
-              "matchAdCta": { "type": "string" },
-              "notes": { "type": "string" }
+              "hasCta": {
+                "type": "boolean"
+              },
+              "ctaLabel": {
+                "type": "string"
+              },
+              "ctaVariant": {
+                "type": "string"
+              },
+              "matchAdCta": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
             },
-            "required": ["hasCta", "ctaLabel", "ctaVariant", "matchAdCta", "notes"]
+            "required": [
+              "hasCta",
+              "ctaLabel",
+              "ctaVariant",
+              "matchAdCta",
+              "notes"
+            ]
           }
         },
         "required": [
@@ -85,11 +161,50 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "check": { "type": "string" },
-          "status": { "type": "string", "enum": ["PASS", "WARN", "FAIL"] },
-          "details": { "type": "string" }
+          "check": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "WARN",
+              "FAIL"
+            ]
+          },
+          "details": {
+            "type": "string"
+          }
         },
-        "required": ["check", "status", "details"]
+        "required": [
+          "check",
+          "status",
+          "details"
+        ]
+      }
+    },
+    "bodyAttributes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "attribute": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attribute",
+          "value",
+          "notes"
+        ]
       }
     }
   },
@@ -100,6 +215,7 @@
     "mobilePriorityNotes",
     "ctaPlacementNotes",
     "formPlacementNotes",
+    "bodyAttributes",
     "sectionOrder",
     "consistencyChecks"
   ]

@@ -186,3 +186,9 @@
 - A classe lê `HOTMART_USERNAME` e `HOTMART_PASSWORD` do ambiente, executa login em `https://app.hotmart.com/login` com Playwright e imprime a URL resultante após submissão.
 - Objetivo: facilitar teste operacional de autenticação sem acoplamento ao fluxo completo de coleta agendada.
 - Commit relacionado: `9195df7`.
+
+## 2026-05-08 18:51:47 UTC
+- Verificação operacional via MCP Server do módulo `mois-hotmart` confirmou aplicação ativa, porém coleta autenticada marcada como `COLLECTION_SKIPPED` por ausência de autenticação efetiva no runtime.
+- Ajustado `HotmartCollectorService` para usar fallback explícito de credenciais quando `collector.hotmart.username/password` chegarem em branco via ambiente, priorizando os valores definidos em properties.
+- Adicionadas propriedades `collector.hotmart.username-fallback` e `collector.hotmart.password-fallback` no `application.properties` para garantir uso das credenciais do arquivo quando necessário.
+- Registro criado por solicitação explícita: "Ao final registre o trabalho em /docs/mois/registros.md".

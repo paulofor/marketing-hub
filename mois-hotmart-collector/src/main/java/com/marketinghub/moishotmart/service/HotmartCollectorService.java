@@ -30,13 +30,15 @@ public class HotmartCollectorService {
             @Value("${collector.hotmart.search-url:https://app.hotmart.com/market/search}") String hotmartMarketUrl,
             @Value("${collector.hotmart.session-cookie:}") String hotmartSessionCookie,
             @Value("${collector.hotmart.username:}") String hotmartUsername,
-            @Value("${collector.hotmart.password:}") String hotmartPassword
+            @Value("${collector.hotmart.password:}") String hotmartPassword,
+            @Value("${collector.hotmart.username-fallback:}") String hotmartUsernameFallback,
+            @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback
     ) {
         this.headless = headless;
         this.hotmartMarketUrl = hotmartMarketUrl;
         this.hotmartSessionCookie = hotmartSessionCookie;
-        this.hotmartUsername = hotmartUsername;
-        this.hotmartPassword = hotmartPassword;
+        this.hotmartUsername = pickFirstNonBlank(hotmartUsername, hotmartUsernameFallback);
+        this.hotmartPassword = pickFirstNonBlank(hotmartPassword, hotmartPasswordFallback);
     }
 
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
@@ -103,6 +105,16 @@ public class HotmartCollectorService {
         }
 
         return new HotmartCollectionResponse(status, message, products);
+    }
+
+    private String pickFirstNonBlank(String primary, String fallback) {
+        if (primary != null && !primary.isBlank()) {
+            return primary;
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback;
+        }
+        return "";
     }
 
     private void performLogin(Page page) {

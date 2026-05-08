@@ -65,6 +65,7 @@ Regras fixas da etapa:
   `position`, `top`, `right`, `bottom`, `left`, `z-index`, `display`, `float`, `clear`, `visibility`, `overflow`, `overflow-x`, `overflow-y`, `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`, `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`, `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`, `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`, `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `justify-items`, `place-items`, `place-content`, `transform`, `translate`, `scale`, `rotate`, `transform-origin`.
 - Em uiSizes, para cada `<img>` definido em `uiTags`, especifique obrigatoriamente largura, altura, proporção e comportamento responsivo (desktop/mobile), para manter a composição estaticamente atraente.
 - Em uiSizeTexts você vai definir para cada tag de texto de ( uiTags ) o tamanho do texto em caracteres: máximo e mínimo.
+- Defina obrigatoriamente `bodyAttributes[]` para declarar os atributos do elemento `<body>` (um item por atributo), sempre com `attribute`, `value` e `notes` explicando o objetivo do atributo no layout/conversão.
 - Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
 - Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
 - `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
@@ -110,6 +111,7 @@ Responda em JSON válido e estritamente aderente ao artefato `landingPageWirefra
 Campos obrigatórios:
 - pageGoal
 - variantLayoutId
+- bodyAttributes[] com attribute, value, notes (lista obrigatória de atributos definidos para o `<body>`).
 - sectionOrder[] com sectionId, sectionName, objective, contentType, copySource, uiNotes, uiTags, uiSizes, messageMatchDependency, sectionDependsOn, mobilePriorityScore, dropOffRisk, surfaceSpec, ctaSlot
 - mobilePriorityNotes
 - ctaPlacementNotes

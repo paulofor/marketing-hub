@@ -99,6 +99,16 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
             <p className="text-danger mb-0">Não foi possível carregar os detalhes da execução.</p>
           ) : (
             <div className="d-flex flex-column gap-3">
+              {detailQuery.data.errorMessage ? (
+                <div className="alert alert-danger mb-0" role="alert">
+                  <strong>Motivo da falha:</strong> {detailQuery.data.errorMessage}
+                </div>
+              ) : detailQuery.data.status === "FALHA" ? (
+                <div className="alert alert-warning mb-0" role="alert">
+                  <strong>Motivo da falha:</strong> não informado pelo Worker AI.
+                </div>
+              ) : null}
+
               <div className="row g-3 small">
                 <div className="col-md-6"><strong>Job ID:</strong> {detailQuery.data.idJob}</div>
                 <div className="col-md-6"><strong>Status:</strong> {detailQuery.data.status}</div>

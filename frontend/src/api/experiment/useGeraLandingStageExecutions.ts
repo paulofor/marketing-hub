@@ -23,6 +23,7 @@ export interface GeraLandingStageExecutionDetail extends GeraLandingStageExecuti
   openAiJobId?: string;
   modelResponse?: string;
   provisionalHtml?: string;
+  errorMessage?: string;
   inputTokens?: number;
   outputTokens?: number;
   costUsd?: number;

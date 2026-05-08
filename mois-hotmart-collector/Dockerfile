@@ -6,6 +6,25 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libxkbcommon0 \
+    libgbm1 \
+    libasound2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libcups2 \
+    libpangocairo-1.0-0 \
+    libgtk-3-0 \
+    libdrm2 \
+    fonts-liberation \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/target/mois-hotmart-collector.jar app.jar
 EXPOSE 8096
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

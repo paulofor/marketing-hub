@@ -192,3 +192,10 @@
 - Ajustado `HotmartCollectorService` para usar fallback explícito de credenciais quando `collector.hotmart.username/password` chegarem em branco via ambiente, priorizando os valores definidos em properties.
 - Adicionadas propriedades `collector.hotmart.username-fallback` e `collector.hotmart.password-fallback` no `application.properties` para garantir uso das credenciais do arquivo quando necessário.
 - Registro criado por solicitação explícita: "Ao final registre o trabalho em /docs/mois/registros.md".
+
+## 2026-05-08 22:30:00 UTC
+- Analisada recorrência de `COLLECTION_ERROR` no `mois-hotmart-collector` com mensagem `Falha na coleta Playwright: Failed to create driver` observada nos logs recentes via MCP.
+- Corrigido o runtime Docker do coletor para incluir dependências de sistema exigidas pelo Chromium/Playwright (`libnss3`, `libatk-bridge2.0-0`, `libxkbcommon0`, `libgbm1`, `libasound2`, `libxcomposite1`, `libxdamage1`, `libxfixes3`, `libxrandr2`, `libcups2`, `libpangocairo-1.0-0`, `libgtk-3-0`, `libdrm2`, `fonts-liberation`, `ca-certificates`).
+- Ajustado o launch do Chromium no `HotmartCollectorService` com argumentos `--no-sandbox` e `--disable-dev-shm-usage` para maior estabilidade em container.
+- Validação executada no módulo com `mvn test -q` concluída com sucesso.
+- Registro criado por solicitação explícita: "agora registre o trabalho em /docs/mois/registros.md".

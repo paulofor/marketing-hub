@@ -39,8 +39,12 @@ public class WireframeHtmlGenerator {
 
         html.append("<body").append(renderBodyAttributes(bodyAttributes)).append(">\n");
 
+        int sectionIndex = 0;
+
         for (String tag : tags) {
-            html.append(tag).append("\n");
+            String sectionHtml = fillLoremIpsumPlaceholders(tag);
+            sectionHtml = applySectionPreviewColor(sectionHtml, sectionIndex++);
+            html.append(sectionHtml).append("\n");
         }
 
         html.append("</body>\n");
@@ -52,9 +56,136 @@ public class WireframeHtmlGenerator {
     private static String baseCss() {
         return """
             *{box-sizing:border-box;}
-            body{margin:0;padding:0;}
+            body{margin:0;padding:0;font-family:Arial,sans-serif;line-height:1.4;}
             img{display:block;max-width:100%;}
+            section{border-bottom:1px solid #e5e7eb;}
             """;
+    }
+
+    private static String fillLoremIpsumPlaceholders(String html) {
+        String output = html;
+
+        output = output.replaceAll(
+            "(?is)<(h1|h2|h3)([^>]*)>\\s*</\\1>",
+            "<$1$2>Lorem ipsum dolor sit amet</$1>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<p([^>]*)>\\s*</p>",
+            "<p$1>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<li([^>]*)>\\s*</li>",
+            "<li$1>Lorem ipsum dolor sit amet.</li>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<a([^>]*)>\\s*</a>",
+            "<a$1>Lorem ipsum dolor sit amet</a>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<button([^>]*)>\\s*</button>",
+            "<button$1>Lorem ipsum dolor sit amet</button>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<label([^>]*)>\\s*</label>",
+            "<label$1>Lorem ipsum</label>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<option([^>]*)>\\s*</option>",
+            "<option$1>Lorem ipsum</option>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<span([^>]*)>\\s*</span>",
+            "<span$1>Lorem ipsum</span>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<summary([^>]*)>\\s*</summary>",
+            "<summary$1>Lorem ipsum dolor sit amet</summary>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<strong([^>]*)>\\s*</strong>",
+            "<strong$1>Lorem ipsum</strong>"
+        );
+
+        output = output.replaceAll(
+            "(?is)<small([^>]*)>\\s*</small>",
+            "<small$1>Lorem ipsum</small>"
+        );
+
+        return output;
+    }
+
+    private static String applySectionPreviewColor(String html, int index) {
+        String[] backgrounds = {
+            "#ffffff",
+            "#f8fafc",
+            "#eff6ff",
+            "#f0fdf4",
+            "#fff7ed",
+            "#fdf2f8",
+            "#f5f3ff",
+            "#ecfeff"
+        };
+
+        String[] borders = {
+            "#e5e7eb",
+            "#cbd5e1",
+            "#bfdbfe",
+            "#bbf7d0",
+            "#fed7aa",
+            "#fbcfe8",
+            "#ddd6fe",
+            "#a5f3fc"
+        };
+
+        String background = backgrounds[index % backgrounds.length];
+        String border = borders[index % borders.length];
+
+        String previewStyle = "background:" + background
+            + ";color:#111827"
+            + ";border-bottom:1px solid " + border
+            + ";";
+
+        Pattern sectionPattern = Pattern.compile("<section\\b([^>]*)>", Pattern.CASE_INSENSITIVE);
+        Matcher sectionMatcher = sectionPattern.matcher(html);
+
+        if (!sectionMatcher.find()) {
+            return html;
+        }
+
+        String attrs = sectionMatcher.group(1);
+        String mergedAttrs = mergeStyleAttribute(attrs, previewStyle);
+
+        return sectionMatcher.replaceFirst(
+            Matcher.quoteReplacement("<section" + mergedAttrs + ">")
+        );
+    }
+
+    private static String mergeStyleAttribute(String attrs, String styleToAppend) {
+        Pattern stylePattern = Pattern.compile("\\sstyle=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
+        Matcher styleMatcher = stylePattern.matcher(attrs);
+
+        if (!styleMatcher.find()) {
+            return attrs + " style=\"" + styleToAppend + "\"";
+        }
+
+        String existingStyle = styleMatcher.group(1).trim();
+
+        String mergedStyle = existingStyle.endsWith(";")
+            ? existingStyle + styleToAppend
+            : existingStyle + ";" + styleToAppend;
+
+        return styleMatcher.replaceFirst(
+            " style=\"" + Matcher.quoteReplacement(mergedStyle) + "\""
+        );
     }
 
     private static String extractSectionOrderArray(String json) {
@@ -228,11 +359,17 @@ public class WireframeHtmlGenerator {
             int closeBrace = findMatchingBrace(css, openBrace);
             String declarations = css.substring(openBrace + 1, closeBrace);
 
-            output
-                .append(normalizeSelectorList(selector))
-                .append("{")
-                .append(declarations)
-                .append("}");
+            if (selector.trim().startsWith("@media")) {
+                output.append(selector)
+                    .append("{")
+                    .append(normalizePlainCssSelectors(declarations))
+                    .append("}");
+            } else {
+                output.append(normalizeSelectorList(selector))
+                    .append("{")
+                    .append(declarations)
+                    .append("}");
+            }
 
             index = closeBrace + 1;
         }
@@ -356,11 +493,21 @@ public class WireframeHtmlGenerator {
             return trimmed;
         }
 
-        if (trimmed.startsWith("#") || trimmed.startsWith(".") || trimmed.startsWith("[") || trimmed.startsWith(":")) {
+        if (
+            trimmed.startsWith("#")
+                || trimmed.startsWith(".")
+                || trimmed.startsWith("[")
+                || trimmed.startsWith(":")
+        ) {
             return trimmed;
         }
 
-        if (trimmed.contains(" ") || trimmed.contains(">") || trimmed.contains("+") || trimmed.contains("~")) {
+        if (
+            trimmed.contains(" ")
+                || trimmed.contains(">")
+                || trimmed.contains("+")
+                || trimmed.contains("~")
+        ) {
             return trimmed;
         }
 
@@ -393,7 +540,9 @@ public class WireframeHtmlGenerator {
             || selector.equals("li")
             || selector.equals("span")
             || selector.equals("summary")
-            || selector.equals("details");
+            || selector.equals("details")
+            || selector.equals("strong")
+            || selector.equals("small");
     }
 
     private static String renderBodyAttributes(List<BodyAttribute> attributes) {

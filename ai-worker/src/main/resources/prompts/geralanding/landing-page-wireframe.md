@@ -88,6 +88,10 @@ Responda em JSON válido e estritamente aderente ao artefato `landingPageWirefra
 ### Responsabilidade canônica de imagem nesta etapa
 
 - Defina no wireframe todos os itens estruturais de imagem por seção (ex.: `sectionId`, `imageBindingKey`, objetivo visual e restrições de composição/layout).
+- A página deve ser visualmente rica: planeje imagens em alta cobertura de seções, priorizando hero, dor, mecanismo, prova, oferta e CTA com contexto visual claro (evitar blocos longos sem apoio visual).
+- Cada seção com potencial de conversão deve explicitar imagem conectada ao eixo **Dor → Resultado** do nicho (mostrar problema real, transformação esperada e evidência prática da melhora).
+- Em cada objetivo visual, descreva a cena de forma concreta para refletir a dor principal do nicho e o resultado desejado (antes/depois, contraste de estado, ganho percebido, redução de esforço).
+- Variar o tipo de imagem entre seções (ex.: contexto da dor, demonstração de mecanismo, prova social/documental, visual da oferta) para evitar repetição e aumentar percepção de valor.
 - O estágio `landing-page-image-planning` **não pode redefinir** esses campos estruturais; ele apenas consome o que veio do wireframe e gera o prompt final para o modelo de imagem.
 Campos obrigatórios:
 - pageGoal

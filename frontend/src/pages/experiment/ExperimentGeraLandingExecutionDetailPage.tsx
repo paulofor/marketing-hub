@@ -4,6 +4,7 @@ import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useGeraLandingStageExecutionDetail } from "../../api/experiment/useGeraLandingStageExecutions";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import MarkdownContentViewer from "../../components/MarkdownContentViewer";
+import { useState } from "react";
 
 function formatDateTime(value?: string) {
   if (!value) return "—";
@@ -23,6 +24,7 @@ function extractModelFromRequestBody(raw?: string) {
 }
 
 export default function ExperimentGeraLandingExecutionDetailPage() {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const { id: experimentId, jobId } = useParams();
   const detailQuery = useGeraLandingStageExecutionDetail(experimentId, jobId);
   const modelUsed = extractModelFromRequestBody(detailQuery.data?.openAiRequestBody);
@@ -31,6 +33,30 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
     ? `data:text/html;charset=utf-8,${encodeURIComponent(provisionalHtml)}`
     : "";
   const provisionalHtmlFileName = `provisional-html-${detailQuery.data?.idJob ?? "geralanding"}.html`;
+
+  const handleCopyJson = async (label: string, value?: string | null) => {
+    if (!value) return;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = value;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedField(label);
+      window.setTimeout(() => setCopiedField((current) => (current === label ? null : current)), 2000);
+    } catch {
+      setCopiedField(null);
+    }
+  };
 
   return (
     <div className="d-flex flex-column gap-3">
@@ -80,19 +106,55 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               </div>
 
               <div>
-                <h6>Prompt content</h6>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <h6 className="mb-0">Prompt content</h6>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => handleCopyJson("promptContent", detailQuery.data.promptContent)}
+                  >
+                    {copiedField === "promptContent" ? "Copiado!" : "Copiar JSON"}
+                  </button>
+                </div>
                 <CollapsibleJsonViewer content={detailQuery.data.promptContent} />
               </div>
               <div>
-                <h6>Prompt</h6>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <h6 className="mb-0">Prompt</h6>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => handleCopyJson("prompt", detailQuery.data.prompt)}
+                  >
+                    {copiedField === "prompt" ? "Copiado!" : "Copiar JSON"}
+                  </button>
+                </div>
                 <CollapsibleJsonViewer content={detailQuery.data.prompt} />
               </div>
               <div>
-                <h6>OpenAI request body (prompt cru enviado)</h6>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <h6 className="mb-0">OpenAI request body (prompt cru enviado)</h6>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => handleCopyJson("openAiRequestBody", detailQuery.data.openAiRequestBody)}
+                  >
+                    {copiedField === "openAiRequestBody" ? "Copiado!" : "Copiar JSON"}
+                  </button>
+                </div>
                 <CollapsibleJsonViewer content={detailQuery.data.openAiRequestBody} />
               </div>
               <div>
-                <h6>Schema JSON enviado para o modelo</h6>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <h6 className="mb-0">Schema JSON enviado para o modelo</h6>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => handleCopyJson("schemaJson", detailQuery.data.schemaJson)}
+                  >
+                    {copiedField === "schemaJson" ? "Copiado!" : "Copiar JSON"}
+                  </button>
+                </div>
                 <CollapsibleJsonViewer content={detailQuery.data.schemaJson} />
               </div>
               <div>
@@ -100,7 +162,16 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <MarkdownContentViewer content={detailQuery.data.promptMarkdownContent} />
               </div>
               <div>
-                <h6>Model response</h6>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <h6 className="mb-0">Model response</h6>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => handleCopyJson("modelResponse", detailQuery.data.modelResponse)}
+                  >
+                    {copiedField === "modelResponse" ? "Copiado!" : "Copiar JSON"}
+                  </button>
+                </div>
                 <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
               </div>
               <div>

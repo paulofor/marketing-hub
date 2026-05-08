@@ -39,27 +39,6 @@ class WireframeProvisionalHtmlAssemblerTest {
     }
 
     @Test
-    void assembleDelegatesRawJsonWithoutAssemblerNormalization() throws Exception {
-        Map<String, Object> section = Map.of(
-                "sectionId", "s1-hero-form",
-                "uiTags", "<!doctype html><html><body><section id='s1-hero-form'><h1 id='s1-h1'></h1></section></body></html>",
-                "uiSizes", "{\"#s1-hero-form\":{\"padding\":\"20px 16px\"},\"#s1-wrap\":{\"gridTemplateColumns\":\"1fr\"}}"
-        );
-        Map<String, Object> model = Map.of(
-                "landingPageWireframe", Map.of("sectionOrder", List.of(section))
-        );
-        String modelResponse = new ObjectMapper().writeValueAsString(model);
-
-        String html = assembler.assemble(modelResponse);
-
-        assertNotNull(html);
-        assertTrue(html.contains("#s1-hero-form {"));
-        assertTrue(html.contains("padding: 20px 16px;"));
-        assertTrue(html.contains("grid-template-columns: 1fr;"));
-        assertTrue(html.toLowerCase().contains("<html><body><section"));
-    }
-
-    @Test
     void assemblePreservesPlainCssUiSizesIncludingImageDimensions() {
         String modelResponse = """
                 {

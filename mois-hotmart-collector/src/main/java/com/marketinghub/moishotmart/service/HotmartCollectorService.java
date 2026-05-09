@@ -13,11 +13,14 @@ import com.microsoft.playwright.options.WaitUntilState;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class HotmartCollectorService {
+    private static final Logger log = LoggerFactory.getLogger(HotmartCollectorService.class);
 
     private final boolean headless;
     private final String hotmartMarketUrl;
@@ -52,6 +55,7 @@ public class HotmartCollectorService {
                 && hotmartPassword != null && !hotmartPassword.isBlank();
 
         if (!hasSessionCookie && !hasCredentials) {
+            log.warn("Coleta Hotmart ignorada: autenticação ausente (sem cookie de sessão e sem credenciais).");
             return new HotmartCollectionResponse(
                     "COLLECTION_SKIPPED",
                     "Autenticação Hotmart ausente. Configure collector.hotmart.session-cookie "
@@ -60,23 +64,39 @@ public class HotmartCollectorService {
             );
         }
 
+        log.info(
+                "Iniciando coleta Hotmart com Playwright. headless={}, maxProductsSolicitado={}, maxProductsAplicado={}, hasSessionCookie={}, hasCredentials={}",
+                headless,
+                request.maxProducts(),
+                boundedMax,
+                hasSessionCookie,
+                hasCredentials
+        );
+
         try (Playwright playwright = Playwright.create()) {
+            String browserPath = playwright.chromium().executablePath();
+            List<String> launchArgs = List.of("--no-sandbox", "--disable-dev-shm-usage");
+            log.info("Playwright inicializado. Chromium executablePath='{}', launchArgs={}", browserPath, launchArgs);
+
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                     .setHeadless(headless)
-                    .setArgs(List.of("--no-sandbox", "--disable-dev-shm-usage")));
+                    .setArgs(launchArgs));
             BrowserContext context = browser.newContext();
             Page page = context.newPage();
 
             if (hasSessionCookie) {
+                log.info("Usando autenticação por cookie de sessão Hotmart.");
                 context.addCookies(List.of(new Cookie("hotmart_session", hotmartSessionCookie)
                         .setDomain(".hotmart.com")
                         .setPath("/")
                         .setHttpOnly(true)
                         .setSecure(true)));
             } else {
+                log.info("Usando autenticação por login/senha Hotmart.");
                 performLogin(page);
             }
 
+            log.info("Navegando para URL de mercado Hotmart: {}", hotmartMarketUrl);
             page.navigate(hotmartMarketUrl, new Page.NavigateOptions()
                     .setTimeout(60_000)
                     .setWaitUntil(WaitUntilState.NETWORKIDLE));
@@ -84,6 +104,7 @@ public class HotmartCollectorService {
 
             int cardsCount = page.locator("a[href*='/market/products/']").count();
             int maxToRead = Math.min(cardsCount, boundedMax);
+            log.info("Página carregada. cardsEncontrados={}, cardsProcessados={}", cardsCount, maxToRead);
             for (int i = 0; i < maxToRead; i++) {
                 String title = page.locator("a[href*='/market/products/']").nth(i).innerText();
                 String detailsUrl = page.locator("a[href*='/market/products/']").nth(i).getAttribute("href");
@@ -99,11 +120,20 @@ public class HotmartCollectorService {
                 ));
             }
 
+            log.info("Coleta Hotmart finalizada com sucesso. produtosColetados={}", products.size());
             context.close();
             browser.close();
         } catch (Exception ex) {
             status = "COLLECTION_ERROR";
             message = "Falha na coleta Playwright: " + ex.getMessage();
+            log.error(
+                    "Erro na coleta Hotmart via Playwright. headless={}, hasSessionCookie={}, hasCredentials={}, marketUrl='{}'",
+                    headless,
+                    hasSessionCookie,
+                    hasCredentials,
+                    hotmartMarketUrl,
+                    ex
+            );
         }
 
         return new HotmartCollectionResponse(status, message, products);
@@ -120,6 +150,8 @@ public class HotmartCollectorService {
     }
 
     private void performLogin(Page page) {
+        log.info("Iniciando login Hotmart por credenciais (username preenchido={}).",
+                hotmartUsername != null && !hotmartUsername.isBlank());
         page.navigate("https://app.hotmart.com/login", new Page.NavigateOptions()
                 .setTimeout(60_000)
                 .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
@@ -128,5 +160,6 @@ public class HotmartCollectorService {
         page.locator("input[type='password'], input[name='password']").first().fill(hotmartPassword);
         page.locator("button[type='submit']").first().click();
         page.waitForTimeout(3_000);
+        log.info("Login Hotmart submetido. URL atual após espera='{}'.", page.url());
     }
 }

@@ -44,6 +44,7 @@ public class WireframeHtmlGenerator {
         for (String tag : tags) {
             String sectionHtml = fillLoremIpsumPlaceholders(tag);
             sectionHtml = applySectionPreviewColor(sectionHtml, sectionIndex++);
+            sectionHtml = applyFormPreviewColor(sectionHtml);
             html.append(sectionHtml).append("\n");
         }
 
@@ -124,33 +125,13 @@ public class WireframeHtmlGenerator {
     }
 
     private static String applySectionPreviewColor(String html, int index) {
-        String[] backgrounds = {
-            "#ffffff",
-            "#f8fafc",
-            "#eff6ff",
-            "#f0fdf4",
-            "#fff7ed",
-            "#fdf2f8",
-            "#f5f3ff",
-            "#ecfeff"
-        };
-
-        String[] borders = {
-            "#e5e7eb",
-            "#cbd5e1",
-            "#bfdbfe",
-            "#bbf7d0",
-            "#fed7aa",
-            "#fbcfe8",
-            "#ddd6fe",
-            "#a5f3fc"
-        };
-
-        String background = backgrounds[index % backgrounds.length];
-        String border = borders[index % borders.length];
+        boolean lightSurface = index % 2 == 0;
+        String background = lightSurface ? "#ffffff" : "#111111";
+        String textColor = lightSurface ? "#111111" : "#ffffff";
+        String border = lightSurface ? "#e5e7eb" : "#374151";
 
         String previewStyle = "background:" + background
-            + ";color:#111827"
+            + ";color:" + textColor
             + ";border-bottom:1px solid " + border
             + ";";
 
@@ -166,6 +147,23 @@ public class WireframeHtmlGenerator {
 
         return sectionMatcher.replaceFirst(
             Matcher.quoteReplacement("<section" + mergedAttrs + ">")
+        );
+    }
+
+    private static String applyFormPreviewColor(String html) {
+        Pattern formPattern = Pattern.compile("<form\\b([^>]*)>", Pattern.CASE_INSENSITIVE);
+        Matcher formMatcher = formPattern.matcher(html);
+
+        if (!formMatcher.find()) {
+            return html;
+        }
+
+        String attrs = formMatcher.group(1);
+        String formStyle = "background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:12px;padding:16px;";
+        String mergedAttrs = mergeStyleAttribute(attrs, formStyle);
+
+        return formMatcher.replaceFirst(
+            Matcher.quoteReplacement("<form" + mergedAttrs + ">")
         );
     }
 

@@ -38,4 +38,28 @@ class WireframeHtmlGeneratorTest {
         assertTrue(html.contains("#hero h1 {"));
         assertTrue(html.contains("font-size: 32px;"));
     }
+
+    @Test
+    void shouldAlternateOnlyTwoSectionColorsAndHighlightFormInLightGreen() {
+        String json = """
+            {
+              "sectionOrder": [
+                {
+                  "uiTags": "<section id=\\\"s1\\\"><h1></h1><form id=\\\"f1\\\"></form></section>"
+                },
+                {
+                  "uiTags": "<section id=\\\"s2\\\"><h2></h2></section>"
+                }
+              ]
+            }
+            """;
+
+        WireframeHtmlGenerator generator = new WireframeHtmlGenerator();
+        String html = generator.generateFromJson(json);
+
+        assertNotNull(html);
+        assertTrue(html.contains("background:#ffffff;color:#111111"));
+        assertTrue(html.contains("background:#111111;color:#ffffff"));
+        assertTrue(html.contains("form id=\"f1\" style=\"background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:12px;padding:16px;\""));
+    }
 }

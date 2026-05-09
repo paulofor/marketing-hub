@@ -12,11 +12,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/geralanding")
-public class GeraLandingWireframeController {
+public class GeraLandingContoller {
 
   private final GeraLandingStageExecutionService executionService;
 
-  public GeraLandingWireframeController(GeraLandingStageExecutionService executionService) {
+  public GeraLandingContoller(GeraLandingStageExecutionService executionService) {
     this.executionService = executionService;
   }
 
@@ -40,7 +40,13 @@ public class GeraLandingWireframeController {
 
   @PostMapping("/wireframe/start")
   public ResponseEntity<GeraLandingStartResponse> startWireframe(@PathVariable Long experimentId) {
-    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId);
+    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-wireframe");
+    return ResponseEntity.accepted().body(response);
+  }
+
+  @PostMapping("/copy/start")
+  public ResponseEntity<GeraLandingStartResponse> startCopy(@PathVariable Long experimentId) {
+    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-copy");
     return ResponseEntity.accepted().body(response);
   }
 }

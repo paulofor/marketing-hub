@@ -140,7 +140,10 @@ export default function ExperimentDetailPage() {
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
+  const [isStartingCopy, setIsStartingCopy] = useState(false);
   const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
+    useState<GeraLandingStageExecutionItem | null>(null);
+  const [optimisticCopyExecution, setOptimisticCopyExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const hadRunningGeraLandingExecutionRef = useRef(false);
   const {
@@ -153,6 +156,16 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingCompletedGeraLandingExecutions,
     refetch: refetchCompletedGeraLandingExecutions,
   } = useGeraLandingStageExecutions(expId, "landing-page-wireframe", true);
+  const {
+    data: pendingGeraLandingCopyExecutions,
+    isLoading: isLoadingPendingGeraLandingCopyExecutions,
+    refetch: refetchPendingGeraLandingCopyExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-copy", false);
+  const {
+    data: completedGeraLandingCopyExecutions,
+    isLoading: isLoadingCompletedGeraLandingCopyExecutions,
+    refetch: refetchCompletedGeraLandingCopyExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-copy", true);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -343,6 +356,39 @@ export default function ExperimentDetailPage() {
     }
   };
 
+
+  const handleStartCopy = async () => {
+    try {
+      setIsStartingCopy(true);
+      const { data: startResponse } = await axios.post<{
+        idJob: string;
+        status: string;
+      }>(`/api/experiments/${expId}/geralanding/copy/start`);
+      const localExecutionRequestedAt = new Date().toISOString();
+      setOptimisticCopyExecution({
+        idJob: startResponse.idJob,
+        status: startResponse.status,
+        executionRequestedAt: localExecutionRequestedAt,
+      });
+      toast.success(
+        `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
+      );
+      await Promise.all([
+        refetchPendingGeraLandingCopyExecutions(),
+        refetchCompletedGeraLandingCopyExecutions(),
+      ]);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível iniciar o Copy.")
+        : "Não foi possível iniciar o Copy.";
+      toast.error(message);
+    } finally {
+      setIsStartingCopy(false);
+    }
+  };
+
   const isRunningExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
     return ["AGUARDANDO_RETORNO_OPENAI", "EM_PROCESSAMENTO", "PROCESSING", "RUNNING", "IN_PROGRESS", "PENDING", "INICIADO", "STARTED"].includes(
@@ -417,7 +463,66 @@ export default function ExperimentDetailPage() {
       allExecutions.findIndex((candidate) => candidate.idJob === execution.idJob) === index,
     );
   }, [completedGeraLandingExecutions, pendingGeraLandingExecutions]);
-  const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
+  
+  const mergedPendingGeraLandingCopyExecutions = useMemo(() => {
+    if (!optimisticCopyExecution) {
+      return pendingGeraLandingCopyExecutions ?? [];
+    }
+    const alreadyPresent = (pendingGeraLandingCopyExecutions ?? []).some(
+      (execution) => execution.idJob === optimisticCopyExecution.idJob,
+    );
+    if (alreadyPresent) {
+      return pendingGeraLandingCopyExecutions ?? [];
+    }
+    return [optimisticCopyExecution, ...(pendingGeraLandingCopyExecutions ?? [])];
+  }, [optimisticCopyExecution, pendingGeraLandingCopyExecutions]);
+
+  useEffect(() => {
+    if (!optimisticCopyExecution) {
+      return;
+    }
+    const persistedExecution = (pendingGeraLandingCopyExecutions ?? []).some(
+      (execution) => execution.idJob === optimisticCopyExecution.idJob,
+    );
+    if (persistedExecution) {
+      setOptimisticCopyExecution(null);
+    }
+  }, [optimisticCopyExecution, pendingGeraLandingCopyExecutions]);
+
+  const hasRunningGeraLandingCopyExecution = mergedPendingGeraLandingCopyExecutions.some(
+    (execution) => isRunningExecution(execution.status),
+  );
+  const runningGeraLandingCopyExecutions = useMemo(
+    () =>
+      mergedPendingGeraLandingCopyExecutions.filter((execution) =>
+        isRunningExecution(execution.status),
+      ),
+    [mergedPendingGeraLandingCopyExecutions],
+  );
+  const historyGeraLandingCopyExecutions = useMemo(() => {
+    const completedHistory = (completedGeraLandingCopyExecutions ?? []).filter(
+      (execution) => isCompletedExecution(execution.status) || hasFailedExecution(execution.status),
+    );
+    const failedFromPending = (pendingGeraLandingCopyExecutions ?? []).filter((execution) =>
+      hasFailedExecution(execution.status),
+    );
+
+    const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
+      (leftExecution, rightExecution) => {
+        const leftTimestamp = Date.parse(leftExecution.executionRequestedAt ?? "");
+        const rightTimestamp = Date.parse(rightExecution.executionRequestedAt ?? "");
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp) ? 0 : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp) ? 0 : rightTimestamp;
+
+        return normalizedRightTimestamp - normalizedLeftTimestamp;
+      },
+    );
+
+    return sortedExecutions.filter((execution, index, allExecutions) =>
+      allExecutions.findIndex((candidate) => candidate.idJob === execution.idJob) === index,
+    );
+  }, [completedGeraLandingCopyExecutions, pendingGeraLandingCopyExecutions]);
+const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
     isRunningExecution(execution.status),
   )?.idJob;
 
@@ -1688,6 +1793,75 @@ export default function ExperimentDetailPage() {
                                     {execution.idJob}
                                   </Link>
                                 </td>
+                                <td>{execution.status}</td>
+                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                                <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-body d-flex flex-column gap-3">
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                  <h5 className="card-title mb-0">Gera Copy</h5>
+                </div>
+                <div className="d-flex flex-column gap-3">
+                  <button
+                    type="button"
+                    className="btn btn-primary align-self-start"
+                    onClick={handleStartCopy}
+                    disabled={isStartingCopy || hasRunningGeraLandingCopyExecution}
+                  >
+                    {isStartingCopy ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Iniciar"
+                    )}
+                  </button>
+                  {isLoadingPendingGeraLandingCopyExecutions ? (
+                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
+                  ) : runningGeraLandingCopyExecutions.length === 0 ? (
+                    <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th></tr></thead>
+                        <tbody>
+                          {runningGeraLandingCopyExecutions.map((execution) => (
+                            <tr key={execution.idJob}>
+                              <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
+                              <td>{execution.status}</td>
+                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções</h6>
+                    {isLoadingCompletedGeraLandingCopyExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : historyGeraLandingCopyExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead>
+                          <tbody>
+                            {historyGeraLandingCopyExecutions.map((execution) => (
+                              <tr key={execution.idJob}>
+                                <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
                                 <td>{execution.status}</td>
                                 <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
                                 <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>

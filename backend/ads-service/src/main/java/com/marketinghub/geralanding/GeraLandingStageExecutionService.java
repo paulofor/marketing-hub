@@ -37,7 +37,7 @@ public class GeraLandingStageExecutionService {
     }
 
     @Transactional
-    public GeraLandingStartResponse registerInitialExecution(Long experimentId) {
+    public GeraLandingStartResponse registerInitialExecution(Long experimentId, String stageCode) {
         Instant now = Instant.now();
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
@@ -45,7 +45,7 @@ public class GeraLandingStageExecutionService {
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(experiment.getId())
                 .experiment(experiment)
-                .stageCode("landing-page-wireframe")
+                .stageCode(stageCode)
                 .executionRequestedAt(now)
                 .createdAt(now)
                 .promptTemplateId("manual/start")

@@ -16,7 +16,7 @@ public class WireframeHtmlGenerator {
 
         String sectionOrder = extractSectionOrderArray(json);
         List<String> tags = extractStringFieldValues(sectionOrder, "uiTags");
-        List<String> sizeBlocks = extractStringFieldValues(sectionOrder, "uiSizes");
+        List<String> sizeBlocks = extractFieldRawValues(sectionOrder, "uiSizes");
         List<BodyAttribute> bodyAttributes = extractBodyAttributes(json);
 
         StringBuilder html = new StringBuilder();
@@ -237,6 +237,65 @@ public class WireframeHtmlGenerator {
 
         while (matcher.find()) {
             values.add(unescapeJson(matcher.group(1)));
+        }
+
+        return values;
+    }
+
+
+    private static List<String> extractFieldRawValues(String text, String field) {
+        List<String> values = new ArrayList<>();
+        String key = "\"" + field + "\"";
+
+        int searchFrom = 0;
+
+        while (true) {
+            int keyIndex = text.indexOf(key, searchFrom);
+
+            if (keyIndex < 0) {
+                break;
+            }
+
+            int colonIndex = text.indexOf(':', keyIndex + key.length());
+
+            if (colonIndex < 0) {
+                break;
+            }
+
+            int valueStart = colonIndex + 1;
+
+            while (valueStart < text.length() && Character.isWhitespace(text.charAt(valueStart))) {
+                valueStart++;
+            }
+
+            if (valueStart >= text.length()) {
+                break;
+            }
+
+            char start = text.charAt(valueStart);
+
+            if (start == '"') {
+                int valueEnd = findStringEnd(text, valueStart + 1);
+                values.add(unescapeJson(text.substring(valueStart + 1, valueEnd)));
+                searchFrom = valueEnd + 1;
+                continue;
+            }
+
+            if (start == '{' || start == '[') {
+                int valueEnd = start == '{' ? findMatchingBrace(text, valueStart) : findMatchingBracket(text, valueStart);
+                values.add(text.substring(valueStart, valueEnd + 1));
+                searchFrom = valueEnd + 1;
+                continue;
+            }
+
+            int valueEnd = valueStart;
+
+            while (valueEnd < text.length() && text.charAt(valueEnd) != ',' && text.charAt(valueEnd) != '}') {
+                valueEnd++;
+            }
+
+            values.add(text.substring(valueStart, valueEnd).trim());
+            searchFrom = valueEnd + 1;
         }
 
         return values;
@@ -585,6 +644,33 @@ public class WireframeHtmlGenerator {
         }
 
         throw new IllegalArgumentException("String inválida.");
+    }
+
+    private static int findMatchingBracket(String value, int open) {
+        int depth = 0;
+        boolean inString = false;
+
+        for (int i = open; i < value.length(); i++) {
+            char c = value.charAt(i);
+
+            if (c == '"' && !isEscaped(value, i)) {
+                inString = !inString;
+            }
+
+            if (!inString) {
+                if (c == '[') {
+                    depth++;
+                } else if (c == ']') {
+                    depth--;
+
+                    if (depth == 0) {
+                        return i;
+                    }
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("Array inválido.");
     }
 
     private static int findMatchingBrace(String value, int open) {

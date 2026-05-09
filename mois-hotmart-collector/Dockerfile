@@ -8,6 +8,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
     libnss3 \
     libatk-bridge2.0-0 \
     libxkbcommon0 \
@@ -27,12 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=build /app/target/mois-hotmart-collector.jar app.jar
 
-# Pre-instala Chromium do Playwright no build para evitar download em runtime
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN mkdir -p /ms-playwright \
-    && java -cp /app/app.jar com.microsoft.playwright.CLI install chromium \
-    && test -d /ms-playwright \
-    && find /ms-playwright -maxdepth 4 -type f \( -name chrome -o -name chromium \)
+# Força uso de Chromium do sistema para ambiente Linux headless sem GUI
+ENV COLLECTOR_PLAYWRIGHT_EXECUTABLE_PATH=/usr/bin/chromium
 
 EXPOSE 8096
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

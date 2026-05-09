@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,24 @@ public class GeraLandingService {
     private static final String AD_IMAGE_BRIEFING = "adImageBriefing";
     private static final String LANDING_PAGE_WIREFRAME = "landingPageWireframe";
     private static final String EXPERIMENT_METADATA = "experimentMetadata";
+    private static final List<String> HYPOTHESIS_PIPELINE_KEYS = List.of(
+            "NICHE_NAME",
+            "PAIN_JSON",
+            "RESULT_JSON",
+            "MECHANISM_JSON",
+            "PROOF_JSON",
+            "OFFER_JSON");
+    private static final List<String> EXPERIMENT_PIPELINE_KEYS = List.of(
+            "campaignAngle",
+            "adCopy",
+            "adImageBriefing",
+            "landingPageWireframe",
+            "landingCopy",
+            "landingPromptImagem",
+            "listaImagem",
+            "landingPresetDesign",
+            "landingHtml",
+            "experimentMetadata");
 
     private final ObjectMapper objectMapper;
     private final GeraLandingBackendClient backendClient;
@@ -79,7 +98,7 @@ public class GeraLandingService {
         String template = carregarPromptBase(etapa.trim() + ".md");
         Map<String, Object> dadosPayload = obterDadosDoJob(context);
         String resolvedPrompt = resolverPlaceholders(template, dadosPayload);
-        return formatarPromptUsuario(etapa, resolvedPrompt);
+        return formatarPromptUsuario(etapa, resolvedPrompt, dadosPayload);
     }
 
     public String montarERegistrarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
@@ -194,16 +213,42 @@ public class GeraLandingService {
 
 
 
-    private String formatarPromptUsuario(String etapa, String promptResolvido) {
+    private String formatarPromptUsuario(String etapa, String promptResolvido, Map<String, Object> dadosPayload) {
         String etapaNormalizada = StringUtils.hasText(etapa) ? etapa.trim() : "desconhecida";
         String promptLimpo = promptResolvido == null ? "" : promptResolvido.trim();
+        String contextoCanonico = montarContextoCanonicoDisponivel(dadosPayload);
         return """
                 # Tarefa
                 Você deve executar a etapa `%s` do pipeline de landing page e responder estritamente no formato solicitado.
 
                 # Instruções do usuário
                 %s
-                """.formatted(etapaNormalizada, promptLimpo);
+
+                # Contexto canônico disponível para montagem do prompt final
+                %s
+                """.formatted(etapaNormalizada, promptLimpo, contextoCanonico);
+    }
+
+    private String montarContextoCanonicoDisponivel(Map<String, Object> dadosPayload) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("## Pipeline de hipótese\n");
+        appendPipelineValues(sb, HYPOTHESIS_PIPELINE_KEYS, dadosPayload);
+        sb.append("\n## Pipeline de experimento\n");
+        appendPipelineValues(sb, EXPERIMENT_PIPELINE_KEYS, dadosPayload);
+        return sb.toString().trim();
+    }
+
+    private void appendPipelineValues(StringBuilder sb, List<String> keys, Map<String, Object> dadosPayload) {
+        for (String key : keys) {
+            sb.append("- ").append(key).append(": ");
+            Object value = dadosPayload != null ? dadosPayload.get(key) : null;
+            try {
+                sb.append(renderPlaceholderValue(value));
+            } catch (JsonProcessingException ex) {
+                sb.append(String.valueOf(value));
+            }
+            sb.append("\n");
+        }
     }
     private String carregarPromptBase(String fileName) throws IOException {
         ClassPathResource resource = new ClassPathResource(GERALANDING_PROMPT_BASE_PATH + fileName);

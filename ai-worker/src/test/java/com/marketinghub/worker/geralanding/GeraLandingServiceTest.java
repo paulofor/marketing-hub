@@ -49,6 +49,53 @@ class GeraLandingServiceTest {
     }
 
     @Test
+    void deveDisponibilizarTodosOsItensCanonicosDosPipelinesNoPromptFinal() throws Exception {
+        GeraLandingPromptContext context = new GeraLandingPromptContext(
+                10L,
+                "id-job-original",
+                "landing-page-wireframe",
+                Map.of(
+                        "NICHE_NAME", "E-commerce",
+                        "PAIN_JSON", Map.of("title", "Baixa conversão"),
+                        "RESULT_JSON", Map.of("title", "Mais vendas"),
+                        "MECHANISM_JSON", Map.of("title", "Mecanismo validado"),
+                        "PROOF_JSON", Map.of("title", "Prova objetiva"),
+                        "OFFER_JSON", Map.of("title", "Oferta principal"),
+                        "campaignAngle", Map.of("hook", "Ganhe tempo"),
+                        "adCopy", Map.of("headline", "Resultado claro"),
+                        "adImageBriefing", Map.of("scene", "Pessoa trabalhando"),
+                        "landingPageWireframe", Map.of("pageGoal", "capturar lead"),
+                        "landingCopy", Map.of("primaryCTA", "Quero começar"),
+                        "landingPromptImagem", "Prompt imagem",
+                        "listaImagem", Map.of("items", java.util.List.of("img1", "img2")),
+                        "landingPresetDesign", Map.of("palette", "neutral"),
+                        "landingHtml", "<html></html>",
+                        "experimentMetadata", Map.of("experimentId", 10)));
+
+        String prompt = service.montarPromptEtapa(context, "landing-page-wireframe");
+
+        assertThat(prompt)
+                .contains("## Pipeline de hipótese")
+                .contains("- NICHE_NAME: E-commerce")
+                .contains("- PAIN_JSON:")
+                .contains("- RESULT_JSON:")
+                .contains("- MECHANISM_JSON:")
+                .contains("- PROOF_JSON:")
+                .contains("- OFFER_JSON:")
+                .contains("## Pipeline de experimento")
+                .contains("- campaignAngle:")
+                .contains("- adCopy:")
+                .contains("- adImageBriefing:")
+                .contains("- landingPageWireframe:")
+                .contains("- landingCopy:")
+                .contains("- landingPromptImagem: Prompt imagem")
+                .contains("- listaImagem:")
+                .contains("- landingPresetDesign:")
+                .contains("- landingHtml: <html></html>")
+                .contains("- experimentMetadata:");
+    }
+
+    @Test
     void deveRegistrarPromptMontadoComChaveDeRastreio() throws Exception {
         GeraLandingPromptContext context = novoContexto();
 

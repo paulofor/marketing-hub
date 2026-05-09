@@ -199,3 +199,15 @@
 - Ajustado o launch do Chromium no `HotmartCollectorService` com argumentos `--no-sandbox` e `--disable-dev-shm-usage` para maior estabilidade em container.
 - Validação executada no módulo com `mvn test -q` concluída com sucesso.
 - Registro criado por solicitação explícita: "agora registre o trabalho em /docs/mois/registros.md".
+
+## 2026-05-09 01:10:00 UTC
+- Atendendo à solicitação de aumentar observabilidade do erro `Falha na coleta Playwright: Failed to create driver` no `mois-hotmart-collector`, foram adicionados logs diagnósticos no `HotmartCollectorService`.
+- Novos logs cobrem:
+  - contexto de início da coleta (`headless`, limites solicitado/aplicado, presença de cookie/senha);
+  - bootstrap do Playwright com `chromium executablePath` e argumentos de launch;
+  - estratégia de autenticação usada (cookie de sessão vs login/senha);
+  - navegação para URL alvo, quantidade de cards encontrados/processados e total coletado;
+  - erro com contexto completo e stack trace no bloco de exceção.
+- Fluxo de login também passou a registrar início e URL resultante após submissão, para facilitar triagem de falhas de autenticação.
+- Validação executada: `mvn -q test` no módulo `mois-hotmart-collector` com sucesso.
+- Registro criado por solicitação explícita: "registre em /docs/mois/registros.md".

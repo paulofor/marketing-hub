@@ -43,7 +43,7 @@ class GeraLandingExecutionServiceTest {
         verify(backendClient).receivePrompt(any(), any(), any(), any(), any(), any(), any(), any());
         verify(backendClient).receiveDispatch(any(), any(), any(), any());
         verify(backendClient).receiveResult(any(), any(), any(), any());
-        verify(backendClient, never()).receiveFailure(any(), any(), any(), any());
+        verify(backendClient, never()).receiveFailure(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -70,7 +70,7 @@ class GeraLandingExecutionServiceTest {
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"));
         service.processPendingExecutions();
 
-        verify(backendClient).receiveFailure(any(), any(), any(), any());
+        verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
         verify(backendClient, never()).receiveResult(any(), any(), any(), any());
     }
 }

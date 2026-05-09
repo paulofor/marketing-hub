@@ -16,7 +16,7 @@ public class WireframeProvisionalHtmlAssembler {
     }
 
     @SuppressWarnings("unchecked")
-    public String assemble(String modelResponse) {
+    public String assemble(String modelResponse, String jobId) {
         if (!StringUtils.hasText(modelResponse)) {
             return null;
         }
@@ -26,9 +26,27 @@ public class WireframeProvisionalHtmlAssembler {
                     ? (Map<String, Object>) nested
                     : root;
             WireframeHtmlGenerator generator = new WireframeHtmlGenerator();
-            return generator.generateFromJson(objectMapper.writeValueAsString(wireframe));
+            String html = generator.generateFromJson(objectMapper.writeValueAsString(wireframe));
+            return appendJobIdCommentBeforeHead(html, jobId);
         } catch (Exception e) {
             return null;
         }
     }
+
+    public String assemble(String modelResponse) {
+        return assemble(modelResponse, null);
+    }
+
+    private String appendJobIdCommentBeforeHead(String html, String jobId) {
+        if (!StringUtils.hasText(html) || !StringUtils.hasText(jobId)) {
+            return html;
+        }
+        String comment = "<!-- jobId = " + jobId + " -->\n";
+        int headIndex = html.toLowerCase().indexOf("<head>");
+        if (headIndex < 0) {
+            return comment + html;
+        }
+        return html.substring(0, headIndex) + comment + html.substring(headIndex);
+    }
+
 }

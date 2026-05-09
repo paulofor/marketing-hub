@@ -75,7 +75,8 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 | `openai_job_id` | `VARCHAR(120)` | Não | ID técnico da resposta/job OpenAI quando disponível. |
 | `model_response` | `LONGTEXT` | Não | Conteúdo final retornado pelo modelo. |
 | `provisional_html` | `LONGTEXT` | Não | HTML provisório (informado ou derivado do model response). |
-| `error_message` | `LONGTEXT` | Não | Motivo textual de falha quando houver. |
+| `error_message` | `LONGTEXT` | Não | Motivo textual resumido de falha quando houver. |
+| `error_detail` | `LONGTEXT` | Não | Detalhe técnico complementar da falha (stack, contexto, payload rejeitado etc.). |
 | `input_tokens` | `INT` | Não | Tokens de entrada efetivos. |
 | `output_tokens` | `INT` | Não | Tokens de saída efetivos. |
 | `cost_usd` | `DECIMAL(12,6)` | Não | Custo estimado em USD. |
@@ -90,6 +91,14 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
   - detalhe por `experimentId + idJob`.
 
 ---
+
+
+## 2.4 Evolução recente de schema (erro detalhado)
+
+- ChangeSet Liquibase: `2026-05-09-add-gera-landing-error-detail`.
+- Tabela afetada: `gera_landing_stage_execution`.
+- Coluna adicionada: `error_detail` (`LONGTEXT`).
+- Objetivo: separar mensagem resumida de falha (`error_message`) do detalhe técnico completo (`error_detail`) no fechamento de execução (`receive-result`).
 
 ## 3) Contratos HTTP canônicos
 
@@ -246,6 +255,7 @@ Backend em `receiveResult`:
 - persiste `model_response`;
 - calcula `provisional_html` (usa payload se veio, senão monta via assembler);
 - persiste `error_message` (quando houver);
+- persiste `error_detail` (quando houver);
 - persiste `openai_job_id` (quando informado);
 - persiste `openai_model` (quando informado no handoff do prompt);
 - persiste `input_tokens`, `output_tokens`, `cost_usd`;
@@ -278,7 +288,7 @@ Além disso, para etapa `landing-page-wireframe`, sem erro e com `modelResponse`
    - resposta final persistida sem `errorMessage`.
 
 5. **FALHA**
-   - erro final persistido em `error_message`.
+   - erro final persistido em `error_message` (resumo) e opcionalmente `error_detail` (detalhe técnico).
 
 ---
 
@@ -293,7 +303,7 @@ Cada execução pode ser reconstituída de ponta a ponta com:
 - `openAiJobId` + resposta final;
 - métricas de custo/tokens;
 - timestamps de início/fim;
-- `error_message` quando aplicável.
+- `error_message` e `error_detail` quando aplicável.
 
 ---
 

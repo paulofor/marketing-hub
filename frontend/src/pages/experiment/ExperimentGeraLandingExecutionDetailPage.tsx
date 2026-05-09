@@ -127,12 +127,12 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                       className="btn btn-sm btn-outline-secondary"
                       onClick={() => handleCopyJson("errorDetail", detailQuery.data.errorDetail)}
                     >
-                      {copiedField === "errorDetail" ? "Copiado!" : "Copiar"}
+                      {copiedField === "errorDetail" ? "Copiado!" : "Copiar JSON"}
                     </button>
                   </div>
-                  <pre className="mb-0 mt-2 small overflow-auto">
-                    <code>{detailQuery.data.errorDetail}</code>
-                  </pre>
+                  <div className="mt-2">
+                    <CollapsibleJsonViewer content={detailQuery.data.errorDetail} />
+                  </div>
                 </div>
               ) : null}
 

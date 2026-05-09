@@ -25,6 +25,36 @@ Este documento contém **apenas o esquema canônico** dos artefatos do pipeline.
 - **Critério canônico de exclusividade**: todo artefato gerado direta **ou** indiretamente pelo pipeline de um experimento é considerado **exclusivo daquele experimento**.
 - Portanto, para um artefato ser classificado como "não exclusivo", ele não pode ter sido produzido em nenhuma etapa do pipeline do experimento (incluindo derivações, transformações, consolidações ou enriquecimentos).
 
+## Contrato canônico — disponibilidade de variáveis na montagem do prompt final (Gera Landing)
+
+Para a montagem do prompt final do Gera Landing, **todos os itens abaixo devem estar disponíveis no contexto de prompt** (mesmo quando um template específico não consumir diretamente cada campo).
+
+### Pipeline de hipótese (itens obrigatórios no contexto)
+
+- `NICHE_NAME`
+- `PAIN_JSON`
+- `RESULT_JSON`
+- `MECHANISM_JSON`
+- `PROOF_JSON`
+- `OFFER_JSON`
+
+### Pipeline de experimento (itens obrigatórios no contexto)
+
+- `campaignAngle`
+- `adCopy`
+- `adImageBriefing`
+- `landingPageWireframe`
+- `landingCopy`
+- `landingPromptImagem`
+- `listaImagem`
+- `landingPresetDesign`
+- `landingHtml`
+- `experimentMetadata`
+
+Regra de conformidade:
+- a ausência de qualquer item não deve quebrar a montagem do prompt;
+- o montador deve expor explicitamente os campos no prompt final para garantir rastreabilidade do que estava disponível em cada execução.
+
 ## Convenção de envelope (`artifact`)
 
 ```json

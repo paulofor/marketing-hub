@@ -275,6 +275,7 @@ public class GeraLandingService {
                 promptMontado,
                 null,
                 null,
+                null,
                 promptMarkdownContent);
     }
 }

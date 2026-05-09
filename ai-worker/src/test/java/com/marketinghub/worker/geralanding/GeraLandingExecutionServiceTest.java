@@ -35,7 +35,8 @@ class GeraLandingExecutionServiceTest {
                         openAiClient,
                         objectMapper,
                         20,
-                        new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"));
+                        new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
+                        new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"));
         service.processPendingExecutions();
 
         verify(openAiClient).generate(any());
@@ -65,7 +66,8 @@ class GeraLandingExecutionServiceTest {
                         openAiClient,
                         objectMapper,
                         20,
-                        new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"));
+                        new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
+                        new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"));
         service.processPendingExecutions();
 
         verify(backendClient).receiveFailure(any(), any(), any(), any());

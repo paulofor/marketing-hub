@@ -1,5 +1,241 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "additionalProperties": true
+  "additionalProperties": false,
+  "properties": {
+    "pageGoal": {
+      "type": "string"
+    },
+    "messageMatchSource": {
+      "type": "string"
+    },
+    "messageMatchNotes": {
+      "type": "string"
+    },
+    "primaryCTA": {
+      "type": "string"
+    },
+    "hero": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eyebrow": {
+          "type": "string"
+        },
+        "headline": {
+          "type": "string"
+        },
+        "subheadline": {
+          "type": "string"
+        },
+        "promise": {
+          "type": "string"
+        },
+        "supportingCopy": {
+          "type": "string"
+        },
+        "proofBadge": {
+          "type": "string"
+        },
+        "microcopy": {
+          "type": "string"
+        },
+        "ctaLabel": {
+          "type": "string"
+        },
+        "ctaUrl": {
+          "type": "string"
+        },
+        "ctaMatchNotes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "headline",
+        "promise",
+        "ctaLabel",
+        "ctaMatchNotes"
+      ],
+      "description": "Conteúdo do hero deve refletir os uiTags/uiTextTags da seção hero no wireframe anterior."
+    },
+    "bodySections": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sectionId": {
+            "type": "string"
+          },
+          "slotId": {
+            "type": "string",
+            "description": "Identificador técnico literal do copySlot de origem no wireframe; obrigatório para vincular uiTextTags."
+          },
+          "sectionType": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "pain",
+              "mechanism",
+              "proof",
+              "offer",
+              "cta",
+              "faq",
+              "bonus",
+              "objection"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "bullets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "copy": {
+            "type": "string"
+          },
+          "ctaSupport": {
+            "type": "string"
+          },
+          "sectionDependsOn": {
+            "type": "string"
+          },
+          "messageMatchNotes": {
+            "type": "string",
+            "description": "Explicar como o texto final mantém continuidade com adCopy e com uiTags/uiTextTags do wireframe."
+          }
+        },
+        "required": [
+          "sectionId",
+          "sectionType",
+          "title",
+          "summary",
+          "messageMatchNotes"
+        ]
+      },
+      "description": "Cada bodySection deve ser escrita a partir dos uiTags da seção e uiTextTags do slot correspondente (mesma sectionId/slotId) no landingPageWireframe anterior."
+    },
+    "ctaBlocks": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "placement": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "mid",
+              "final",
+              "sticky",
+              "inline"
+            ]
+          },
+          "ctaVariant": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary",
+              "ghost",
+              "sticky"
+            ]
+          },
+          "ctaLabel": {
+            "type": "string"
+          },
+          "ctaUrl": {
+            "type": "string"
+          },
+          "matchAdCta": {
+            "type": "string"
+          },
+          "ctaSupport": {
+            "type": "string"
+          },
+          "messageMatchNotes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "placement",
+          "ctaVariant",
+          "ctaLabel",
+          "matchAdCta"
+        ]
+      }
+    },
+    "faq": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "objectionTag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ]
+      }
+    },
+    "consistencyChecks": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "check": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "WARN",
+              "FAIL"
+            ]
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "check",
+          "status"
+        ]
+      },
+      "description": "Use FAIL quando faltar uiTags/uiTextTags em slot obrigatório ou quando não houver mapeamento sectionId/slotId válido."
+    },
+    "complianceNotes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "pageGoal",
+    "messageMatchSource",
+    "primaryCTA",
+    "hero",
+    "bodySections",
+    "ctaBlocks",
+    "consistencyChecks"
+  ],
+  "description": "Schema da etapa landing copy. A copy deve ser derivada dos sinais do wireframe anterior, especialmente uiTags e uiTextTags por sectionId/slotId."
 }

@@ -26,5 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/target/mois-hotmart-collector.jar app.jar
+
+# Pre-instala Chromium do Playwright no build para evitar download em runtime
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright \
+    && java -cp /app/app.jar com.microsoft.playwright.CLI install chromium \
+    && test -d /ms-playwright \
+    && find /ms-playwright -maxdepth 4 -type f \( -name chrome -o -name chromium \)
+
 EXPOSE 8096
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

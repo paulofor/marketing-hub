@@ -13,6 +13,7 @@ import com.microsoft.playwright.options.WaitUntilState;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,7 @@ public class HotmartCollectorService {
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorService.class);
 
     private final boolean headless;
+    private final String chromiumExecutablePath;
     private final String hotmartMarketUrl;
     private final String hotmartSessionCookie;
     private final String hotmartUsername;
@@ -30,6 +32,7 @@ public class HotmartCollectorService {
 
     public HotmartCollectorService(
             @Value("${collector.playwright.headless:true}") boolean headless,
+            @Value("${collector.playwright.chromium-executable-path:}") String chromiumExecutablePath,
             @Value("${collector.hotmart.search-url:https://app.hotmart.com/market/search}") String hotmartMarketUrl,
             @Value("${collector.hotmart.session-cookie:}") String hotmartSessionCookie,
             @Value("${collector.hotmart.username:}") String hotmartUsername,
@@ -38,6 +41,7 @@ public class HotmartCollectorService {
             @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback
     ) {
         this.headless = headless;
+        this.chromiumExecutablePath = chromiumExecutablePath;
         this.hotmartMarketUrl = hotmartMarketUrl;
         this.hotmartSessionCookie = hotmartSessionCookie;
         this.hotmartUsername = pickFirstNonBlank(hotmartUsername, hotmartUsernameFallback);
@@ -78,9 +82,15 @@ public class HotmartCollectorService {
             List<String> launchArgs = List.of("--no-sandbox", "--disable-dev-shm-usage");
             log.info("Playwright inicializado. Chromium executablePath='{}', launchArgs={}", browserPath, launchArgs);
 
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
                     .setHeadless(headless)
-                    .setArgs(launchArgs));
+                    .setArgs(launchArgs);
+            if (chromiumExecutablePath != null && !chromiumExecutablePath.isBlank()) {
+                launchOptions.setExecutablePath(Path.of(chromiumExecutablePath));
+                log.info("Usando Chromium com executablePath explícito: '{}'", chromiumExecutablePath);
+            }
+
+            Browser browser = playwright.chromium().launch(launchOptions);
             BrowserContext context = browser.newContext();
             Page page = context.newPage();
 

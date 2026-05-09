@@ -211,3 +211,10 @@
 - Fluxo de login também passou a registrar início e URL resultante após submissão, para facilitar triagem de falhas de autenticação.
 - Validação executada: `mvn -q test` no módulo `mois-hotmart-collector` com sucesso.
 - Registro criado por solicitação explícita: "registre em /docs/mois/registros.md".
+
+## 2026-05-09 05:55:33 UTC-3
+- Revisado o ajuste de estabilidade do `mois-hotmart-collector` para execução em ambiente sem UI com Playwright.
+- No `Dockerfile`, a etapa de pré-instalação do Chromium foi endurecida para validação explícita do diretório de browsers e busca correta do binário (com expressão `find` parentetizada), evitando falso-positivo silencioso.
+- Mantida a estratégia de uso de browser com `collector.playwright.chromium-executable-path` no serviço, permitindo apontamento explícito do executável quando necessário em produção.
+- Testes unitários do módulo Java reexecutados com sucesso após os ajustes.
+- Registro criado por solicitação explícita: "registre o trabalho em /docs/mois/registros.md".

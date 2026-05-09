@@ -83,6 +83,10 @@ public class GeraLandingStageExecution {
     @Column(name = "error_message", columnDefinition = "LONGTEXT")
     private String errorMessage;
 
+    @Lob
+    @Column(name = "error_detail", columnDefinition = "LONGTEXT")
+    private String errorDetail;
+
     @Column(name = "input_tokens")
     private Integer inputTokens;
 

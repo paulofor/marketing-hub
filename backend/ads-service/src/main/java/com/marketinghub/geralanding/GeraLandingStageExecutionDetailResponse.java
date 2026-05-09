@@ -23,6 +23,7 @@ public record GeraLandingStageExecutionDetailResponse(
         String modelResponse,
         String provisionalHtml,
         String errorMessage,
+        String errorDetail,
         Integer inputTokens,
         Integer outputTokens,
         BigDecimal costUsd) {

@@ -48,7 +48,6 @@ Regras fixas da etapa:
 28. Se qualquer checklist interno falhar, reescreva o HTML completo antes de responder; não devolva versão parcial.
 29. Use os mesmos `sectionId` e `imageBindingKey` de forma **literal** (case-sensitive, sem renomear, traduzir ou normalizar).
 30. `consistencyChecks` deve refletir esse contrato com evidência objetiva para `IMAGE_PLAN_BINDING` e `SURFACE_SPEC_BINDING`.
-
 CASE_DATA
 {{CASE_DATA_BLOCK}}
 

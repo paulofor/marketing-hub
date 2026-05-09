@@ -120,7 +120,16 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               ) : null}
               {detailQuery.data.errorDetail ? (
                 <div className="alert alert-secondary mb-0" role="alert">
-                  <strong>Detalhe técnico do erro:</strong>
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <strong className="mb-0">Detalhe técnico do erro:</strong>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => handleCopyJson("errorDetail", detailQuery.data.errorDetail)}
+                    >
+                      {copiedField === "errorDetail" ? "Copiado!" : "Copiar"}
+                    </button>
+                  </div>
                   <pre className="mb-0 mt-2 small overflow-auto">
                     <code>{detailQuery.data.errorDetail}</code>
                   </pre>

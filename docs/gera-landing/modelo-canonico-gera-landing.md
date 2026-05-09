@@ -315,3 +315,160 @@ Documento consolidado a partir dos pacotes:
 - `ai-worker/src/main/resources/prompts/geralanding`
 
 Toda mudança de contrato, estados, payload, auditoria ou persistência deve refletir imediatamente neste arquivo para manter caráter canônico.
+
+---
+
+## 9) Construção canônica das telas (fonte: frontend atual)
+
+> Esta seção documenta **como as telas estão implementadas hoje** no frontend administrativo, tomando o código como fonte de verdade.
+
+## 9.1 Tela de monitoramento (card no detalhe do experimento)
+
+Local: aba `gera-landing` em `ExperimentDetailPage`.
+
+### 9.1.1 Estrutura visual do card de execução
+
+- O módulo é renderizado em cards separados por etapa; hoje existe card explícito para:
+  - **Gera WireFrame** (stage `landing-page-wireframe`)
+  - **Gera Copy** (stage `landing-page-copy`)
+- Cada card contém:
+  1. título da etapa;
+  2. badge de custo agregado de execuções concluídas (`Total execuções: US$ ...`);
+  3. botão de início da etapa (`Iniciar`);
+  4. tabela de **execuções em andamento** (quando houver);
+  5. bloco de **histórico de execuções** com custo por linha.
+
+### 9.1.2 Fontes de dados e atualização
+
+Para cada etapa, a tela abre duas consultas do mesmo endpoint, mudando apenas `includeCompleted`:
+
+- **Pendentes/rodando**: `GET /api/experiments/{experimentId}/geralanding/stage-executions?stageCode=...&includeCompleted=false`
+  - atualização automática a cada **10 segundos** (`refetchInterval: 10000`);
+  - usada para alimentar a tabela “jobs da etapa”.
+- **Histórico (incluindo concluídas)**: `GET ... includeCompleted=true`
+  - sem polling automático (`refetchInterval: false`);
+  - usada para histórico e para o somatório de custo exibido no badge.
+
+### 9.1.3 Regras de habilitação do botão “Iniciar”
+
+O botão fica desabilitado quando:
+
+1. há requisição de start em andamento (`isStarting... = true`), ou
+2. existe ao menos um job em estado não final da mesma etapa (`hasRunning...Execution = true`).
+
+Com isso, o comportamento operacional é de **um job por etapa em execução simultânea na UI**.
+
+### 9.1.4 Estados de renderização do bloco “em andamento”
+
+Na área de jobs ativos, o frontend aplica três estados mutuamente exclusivos:
+
+1. `isLoading`: texto “Carregando jobs da etapa...”;
+2. lista vazia: texto “Nenhum job pendente ou em execução.”;
+3. lista com dados: tabela com colunas `Job ID`, `Status`, `Data-hora`.
+
+O `Job ID` sempre vira link navegável para a tela de detalhe (`/experiments/{id}/geralanding/stage-executions/{jobId}`).
+
+### 9.1.5 Estados de renderização do histórico
+
+No bloco “Histórico de execuções”, o frontend aplica:
+
+1. `isLoading`: texto “Carregando execuções...”;
+2. lista vazia: texto “Nenhuma execução registrada para esta etapa.”;
+3. lista com dados: tabela com colunas:
+   - `Job ID` (link para detalhe);
+   - `Status`;
+   - `Data-hora`;
+   - `Custo` (alinhado à direita).
+
+O custo por linha usa `costUsd` quando disponível e cai para `0` quando ausente.
+
+### 9.1.6 Contrato de start disparado pelo card
+
+Na etapa wireframe, o botão chama:
+
+- `POST /api/experiments/{experimentId}/geralanding/wireframe/start`
+
+com feedback visual de loading no próprio botão (`spinner` + texto “Iniciando...” ).
+
+## 9.2 Tela de detalhe por execução (reutilizável por qualquer estágio)
+
+Local: rota `/experiments/:id/geralanding/stage-executions/:jobId`.
+
+### 9.2.1 Premissa de reutilização
+
+A tela é orientada por `jobId` e consulta única:
+
+- `GET /api/experiments/{experimentId}/geralanding/stage-executions/{jobId}`
+
+Como o payload traz `stageCode`, a mesma página já funciona para qualquer estágio do Gera Landing, sem template dedicado por etapa.
+
+### 9.2.2 Estrutura de navegação e contexto
+
+- breadcrumb: `Experimento > Detalhe da execução`;
+- título principal “Detalhe da execução Gera Landing”;
+- badge com `stageCode` quando presente;
+- botão “Voltar” para a página do experimento.
+
+### 9.2.3 Estados de carregamento/erro
+
+1. carregando: “Carregando detalhes da execução...”;
+2. erro/sem payload: “Não foi possível carregar os detalhes da execução.”;
+3. sucesso: renderiza painéis de metadados e artefatos.
+
+### 9.2.4 Bloco de alerta de falha
+
+- Se `errorMessage` existir, exibe alerta vermelho com mensagem literal do backend.
+- Se status for `FALHA` sem `errorMessage`, exibe alerta amarelo com fallback: “não informado pelo Worker AI.”
+
+### 9.2.5 Grade de metadados operacionais
+
+A tela exibe, em grid de duas colunas (quando houver espaço), os campos:
+
+- `Job ID`, `Status`, `Stage`;
+- `OpenAI Job ID`;
+- `Modelo usado` (extraído por parse de `openAiRequestBody.model`);
+- `Criado em`, `Solicitado em`, `Processamento iniciado`, `Concluído em`;
+- `Input tokens`, `Output tokens`;
+- `Prompt template ID`;
+- `Custo USD`.
+
+Campos ausentes são mostrados como `—`.
+
+### 9.2.6 Blocos auditáveis com copiar/baixar
+
+Para cada artefato textual/JSON, a UI oferece:
+
+- botão **Copiar** (clipboard com fallback para `textarea`);
+- botão **Baixar** (`data:` URL);
+- visualização colapsável (`CollapsibleJsonViewer`) ou markdown (`MarkdownContentViewer`).
+
+Artefatos renderizados:
+
+1. `promptContent`
+2. `prompt`
+3. `openAiRequestBody`
+4. `schemaJson`
+5. `promptMarkdownContent` (viewer markdown)
+6. `modelResponse`
+
+### 9.2.7 Área de HTML provisório
+
+- Quando `provisionalHtml` existe:
+  - botão copiar HTML;
+  - botão baixar `.html`;
+  - link “Abrir HTML provisório em nova aba” com `target="_blank"` e `rel="noopener noreferrer"`;
+  - preview em `<pre><code>` com rolagem.
+- Quando não existe: mensagem “Nenhum HTML provisório disponível para este registro.”
+
+## 9.3 Contrato frontend canônico para monitoramento e detalhe
+
+O hook `useGeraLandingStageExecutions` define o contrato mínimo de item para listagens:
+
+- `idJob`
+- `status`
+- `executionRequestedAt`
+- `costUsd?`
+
+O hook `useGeraLandingStageExecutionDetail` estende para auditoria completa com os campos de prompt, schema, request OpenAI, resposta e métricas.
+
+Esse contrato é a base concreta para suportar **qualquer estágio** na tela de detalhe, desde que o backend continue retornando a mesma estrutura por `jobId`.

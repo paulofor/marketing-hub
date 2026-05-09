@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -122,5 +123,62 @@ class GeraLandingStageExecutionServiceTest {
         assertEquals("<html>provisorio</html>", execution.getProvisionalHtml());
         assertTrue(Arrays.equals("id-ok".getBytes(StandardCharsets.UTF_8), experiment.getLandingPageWireframeJobId()));
         verify(experimentRepository).save(experiment);
+    }
+
+    @Test
+    void shouldMarkExecutionAsProcessingWhenDispatchIsReceived() {
+        GeraLandingDispatchReceiveRequest request =
+                new GeraLandingDispatchReceiveRequest(19L, "landing-page-wireframe", "openai-job-123");
+
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(19L)
+                .stageCode("landing-page-wireframe")
+                .executionRequestedAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .idJob("id-dispatch".getBytes(StandardCharsets.UTF_8))
+                .build();
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-dispatch".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+
+        service.markAsSentToOpenAi("id-dispatch", request);
+
+        assertEquals("EM_PROCESSAMENTO", execution.getStatus());
+        assertEquals("openai-job-123", execution.getOpenAiJobId());
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void shouldMarkExecutionAsFailureAndSkipExperimentPersistenceWhenErrorMessageExists() {
+        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
+                31L,
+                "landing-page-wireframe",
+                null,
+                null,
+                "erro no batch",
+                "job-openai-erro",
+                null,
+                null,
+                null);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(31L)
+                .stageCode("landing-page-wireframe")
+                .executionRequestedAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .status("EM_PROCESSAMENTO")
+                .idJob("id-falha".getBytes(StandardCharsets.UTF_8))
+                .build();
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-falha".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(wireframeProvisionalHtmlAssembler.assemble(null, "id-falha")).thenReturn("<html>fallback</html>");
+
+        service.receiveResult("id-falha", request);
+
+        assertEquals("FALHA", execution.getStatus());
+        assertEquals("erro no batch", execution.getErrorMessage());
+        assertEquals("<html>fallback</html>", execution.getProvisionalHtml());
+        verify(experimentRepository, times(0)).save(any(Experiment.class));
     }
 }

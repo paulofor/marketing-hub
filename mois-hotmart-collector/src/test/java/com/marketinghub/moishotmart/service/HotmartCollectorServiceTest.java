@@ -11,6 +11,7 @@ class HotmartCollectorServiceTest {
     void shouldSkipWhenSessionAndCredentialsAreMissing() {
         HotmartCollectorService service = new HotmartCollectorService(
                 true,
+                "",
                 "https://app.hotmart.com/market/search",
                 "",
                 "",

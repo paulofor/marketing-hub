@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 public class GeraLandingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingExecutionService.class);
     private static final String STAGE_WIREFRAME = "landing-page-wireframe";
+    private static final String STAGE_COPY = "landing-page-copy";
 
     private final GeraLandingBackendClient backendClient;
     private final GeraLandingService geraLandingService;
@@ -26,6 +27,7 @@ public class GeraLandingExecutionService {
     private final ObjectMapper objectMapper;
     private final int pendingLimit;
     private final Resource wireframeSchemaResource;
+    private final Resource copySchemaResource;
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
@@ -33,13 +35,16 @@ public class GeraLandingExecutionService {
                                        ObjectMapper objectMapper,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,
                                        @Value("classpath:prompts/geralanding/landing-page-wireframe-schema.json")
-                                       Resource wireframeSchemaResource) {
+                                       Resource wireframeSchemaResource,
+                                       @Value("classpath:prompts/geralanding/landing-page-copy-schema.json")
+                                       Resource copySchemaResource) {
         this.backendClient = backendClient;
         this.geraLandingService = geraLandingService;
         this.openAiClient = openAiClient;
         this.objectMapper = objectMapper;
         this.pendingLimit = Math.max(1, pendingLimit);
         this.wireframeSchemaResource = wireframeSchemaResource;
+        this.copySchemaResource = copySchemaResource;
     }
 
     public void processPendingExecutions() {
@@ -63,9 +68,9 @@ public class GeraLandingExecutionService {
             return;
         }
         String normalizedStage = execution.stageCode().trim().toLowerCase(Locale.ROOT);
-        if (!STAGE_WIREFRAME.equals(normalizedStage)) {
-            log.info("Skipping gera-landing executionId={} because stageCode {} is not supported (expected {})",
-                    execution.idJob(), execution.stageCode(), STAGE_WIREFRAME);
+        if (!STAGE_WIREFRAME.equals(normalizedStage) && !STAGE_COPY.equals(normalizedStage)) {
+            log.info("Skipping gera-landing executionId={} because stageCode {} is not supported",
+                    execution.idJob(), execution.stageCode());
             return;
         }
         try {
@@ -81,13 +86,14 @@ public class GeraLandingExecutionService {
                     execution.idJob(), execution.experimentId());
 
             String openAiRequestBody = buildOpenAiRequestBody(
+                    normalizedStage,
                     openAiModel,
                     prompt,
                     "gera-landing-pipeline",
                     "Você é especialista em execução de pipeline de experimento.");
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
-            String schemaJson = objectMapper.writeValueAsString(readWireframeSchema());
+            String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(normalizedStage));
             backendClient.receivePrompt(
                     execution.idJob(),
                     execution.experimentId(),
@@ -138,7 +144,8 @@ public class GeraLandingExecutionService {
         }
     }
 
-    private String buildOpenAiRequestBody(String model,
+    private String buildOpenAiRequestBody(String stageCode,
+                                          String model,
                                           String prompt,
                                           String systemName,
                                           String systemMessage) throws JsonProcessingException {
@@ -161,7 +168,7 @@ public class GeraLandingExecutionService {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", "experiment_pipeline_landing_page_copy");
-        format.put("schema", readWireframeSchema());
+        format.put("schema", readSchemaByStage(stageCode));
         format.put("strict", true);
 
         String resolvedModel = StringUtils.hasText(model) ? model.trim() : "gpt-5.2";
@@ -180,11 +187,12 @@ public class GeraLandingExecutionService {
         return objectMapper.writeValueAsString(body);
     }
 
-    private Map<String, Object> readWireframeSchema() throws JsonProcessingException {
+    private Map<String, Object> readSchemaByStage(String stageCode) throws JsonProcessingException {
+        Resource schemaResource = STAGE_COPY.equals(stageCode) ? copySchemaResource : wireframeSchemaResource;
         try {
-            return objectMapper.readValue(wireframeSchemaResource.getInputStream(), Map.class);
+            return objectMapper.readValue(schemaResource.getInputStream(), Map.class);
         } catch (IOException ex) {
-            throw new JsonProcessingException("Falha ao carregar schema do wireframe em classpath:prompts/geralanding/landing-page-wireframe-schema.json") {
+            throw new JsonProcessingException("Falha ao carregar schema da etapa " + stageCode) {
             };
         }
     }

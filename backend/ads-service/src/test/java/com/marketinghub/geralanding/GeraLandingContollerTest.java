@@ -18,8 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = GeraLandingWireframeController.class)
-class GeraLandingWireframeControllerTest {
+@WebMvcTest(controllers = GeraLandingContoller.class)
+class GeraLandingContollerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -29,7 +29,7 @@ class GeraLandingWireframeControllerTest {
 
     @Test
     void shouldCreateExecutionAndReturnCodeAndStatus() throws Exception {
-        when(executionService.registerInitialExecution(99L))
+        when(executionService.registerInitialExecution(99L, "landing-page-wireframe"))
                 .thenReturn(new GeraLandingStartResponse("job-123", "INICIADO"));
 
         mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/wireframe/start", 99L))
@@ -37,7 +37,21 @@ class GeraLandingWireframeControllerTest {
                 .andExpect(jsonPath("$.idJob").value("job-123"))
                 .andExpect(jsonPath("$.status").value("INICIADO"));
 
-        verify(executionService).registerInitialExecution(eq(99L));
+        verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-wireframe"));
+    }
+
+
+    @Test
+    void shouldCreateCopyExecutionAndReturnCodeAndStatus() throws Exception {
+        when(executionService.registerInitialExecution(99L, "landing-page-copy"))
+                .thenReturn(new GeraLandingStartResponse("job-copy-1", "INICIADO"));
+
+        mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/copy/start", 99L))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.idJob").value("job-copy-1"))
+                .andExpect(jsonPath("$.status").value("INICIADO"));
+
+        verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-copy"));
     }
 
     @Test

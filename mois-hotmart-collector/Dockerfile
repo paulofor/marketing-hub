@@ -30,6 +30,8 @@ COPY --from=build /app/target/mois-hotmart-collector.jar app.jar
 
 # Força uso de Chromium do sistema para ambiente Linux headless sem GUI
 ENV COLLECTOR_PLAYWRIGHT_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 EXPOSE 8096
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

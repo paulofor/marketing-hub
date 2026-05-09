@@ -218,3 +218,11 @@
 - Mantida a estratégia de uso de browser com `collector.playwright.chromium-executable-path` no serviço, permitindo apontamento explícito do executável quando necessário em produção.
 - Testes unitários do módulo Java reexecutados com sucesso após os ajustes.
 - Registro criado por solicitação explícita: "registre o trabalho em /docs/mois/registros.md".
+
+## 2026-05-09 14:18:33 UTC-3
+- Registrado trabalho no `mois-hotmart-collector` para diagnóstico do erro de bootstrap Playwright (`Failed to create driver`), incluindo:
+  - configuração de runtime no `Dockerfile` com `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` e `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`;
+  - log diagnóstico no início da coleta com variáveis de ambiente relevantes (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`, `PLAYWRIGHT_BROWSERS_PATH`, `HOME`) e `collector.playwright.chromium-executable-path`.
+- Mantidas credenciais no `application.properties` por solicitação explícita para ajuste posterior.
+- Testes unitários do módulo `mois-hotmart-collector` executados com sucesso (`mvn test -q`).
+- Registro criado por solicitação explícita: "registre o traabalho em /docs/mois/registros.md".

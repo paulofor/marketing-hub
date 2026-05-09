@@ -108,6 +108,7 @@ public class GeraLandingStageExecutionService {
         execution.setPrompt(request.prompt());
         execution.setOpenAiJobId(request.openAiJobId());
         execution.setOpenAiRequestBody(request.openAiRequestBody());
+        execution.setOpenAiModel(request.openAiModel());
         execution.setSchemaJson(request.schemaJson());
         execution.setPromptMarkdownContent(request.promptMarkdownContent());
         execution.setProcessingStartedAt(now);
@@ -216,6 +217,7 @@ public class GeraLandingStageExecutionService {
                 execution.getPromptContent(),
                 execution.getPrompt(),
                 execution.getOpenAiRequestBody(),
+                execution.getOpenAiModel(),
                 execution.getSchemaJson(),
                 execution.getPromptMarkdownContent(),
                 execution.getStatus(),

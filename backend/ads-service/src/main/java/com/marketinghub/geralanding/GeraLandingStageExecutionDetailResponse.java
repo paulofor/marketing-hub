@@ -15,6 +15,7 @@ public record GeraLandingStageExecutionDetailResponse(
         String promptContent,
         String prompt,
         String openAiRequestBody,
+        String openAiModel,
         String schemaJson,
         String promptMarkdownContent,
         String status,

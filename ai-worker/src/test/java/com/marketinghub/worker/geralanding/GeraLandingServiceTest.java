@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -50,27 +51,29 @@ class GeraLandingServiceTest {
 
     @Test
     void deveDisponibilizarTodosOsItensCanonicosDosPipelinesNoPromptFinal() throws Exception {
+        Map<String, Object> dadosPrompt = new LinkedHashMap<>();
+        dadosPrompt.put("NICHE_NAME", "E-commerce");
+        dadosPrompt.put("PAIN_JSON", Map.of("title", "Baixa conversão"));
+        dadosPrompt.put("RESULT_JSON", Map.of("title", "Mais vendas"));
+        dadosPrompt.put("MECHANISM_JSON", Map.of("title", "Mecanismo validado"));
+        dadosPrompt.put("PROOF_JSON", Map.of("title", "Prova objetiva"));
+        dadosPrompt.put("OFFER_JSON", Map.of("title", "Oferta principal"));
+        dadosPrompt.put("campaignAngle", Map.of("hook", "Ganhe tempo"));
+        dadosPrompt.put("adCopy", Map.of("headline", "Resultado claro"));
+        dadosPrompt.put("adImageBriefing", Map.of("scene", "Pessoa trabalhando"));
+        dadosPrompt.put("landingPageWireframe", Map.of("pageGoal", "capturar lead"));
+        dadosPrompt.put("landingCopy", Map.of("primaryCTA", "Quero começar"));
+        dadosPrompt.put("landingPromptImagem", "Prompt imagem");
+        dadosPrompt.put("listaImagem", Map.of("items", java.util.List.of("img1", "img2")));
+        dadosPrompt.put("landingPresetDesign", Map.of("palette", "neutral"));
+        dadosPrompt.put("landingHtml", "<html></html>");
+        dadosPrompt.put("experimentMetadata", Map.of("experimentId", 10));
+
         GeraLandingPromptContext context = new GeraLandingPromptContext(
                 10L,
                 "id-job-original",
                 "landing-page-wireframe",
-                Map.of(
-                        "NICHE_NAME", "E-commerce",
-                        "PAIN_JSON", Map.of("title", "Baixa conversão"),
-                        "RESULT_JSON", Map.of("title", "Mais vendas"),
-                        "MECHANISM_JSON", Map.of("title", "Mecanismo validado"),
-                        "PROOF_JSON", Map.of("title", "Prova objetiva"),
-                        "OFFER_JSON", Map.of("title", "Oferta principal"),
-                        "campaignAngle", Map.of("hook", "Ganhe tempo"),
-                        "adCopy", Map.of("headline", "Resultado claro"),
-                        "adImageBriefing", Map.of("scene", "Pessoa trabalhando"),
-                        "landingPageWireframe", Map.of("pageGoal", "capturar lead"),
-                        "landingCopy", Map.of("primaryCTA", "Quero começar"),
-                        "landingPromptImagem", "Prompt imagem",
-                        "listaImagem", Map.of("items", java.util.List.of("img1", "img2")),
-                        "landingPresetDesign", Map.of("palette", "neutral"),
-                        "landingHtml", "<html></html>",
-                        "experimentMetadata", Map.of("experimentId", 10)));
+                dadosPrompt);
 
         String prompt = service.montarPromptEtapa(context, "landing-page-wireframe");
 
@@ -108,6 +111,7 @@ class GeraLandingServiceTest {
                         Mockito.eq(10L),
                         Mockito.eq("test-placeholder"),
                         Mockito.eq(prompt),
+                        Mockito.isNull(),
                         Mockito.isNull(),
                         Mockito.isNull(),
                         Mockito.anyString());

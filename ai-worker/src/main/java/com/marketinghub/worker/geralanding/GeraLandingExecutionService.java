@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 @Service
 public class GeraLandingExecutionService {
@@ -137,7 +138,12 @@ public class GeraLandingExecutionService {
             log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId(), ex);
             try {
-                backendClient.receiveFailure(execution.idJob(), execution.experimentId(), execution.stageCode(), ex.getMessage());
+                backendClient.receiveFailure(
+                        execution.idJob(),
+                        execution.experimentId(),
+                        execution.stageCode(),
+                        ex.getMessage(),
+                        ExceptionUtils.getRootCauseMessage(ex));
             } catch (Exception callbackEx) {
                 log.error("Falha ao registrar erro de execução no backend para executionId={}", execution.idJob(), callbackEx);
             }

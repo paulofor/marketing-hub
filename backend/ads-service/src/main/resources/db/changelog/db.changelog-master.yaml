@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-09-gera-landing-error-detail-column.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-05-07-experiment-wireframe-job-fk.yaml
       relativeToChangelogFile: true
 

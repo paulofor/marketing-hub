@@ -97,6 +97,7 @@ class GeraLandingStageExecutionServiceTest {
                 "{\"landingPageWireframe\":{\"sectionOrder\":[]}}",
                 null,
                 null,
+                null,
                 "job-openai-1",
                 100,
                 200,
@@ -157,6 +158,7 @@ class GeraLandingStageExecutionServiceTest {
                 null,
                 null,
                 "erro no batch",
+                "detalhe tecnico",
                 "job-openai-erro",
                 null,
                 null,
@@ -178,6 +180,7 @@ class GeraLandingStageExecutionServiceTest {
 
         assertEquals("FALHA", execution.getStatus());
         assertEquals("erro no batch", execution.getErrorMessage());
+        assertEquals("detalhe tecnico", execution.getErrorDetail());
         assertEquals("<html>fallback</html>", execution.getProvisionalHtml());
         verify(experimentRepository, times(0)).save(any(Experiment.class));
     }

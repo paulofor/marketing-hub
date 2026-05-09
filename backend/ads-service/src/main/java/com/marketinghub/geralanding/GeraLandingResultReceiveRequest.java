@@ -10,6 +10,7 @@ public record GeraLandingResultReceiveRequest(
         String modelResponse,
         String provisionalHtml,
         String errorMessage,
+        String errorDetail,
         String openAiJobId,
         Integer inputTokens,
         Integer outputTokens,

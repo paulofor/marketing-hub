@@ -69,6 +69,7 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 | `prompt` | `LONGTEXT` | Não | Prompt final montado no worker (envelope de tarefa + instruções). |
 | `openai_request_body` | `LONGTEXT` | Não | Request JSON efetivo para Responses API em batch. |
 | `schema_json` | `LONGTEXT` | Não | Schema serializado usado em `text.format.schema`. |
+| `openai_model` | `VARCHAR(120)` | Não | Modelo OpenAI efetivamente usado na execução (ex.: `gpt-5.2`). |
 | `prompt_markdown_content` | `LONGTEXT` | Não | Conteúdo markdown cru da etapa (`*.md`). |
 | `status` | `VARCHAR(50)` | Sim | Estado atual da execução (ver seção 5). |
 | `openai_job_id` | `VARCHAR(120)` | Não | ID técnico da resposta/job OpenAI quando disponível. |
@@ -209,6 +210,7 @@ Antes de executar batch, worker chama `receive-prompt` com:
 - `stageCode`
 - `prompt`
 - `openAiRequestBody`
+- `openAiModel`
 - `schemaJson`
 - `promptMarkdownContent`
 
@@ -245,6 +247,7 @@ Backend em `receiveResult`:
 - calcula `provisional_html` (usa payload se veio, senão monta via assembler);
 - persiste `error_message` (quando houver);
 - persiste `openai_job_id` (quando informado);
+- persiste `openai_model` (quando informado no handoff do prompt);
 - persiste `input_tokens`, `output_tokens`, `cost_usd`;
 - seta `completed_at = now`;
 - seta status:

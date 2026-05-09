@@ -54,6 +54,9 @@ public class GeraLandingStageExecution {
     @Column(name = "openai_request_body", columnDefinition = "LONGTEXT")
     private String openAiRequestBody;
 
+    @Column(name = "openai_model", length = 120)
+    private String openAiModel;
+
     @Lob
     @Column(name = "schema_json", columnDefinition = "LONGTEXT")
     private String schemaJson;

@@ -69,6 +69,7 @@ public class GeraLandingExecutionService {
             return;
         }
         try {
+            final String openAiModel = "gpt-5.2";
             GeraLandingPromptContext context = new GeraLandingPromptContext(
                     execution.experimentId(),
                     execution.idJob(),
@@ -80,7 +81,7 @@ public class GeraLandingExecutionService {
                     execution.idJob(), execution.experimentId());
 
             String openAiRequestBody = buildOpenAiRequestBody(
-                    "gpt-5.2",
+                    openAiModel,
                     prompt,
                     "gera-landing-pipeline",
                     "Você é especialista em execução de pipeline de experimento.");
@@ -93,6 +94,7 @@ public class GeraLandingExecutionService {
                     execution.stageCode(),
                     prompt,
                     openAiRequestBody,
+                    openAiModel,
                     schemaJson,
                     promptMarkdownContent);
 
@@ -100,7 +102,7 @@ public class GeraLandingExecutionService {
                     UUID.fromString(execution.idJob()),
                     execution.experimentId(),
                     execution.stageCode(),
-                    "gpt-5.2",
+                    openAiModel,
                     openAiRequestBody,
                     prompt,
                     null);

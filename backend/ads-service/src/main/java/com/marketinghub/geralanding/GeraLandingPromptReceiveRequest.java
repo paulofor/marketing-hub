@@ -9,6 +9,7 @@ public record GeraLandingPromptReceiveRequest(
         @NotBlank String prompt,
         String openAiJobId,
         String openAiRequestBody,
+        String openAiModel,
         String schemaJson,
         String promptMarkdownContent) {
 }

@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-09-gera-landing-openai-model-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: gera_landing_stage_execution
+                columnName: openai_model
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: openai_model
+                  type: VARCHAR(120)
+                  remarks: Modelo OpenAI utilizado na execução

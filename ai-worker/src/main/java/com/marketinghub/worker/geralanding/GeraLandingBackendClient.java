@@ -133,6 +133,7 @@ public class GeraLandingBackendClient {
                               String stageCode,
                               String prompt,
                               String openAiRequestBody,
+                              String openAiModel,
                               String schemaJson,
                               String promptMarkdownContent) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
@@ -149,6 +150,7 @@ public class GeraLandingBackendClient {
         body.put("stageCode", stageCode);
         body.put("prompt", prompt);
         body.put("openAiRequestBody", openAiRequestBody);
+        body.put("openAiModel", openAiModel);
         body.put("schemaJson", schemaJson);
         body.put("promptMarkdownContent", promptMarkdownContent);
         webClient.post()

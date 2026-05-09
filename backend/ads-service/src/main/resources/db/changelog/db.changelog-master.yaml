@@ -720,3 +720,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-06-gera-landing-prompt-audit-columns.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-05-09-gera-landing-openai-model-column.yaml
+      relativeToChangelogFile: true

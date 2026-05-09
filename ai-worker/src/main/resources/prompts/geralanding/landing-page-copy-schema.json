@@ -51,9 +51,15 @@
         }
       },
       "required": [
+        "eyebrow",
         "headline",
+        "subheadline",
         "promise",
+        "supportingCopy",
+        "proofBadge",
+        "microcopy",
         "ctaLabel",
+        "ctaUrl",
         "ctaMatchNotes"
       ],
       "description": "Conteúdo do hero deve refletir os uiTags/uiTextTags da seção hero no wireframe anterior."
@@ -114,9 +120,14 @@
         },
         "required": [
           "sectionId",
+          "slotId",
           "sectionType",
           "title",
           "summary",
+          "bullets",
+          "copy",
+          "ctaSupport",
+          "sectionDependsOn",
           "messageMatchNotes"
         ]
       },
@@ -168,7 +179,10 @@
           "placement",
           "ctaVariant",
           "ctaLabel",
-          "matchAdCta"
+          "ctaUrl",
+          "matchAdCta",
+          "ctaSupport",
+          "messageMatchNotes"
         ]
       }
     },
@@ -191,7 +205,8 @@
         },
         "required": [
           "question",
-          "answer"
+          "answer",
+          "objectionTag"
         ]
       }
     },
@@ -219,7 +234,8 @@
         },
         "required": [
           "check",
-          "status"
+          "status",
+          "details"
         ]
       },
       "description": "Use FAIL quando faltar uiTags/uiTextTags em slot obrigatório ou quando não houver mapeamento sectionId/slotId válido."

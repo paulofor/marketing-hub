@@ -71,7 +71,9 @@ public class GeraLandingOpenAiBatchClient {
             BatchResponse batch = createBatch(inputFileId);
             BatchResponse completed = pollUntilCompleted(batch.id());
             if (!StringUtils.hasText(completed.outputFileId())) {
-                throw new IllegalStateException("Batch finalizado sem output_file_id");
+                String rawErrorOutput = downloadOptionalFileContent(completed.errorFileId());
+                throw new IllegalStateException("Batch finalizado sem output_file_id"
+                        + (StringUtils.hasText(rawErrorOutput) ? ". error_file=" + rawErrorOutput : ""));
             }
             String rawOutput = downloadFileContent(completed.outputFileId());
             OpenAiResponse response = parseFirstResponse(rawOutput);
@@ -161,6 +163,24 @@ public class GeraLandingOpenAiBatchClient {
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    private String downloadOptionalFileContent(String fileId) {
+        if (!StringUtils.hasText(fileId)) {
+            return null;
+        }
+        try {
+            byte[] bytes = webClient.get().uri("/files/{id}/content", fileId)
+                    .retrieve().bodyToMono(byte[].class)
+                    .block();
+            if (bytes == null || bytes.length == 0) {
+                return null;
+            }
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            log.warn("Falha ao baixar error_file_id={} do batch", fileId, ex);
+            return null;
+        }
+    }
+
     private OpenAiResponse parseFirstResponse(String jsonlOutput) throws Exception {
         String firstLine = jsonlOutput.lines().filter(StringUtils::hasText).findFirst()
                 .orElseThrow(() -> new IllegalStateException("Saída do batch sem linhas"));
@@ -169,7 +189,8 @@ public class GeraLandingOpenAiBatchClient {
             String rawErrorBody = line.response() != null ? line.response().rawBody() : null;
             throw new IllegalStateException("OpenAI retornou erro no batch. status=" + line.status_code()
                     + ", custom_id=" + line.custom_id()
-                    + ", body=" + rawErrorBody);
+                    + ", body=" + rawErrorBody
+                    + ", error=" + (line.error() != null ? line.error().toJson() : null));
         }
         if (line.response() == null || line.response().body() == null || line.response().body().isNull()) {
             throw new IllegalStateException("Linha de saída do batch sem response.body");
@@ -181,15 +202,26 @@ public class GeraLandingOpenAiBatchClient {
     private record FileResponse(String id) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record BatchResponse(String id, String status, @com.fasterxml.jackson.annotation.JsonProperty("output_file_id") String outputFileId) {}
+    private record BatchResponse(String id,
+                                 String status,
+                                 @com.fasterxml.jackson.annotation.JsonProperty("output_file_id") String outputFileId,
+                                 @com.fasterxml.jackson.annotation.JsonProperty("error_file_id") String errorFileId) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record BatchOutputLine(String custom_id, Integer status_code, BatchHttpResponse response) {}
+    private record BatchOutputLine(String custom_id, Integer status_code, BatchHttpResponse response, BatchError error) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record BatchHttpResponse(JsonNode body) {
         String rawBody() {
             return body != null ? body.toString() : null;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record BatchError(String code, String message, String param, String type) {
+        String toJson() {
+            return "{\"code\":\"" + code + "\",\"message\":\"" + message
+                    + "\",\"param\":\"" + param + "\",\"type\":\"" + type + "\"}";
         }
     }
 }

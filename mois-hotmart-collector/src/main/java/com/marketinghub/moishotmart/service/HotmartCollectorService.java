@@ -76,6 +76,7 @@ public class HotmartCollectorService {
                 hasSessionCookie,
                 hasCredentials
         );
+        logPlaywrightRuntimeDiagnostics();
 
         try (Playwright playwright = Playwright.create()) {
             String browserPath = playwright.chromium().executablePath();
@@ -157,6 +158,19 @@ public class HotmartCollectorService {
             return fallback;
         }
         return "";
+    }
+
+    private void logPlaywrightRuntimeDiagnostics() {
+        String skipDownload = System.getenv("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD");
+        String browsersPath = System.getenv("PLAYWRIGHT_BROWSERS_PATH");
+        String home = System.getenv("HOME");
+        log.info(
+                "Diagnóstico Playwright runtime: skipBrowserDownload='{}', browsersPath='{}', home='{}', configuredExecutablePath='{}'",
+                skipDownload,
+                browsersPath,
+                home,
+                chromiumExecutablePath
+        );
     }
 
     private void performLogin(Page page) {

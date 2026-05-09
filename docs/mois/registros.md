@@ -226,3 +226,14 @@
 - Mantidas credenciais no `application.properties` por solicitação explícita para ajuste posterior.
 - Testes unitários do módulo `mois-hotmart-collector` executados com sucesso (`mvn test -q`).
 - Registro criado por solicitação explícita: "registre o traabalho em /docs/mois/registros.md".
+
+## 2026-05-09 21:25:00 UTC
+- Pesquisa operacional realizada com suporte do MCP Server e validação manual no host de produção para o `mois-hotmart-collector`.
+- Evidências coletadas no container em execução (`ghcr.io/paulofor/marketing-hub/mois-hotmart-collector:sha-738efa1e78dc7b9156c2e7b059cf9eb0ab2798ca`):
+  - variável `COLLECTOR_PLAYWRIGHT_EXECUTABLE_PATH` apontando para `/usr/bin/chromium`;
+  - binário existente no container em `/usr/bin/chromium-browser` (pacote transitional);
+  - ausência do caminho `/usr/bin/chromium`, reproduzindo exatamente a falha dos logs (`Failed to launch chromium because executable doesn't exist at /usr/bin/chromium`).
+- Ajuste aplicado no repositório: remoção do `ENV COLLECTOR_PLAYWRIGHT_EXECUTABLE_PATH=/usr/bin/chromium` no `mois-hotmart-collector/Dockerfile` para não forçar caminho inválido e permitir resolução automática do executável pelo Playwright em runtime.
+- Mantidas as variáveis `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` e `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` no Dockerfile para preservar estratégia atual de runtime.
+- Próximo passo operacional recomendado: rebuild/publish da imagem e redeploy do container para materializar a correção em produção.
+- Registro criado por solicitação explícita: "registre a pesquisa e o ajuste em /docs/mois/registros.md".

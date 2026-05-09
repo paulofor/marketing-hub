@@ -148,7 +148,7 @@ public class GeraLandingStageExecutionService {
         execution.setModelResponse(request.modelResponse());
         String provisionalHtml = StringUtils.hasText(request.provisionalHtml())
                 ? request.provisionalHtml()
-                : wireframeProvisionalHtmlAssembler.assemble(request.modelResponse());
+                : wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
         execution.setProvisionalHtml(provisionalHtml);
         execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
         if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {

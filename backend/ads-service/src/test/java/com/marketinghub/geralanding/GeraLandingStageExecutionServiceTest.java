@@ -114,7 +114,7 @@ class GeraLandingStageExecutionServiceTest {
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-ok".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
         when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
-        when(wireframeProvisionalHtmlAssembler.assemble(request.modelResponse())).thenReturn("<html>provisorio</html>");
+        when(wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), "id-ok")).thenReturn("<html>provisorio</html>");
 
         service.receiveResult("id-ok", request);
 

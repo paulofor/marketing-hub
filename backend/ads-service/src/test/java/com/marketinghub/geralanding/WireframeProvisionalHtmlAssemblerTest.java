@@ -30,12 +30,13 @@ class WireframeProvisionalHtmlAssemblerTest {
                 }
                 """;
 
-        String html = assembler.assemble(modelResponse);
+        String html = assembler.assemble(modelResponse, "job-123");
 
         assertNotNull(html);
         assertTrue(html.contains("<!doctype html>"));
         assertTrue(html.contains("id=\"s1-hero\"") || html.contains("id='s1-hero'"));
         assertTrue(html.contains("Lorem ipsum"));
+        assertTrue(html.contains("<!-- jobId = job-123 -->"));
     }
 
     @Test
@@ -56,7 +57,7 @@ class WireframeProvisionalHtmlAssemblerTest {
         assertTrue(html.contains("#s1-hero-form {"));
         assertTrue(html.contains("padding: 20px 16px;"));
         assertTrue(html.contains("grid-template-columns: 1fr;"));
-        assertTrue(html.toLowerCase().contains("<html><body><section"));
+        assertTrue(!html.contains("<!-- jobId ="));
     }
 
     @Test

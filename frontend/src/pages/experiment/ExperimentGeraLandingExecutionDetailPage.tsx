@@ -118,6 +118,14 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <strong>Motivo da falha:</strong> não informado pelo Worker AI.
                 </div>
               ) : null}
+              {detailQuery.data.errorDetail ? (
+                <div className="alert alert-secondary mb-0" role="alert">
+                  <strong>Detalhe técnico do erro:</strong>
+                  <pre className="mb-0 mt-2 small overflow-auto">
+                    <code>{detailQuery.data.errorDetail}</code>
+                  </pre>
+                </div>
+              ) : null}
 
               <div className="row g-3 small">
                 <div className="col-md-6"><strong>Job ID:</strong> {detailQuery.data.idJob}</div>

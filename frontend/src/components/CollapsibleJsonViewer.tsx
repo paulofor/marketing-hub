@@ -12,6 +12,7 @@ type CollapsibleJsonViewerProps = {
   content?: string | null;
   emptyMessage?: string;
   initiallyCollapsed?: boolean;
+  parseAsJson?: boolean;
 };
 
 function parseJson(content?: string | null): JsonValue | null {
@@ -21,6 +22,18 @@ function parseJson(content?: string | null): JsonValue | null {
   } catch {
     return null;
   }
+}
+
+function decodeEscapedText(value: string): string {
+  if (!value.includes("\\n") && !value.includes("\\r") && !value.includes("\\t")) {
+    return value;
+  }
+
+  return value
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\n")
+    .replace(/\\t/g, "\t");
 }
 
 function JsonNode({
@@ -47,7 +60,7 @@ function JsonNode({
             className="mb-0 d-inline"
             style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
           >
-            {value}
+            {decodeEscapedText(value)}
           </pre>
         ) : (
           <code>{JSON.stringify(value)}</code>
@@ -94,8 +107,9 @@ export default function CollapsibleJsonViewer({
   content,
   emptyMessage = "Sem conteúdo registrado.",
   initiallyCollapsed = false,
+  parseAsJson = true,
 }: CollapsibleJsonViewerProps) {
-  const parsed = useMemo(() => parseJson(content), [content]);
+  const parsed = useMemo(() => (parseAsJson ? parseJson(content) : null), [content, parseAsJson]);
 
   if (!content) {
     return <p className="text-muted small mb-0">{emptyMessage}</p>;
@@ -104,7 +118,7 @@ export default function CollapsibleJsonViewer({
   if (!parsed) {
     return (
       <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
-        {content}
+        {decodeEscapedText(content)}
       </pre>
     );
   }

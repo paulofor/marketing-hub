@@ -247,11 +247,14 @@
   "required": [
     "pageGoal",
     "messageMatchSource",
+    "messageMatchNotes",
     "primaryCTA",
     "hero",
     "bodySections",
     "ctaBlocks",
-    "consistencyChecks"
+    "faq",
+    "consistencyChecks",
+    "complianceNotes"
   ],
   "description": "Schema da etapa landing copy. A copy deve ser derivada dos sinais do wireframe anterior, especialmente uiTags e uiTextTags por sectionId/slotId."
 }

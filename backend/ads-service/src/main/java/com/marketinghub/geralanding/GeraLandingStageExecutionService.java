@@ -177,6 +177,12 @@ public class GeraLandingStageExecutionService {
                 experiment = experimentRepository.findById(request.experimentId()).orElse(null);
             }
             String wireframe = experiment != null ? experiment.getLandingPageWireframe() : null;
+            if (!StringUtils.hasText(wireframe) && request.experimentId() != null) {
+                wireframe = executionRepository
+                        .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), "landing-page-wireframe")
+                        .map(GeraLandingStageExecution::getModelResponse)
+                        .orElse(null);
+            }
             return copyProvisionalHtmlAssembler.assemble(request.modelResponse(), wireframe, idJob);
         }
         return wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);

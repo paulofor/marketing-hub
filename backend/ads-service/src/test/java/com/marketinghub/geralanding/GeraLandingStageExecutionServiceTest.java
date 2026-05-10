@@ -166,6 +166,54 @@ class GeraLandingStageExecutionServiceTest {
         verify(experimentRepository).save(experiment);
     }
 
+
+    @Test
+    void shouldUseLatestWireframeExecutionWhenExperimentHasNoWireframeForCopyHtmlAssembly() {
+        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
+                55L,
+                "landing-page-copy",
+                "{\"landingPageCopy\":{\"hero\":{\"headline\":\"Titulo\"}}}",
+                null,
+                null,
+                null,
+                "job-openai-copy",
+                12,
+                34,
+                null);
+        GeraLandingStageExecution copyExecution = GeraLandingStageExecution.builder()
+                .experimentId(55L)
+                .stageCode("landing-page-copy")
+                .executionRequestedAt(Instant.parse("2026-05-10T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-10T00:00:00Z"))
+                .status("EM_PROCESSAMENTO")
+                .idJob("id-copy-fallback".getBytes(StandardCharsets.UTF_8))
+                .build();
+        GeraLandingStageExecution wireframeExecution = GeraLandingStageExecution.builder()
+                .experimentId(55L)
+                .stageCode("landing-page-wireframe")
+                .executionRequestedAt(Instant.parse("2026-05-09T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-09T00:00:00Z"))
+                .status("CONCLUIDO")
+                .modelResponse("{\"landingPageWireframe\":{\"sectionOrder\":[]}}")
+                .idJob("id-wireframe".getBytes(StandardCharsets.UTF_8))
+                .build();
+        Experiment experiment = new Experiment();
+        experiment.setId(55L);
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-copy-fallback".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(copyExecution));
+        when(experimentRepository.findById(55L)).thenReturn(Optional.of(experiment));
+        when(executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(55L, "landing-page-wireframe"))
+                .thenReturn(Optional.of(wireframeExecution));
+        when(copyProvisionalHtmlAssembler.assemble(request.modelResponse(), wireframeExecution.getModelResponse(), "id-copy-fallback"))
+                .thenReturn("<html>copy-com-wireframe</html>");
+
+        service.receiveResult("id-copy-fallback", request);
+
+        assertEquals("<html>copy-com-wireframe</html>", copyExecution.getProvisionalHtml());
+        verify(copyProvisionalHtmlAssembler).assemble(request.modelResponse(), wireframeExecution.getModelResponse(), "id-copy-fallback");
+    }
+
     @Test
     void shouldMarkExecutionAsProcessingWhenDispatchIsReceived() {
         GeraLandingDispatchReceiveRequest request =

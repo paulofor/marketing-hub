@@ -26,14 +26,17 @@ public class GeraLandingStageExecutionService {
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
     private final WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler;
+    private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
 
     public GeraLandingStageExecutionService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
-            WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler) {
+            WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler,
+            CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.wireframeProvisionalHtmlAssembler = wireframeProvisionalHtmlAssembler;
+        this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
     }
 
     @Transactional
@@ -147,9 +150,7 @@ public class GeraLandingStageExecutionService {
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
         execution.setModelResponse(request.modelResponse());
-        String provisionalHtml = StringUtils.hasText(request.provisionalHtml())
-                ? request.provisionalHtml()
-                : wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
+        String provisionalHtml = resolveProvisionalHtml(idJob, request, execution);
         execution.setProvisionalHtml(provisionalHtml);
         execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
         execution.setErrorDetail(StringUtils.hasText(request.errorDetail()) ? request.errorDetail().trim() : null);
@@ -162,11 +163,35 @@ public class GeraLandingStageExecutionService {
         execution.setCompletedAt(Instant.now());
         execution.setStatus(StringUtils.hasText(request.errorMessage()) ? STATUS_FAILED : STATUS_COMPLETED);
         executionRepository.save(execution);
-        persistWireframeOnExperiment(request, execution);
+        persistStageArtifactOnExperiment(request, execution);
     }
 
-    private void persistWireframeOnExperiment(GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
-        if (!"landing-page-wireframe".equalsIgnoreCase(request.stageCode())) {
+
+    private String resolveProvisionalHtml(String idJob, GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
+        if (StringUtils.hasText(request.provisionalHtml())) {
+            return request.provisionalHtml();
+        }
+        if ("landing-page-copy".equalsIgnoreCase(request.stageCode())) {
+            Experiment experiment = execution.getExperiment();
+            if (experiment == null && request.experimentId() != null) {
+                experiment = experimentRepository.findById(request.experimentId()).orElse(null);
+            }
+            String wireframe = experiment != null ? experiment.getLandingPageWireframe() : null;
+            if (!StringUtils.hasText(wireframe) && request.experimentId() != null) {
+                wireframe = executionRepository
+                        .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), "landing-page-wireframe")
+                        .map(GeraLandingStageExecution::getModelResponse)
+                        .orElse(null);
+            }
+            return copyProvisionalHtmlAssembler.assemble(request.modelResponse(), wireframe, idJob);
+        }
+        return wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
+    }
+
+    private void persistStageArtifactOnExperiment(GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
+        String stageCode = request.stageCode();
+        if (!"landing-page-wireframe".equalsIgnoreCase(stageCode)
+                && !"landing-page-copy".equalsIgnoreCase(stageCode)) {
             return;
         }
         if (!StringUtils.hasText(request.modelResponse()) || StringUtils.hasText(request.errorMessage())) {
@@ -174,8 +199,13 @@ public class GeraLandingStageExecutionService {
         }
         Experiment experiment = experimentRepository.findById(request.experimentId())
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + request.experimentId()));
-        experiment.setLandingPageWireframe(request.modelResponse());
-        experiment.setLandingPageWireframeJobId(execution.getIdJob());
+        if ("landing-page-wireframe".equalsIgnoreCase(stageCode)) {
+            experiment.setLandingPageWireframe(request.modelResponse());
+            experiment.setLandingPageWireframeJobId(execution.getIdJob());
+        } else {
+            experiment.setLandingPageCopy(request.modelResponse());
+            experiment.setLandingPageCopyJobId(execution.getIdJob());
+        }
         experimentRepository.save(experiment);
     }
 

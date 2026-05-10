@@ -29,6 +29,13 @@ Atualização incremental — vínculo do wireframe com execução Gera Landing 
   - objetivo: manter lineage direto entre artefato consolidado do experimento e execução operacional auditável do Gera Landing.
 
 
+
+Atualização incremental — vínculo da copy com execução Gera Landing (10/05/2026):
+
+- `landing_page_copy_job_id` (`BINARY(36)`)
+  - referencia o `id_job` da execução que gerou a versão atualmente persistida em `landing_page_copy`;
+  - objetivo: garantir lineage e seleção explícita da versão de copy usada no pipeline de landing.
+
 Atualização incremental — rastreio explícito de modelo OpenAI no Gera Landing (09/05/2026):
 
 - `gera_landing_stage_execution.openai_model` (`VARCHAR(120)`)

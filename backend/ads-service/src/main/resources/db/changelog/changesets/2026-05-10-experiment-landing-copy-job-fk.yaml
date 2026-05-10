@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-10-experiment-landing-copy-job-fk
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: landing_page_copy_job_id
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: landing_page_copy_job_id
+                  type: BINARY(36)

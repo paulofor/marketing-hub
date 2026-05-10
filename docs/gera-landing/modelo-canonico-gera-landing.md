@@ -482,3 +482,114 @@ O hook `useGeraLandingStageExecutions` define o contrato mínimo de item para li
 O hook `useGeraLandingStageExecutionDetail` estende para auditoria completa com os campos de prompt, schema, request OpenAI, resposta e métricas.
 
 Esse contrato é a base concreta para suportar **qualquer estágio** na tela de detalhe, desde que o backend continue retornando a mesma estrutura por `jobId`.
+
+## 12) Mecanismo canônico de Assembler por etapa para HTML provisório
+
+### 12.1 Objetivo do mecanismo
+
+No pipeline Gera Landing, cada etapa de geração (ex.: `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-briefing`, `landing-page-design-preset`) deve possuir seu próprio **Assembler** responsável por transformar a saída estruturada do modelo em um HTML provisório visualizável e auditável.
+
+Esse HTML provisório é um artefato operacional de inspeção rápida e validação humana do conteúdo da etapa. Ele **não substitui** o render final da landing, mas garante:
+
+- previsibilidade de apresentação por etapa;
+- rastreabilidade do que foi gerado pelo modelo;
+- persistência de uma visão legível no backend;
+- contrato uniforme entre worker, backend e UI administrativa.
+
+### 12.2 Princípio arquitetural (independente da etapa)
+
+Cada etapa segue o mesmo ciclo:
+
+1. O worker gera `modelResponse` conforme o schema da etapa.
+2. O backend recebe `modelResponse` em `receive-result`.
+3. O backend resolve o `StageCode` da execução.
+4. O backend delega para o Assembler específico daquela etapa.
+5. O Assembler converte o JSON da etapa em HTML provisório seguro para preview.
+6. O backend persiste o HTML em `gera_landing_stage_execution.provisional_html`.
+7. A UI administrativa lê esse campo para inspeção operacional.
+
+### 12.3 Contrato mínimo canônico dos Assemblers
+
+Para manter consistência cross-etapas, todo Assembler deve seguir o contrato mínimo:
+
+- Entrada principal:
+  - `modelResponse` (JSON retornado pelo modelo).
+  - `jobId` (quando aplicável, para anotação de rastreio no HTML).
+- Saída:
+  - `String` contendo HTML provisório completo **ou** `null` quando não for possível montar com segurança.
+- Comportamento de robustez:
+  - nunca lançar erro para fora do fluxo de persistência final;
+  - falhas de parse/normalização retornam `null` e ficam registráveis em auditoria;
+  - tolerar variações controladas de envelope (objeto raiz da etapa ou objeto aninhado).
+
+### 12.4 Responsabilidade por etapa (não ficar preso em Wireframe)
+
+A estratégia canônica exige um Assembler dedicado por etapa de pipeline. Exemplo de distribuição de responsabilidades:
+
+- **Wireframe Assembler**:
+  - monta estrutura visual da página por seções;
+  - aplica placeholders e estilos de preview para leitura rápida de layout.
+
+- **Copy Assembler**:
+  - organiza títulos, subtítulos, bullets, CTAs, provas e blocos textuais;
+  - destaca hierarquia de copy e intenção de conversão sem depender do layout final.
+
+- **Image Briefing Assembler**:
+  - renderiza briefing por bloco (contexto, cena, elementos obrigatórios, restrições, variações);
+  - facilita validação semântica de direção de arte por etapa.
+
+- **Design Preset Assembler**:
+  - apresenta decisões de sistema visual (tipografia, cores, espaçamentos, componentes, tokens);
+  - permite revisão rápida de coerência estética antes da composição final.
+
+Observação: os nomes concretos de classes podem variar, mas o padrão arquitetural e o contrato operacional devem permanecer os mesmos.
+
+### 12.5 Roteamento canônico por `stage_code`
+
+O backend deve possuir um roteador/fábrica de assembler por etapa, baseado em `stage_code`, com mapeamento explícito e sem heurísticas implícitas. Exemplo conceitual:
+
+- `landing-page-wireframe` → Wireframe Assembler
+- `landing-page-copy` → Copy Assembler
+- `landing-page-image-briefing` → Image Briefing Assembler
+- `landing-page-design-preset` → Design Preset Assembler
+
+Regras:
+
+- estágio não mapeado: persistir `provisional_html = null` e registrar a condição em auditoria;
+- não compartilhar lógica de render específica entre etapas quando isso causar acoplamento indevido;
+- extrair apenas utilitários genéricos realmente reutilizáveis (sanitização, helpers de markup, escape).
+
+### 12.6 Persistência e consumo no backend
+
+No fechamento da execução (`receive-result`), o backend deve aplicar a política abaixo:
+
+1. Se o payload já trouxer `provisionalHtml` explícito e confiável, pode persistir esse valor.
+2. Caso contrário, gerar via Assembler da etapa.
+3. Persistir em `provisional_html`.
+4. Manter `model_response` bruto para auditoria paralela.
+
+Essa abordagem garante dupla rastreabilidade:
+
+- o dado estruturado original do modelo;
+- a visualização provisória derivada para operação.
+
+### 12.7 Diretrizes de qualidade para os novos Assemblers
+
+Ao criar Assemblers de novas etapas, cumprir obrigatoriamente:
+
+- aderência ao schema da etapa e aos documentos canônicos de artefato;
+- saída HTML estável para o mesmo input (determinismo funcional);
+- tratamento de campos ausentes sem quebrar o fluxo;
+- cobertura de testes unitários da etapa (sucesso, input parcial, input inválido);
+- não injetar JSON-em-JSON em campos textuais;
+- preservar foco de UX operacional: informação clara, sem poluição visual e sem contradições.
+
+### 12.8 Benefícios do padrão por etapa
+
+O padrão de Assembler dedicado por etapa traz:
+
+- escalabilidade do pipeline sem crescimento de complexidade acoplada;
+- facilidade de evolução de contratos por etapa;
+- depuração mais rápida (erro localizado por estágio);
+- melhor governança entre backend, worker e frontend administrativo;
+- base consistente para futuras etapas além de Wireframe, Copy, Image Briefing e Design Preset.

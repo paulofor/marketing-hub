@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class HotmartCollectorService {
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorService.class);
+    private static final double PLAYWRIGHT_TIMEOUT_MS = 180_000;
 
     private final boolean headless;
     private final String chromiumExecutablePath;
@@ -176,14 +177,34 @@ public class HotmartCollectorService {
     private void performLogin(Page page) {
         log.info("Iniciando login Hotmart por credenciais (username preenchido={}).",
                 hotmartUsername != null && !hotmartUsername.isBlank());
-        page.navigate("https://app.hotmart.com/login", new Page.NavigateOptions()
-                .setTimeout(60_000)
+        page.navigate("https://sso.hotmart.com/login", new Page.NavigateOptions()
+                .setTimeout(PLAYWRIGHT_TIMEOUT_MS)
                 .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
-        page.locator("input[type='email'], input[name='email']").first().fill(hotmartUsername);
-        page.locator("input[type='password'], input[name='password']").first().fill(hotmartPassword);
-        page.locator("button[type='submit']").first().click();
-        page.waitForTimeout(3_000);
-        log.info("Login Hotmart submetido. URL atual após espera='{}'.", page.url());
+        page.setDefaultTimeout(PLAYWRIGHT_TIMEOUT_MS);
+
+        String emailSelector = "input#username, input[name='username'], input[autocomplete*='username'], input[type='text'][name='username'], input[type='email'], input[name='email']";
+        String passwordSelector = "input[type='password'], input[name='password']";
+        String submitSelector = "button#submit-button, button[data-test-id='login-submit'], button[name='submit'][type='submit'], button[type='submit']";
+
+        try {
+            long emailCount = page.locator(emailSelector).count();
+            long passwordCount = page.locator(passwordSelector).count();
+            long submitCount = page.locator(submitSelector).count();
+            log.info("Diagnóstico de seletores Hotmart login: emailMatches={}, passwordMatches={}, submitMatches={}, url='{}'",
+                    emailCount, passwordCount, submitCount, page.url());
+
+            page.locator(emailSelector).first().fill(hotmartUsername);
+            page.locator(passwordSelector).first().fill(hotmartPassword);
+            page.locator(submitSelector).first().click();
+            page.waitForTimeout(3_000);
+            log.info("Login Hotmart submetido. URL atual após espera='{}'.", page.url());
+        } catch (Exception ex) {
+            String inputSnapshot = page.locator("input")
+                    .evaluateAll("els => els.slice(0, 10).map((el, idx) => `${idx}:type=${el.getAttribute('type') || ''};name=${el.getAttribute('name') || ''};id=${el.getAttribute('id') || ''};placeholder=${el.getAttribute('placeholder') || ''}`).join(' | ')")
+                    .toString();
+            log.error("Falha ao preencher/submeter login Hotmart. url='{}', inputSnapshot='{}'", page.url(), inputSnapshot, ex);
+            throw ex;
+        }
     }
 }

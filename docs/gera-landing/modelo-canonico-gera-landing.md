@@ -33,11 +33,12 @@ Ele cobre:
   - Executa ciclo batch (upload JSONL → create batch → polling → download output).
   - Devolve status de dispatch e resultado (ou falha) para o backend.
 
-### 1.2 Etapa suportada oficialmente no código atual
+### 1.2 Etapas suportadas oficialmente no código atual
 
-- `landing-page-wireframe`.
+- `landing-page-wireframe`;
+- `landing-page-copy`.
 
-Qualquer etapa fora desse valor é ignorada pelo worker com log informativo.
+Observação operacional: no worker `geralanding`, etapas fora desse conjunto ainda são ignoradas com log informativo.
 
 ---
 
@@ -264,11 +265,14 @@ Backend em `receiveResult`:
   - `FALHA` se `error_message` preenchido;
   - `CONCLUIDO` caso contrário.
 
-Além disso, para etapa `landing-page-wireframe`, sem erro e com `modelResponse` válido:
+Além disso, sem erro e com `modelResponse` válido, o backend atualiza o artefato consolidado no `experiment` conforme a etapa:
 
-- backend atualiza o experimento:
+- `landing-page-wireframe`:
   - `landingPageWireframe = modelResponse`
   - `landingPageWireframeJobId = execution.idJob`.
+- `landing-page-copy`:
+  - `landingPageCopy = modelResponse`
+  - `landingPageCopyJobId = execution.idJob` (versão da copy que deve ser usada nas próximas etapas).
 
 ---
 

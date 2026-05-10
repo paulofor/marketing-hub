@@ -9,6 +9,43 @@ Estruturar uma camada de inteligência de mercado baseada em MEI para alimentar 
 - OPRM consumindo contexto de nicho durante processamento de jobs.
 - Score de oportunidade por nicho para priorização comercial.
 
+## Pesquisa — fontes públicas recomendadas (base oficial)
+
+### Fonte 1 (prioridade alta): Receita Federal — Dados Públicos do CNPJ
+- Link institucional CNPJ: https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/cnpj
+- Metadados/layout oficial dos arquivos públicos: https://www.gov.br/receitafederal/dados/cnpj-metadados.pdf
+- Uso no plano:
+  - base principal para contagem de estabelecimentos por CNAE e geografia;
+  - filtros por situação cadastral (ativos), matriz/filial e data de abertura;
+  - consolidação por mês para séries de crescimento.
+
+### Fonte 2 (prioridade alta): Mapa de Empresas (Gov.br/MDIC)
+- Serviço: https://www.gov.br/pt-br/servicos/mapa-de-empresa
+- Painéis e orientações de extração: https://www.gov.br/empresas-e-negocios/pt-br/mapa-de-empresas/painel-mapa-de-empresas
+- Uso no plano:
+  - validação cruzada de aberturas/baixas mensais;
+  - acompanhamento rápido de tendências e recortes por UF;
+  - conferência de consistência entre pipeline interno e painéis governamentais.
+
+### Fonte 3 (prioridade média): IBGE CEMPRE / SIDRA
+- Página da pesquisa CEMPRE: https://www.ibge.gov.br/estatisticas/economicas/servicos/9016-estatisticas-do-cadastro-central-de-empresas.html
+- Tabelas SIDRA (CEMPRE): https://sidra.ibge.gov.br/pesquisa/cempre/tabelas
+- Uso no plano:
+  - indicadores estruturais por CNAE/território para complementar leitura de tamanho de nicho;
+  - métricas de concentração e dinâmica setorial para robustecer o `concentration_score`.
+
+### Fonte 4 (catálogo): dados.gov.br
+- Portal Brasileiro de Dados Abertos: https://dados.gov.br
+- Uso no plano:
+  - descoberta e versionamento de datasets governamentais adicionais;
+  - controle de origem/licença e rastreabilidade de cada ingestão.
+
+### Regras de priorização de uso das fontes
+1. **Produção oficial do ranking**: usar Receita CNPJ como fonte primária.
+2. **Validação de tendência**: cruzar com Mapa de Empresas.
+3. **Contexto econômico-estrutural**: complementar com CEMPRE/SIDRA.
+4. **Catálogo e governança**: registrar datasets via dados.gov.br.
+
 ---
 
 ## Fase 1 — Governança e modelagem (Semana 1)

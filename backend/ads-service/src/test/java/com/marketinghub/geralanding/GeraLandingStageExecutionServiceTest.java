@@ -152,11 +152,12 @@ class GeraLandingStageExecutionServiceTest {
                 .build();
         Experiment experiment = new Experiment();
         experiment.setId(44L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[]}}");
 
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-copy".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
         when(experimentRepository.findById(44L)).thenReturn(Optional.of(experiment));
-        when(copyProvisionalHtmlAssembler.assemble(request.modelResponse(), null, "id-copy")).thenReturn("<html>provisorio</html>");
+        when(copyProvisionalHtmlAssembler.assemble(request.modelResponse(), experiment.getLandingPageWireframe(), "id-copy")).thenReturn("<html>provisorio</html>");
 
         service.receiveResult("id-copy", request);
 
@@ -168,7 +169,7 @@ class GeraLandingStageExecutionServiceTest {
 
 
     @Test
-    void shouldUseLatestWireframeExecutionWhenExperimentHasNoWireframeForCopyHtmlAssembly() {
+    void shouldThrowWhenExperimentHasNoWireframeForCopyHtmlAssembly() {
         GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
                 55L,
                 "landing-page-copy",
@@ -188,30 +189,17 @@ class GeraLandingStageExecutionServiceTest {
                 .status("EM_PROCESSAMENTO")
                 .idJob("id-copy-fallback".getBytes(StandardCharsets.UTF_8))
                 .build();
-        GeraLandingStageExecution wireframeExecution = GeraLandingStageExecution.builder()
-                .experimentId(55L)
-                .stageCode("landing-page-wireframe")
-                .executionRequestedAt(Instant.parse("2026-05-09T00:00:00Z"))
-                .createdAt(Instant.parse("2026-05-09T00:00:00Z"))
-                .status("CONCLUIDO")
-                .modelResponse("{\"landingPageWireframe\":{\"sectionOrder\":[]}}")
-                .idJob("id-wireframe".getBytes(StandardCharsets.UTF_8))
-                .build();
         Experiment experiment = new Experiment();
         experiment.setId(55L);
 
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-copy-fallback".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(copyExecution));
         when(experimentRepository.findById(55L)).thenReturn(Optional.of(experiment));
-        when(executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(55L, "landing-page-wireframe"))
-                .thenReturn(Optional.of(wireframeExecution));
-        when(copyProvisionalHtmlAssembler.assemble(request.modelResponse(), wireframeExecution.getModelResponse(), "id-copy-fallback"))
-                .thenReturn("<html>copy-com-wireframe</html>");
+        IllegalStateException exception = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalStateException.class,
+                () -> service.receiveResult("id-copy-fallback", request));
 
-        service.receiveResult("id-copy-fallback", request);
-
-        assertEquals("<html>copy-com-wireframe</html>", copyExecution.getProvisionalHtml());
-        verify(copyProvisionalHtmlAssembler).assemble(request.modelResponse(), wireframeExecution.getModelResponse(), "id-copy-fallback");
+        assertEquals("Não foi possível montar HTML provisório da copy: experiment.landingPageWireframe ausente", exception.getMessage());
     }
 
     @Test

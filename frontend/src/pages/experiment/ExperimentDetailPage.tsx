@@ -562,6 +562,10 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
     (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
     0,
   );
+  const totalCompletedGeraLandingCopyCostUsd = historyGeraLandingCopyExecutions.reduce(
+    (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+    0,
+  );
   const { data: runningGeraLandingJobDetail } = useGeraLandingStageExecutionDetail(
     expId,
     runningGeraLandingJobId,
@@ -1811,6 +1815,9 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
               <div className="card-body d-flex flex-column gap-3">
                 <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
                   <h5 className="card-title mb-0">Gera Copy</h5>
+                  <span className="badge text-bg-light border fs-6 fw-semibold">
+                    Total execuções: {formatCurrencyUsd(totalCompletedGeraLandingCopyCostUsd)}
+                  </span>
                 </div>
                 <div className="d-flex flex-column gap-3">
                   <button

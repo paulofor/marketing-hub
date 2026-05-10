@@ -11,6 +11,7 @@ type JsonValue =
 type CollapsibleJsonViewerProps = {
   content?: string | null;
   emptyMessage?: string;
+  initiallyCollapsed?: boolean;
 };
 
 function parseJson(content?: string | null): JsonValue | null {
@@ -26,10 +27,12 @@ function JsonNode({
   value,
   label,
   depth = 0,
+  initiallyCollapsed = false,
 }: {
   value: JsonValue;
   label?: string;
   depth?: number;
+  initiallyCollapsed?: boolean;
 }) {
   const spacing = { marginLeft: depth === 0 ? 0 : 12 };
 
@@ -59,7 +62,7 @@ function JsonNode({
     : Object.entries(value);
 
   return (
-    <details open={depth < 1} style={spacing}>
+    <details open={initiallyCollapsed ? depth > 0 : depth < 1} style={spacing}>
       <summary className="small" style={{ cursor: "pointer" }}>
         {label ? (
           <strong>{label}</strong>
@@ -78,6 +81,7 @@ function JsonNode({
               value={child}
               label={key}
               depth={depth + 1}
+              initiallyCollapsed={initiallyCollapsed}
             />
           ))
         )}
@@ -89,6 +93,7 @@ function JsonNode({
 export default function CollapsibleJsonViewer({
   content,
   emptyMessage = "Sem conteúdo registrado.",
+  initiallyCollapsed = false,
 }: CollapsibleJsonViewerProps) {
   const parsed = useMemo(() => parseJson(content), [content]);
 
@@ -106,7 +111,7 @@ export default function CollapsibleJsonViewer({
 
   return (
     <div className="bg-body-tertiary rounded p-2" style={{ overflowX: "auto" }}>
-      <JsonNode value={parsed} />
+      <JsonNode value={parsed} initiallyCollapsed={initiallyCollapsed} />
     </div>
   );
 }

@@ -10,25 +10,85 @@ function formatDateTime(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  return date.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 }
 
 function extractModelFromRequestBody(raw?: string) {
   if (!raw) return "—";
   try {
     const parsed = JSON.parse(raw);
-    return typeof parsed?.model === "string" && parsed.model.trim() ? parsed.model : "—";
+    return typeof parsed?.model === "string" && parsed.model.trim()
+      ? parsed.model
+      : "—";
   } catch {
     return "—";
   }
+}
+
+function extractErrorFileContent(raw?: string) {
+  if (!raw) return undefined;
+
+  const marker = "error_file=";
+  const markerIndex = raw.indexOf(marker);
+  if (markerIndex < 0) return raw;
+
+  const jsonSlice = raw.slice(markerIndex + marker.length).trim();
+  const openingBraceIndex = jsonSlice.indexOf("{");
+  if (openingBraceIndex < 0) return raw;
+
+  let depth = 0;
+  let inString = false;
+  let isEscaped = false;
+
+  for (let i = openingBraceIndex; i < jsonSlice.length; i += 1) {
+    const char = jsonSlice[i];
+
+    if (inString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (char === "\\") {
+        isEscaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return jsonSlice.slice(openingBraceIndex, i + 1);
+      }
+    }
+  }
+
+  return raw;
 }
 
 export default function ExperimentGeraLandingExecutionDetailPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { id: experimentId, jobId } = useParams();
   const detailQuery = useGeraLandingStageExecutionDetail(experimentId, jobId);
-  const modelUsed = extractModelFromRequestBody(detailQuery.data?.openAiRequestBody);
+  const modelUsed = extractModelFromRequestBody(
+    detailQuery.data?.openAiRequestBody,
+  );
   const provisionalHtml = detailQuery.data?.provisionalHtml?.trim() ?? "";
+  const errorFileContent = extractErrorFileContent(
+    detailQuery.data?.errorDetail,
+  );
 
   const buildJsonDownloadProps = (fieldName: string, value?: string | null) => {
     if (!value) return null;
@@ -67,7 +127,10 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
         document.body.removeChild(textArea);
       }
       setCopiedField(label);
-      window.setTimeout(() => setCopiedField((current) => (current === label ? null : current)), 2000);
+      window.setTimeout(
+        () => setCopiedField((current) => (current === label ? null : current)),
+        2000,
+      );
     } catch {
       setCopiedField(null);
     }
@@ -91,12 +154,20 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
           <PageTitle icon={experimentIcon}>
             Detalhe da execução Gera Landing
             {detailQuery.data?.stageCode ? (
-              <span className="badge text-bg-primary ms-3 align-middle">{detailQuery.data.stageCode}</span>
+              <span className="badge text-bg-primary ms-3 align-middle">
+                {detailQuery.data.stageCode}
+              </span>
             ) : null}
           </PageTitle>
-          <p className="text-muted mb-0">Visualização completa do registro da tabela gera_landing_stage_execution.</p>
+          <p className="text-muted mb-0">
+            Visualização completa do registro da tabela
+            gera_landing_stage_execution.
+          </p>
         </div>
-        <Link to={`/experiments/${experimentId}`} className="btn btn-outline-secondary">
+        <Link
+          to={`/experiments/${experimentId}`}
+          className="btn btn-outline-secondary"
+        >
           Voltar
         </Link>
       </div>
@@ -104,52 +175,99 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
       <section className="card border-0 shadow-sm">
         <div className="card-body">
           {detailQuery.isLoading ? (
-            <p className="text-muted mb-0">Carregando detalhes da execução...</p>
+            <p className="text-muted mb-0">
+              Carregando detalhes da execução...
+            </p>
           ) : detailQuery.isError || !detailQuery.data ? (
-            <p className="text-danger mb-0">Não foi possível carregar os detalhes da execução.</p>
+            <p className="text-danger mb-0">
+              Não foi possível carregar os detalhes da execução.
+            </p>
           ) : (
             <div className="d-flex flex-column gap-3">
               {detailQuery.data.errorMessage ? (
                 <div className="alert alert-danger mb-0" role="alert">
-                  <strong>Motivo da falha:</strong> {detailQuery.data.errorMessage}
+                  <strong>Motivo da falha:</strong>{" "}
+                  {detailQuery.data.errorMessage}
                 </div>
               ) : detailQuery.data.status === "FALHA" ? (
                 <div className="alert alert-warning mb-0" role="alert">
-                  <strong>Motivo da falha:</strong> não informado pelo Worker AI.
+                  <strong>Motivo da falha:</strong> não informado pelo Worker
+                  AI.
                 </div>
               ) : null}
-              {detailQuery.data.errorDetail ? (
+              {errorFileContent ? (
                 <div className="alert alert-secondary mb-0" role="alert">
                   <div className="d-flex align-items-center gap-2 flex-wrap">
                     <strong className="mb-0">Detalhe técnico do erro:</strong>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary"
-                      onClick={() => handleCopyJson("errorDetail", detailQuery.data.errorDetail)}
+                      onClick={() =>
+                        handleCopyJson("errorDetail", errorFileContent)
+                      }
                     >
-                      {copiedField === "errorDetail" ? "Copiado!" : "Copiar JSON"}
+                      {copiedField === "errorDetail"
+                        ? "Copiado!"
+                        : "Copiar JSON"}
                     </button>
                   </div>
                   <div className="mt-2">
-                    <CollapsibleJsonViewer content={detailQuery.data.errorDetail} />
+                    <CollapsibleJsonViewer
+                      content={errorFileContent}
+                      initiallyCollapsed
+                    />
                   </div>
                 </div>
               ) : null}
 
               <div className="row g-3 small">
-                <div className="col-md-6"><strong>Job ID:</strong> {detailQuery.data.idJob}</div>
-                <div className="col-md-6"><strong>Status:</strong> {detailQuery.data.status}</div>
-                <div className="col-md-6"><strong>Stage:</strong> {detailQuery.data.stageCode}</div>
-                <div className="col-md-6"><strong>OpenAI Job ID:</strong> {detailQuery.data.openAiJobId ?? "—"}</div>
-                <div className="col-md-6"><strong>Modelo usado:</strong> {modelUsed}</div>
-                <div className="col-md-6"><strong>Criado em:</strong> {formatDateTime(detailQuery.data.createdAt)}</div>
-                <div className="col-md-6"><strong>Concluído em:</strong> {formatDateTime(detailQuery.data.completedAt)}</div>
-                <div className="col-md-6"><strong>Solicitado em:</strong> {formatDateTime(detailQuery.data.executionRequestedAt)}</div>
-                <div className="col-md-6"><strong>Input tokens:</strong> {detailQuery.data.inputTokens ?? "—"}</div>
-                <div className="col-md-6"><strong>Processamento iniciado:</strong> {formatDateTime(detailQuery.data.processingStartedAt)}</div>
-                <div className="col-md-6"><strong>Output tokens:</strong> {detailQuery.data.outputTokens ?? "—"}</div>
-                <div className="col-md-6"><strong>Prompt template ID:</strong> {detailQuery.data.promptTemplateId ?? "—"}</div>
-                <div className="col-md-6"><strong>Custo USD:</strong> {detailQuery.data.costUsd ?? "—"}</div>
+                <div className="col-md-6">
+                  <strong>Job ID:</strong> {detailQuery.data.idJob}
+                </div>
+                <div className="col-md-6">
+                  <strong>Status:</strong> {detailQuery.data.status}
+                </div>
+                <div className="col-md-6">
+                  <strong>Stage:</strong> {detailQuery.data.stageCode}
+                </div>
+                <div className="col-md-6">
+                  <strong>OpenAI Job ID:</strong>{" "}
+                  {detailQuery.data.openAiJobId ?? "—"}
+                </div>
+                <div className="col-md-6">
+                  <strong>Modelo usado:</strong> {modelUsed}
+                </div>
+                <div className="col-md-6">
+                  <strong>Criado em:</strong>{" "}
+                  {formatDateTime(detailQuery.data.createdAt)}
+                </div>
+                <div className="col-md-6">
+                  <strong>Concluído em:</strong>{" "}
+                  {formatDateTime(detailQuery.data.completedAt)}
+                </div>
+                <div className="col-md-6">
+                  <strong>Solicitado em:</strong>{" "}
+                  {formatDateTime(detailQuery.data.executionRequestedAt)}
+                </div>
+                <div className="col-md-6">
+                  <strong>Input tokens:</strong>{" "}
+                  {detailQuery.data.inputTokens ?? "—"}
+                </div>
+                <div className="col-md-6">
+                  <strong>Processamento iniciado:</strong>{" "}
+                  {formatDateTime(detailQuery.data.processingStartedAt)}
+                </div>
+                <div className="col-md-6">
+                  <strong>Output tokens:</strong>{" "}
+                  {detailQuery.data.outputTokens ?? "—"}
+                </div>
+                <div className="col-md-6">
+                  <strong>Prompt template ID:</strong>{" "}
+                  {detailQuery.data.promptTemplateId ?? "—"}
+                </div>
+                <div className="col-md-6">
+                  <strong>Custo USD:</strong> {detailQuery.data.costUsd ?? "—"}
+                </div>
               </div>
 
               <div>
@@ -158,21 +276,37 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={() => handleCopyJson("promptContent", detailQuery.data.promptContent)}
+                    onClick={() =>
+                      handleCopyJson(
+                        "promptContent",
+                        detailQuery.data.promptContent,
+                      )
+                    }
                   >
-                    {copiedField === "promptContent" ? "Copiado!" : "Copiar JSON"}
+                    {copiedField === "promptContent"
+                      ? "Copiado!"
+                      : "Copiar JSON"}
                   </button>
                   {(() => {
-                    const download = buildJsonDownloadProps("prompt-content", detailQuery.data.promptContent);
+                    const download = buildJsonDownloadProps(
+                      "prompt-content",
+                      detailQuery.data.promptContent,
+                    );
                     if (!download) return null;
                     return (
-                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                      <a
+                        href={download.href}
+                        download={download.fileName}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
                         Baixar JSON
                       </a>
                     );
                   })()}
                 </div>
-                <CollapsibleJsonViewer content={detailQuery.data.promptContent} />
+                <CollapsibleJsonViewer
+                  content={detailQuery.data.promptContent}
+                />
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">
@@ -180,15 +314,24 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={() => handleCopyJson("prompt", detailQuery.data.prompt)}
+                    onClick={() =>
+                      handleCopyJson("prompt", detailQuery.data.prompt)
+                    }
                   >
                     {copiedField === "prompt" ? "Copiado!" : "Copiar JSON"}
                   </button>
                   {(() => {
-                    const download = buildJsonDownloadProps("prompt", detailQuery.data.prompt);
+                    const download = buildJsonDownloadProps(
+                      "prompt",
+                      detailQuery.data.prompt,
+                    );
                     if (!download) return null;
                     return (
-                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                      <a
+                        href={download.href}
+                        download={download.fileName}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
                         Baixar JSON
                       </a>
                     );
@@ -198,25 +341,43 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">
-                  <h6 className="mb-0">OpenAI request body (prompt cru enviado)</h6>
+                  <h6 className="mb-0">
+                    OpenAI request body (prompt cru enviado)
+                  </h6>
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={() => handleCopyJson("openAiRequestBody", detailQuery.data.openAiRequestBody)}
+                    onClick={() =>
+                      handleCopyJson(
+                        "openAiRequestBody",
+                        detailQuery.data.openAiRequestBody,
+                      )
+                    }
                   >
-                    {copiedField === "openAiRequestBody" ? "Copiado!" : "Copiar JSON"}
+                    {copiedField === "openAiRequestBody"
+                      ? "Copiado!"
+                      : "Copiar JSON"}
                   </button>
                   {(() => {
-                    const download = buildJsonDownloadProps("openai-request-body", detailQuery.data.openAiRequestBody);
+                    const download = buildJsonDownloadProps(
+                      "openai-request-body",
+                      detailQuery.data.openAiRequestBody,
+                    );
                     if (!download) return null;
                     return (
-                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                      <a
+                        href={download.href}
+                        download={download.fileName}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
                         Baixar JSON
                       </a>
                     );
                   })()}
                 </div>
-                <CollapsibleJsonViewer content={detailQuery.data.openAiRequestBody} />
+                <CollapsibleJsonViewer
+                  content={detailQuery.data.openAiRequestBody}
+                />
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">
@@ -224,15 +385,24 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={() => handleCopyJson("schemaJson", detailQuery.data.schemaJson)}
+                    onClick={() =>
+                      handleCopyJson("schemaJson", detailQuery.data.schemaJson)
+                    }
                   >
                     {copiedField === "schemaJson" ? "Copiado!" : "Copiar JSON"}
                   </button>
                   {(() => {
-                    const download = buildJsonDownloadProps("schema-json", detailQuery.data.schemaJson);
+                    const download = buildJsonDownloadProps(
+                      "schema-json",
+                      detailQuery.data.schemaJson,
+                    );
                     if (!download) return null;
                     return (
-                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                      <a
+                        href={download.href}
+                        download={download.fileName}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
                         Baixar JSON
                       </a>
                     );
@@ -242,7 +412,9 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               </div>
               <div>
                 <h6>Conteúdo do arquivo .md usado no prompt</h6>
-                <MarkdownContentViewer content={detailQuery.data.promptMarkdownContent} />
+                <MarkdownContentViewer
+                  content={detailQuery.data.promptMarkdownContent}
+                />
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">
@@ -250,33 +422,64 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={() => handleCopyJson("modelResponse", detailQuery.data.modelResponse)}
+                    onClick={() =>
+                      handleCopyJson(
+                        "modelResponse",
+                        detailQuery.data.modelResponse,
+                      )
+                    }
                   >
-                    {copiedField === "modelResponse" ? "Copiado!" : "Copiar JSON"}
+                    {copiedField === "modelResponse"
+                      ? "Copiado!"
+                      : "Copiar JSON"}
                   </button>
                   {(() => {
-                    const download = buildJsonDownloadProps("model-response", detailQuery.data.modelResponse);
+                    const download = buildJsonDownloadProps(
+                      "model-response",
+                      detailQuery.data.modelResponse,
+                    );
                     if (!download) return null;
                     return (
-                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                      <a
+                        href={download.href}
+                        download={download.fileName}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
                         Baixar JSON
                       </a>
                     );
                   })()}
                 </div>
-                <CollapsibleJsonViewer content={detailQuery.data.modelResponse} />
+                <CollapsibleJsonViewer
+                  content={detailQuery.data.modelResponse}
+                />
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <h6 className="mb-0">HTML provisório</h6>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => handleCopyJson("provisionalHtml", provisionalHtml)}>
-                    {copiedField === "provisionalHtml" ? "Copiado!" : "Copiar HTML"}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() =>
+                      handleCopyJson("provisionalHtml", provisionalHtml)
+                    }
+                  >
+                    {copiedField === "provisionalHtml"
+                      ? "Copiado!"
+                      : "Copiar HTML"}
                   </button>
                   {(() => {
-                    const download = buildHtmlDownloadProps("provisional-html", provisionalHtml);
+                    const download = buildHtmlDownloadProps(
+                      "provisional-html",
+                      provisionalHtml,
+                    );
                     if (!download) return null;
                     return (
-                      <a href={download.href} download={download.fileName} className="btn btn-sm btn-outline-secondary">
+                      <a
+                        href={download.href}
+                        download={download.fileName}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
                         Baixar HTML
                       </a>
                     );
@@ -291,12 +494,17 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                     >
                       Abrir HTML provisório em nova aba
                     </Link>
-                    <pre className="border rounded bg-light p-3 mb-0 small overflow-auto" style={{ maxHeight: "320px" }}>
+                    <pre
+                      className="border rounded bg-light p-3 mb-0 small overflow-auto"
+                      style={{ maxHeight: "320px" }}
+                    >
                       <code>{provisionalHtml}</code>
                     </pre>
                   </div>
                 ) : (
-                  <p className="text-muted mb-0">Nenhum HTML provisório disponível para este registro.</p>
+                  <p className="text-muted mb-0">
+                    Nenhum HTML provisório disponível para este registro.
+                  </p>
                 )}
               </div>
             </div>

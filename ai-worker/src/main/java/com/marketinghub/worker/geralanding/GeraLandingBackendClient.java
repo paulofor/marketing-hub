@@ -64,6 +64,7 @@ public class GeraLandingBackendClient {
         payload.put("campaignAngle", parseJsonField(experiment.get("campaignAngle")));
         payload.put("adCopy", parseJsonField(experiment.get("adCopy")));
         payload.put("adImageBriefing", parseJsonField(experiment.get("adImageBriefing")));
+        payload.put("landingPageWireframe", parseJsonField(experiment.get("landingPageWireframe")));
         payload.put("NICHE_NAME", resolveNicheName(experiment.get("nicheId")));
         populateHypothesisFields(payload, experiment.get("nicheId"), experiment.get("hypothesisId"));
         return payload;

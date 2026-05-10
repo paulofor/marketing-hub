@@ -306,6 +306,7 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 </div>
                 <CollapsibleJsonViewer
                   content={detailQuery.data.promptContent}
+                  parseAsJson={false}
                 />
               </div>
               <div>
@@ -337,7 +338,7 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                     );
                   })()}
                 </div>
-                <CollapsibleJsonViewer content={detailQuery.data.prompt} />
+                <CollapsibleJsonViewer content={detailQuery.data.prompt} parseAsJson={false} />
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">

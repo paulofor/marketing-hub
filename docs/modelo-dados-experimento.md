@@ -627,3 +627,10 @@ Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cad
 - `OPRM_OCCUPATION` não substitui `OPRM_JOB`; ela governa o catálogo permitido para criação de novos jobs OPRM.
 - A criação de job (`POST /api/oprm/jobs`) valida se `occupation_seed_ref` está ativa no catálogo.
 - A UI do OPRM passa a consumir endpoints dedicados de catálogo (`/api/oprm/occupations`) para CRUD administrativo.
+
+## OPRM MEI — Ingestão macro de snapshots (2026-05-10)
+
+- Nova tabela backend: `oprm_niche_snapshot` (snapshot macro por data/fonte/CNAE/UF/município).
+- Chave única: (`snapshot_date`, `source`, `cnae_code`, `uf`, `municipio`).
+- Endpoint de ingestão no backend: `POST /api/niches/snapshots:ingest`.
+- Regra operacional: coletor como cliente da API backend; sem escrita direta no banco.

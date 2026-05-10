@@ -237,3 +237,11 @@
 - Mantidas as variáveis `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` e `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` no Dockerfile para preservar estratégia atual de runtime.
 - Próximo passo operacional recomendado: rebuild/publish da imagem e redeploy do container para materializar a correção em produção.
 - Registro criado por solicitação explícita: "registre a pesquisa e o ajuste em /docs/mois/registros.md".
+
+## 2026-05-10 14:10:04 UTC-3
+- Endurecida a estratégia de container do `mois-hotmart-collector` para eliminar recorrência de falha do Playwright em ambiente Ubuntu 26.04.
+- `Dockerfile` atualizado para usar imagens base Jammy nas duas etapas (`maven:3.9.9-eclipse-temurin-21-jammy` e `eclipse-temurin:21-jre-jammy`), reduzindo risco de incompatibilidade de plataforma com Chromium gerenciado pelo Playwright.
+- Mantida instalação do Chromium no build (`install --with-deps chromium`) e forçado runtime a consumir somente browsers já empacotados (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`, `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`), evitando tentativa de reinstalação dinâmica durante a coleta agendada.
+- Ajustado conjunto de libs de runtime para Jammy com `libasound2` (substituindo variante `t64`) e sem dependência do pacote de distro `chromium`.
+- Validação executada: `mvn -q test` no módulo `mois-hotmart-collector` com sucesso.
+- Registro criado por solicitação explícita: "registre o trabalho em /docs/mois/registros.md".

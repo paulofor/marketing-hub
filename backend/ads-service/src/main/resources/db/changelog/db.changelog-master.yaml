@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-10-oprm-niche-snapshot-ingestion.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-05-10-experiment-landing-copy-job-fk.yaml
       relativeToChangelogFile: true
 

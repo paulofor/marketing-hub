@@ -84,12 +84,35 @@ Definir endpoints:
 ## Fase 2 — Ingestão e qualidade de dados (Semana 2)
 
 ### 2.1 Pipeline de ingestão
-- Criar job batch no backend para ingestão da base MEI/CNAE.
+- Arquitetura operacional definida:
+  - o **coletor** é responsável por obter o arquivo público da Receita, extrair os campos necessários e atuar como **cliente do backend**;
+  - o **backend** é o único responsável pela persistência no banco e por validar contrato/payload recebido;
+  - o coletor **não grava diretamente no banco**.
 - Etapas:
-  1. download/coleta da fonte;
-  2. parse e validação de esquema;
-  3. normalização de chaves geográficas;
-  4. carga incremental em `niche_snapshot`.
+  1. coletor faz download/coleta da fonte;
+  2. coletor realiza parse e validação estrutural mínima do arquivo;
+  3. coletor normaliza payload para contrato canônico macro;
+  4. coletor envia lote para endpoint do backend;
+  5. backend valida, aplica regras de qualidade e persiste incrementalmente em `niche_snapshot`.
+
+### 2.1.1 Endpoint de ingestão (backend)
+- Criar endpoint específico para receber lotes do coletor:
+  - `POST /api/niches/snapshots:ingest`
+- Contrato mínimo do payload:
+  - `snapshotDate`
+  - `source` (ex.: `RECEITA_CNPJ_PUBLIC`)
+  - `records[]` com:
+    - `cnaeCode`
+    - `uf`
+    - `municipio`
+    - `meiActive`
+    - `openings`
+    - `closures`
+    - `net`
+- Resposta esperada:
+  - status do lote (`ACCEPTED`, `REJECTED`, `PARTIAL`)
+  - contadores (`received`, `validated`, `persisted`, `discarded`)
+  - `qualityStatus` e `qualityNotes`.
 
 ### 2.2 Regras de qualidade
 - Duplicidade por chave (`snapshot_date`, `cnae_code`, `uf`, `municipio`).
@@ -170,6 +193,7 @@ Adicionar bloco `marketEvidence` aos artefatos relevantes:
 3. OPRM consumindo `marketEvidence` sem quebrar jobs existentes.
 4. Ranking de nichos disponível por tamanho, crescimento e oportunidade.
 5. Documentação canônica atualizada e alinhada aos testes.
+6. Coletor operando exclusivamente como cliente de API do backend, sem escrita direta no banco.
 
 ## Riscos e mitigação
 - **Mudança de layout da fonte**: criar versionamento de parser.

@@ -1,0 +1,94 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-10-01-oprm-niche-snapshot-ingestion
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_niche_snapshot
+      changes:
+        - createTable:
+            tableName: oprm_niche_snapshot
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: snapshot_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cnae_code
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: uf
+                  type: CHAR(2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: municipio
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mei_active
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: openings
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: closures
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: net
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: oprm_niche_snapshot
+            columnNames: snapshot_date, source, cnae_code, uf, municipio
+            constraintName: uk_oprm_niche_snapshot_key
+        - createIndex:
+            tableName: oprm_niche_snapshot
+            indexName: idx_oprm_niche_snapshot_occ_time
+            columns:
+              - column:
+                  name: snapshot_date
+              - column:
+                  name: cnae_code
+              - column:
+                  name: uf

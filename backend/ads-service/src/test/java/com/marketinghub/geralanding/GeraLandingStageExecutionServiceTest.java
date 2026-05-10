@@ -34,6 +34,9 @@ class GeraLandingStageExecutionServiceTest {
     @Mock
     private WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler;
 
+    @Mock
+    private CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
+
     @InjectMocks
     private GeraLandingStageExecutionService service;
 
@@ -123,6 +126,43 @@ class GeraLandingStageExecutionServiceTest {
         assertEquals("{\"landingPageWireframe\":{\"sectionOrder\":[]}}", experiment.getLandingPageWireframe());
         assertEquals("<html>provisorio</html>", execution.getProvisionalHtml());
         assertTrue(Arrays.equals("id-ok".getBytes(StandardCharsets.UTF_8), experiment.getLandingPageWireframeJobId()));
+        verify(experimentRepository).save(experiment);
+    }
+
+    @Test
+    void shouldPersistLandingPageCopyOnExperimentWhenCopyResultArrives() {
+        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
+                44L,
+                "landing-page-copy",
+                "{\"landingPageCopy\":{\"hero\":{}}}",
+                null,
+                null,
+                null,
+                "job-openai-copy",
+                90,
+                140,
+                null);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(44L)
+                .stageCode("landing-page-copy")
+                .executionRequestedAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-04T00:00:00Z"))
+                .status("EM_PROCESSAMENTO")
+                .idJob("id-copy".getBytes(StandardCharsets.UTF_8))
+                .build();
+        Experiment experiment = new Experiment();
+        experiment.setId(44L);
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-copy".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(experimentRepository.findById(44L)).thenReturn(Optional.of(experiment));
+        when(copyProvisionalHtmlAssembler.assemble(request.modelResponse(), null, "id-copy")).thenReturn("<html>provisorio</html>");
+
+        service.receiveResult("id-copy", request);
+
+        assertEquals("{\"landingPageCopy\":{\"hero\":{}}}", experiment.getLandingPageCopy());
+        assertEquals("<html>provisorio</html>", execution.getProvisionalHtml());
+        assertTrue(Arrays.equals("id-copy".getBytes(StandardCharsets.UTF_8), experiment.getLandingPageCopyJobId()));
         verify(experimentRepository).save(experiment);
     }
 

@@ -108,6 +108,12 @@ Diretriz obrigatória para títulos de seção:
 37. Não fixar nomenclaturas da oferta atual como padrão universal.
 38. Para evitar reprocessamentos: se faltar `sectionId`/`copySlots` válidos no `CASE_DATA`, não invente `slotId`; registre `FAIL` em `consistencyChecks` com detalhe objetivo e mantenha os demais campos aderentes ao contrato.
 
+
+39. Proibido vazar metainstruções, nomes de campos, caminhos de objeto, ids de variante, labels de estágio ou termos de contrato no texto final exibido ao usuário.
+40. Nunca usar no conteúdo final strings técnicas como: `adCopy.`, `campaignAngle.`, `landingPageWireframe`, `uiTags`, `uiTextTags`, `copySlots`, `sectionId`, `slotId`, `CASE_DATA`, `OUTPUT_CONTRACT`, `template_id`, `artifact_target`, `V1-`, `V2-`, `V3-`.
+41. É proibido ecoar instruções operacionais (ex.: “Como funciona (passo X)” quando vier como guideline interna) como se fosse copy final, salvo se isso vier explicitamente como texto de negócio no insumo estruturado.
+42. Todo texto de `hero`, `bodySections`, `ctaBlocks` e `faq` deve soar como comunicação comercial final, sem linguagem de especificação técnica.
+
 CASE_DATA
 {{CASE_DATA_BLOCK}}
 
@@ -133,3 +139,4 @@ Critérios mínimos de aceite no próprio output:
 - `faq.length >= 3`
 - `ctaBlocks.length >= 2`
 - incluir em `consistencyChecks` os checks: CTA_MATCH, PROMISE_MATCH, GOOGLE_LANDING_BEST_PRACTICES
+- não conter vazamento de metainstruções/termos técnicos de contrato em campos textuais finais (`hero`, `bodySections`, `ctaBlocks`, `faq`)

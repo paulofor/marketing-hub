@@ -1,6 +1,10 @@
 package com.marketinghub.geralanding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -57,25 +61,16 @@ public class CopyProvisionalHtmlAssembler {
             throw new IllegalArgumentException("Copy da etapa Gera Copy sem textos para preencher a página");
         }
 
-        String[] tags = {"h1", "h2", "h3", "p", "li", "span", "summary", "a", "button"};
-        String result = html;
-        for (String tag : tags) {
-            String pattern = "(?is)<" + tag + "(\\s[^>]*)?>.*?</" + tag + ">";
-            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(pattern).matcher(result);
-            StringBuffer rewritten = new StringBuffer();
-            while (matcher.find()) {
-                String text = copyTexts.pollFirst();
-                if (!StringUtils.hasText(text)) {
-                    throw new IllegalArgumentException("Copy insuficiente para preencher todos os campos de texto do HTML");
-                }
-                String attrs = matcher.group(1) == null ? "" : matcher.group(1);
-                String replacement = "<" + tag + attrs + ">" + escapeHtml(text) + "</" + tag + ">";
-                matcher.appendReplacement(rewritten, java.util.regex.Matcher.quoteReplacement(replacement));
+        Document document = Jsoup.parse(html, "", Parser.htmlParser());
+        List<Element> textElements = document.select("h1, h2, h3, p, li, span, summary, a, button");
+        for (Element element : textElements) {
+            String text = copyTexts.pollFirst();
+            if (!StringUtils.hasText(text)) {
+                throw new IllegalArgumentException("Copy insuficiente para preencher todos os campos de texto do HTML");
             }
-            matcher.appendTail(rewritten);
-            result = rewritten.toString();
+            element.text(text);
         }
-        return result;
+        return document.outerHtml();
     }
 
     private Deque<String> collectCopyTexts(Map<String, Object> copy) {

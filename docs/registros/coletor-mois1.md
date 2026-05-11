@@ -35,3 +35,19 @@
 - Ajustado `HotmartCollectorService` no módulo `mois-hotmart-collector` para remover dependência de `waitUntil=NETWORKIDLE` na navegação do market Hotmart, trocando para `DOMCONTENTLOADED` + `waitForURL("**/market/**")` + espera explícita do `#root`.
 - Reforçado tratamento do banner de cookies: mantida tentativa de aceite e adicionada estratégia de fallback via JavaScript para ocultar `#hotmart-cookie-policy` quando o overlay continuar interceptando eventos de clique.
 - Objetivo dos ajustes: reduzir falhas por timeout e por interceptação de clique no submit de login.
+
+## 2026-05-11 13:50:14 UTC-3
+- Incluído log de diagnóstico de HTML no  para os casos em que  na página de market da Hotmart.
+- O log agora registra  atual e  normalizado/truncado (até 8.000 caracteres), para validar se os cards existem no DOM mas não foram capturados pelo seletor.
+- Mantida abordagem de causa-raiz: coletar evidência do HTML retornado no momento exato da falha de detecção de cards.
+
+## 2026-05-11 13:50:27 UTC-3
+- Correção de registro anterior: a entrada imediatamente acima perdeu trechos literais devido à interpretação de crases no shell durante o append.
+- Conteúdo correto: incluído log de diagnóstico de HTML no `HotmartCollectorService` para os casos em que `cardsEncontrados=0` na página de market da Hotmart.
+- Conteúdo correto: o log registra `url` atual e `htmlSnapshot` normalizado/truncado (até 8.000 caracteres), para validar se os cards existem no DOM mas não foram capturados pelo seletor.
+- Mantida abordagem de causa-raiz: coletar evidência do HTML retornado no momento exato da falha de detecção de cards.
+
+## 2026-05-11 13:56:00 UTC-3
+- Implementado fallback de coleta via API oficial `https://api-affiliation-market.hotmart.com/v2/market/search` quando a página de market não retorna cards no DOM (`cardsEncontrados=0`).
+- O fallback executa `fetch` no contexto autenticado da página (`credentials: include`) e mapeia produtos retornados da API para `HotmartProductSnapshot`.
+- Adicionado log técnico do status HTTP e `bodyPreview` truncado da resposta da API para diagnóstico de contrato/autenticação sem depender apenas do scraper visual.

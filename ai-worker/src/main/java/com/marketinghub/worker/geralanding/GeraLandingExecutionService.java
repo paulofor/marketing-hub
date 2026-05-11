@@ -1,13 +1,16 @@
 package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +24,8 @@ public class GeraLandingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingExecutionService.class);
     private static final String STAGE_WIREFRAME = "landing-page-wireframe";
     private static final String STAGE_COPY = "landing-page-copy";
+    private static final Pattern BANNED_COPY_TEXT_PATTERN = Pattern.compile(
+            "(?i)(adCopy\\.|campaignAngle\\.|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\bV[1-3]-|lorem ipsum|como funciona \\(passo)");
 
     private final GeraLandingBackendClient backendClient;
     private final GeraLandingService geraLandingService;
@@ -115,6 +120,7 @@ public class GeraLandingExecutionService {
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());
             GeraLandingJobCompletionPayload payload = openAiClient.generate(openAiJob);
+            validateCopyPayloadText(normalizedStage, payload);
             log.info(
                     "Resposta OpenAI recebida para gera-landing executionId={} (experimentId={}, openAiJobId={}, inputTokens={}, outputTokens={}, costUsd={}, responseContentLength={}, rawResponseLength={})",
                     execution.idJob(),
@@ -148,6 +154,55 @@ public class GeraLandingExecutionService {
                 log.error("Falha ao registrar erro de execução no backend para executionId={}", execution.idJob(), callbackEx);
             }
         }
+    }
+
+    private void validateCopyPayloadText(String normalizedStage, GeraLandingJobCompletionPayload payload) {
+        if (!STAGE_COPY.equals(normalizedStage) || payload == null || !StringUtils.hasText(payload.responseContent())) {
+            return;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(payload.responseContent());
+            List<String> violations = new ArrayList<>();
+            collectViolations(root.path("hero"), "hero", violations);
+            collectViolations(root.path("bodySections"), "bodySections", violations);
+            collectViolations(root.path("ctaBlocks"), "ctaBlocks", violations);
+            collectViolations(root.path("faq"), "faq", violations);
+            if (!violations.isEmpty()) {
+                throw new IllegalStateException("Copy inválida: vazamento de metainstrução/texto técnico detectado em "
+                        + String.join("; ", violations));
+            }
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Copy inválida: resposta não é JSON parseável para validação textual", ex);
+        }
+    }
+
+    private void collectViolations(JsonNode node, String path, List<String> violations) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return;
+        }
+        if (node.isTextual()) {
+            String value = node.asText();
+            if (BANNED_COPY_TEXT_PATTERN.matcher(value).find()) {
+                violations.add(path + "='" + abbreviate(value, 100) + "'");
+            }
+            return;
+        }
+        if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                collectViolations(node.get(i), path + "[" + i + "]", violations);
+            }
+            return;
+        }
+        if (node.isObject()) {
+            node.fieldNames().forEachRemaining(field -> collectViolations(node.get(field), path + "." + field, violations));
+        }
+    }
+
+    private String abbreviate(String value, int max) {
+        if (value == null || value.length() <= max) {
+            return value;
+        }
+        return value.substring(0, max) + "...";
     }
 
     private String buildOpenAiRequestBody(String stageCode,

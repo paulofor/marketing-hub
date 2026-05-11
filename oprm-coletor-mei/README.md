@@ -36,3 +36,23 @@ Exemplo de payload:
 ```bash
 docker build -t oprm-coletor-mei:local .
 ```
+
+
+## Agendamento da ingestão (Receita Federal)
+Para agendar a ingestão automática no OPRM Coletor às **15:10** (horário de Brasília), configure:
+
+```bash
+export OPRM_COLLECTOR_SCHEDULE_ENABLED=true
+export OPRM_COLLECTOR_SCHEDULE_CRON="0 10 15 * * *"
+export OPRM_COLLECTOR_SCHEDULE_TIMEZONE="America/Sao_Paulo"
+export OPRM_COLLECTOR_SCHEDULE_SOURCE="RECEITA_FEDERAL"
+export OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE="/caminho/receita-cnaes.json"
+```
+
+Formato do arquivo `receita-cnaes.json` (array de registros):
+```json
+[
+  { "cnaeCode": "62.01-5-01", "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda", "active": true },
+  { "cnaeCode": "6201501", "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda", "active": true }
+]
+```

@@ -145,7 +145,6 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
         assertThat(userPrompt).contains("- messageMatchSource");
-        assertThat(userPrompt).contains("hero {");
         assertThat(userPrompt).contains("bodySections[]");
         assertThat(userPrompt).contains("ctaBlocks[]");
         assertThat(userPrompt).contains("consistencyChecks[]");

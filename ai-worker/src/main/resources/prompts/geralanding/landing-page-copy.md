@@ -72,7 +72,6 @@ Campos obrigatórios:
 - messageMatchNotes
 - primaryCTA
 - complianceNotes
-- hero { eyebrow, headline, subheadline, promise, supportingCopy, proofBadge, microcopy, ctaLabel, ctaUrl, ctaMatchNotes }
 - bodySections[] com sectionId, slotId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
 - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
 - faq[] com question, answer, objectionTag

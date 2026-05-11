@@ -253,3 +253,10 @@
 - Ajustado conjunto de libs de runtime para Jammy com `libasound2` (substituindo variante `t64`) e sem dependência do pacote de distro `chromium`.
 - Validação executada: `mvn -q test` no módulo `mois-hotmart-collector` com sucesso.
 - Registro criado por solicitação explícita: "registre o trabalho em /docs/mois/registros.md".
+
+## 2026-05-11 20:58:00 UTC
+- Ajustado novamente o fluxo de autenticação do `mois-hotmart-collector` para tratar falhas persistentes na obtenção de JWT após submit do login.
+- No `HotmartCollectorService`, após o submit agora existe validação explícita de progresso (`ensureLoginProgressed`): quando a URL permanece em `sso.hotmart.com/login`, o fluxo reaplica mitigação de overlay e executa fallback adicional por `Enter` no campo senha.
+- Mantidas as proteções anti-overlay já existentes, com foco em eliminar o bloqueio do cookie policy que impede a transição de estado autenticado.
+- Validação executada no módulo Java: `mvn -q test` com sucesso.
+- Registro criado por solicitação explícita: "registre as alterações".

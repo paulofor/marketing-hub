@@ -36,6 +36,7 @@ Regras fixas da etapa:
 22. Para cada seção do wireframe, preencha os textos de cada elemento listado em `uiTextTags`.
 22.1. Em `items[].item`, usar sempre o id técnico literal do elemento vindo de `uiTextTags`; não usar aliases genéricos.
 22.2. Cada `items[].copy` deve respeitar o tamanho sugerido em caracteres informado no `uiTextTags` correspondente.
+22.3. Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual.
 23. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
 24. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
 

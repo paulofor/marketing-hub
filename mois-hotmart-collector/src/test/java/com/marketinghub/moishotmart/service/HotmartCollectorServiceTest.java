@@ -17,7 +17,8 @@ class HotmartCollectorServiceTest {
                 "",
                 "",
                 "",
-                ""
+                "",
+                false
         );
 
         var response = service.collect(new HotmartCollectionRequest("hotmart-market", 10));

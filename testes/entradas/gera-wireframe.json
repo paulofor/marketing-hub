@@ -1,0 +1,281 @@
+{
+  "pageGoal": "Fazer o visitante preencher um briefing de 2 minutos e gerar imediatamente uma Amostra Personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens), com foco em fechar sem briga de preço.",
+  "variantLayoutId": "proof-first",
+  "messageMatchSummary": "Continuidade direta com o anúncio: promessa central ‘fechar sem briga de preço / mais previsibilidade’ + prova rápida ‘briefing 2 min → preview ~3 min’ + entrega ‘PDF 1 página (marca d’água) + mini-kit (5 itens)’ e CTA idêntico.",
+  "mobilePriorityNotes": "Mobile-first: acima da dobra deve conter headline+prova de rapidez+visual do PDF+CTA. Evitar 2 colunas no conteúdo principal; empilhar: promessa → prova → CTA → visual. Repetir CTA principal até o fim da 2ª seção. Espaçamentos compactos (sem áreas vazias).",
+  "ctaPlacementNotes": "CTA principal no Hero e repetido: (1) após prova rápida (seção 2), (2) após ‘o que você recebe’ (seção 4), (3) CTA final antes do footer. Labels sempre iguais ao CTA do anúncio para manter message match.",
+  "formPlacementNotes": "Formulário aparece no Hero (acima da dobra no mobile) como bloco único vertical. Em mobile, botão ‘Gerar minha amostra’ fixo no final do formulário (sem sticky global). Em desktop, formulário à direita do conteúdo do hero (duas colunas permitidas apenas no desktop), mantendo o mesmo alinhamento à margem esquerda do container. Repetir formulário completo em seção final (para quem rolar).",
+  "sectionOrder": [
+    {
+      "sectionId": "s1-hero-proof-cta",
+      "sectionName": "Hero (promessa + prova rápida + CTA + mockup)",
+      "objective": "Garantir message match imediato com o anúncio e capturar a ação (briefing) com prova visual do que será gerado.",
+      "contentType": "hero",
+      "copySource": "campaignAngle.landingMatchLine + campaignAngle.primaryPromise + adCopy.V1/V3 (prova ~3 min)",
+      "uiNotes": "Mobile reading flow: (1) marca/identidade discreta, (2) headline com promessa, (3) linha de match do anúncio, (4) bullets curtos de entrega, (5) mockup do PDF (com marca d’água) + mini-kit, (6) formulário (briefing) com CTA principal e nota de privacidade. Desktop: texto+mockup à esquerda e form à direita, sem quebrar a hierarquia.",
+      "uiTags": "<section id=\"s1-hero-proof-cta\"><div id=\"s1-container\"><header id=\"s1-header\"><div id=\"s1-brand\"></div></header><div id=\"s1-body\"><h1 id=\"s1-title\"></h1><p id=\"s1-matchline\"></p><ul id=\"s1-bullets\"><li id=\"s1-bullets-1\"></li><li id=\"s1-bullets-2\"></li><li id=\"s1-bullets-3\"></li></ul><figure id=\"s1-figure\"><img id=\"s1-img-mockup\"/><figcaption id=\"s1-figcaption\"></figcaption></figure><form id=\"s1-form\"><label id=\"s1-form-label-1\"></label><input id=\"s1-form-input-1\"/><label id=\"s1-form-label-2\"></label><input id=\"s1-form-input-2\"/><label id=\"s1-form-label-3\"></label><select id=\"s1-form-select-1\"></select><label id=\"s1-form-label-4\"></label><textarea id=\"s1-form-textarea-1\"></textarea><div id=\"s1-form-consent\"></div><button id=\"s1-form-submit\"></button><p id=\"s1-form-privacy\"></p></form></div></div></section>",
+      "uiSizeTexts": "#s1-title{min:38;max:72} #s1-matchline{min:90;max:170} #s1-bullets-1{min:28;max:60} #s1-bullets-2{min:28;max:60} #s1-bullets-3{min:28;max:60} #s1-figcaption{min:40;max:95} #s1-form-label-1{min:6;max:28} #s1-form-label-2{min:6;max:28} #s1-form-label-3{min:6;max:28} #s1-form-label-4{min:6;max:32} #s1-form-privacy{min:60;max:140} #s1-form-consent{min:30;max:90} #s1-form-submit{min:18;max:64}",
+      "uiSizes": "#s1-hero-proof-cta{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:24px;padding-right:16px;padding-bottom:24px;padding-left:16px} #s1-container{width:100%;max-width:1120px;box-sizing:border-box} #s1-header{display:flex;justify-content:flex-start;align-items:center;width:100%;margin-bottom:12px} #s1-brand{width:160px;height:24px} #s1-body{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:12px} #s1-title{width:100%;max-width:34ch} #s1-matchline{width:100%;max-width:52ch} #s1-bullets{width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:4px;padding-left:18px} #s1-figure{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:8px;margin-top:4px;margin-bottom:4px} #s1-img-mockup{width:100%;height:240px;min-height:220px;max-height:280px;box-sizing:border-box} #s1-figcaption{width:100%;max-width:56ch} #s1-form{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:10px;margin-top:8px} #s1-form-input-1{width:100%;height:44px;box-sizing:border-box} #s1-form-input-2{width:100%;height:44px;box-sizing:border-box} #s1-form-select-1{width:100%;height:44px;box-sizing:border-box} #s1-form-textarea-1{width:100%;height:96px;min-height:88px;max-height:140px;box-sizing:border-box} #s1-form-consent{width:100%;box-sizing:border-box} #s1-form-submit{width:100%;height:48px;box-sizing:border-box} #s1-form-privacy{width:100%;max-width:60ch}",
+      "messageMatchDependency": "Deve repetir literalmente o CTA do anúncio e mencionar: briefing 2 min, preview ~3 min, PDF 1 página (marca d’água) + mini-kit (5 itens).",
+      "sectionDependsOn": [],
+      "mobilePriorityScore": 10,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "hero-proof-cta",
+        "notes": "Âncora de conversão: promessa+prova+visual+form acima da dobra. Imagem vinculada ao ‘produto’ (mockup do PDF com marca d’água + cards do mini-kit)."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "campaignAngle.primaryCTA",
+        "notes": "CTA principal integrado ao submit do formulário; evitar CTAs alternativos no topo para não fragmentar ação."
+      }
+    },
+    {
+      "sectionId": "s2-proof-how-fast",
+      "sectionName": "Prova rápida (como funciona em 3 passos)",
+      "objective": "Reduzir ceticismo mostrando o fluxo ‘2 min → ~3 min’ e reforçar que é preview antes de decidir.",
+      "contentType": "timeline",
+      "copySource": "campaignAngle.proofSummary + adCopy.V3 (preview)",
+      "uiNotes": "Mobile reading flow: (1) título prova, (2) 3 passos em lista curta, (3) imagem de fluxo com setas/cronômetro, (4) CTA repetido em botão âncora que rola para o formulário do hero (ou abre modal do mesmo form).",
+      "uiTags": "<section id=\"s2-proof-how-fast\"><div id=\"s2-container\"><h2 id=\"s2-title\"></h2><ul id=\"s2-steps\"><li id=\"s2-steps-1\"></li><li id=\"s2-steps-2\"></li><li id=\"s2-steps-3\"></li></ul><figure id=\"s2-figure\"><img id=\"s2-img-flow\"/><figcaption id=\"s2-figcaption\"></figcaption></figure><button id=\"s2-cta\"></button></div></section>",
+      "uiSizeTexts": "#s2-title{min:24;max:52} #s2-steps-1{min:28;max:70} #s2-steps-2{min:28;max:70} #s2-steps-3{min:28;max:70} #s2-figcaption{min:40;max:110} #s2-cta{min:18;max:64}",
+      "uiSizes": "#s2-proof-how-fast{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s2-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px} #s2-title{width:100%;max-width:36ch} #s2-steps{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px} #s2-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:4px;margin-bottom:4px} #s2-img-flow{width:100%;height:220px;min-height:200px;max-height:260px;box-sizing:border-box} #s2-figcaption{width:100%;max-width:60ch} #s2-cta{width:100%;height:48px;box-sizing:border-box;margin-top:4px}",
+      "messageMatchDependency": "Reforçar ‘preview antes de decidir’ e tempos (briefing 2 min; geração ~3 min) como prova central.",
+      "sectionDependsOn": [
+        "s1-hero-proof-cta"
+      ],
+      "mobilePriorityScore": 9,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "proof-steps",
+        "notes": "Seção de prova visual: imagem de fluxo (setas + cronômetro + mockup) para ancorar rapidez e reduzir ‘parece bom demais’."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "ctaVariant": "secondary",
+        "matchAdCta": "campaignAngle.primaryCTA",
+        "notes": "Botão âncora para o formulário do hero (scrollTo #s1-form)."
+      }
+    },
+    {
+      "sectionId": "s3-pain-context",
+      "sectionName": "Contexto da dor (sem drama; direto)",
+      "objective": "Fazer o visitante se reconhecer: conversa vira preço cedo demais + perda de tempo com curiosos.",
+      "contentType": "split",
+      "copySource": "PAIN_JSON.surface + campaignAngle.primaryPain",
+      "uiNotes": "Mobile reading flow: (1) título, (2) parágrafo curto descrevendo o cenário ‘WhatsApp → quanto custa?’, (3) lista curta de consequências, (4) imagem contextual (tela de chat genérica + personal frustrado/ocupado).",
+      "uiTags": "<section id=\"s3-pain-context\"><div id=\"s3-container\"><h2 id=\"s3-title\"></h2><p id=\"s3-text\"></p><ul id=\"s3-bullets\"><li id=\"s3-bullets-1\"></li><li id=\"s3-bullets-2\"></li><li id=\"s3-bullets-3\"></li></ul><figure id=\"s3-figure\"><img id=\"s3-img-chat\"/><figcaption id=\"s3-figcaption\"></figcaption></figure></div></section>",
+      "uiSizeTexts": "#s3-title{min:22;max:50} #s3-text{min:120;max:260} #s3-bullets-1{min:26;max:72} #s3-bullets-2{min:26;max:72} #s3-bullets-3{min:26;max:72} #s3-figcaption{min:30;max:90}",
+      "uiSizes": "#s3-pain-context{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s3-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:10px} #s3-title{width:100%;max-width:38ch} #s3-text{width:100%;max-width:62ch} #s3-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px} #s3-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px} #s3-img-chat{width:100%;height:210px;min-height:190px;max-height:250px;box-sizing:border-box} #s3-figcaption{width:100%;max-width:62ch}",
+      "messageMatchDependency": "Deve conectar a dor do anúncio (‘quanto custa?’ cedo) ao motivo de existir da amostra/kit (mostrar valor antes do preço).",
+      "sectionDependsOn": [
+        "s2-proof-how-fast"
+      ],
+      "mobilePriorityScore": 7,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "pain-recognition",
+        "notes": "Imagem contextual de chat genérico (sem marcas) e rotina corrida para aumentar identificação sem usar antes/depois corporal."
+      },
+      "ctaSlot": {
+        "hasCta": false,
+        "ctaLabel": "",
+        "ctaVariant": "",
+        "matchAdCta": "",
+        "notes": "Sem CTA aqui para não interromper; o usuário já teve CTA até a seção 2."
+      }
+    },
+    {
+      "sectionId": "s4-what-you-get",
+      "sectionName": "O que você recebe (Amostra + mini-kit)",
+      "objective": "Clarificar entregáveis e valor percebido sem parecer consultoria; ancorar ‘preview com marca d’água’.",
+      "contentType": "proof",
+      "copySource": "campaignAngle.proofSummary + campaignAngle.mechanismSummary (somente como estrutura do kit)",
+      "uiNotes": "Mobile reading flow: (1) título ‘o que vem’, (2) lista 5 itens do mini-kit (curta), (3) imagem de ‘produto’ (mockup PDF + 5 cards), (4) CTA repetido.",
+      "uiTags": "<section id=\"s4-what-you-get\"><div id=\"s4-container\"><h2 id=\"s4-title\"></h2><p id=\"s4-subtitle\"></p><ul id=\"s4-list\"><li id=\"s4-list-1\"></li><li id=\"s4-list-2\"></li><li id=\"s4-list-3\"></li><li id=\"s4-list-4\"></li><li id=\"s4-list-5\"></li></ul><figure id=\"s4-figure\"><img id=\"s4-img-kit\"/><figcaption id=\"s4-figcaption\"></figcaption></figure><button id=\"s4-cta\"></button></div></section>",
+      "uiSizeTexts": "#s4-title{min:22;max:52} #s4-subtitle{min:70;max:160} #s4-list-1{min:22;max:70} #s4-list-2{min:22;max:70} #s4-list-3{min:22;max:70} #s4-list-4{min:22;max:70} #s4-list-5{min:22;max:70} #s4-figcaption{min:40;max:110} #s4-cta{min:18;max:64}",
+      "uiSizes": "#s4-what-you-get{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s4-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px} #s4-title{width:100%;max-width:38ch} #s4-subtitle{width:100%;max-width:62ch} #s4-list{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px} #s4-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px;margin-bottom:2px} #s4-img-kit{width:100%;height:260px;min-height:240px;max-height:310px;box-sizing:border-box} #s4-figcaption{width:100%;max-width:62ch} #s4-cta{width:100%;height:48px;box-sizing:border-box;margin-top:6px}",
+      "messageMatchDependency": "Explicitar: Amostra em PDF (1 página, com marca d’água) + mini-kit (5 itens). Não prometer acompanhamento humano.",
+      "sectionDependsOn": [
+        "s2-proof-how-fast"
+      ],
+      "mobilePriorityScore": 9,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "deliverables-kit",
+        "notes": "Seção de oferta/entregáveis (alta clareza): visual de produto digital (mockups) para aumentar valor percebido."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "campaignAngle.primaryCTA",
+        "notes": "Reforço de ação para quem precisa entender ‘o que ganha’ antes de preencher."
+      }
+    },
+    {
+      "sectionId": "s5-mechanism-8weeks",
+      "sectionName": "Como o kit organiza seu ‘Ciclo de Evolução de 8 semanas’",
+      "objective": "Explicar o mecanismo sem virar promessa principal; mostrar que existe estrutura repetível (mensagem + conversa + início guiado).",
+      "contentType": "split",
+      "copySource": "campaignAngle.mechanismSummary",
+      "uiNotes": "Mobile reading flow: (1) título, (2) parágrafo curto ‘estrutura em 3 blocos’, (3) 3 bullets (convite, roteiro WhatsApp, começo guiado/check-ins), (4) imagem tipo diagrama simples (3 blocos).",
+      "uiTags": "<section id=\"s5-mechanism-8weeks\"><div id=\"s5-container\"><h2 id=\"s5-title\"></h2><p id=\"s5-text\"></p><ul id=\"s5-bullets\"><li id=\"s5-bullets-1\"></li><li id=\"s5-bullets-2\"></li><li id=\"s5-bullets-3\"></li></ul><figure id=\"s5-figure\"><img id=\"s5-img-diagram\"/><figcaption id=\"s5-figcaption\"></figcaption></figure></div></section>",
+      "uiSizeTexts": "#s5-title{min:22;max:52} #s5-text{min:90;max:190} #s5-bullets-1{min:26;max:78} #s5-bullets-2{min:26;max:78} #s5-bullets-3{min:26;max:78} #s5-figcaption{min:40;max:120}",
+      "uiSizes": "#s5-mechanism-8weeks{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s5-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:10px} #s5-title{width:100%;max-width:44ch} #s5-text{width:100%;max-width:62ch} #s5-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px} #s5-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px} #s5-img-diagram{width:100%;height:220px;min-height:200px;max-height:260px;box-sizing:border-box} #s5-figcaption{width:100%;max-width:62ch}",
+      "messageMatchDependency": "Manter mecanismo como explicação (não headline). Conectar ao objetivo: mostrar valor antes do preço + engajar no começo.",
+      "sectionDependsOn": [
+        "s4-what-you-get"
+      ],
+      "mobilePriorityScore": 6,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "mechanism-explainer",
+        "notes": "Diagrama simples com 3 blocos para reduzir carga cognitiva e reforçar ‘processo repetível’ sem jargão."
+      },
+      "ctaSlot": {
+        "hasCta": false,
+        "ctaLabel": "",
+        "ctaVariant": "",
+        "matchAdCta": "",
+        "notes": "Sem CTA para manter ritmo; CTA volta no próximo bloco de prova/credibilidade."
+      }
+    },
+    {
+      "sectionId": "s6-proof-preview-example",
+      "sectionName": "Exemplo de preview (o que você vê na amostra)",
+      "objective": "Prova concreta do output: mostrar uma página de amostra com marca d’água e campos típicos (sem prometer resultado individual).",
+      "contentType": "proof",
+      "copySource": "campaignAngle.proofSummary (preview)",
+      "uiNotes": "Mobile reading flow: (1) título, (2) 3 bullets do que aparece no PDF, (3) imagem grande do PDF com watermark ‘AMOSTRA’, (4) nota ‘você vê antes de decidir’.",
+      "uiTags": "<section id=\"s6-proof-preview-example\"><div id=\"s6-container\"><h2 id=\"s6-title\"></h2><ul id=\"s6-bullets\"><li id=\"s6-bullets-1\"></li><li id=\"s6-bullets-2\"></li><li id=\"s6-bullets-3\"></li></ul><figure id=\"s6-figure\"><img id=\"s6-img-pdf\"/><figcaption id=\"s6-figcaption\"></figcaption></figure></div></section>",
+      "uiSizeTexts": "#s6-title{min:22;max:52} #s6-bullets-1{min:26;max:78} #s6-bullets-2{min:26;max:78} #s6-bullets-3{min:26;max:78} #s6-figcaption{min:40;max:120}",
+      "uiSizes": "#s6-proof-preview-example{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s6-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px} #s6-title{width:100%;max-width:44ch} #s6-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px} #s6-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px} #s6-img-pdf{width:100%;height:320px;min-height:300px;max-height:380px;box-sizing:border-box} #s6-figcaption{width:100%;max-width:62ch}",
+      "messageMatchDependency": "‘Você não compra no escuro’: evidenciar marca d’água e que é amostra/preview.",
+      "sectionDependsOn": [
+        "s2-proof-how-fast"
+      ],
+      "mobilePriorityScore": 8,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "output-proof",
+        "notes": "Prova visual do output (1 página) para aumentar confiança e reduzir risco percebido."
+      },
+      "ctaSlot": {
+        "hasCta": false,
+        "ctaLabel": "",
+        "ctaVariant": "",
+        "matchAdCta": "",
+        "notes": "Sem CTA aqui para não sobrecarregar; próximo bloco inclui CTA final + formulário repetido."
+      }
+    },
+    {
+      "sectionId": "s7-faq-objections",
+      "sectionName": "FAQ (objeções rápidas)",
+      "objective": "Remover fricções: ‘é consultoria?’, ‘precisa de call?’, ‘quanto tempo?’, ‘serve pra mim?’, ‘o que recebo exatamente?’.",
+      "contentType": "faq",
+      "copySource": "Regras globais + campaignAngle (sem consultoria; preview; tempo)",
+      "uiNotes": "Mobile reading flow: (1) título, (2) 4 perguntas com respostas curtas em acordeão (se não houver acordeão, blocos curtos). Sem imagem obrigatória aqui para evitar peso; manter densidade.",
+      "uiTags": "<section id=\"s7-faq-objections\"><div id=\"s7-container\"><h2 id=\"s7-title\"></h2><div id=\"s7-faq\"><div id=\"s7-faq-1\"><h3 id=\"s7-faq-1-q\"></h3><p id=\"s7-faq-1-a\"></p></div><div id=\"s7-faq-2\"><h3 id=\"s7-faq-2-q\"></h3><p id=\"s7-faq-2-a\"></p></div><div id=\"s7-faq-3\"><h3 id=\"s7-faq-3-q\"></h3><p id=\"s7-faq-3-a\"></p></div><div id=\"s7-faq-4\"><h3 id=\"s7-faq-4-q\"></h3><p id=\"s7-faq-4-a\"></p></div></div></div></section>",
+      "uiSizeTexts": "#s7-title{min:18;max:48} #s7-faq-1-q{min:18;max:70} #s7-faq-1-a{min:60;max:180} #s7-faq-2-q{min:18;max:70} #s7-faq-2-a{min:60;max:180} #s7-faq-3-q{min:18;max:70} #s7-faq-3-a{min:60;max:180} #s7-faq-4-q{min:18;max:70} #s7-faq-4-a{min:60;max:180}",
+      "uiSizes": "#s7-faq-objections{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s7-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px} #s7-title{width:100%;max-width:40ch} #s7-faq{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px} #s7-faq-1{width:100%;box-sizing:border-box} #s7-faq-2{width:100%;box-sizing:border-box} #s7-faq-3{width:100%;box-sizing:border-box} #s7-faq-4{width:100%;box-sizing:border-box} #s7-faq-1-a{width:100%;max-width:70ch} #s7-faq-2-a{width:100%;max-width:70ch} #s7-faq-3-a{width:100%;max-width:70ch} #s7-faq-4-a{width:100%;max-width:70ch}",
+      "messageMatchDependency": "Reforçar automação e ausência de consultoria/call; reiterar preview e marca d’água.",
+      "sectionDependsOn": [
+        "s4-what-you-get"
+      ],
+      "mobilePriorityScore": 5,
+      "dropOffRisk": "medio",
+      "surfaceSpec": {
+        "surfaceToken": "objection-handling",
+        "notes": "Bloco de objeções para reduzir risco percebido e alinhar expectativa do que o produto é (e não é)."
+      },
+      "ctaSlot": {
+        "hasCta": false,
+        "ctaLabel": "",
+        "ctaVariant": "",
+        "matchAdCta": "",
+        "notes": "CTA final vem junto do formulário repetido para ação imediata."
+      }
+    },
+    {
+      "sectionId": "s8-final-cta-form",
+      "sectionName": "CTA final + formulário (repetição)",
+      "objective": "Capturar quem rolou a página: reforçar promessa e oferecer o mesmo briefing sem voltar ao topo.",
+      "contentType": "cta",
+      "copySource": "campaignAngle.singleMindedPromise + campaignAngle.primaryCTA",
+      "uiNotes": "Mobile reading flow: (1) título curto, (2) 3 bullets recap (preview, PDF+kit, sem briga de preço), (3) formulário repetido, (4) nota de privacidade e links legais no rodapé.",
+      "uiTags": "<section id=\"s8-final-cta-form\"><div id=\"s8-container\"><h2 id=\"s8-title\"></h2><ul id=\"s8-bullets\"><li id=\"s8-bullets-1\"></li><li id=\"s8-bullets-2\"></li><li id=\"s8-bullets-3\"></li></ul><form id=\"s8-form\"><label id=\"s8-form-label-1\"></label><input id=\"s8-form-input-1\"/><label id=\"s8-form-label-2\"></label><input id=\"s8-form-input-2\"/><label id=\"s8-form-label-3\"></label><select id=\"s8-form-select-1\"></select><label id=\"s8-form-label-4\"></label><textarea id=\"s8-form-textarea-1\"></textarea><div id=\"s8-form-consent\"></div><button id=\"s8-form-submit\"></button><p id=\"s8-form-privacy\"></p></form><footer id=\"s8-footer\"><div id=\"s8-legal\"></div><a id=\"s8-privacy-link\"></a><a id=\"s8-terms-link\"></a><a id=\"s8-contact-link\"></a></footer></div></section>",
+      "uiSizeTexts": "#s8-title{min:22;max:52} #s8-bullets-1{min:26;max:70} #s8-bullets-2{min:26;max:70} #s8-bullets-3{min:26;max:70} #s8-form-privacy{min:60;max:140} #s8-form-submit{min:18;max:64} #s8-legal{min:40;max:120} #s8-privacy-link{min:8;max:40} #s8-terms-link{min:8;max:40} #s8-contact-link{min:8;max:40}",
+      "uiSizes": "#s8-final-cta-form{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px} #s8-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px} #s8-title{width:100%;max-width:44ch} #s8-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px} #s8-form{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:10px;margin-top:6px} #s8-form-input-1{width:100%;height:44px;box-sizing:border-box} #s8-form-input-2{width:100%;height:44px;box-sizing:border-box} #s8-form-select-1{width:100%;height:44px;box-sizing:border-box} #s8-form-textarea-1{width:100%;height:96px;min-height:88px;max-height:140px;box-sizing:border-box} #s8-form-consent{width:100%;box-sizing:border-box} #s8-form-submit{width:100%;height:48px;box-sizing:border-box} #s8-form-privacy{width:100%;max-width:60ch} #s8-footer{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:12px} #s8-legal{width:100%;max-width:80ch} #s8-privacy-link{width:100%;max-width:28ch} #s8-terms-link{width:100%;max-width:28ch} #s8-contact-link{width:100%;max-width:28ch}",
+      "messageMatchDependency": "Repetir CTA literal e recap dos elementos de prova (preview ~3 min; PDF 1 página com marca d’água; mini-kit 5 itens).",
+      "sectionDependsOn": [
+        "s7-faq-objections"
+      ],
+      "mobilePriorityScore": 10,
+      "dropOffRisk": "baixo",
+      "surfaceSpec": {
+        "surfaceToken": "final-conversion",
+        "notes": "Fechamento com formulário repetido para reduzir fricção de rolagem e maximizar conversão."
+      },
+      "ctaSlot": {
+        "hasCta": true,
+        "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
+        "ctaVariant": "primary",
+        "matchAdCta": "campaignAngle.primaryCTA",
+        "notes": "CTA como submit do formulário final; mesma ação e rótulo do topo."
+      }
+    }
+  ],
+  "consistencyChecks": [
+    {
+      "check": "Message match (promessa central e CTA) entre anúncio e landing",
+      "status": "PASS",
+      "details": "Hero e CTAs repetem literalmente ‘Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF’ e reforçam ‘fechar sem briga de preço’ + preview rápido (~3 min)."
+    },
+    {
+      "check": "Envelope do produto (sem consultoria/call/gestão humana)",
+      "status": "PASS",
+      "details": "Wireframe posiciona entrega como geração automática de PDF + mini-kit; FAQ cobre ‘não é consultoria’ e ‘sem call’."
+    },
+    {
+      "check": "CTA aparece até o fim da 2ª seção no mobile",
+      "status": "PASS",
+      "details": "CTA no formulário do Hero (seção 1) e botão de repetição na seção 2."
+    },
+    {
+      "check": "Regra mobile (sem duas colunas no conteúdo principal)",
+      "status": "PASS",
+      "details": "Todas as seções definidas em coluna única; observação de duas colunas apenas para desktop no Hero."
+    },
+    {
+      "check": "Prova mínima (>=2 tipos distintos)",
+      "status": "PASS",
+      "details": "Prova de rapidez/fluxo (seção 2) + prova visual do output (seção 6) + mockups de entregáveis (seção 4)."
+    }
+  ],
+  "bodyAttributes": [
+    {
+      "attribute": "style",
+      "value": "margin:0;padding:0;box-sizing:border-box;",
+      "notes": "Remove margens padrão e garante base consistente para layout mobile-first."
+    },
+    {
+      "attribute": "data-contrast",
+      "value": "high",
+      "notes": "Indica preferência por alto contraste para legibilidade e acessibilidade (mínimo 4.5:1)."
+    },
+    {
+      "attribute": "data-layout",
+      "value": "mobile-first-single-column",
+      "notes": "Força decisão estrutural: coluna única no mobile; evita duas colunas no conteúdo principal."
+    },
+    {
+      "attribute": "data-container-max",
+      "value": "1120",
+      "notes": "Padroniza largura máxima e alinhamento à esquerda uniforme dentro do container para consistência visual."
+    }
+  ]
+}

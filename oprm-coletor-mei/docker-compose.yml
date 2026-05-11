@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  oprm-coletor-mei:
+    build: .
+    container_name: oprm-coletor-mei
+    ports:
+      - "8094:8094"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default

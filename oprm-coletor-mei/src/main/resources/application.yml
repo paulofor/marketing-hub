@@ -1,0 +1,16 @@
+server:
+  port: 8094
+
+spring:
+  application:
+    name: oprm-coletor-mei
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -1,0 +1,4 @@
+services:
+  oprm-coletor-mei:
+    image: ${OPRM_COLETOR_MEI_IMAGE}
+    build: null

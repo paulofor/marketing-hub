@@ -3,6 +3,8 @@ package com.marketinghub.moishotmart.service;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionResponse;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartProductSnapshot;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -12,6 +14,7 @@ import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.nio.file.Path;
@@ -25,6 +28,7 @@ public class HotmartCollectorService {
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorService.class);
     private static final double PLAYWRIGHT_TIMEOUT_MS = 180_000;
     private static final int LOGIN_SUBMIT_RETRIES = 3;
+    private static final String HOTMART_MARKET_API_URL = "https://api-affiliation-market.hotmart.com/v2/market/search";
 
     private final boolean headless;
     private final String chromiumExecutablePath;
@@ -32,6 +36,7 @@ public class HotmartCollectorService {
     private final String hotmartSessionCookie;
     private final String hotmartUsername;
     private final String hotmartPassword;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public HotmartCollectorService(
             @Value("${collector.playwright.headless:true}") boolean headless,
@@ -113,7 +118,15 @@ public class HotmartCollectorService {
             int cardsCount = page.locator("a[href*='/market/products/']").count();
             int maxToRead = Math.min(cardsCount, boundedMax);
             log.info("Página carregada. cardsEncontrados={}, cardsProcessados={}", cardsCount, maxToRead);
-            for (int i = 0; i < maxToRead; i++) {
+            if (cardsCount == 0) {
+                log.warn("Nenhum card de produto encontrado na página de mercado. url='{}', htmlSnapshot='{}'",
+                        page.url(),
+                        captureHtmlSnapshot(page));
+                int apiCollected = collectProductsViaMarketApi(page, boundedMax, products);
+                log.info("Fallback API Hotmart finalizado. produtosColetadosViaApi={}", apiCollected);
+            }
+            if (products.isEmpty()) {
+                for (int i = 0; i < maxToRead; i++) {
                 String title = page.locator("a[href*='/market/products/']").nth(i).innerText();
                 String detailsUrl = page.locator("a[href*='/market/products/']").nth(i).getAttribute("href");
                 if (detailsUrl != null && detailsUrl.startsWith("/")) {
@@ -126,6 +139,7 @@ public class HotmartCollectorService {
                         detailsUrl == null ? hotmartMarketUrl : detailsUrl,
                         Instant.now()
                 ));
+                }
             }
 
             log.info("Coleta Hotmart finalizada com sucesso. produtosColetados={}", products.size());
@@ -145,6 +159,115 @@ public class HotmartCollectorService {
         }
 
         return new HotmartCollectionResponse(status, message, products);
+    }
+
+
+    private String captureHtmlSnapshot(Page page) {
+        String html = page.content();
+        if (html == null || html.isBlank()) {
+            return "HTML vazio";
+        }
+        String normalized = html.replaceAll("\\s+", " ").trim();
+        int maxLength = 8_000;
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        return normalized.substring(0, maxLength) + "...[TRUNCATED]";
+    }
+
+
+    private int collectProductsViaMarketApi(Page page, int boundedMax, List<HotmartProductSnapshot> products) {
+        try {
+            String response = page.evaluate("""
+                    async ({ apiUrl, rows }) => {
+                      const payload = {
+                        page: 1,
+                        rows,
+                        userLocale: 'PT_BR',
+                        name: 'hottest'
+                      };
+                      const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                          'accept': 'application/json, text/plain, */*',
+                          'content-type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                      });
+                      const text = await res.text();
+                      return JSON.stringify({ status: res.status, body: text });
+                    }
+                    """, java.util.Map.of("apiUrl", HOTMART_MARKET_API_URL, "rows", boundedMax)).toString();
+
+            JsonNode root = objectMapper.readTree(response);
+            int status = root.path("status").asInt();
+            String body = root.path("body").asText("{}");
+            log.info("Resposta fallback API Hotmart recebida. status={}, bodyPreview='{}'", status, truncateForLog(body, 1200));
+            if (status < 200 || status >= 300) {
+                return 0;
+            }
+            JsonNode data = objectMapper.readTree(body);
+            JsonNode productsNode = firstArray(data, "products", "items", "content", "results");
+            if (productsNode == null || !productsNode.isArray()) {
+                return 0;
+            }
+            for (JsonNode item : productsNode) {
+                if (products.size() >= boundedMax) {
+                    break;
+                }
+                String title = firstText(item, "name", "productName", "title");
+                String url = firstText(item, "checkoutUrl", "productUrl", "url", "link");
+                if (url == null || url.isBlank()) {
+                    url = hotmartMarketUrl;
+                }
+                products.add(new HotmartProductSnapshot(
+                        title == null || title.isBlank() ? "Produto sem título" : title,
+                        "N/A",
+                        "N/A",
+                        url,
+                        Instant.now()
+                ));
+            }
+            return products.size();
+        } catch (Exception ex) {
+            log.warn("Falha no fallback de coleta via API Hotmart.", ex);
+            return 0;
+        }
+    }
+
+    private JsonNode firstArray(JsonNode node, String... keys) {
+        for (String key : keys) {
+            JsonNode child = node.path(key);
+            if (child.isArray()) {
+                return child;
+            }
+        }
+        Iterator<JsonNode> it = node.elements();
+        while (it.hasNext()) {
+            JsonNode child = it.next();
+            if (child.isArray()) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private String firstText(JsonNode node, String... keys) {
+        for (String key : keys) {
+            JsonNode child = node.path(key);
+            if (child.isTextual() && !child.asText().isBlank()) {
+                return child.asText();
+            }
+        }
+        return null;
+    }
+
+    private String truncateForLog(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength) + "...[TRUNCATED]";
     }
 
     private String pickFirstNonBlank(String primary, String fallback) {

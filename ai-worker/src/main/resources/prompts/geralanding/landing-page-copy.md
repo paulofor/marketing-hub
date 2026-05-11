@@ -58,6 +58,8 @@ Regras obrigatórias:
 5. Manter continuidade com promessa e CTA do anúncio, preservando o direcionamento de `campaignAngle`.
 6. Se houver conflito entre contexto e wireframe, priorize wireframe (`uiTags` + `uiSizeTexts`).
 7. Responder somente com JSON válido aderente ao schema da etapa.
+8. Campos explicativos (`messageMatchNotes`, `ctaMatchNotes`, `matchAdCta`, `consistencyChecks.details`) também são conteúdo de negócio e devem ser escritos em linguagem natural para time de marketing; nunca referencie nomes de campos/paths técnicos (ex.: `campaignAngle.primaryCTA`, `landingMatchLine`, `mechanismSummary`) e nunca escreva instruções como “usa literalmente”, “idêntico ao anúncio” ou “âncora para o formulário”.
+9. Proibido copiar trechos literais do prompt, schema, metadados ou contrato. Se detectar risco de vazamento técnico em qualquer campo textual, reescreva o texto antes de finalizar o JSON.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

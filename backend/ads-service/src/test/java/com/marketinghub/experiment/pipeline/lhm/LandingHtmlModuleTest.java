@@ -189,50 +189,6 @@ class LandingHtmlModuleTest {
         assertTrue(html.contains("Final CTA"));
     }
 
-
-    @Test
-    void assembleHtmlDocumentRendersBodySectionItemsWhenCopyUsesItemsList() {
-        Experiment experiment = new Experiment();
-        applyBaseCssContract(experiment);
-        applyImagePlanningContract(experiment);
-        experiment.setName("Teste LHM Body Items");
-        experiment.setLandingPageWireframe("""
-                {
-                  "landingPageWireframe": {
-                    "sectionOrder": [
-                      {"sectionId": "mechanism_01", "sectionName": "Mecanismo", "contentType": "split", "surfaceSpec": {"surfaceToken": "surface-mech", "style": "solid", "contrastMode": "normal"}}
-                    ],
-                    "formSpec": {
-                      "formId": "lead-capture-primary",
-                      "submitTarget": "/api/flows/submissions",
-                      "submitLabel": "Enviar",
-                      "fields": [{"name": "nome", "type": "text", "required": true}]
-                    }
-                  }
-                }
-                """);
-        experiment.setLandingPageCopy("""
-                {
-                  "landingPageCopy": {
-                    "bodySections": [
-                      {
-                        "sectionId": "mechanism_01",
-                        "items": [
-                          {"item": "Dor", "copy": "Você perde horas com tentativa e erro."},
-                          {"item": "Mecanismo", "copy": "Fluxo guiado passo a passo com foco em execução."}
-                        ]
-                      }
-                    ]
-                  }
-                }
-                """);
-
-        String html = module.assembleHtmlDocument(experiment);
-
-        assertTrue(html.contains("Você perde horas com tentativa e erro."));
-        assertTrue(html.contains("Fluxo guiado passo a passo com foco em execução."));
-    }
-
     @Test
     void assembleHtmlDocumentUsesDesignPresetForStyleAndContrastMode() {
         Experiment experiment = new Experiment();

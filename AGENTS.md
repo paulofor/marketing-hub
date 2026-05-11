@@ -39,6 +39,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Testes Unitários**: os testes unitários precisam sempre estar em concordancia com as regras dos documentos canonicos.
 - **Regra Geral (cânone x testes)**: sempre que houver alteração de regra em documento canônico, revisar e atualizar os testes unitários relacionados para manter aderência entre documentação, regras de domínio e validações automatizadas.
 - **Telas do Usuario**: as telas de usuario, ou frontend precisam sempre estar dando as informações mais importantes e precisas para  o usuario e ofereçendo so comandos necessários para o direcionamento dos fluxo de processos mantidos pelo sistema. Evite informações contraditórias, em excesso e desorganizadas. Mantenha sempre a conformidade com os documentos canonicos.
+- **Gera Landing** : se estiver fazendo trabalho relacionado ao pacote geralanding registre sempre o trabalho em : /docs/gera-landing/registros1.md
 
 ## 3. Orientações Práticas:
 

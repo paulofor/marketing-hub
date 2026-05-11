@@ -1,5 +1,7 @@
 package com.marketinghub.geralanding;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -7,104 +9,119 @@ import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class CopyProvisionalHtmlProcessor {
 
-    public String process(String html, Map<String, Object> copy) {
-        Deque<String> copyTexts = collectCopyTexts(copy);
-        String output = applyCopyToAllTextNodes(html, copyTexts);
-        if (StringUtils.hasText(copyTexts.peekFirst())) {
-            output = output.replaceFirst("(?is)<title>.*?</title>", "<title>" + escapeHtml(copyTexts.peekFirst()) + "</title>");
-        }
-        return output;
-    }
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private String applyCopyToAllTextNodes(String html, Deque<String> copyTexts) {
-        if (!StringUtils.hasText(html)) {
-            throw new IllegalArgumentException("HTML provisório ausente para aplicar a copy");
+    public String process(String wireframeJson, String copyJson) {
+        if (!StringUtils.hasText(wireframeJson)) {
+            throw new IllegalArgumentException("JSON de wireframe ausente");
         }
-        if (copyTexts.isEmpty()) {
-            throw new IllegalArgumentException("Copy da etapa Gera Copy sem textos para preencher a página");
+        if (!StringUtils.hasText(copyJson)) {
+            throw new IllegalArgumentException("JSON de copy ausente");
         }
 
-        Document document = Jsoup.parse(html, "", Parser.htmlParser());
-        List<Element> textElements = document.select("h1, h2, h3, p, li, span, summary, a, button");
-        for (Element element : textElements) {
-            String text = copyTexts.pollFirst();
-            if (!StringUtils.hasText(text)) {
-                throw new IllegalArgumentException("Copy insuficiente para preencher todos os campos de texto do HTML");
+        Map<String, Object> wireframe = parseJson(wireframeJson);
+        Map<String, Object> copy = parseJson(copyJson);
+
+        String baseHtml = buildHtmlFromWireframe(wireframe);
+        Map<String, String> copyByItemId = collectCopyByItemId(copy);
+
+        Document document = Jsoup.parse(baseHtml, "", Parser.htmlParser());
+        for (Map.Entry<String, String> entry : copyByItemId.entrySet()) {
+            Element element = document.getElementById(entry.getKey());
+            if (element != null && StringUtils.hasText(entry.getValue())) {
+                element.text(entry.getValue().trim());
             }
-            element.text(text);
         }
+
+        String title = firstNonBlank(copyByItemId.get("s1-title"), copyByItemId.get("s2-title"));
+        if (StringUtils.hasText(title)) {
+            document.title(title);
+        }
+
         return document.outerHtml();
     }
 
-    private Deque<String> collectCopyTexts(Map<String, Object> copy) {
-        List<String> values = new ArrayList<>();
-        collectTextsRecursive(copy, null, values);
-        Deque<String> queue = new ArrayDeque<>();
-        for (String value : values) {
-            if (StringUtils.hasText(value)) {
-                queue.addLast(value.trim());
-            }
+    private Map<String, Object> parseJson(String json) {
+        try {
+            return OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao interpretar JSON de entrada", e);
         }
-        return queue;
     }
 
     @SuppressWarnings("unchecked")
-    private void collectTextsRecursive(Object node, String key, List<String> out) {
-        if (node == null) {
-            return;
+    private String buildHtmlFromWireframe(Map<String, Object> wireframe) {
+        Object rawSections = wireframe.get("sectionOrder");
+        if (!(rawSections instanceof List<?> sections) || sections.isEmpty()) {
+            throw new IllegalArgumentException("Wireframe sem sectionOrder para montar HTML base");
         }
-        if (node instanceof Map<?, ?> map) {
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                collectTextsRecursive(entry.getValue(), String.valueOf(entry.getKey()), out);
+
+        List<String> sectionBlocks = new ArrayList<>();
+        for (Object section : sections) {
+            if (!(section instanceof Map<?, ?> sectionMap)) {
+                continue;
             }
-            return;
-        }
-        if (node instanceof List<?> list) {
-            for (Object item : list) {
-                collectTextsRecursive(item, key, out);
+            String uiTags = asString(sectionMap.get("uiTags"));
+            if (StringUtils.hasText(uiTags)) {
+                sectionBlocks.add(uiTags.trim());
             }
-            return;
         }
-        if (node instanceof String text && shouldUseAsCopyText(key, text)) {
-            out.add(text);
+
+        if (sectionBlocks.isEmpty()) {
+            throw new IllegalArgumentException("Wireframe sem uiTags para montar HTML base");
         }
+
+        return "<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Landing Provisória</title></head><body>"
+                + String.join("\n", sectionBlocks)
+                + "</body></html>";
     }
 
-    private boolean shouldUseAsCopyText(String key, String value) {
-        if (!StringUtils.hasText(value)) {
-            return false;
+    @SuppressWarnings("unchecked")
+    private Map<String, String> collectCopyByItemId(Map<String, Object> copyJson) {
+        Map<String, String> result = new LinkedHashMap<>();
+        Object rawSections = copyJson.get("bodySections");
+        if (!(rawSections instanceof List<?> sections)) {
+            return result;
         }
-        if (key == null) {
-            return true;
+
+        for (Object section : sections) {
+            if (!(section instanceof Map<?, ?> sectionMap)) {
+                continue;
+            }
+            Object rawItems = sectionMap.get("items");
+            if (!(rawItems instanceof List<?> items)) {
+                continue;
+            }
+            for (Object item : items) {
+                if (!(item instanceof Map<?, ?> itemMap)) {
+                    continue;
+                }
+                String id = asString(itemMap.get("item"));
+                String copy = asString(itemMap.get("copy"));
+                if (StringUtils.hasText(id) && StringUtils.hasText(copy)) {
+                    result.put(id.trim(), copy.trim());
+                }
+            }
         }
-        String normalized = key.toLowerCase();
-        if (normalized.contains("id")
-                || normalized.contains("slot")
-                || normalized.contains("section")
-                || normalized.contains("url")
-                || normalized.contains("placement")
-                || normalized.contains("code")
-                || normalized.contains("status")) {
-            return false;
-        }
-        return true;
+        return result;
     }
 
-    private String escapeHtml(String value) {
-        return value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+    private String asString(Object value) {
+        return value instanceof String str ? str : null;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (StringUtils.hasText(first)) {
+            return first;
+        }
+        return StringUtils.hasText(second) ? second : null;
     }
 }

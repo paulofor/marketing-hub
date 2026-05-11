@@ -114,6 +114,10 @@ Diretriz obrigatória para títulos de seção:
 41. É proibido ecoar instruções operacionais (ex.: “Como funciona (passo X)” quando vier como guideline interna) como se fosse copy final, salvo se isso vier explicitamente como texto de negócio no insumo estruturado.
 42. Todo texto de `hero`, `bodySections`, `ctaBlocks` e `faq` deve soar como comunicação comercial final, sem linguagem de especificação técnica.
 
+43. Regra de emissão final (obrigatória): antes de responder, revise todo o JSON e remova qualquer texto de instrução interna, placeholders ou termos técnicos de contrato.
+44. Se qualquer campo textual contiver termo proibido (ex.: adCopy., campaignAngle., uiTags, slotId, CASE_DATA, OUTPUT_CONTRACT, V1-/V2-/V3-, Lorem ipsum, “Como funciona (passo X)”), REESCREVA o campo até virar comunicação comercial final ao usuário.
+45. Nunca devolva orientação de implementação, nomes de variáveis, caminhos de objeto, nem texto de “o que deve ser feito”; devolva apenas copy pronta para publicação.
+
 CASE_DATA
 {{CASE_DATA_BLOCK}}
 

@@ -72,6 +72,8 @@ Critérios mínimos de aceite no próprio output:
 - `bodySections.length >= 4`
 - Se `landingPageWireframe` existir, `bodySections` deve conter exatamente as mesmas seções do wireframe, na mesma ordem de `sections`.
 - Cada `bodySections[i].items[j]` deve conter somente os campos `item` e `copy`.
+- cada item de `bodySections` deve informar `sectionId` + `slotId` exatamente como definidos no wireframe
+- não usar `purpose` como `slotId` (ex.: `headline`, `subheadline`, `promise`)
 - Se existir `uiTextTags`, os textos devem respeitar os limites sugeridos de caracteres por elemento/slot.
 - `faq.length >= 3`
 - `ctaBlocks.length >= 2`

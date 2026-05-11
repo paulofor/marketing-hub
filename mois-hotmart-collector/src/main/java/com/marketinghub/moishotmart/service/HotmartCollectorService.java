@@ -102,8 +102,12 @@ public class HotmartCollectorService {
 
             log.info("Navegando para URL de mercado Hotmart: {}", hotmartMarketUrl);
             page.navigate(hotmartMarketUrl, new Page.NavigateOptions()
-                    .setTimeout(60_000)
-                    .setWaitUntil(WaitUntilState.NETWORKIDLE));
+                    .setTimeout(120_000)
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            page.waitForURL("**/market/**", new Page.WaitForURLOptions().setTimeout(60_000));
+            page.locator("#root").first().waitFor(new com.microsoft.playwright.Locator.WaitForOptions()
+                    .setState(WaitForSelectorState.VISIBLE)
+                    .setTimeout(60_000));
             page.waitForTimeout(1_500);
 
             int cardsCount = page.locator("a[href*='/market/products/']").count();
@@ -283,7 +287,18 @@ public class HotmartCollectorService {
                             .setState(WaitForSelectorState.HIDDEN)
                             .setTimeout(5_000));
         } catch (Exception ignored) {
-            log.debug("Overlay de cookie não ocultou no tempo esperado; seguindo com retries.");
+            log.debug("Overlay de cookie não ocultou no tempo esperado; aplicando fallback por JS.");
+            hideOverlayWithJavascript(page, "#hotmart-cookie-policy");
+        }
+    }
+
+
+    private void hideOverlayWithJavascript(Page page, String selector) {
+        try {
+            page.evaluate("(sel) => { const el = document.querySelector(sel); if (el) { el.style.display = 'none'; el.style.pointerEvents = 'none'; } }", selector);
+            log.info("Overlay '{}' ocultado por fallback JS.", selector);
+        } catch (Exception ex) {
+            log.debug("Falha ao ocultar overlay '{}' por JS: {}", selector, ex.getMessage());
         }
     }
 

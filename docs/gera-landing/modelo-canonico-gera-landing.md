@@ -212,6 +212,28 @@ Request montado com:
 
 O JSON final vai para `openai_request_body` (auditoria).
 
+### 4.5.1 Regra canônica de compatibilidade de schema com OpenAI (obrigatória)
+
+Para qualquer etapa do Gera Landing que use `text.format.type = json_schema` com `strict = true`, o schema enviado **deve** respeitar o subconjunto suportado pela OpenAI Structured Outputs.
+
+Procedimento obrigatório antes de publicar alteração de schema:
+
+1. Consultar a documentação oficial da OpenAI (Structured Outputs / response_format json_schema) via MCP/documentação oficial.
+2. Validar se não há uso de keywords não suportadas no strict mode.
+3. Registrar no histórico operacional (`docs/gera-landing/registros1.md`) a revisão realizada e o resultado.
+
+Lista mínima de keywords de composição que **não podem** ser usadas no strict mode (fonte oficial OpenAI):
+
+- `allOf`
+- `not`
+- `dependentRequired`
+- `dependentSchemas`
+- `if`
+- `then`
+- `else`
+
+Consequência operacional esperada: evitar erro `400 invalid_json_schema` no Batch/Responses por envio de schema inválido.
+
 ## 4.6 Handoff de prompt para backend
 
 Antes de executar batch, worker chama `receive-prompt` com:

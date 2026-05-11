@@ -683,6 +683,17 @@ public class LandingHtmlModule {
     private void appendBodySectionBlock(StringBuilder sb, Map<String, Object> bodySection) {
         appendRichText(sb, asTrimmedString(bodySection.get("summary")));
         appendRichText(sb, asTrimmedString(bodySection.get("copy")));
+        if (bodySection.get("items") instanceof List<?> rawItems) {
+            for (Object rawItem : rawItems) {
+                if (!(rawItem instanceof Map<?, ?> rawItemMap)) {
+                    continue;
+                }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> itemMap = (Map<String, Object>) rawItemMap;
+                appendRichText(sb, asTrimmedString(itemMap.get("item")));
+                appendRichText(sb, asTrimmedString(itemMap.get("copy")));
+            }
+        }
         if (bodySection.get("bullets") instanceof List<?> rawBullets) {
             StringBuilder bulletsMarkup = new StringBuilder();
             for (Object rawBullet : rawBullets) {

@@ -20,15 +20,18 @@ public class CnaeCatalogCollectorScheduler {
 
     private final CnaeCatalogScheduleProperties scheduleProperties;
     private final CnaeCatalogCollectorService collectorService;
+    private final CnaeCatalogExecutionLogService executionLogService;
     private final ObjectMapper objectMapper;
 
     public CnaeCatalogCollectorScheduler(
             CnaeCatalogScheduleProperties scheduleProperties,
             CnaeCatalogCollectorService collectorService,
+            CnaeCatalogExecutionLogService executionLogService,
             ObjectMapper objectMapper
     ) {
         this.scheduleProperties = scheduleProperties;
         this.collectorService = collectorService;
+        this.executionLogService = executionLogService;
         this.objectMapper = objectMapper;
     }
 
@@ -39,6 +42,7 @@ public class CnaeCatalogCollectorScheduler {
         }
         if (scheduleProperties.payloadFile() == null || scheduleProperties.payloadFile().isBlank()) {
             log.warn("Agendamento habilitado, mas oprm.collector.schedule.payload-file não foi definido.");
+            executionLogService.error("scheduled-job", "Agendamento habilitado sem payload-file configurado.");
             return;
         }
 
@@ -49,13 +53,15 @@ public class CnaeCatalogCollectorScheduler {
                     }
             );
             CnaeCatalogCollectRequest request = new CnaeCatalogCollectRequest(scheduleProperties.source(), records);
-            var result = collectorService.collectAndIngest(request);
+            var result = collectorService.collectAndIngest(request, "scheduled-job");
             log.info("Ingestão agendada executada com sucesso. Recebidos: {}, normalizados: {}, persistidos: {}",
                     result.received(), result.normalized(), result.persisted());
         } catch (IOException e) {
             log.error("Falha ao carregar payload do arquivo configurado para ingestão agendada.", e);
+            executionLogService.error("scheduled-job", "Falha ao carregar payload-file: " + e.getMessage());
         } catch (RuntimeException e) {
             log.error("Falha ao executar ingestão agendada.", e);
+            executionLogService.error("scheduled-job", "Falha ao executar ingestão agendada: " + e.getMessage());
         }
     }
 }

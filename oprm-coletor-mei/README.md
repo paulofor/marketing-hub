@@ -21,6 +21,10 @@ Coleta + ingestão de catálogo CNAE (OPRM):
 - `POST http://localhost:8094/api/oprm-mei/catalog/collect`
 - O coletor aplica normalização de `cnaeCode`, deduplicação e envio em lotes para o backend (`/api/niches/catalog:ingest`).
 
+Logs de execução (acesso por URL):
+- `GET http://localhost:8094/api/oprm-mei/catalog/executions`
+- Retorna histórico em memória das últimas execuções (manual e agendada), com `timestamp`, `trigger`, `status`, `message` e totais (`received`, `normalized`, `persisted`).
+
 Exemplo de payload:
 ```json
 {

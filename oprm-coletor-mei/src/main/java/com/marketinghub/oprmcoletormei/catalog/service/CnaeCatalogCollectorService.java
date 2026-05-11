@@ -17,13 +17,23 @@ public class CnaeCatalogCollectorService {
 
     private final RestClient.Builder restClientBuilder;
     private final CnaeCatalogCollectorProperties properties;
+    private final CnaeCatalogExecutionLogService executionLogService;
 
-    public CnaeCatalogCollectorService(RestClient.Builder restClientBuilder, CnaeCatalogCollectorProperties properties) {
+    public CnaeCatalogCollectorService(
+            RestClient.Builder restClientBuilder,
+            CnaeCatalogCollectorProperties properties,
+            CnaeCatalogExecutionLogService executionLogService
+    ) {
         this.restClientBuilder = restClientBuilder;
         this.properties = properties;
+        this.executionLogService = executionLogService;
     }
 
     public CnaeCatalogCollectResponse collectAndIngest(CnaeCatalogCollectRequest request) {
+        return collectAndIngest(request, "manual-api");
+    }
+
+    public CnaeCatalogCollectResponse collectAndIngest(CnaeCatalogCollectRequest request, String trigger) {
         List<CnaeCatalogIngestPayload.Record> normalized = normalizeAndDeduplicate(request.records());
         List<List<CnaeCatalogIngestPayload.Record>> batches = partition(normalized, properties.batchSize());
 
@@ -34,13 +44,20 @@ public class CnaeCatalogCollectorService {
             persisted += response.persisted();
         }
 
-        return new CnaeCatalogCollectResponse(
+        CnaeCatalogCollectResponse response = new CnaeCatalogCollectResponse(
                 request.records().size(),
                 normalized.size(),
                 request.records().size() - normalized.size(),
                 batches.size(),
                 persisted
         );
+        executionLogService.info(
+                trigger,
+                "SUCCESS",
+                "Ingestão concluída com sucesso.",
+                response
+        );
+        return response;
     }
 
     private IngestResponse sendBatch(CnaeCatalogIngestPayload payload) {

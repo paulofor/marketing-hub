@@ -19,68 +19,6 @@
       "type": "string",
       "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
     },
-    "hero": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "eyebrow": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "headline": {
-          "type": "string",
-          "minLength": 8,
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "subheadline": {
-          "type": "string",
-          "minLength": 12,
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "promise": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "supportingCopy": {
-          "type": "string",
-          "minLength": 24,
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "proofBadge": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "microcopy": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "ctaLabel": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "ctaUrl": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        },
-        "ctaMatchNotes": {
-          "type": "string",
-          "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-        }
-      },
-      "required": [
-        "eyebrow",
-        "headline",
-        "subheadline",
-        "promise",
-        "supportingCopy",
-        "proofBadge",
-        "microcopy",
-        "ctaLabel",
-        "ctaUrl",
-        "ctaMatchNotes"
-      ],
-      "description": "Conteúdo do hero deve refletir os uiTags/uiTextTags da seção hero no wireframe anterior."
-    },
     "bodySections": {
       "type": "array",
       "minItems": 4,
@@ -159,7 +97,7 @@
           "messageMatchNotes"
         ]
       },
-      "description": "Cada bodySection deve ser escrita a partir dos uiTags da seção e uiTextTags do slot correspondente (mesma sectionId/slotId) no landingPageWireframe anterior."
+      "description": "Cada bodySection deve seguir exatamente a lista/ordem de seções do wireframe e ser escrita a partir dos uiTags/uiTextTags do slot correspondente (mesma sectionId/slotId), respeitando o tamanho sugerido em caracteres."
     },
     "ctaBlocks": {
       "type": "array",
@@ -290,7 +228,6 @@
     "messageMatchSource",
     "messageMatchNotes",
     "primaryCTA",
-    "hero",
     "bodySections",
     "ctaBlocks",
     "faq",

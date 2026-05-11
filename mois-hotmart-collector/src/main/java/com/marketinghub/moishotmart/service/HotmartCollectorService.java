@@ -36,6 +36,7 @@ public class HotmartCollectorService {
     private final String hotmartSessionCookie;
     private final String hotmartUsername;
     private final String hotmartPassword;
+    private final boolean logFullToken;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public HotmartCollectorService(
@@ -46,7 +47,8 @@ public class HotmartCollectorService {
             @Value("${collector.hotmart.username:}") String hotmartUsername,
             @Value("${collector.hotmart.password:}") String hotmartPassword,
             @Value("${collector.hotmart.username-fallback:}") String hotmartUsernameFallback,
-            @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback
+            @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback,
+            @Value("${collector.hotmart.log-full-token:false}") boolean logFullToken
     ) {
         this.headless = headless;
         this.chromiumExecutablePath = chromiumExecutablePath;
@@ -54,6 +56,7 @@ public class HotmartCollectorService {
         this.hotmartSessionCookie = hotmartSessionCookie;
         this.hotmartUsername = pickFirstNonBlank(hotmartUsername, hotmartUsernameFallback);
         this.hotmartPassword = pickFirstNonBlank(hotmartPassword, hotmartPasswordFallback);
+        this.logFullToken = logFullToken;
     }
 
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
@@ -104,6 +107,8 @@ public class HotmartCollectorService {
             Page page = context.newPage();
 
             authenticateHotmart(context, page, hasSessionCookie, hasCredentials);
+            String hotmartAccessToken = tryExtractAccessToken(page);
+            logTokenDiagnostics(hotmartAccessToken);
 
             log.info("Navegando para URL de mercado Hotmart: {}", hotmartMarketUrl);
             page.navigate(hotmartMarketUrl, new Page.NavigateOptions()
@@ -122,7 +127,7 @@ public class HotmartCollectorService {
                 log.warn("Nenhum card de produto encontrado na página de mercado. url='{}', htmlSnapshot='{}'",
                         page.url(),
                         captureHtmlSnapshot(page));
-                int apiCollected = collectProductsViaMarketApi(page, boundedMax, products);
+                int apiCollected = collectProductsViaMarketApi(page, hotmartAccessToken, boundedMax, products);
                 log.info("Fallback API Hotmart finalizado. produtosColetadosViaApi={}", apiCollected);
             }
             if (products.isEmpty()) {
@@ -176,10 +181,13 @@ public class HotmartCollectorService {
     }
 
 
-    private int collectProductsViaMarketApi(Page page, int boundedMax, List<HotmartProductSnapshot> products) {
+    private int collectProductsViaMarketApi(Page page, String accessToken, int boundedMax, List<HotmartProductSnapshot> products) {
         try {
+            log.info("Fallback API Hotmart: iniciando chamada. hasAccessToken={}, tokenPreview='{}'",
+                    accessToken != null && !accessToken.isBlank(),
+                    maskToken(accessToken));
             String response = page.evaluate("""
-                    async ({ apiUrl, rows }) => {
+                    async ({ apiUrl, rows, accessToken }) => {
                       const payload = {
                         page: 1,
                         rows,
@@ -191,6 +199,7 @@ public class HotmartCollectorService {
                         credentials: 'include',
                         headers: {
                           'accept': 'application/json, text/plain, */*',
+                          ...(accessToken ? { 'authorization': `Bearer ${accessToken}` } : {}),
                           'content-type': 'application/json'
                         },
                         body: JSON.stringify(payload)
@@ -198,7 +207,7 @@ public class HotmartCollectorService {
                       const text = await res.text();
                       return JSON.stringify({ status: res.status, body: text });
                     }
-                    """, java.util.Map.of("apiUrl", HOTMART_MARKET_API_URL, "rows", boundedMax)).toString();
+                    """, java.util.Map.of("apiUrl", HOTMART_MARKET_API_URL, "rows", boundedMax, "accessToken", accessToken == null ? "" : accessToken)).toString();
 
             JsonNode root = objectMapper.readTree(response);
             int status = root.path("status").asInt();
@@ -234,6 +243,61 @@ public class HotmartCollectorService {
             log.warn("Falha no fallback de coleta via API Hotmart.", ex);
             return 0;
         }
+    }
+
+    private String tryExtractAccessToken(Page page) {
+        log.info("Token Hotmart: iniciando extração pós-login (localStorage/sessionStorage/cookies).");
+        try {
+            Object tokenObj = page.evaluate("""
+                    () => {
+                      const jwtRegex = /eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+/;
+                      const stores = [window.localStorage, window.sessionStorage];
+                      for (const storage of stores) {
+                        for (let i = 0; i < storage.length; i++) {
+                          const key = storage.key(i);
+                          const value = storage.getItem(key);
+                          if (!value) continue;
+                          if (jwtRegex.test(value)) return value.match(jwtRegex)[0];
+                        }
+                      }
+                      const cookieMatch = document.cookie.match(jwtRegex);
+                      return cookieMatch ? cookieMatch[0] : '';
+                    }
+                    """);
+            String token = tokenObj == null ? "" : tokenObj.toString();
+            if (token.isBlank()) {
+                log.warn("Token Hotmart: nenhum token JWT encontrado no contexto da página. url='{}'", page.url());
+                return "";
+            }
+            log.info("Token Hotmart: token capturado com sucesso.");
+            return token;
+        } catch (Exception ex) {
+            log.warn("Token Hotmart: falha ao extrair token pós-login. url='{}'", page.url(), ex);
+            return "";
+        }
+    }
+
+    private void logTokenDiagnostics(String token) {
+        boolean hasToken = token != null && !token.isBlank();
+        log.info("Token Hotmart: hasToken={}, length={}", hasToken, hasToken ? token.length() : 0);
+        if (!hasToken) {
+            return;
+        }
+        if (logFullToken) {
+            log.warn("Token Hotmart (FULL - modo diagnóstico): {}", token);
+        } else {
+            log.info("Token Hotmart (masked): {}", maskToken(token));
+        }
+    }
+
+    private String maskToken(String token) {
+        if (token == null || token.isBlank()) {
+            return "";
+        }
+        if (token.length() <= 20) {
+            return "***";
+        }
+        return token.substring(0, 12) + "...<masked>..." + token.substring(token.length() - 8);
     }
 
     private JsonNode firstArray(JsonNode node, String... keys) {

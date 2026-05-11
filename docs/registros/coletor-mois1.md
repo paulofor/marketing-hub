@@ -51,3 +51,9 @@
 - Implementado fallback de coleta via API oficial `https://api-affiliation-market.hotmart.com/v2/market/search` quando a página de market não retorna cards no DOM (`cardsEncontrados=0`).
 - O fallback executa `fetch` no contexto autenticado da página (`credentials: include`) e mapeia produtos retornados da API para `HotmartProductSnapshot`.
 - Adicionado log técnico do status HTTP e `bodyPreview` truncado da resposta da API para diagnóstico de contrato/autenticação sem depender apenas do scraper visual.
+
+## 2026-05-11 15:30:35 UTC-3
+- Adicionado diagnóstico pós-login no `HotmartCollectorService` para extração de token JWT (tentativa em `localStorage`, `sessionStorage` e `document.cookie`) com logs de cada passo.
+- Adicionado logging de token com proteção por padrão (`masked`) e opção explícita `collector.hotmart.log-full-token=true` para modo diagnóstico completo.
+- Fallback da API Hotmart agora tenta enviar `Authorization: Bearer <token>` quando token estiver disponível, mantendo também `credentials: include`.
+- Incluídos logs detalhados no início do fallback da API informando presença de token e pré-visualização mascarada para rastrear causa-raiz de falhas de autenticação/coleta.

@@ -1,4 +1,3 @@
-
 Estamos Trabalhando nesse contexto:
 
 ```xml
@@ -23,100 +22,42 @@ Estamos Trabalhando nesse contexto:
 		</experimento>
 	</hipotese>
 </nicho>
-
-Nicho: {{NICHE_NAME}}
-
-Dor: {{PAIN_JSON}}
-
-Resultado: {{RESULT_JSON}}
-
-{prompt-regras-globais}
-
-Ângulo da Campanha que vai ser publicada: 
-{dados-campaignAngle}
-
-Copy do Anuncio:
-{dados-adCopy}
-
-Briefing das Imagens dos Anuncios:
-{dados-adImageBriefing}
+```
 
 Wireframe da Landing: IMPORTANTE !!
 {dados-landingPageWireframe}
-
 
 template_id: landing-copy
 template_version: v2
 artifact_target: landingPageCopy
 
 SYSTEM_INSTRUCTIONS
-Você está na etapa de copy da landing page.
+Objetivo principal desta etapa:
+- Ler o JSON que vem logo após "Wireframe da Landing: IMPORTANTE !!".
+- Para cada seção/slot do wireframe, gerar os textos finais para os campos do contrato de `landingPageCopy`.
+- Respeitar obrigatoriamente os sinais de `uiTags` e os limites sugeridos em `uiSizeTexts`.
 
-Modelo conceitual interno obrigatório (não expor no output final):
-- `entryAsset`: ativo inicial/prova/amostra/diagnóstico/preview/primeira experiência
-- `coreOffer`: produto/sistema/framework/processo/entrega central
-- `activationLayer`: implementação prática (plano/roteiro/sequência/setup/aplicação)
-- `continuityLayer`: continuidade/evolução/expansão/atualização, quando existir
-- `proofDevice`: elemento que torna a promessa tangível antes da compra
+Elementos de contexto (usar para direcionar a argumentação, sem mudar a estrutura do wireframe):
+- `nicho`: define com quem a landing está falando.
+- `pain`: dores reais do público que devem aparecer com clareza.
+- `result`: resultado esperado por essas pessoas (transformação desejada).
+- `campaignAngle`: direcionamento-base do fluxo (promessa e framing principal da campanha).
+- Esses elementos são contexto estratégico. Eles orientam tom, linguagem e argumentos, mas não substituem `uiSizeTexts`, `uiTags` e `slotId`.
 
-Regras fixas da etapa:
-1. Continue exatamente a promessa do anúncio clicado e preserve o message match.
-2. `messageMatchSource` deve apontar a fonte da promessa no anúncio (sem duplicar este campo no contrato), e `messageMatchNotes` deve explicar a continuidade.
-3. `hero.ctaLabel`, `primaryCTA` e todos os `ctaBlocks` devem manter o mesmo CTA aprovado.
-4. `bodySections` deve ter no mínimo quatro blocos cobrindo dor, mecanismo, prova e oferta.
-5. `faq` deve conter no mínimo três perguntas com `objectionTag`.
-6. `consistencyChecks` deve incluir CTA_MATCH, PROMISE_MATCH e GOOGLE_LANDING_BEST_PRACTICES.
-7. Os valores de `consistencyChecks.status` devem ser exatamente: PASS, WARN ou FAIL.
-8. `complianceNotes` deve reforçar entrega digital via IA, sem consultoria humana.
-9. Priorize concretude comercial: mantenha nomes reais dos entregáveis, da prova visível e do CTA tangível quando disponíveis nos resumos estruturados.
-10. Nunca invente o tipo concreto da oferta; inferir somente dos insumos estruturados do experimento atual.
-11. Não invente nicho, persona, hipótese, mecanismo, prova, oferta, camadas ou entregáveis fora dos dados recebidos.
-12. Não retornar campos legados fora do contrato (ex.: `messageMatchSummary`).
-13. Não usar taxonomia interna (`entryAsset`, `coreOffer` etc.) no texto final da copy.
-14. A copy final deve cobrir explicitamente o eixo **Dor → Resultado → Mecanismo → Prova → Oferta** ao longo de `hero`, `bodySections`, `ctaBlocks` e `faq`.
-15. `hero.supportingCopy` não pode ser vazio e deve conectar dor, urgência e próximo passo.
-16. Cada item de `bodySections` deve ter `summary` e `copy` substantivos (não usar placeholders).
-17. Cada item de `bodySections` deve conter no mínimo três bullets concretos e específicos.
-18. `faq` deve conter no mínimo três objeções reais do caso atual (sem perguntas genéricas vazias).
-19. `ctaBlocks` deve conter no mínimo duas variações posicionais de CTA (ex.: hero+final ou mid+final), mantendo coerência com `primaryCTA`.
-20. `ctaUrl` nunca pode conter placeholders (ex.: `{slug}`); sempre retornar URL resolvida para o fluxo atual.
-21. Quando `CASE_DATA` incluir `landingPageWireframe` com `copySlots`, cada item de `bodySections` deve informar `sectionId` + `slotId` exatamente como definidos no wireframe (sem inventar ids e sem reutilizar slots de hero).
-22. Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual para manter compatibilidade de contrato com o backend.
-22.1. `slotId` deve ser sempre o identificador técnico literal do `copySlots[].slotId` da mesma `sectionId`; não usar `purpose` como `slotId` (ex.: `headline`, `subheadline`, `promise`) e não usar aliases genéricos.
-23. Para cada `bodySections` e `hero`, use explicitamente os sinais do wireframe anterior: `uiTags` (intenção/componente) e `uiTextTags` (âncora textual) da mesma `sectionId`/`slotId` como base obrigatória da redação final.
-24. Quando `uiTags`/`uiTextTags` existirem no `landingPageWireframe`, é proibido ignorar esses campos na construção da copy; trate-os como contrato de entrada.
-25. Se `uiTags`/`uiTextTags` vierem vazios/ausentes em um slot obrigatório, registrar `consistencyChecks` com `status: FAIL`, citando `sectionId` e `slotId` afetados.
-26. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
-27. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
+Prioridade de decisão (ordem obrigatória):
+1. `uiSizeTexts` (tamanho sugerido por campo textual).
+2. `uiTags`/`uiTextTags` (intenção do texto por seção/slot).
+3. Contexto estratégico (`nicho`, `pain`, `result`, `campaignAngle`) para escolher linguagem, dor e promessa.
+4. Demais dados do CASE_DATA como apoio complementar.
 
-Diretriz obrigatória para HERO:
-28. `hero.headline`: foco na transformação principal (curta, direta, comercial).
-29. `hero.subheadline`: explicar ativo inicial/prova/primeiro passo quando existir, sem presumir formato fixo.
-30. `hero.supportingCopy`: contextualizar dor + urgência + ponte para a oferta principal atual.
-31. Não presumir formatos universais (kit, PDF, plano fixo, ciclo com duração fixa, regeneração etc.).
-
-Diretriz obrigatória para seção de OFERTA:
-32. Estruture a narrativa para suportar duas camadas quando os dados trouxerem essa distinção:
-   - Camada A (agora): o que a pessoa recebe/vê/gera de imediato (entryAsset/prova/preview/diagnóstico/primeiro entregável).
-   - Camada B (estrutura maior): o que isso representa dentro da entrega principal (coreOffer/sistema/framework/processo/sequência/pacote central).
-33. Se a hipótese trouxer apenas um objeto comercial, não force duas camadas artificiais; mantenha clareza comercial com uma camada única.
-34. Sempre conectar entregáveis ao resultado percebido; evitar listas de exemplos fixos desta hipótese atual.
-
-Diretriz obrigatória para títulos de seção:
-35. Títulos devem ser comerciais e específicos ao caso atual, porém reutilizáveis para hipóteses futuras.
-36. Não usar rótulos internos de taxonomia no output.
-37. Não fixar nomenclaturas da oferta atual como padrão universal.
-38. Para evitar reprocessamentos: se faltar `sectionId`/`copySlots` válidos no `CASE_DATA`, não invente `slotId`; registre `FAIL` em `consistencyChecks` com detalhe objetivo e mantenha os demais campos aderentes ao contrato.
-
-
-39. Proibido vazar metainstruções, nomes de campos, caminhos de objeto, ids de variante, labels de estágio ou termos de contrato no texto final exibido ao usuário.
-40. Nunca usar no conteúdo final strings técnicas como: `adCopy.`, `campaignAngle.`, `landingPageWireframe`, `uiTags`, `uiTextTags`, `copySlots`, `sectionId`, `slotId`, `CASE_DATA`, `OUTPUT_CONTRACT`, `template_id`, `artifact_target`, `V1-`, `V2-`, `V3-`.
-41. É proibido ecoar instruções operacionais (ex.: “Como funciona (passo X)” quando vier como guideline interna) como se fosse copy final, salvo se isso vier explicitamente como texto de negócio no insumo estruturado.
-42. Todo texto de `hero`, `bodySections`, `ctaBlocks` e `faq` deve soar como comunicação comercial final, sem linguagem de especificação técnica.
-
-43. Regra de emissão final (obrigatória): antes de responder, revise todo o JSON e remova qualquer texto de instrução interna, placeholders ou termos técnicos de contrato.
-44. Se qualquer campo textual contiver termo proibido (ex.: adCopy., campaignAngle., uiTags, slotId, CASE_DATA, OUTPUT_CONTRACT, V1-/V2-/V3-, Lorem ipsum, “Como funciona (passo X)”), REESCREVA o campo até virar comunicação comercial final ao usuário.
-45. Nunca devolva orientação de implementação, nomes de variáveis, caminhos de objeto, nem texto de “o que deve ser feito”; devolva apenas copy pronta para publicação.
+Regras obrigatórias:
+1. `sectionId` e `slotId` devem ser exatamente os mesmos do wireframe (sem inventar ids e sem aliases).
+2. Cada texto final deve ficar o mais próximo possível do intervalo sugerido em `uiSizeTexts` (mínimo/máximo). Evite extrapolar.
+3. Se faltar `uiSizeTexts` em algum slot obrigatório, preencher mesmo assim com base em `uiTags` + contexto estratégico e registrar `consistencyChecks.status = WARN` com detalhe objetivo.
+4. Não vazar termos técnicos/metainstruções no texto final exibido ao usuário.
+5. Manter continuidade com promessa e CTA do anúncio, preservando o direcionamento de `campaignAngle`.
+6. Se houver conflito entre contexto e wireframe, priorize wireframe (`uiTags` + `uiSizeTexts`).
+7. Responder somente com JSON válido aderente ao schema da etapa.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -136,11 +77,10 @@ Campos obrigatórios:
 - consistencyChecks[] com check, status (PASS/WARN/FAIL), details
 
 Critérios mínimos de aceite no próprio output:
-- `hero` e cada item de `bodySections` devem estar semanticamente alinhados com `landingPageWireframe.sections[].uiTags` e `landingPageWireframe.sections[].copySlots[].uiTextTags` da mesma seção/slot.
 - `bodySections.length >= 4`
 - Se `landingPageWireframe.copySlots` existir, `bodySections[i].slotId` deve pertencer aos copySlots da `sectionId` correspondente.
 - cada `bodySections[i].bullets.length >= 3`
 - `faq.length >= 3`
 - `ctaBlocks.length >= 2`
 - incluir em `consistencyChecks` os checks: CTA_MATCH, PROMISE_MATCH, GOOGLE_LANDING_BEST_PRACTICES
-- não conter vazamento de metainstruções/termos técnicos de contrato em campos textuais finais (`hero`, `bodySections`, `ctaBlocks`, `faq`)
+- textos devem priorizar `uiTags` e respeitar `uiSizeTexts` do wireframe

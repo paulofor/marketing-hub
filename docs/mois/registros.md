@@ -238,6 +238,14 @@
 - Próximo passo operacional recomendado: rebuild/publish da imagem e redeploy do container para materializar a correção em produção.
 - Registro criado por solicitação explícita: "registre a pesquisa e o ajuste em /docs/mois/registros.md".
 
+## 2026-05-10 22:15:04 UTC-3
+- Revisada a robustez da autenticação do `mois-hotmart-collector` após feedback de qualidade na PR anterior.
+- Corrigida a estratégia de fallback: o fluxo agora tenta login por credenciais quando disponível e, em caso de falha, aplica cookie de sessão automaticamente **quando também configurado**.
+- Refatorado `HotmartCollectorService` para centralizar autenticação em método dedicado (`authenticateHotmart`) e remover ramificação morta que impedia fallback efetivo.
+- Extraído helper `applySessionCookie` para reduzir duplicação e garantir aplicação consistente do cookie no `BrowserContext`.
+- Mantidas as melhorias de anti-overlay/retry já introduzidas anteriormente no submit do login.
+- Validação executada no módulo Java: `mvn -q test` com sucesso.
+
 ## 2026-05-10 14:10:04 UTC-3
 - Endurecida a estratégia de container do `mois-hotmart-collector` para eliminar recorrência de falha do Playwright em ambiente Ubuntu 26.04.
 - `Dockerfile` atualizado para usar imagens base Jammy nas duas etapas (`maven:3.9.9-eclipse-temurin-21-jammy` e `eclipse-temurin:21-jre-jammy`), reduzindo risco de incompatibilidade de plataforma com Chromium gerenciado pelo Playwright.

@@ -27,15 +27,15 @@ Regras fixas da etapa:
 12. Não retornar campos legados fora do contrato (ex.: `messageMatchSummary`).
 13. Não usar taxonomia interna (`entryAsset`, `coreOffer` etc.) no texto final da copy.
 14. A copy final deve cobrir explicitamente o eixo **Dor → Resultado → Mecanismo → Prova → Oferta** ao longo de `bodySections`, `ctaBlocks` e `faq`.
-16. Cada item de `bodySections` deve ter `summary` e `copy` substantivos (não usar placeholders).
-17. Cada item de `bodySections` deve conter no mínimo três bullets concretos e específicos.
+16. Cada item de `bodySections` deve conter uma lista `items[]`.
+17. Cada entrada de `items[]` deve ter somente dois campos: `item` (id literal que veio de `uiTextTags`) e `copy`.
 18. `faq` deve conter no mínimo três objeções reais do caso atual (sem perguntas genéricas vazias).
 19. `ctaBlocks` deve conter no mínimo duas variações posicionais de CTA (ex.: hero+final ou mid+final), mantendo coerência com `primaryCTA`.
 20. `ctaUrl` nunca pode conter placeholders (ex.: `{slug}`); sempre retornar URL resolvida para o fluxo atual.
 21. Quando `CASE_DATA` incluir `landingPageWireframe` com `copySlots`, `bodySections` deve refletir exatamente as seções recebidas no wireframe: mesma lista, mesma ordem e mesmos `sectionId` (sem inventar, remover, reordenar ou fundir seções).
-22. Para cada seção do wireframe, preencha os textos de cada elemento listado em `uiTextTags` usando os `slotId` técnicos literais dos `copySlots` da mesma `sectionId`.
-22.1. `slotId` deve ser sempre o identificador técnico literal do `copySlots[].slotId`; não usar `purpose` como `slotId` e não usar aliases genéricos.
-22.2. Cada item de `bodySections` deve respeitar o tamanho sugerido em caracteres informado no `uiTextTags` correspondente.
+22. Para cada seção do wireframe, preencha os textos de cada elemento listado em `uiTextTags`.
+22.1. Em `items[].item`, usar sempre o id técnico literal do elemento vindo de `uiTextTags`; não usar aliases genéricos.
+22.2. Cada `items[].copy` deve respeitar o tamanho sugerido em caracteres informado no `uiTextTags` correspondente.
 23. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
 24. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
 
@@ -50,7 +50,7 @@ Diretriz obrigatória para títulos de seção:
 28. Títulos devem ser comerciais e específicos ao caso atual, porém reutilizáveis para hipóteses futuras.
 29. Não usar rótulos internos de taxonomia no output.
 30. Não fixar nomenclaturas da oferta atual como padrão universal.
-31. Para evitar reprocessamentos: se faltar `sectionId`/`copySlots`/`uiTextTags` válidos no `CASE_DATA`, não invente `slotId`; registre `FAIL` em `consistencyChecks` com detalhe objetivo e mantenha os demais campos aderentes ao contrato.
+31. Para evitar reprocessamentos: se faltar `sectionId`/`uiTextTags` válidos no `CASE_DATA`, não invente `item`; registre `FAIL` em `consistencyChecks` com detalhe objetivo e mantenha os demais campos aderentes ao contrato.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -63,7 +63,7 @@ Campos obrigatórios:
 - messageMatchNotes
 - primaryCTA
 - complianceNotes
-- bodySections[] com sectionId, slotId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
+- bodySections[] com sectionId e items[]; cada item de items[] deve conter somente: item, copy
 - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
 - faq[] com question, answer, objectionTag
 - consistencyChecks[] com check, status (PASS/FAIL/WARNING), details
@@ -71,9 +71,8 @@ Campos obrigatórios:
 Critérios mínimos de aceite no próprio output:
 - `bodySections.length >= 4`
 - Se `landingPageWireframe` existir, `bodySections` deve conter exatamente as mesmas seções do wireframe, na mesma ordem de `sections`.
-- Se `landingPageWireframe.copySlots` existir, `bodySections[i].slotId` deve pertencer aos copySlots da `sectionId` correspondente.
+- Cada `bodySections[i].items[j]` deve conter somente os campos `item` e `copy`.
 - Se existir `uiTextTags`, os textos devem respeitar os limites sugeridos de caracteres por elemento/slot.
-- cada `bodySections[i].bullets.length >= 3`
 - `faq.length >= 3`
 - `ctaBlocks.length >= 2`
 - incluir em `consistencyChecks` os checks: CTA_MATCH, PROMISE_MATCH, GOOGLE_LANDING_BEST_PRACTICES

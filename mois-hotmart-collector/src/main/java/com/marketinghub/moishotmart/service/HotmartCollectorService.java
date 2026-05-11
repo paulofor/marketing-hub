@@ -381,6 +381,7 @@ public class HotmartCollectorService {
             page.locator(passwordSelector).first().fill(hotmartPassword);
             closeCookieOrConsentOverlays(page);
             submitLoginWithRetry(page, submitSelector, passwordSelector);
+            ensureLoginProgressed(page, passwordSelector);
             log.info("Login Hotmart submetido. URL atual após espera='{}'.", page.url());
         } catch (Exception ex) {
             String inputSnapshot = page.locator("input")
@@ -425,9 +426,18 @@ public class HotmartCollectorService {
         RuntimeException lastError = null;
         for (int attempt = 1; attempt <= LOGIN_SUBMIT_RETRIES; attempt++) {
             try {
+                closeCookieOrConsentOverlays(page);
                 waitTransientOverlaysToHide(page);
                 page.locator(submitSelector).first().scrollIntoViewIfNeeded();
-                page.locator(submitSelector).first().click();
+                try {
+                    page.locator(submitSelector).first().click();
+                } catch (RuntimeException clickFailure) {
+                    log.warn("Click padrão no submit falhou na tentativa {}. Aplicando fallback com force=true. motivo={}",
+                            attempt, clickFailure.getMessage());
+                    closeCookieOrConsentOverlays(page);
+                    page.locator(submitSelector).first()
+                            .click(new com.microsoft.playwright.Locator.ClickOptions().setForce(true).setTimeout(5_000));
+                }
                 page.waitForTimeout(2_000);
                 return;
             } catch (RuntimeException ex) {
@@ -476,6 +486,7 @@ public class HotmartCollectorService {
         } catch (Exception ignored) {
             log.debug("Overlay de cookie não ocultou no tempo esperado; aplicando fallback por JS.");
             hideOverlayWithJavascript(page, "#hotmart-cookie-policy");
+            hideOverlayWithJavascript(page, "hotmart-cookie-policy");
         }
     }
 
@@ -489,9 +500,22 @@ public class HotmartCollectorService {
         }
     }
 
+    private void ensureLoginProgressed(Page page, String passwordSelector) {
+        String currentUrl = page.url();
+        if (!currentUrl.contains("sso.hotmart.com/login")) {
+            return;
+        }
+        log.warn("Login ainda na SSO após submit; forçando nova tentativa de progressão.");
+        closeCookieOrConsentOverlays(page);
+        page.locator(passwordSelector).first().press("Enter");
+        page.waitForTimeout(3_000);
+        closeCookieOrConsentOverlays(page);
+    }
+
     private void waitTransientOverlaysToHide(Page page) {
         waitOverlayHidden(page, "#loader");
         waitOverlayHidden(page, "#hotmart-cookie-policy");
+        waitOverlayHidden(page, "hotmart-cookie-policy");
     }
 
     private void waitOverlayHidden(Page page, String selector) {

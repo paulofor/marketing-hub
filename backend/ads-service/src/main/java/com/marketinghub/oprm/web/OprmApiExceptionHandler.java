@@ -23,7 +23,8 @@ import org.springframework.web.server.ResponseStatusException;
         OprmWorkspaceController.class,
         OprmFeedbackController.class,
         OprmHeartbeatController.class,
-        com.marketinghub.oprm.niche.web.OprmNicheIngestionController.class
+        com.marketinghub.oprm.niche.web.OprmNicheIngestionController.class,
+        com.marketinghub.oprm.niche.web.OprmNicheCatalogIngestionController.class
 })
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class OprmApiExceptionHandler {

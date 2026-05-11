@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-11-oprm-niche-catalog-ingestion.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-05-10-oprm-niche-snapshot-ingestion.yaml
       relativeToChangelogFile: true
 

@@ -14,3 +14,8 @@ management:
     health:
       probes:
         enabled: true
+
+oprm:
+  collector:
+    backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168:8000}
+    batch-size: ${OPRM_COLLECTOR_BATCH_SIZE:500}

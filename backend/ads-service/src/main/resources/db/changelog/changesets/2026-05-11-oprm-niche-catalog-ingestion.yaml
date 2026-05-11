@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-11-01-oprm-niche-catalog-ingestion
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_niche_catalog
+      changes:
+        - createTable:
+            tableName: oprm_niche_catalog
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: cnae_code
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cnae_label
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BIT(1)
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: oprm_niche_catalog
+            columnNames: cnae_code
+            constraintName: uk_oprm_niche_catalog_code
+        - createIndex:
+            tableName: oprm_niche_catalog
+            indexName: idx_oprm_niche_catalog_active
+            columns:
+              - column:
+                  name: active

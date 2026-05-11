@@ -8,7 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CopyProvisionalHtmlAssemblerTest {
 
-    private final CopyProvisionalHtmlAssembler assembler = new CopyProvisionalHtmlAssembler(new ObjectMapper());
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final CopyProvisionalHtmlAssembler assembler = new CopyProvisionalHtmlAssembler(
+            new CopyProvisionalHtmlPayloadResolver(objectMapper),
+            new CopyProvisionalHtmlProcessor(),
+            objectMapper);
 
     @Test
     void assembleAppliesCopyInDomOrderWithoutGroupingByTag() {

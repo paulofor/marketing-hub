@@ -19,3 +19,10 @@ oprm:
   collector:
     backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168:8000}
     batch-size: ${OPRM_COLLECTOR_BATCH_SIZE:500}
+
+    schedule:
+      enabled: ${OPRM_COLLECTOR_SCHEDULE_ENABLED:false}
+      cron: ${OPRM_COLLECTOR_SCHEDULE_CRON:0 10 15 * * *}
+      timezone: ${OPRM_COLLECTOR_SCHEDULE_TIMEZONE:America/Sao_Paulo}
+      source: ${OPRM_COLLECTOR_SCHEDULE_SOURCE:RECEITA_FEDERAL}
+      payload-file: ${OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE:}

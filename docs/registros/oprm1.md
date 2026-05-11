@@ -8,3 +8,5 @@
 - 2026-05-11 15:35:00 (UTC-3): implementação do coletor OPRM para ingestão de catálogo CNAE. Criado endpoint `POST /api/oprm-mei/catalog/collect` no módulo `oprm-coletor-mei`, com lógica de negócio de normalização de `cnaeCode`, deduplicação e envio em lotes para `POST /api/niches/catalog:ingest` no backend. Mantida diretriz: negócio no coletor/OPRM e backend apenas persistência.
 
 - 2026-05-11: Adicionado agendamento de ingestão no OPRM coletor (cron 15:10 America/Sao_Paulo) com payload externo configurável.
+
+- 2026-05-11 15:20:00 (UTC-3): diagnóstico de falha no `docker compose pull` do `oprm-coletor-mei` em CI: removido campo legado `version` do `docker-compose.yml` para eliminar warning de obsolescência e reduzir ruído operacional; identificado que erro final permanece de infraestrutura do runtime containerd (`failed commit on ref ... no such file or directory`), fora do escopo do compose do projeto.

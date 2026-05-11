@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   oprm-coletor-mei:
     build: .

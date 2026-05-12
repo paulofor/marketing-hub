@@ -67,3 +67,9 @@
 - Alterado o `HotmartCollectorService` para priorizar coleta via API da Hotmart usando JWT salvo em configuração geral do backend (`/api/settings/hotmart_access_token_jwt`), eliminando a dependência de login automatizado para o fluxo principal.
 - Implementada busca do token JWT via HTTP no backend (`collector.backend.base-url`) e uso direto no `Authorization: Bearer` da chamada para `https://api-affiliation-market.hotmart.com/v2/market/search`.
 - Atualizado teste unitário para refletir o novo contrato do construtor do serviço e validar o comportamento de `COLLECTION_SKIPPED` quando não houver token configurado.
+
+## 2026-05-12 23:46 UTC — Persistência Hotmart no backend
+- Ajustado o `HotmartCollectorService` para enviar o resultado coletado para o endpoint do backend `/api/v1/mois/persistence/collection-jobs/{jobId}` após cada execução.
+- Mapeado snapshot de produto para `references` do payload de persistência, permitindo gravação em `mois_collected_reference` e exibição na tela `/hotmart`.
+- Adicionados parâmetros de configuração para `workspaceId`, `niche` e `marketTheme` no coletor.
+- Testes do módulo executados com sucesso (`mvn test -q`).

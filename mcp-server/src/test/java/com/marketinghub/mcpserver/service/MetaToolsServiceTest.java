@@ -47,7 +47,8 @@ class MetaToolsServiceTest {
                         "owner",
                         "repo",
                         "token"
-                )
+                ),
+                new McpProperties.Shell(false, 20, 12000, List.of("find"))
         );
         service = new MetaToolsService(properties, restTemplate, new ObjectMapper());
     }

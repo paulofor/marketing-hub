@@ -24,6 +24,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_list_workflows`: lista workflows do repositório configurado no GitHub Actions.
 - `github_actions_list_runs`: lista execuções (runs) de workflows do repositório configurado no GitHub Actions.
 - `github_actions_get_run_summary`: verifica se uma execução terminou com sucesso e detalha jobs/steps com falha.
+- `shell_exec`: executa comando Linux no host com allowlist e timeout de segurança (desabilitado por padrão).
 
 ## Executar localmente
 
@@ -65,6 +66,27 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 Timeout de leitura HTTP por módulo: `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`).
 
 Limite máximo por chamada: `MCP_LOG_MAX_LINES` (default `500`).
+
+
+## Ferramenta de shell remoto (Linux)
+
+A tool de execução de comandos Linux pode ser habilitada por configuração:
+
+- `MCP_SHELL_ENABLED` (default `false`);
+- `MCP_SHELL_TIMEOUT_SECONDS` (default `20`);
+- `MCP_SHELL_MAX_OUTPUT_CHARS` (default `12000`);
+- `MCP_SHELL_ALLOWED_COMMANDS` (CSV, default `find,cat,rg,ls,sha256sum,head,tail,pwd,uname`).
+
+Quando `MCP_SHELL_ENABLED=false`, a chamada `tools/call` para `shell_exec` retorna:
+`shell tools are disabled (set mcp.shell.enabled=true)`.
+
+Exemplo de chamada:
+
+```bash
+curl -sS https://mcpserverdigi.shop/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"shell_exec","arguments":{"command":"uname -a"}}}'
+```
 
 ## Ferramentas de diagnóstico Meta
 

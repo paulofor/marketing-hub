@@ -89,6 +89,7 @@ class ModuleLogServiceTest {
                 ""
         );
 
-        return new McpProperties("marketing-hub-mcp", "1.0.0", "", logs, meta, github);
+        return new McpProperties("marketing-hub-mcp", "1.0.0", "", logs, meta, github,
+                new McpProperties.Shell(false, 20, 12000, List.of("find")));
     }
 }

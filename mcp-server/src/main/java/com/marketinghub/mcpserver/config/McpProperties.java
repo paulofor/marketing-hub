@@ -18,7 +18,8 @@ public record McpProperties(
         String apiKey,
         @NotNull @Valid Logs logs,
         @NotNull @Valid Meta meta,
-        @NotNull @Valid Github github
+        @NotNull @Valid Github github,
+        @NotNull @Valid Shell shell
 ) {
     public record Logs(
             @NotBlank String backendPath,
@@ -35,6 +36,15 @@ public record McpProperties(
             @Positive int fetchRetryDelayMillis,
             @Positive int maxLines,
             @Positive int httpTailRangeBytes
+    ) {
+    }
+
+
+    public record Shell(
+            boolean enabled,
+            @Positive int timeoutSeconds,
+            @Positive int maxOutputChars,
+            @NotEmpty List<@NotBlank String> allowedCommands
     ) {
     }
 

@@ -5,6 +5,7 @@ import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
+import com.marketinghub.mcpserver.service.ShellCommandService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,17 +40,20 @@ public class McpController {
     private final ModuleLogService moduleLogService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
+    private final ShellCommandService shellCommandService;
 
     public McpController(McpProperties properties,
                          DatabaseDiagnosticsService databaseDiagnosticsService,
                          ModuleLogService moduleLogService,
                          MetaDiagnosticsService metaDiagnosticsService,
-                         GithubActionsService githubActionsService) {
+                         GithubActionsService githubActionsService,
+                         ShellCommandService shellCommandService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.moduleLogService = moduleLogService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
+        this.shellCommandService = shellCommandService;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -209,6 +213,17 @@ public class McpController {
                                                     "description", "ID do workflow run no GitHub Actions.")),
                                     "required", List.of("run_id"),
                                     "additionalProperties", false)
+                                        ),
+                    Map.of(
+                            "name", "shell_exec",
+                            "description", "Executa comando Linux no host com allowlist e timeout de segurança.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "command", Map.of("type", "string",
+                                                    "description", "Comando Linux permitido pela allowlist.")),
+                                    "required", List.of("command"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -252,6 +267,7 @@ public class McpController {
                 case "github_actions_list_workflows" -> callGithubActionsListWorkflows(id, arguments);
                 case "github_actions_list_runs" -> callGithubActionsListRuns(id, arguments);
                 case "github_actions_get_run_summary" -> callGithubActionsGetRunSummary(id, arguments);
+                case "shell_exec" -> callShellExecTool(id, arguments);
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
@@ -476,6 +492,13 @@ public class McpController {
             return (Map<String, Object>) map;
         }
         throw new IllegalArgumentException(name + " must be an object");
+    }
+
+
+    private Map<String, Object> callShellExecTool(Object id, Map<String, Object> arguments) {
+        String command = stringArgument(arguments, "command");
+        Map<String, Object> result = shellCommandService.execute(command);
+        return successToolResult(id, result, "Shell command executed");
     }
 
     private Map<String, Object> successToolResult(Object id, Map<String, Object> data, String text) {

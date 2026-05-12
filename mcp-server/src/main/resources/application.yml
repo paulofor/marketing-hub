@@ -63,6 +63,11 @@ mcp:
     access-token: ${MCP_META_GRAPH_ACCESS_TOKEN:}
     debug-access-token: ${MCP_META_GRAPH_DEBUG_ACCESS_TOKEN:${MCP_META_GRAPH_ACCESS_TOKEN:}}
     docs-allowed-hosts: ${MCP_META_DOCS_ALLOWED_HOSTS:developers.facebook.com,business.facebook.com,www.facebook.com}
+  shell:
+    enabled: ${MCP_SHELL_ENABLED:false}
+    timeout-seconds: ${MCP_SHELL_TIMEOUT_SECONDS:20}
+    max-output-chars: ${MCP_SHELL_MAX_OUTPUT_CHARS:12000}
+    allowed-commands: ${MCP_SHELL_ALLOWED_COMMANDS:find,cat,rg,ls,sha256sum,head,tail,pwd,uname}
   github:
     enabled: ${MCP_GITHUB_ENABLED:false}
     api-base-url: ${MCP_GITHUB_API_BASE_URL:https://api.github.com}

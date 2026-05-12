@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Feche sem briga de preço (com preview rápido)</title>
+<style>
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111827; background: #ffffff; line-height: 1.5; }
+img { display: block; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 12px; object-fit: cover; }
+button, a[id$="-cta"] { cursor: pointer; }
+label { font-weight: 600; }
+input, select, textarea, button { font: inherit; }
+button { border: 0; border-radius: 10px; padding: 0 16px; font-weight: 700; }
+a { color: inherit; }
+
+#s1-hero-proof-cta{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:24px;padding-right:16px;padding-bottom:24px;padding-left:16px}
+#s1-container{width:100%;max-width:1120px;box-sizing:border-box}
+#s1-header{display:flex;justify-content:flex-start;align-items:center;width:100%;margin-bottom:12px}
+#s1-brand{width:160px;height:24px}
+#s1-body{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:12px}
+#s1-title{width:100%;max-width:34ch}
+#s1-matchline{width:100%;max-width:52ch}
+#s1-bullets{width:100%;box-sizing:border-box;margin-top:4px;margin-bottom:4px;padding-left:18px}
+#s1-figure{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:8px;margin-top:4px;margin-bottom:4px}
+#s1-img-mockup{width:100%;height:240px;min-height:220px;max-height:280px;box-sizing:border-box}
+#s1-figcaption{width:100%;max-width:56ch}
+#s1-form{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:10px;margin-top:8px}
+#s1-form-input-1{width:100%;height:44px;box-sizing:border-box}
+#s1-form-input-2{width:100%;height:44px;box-sizing:border-box}
+#s1-form-select-1{width:100%;height:44px;box-sizing:border-box}
+#s1-form-textarea-1{width:100%;height:96px;min-height:88px;max-height:140px;box-sizing:border-box}
+#s1-form-consent{width:100%;box-sizing:border-box}
+#s1-form-submit{width:100%;height:48px;box-sizing:border-box}
+#s1-form-privacy{width:100%;max-width:60ch}
+#s2-proof-how-fast{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s2-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px}
+#s2-title{width:100%;max-width:36ch}
+#s2-steps{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px}
+#s2-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:4px;margin-bottom:4px}
+#s2-img-flow{width:100%;height:220px;min-height:200px;max-height:260px;box-sizing:border-box}
+#s2-figcaption{width:100%;max-width:60ch}
+#s2-cta{width:100%;height:48px;box-sizing:border-box;margin-top:4px}
+#s3-pain-context{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s3-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:10px}
+#s3-title{width:100%;max-width:38ch}
+#s3-text{width:100%;max-width:62ch}
+#s3-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px}
+#s3-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px}
+#s3-img-chat{width:100%;height:210px;min-height:190px;max-height:250px;box-sizing:border-box}
+#s3-figcaption{width:100%;max-width:62ch}
+#s4-what-you-get{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s4-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px}
+#s4-title{width:100%;max-width:38ch}
+#s4-subtitle{width:100%;max-width:62ch}
+#s4-list{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px}
+#s4-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px;margin-bottom:2px}
+#s4-img-kit{width:100%;height:260px;min-height:240px;max-height:310px;box-sizing:border-box}
+#s4-figcaption{width:100%;max-width:62ch}
+#s4-cta{width:100%;height:48px;box-sizing:border-box;margin-top:6px}
+#s5-mechanism-8weeks{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s5-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:10px}
+#s5-title{width:100%;max-width:44ch}
+#s5-text{width:100%;max-width:62ch}
+#s5-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px}
+#s5-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px}
+#s5-img-diagram{width:100%;height:220px;min-height:200px;max-height:260px;box-sizing:border-box}
+#s5-figcaption{width:100%;max-width:62ch}
+#s6-proof-preview-example{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s6-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px}
+#s6-title{width:100%;max-width:44ch}
+#s6-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px}
+#s6-figure{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:6px}
+#s6-img-pdf{width:100%;height:320px;min-height:300px;max-height:380px;box-sizing:border-box}
+#s6-figcaption{width:100%;max-width:62ch}
+#s7-faq-objections{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s7-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px}
+#s7-title{width:100%;max-width:40ch}
+#s7-faq{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px}
+#s7-faq-1{width:100%;box-sizing:border-box}
+#s7-faq-2{width:100%;box-sizing:border-box}
+#s7-faq-3{width:100%;box-sizing:border-box}
+#s7-faq-4{width:100%;box-sizing:border-box}
+#s7-faq-1-a{width:100%;max-width:70ch}
+#s7-faq-2-a{width:100%;max-width:70ch}
+#s7-faq-3-a{width:100%;max-width:70ch}
+#s7-faq-4-a{width:100%;max-width:70ch}
+#s8-final-cta-form{display:flex;justify-content:center;align-items:flex-start;width:100%;box-sizing:border-box;padding-top:20px;padding-right:16px;padding-bottom:20px;padding-left:16px}
+#s8-container{width:100%;max-width:1120px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:12px}
+#s8-title{width:100%;max-width:44ch}
+#s8-bullets{width:100%;box-sizing:border-box;padding-left:18px;margin-top:0px;margin-bottom:0px}
+#s8-form{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;gap:10px;margin-top:6px}
+#s8-form-input-1{width:100%;height:44px;box-sizing:border-box}
+#s8-form-input-2{width:100%;height:44px;box-sizing:border-box}
+#s8-form-select-1{width:100%;height:44px;box-sizing:border-box}
+#s8-form-textarea-1{width:100%;height:96px;min-height:88px;max-height:140px;box-sizing:border-box}
+#s8-form-consent{width:100%;box-sizing:border-box}
+#s8-form-submit{width:100%;height:48px;box-sizing:border-box}
+#s8-form-privacy{width:100%;max-width:60ch}
+#s8-footer{width:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;gap:8px;margin-top:12px}
+#s8-legal{width:100%;max-width:80ch}
+#s8-privacy-link{width:100%;max-width:28ch}
+#s8-terms-link{width:100%;max-width:28ch}
+#s8-contact-link{width:100%;max-width:28ch}
+  </style>
+</head>
+<body data-container-max="1120" data-contrast="high" data-layout="mobile-first-single-column" style="margin:0;padding:0;box-sizing:border-box;">
+<section id="s1-hero-proof-cta"><div id="s1-container"><header id="s1-header"><div id="s1-brand"></div></header><div id="s1-body"><h1 id="s1-title">Feche sem briga de preço (com preview rápido)</h1><p id="s1-matchline">Briefing de 2 minutos → preview em ~3 min: Amostra em PDF (1 página, com marca d’água) + mini-kit (5 itens) no seu estilo.</p><ul id="s1-bullets"><li id="s1-bullets-1">Amostra em PDF (1 página, com marca d’água)</li><li id="s1-bullets-2">Mini-kit com 5 itens prontos para usar hoje</li><li id="s1-bullets-3">Mostre valor antes do “quanto custa?”</li></ul><figure id="s1-figure"><img alt="" id="s1-img-mockup"/><figcaption id="s1-figcaption">Exemplo do que você gera: 1 página em PDF com marca d’água + cards do mini-kit.</figcaption></figure><form id="s1-form" method="post"><label for="s1-form-input-1" id="s1-form-label-1">Seu nome</label><input autocomplete="name" id="s1-form-input-1" name="nome" required="" type="text"/><label for="s1-form-input-2" id="s1-form-label-2">Seu WhatsApp</label><input autocomplete="tel" id="s1-form-input-2" name="whatsapp" required="" type="tel"/><label for="s1-form-select-1" id="s1-form-label-3">Seu foco hoje</label><select id="s1-form-select-1" name="foco" required=""></select><label for="s1-form-textarea-1" id="s1-form-label-4">Descreva seu aluno ideal</label><textarea id="s1-form-textarea-1" name="aluno_ideal" required=""></textarea><div id="s1-form-consent">Concordo em receber a amostra e mensagens de acompanhamento por WhatsApp.</div><button id="s1-form-submit" type="submit">Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF</button><p id="s1-form-privacy">Seus dados são usados apenas para gerar a amostra e enviar o PDF. Sem spam.</p></form></div></div></section>
+<section id="s2-proof-how-fast"><div id="s2-container"><h2 id="s2-title">Como funciona (2 min → ~3 min)</h2><ul id="s2-steps"><li id="s2-steps-1">1) Responda o briefing (leva ~2 min)</li><li id="s2-steps-2">2) Aguarde a geração do preview (~3 min)</li><li id="s2-steps-3">3) Receba o PDF + mini-kit e veja antes de decidir</li></ul><figure id="s2-figure"><img alt="" id="s2-img-flow"/><figcaption id="s2-figcaption">Você vê o preview primeiro: o objetivo é clareza e próximos passos, não “comprar no escuro”.</figcaption></figure><button id="s2-cta" onclick="document.getElementById('s1-form').scrollIntoView({behavior:'smooth'});" type="button">Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF</button></div></section>
+<section id="s3-pain-context"><div id="s3-container"><h2 id="s3-title">Quando a conversa vira preço cedo demais</h2><p id="s3-text">Você treina bem, mas o primeiro contato no WhatsApp já começa com “quanto custa?”. Sem um jeito rápido de mostrar valor, você perde tempo, entra em comparativo por preço e a agenda continua instável.</p><ul id="s3-bullets"><li id="s3-bullets-1">Curiosos pedem preço e somem (tempo perdido)</li><li id="s3-bullets-2">Você se explica do zero em toda conversa</li><li id="s3-bullets-3">Alunos entram sem clareza e desanimam no começo</li></ul><figure id="s3-figure"><img alt="" id="s3-img-chat"/><figcaption id="s3-figcaption">Cenário comum: mensagem de preço cedo, sem espaço para você mostrar diferença.</figcaption></figure></div></section>
+<section id="s4-what-you-get"><div id="s4-container"><h2 id="s4-title">O que você recebe na hora</h2><p id="s4-subtitle">Um preview simples e direto para você mostrar valor antes do preço: 1 PDF (com marca d’água) + mini-kit com 5 itens prontos no seu estilo.</p><ul id="s4-list"><li id="s4-list-1">Amostra em PDF (1 página, com marca d’água)</li><li id="s4-list-2">Mensagem de convite (pra atrair o aluno certo)</li><li id="s4-list-3">Roteiro curto de WhatsApp (perguntas + respostas)</li><li id="s4-list-4">Mapa simples de progresso (8 semanas)</li><li id="s4-list-5">Boas-vindas + check-ins de início (D0–D7)</li></ul><figure id="s4-figure"><img alt="" id="s4-img-kit"/><figcaption id="s4-figcaption">Tudo vem em formato de preview para você avaliar antes de qualquer decisão.</figcaption></figure><button id="s4-cta" onclick="document.getElementById('s1-form').scrollIntoView({behavior:'smooth'});" type="button">Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF</button></div></section>
+<section id="s5-mechanism-8weeks"><div id="s5-container"><h2 id="s5-title">A estrutura do “Ciclo de Evolução (8 semanas)”</h2><p id="s5-text">O kit organiza seu processo em 3 blocos práticos para você repetir todo mês: atrair com clareza, conduzir a conversa e iniciar com marcos simples de evolução.</p><ul id="s5-bullets"><li id="s5-bullets-1">Convite claro: mensagem/bio e ideias para atrair o perfil certo</li><li id="s5-bullets-2">Roteiro de WhatsApp: 10–15 min para qualificar sem virar desconto</li><li id="s5-bullets-3">Começo guiado: mapa + check-ins para manter engajamento no início</li></ul><figure id="s5-figure"><img alt="" id="s5-img-diagram"/><figcaption id="s5-figcaption">Um diagrama simples em 3 partes (convite → conversa → começo guiado).</figcaption></figure></div></section>
+<section id="s6-proof-preview-example"><div id="s6-container"><h2 id="s6-title">Exemplo do preview (1 página no PDF)</h2><ul id="s6-bullets"><li id="s6-bullets-1">Resumo do seu posicionamento (pra evitar comparativo por preço)</li><li id="s6-bullets-2">Próximo passo sugerido para 3 conversas iniciais</li><li id="s6-bullets-3">Mini-kit listado com itens prontos para aplicar</li></ul><figure id="s6-figure"><img alt="" id="s6-img-pdf"/><figcaption id="s6-figcaption">A página vem com marca d’água: é uma amostra/preview para você ver antes de decidir.</figcaption></figure></div></section>
+<section id="s7-faq-objections"><div id="s7-container"><h2 id="s7-title">Perguntas rápidas</h2><div id="s7-faq"><div id="s7-faq-1"><h3 id="s7-faq-1-q">Isso é consultoria ou acompanhamento?</h3><p id="s7-faq-1-a">Não. Você gera uma amostra em PDF (com marca d’água) + um mini-kit pronto. É um preview automático para você avaliar e usar como base.</p></div><div id="s7-faq-2"><h3 id="s7-faq-2-q">Precisa marcar call ou reunião?</h3><p id="s7-faq-2-a">Não. O processo é por briefing curto e entrega do preview em PDF. Sem ligação obrigatória.</p></div><div id="s7-faq-3"><h3 id="s7-faq-3-q">Quanto tempo leva para ficar pronto?</h3><p id="s7-faq-3-a">O briefing leva cerca de 2 minutos. A geração do preview costuma levar aproximadamente 3 minutos.</p></div><div id="s7-faq-4"><h3 id="s7-faq-4-q">O que eu recebo exatamente?</h3><p id="s7-faq-4-a">Uma Amostra Personalizada em PDF (1 página, com marca d’água) e um mini-kit com 5 itens (mensagens/roteiro/check-ins) para você aplicar no seu contexto.</p></div></div></div></section>
+<section id="s8-final-cta-form"><div id="s8-container"><h2 id="s8-title">Gere sua amostra e veja o preview</h2><ul id="s8-bullets"><li id="s8-bullets-1">Briefing de 2 min → preview em ~3 min</li><li id="s8-bullets-2">PDF (1 página, com marca d’água) + mini-kit (5 itens)</li><li id="s8-bullets-3">Para conduzir conversas sem briga de preço</li></ul><form id="s8-form" method="post"><label for="s8-form-input-1" id="s8-form-label-1">Seu nome</label><input autocomplete="name" id="s8-form-input-1" name="nome" required="" type="text"/><label for="s8-form-input-2" id="s8-form-label-2">Seu WhatsApp</label><input autocomplete="tel" id="s8-form-input-2" name="whatsapp" required="" type="tel"/><label for="s8-form-select-1" id="s8-form-label-3">Seu foco hoje</label><select id="s8-form-select-1" name="foco" required=""></select><label for="s8-form-textarea-1" id="s8-form-label-4">Descreva seu aluno ideal</label><textarea id="s8-form-textarea-1" name="aluno_ideal" required=""></textarea><div id="s8-form-consent">Concordo em receber a amostra e mensagens de acompanhamento por WhatsApp.</div><button id="s8-form-submit" type="submit">Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF</button><p id="s8-form-privacy">Usamos seus dados só para gerar e enviar sua amostra. Você pode pedir remoção a qualquer momento.</p></form><footer id="s8-footer"><div id="s8-legal">© 2026 — Material de amostra/preview. Sem garantia de resultados.</div><a href="#politica-de-privacidade" id="s8-privacy-link">Política de Privacidade</a><a href="#termos-de-uso" id="s8-terms-link">Termos de Uso</a><a href="#contato" id="s8-contact-link">Contato</a></footer></div></section>
+</body>
+</html>

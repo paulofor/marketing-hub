@@ -15,3 +15,5 @@
 - 2026-05-12 15:05:00 UTC-3 — Atualizada a etapa Gera Wireframe para reforçar objetivo comercial de venda com captura de dados para envio de amostra/prova, e bloqueado preenchimento de copy nesta fase (`texto.conteudo` obrigatório como string vazia no prompt e no schema).
 
 - 2026-05-12 18:05:00 UTC-3 — Ajustado o montador HTML do wireframe para alternar fundo de seção em duas cores (claro/escuro) no payload `pagina/corpo/secoes` e para representar imagens (`img`) com placeholder visual exibindo dimensões definidas no wireframe.
+
+- 2026-05-12 19:15:00 UTC-3 — Ajustadas as solicitações da etapa `landing-page-wireframe` para exigir, em cada seção, metadados de intenção comercial no padrão do esboço (`papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto`), com atualização sincronizada do prompt e do schema.

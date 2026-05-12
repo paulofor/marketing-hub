@@ -57,3 +57,8 @@
 - Adicionado logging de token com proteção por padrão (`masked`) e opção explícita `collector.hotmart.log-full-token=true` para modo diagnóstico completo.
 - Fallback da API Hotmart agora tenta enviar `Authorization: Bearer <token>` quando token estiver disponível, mantendo também `credentials: include`.
 - Incluídos logs detalhados no início do fallback da API informando presença de token e pré-visualização mascarada para rastrear causa-raiz de falhas de autenticação/coleta.
+
+## 2026-05-12 11:22:10 UTC-3
+- Reforçado o tratamento do banner de cookies no `HotmartCollectorService` com seletores adicionais específicos do overlay da Hotmart (`#hotmart-cookie-policy button`, `hotmart-cookie-policy button`) e variações genéricas de botões de consentimento.
+- Incluída opção textual adicional (`Allow all`) para aceite automático em páginas em inglês.
+- Melhorado fallback de causa-raiz: quando o overlay não some no timeout, o log agora sobe para `warn` com URL atual e o fallback JS também remove `.hotmart-cookie-policy-container`, reduzindo interceptação de clique no submit de login.

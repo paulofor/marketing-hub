@@ -20,7 +20,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +47,9 @@ public class HotmartCollectorService {
     private final boolean logFullToken;
     private final String backendBaseUrl;
     private final String hotmartJwtSettingKey;
+    private final String workspaceId;
+    private final String defaultNiche;
+    private final String defaultMarketTheme;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public HotmartCollectorService(
@@ -57,7 +63,10 @@ public class HotmartCollectorService {
             @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback,
             @Value("${collector.hotmart.log-full-token:false}") boolean logFullToken,
             @Value("${collector.backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
-            @Value("${collector.hotmart.jwt-setting-key:hotmart_access_token_jwt}") String hotmartJwtSettingKey
+            @Value("${collector.hotmart.jwt-setting-key:hotmart_access_token_jwt}") String hotmartJwtSettingKey,
+            @Value("${collector.backend.workspace-id:workspace-001}") String workspaceId,
+            @Value("${collector.backend.niche:marketing-digital}") String defaultNiche,
+            @Value("${collector.backend.market-theme:ofertas-hotmart}") String defaultMarketTheme
     ) {
         this.headless = headless;
         this.chromiumExecutablePath = chromiumExecutablePath;
@@ -68,6 +77,9 @@ public class HotmartCollectorService {
         this.logFullToken = logFullToken;
         this.backendBaseUrl = backendBaseUrl;
         this.hotmartJwtSettingKey = hotmartJwtSettingKey;
+        this.workspaceId = workspaceId;
+        this.defaultNiche = defaultNiche;
+        this.defaultMarketTheme = defaultMarketTheme;
     }
 
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
@@ -110,7 +122,88 @@ public class HotmartCollectorService {
             message = "Falha na coleta API: " + ex.getMessage();
             log.error("Erro na coleta Hotmart via API JWT.", ex);
         }
+        persistCollectedProductsOnBackend(request, status, products);
         return new HotmartCollectionResponse(status, message, products);
+    }
+
+    private void persistCollectedProductsOnBackend(
+            HotmartCollectionRequest request,
+            String status,
+            List<HotmartProductSnapshot> products
+    ) {
+        String jobId = "hotmart-" + Instant.now().toEpochMilli() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        String endpoint = backendBaseUrl + "/api/v1/mois/persistence/collection-jobs/" + jobId;
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("job", Map.of(
+                    "jobId", jobId,
+                    "workspaceId", workspaceId,
+                    "niche", defaultNiche,
+                    "marketTheme", defaultMarketTheme,
+                    "status", status,
+                    "timeWindow", "LAST_7_DAYS",
+                    "limitPerSource", Math.max(products.size(), request.maxProducts()),
+                    "minSuccessScore", 0,
+                    "sources", List.of("HOTMART"),
+                    "createdAt", Instant.now().toString()
+            ));
+            payload.put("references", toCollectedReferences(jobId, request.source(), products));
+            payload.put("lineageByReferenceId", Map.of());
+            payload.put("runtime", Map.of("retries", 0, "latencyMs", 0, "finishedAt", Instant.now().toString()));
+            payload.put("sourceOps", List.of());
+
+            HttpRequest persistenceRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("accept", "application/json")
+                    .header("content-type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(persistenceRequest, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Falha ao persistir coleta Hotmart no backend. status={}, endpoint={}, body={}",
+                        response.statusCode(), endpoint, truncateForLog(response.body(), 600));
+                return;
+            }
+            log.info("Coleta Hotmart persistida no backend com sucesso. endpoint={}, jobId={}, produtos={}",
+                    endpoint, jobId, products.size());
+        } catch (Exception ex) {
+            log.warn("Falha ao persistir produtos coletados no backend.", ex);
+        }
+    }
+
+    private List<Map<String, Object>> toCollectedReferences(String jobId, String source, List<HotmartProductSnapshot> products) {
+        List<Map<String, Object>> references = new ArrayList<>();
+        int position = 1;
+        for (HotmartProductSnapshot product : products) {
+            Map<String, String> rawMetadata = new HashMap<>();
+            rawMetadata.put("productName", product.title());
+            rawMetadata.put("productUrl", product.detailsUrl());
+            rawMetadata.put("salesPageUrl", product.detailsUrl());
+            rawMetadata.put("producerName", null);
+
+            Map<String, Object> reference = new HashMap<>();
+            reference.put("referenceId", "hotmart-" + position + "-" + UUID.randomUUID().toString().substring(0, 8));
+            reference.put("jobId", jobId);
+            reference.put("source", "HOTMART");
+            reference.put("title", product.title());
+            reference.put("url", product.detailsUrl());
+            reference.put("niche", defaultNiche);
+            reference.put("status", "COLLECTED");
+            reference.put("favorite", false);
+            reference.put("importedReferenceId", null);
+            reference.put("successScore", 80);
+            reference.put("successSignal", "HOTMART_TRENDING");
+            reference.put("confidenceLevel", "MEDIUM");
+            reference.put("rankingPosition", position);
+            reference.put("engagementRelative", 0.0);
+            reference.put("recurrenceScore", 0.0);
+            reference.put("evidenceScore", 0.0);
+            reference.put("collectedAt", product.collectedAt() == null ? Instant.now().toString() : product.collectedAt().toString());
+            reference.put("rawMetadata", rawMetadata);
+            references.add(reference);
+            position++;
+        }
+        return references;
     }
 
     private String fetchHotmartJwtFromGeneralSettings() {

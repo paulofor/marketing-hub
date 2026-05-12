@@ -4,13 +4,16 @@ import com.marketinghub.mois.dto.MoisArtifactDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
+import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.service.MoisCollectionPersistenceService;
+import com.marketinghub.mois.service.MoisHotmartProductService;
 import com.marketinghub.mois.service.MoisModuleGateway;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +31,7 @@ public class MoisController {
 
     private final MoisModuleGateway gateway;
     private final MoisCollectionPersistenceService collectionPersistenceService;
+    private final MoisHotmartProductService moisHotmartProductService;
 
     @PostMapping("/discovery-requests")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -247,5 +251,17 @@ public class MoisController {
     @GetMapping("/health")
     public Map<String, String> health() {
         return gateway.health();
+    }
+
+    @GetMapping("/hotmart/products")
+    public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartProducts(
+            @RequestParam(defaultValue = "workspace-001") String workspaceId,
+            @RequestParam(defaultValue = "24") Integer limit
+    ) {
+        if (!StringUtils.hasText(workspaceId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
+        }
+        int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
+        return moisHotmartProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
     }
 }

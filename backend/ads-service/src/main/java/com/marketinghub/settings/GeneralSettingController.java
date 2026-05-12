@@ -11,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/settings")
 public class GeneralSettingController {
     private final GeneralSettingService service;
-
     public GeneralSettingController(GeneralSettingService service) {
         this.service = service;
     }
@@ -32,4 +31,5 @@ public class GeneralSettingController {
         }
         return service.upsert(name, request.value());
     }
+
 }

@@ -9,7 +9,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,logfile
   endpoint:
     health:
       probes:
@@ -26,3 +26,7 @@ oprm:
       timezone: ${OPRM_COLLECTOR_SCHEDULE_TIMEZONE:America/Sao_Paulo}
       source: ${OPRM_COLLECTOR_SCHEDULE_SOURCE:RECEITA_FEDERAL}
       payload-file: ${OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE:}
+
+logging:
+  file:
+    name: ${OPRM_COLLECTOR_LOG_FILE:/tmp/oprm-coletor-mei.log}

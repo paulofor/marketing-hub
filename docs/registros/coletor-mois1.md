@@ -62,3 +62,8 @@
 - Reforçado o tratamento do banner de cookies no `HotmartCollectorService` com seletores adicionais específicos do overlay da Hotmart (`#hotmart-cookie-policy button`, `hotmart-cookie-policy button`) e variações genéricas de botões de consentimento.
 - Incluída opção textual adicional (`Allow all`) para aceite automático em páginas em inglês.
 - Melhorado fallback de causa-raiz: quando o overlay não some no timeout, o log agora sobe para `warn` com URL atual e o fallback JS também remove `.hotmart-cookie-policy-container`, reduzindo interceptação de clique no submit de login.
+
+## 2026-05-12 14:20:29 UTC-3
+- Alterado o `HotmartCollectorService` para priorizar coleta via API da Hotmart usando JWT salvo em configuração geral do backend (`/api/settings/hotmart_access_token_jwt`), eliminando a dependência de login automatizado para o fluxo principal.
+- Implementada busca do token JWT via HTTP no backend (`collector.backend.base-url`) e uso direto no `Authorization: Bearer` da chamada para `https://api-affiliation-market.hotmart.com/v2/market/search`.
+- Atualizado teste unitário para refletir o novo contrato do construtor do serviço e validar o comportamento de `COLLECTION_SKIPPED` quando não houver token configurado.

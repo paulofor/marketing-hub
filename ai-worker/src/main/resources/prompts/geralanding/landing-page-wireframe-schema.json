@@ -2,221 +2,181 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "pageGoal": {
-      "type": "string"
-    },
-    "variantLayoutId": {
-      "type": "string",
-      "enum": [
-        "form-first",
-        "proof-first",
-        "story-first"
-      ]
-    },
-    "messageMatchSummary": {
-      "type": "string"
-    },
-    "mobilePriorityNotes": {
-      "type": "string"
-    },
-    "ctaPlacementNotes": {
-      "type": "string"
-    },
-    "formPlacementNotes": {
-      "type": "string"
-    },
-    "sectionOrder": {
-      "type": "array",
-      "minItems": 4,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "sectionId": {
-            "type": "string"
-          },
-          "sectionName": {
-            "type": "string"
-          },
-          "objective": {
-            "type": "string"
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "hero",
-              "form",
-              "split",
-              "proof",
-              "timeline",
-              "faq",
-              "cta"
-            ]
-          },
-          "copySource": {
-            "type": "string"
-          },
-          "uiNotes": {
-            "type": "string"
-          },
-          "uiTags": {
-            "type": "string"
-          },
-          "uiSizeTexts": {
-            "type": "string"
-          },
-          "uiSizes": {
-            "type": "string"
-          },
-          "messageMatchDependency": {
-            "type": "string"
-          },
-          "sectionDependsOn": {
-            "type": "array",
-            "items": {
+    "pagina": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "head": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "texto": {
               "type": "string"
             }
           },
-          "mobilePriorityScore": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 10
-          },
-          "dropOffRisk": {
-            "type": "string",
-            "enum": [
-              "baixo",
-              "medio",
-              "alto"
-            ]
-          },
-          "surfaceSpec": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "surfaceToken": {
-                "type": "string"
-              },
-              "notes": {
-                "type": "string"
+          "required": [
+            "texto"
+          ]
+        },
+        "corpo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "estilos": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "nome": {
+                    "type": "string"
+                  },
+                  "valor": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "nome",
+                  "valor"
+                ]
               }
             },
-            "required": [
-              "surfaceToken",
-              "notes"
-            ]
-          },
-          "ctaSlot": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "hasCta": {
-                "type": "boolean"
-              },
-              "ctaLabel": {
-                "type": "string"
-              },
-              "ctaVariant": {
-                "type": "string"
-              },
-              "matchAdCta": {
-                "type": "string"
-              },
-              "notes": {
-                "type": "string"
+            "secoes": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "nome": {
+                    "type": "string"
+                  },
+                  "objetivo": {
+                    "type": "string"
+                  },
+                  "oQueQuerProvocarNoUsuario": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "estilos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "nome": {
+                          "type": "string"
+                        },
+                        "valor": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "nome",
+                        "valor"
+                      ]
+                    }
+                  },
+                  "elementosSeccao": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "tag": {
+                          "type": "string"
+                        },
+                        "texto": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "tamMaximo": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "tamMinimo": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "conteudo": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "tamMaximo",
+                            "tamMinimo",
+                            "conteudo"
+                          ]
+                        },
+                        "estilos": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "nome": {
+                                "type": "string"
+                              },
+                              "valor": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "nome",
+                              "valor"
+                            ]
+                          }
+                        },
+                        "elementosInternos": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/properties/pagina/properties/corpo/properties/secoes/items/properties/elementosSeccao/items"
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "tag",
+                        "texto",
+                        "estilos",
+                        "elementosInternos"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "nome",
+                  "objetivo",
+                  "oQueQuerProvocarNoUsuario",
+                  "id",
+                  "estilos",
+                  "elementosSeccao"
+                ]
               }
-            },
-            "required": [
-              "hasCta",
-              "ctaLabel",
-              "ctaVariant",
-              "matchAdCta",
-              "notes"
-            ]
-          }
-        },
-        "required": [
-          "sectionId",
-          "sectionName",
-          "objective",
-          "contentType",
-          "copySource",
-          "uiNotes",
-          "uiTags",
-          "uiSizeTexts",
-          "uiSizes",
-          "messageMatchDependency",
-          "sectionDependsOn",
-          "mobilePriorityScore",
-          "dropOffRisk",
-          "surfaceSpec",
-          "ctaSlot"
-        ]
-      }
-    },
-    "consistencyChecks": {
-      "type": "array",
-      "minItems": 2,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "check": {
-            "type": "string"
+            }
           },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PASS",
-              "WARN",
-              "FAIL"
-            ]
-          },
-          "details": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "check",
-          "status",
-          "details"
-        ]
-      }
-    },
-    "bodyAttributes": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "attribute": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          },
-          "notes": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "attribute",
-          "value",
-          "notes"
-        ]
-      }
+          "required": [
+            "estilos",
+            "secoes"
+          ]
+        }
+      },
+      "required": [
+        "head",
+        "corpo"
+      ]
     }
   },
   "required": [
-    "pageGoal",
-    "variantLayoutId",
-    "messageMatchSummary",
-    "mobilePriorityNotes",
-    "ctaPlacementNotes",
-    "formPlacementNotes",
-    "bodyAttributes",
-    "sectionOrder",
-    "consistencyChecks"
+    "pagina"
   ]
 }

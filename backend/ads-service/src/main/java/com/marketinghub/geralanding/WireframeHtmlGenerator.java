@@ -1,17 +1,26 @@
 package com.marketinghub.geralanding;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WireframeHtmlGenerator {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     public String generateFromJson(String json) {
         if (!StringUtils.hasText(json)) {
             return null;
+        }
+
+        if (json.contains("\"pagina\"") && json.contains("\"corpo\"") && json.contains("\"secoes\"")) {
+            return generateFromPaginaJson(json);
         }
 
         String sectionOrder = extractSectionOrderArray(json);
@@ -52,6 +61,86 @@ public class WireframeHtmlGenerator {
         html.append("</html>\n");
 
         return html.toString();
+    }
+
+    private String generateFromPaginaJson(String json) {
+        try {
+            Map<String, Object> root = OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
+            Map<String, Object> pagina = asMap(root.get("pagina"));
+            Map<String, Object> head = asMap(pagina.get("head"));
+            Map<String, Object> corpo = asMap(pagina.get("corpo"));
+
+            StringBuilder html = new StringBuilder();
+            html.append("<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n")
+                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+                .append("<title>").append(escapeHtmlText(asText(head.get("texto"), "Wireframe provisório"))).append("</title>\n")
+                .append("<style>\n").append(baseCss());
+            html.append("\nbody{").append(renderInlineStyle(asList(corpo.get("estilos")))).append("}\n");
+            html.append("</style>\n</head>\n<body>\n");
+            for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
+                html.append(renderElement(secao, "elementosSeccao", "section"));
+            }
+            html.append("</body>\n</html>\n");
+            return html.toString();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao renderizar novo JSON de wireframe", e);
+        }
+    }
+
+    private String renderElement(Map<String, Object> node, String childKey, String defaultTag) {
+        String tag = asText(node.get("tag"), defaultTag);
+        String id = asText(node.get("id"), "");
+        String style = renderInlineStyle(asList(node.get("estilos")));
+        StringBuilder out = new StringBuilder();
+        out.append("<").append(tag);
+        if (StringUtils.hasText(id)) out.append(" id=\"").append(escapeHtmlAttribute(id)).append("\"");
+        if (StringUtils.hasText(style)) out.append(" style=\"").append(escapeHtmlAttribute(style)).append("\"");
+        out.append(">");
+        out.append(resolveText(node));
+        for (Map<String, Object> child : asList(node.get("elementosInternos"))) {
+            out.append(renderElement(child, "elementosInternos", "div"));
+        }
+        for (Map<String, Object> child : asList(node.get(childKey))) {
+            out.append(renderElement(child, "elementosInternos", "div"));
+        }
+        out.append("</").append(tag).append(">\n");
+        return out.toString();
+    }
+
+    private String resolveText(Map<String, Object> node) {
+        Map<String, Object> texto = asMap(node.get("texto"));
+        String content = asText(texto.get("conteudo"), "").trim();
+        return escapeHtmlText(StringUtils.hasText(content) ? content : "Lorem ipsum dolor sit amet.");
+    }
+
+    private String renderInlineStyle(List<Map<String, Object>> estilos) {
+        StringBuilder out = new StringBuilder();
+        for (Map<String, Object> estilo : estilos) {
+            String nome = asText(estilo.get("nome"), "");
+            String valor = asText(estilo.get("valor"), "");
+            if (StringUtils.hasText(nome) && StringUtils.hasText(valor)) {
+                out.append(nome).append(":").append(valor).append(";");
+            }
+        }
+        return out.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asMap(Object value) {
+        return value instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> asList(Object value) {
+        return value instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    }
+
+    private String asText(Object value, String fallback) {
+        return value instanceof String text && StringUtils.hasText(text) ? text : fallback;
+    }
+
+    private static String escapeHtmlText(String value) {
+        return escapeHtmlAttribute(value);
     }
 
     private static String baseCss() {

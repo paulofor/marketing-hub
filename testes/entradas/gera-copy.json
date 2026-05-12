@@ -1,7 +1,7 @@
 {
   "pageGoal": "Fazer o visitante preencher um briefing de 2 minutos e gerar imediatamente uma Amostra Personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens), com foco em fechar sem briga de preço.",
-  "messageMatchSource": "Anúncios com foco em previsibilidade de agenda e prova rápida (briefing 2 min → preview ~3 min), oferecendo Amostra em PDF (1 página, com marca d’água) + mini-kit (5 itens).",
-  "messageMatchNotes": "A página mantém a mesma promessa: ajudar o personal a mostrar valor antes do preço para conduzir conversas com próximo passo claro. A prova de rapidez aparece logo no início (briefing 2 min e geração em ~3 min) e o entregável é descrito de forma consistente (PDF 1 página com marca d’água + mini-kit com 5 itens).",
+  "messageMatchSource": "Anúncio → Landing com continuidade pela mesma promessa (previsibilidade/valor antes do preço), mesma prova de rapidez (briefing 2 min → preview ~3 min) e mesma entrega (PDF 1 página com marca d’água + mini-kit 5 itens), mantendo o mesmo CTA em todos os pontos-chave.",
+  "messageMatchNotes": "O topo já conecta com a situação real do personal (leads pedindo preço cedo) e responde com uma prova simples: você preenche um briefing curto e vê um preview rápido. A página repete os mesmos elementos (tempo, entregáveis e CTA) para reduzir fricção e evitar “parece bom demais”.",
   "primaryCTA": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
   "bodySections": [
     {
@@ -9,27 +9,27 @@
       "items": [
         {
           "item": "s1-title",
-          "copy": "Mais previsibilidade de agenda (sem briga de preço)"
+          "copy": "Feche sem briga de preço (com preview rápido)"
         },
         {
           "item": "s1-matchline",
-          "copy": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens)."
+          "copy": "Briefing de 2 minutos → preview em ~3 min: Amostra em PDF (1 página, com marca d’água) + mini-kit (5 itens) no seu estilo."
         },
         {
           "item": "s1-bullets-1",
-          "copy": "Briefing rápido: leva ~2 minutos"
+          "copy": "Amostra em PDF (1 página, com marca d’água)"
         },
         {
           "item": "s1-bullets-2",
-          "copy": "Preview pronto em ~3 minutos"
+          "copy": "Mini-kit com 5 itens prontos para usar hoje"
         },
         {
           "item": "s1-bullets-3",
-          "copy": "PDF 1 página + mini-kit (5 itens)"
+          "copy": "Mostre valor antes do “quanto custa?”"
         },
         {
           "item": "s1-figcaption",
-          "copy": "Você vê a amostra com marca d’água antes de decidir o próximo passo."
+          "copy": "Exemplo do que você gera: 1 página em PDF com marca d’água + cards do mini-kit."
         },
         {
           "item": "s1-form-label-1",
@@ -41,15 +41,15 @@
         },
         {
           "item": "s1-form-label-3",
-          "copy": "Seu foco"
+          "copy": "Seu foco hoje"
         },
         {
           "item": "s1-form-label-4",
-          "copy": "Seu público (rápido)"
+          "copy": "Descreva seu aluno ideal"
         },
         {
           "item": "s1-form-consent",
-          "copy": "Concordo em receber a amostra e mensagens relacionadas a este material."
+          "copy": "Concordo em receber a amostra e mensagens de acompanhamento por WhatsApp."
         },
         {
           "item": "s1-form-submit",
@@ -66,23 +66,23 @@
       "items": [
         {
           "item": "s2-title",
-          "copy": "Como funciona (em 3 passos rápidos)"
+          "copy": "Como funciona (2 min → ~3 min)"
         },
         {
           "item": "s2-steps-1",
-          "copy": "1) Responda um briefing de 2 minutos"
+          "copy": "1) Responda o briefing (leva ~2 min)"
         },
         {
           "item": "s2-steps-2",
-          "copy": "2) Aguarde ~3 min para gerar o preview"
+          "copy": "2) Aguarde a geração do preview (~3 min)"
         },
         {
           "item": "s2-steps-3",
-          "copy": "3) Receba o PDF + mini-kit (5 itens)"
+          "copy": "3) Receba o PDF + mini-kit e veja antes de decidir"
         },
         {
           "item": "s2-figcaption",
-          "copy": "É um preview: você confere a amostra (com marca d’água) antes de qualquer decisão."
+          "copy": "Você vê o preview primeiro: o objetivo é clareza e próximos passos, não “comprar no escuro”."
         },
         {
           "item": "s2-cta",
@@ -95,27 +95,27 @@
       "items": [
         {
           "item": "s3-title",
-          "copy": "Quando o primeiro contato vira “quanto custa?”"
+          "copy": "Quando a conversa vira preço cedo demais"
         },
         {
           "item": "s3-text",
-          "copy": "Você sabe treinar e entregar resultado — mas o WhatsApp enche de curiosos. A conversa mal começa e já cai no preço, como se todo acompanhamento fosse igual. Sem uma forma simples de mostrar valor rápido, você perde tempo e previsibilidade."
+          "copy": "Você treina bem, mas o primeiro contato no WhatsApp já começa com “quanto custa?”. Sem um jeito rápido de mostrar valor, você perde tempo, entra em comparativo por preço e a agenda continua instável."
         },
         {
           "item": "s3-bullets-1",
-          "copy": "Você responde muito e fecha pouco"
+          "copy": "Curiosos pedem preço e somem (tempo perdido)"
         },
         {
           "item": "s3-bullets-2",
-          "copy": "O lead compara por preço e some"
+          "copy": "Você se explica do zero em toda conversa"
         },
         {
           "item": "s3-bullets-3",
-          "copy": "A agenda fica com buracos no mês"
+          "copy": "Alunos entram sem clareza e desanimam no começo"
         },
         {
           "item": "s3-figcaption",
-          "copy": "A amostra ajuda a mostrar valor antes do preço entrar na conversa."
+          "copy": "Cenário comum: mensagem de preço cedo, sem espaço para você mostrar diferença."
         }
       ]
     },
@@ -124,11 +124,11 @@
       "items": [
         {
           "item": "s4-title",
-          "copy": "O que você recebe (amostra + mini-kit)"
+          "copy": "O que você recebe na hora"
         },
         {
           "item": "s4-subtitle",
-          "copy": "Em ~3 minutos, você gera uma Amostra Personalizada em PDF (1 página, com marca d’água) e um mini-kit com 5 itens prontos para usar no seu estilo."
+          "copy": "Um preview simples e direto para você mostrar valor antes do preço: 1 PDF (com marca d’água) + mini-kit com 5 itens prontos no seu estilo."
         },
         {
           "item": "s4-list-1",
@@ -136,23 +136,23 @@
         },
         {
           "item": "s4-list-2",
-          "copy": "Convite pronto (bio/mensagem) para atrair o certo"
+          "copy": "Mensagem de convite (pra atrair o aluno certo)"
         },
         {
           "item": "s4-list-3",
-          "copy": "Roteiro curto de WhatsApp (perguntas e respostas)"
+          "copy": "Roteiro curto de WhatsApp (perguntas + respostas)"
         },
         {
           "item": "s4-list-4",
-          "copy": "Começo guiado D0–D7 (boas-vindas + primeiros passos)"
+          "copy": "Mapa simples de progresso (8 semanas)"
         },
         {
           "item": "s4-list-5",
-          "copy": "Check-ins simples para aumentar engajamento"
+          "copy": "Boas-vindas + check-ins de início (D0–D7)"
         },
         {
           "item": "s4-figcaption",
-          "copy": "Um “produto digital” pronto para você mostrar valor e conduzir o próximo passo."
+          "copy": "Tudo vem em formato de preview para você avaliar antes de qualquer decisão."
         },
         {
           "item": "s4-cta",
@@ -165,27 +165,27 @@
       "items": [
         {
           "item": "s5-title",
-          "copy": "Como o kit organiza um ciclo de 8 semanas"
+          "copy": "A estrutura do “Ciclo de Evolução (8 semanas)”"
         },
         {
           "item": "s5-text",
-          "copy": "A amostra te mostra uma estrutura simples e repetível para o aluno enxergar direção e cuidado desde o começo — sem improviso a cada conversa."
+          "copy": "O kit organiza seu processo em 3 blocos práticos para você repetir todo mês: atrair com clareza, conduzir a conversa e iniciar com marcos simples de evolução."
         },
         {
           "item": "s5-bullets-1",
-          "copy": "Convite claro: o aluno certo entende a proposta"
+          "copy": "Convite claro: mensagem/bio e ideias para atrair o perfil certo"
         },
         {
           "item": "s5-bullets-2",
-          "copy": "Conversa guiada: roteiro curto no WhatsApp"
+          "copy": "Roteiro de WhatsApp: 10–15 min para qualificar sem virar desconto"
         },
         {
           "item": "s5-bullets-3",
-          "copy": "Início bem definido: D0–D7 + check-ins"
+          "copy": "Começo guiado: mapa + check-ins para manter engajamento no início"
         },
         {
           "item": "s5-figcaption",
-          "copy": "Três blocos simples para reduzir “briga de preço” e aumentar consistência."
+          "copy": "Um diagrama simples em 3 partes (convite → conversa → começo guiado)."
         }
       ]
     },
@@ -194,23 +194,23 @@
       "items": [
         {
           "item": "s6-title",
-          "copy": "Exemplo do preview (o que aparece no PDF)"
+          "copy": "Exemplo do preview (1 página no PDF)"
         },
         {
           "item": "s6-bullets-1",
-          "copy": "Resumo do posicionamento e do “porquê” do seu acompanhamento"
+          "copy": "Resumo do seu posicionamento (pra evitar comparativo por preço)"
         },
         {
           "item": "s6-bullets-2",
-          "copy": "Próximo passo sugerido para conduzir 3 conversas"
+          "copy": "Próximo passo sugerido para 3 conversas iniciais"
         },
         {
           "item": "s6-bullets-3",
-          "copy": "Visão do ciclo de 8 semanas (como estrutura)"
+          "copy": "Mini-kit listado com itens prontos para aplicar"
         },
         {
           "item": "s6-figcaption",
-          "copy": "A página vem com marca d’água de amostra: é um preview para você avaliar."
+          "copy": "A página vem com marca d’água: é uma amostra/preview para você ver antes de decidir."
         }
       ]
     },
@@ -223,35 +223,35 @@
         },
         {
           "item": "s7-faq-1-q",
-          "copy": "Isso é consultoria ou mentoria?"
+          "copy": "Isso é consultoria ou acompanhamento?"
         },
         {
           "item": "s7-faq-1-a",
-          "copy": "Não. Você recebe um preview em PDF (com marca d’água) e um mini-kit de materiais prontos. É um gerador de amostra para você usar no seu negócio."
+          "copy": "Não. Você gera uma amostra em PDF (com marca d’água) + um mini-kit pronto. É um preview automático para você avaliar e usar como base."
         },
         {
           "item": "s7-faq-2-q",
-          "copy": "Precisa de call ou reunião?"
+          "copy": "Precisa marcar call ou reunião?"
         },
         {
           "item": "s7-faq-2-a",
-          "copy": "Não precisa. Você preenche o briefing (2 min) e recebe o preview em ~3 min, direto para avaliar e aplicar."
+          "copy": "Não. O processo é por briefing curto e entrega do preview em PDF. Sem ligação obrigatória."
         },
         {
           "item": "s7-faq-3-q",
-          "copy": "O que eu recebo exatamente?"
+          "copy": "Quanto tempo leva para ficar pronto?"
         },
         {
           "item": "s7-faq-3-a",
-          "copy": "Uma Amostra Personalizada em PDF (1 página, com marca d’água) + um mini-kit com 5 itens (convite, roteiro de WhatsApp, começo D0–D7 e check-ins)."
+          "copy": "O briefing leva cerca de 2 minutos. A geração do preview costuma levar aproximadamente 3 minutos."
         },
         {
           "item": "s7-faq-4-q",
-          "copy": "Serve para qualquer tipo de personal?"
+          "copy": "O que eu recebo exatamente?"
         },
         {
           "item": "s7-faq-4-a",
-          "copy": "Funciona melhor para quem vende acompanhamento e quer evitar que a conversa vire só preço, organizando mensagem, conversa e começo do aluno com mais clareza."
+          "copy": "Uma Amostra Personalizada em PDF (1 página, com marca d’água) e um mini-kit com 5 itens (mensagens/roteiro/check-ins) para você aplicar no seu contexto."
         }
       ]
     },
@@ -260,7 +260,7 @@
       "items": [
         {
           "item": "s8-title",
-          "copy": "Gere sua amostra agora (leva 2 minutos)"
+          "copy": "Gere sua amostra e veja o preview"
         },
         {
           "item": "s8-bullets-1",
@@ -268,7 +268,7 @@
         },
         {
           "item": "s8-bullets-2",
-          "copy": "PDF 1 página (com marca d’água) + mini-kit (5 itens)"
+          "copy": "PDF (1 página, com marca d’água) + mini-kit (5 itens)"
         },
         {
           "item": "s8-bullets-3",
@@ -284,15 +284,15 @@
         },
         {
           "item": "s8-form-label-3",
-          "copy": "Seu foco"
+          "copy": "Seu foco hoje"
         },
         {
           "item": "s8-form-label-4",
-          "copy": "Seu público (rápido)"
+          "copy": "Descreva seu aluno ideal"
         },
         {
           "item": "s8-form-consent",
-          "copy": "Concordo em receber a amostra e mensagens relacionadas a este material."
+          "copy": "Concordo em receber a amostra e mensagens de acompanhamento por WhatsApp."
         },
         {
           "item": "s8-form-submit",
@@ -300,19 +300,19 @@
         },
         {
           "item": "s8-form-privacy",
-          "copy": "Privacidade: usamos seus dados só para gerar e enviar sua amostra. Você pode sair quando quiser."
+          "copy": "Usamos seus dados só para gerar e enviar sua amostra. Você pode pedir remoção a qualquer momento."
         },
         {
           "item": "s8-legal",
-          "copy": "Material de amostra (preview) gerado automaticamente; sem promessa de resultado específico."
+          "copy": "© 2026 — Material de amostra/preview. Sem garantia de resultados."
         },
         {
           "item": "s8-privacy-link",
-          "copy": "Privacidade"
+          "copy": "Política de Privacidade"
         },
         {
           "item": "s8-terms-link",
-          "copy": "Termos"
+          "copy": "Termos de Uso"
         },
         {
           "item": "s8-contact-link",
@@ -328,8 +328,8 @@
       "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
       "ctaUrl": "#s1-form",
       "matchAdCta": "Sim — mesma frase do anúncio.",
-      "ctaSupport": "Briefing rápido. Preview em ~3 min. PDF 1 página (marca d’água) + mini-kit (5 itens).",
-      "messageMatchNotes": "Mantém a promessa e a prova de rapidez como motivo imediato para agir."
+      "ctaSupport": "Briefing rápido (2 min) e preview em ~3 min.",
+      "messageMatchNotes": "Reforça tempo, entregáveis (PDF com marca d’água + mini-kit) e o benefício de evitar briga de preço."
     },
     {
       "placement": "mid",
@@ -337,17 +337,17 @@
       "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
       "ctaUrl": "#s1-form",
       "matchAdCta": "Sim — mesma frase do anúncio.",
-      "ctaSupport": "Veja primeiro o preview; depois você decide o próximo passo.",
-      "messageMatchNotes": "Reforça que é preview (reduz risco percebido) e mantém os tempos (2 min / ~3 min)."
+      "ctaSupport": "Veja o preview antes de decidir.",
+      "messageMatchNotes": "Colocado após os 3 passos para capturar quem precisava entender o fluxo."
     },
     {
       "placement": "inline",
       "ctaVariant": "primary",
       "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
-      "ctaUrl": "#s8-form",
+      "ctaUrl": "#s1-form",
       "matchAdCta": "Sim — mesma frase do anúncio.",
-      "ctaSupport": "Recap do que você recebe: PDF com marca d’água + mini-kit (5 itens).",
-      "messageMatchNotes": "Para quem só decide depois de entender o entregável por completo."
+      "ctaSupport": "Entregáveis claros: 1 PDF + mini-kit (5 itens).",
+      "messageMatchNotes": "Entra logo após “o que você recebe”, quando o valor percebido está máximo."
     },
     {
       "placement": "final",
@@ -355,53 +355,53 @@
       "ctaLabel": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF",
       "ctaUrl": "#s8-form",
       "matchAdCta": "Sim — mesma frase do anúncio.",
-      "ctaSupport": "Repete briefing 2 min e preview ~3 min para incentivar conclusão.",
-      "messageMatchNotes": "Fechamento com a mesma promessa e a mesma prova principal."
+      "ctaSupport": "Recap com prova de rapidez e preview.",
+      "messageMatchNotes": "Fecha com o mesmo CTA e com a recapitulação dos elementos de prova e entregáveis."
     }
   ],
   "faq": [
     {
-      "question": "Isso é consultoria ou mentoria?",
-      "answer": "Não. Você recebe uma amostra (preview) em PDF com marca d’água + um mini-kit de 5 itens prontos para aplicar. É para ajudar você a mostrar valor antes do preço.",
-      "objectionTag": "consultoria"
+      "question": "Isso é consultoria ou acompanhamento individual?",
+      "answer": "Não. Você recebe um preview automático: uma Amostra Personalizada em PDF (1 página, com marca d’água) + um mini-kit com 5 itens para aplicar no seu contexto.",
+      "objectionTag": "nao-e-consultoria"
     },
     {
-      "question": "Precisa de call, reunião ou análise ao vivo?",
-      "answer": "Não precisa. Você preenche um briefing de 2 minutos e recebe o preview em ~3 minutos para avaliar com calma.",
-      "objectionTag": "call"
+      "question": "Preciso fazer uma call para receber?",
+      "answer": "Não. Você preenche um briefing rápido e recebe o preview em PDF. Sem ligação obrigatória.",
+      "objectionTag": "sem-call"
     },
     {
-      "question": "O que eu recebo exatamente?",
-      "answer": "Amostra Personalizada em PDF (1 página, com marca d’água) + mini-kit (5 itens): convite/posicionamento, roteiro curto de WhatsApp, começo guiado D0–D7 e check-ins simples.",
-      "objectionTag": "entregavel"
+      "question": "Quanto tempo leva para eu ver a amostra?",
+      "answer": "Em geral, o briefing leva cerca de 2 minutos e a geração do preview leva aproximadamente 3 minutos.",
+      "objectionTag": "tempo"
     },
     {
-      "question": "Isso garante agenda cheia ou resultados com alunos?",
-      "answer": "Não. O material é um preview e uma estrutura de comunicação/início para você aplicar. Resultados variam conforme execução, público e contexto.",
-      "objectionTag": "garantia"
+      "question": "O que vem no mini-kit (5 itens)?",
+      "answer": "Itens práticos para você começar: convite/mensagem, roteiro curto de WhatsApp, mapa simples de progresso e check-ins iniciais para as primeiras semanas.",
+      "objectionTag": "o-que-recebo"
     }
   ],
   "consistencyChecks": [
     {
       "check": "CTA_MATCH",
       "status": "PASS",
-      "details": "O rótulo do CTA foi mantido igual em todos os pontos de ação (topo, meio e final), sem variações de frase."
+      "details": "O mesmo CTA aparece no formulário do topo, no botão da seção de prova, no bloco de entregáveis e no formulário final."
     },
     {
       "check": "PROMISE_MATCH",
       "status": "PASS",
-      "details": "A promessa central permanece a mesma: mostrar valor antes do preço para conduzir conversas com próximo passo claro e ganhar previsibilidade."
+      "details": "A promessa mantém o foco em previsibilidade e condução de conversa sem briga de preço, apoiada por prova de preview rápido e entrega do PDF + mini-kit."
     },
     {
       "check": "GOOGLE_LANDING_BEST_PRACTICES",
       "status": "PASS",
-      "details": "Clareza de oferta e entregáveis, indicação de privacidade, ausência de promessas absolutas, e conteúdo alinhado ao que é mostrado/entregue (preview)."
+      "details": "Mensagem clara acima da dobra, prova visual/explicação do fluxo, FAQ de objeções, repetição de CTA e notas de privacidade/expectativa (sem garantias)."
     },
     {
-      "check": "Tamanhos de texto dentro dos limites sugeridos",
-      "status": "WARN",
-      "details": "Os textos foram escritos para caber nos intervalos, mas a contagem exata de caracteres não foi validada automaticamente aqui; recomenda-se checagem final no layout."
+      "check": "Tamanhos de texto vs. limites sugeridos",
+      "status": "PASS",
+      "details": "Títulos, descrições, bullets e respostas foram redigidos para caber nos intervalos de caracteres informados por campo."
     }
   ],
-  "complianceNotes": "Evita promessas individuais e garantias absolutas. Mantém a oferta como preview/amostra com marca d’água e mini-kit, sem posicionar como consultoria, mentoria ou acompanhamento humano. Não usa antes/depois nem alegações de saúde."
+  "complianceNotes": "Evita promessas individuais e garantias absolutas. Não posiciona como consultoria, mentoria ou acompanhamento humano obrigatório. Não faz alegações de saúde ou antes/depois; apresenta como preview (amostra) com marca d’água e materiais prontos para apoiar a conversa e o início do processo."
 }

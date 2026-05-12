@@ -17,7 +17,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `db_list_tables`: lista todas as tabelas disponíveis no schema atual.
 - `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
 - `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
-- `java_module_logs`: retorna tail de logs do Spring Boot dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-hotmart`).
+- `java_module_logs`: retorna tail de logs do Spring Boot dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-hotmart`, `oprm-coletor-receita`).
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
 - `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
 - `meta_graph_debug_token`: executa `debug_token` para validar tokens.
@@ -54,7 +54,8 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `http://191.252.102.54:8092/api/v1/logs/runtime?lines=200`);
 - `MCP_LOG_MDS_PATH` (default `http://177.153.62.107:8091/actuator/logfile`);
 - `MCP_LOG_MOIS_PATH` (default `http://177.153.62.107:8094/manage/logfile`);
-- `MCP_LOG_MOIS_HOTMART_PATH` (default `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`).
+- `MCP_LOG_MOIS_HOTMART_PATH` (default `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`);
+- `MCP_LOG_OPRM_COLETOR_RECEITA_PATH` (default `http://177.153.62.107:8094/actuator/logfile`).
 - `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`);
 - `MCP_LOG_FETCH_ATTEMPTS` (default `3`), número de tentativas para leitura HTTP de logs;
 - `MCP_LOG_FETCH_RETRY_DELAY_MILLIS` (default `400`), intervalo entre tentativas de leitura HTTP;

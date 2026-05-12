@@ -11,6 +11,7 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - Lead Portal: `http://191.252.120.96:8082/public/runtime-logs/tail?lines=300`
 - Portal Pagamentos (Lead Portal): `http://191.252.102.54:8092/api/v1/logs/runtime?lines=200`
 - Mois Coletor Hotmart: `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`
+- OPRM Coletor Receita: `http://177.153.62.107:8094/actuator/logfile`
 
 Sempre que houver alteração desses endpoints, atualizar em conjunto:
 

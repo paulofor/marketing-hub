@@ -465,8 +465,13 @@ public class HotmartCollectorService {
 
     private void closeCookieOrConsentOverlays(Page page) {
         String cookieAcceptSelectors = String.join(", ",
+                "#hotmart-cookie-policy button",
+                "hotmart-cookie-policy button",
+                "button[data-testid*='cookie']",
+                "button[id*='cookie']",
                 "button:has-text('Accept all cookies')",
                 "button:has-text('Accept all')",
+                "button:has-text('Allow all')",
                 "button:has-text('I agree')",
                 "button:has-text('Aceitar')",
                 "button:has-text('Aceitar tudo')",
@@ -492,9 +497,10 @@ public class HotmartCollectorService {
                             .setState(WaitForSelectorState.HIDDEN)
                             .setTimeout(5_000));
         } catch (Exception ignored) {
-            log.debug("Overlay de cookie não ocultou no tempo esperado; aplicando fallback por JS.");
+            log.warn("Overlay de cookie não ocultou no tempo esperado; aplicando fallback por JS. url='{}'", page.url());
             hideOverlayWithJavascript(page, "#hotmart-cookie-policy");
             hideOverlayWithJavascript(page, "hotmart-cookie-policy");
+            hideOverlayWithJavascript(page, ".hotmart-cookie-policy-container");
         }
     }
 

@@ -9,3 +9,5 @@
 - 2026-05-12 10:05:00 UTC-3 — Corrigido o schema da etapa landing-page-wireframe para compatibilidade com OpenAI Structured Outputs: a recursão de `elementosInternos` passou a referenciar `#/$defs/elementoSecao` definido no topo do schema, evitando erro 400 `invalid_json_schema` por referência fora de definições top-level.
 
 - 2026-05-12 10:20:00 UTC-3 — Restringido de forma rígida o campo `nome` de cada item de `estilos` no schema da etapa `landing-page-wireframe` para aceitar somente whitelist de atributos CSS estruturais permitidos (layout/posicionamento/flex/grid/transform), bloqueando nomes fora da lista.
+
+- 2026-05-12 14:40:00 UTC-3 — Atualizado o montador de HTML provisório da etapa landing-page-wireframe para suportar o novo payload com raiz `pagina`/`corpo`/`secoes`/`elementosSeccao`, renderização recursiva de elementos e fallback em Lorem Ipsum quando `texto.conteudo` vier vazio.

@@ -62,4 +62,37 @@ class WireframeHtmlGeneratorTest {
         assertTrue(html.contains("background:#111111;color:#ffffff"));
         assertTrue(html.contains("form id=\"f1\" style=\"background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:12px;padding:16px;\""));
     }
+
+    @Test
+    void shouldRenderNewPaginaCorpoSecoesStructure() {
+        String json = """
+            {
+              "pagina": {
+                "head": {"texto": "Wireframe Novo"},
+                "corpo": {
+                  "estilos": [{"nome":"max-width","valor":"680px"}],
+                  "secoes": [
+                    {
+                      "id": "s1-hero",
+                      "estilos": [{"nome":"padding","valor":"20px"}],
+                      "elementosSeccao": [
+                        {"id":"el-1","tag":"h1","texto":{"conteudo":""},"estilos":[]},
+                        {"id":"el-2","tag":"p","texto":{"conteudo":"Texto real"},"estilos":[]}
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+            """;
+
+        WireframeHtmlGenerator generator = new WireframeHtmlGenerator();
+        String html = generator.generateFromJson(json);
+
+        assertNotNull(html);
+        assertTrue(html.contains("<section id=\"s1-hero\""));
+        assertTrue(html.contains("<h1 id=\"el-1\">Lorem ipsum dolor sit amet."));
+        assertTrue(html.contains("<p id=\"el-2\">Texto real</p>"));
+        assertTrue(html.contains("body{max-width:680px;}"));
+    }
 }

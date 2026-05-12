@@ -209,6 +209,17 @@ public class McpController {
                                                     "description", "ID do workflow run no GitHub Actions.")),
                                     "required", List.of("run_id"),
                                     "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "github_actions_get_run_logs",
+                            "description", "Baixa e retorna trecho dos logs de uma execução de workflow no GitHub Actions.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "run_id", Map.of("type", "integer", "minimum", 1,
+                                                    "description", "ID do workflow run no GitHub Actions.")),
+                                    "required", List.of("run_id"),
+                                    "additionalProperties", false)
                     )))));
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
@@ -252,6 +263,7 @@ public class McpController {
                 case "github_actions_list_workflows" -> callGithubActionsListWorkflows(id, arguments);
                 case "github_actions_list_runs" -> callGithubActionsListRuns(id, arguments);
                 case "github_actions_get_run_summary" -> callGithubActionsGetRunSummary(id, arguments);
+                case "github_actions_get_run_logs" -> callGithubActionsGetRunLogs(id, arguments);
                 default -> error(id, -32602, "Unknown tool: " + toolName);
             };
         } catch (IllegalArgumentException ex) {
@@ -425,6 +437,22 @@ public class McpController {
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
             return error(id, -32603, "Failed to fetch workflow run summary: " + ex.getMessage());
+        }
+    }
+
+
+
+    private Map<String, Object> callGithubActionsGetRunLogs(Object id, Map<String, Object> arguments) {
+        Integer runIdArg = intArgument(arguments, "run_id");
+        Long runId = runIdArg == null ? null : runIdArg.longValue();
+
+        try {
+            Map<String, Object> result = githubActionsService.getRunLogs(runId);
+            return successToolResult(id, result, "GitHub workflow run logs fetched");
+        } catch (IllegalArgumentException ex) {
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            return error(id, -32603, "Failed to fetch workflow run logs: " + ex.getMessage());
         }
     }
 

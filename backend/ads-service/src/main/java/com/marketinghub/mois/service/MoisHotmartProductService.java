@@ -17,8 +17,9 @@ public class MoisHotmartProductService {
         String latestJobId = jdbcTemplate.query(
                         """
                                 SELECT job_id
-                                FROM mois_collection_job_state
+                                FROM mois_collected_reference
                                 WHERE workspace_id = ?
+                                  AND source = 'HOTMART'
                                 ORDER BY updated_at DESC
                                 LIMIT 1
                                 """,

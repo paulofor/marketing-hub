@@ -1,7 +1,6 @@
-package com.marketinghub.settings;
+package com.marketinghub.mois.service;
 
-import com.marketinghub.settings.dto.HotmartCollectedProductDto;
-import com.marketinghub.settings.dto.HotmartCollectedProductListResponse;
+import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import java.sql.Timestamp;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +9,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class HotmartCollectedProductService {
+public class MoisHotmartProductService {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public HotmartCollectedProductListResponse listLatestByWorkspace(String workspaceId, int limit) {
+    public MoisHotmartProductDtos.HotmartCollectedProductListResponse listLatestByWorkspace(String workspaceId, int limit) {
         String latestJobId = jdbcTemplate.query(
                         """
                                 SELECT job_id
@@ -30,10 +29,10 @@ public class HotmartCollectedProductService {
                 .orElse(null);
 
         if (latestJobId == null) {
-            return new HotmartCollectedProductListResponse(workspaceId, List.of());
+            return new MoisHotmartProductDtos.HotmartCollectedProductListResponse(workspaceId, List.of());
         }
 
-        List<HotmartCollectedProductDto> items = jdbcTemplate.query(
+        List<MoisHotmartProductDtos.HotmartCollectedProductResponse> items = jdbcTemplate.query(
                 """
                         SELECT job_id, reference_id, product_name, product_url, producer_name,
                                hotmart_image_url, success_score, collected_at
@@ -46,7 +45,7 @@ public class HotmartCollectedProductService {
                         """,
                 (rs, rowNum) -> {
                     Timestamp collectedAt = rs.getTimestamp("collected_at");
-                    return new HotmartCollectedProductDto(
+                    return new MoisHotmartProductDtos.HotmartCollectedProductResponse(
                             rs.getString("job_id"),
                             rs.getString("reference_id"),
                             rs.getString("product_name"),
@@ -58,11 +57,9 @@ public class HotmartCollectedProductService {
                             "BRL",
                             collectedAt == null ? null : collectedAt.toInstant());
                 },
-                workspaceId,
-                latestJobId,
-                limit
+                workspaceId, latestJobId, limit
         );
 
-        return new HotmartCollectedProductListResponse(workspaceId, items);
+        return new MoisHotmartProductDtos.HotmartCollectedProductListResponse(workspaceId, items);
     }
 }

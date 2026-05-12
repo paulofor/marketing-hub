@@ -1,7 +1,6 @@
 package com.marketinghub.settings;
 
 import com.marketinghub.settings.dto.GeneralSettingDto;
-import com.marketinghub.settings.dto.HotmartCollectedProductListResponse;
 import com.marketinghub.settings.dto.UpdateGeneralSettingRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -12,14 +11,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/settings")
 public class GeneralSettingController {
     private final GeneralSettingService service;
-    private final HotmartCollectedProductService hotmartCollectedProductService;
-
-    public GeneralSettingController(
-            GeneralSettingService service,
-            HotmartCollectedProductService hotmartCollectedProductService
-    ) {
+    public GeneralSettingController(GeneralSettingService service) {
         this.service = service;
-        this.hotmartCollectedProductService = hotmartCollectedProductService;
     }
 
     @GetMapping("/{name}")
@@ -39,15 +32,4 @@ public class GeneralSettingController {
         return service.upsert(name, request.value());
     }
 
-    @GetMapping("/hotmart/products")
-    public HotmartCollectedProductListResponse listHotmartProducts(
-            @RequestParam(defaultValue = "workspace-001") String workspaceId,
-            @RequestParam(defaultValue = "24") Integer limit
-    ) {
-        if (!StringUtils.hasText(workspaceId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
-        }
-        int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
-        return hotmartCollectedProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
-    }
 }

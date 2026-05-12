@@ -24,7 +24,7 @@ export function useHotmartCollectedProducts(workspaceId: string, limit = 24) {
     queryKey: ["settings", "hotmart", "products", workspaceId, limit],
     enabled: workspaceId.trim().length > 0,
     queryFn: async () => {
-      const { data } = await axios.get<HotmartCollectedProductListResponse>("/api/settings/hotmart/products", {
+      const { data } = await axios.get<HotmartCollectedProductListResponse>("/api/v1/mois/hotmart/products", {
         params: { workspaceId, limit },
       });
       return data.items;

@@ -1,6 +1,6 @@
-package com.marketinghub.settings;
+package com.marketinghub.mois.service;
 
-import com.marketinghub.settings.dto.HotmartCollectedProductListResponse;
+import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class HotmartCollectedProductServiceTest {
+class MoisHotmartProductServiceTest {
 
     @Test
     void shouldReturnEmptyListWhenThereIsNoJobForWorkspace() {
@@ -20,8 +20,9 @@ class HotmartCollectedProductServiceTest {
         when(jdbcTemplate.query(anyString(), any(org.springframework.jdbc.core.RowMapper.class), eq("workspace-001")))
                 .thenReturn(List.of());
 
-        HotmartCollectedProductService service = new HotmartCollectedProductService(jdbcTemplate);
-        HotmartCollectedProductListResponse response = service.listLatestByWorkspace("workspace-001", 24);
+        MoisHotmartProductService service = new MoisHotmartProductService(jdbcTemplate);
+        MoisHotmartProductDtos.HotmartCollectedProductListResponse response =
+                service.listLatestByWorkspace("workspace-001", 24);
 
         assertEquals("workspace-001", response.workspaceId());
         assertEquals(0, response.items().size());

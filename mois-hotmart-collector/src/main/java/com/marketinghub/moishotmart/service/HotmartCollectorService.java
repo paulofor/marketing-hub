@@ -28,6 +28,7 @@ public class HotmartCollectorService {
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorService.class);
     private static final double PLAYWRIGHT_TIMEOUT_MS = 180_000;
     private static final int LOGIN_SUBMIT_RETRIES = 3;
+    private static final int COOKIE_RETRY_ATTEMPTS = 3;
     private static final String HOTMART_MARKET_API_URL = "https://api-affiliation-market.hotmart.com/v2/market/search";
 
     private final boolean headless;
@@ -365,6 +366,8 @@ public class HotmartCollectorService {
                 .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
         page.setDefaultTimeout(PLAYWRIGHT_TIMEOUT_MS);
+        closeCookieOrConsentOverlays(page);
+        waitTransientOverlaysToHide(page);
 
         String emailSelector = "input#username, input[name='username'], input[autocomplete*='username'], input[type='text'][name='username'], input[type='email'], input[name='email']";
         String passwordSelector = "input[type='password'], input[name='password']";
@@ -469,13 +472,18 @@ public class HotmartCollectorService {
                 "button:has-text('Aceitar tudo')",
                 "button:has-text('Concordo')"
         );
-        try {
-            if (page.locator(cookieAcceptSelectors).first().isVisible()) {
-                page.locator(cookieAcceptSelectors).first().click(new com.microsoft.playwright.Locator.ClickOptions().setTimeout(3_000));
-                log.info("Banner de cookies detectado e aceito automaticamente.");
+        for (int attempt = 1; attempt <= COOKIE_RETRY_ATTEMPTS; attempt++) {
+            try {
+                if (page.locator(cookieAcceptSelectors).first().isVisible()) {
+                    page.locator(cookieAcceptSelectors)
+                            .first()
+                            .click(new com.microsoft.playwright.Locator.ClickOptions().setTimeout(3_000));
+                    log.info("Banner de cookies detectado e aceito automaticamente. tentativa={}", attempt);
+                    page.waitForTimeout(300L * attempt);
+                }
+            } catch (Exception ignored) {
+                log.debug("Nenhum botão de aceite de cookie acionável encontrado na tentativa {}.", attempt);
             }
-        } catch (Exception ignored) {
-            log.debug("Nenhum botão de aceite de cookie acionável encontrado.");
         }
 
         try {
@@ -493,7 +501,17 @@ public class HotmartCollectorService {
 
     private void hideOverlayWithJavascript(Page page, String selector) {
         try {
-            page.evaluate("(sel) => { const el = document.querySelector(sel); if (el) { el.style.display = 'none'; el.style.pointerEvents = 'none'; } }", selector);
+            page.evaluate("""
+                    (sel) => {
+                      const el = document.querySelector(sel);
+                      if (!el) return;
+                      el.style.display = 'none';
+                      el.style.pointerEvents = 'none';
+                      if (el.parentNode) {
+                        el.parentNode.removeChild(el);
+                      }
+                    }
+                    """, selector);
             log.info("Overlay '{}' ocultado por fallback JS.", selector);
         } catch (Exception ex) {
             log.debug("Falha ao ocultar overlay '{}' por JS: {}", selector, ex.getMessage());
@@ -505,11 +523,16 @@ public class HotmartCollectorService {
         if (!currentUrl.contains("sso.hotmart.com/login")) {
             return;
         }
-        log.warn("Login ainda na SSO após submit; forçando nova tentativa de progressão.");
-        closeCookieOrConsentOverlays(page);
-        page.locator(passwordSelector).first().press("Enter");
-        page.waitForTimeout(3_000);
-        closeCookieOrConsentOverlays(page);
+        for (int attempt = 1; attempt <= LOGIN_SUBMIT_RETRIES && page.url().contains("sso.hotmart.com/login"); attempt++) {
+            log.warn("Login ainda na SSO após submit; forçando nova tentativa de progressão. tentativa={}", attempt);
+            closeCookieOrConsentOverlays(page);
+            page.locator(passwordSelector).first().press("Enter");
+            page.waitForTimeout(1_000L * attempt);
+            closeCookieOrConsentOverlays(page);
+        }
+        if (page.url().contains("sso.hotmart.com/login")) {
+            throw new IllegalStateException("Login Hotmart não avançou após tentativas de remover banner/consentimento.");
+        }
     }
 
     private void waitTransientOverlaysToHide(Page page) {

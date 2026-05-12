@@ -3,8 +3,11 @@ package com.marketinghub.geralanding;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CopyProvisionalHtmlAssemblerTest {
 
@@ -16,40 +19,28 @@ class CopyProvisionalHtmlAssemblerTest {
             objectMapper);
 
     @Test
-    void assembleAppliesCopyInDomOrderWithoutGroupingByTag() {
-        String wireframe = """
-                {
-                  "landingPageWireframe": {
-                    "sectionOrder": [
-                      {
-                        "uiTags": "<section><h1 id=\\"s1-title\\"></h1><p id=\\"s1-subtitle\\"></p><h2 id=\\"s2-title\\"></h2><p id=\\"s2-subtitle\\"></p></section>",
-                        "uiSizes": ""
-                      }
-                    ]
-                  }
-                }
-                """;
-        String copy = """
-                {
-                  "landingPageCopy": {
-                    "sections": [
-                      {"items": [
-                        {"id": "s1-title", "value": "Headline correta"},
-                        {"id": "s1-subtitle", "value": "Resumo correto"},
-                        {"id": "s2-title", "value": "Copy correta"},
-                        {"id": "s2-subtitle", "value": "Prova correta"}
-                      ]}
-                    ]
-                  }
-                }
-                """;
+    void assembleMustMatchExpectedHtmlExactlyForOfficialFixtures() throws IOException {
+        Path fixtureRoot = resolveFixtureRoot();
+        String wireframe = Files.readString(fixtureRoot.resolve("entradas/gera-wireframe.json"));
+        String copy = Files.readString(fixtureRoot.resolve("entradas/gera-copy.json"));
+        String expectedHtml = Files.readString(fixtureRoot.resolve("saidas/gera-wireframe-copy-exato.html"));
 
-        String html = assembler.assemble(copy, wireframe, "job-1");
+        String html = assembler.assemble(copy, wireframe, null);
 
-        assertNotNull(html);
-        assertTrue(html.contains("Headline correta"));
-        assertTrue(html.contains("Resumo correto"));
-        assertTrue(html.contains("Copy correta"));
-        assertTrue(html.contains("Prova correta"));
+        assertEquals(expectedHtml, html);
+    }
+
+    private Path resolveFixtureRoot() {
+        Path current = Path.of("").toAbsolutePath();
+        for (int i = 0; i < 8 && current != null; i++) {
+            Path candidate = current.resolve("testes");
+            if (Files.exists(candidate.resolve("entradas/gera-wireframe.json"))
+                    && Files.exists(candidate.resolve("entradas/gera-copy.json"))
+                    && Files.exists(candidate.resolve("saidas/gera-wireframe-copy-exato.html"))) {
+                return candidate;
+            }
+            current = current.getParent();
+        }
+        throw new IllegalStateException("Não foi possível localizar pasta de fixtures em /testes");
     }
 }

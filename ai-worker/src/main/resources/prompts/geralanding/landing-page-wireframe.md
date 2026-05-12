@@ -58,6 +58,7 @@ Regras fixas da etapa (formato simplificado):
   - `funcaoComercial`;
   - `objecaoQueRemove`;
   - `classificacaoVisual` em: `mockup`, `foto`, `ilustração`, `diagrama`, `print conceitual`.
+- `briefingVisual` é exclusivo de `img`: não declarar este campo em elementos com outras tags.
 - `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
 - `elementosInternos` pode ser lista vazia, mas sempre deve existir.
@@ -111,6 +112,7 @@ Campos obrigatórios:
 - pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, papelComercial, fasePersuasao, objeçãoQueRemove, prioridadeConversao, acaoEsperada, fonteContexto, id, estilos, elementosSeccao
 - pagina.corpo.secoes[].elementosSeccao[] com id, tag, texto, estilos, elementosInternos
 - Para `tag = "img"`, `pagina.corpo.secoes[].elementosSeccao[].briefingVisual` é obrigatório no contrato.
+- Para tags diferentes de `img`, `briefingVisual` não deve existir no JSON.
 - pagina.corpo.secoes[].elementosSeccao[].texto com tamMaximo, tamMinimo, conteudo
 - Em wireframe, `conteudo` deve ser sempre `""` (sem texto final).
 

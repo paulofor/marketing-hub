@@ -29,3 +29,5 @@
 - 2026-05-12 20:48:15 UTC-3 — Incluída no prompt da etapa `landing-page-wireframe` a orientação para detalhar cada visual (`img`) com contexto de uso (onde entra), tipo esperado, função comercial, objeção removida e classificação do formato (mockup, foto, ilustração, diagrama ou print conceitual).
 
 - 2026-05-12 21:05:00 UTC-3 — Definido no schema da etapa `landing-page-wireframe` o contrato obrigatório de `briefingVisual` para elementos com `tag="img"` (onde entra, tipo esperado, função comercial, objeção removida e classificação), mantendo a regra como exigência estrutural validável além da instrução de prompt.
+
+- 2026-05-12 21:22:00 UTC-3 — Refinado o contrato do `landing-page-wireframe` para deixar explícito que `briefingVisual` é campo exclusivo de elementos `img`: obrigatório quando `tag="img"` e proibido para outras tags (validação `if/then/else` no schema + reforço no prompt).

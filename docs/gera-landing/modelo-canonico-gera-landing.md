@@ -189,7 +189,9 @@ Se chamadas auxiliares falharem, defaults vazios são usados para manter robuste
 - Regras:
   - detecta referência circular em `{prompt-*}` e lança erro;
   - valor ausente vira string vazia;
-  - objetos viram JSON pretty.
+  - objetos viram JSON pretty;
+  - na etapa `landing-page-wireframe`, o foco é estrutura de venda para o público-alvo com coleta de informação para envio de amostra/prova do produto;
+  - na etapa `landing-page-wireframe`, nenhum elemento recebe copy final: `texto.conteudo` deve permanecer vazio (`""`) em toda a árvore de elementos.
 
 Prompt final é encapsulado em:
 

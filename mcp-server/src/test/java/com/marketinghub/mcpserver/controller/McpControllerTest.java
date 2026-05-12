@@ -48,6 +48,7 @@ class McpControllerTest {
         registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
         registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
         registry.add("mcp.logs.mois-hotmart-path", () -> TEST_LOG_DIR.resolve("mois-hotmart.log").toString());
+        registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.meta.enabled", () -> "false");
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
@@ -188,7 +189,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, oprm-coletor-receita"));
     }
 
     @Test
@@ -269,6 +270,7 @@ class McpControllerApiKeyEnabledTest {
         registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
         registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
         registry.add("mcp.logs.mois-hotmart-path", () -> TEST_LOG_DIR.resolve("mois-hotmart.log").toString());
+        registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.meta.enabled", () -> "false");
         registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");

@@ -27,17 +27,15 @@ public class CopyProvisionalHtmlAssembler {
             CopyProvisionalHtmlPayloadResolver.CopyProvisionalHtmlPayload payload =
                     payloadResolver.resolve(copyModelResponse, wireframeModelResponse);
 
-            WireframeHtmlGenerator generator = new WireframeHtmlGenerator();
-            String html = generator.generateFromJson(payloadResolverToJson(payload));
-            html = processor.process(html, payload.copy());
+            String html = processor.process(payloadResolverToJson(payload.wireframe()), payloadResolverToJson(payload.copy()));
             return appendJobIdCommentBeforeHead(html, jobId);
         } catch (Exception e) {
-            return null;
+            throw new IllegalArgumentException("Falha ao montar HTML provisório a partir de wireframe + copy", e);
         }
     }
 
-    private String payloadResolverToJson(CopyProvisionalHtmlPayloadResolver.CopyProvisionalHtmlPayload payload) throws Exception {
-        return objectMapper.writeValueAsString(payload.wireframe());
+    private String payloadResolverToJson(Object payload) throws Exception {
+        return objectMapper.writeValueAsString(payload);
     }
 
     private String appendJobIdCommentBeforeHead(String html, String jobId) {

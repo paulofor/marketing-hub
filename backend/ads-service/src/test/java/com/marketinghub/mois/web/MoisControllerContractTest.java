@@ -6,6 +6,7 @@ import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
 import com.marketinghub.mois.dto.MoisCollectionPersistenceDtos;
 import com.marketinghub.mois.service.MoisCollectionPersistenceService;
+import com.marketinghub.mois.service.MoisHotmartProductService;
 import com.marketinghub.mois.service.MoisModuleGateway;
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +42,9 @@ class MoisControllerContractTest {
 
     @MockBean
     private MoisCollectionPersistenceService collectionPersistenceService;
+
+    @MockBean
+    private MoisHotmartProductService moisHotmartProductService;
 
     @Test
     void shouldAcceptDiscoveryRequest() throws Exception {

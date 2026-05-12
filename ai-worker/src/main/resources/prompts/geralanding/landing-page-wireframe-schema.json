@@ -254,6 +254,46 @@
           "items": {
             "$ref": "#/$defs/elementoSecao"
           }
+        },
+        "briefingVisual": {
+          "type": "object",
+          "description": "Campo exclusivo para elementos de imagem (`tag = img`). Não usar em outras tags.",
+          "additionalProperties": false,
+          "properties": {
+            "ondeEntraNoVisual": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tipoVisualEsperado": {
+              "type": "string",
+              "minLength": 1
+            },
+            "funcaoComercial": {
+              "type": "string",
+              "minLength": 1
+            },
+            "objecaoQueRemove": {
+              "type": "string",
+              "minLength": 1
+            },
+            "classificacaoVisual": {
+              "type": "string",
+              "enum": [
+                "mockup",
+                "foto",
+                "ilustração",
+                "diagrama",
+                "print conceitual"
+              ]
+            }
+          },
+          "required": [
+            "ondeEntraNoVisual",
+            "tipoVisualEsperado",
+            "funcaoComercial",
+            "objecaoQueRemove",
+            "classificacaoVisual"
+          ]
         }
       },
       "required": [
@@ -262,6 +302,32 @@
         "texto",
         "estilos",
         "elementosInternos"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "const": "img"
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "required": [
+              "briefingVisual"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "briefingVisual"
+              ]
+            }
+          }
+        }
       ]
     }
   }

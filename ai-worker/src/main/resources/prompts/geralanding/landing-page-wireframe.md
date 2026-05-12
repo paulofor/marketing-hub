@@ -52,6 +52,13 @@ Regras fixas da etapa (formato simplificado):
 - Cada item de `estilos[]` deve ter apenas `nome` e `valor`.
 - Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto[]`, `id`, `estilos[]`, `elementosSeccao[]`.
 - Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
+- Quando `tag = "img"`, o elemento deve conter também `briefingVisual` com:
+  - `ondeEntraNoVisual`;
+  - `tipoVisualEsperado`;
+  - `funcaoComercial`;
+  - `objecaoQueRemove`;
+  - `classificacaoVisual` em: `mockup`, `foto`, `ilustração`, `diagrama`, `print conceitual`.
+- `briefingVisual` é exclusivo de `img`: não declarar este campo em elementos com outras tags.
 - `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
 - `elementosInternos` pode ser lista vazia, mas sempre deve existir.
@@ -62,6 +69,30 @@ Regras fixas da etapa (formato simplificado):
 - Objetivo comercial obrigatório: estruturar a página para venda com foco na coleta de informação para envio de amostra/prova do produto (ex.: formulário/CTA de captura).
 - Fase wireframe NÃO preenche copy: em TODOS os elementos, `texto.conteudo` deve ser string vazia (`""`) nesta etapa.
 - Para tags de lista (`ul`), sempre declarar os `li` internos explicitamente.
+- Formulário obrigatório da landing: incluir seção/formulário de captura contendo somente os campos `nome` e `email` (não incluir telefone, WhatsApp, CPF, empresa ou outros campos).
+- Hero obrigatório com âncora primária: na primeira dobra (hero), incluir CTA com link âncora direto para a seção do formulário.
+- Âncoras obrigatórias adicionais: incluir mais duas âncoras internas para pontos estratégicos distintos da página (ex.: mecanismo, prova social, oferta), além da âncora do hero para o formulário.
+- Balanceamento visual obrigatório: intercalar blocos de texto e imagem ao longo da página, inserindo elementos `img` em seções relevantes para reduzir paredes de texto e melhorar escaneabilidade.
+- Imagem de produto obrigatória: garantir que pelo menos uma `img` represente visualmente a ideia do produto/entrega que o cliente está comprando (ex.: mockup da solução, amostra do conteúdo, kit/resultado final esperado).
+- Para cada visual (`img`) planejado no wireframe, explicitar no `objetivo`/metadados da seção:
+  - onde o visual entra na narrativa da página (posição e contexto comercial);
+  - qual tipo de visual é esperado;
+  - qual função comercial o visual cumpre;
+  - qual objeção o visual ajuda a remover;
+  - classificar o visual como: `mockup`, `foto`, `ilustração`, `diagrama` ou `print conceitual`.
+- Heurística prática de composição (usar como inspiração, NÃO como regra rígida; adapte ao contexto do nicho/oferta):
+  - Hero bullets: preferir ~3 itens.
+  - Lista de entregáveis: preferir entre 3 e 5 itens.
+  - Antes/depois: preferir 3 itens de "antes" e 3 itens de "depois".
+  - Como funciona: preferir 3 passos.
+  - FAQ: preferir entre 4 e 6 perguntas.
+  - Formulário inicial: em cenários gerais, pode variar entre 3 e 4 campos; quando houver diretriz explícita desta execução, ela prevalece.
+- Heurística para listas longas no mobile (inspiração contextual, não regra absoluta):
+  - Evitar listas grandes no início da página.
+  - Evitar mais de 5 itens visíveis por bloco quando a pessoa ainda não entendeu a oferta.
+  - Evitar misturar no mesmo bloco: benefícios, recursos e explicações extensas.
+  - Evitar estruturas que aumentem sensação de esforço, prejudiquem foco no CTA ou alonguem demais o mobile sem avanço de persuasão.
+  - Listas grandes podem ser aceitáveis quando estiverem em FAQ recolhido, quebradas em cards, com hierarquia clara, posicionadas após entendimento da oferta ou quando necessárias para provar entrega concreta (ex.: mini-kit com 5 itens).
 
 - Ajuste de intenção por seção (referência do esboço):
   - `papelComercial`: descreva a função comercial da seção no funil da landing (ex.: primeira dobra de conversão, remoção de risco, fechamento).
@@ -80,6 +111,8 @@ Campos obrigatórios:
 - pagina.corpo.estilos[] com nome, valor
 - pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, papelComercial, fasePersuasao, objeçãoQueRemove, prioridadeConversao, acaoEsperada, fonteContexto, id, estilos, elementosSeccao
 - pagina.corpo.secoes[].elementosSeccao[] com id, tag, texto, estilos, elementosInternos
+- Para `tag = "img"`, `pagina.corpo.secoes[].elementosSeccao[].briefingVisual` é obrigatório no contrato.
+- Para tags diferentes de `img`, `briefingVisual` não deve existir no JSON.
 - pagina.corpo.secoes[].elementosSeccao[].texto com tamMaximo, tamMinimo, conteudo
 - Em wireframe, `conteudo` deve ser sempre `""` (sem texto final).
 

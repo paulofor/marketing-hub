@@ -76,8 +76,9 @@ class WireframeHtmlGeneratorTest {
                       "id": "s1-hero",
                       "estilos": [{"nome":"padding","valor":"20px"}],
                       "elementosSeccao": [
-                        {"id":"el-1","tag":"h1","texto":{"conteudo":""},"estilos":[]},
-                        {"id":"el-2","tag":"p","texto":{"conteudo":"Texto real"},"estilos":[]}
+                        {"id":"el-1","tag":"h1","texto":{"conteudo":""},"estilos":[],"elementosInternos":[]},
+                        {"id":"el-2","tag":"p","texto":{"conteudo":"Texto real"},"estilos":[],"elementosInternos":[]},
+                        {"id":"img-1","tag":"img","texto":{"conteudo":""},"estilos":[{"nome":"width","valor":"320px"},{"nome":"height","valor":"180px"}],"elementosInternos":[]}
                       ]
                     }
                   ]
@@ -91,8 +92,10 @@ class WireframeHtmlGeneratorTest {
 
         assertNotNull(html);
         assertTrue(html.contains("<section id=\"s1-hero\""));
-        assertTrue(html.contains("<h1 id=\"el-1\">Lorem ipsum dolor sit amet."));
+        assertTrue(html.contains("<h1 id=\"el-1\"></h1>"));
         assertTrue(html.contains("<p id=\"el-2\">Texto real</p>"));
         assertTrue(html.contains("body{max-width:680px;}"));
+        assertTrue(html.contains("background:#ffffff;color:#111111"));
+        assertTrue(html.contains("Imagem 320px x 180px"));
     }
 }

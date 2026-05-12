@@ -13,3 +13,5 @@
 - 2026-05-12 14:40:00 UTC-3 — Atualizado o montador de HTML provisório da etapa landing-page-wireframe para suportar o novo payload com raiz `pagina`/`corpo`/`secoes`/`elementosSeccao`, renderização recursiva de elementos e fallback em Lorem Ipsum quando `texto.conteudo` vier vazio.
 
 - 2026-05-12 15:05:00 UTC-3 — Atualizada a etapa Gera Wireframe para reforçar objetivo comercial de venda com captura de dados para envio de amostra/prova, e bloqueado preenchimento de copy nesta fase (`texto.conteudo` obrigatório como string vazia no prompt e no schema).
+
+- 2026-05-12 18:05:00 UTC-3 — Ajustado o montador HTML do wireframe para alternar fundo de seção em duas cores (claro/escuro) no payload `pagina/corpo/secoes` e para representar imagens (`img`) com placeholder visual exibindo dimensões definidas no wireframe.

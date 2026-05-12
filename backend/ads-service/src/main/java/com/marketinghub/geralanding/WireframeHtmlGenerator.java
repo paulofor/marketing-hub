@@ -77,14 +77,21 @@ public class WireframeHtmlGenerator {
                 .append("<style>\n").append(baseCss());
             html.append("\nbody{").append(renderInlineStyle(asList(corpo.get("estilos")))).append("}\n");
             html.append("</style>\n</head>\n<body>\n");
+            int sectionIndex = 0;
             for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
-                html.append(renderElement(secao, "elementosSeccao", "section"));
+                html.append(renderSection(secao, sectionIndex++));
             }
             html.append("</body>\n</html>\n");
             return html.toString();
         } catch (Exception e) {
             throw new IllegalArgumentException("Falha ao renderizar novo JSON de wireframe", e);
         }
+    }
+
+
+    private String renderSection(Map<String, Object> secao, int sectionIndex) {
+        String sectionHtml = renderElement(secao, "elementosSeccao", "section");
+        return applySectionPreviewColor(sectionHtml, sectionIndex);
     }
 
     private String renderElement(Map<String, Object> node, String childKey, String defaultTag) {
@@ -108,9 +115,38 @@ public class WireframeHtmlGenerator {
     }
 
     private String resolveText(Map<String, Object> node) {
+        String tag = asText(node.get("tag"), "").trim().toLowerCase();
+        if ("img".equals(tag)) {
+            return buildImagePlaceholder(node);
+        }
+
         Map<String, Object> texto = asMap(node.get("texto"));
         String content = asText(texto.get("conteudo"), "").trim();
-        return escapeHtmlText(StringUtils.hasText(content) ? content : "Lorem ipsum dolor sit amet.");
+        return escapeHtmlText(StringUtils.hasText(content) ? content : "");
+    }
+
+    private String buildImagePlaceholder(Map<String, Object> node) {
+        String style = renderInlineStyle(asList(node.get("estilos")));
+        String width = extractCssValue(style, "width", "100%");
+        String height = extractCssValue(style, "height", "180px");
+        String label = "Imagem " + width + " x " + height;
+
+        return "<div style=\"display:flex;align-items:center;justify-content:center;border:2px dashed #94a3b8;background:#e2e8f0;color:#334155;font-size:12px;width:"
+            + escapeHtmlAttribute(width)
+            + ";height:"
+            + escapeHtmlAttribute(height)
+            + ";max-width:100%;\">"
+            + escapeHtmlText(label)
+            + "</div>";
+    }
+
+    private String extractCssValue(String style, String property, String fallback) {
+        Pattern pattern = Pattern.compile("(?:^|;)\\s*" + Pattern.quote(property) + "\\s*:\s*([^;]+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(style == null ? "" : style);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+        return fallback;
     }
 
     private String renderInlineStyle(List<Map<String, Object>> estilos) {

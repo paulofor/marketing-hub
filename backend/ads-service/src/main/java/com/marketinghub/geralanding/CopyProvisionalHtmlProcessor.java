@@ -48,6 +48,10 @@ public class CopyProvisionalHtmlProcessor {
 
     private String applyCopyByItemId(String baseHtml, Map<String, String> copyByItemId) {
         Document document = Jsoup.parse(baseHtml, "", Parser.htmlParser());
+        document.outputSettings()
+                .prettyPrint(false)
+                .charset("utf-8")
+                .syntax(Document.OutputSettings.Syntax.html);
         for (Map.Entry<String, String> entry : copyByItemId.entrySet()) {
             Element element = document.getElementById(entry.getKey());
             if (element != null && StringUtils.hasText(entry.getValue())) {
@@ -60,7 +64,14 @@ public class CopyProvisionalHtmlProcessor {
             document.title(title);
         }
 
-        return document.outerHtml();
+        return normalizeSerializedHtml(document.outerHtml());
+    }
+
+    private String normalizeSerializedHtml(String html) {
+        return html
+                .replace("/*<![CDATA[*/", "")
+                .replace("/*]]>*/", "")
+                .replace(" />", "/>");
     }
 
     private Map<String, Object> parseJson(String json) {
@@ -79,6 +90,7 @@ public class CopyProvisionalHtmlProcessor {
         }
 
         List<String> sectionBlocks = new ArrayList<>();
+        List<String> cssBlocks = new ArrayList<>();
         for (Object section : sections) {
             if (!(section instanceof Map<?, ?> sectionMap)) {
                 continue;
@@ -87,15 +99,50 @@ public class CopyProvisionalHtmlProcessor {
             if (StringUtils.hasText(uiTags)) {
                 sectionBlocks.add(uiTags.trim());
             }
+            String uiSizes = asString(sectionMap.get("uiSizes"));
+            if (StringUtils.hasText(uiSizes)) {
+                cssBlocks.add(uiSizes.trim());
+            }
         }
 
         if (sectionBlocks.isEmpty()) {
             throw new IllegalArgumentException("Wireframe sem uiTags para montar HTML base");
         }
 
-        return "<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Landing Provisória</title></head><body>"
+        return "<!DOCTYPE html>\n\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\"/>\n<meta content=\"width=device-width, initial-scale=1\" name=\"viewport\"/>\n<title>Landing Provisória</title>\n<style>\n"
+                + "* { box-sizing: border-box; }\n"
+                + "html { scroll-behavior: smooth; }\n"
+                + "body { font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; color: #111827; background: #ffffff; line-height: 1.5; }\n"
+                + "img { display: block; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 12px; object-fit: cover; }\n"
+                + "button, a[id$=\"-cta\"] { cursor: pointer; }\n"
+                + "label { font-weight: 600; }\n"
+                + "input, select, textarea, button { font: inherit; }\n"
+                + "button { border: 0; border-radius: 10px; padding: 0 16px; font-weight: 700; }\n"
+                + "a { color: inherit; }\n\n"
+                + String.join("\n", cssBlocks)
+                + "\n  </style>\n</head>\n<body" + buildBodyAttributes(wireframe) + ">"
                 + String.join("\n", sectionBlocks)
-                + "</body></html>";
+                + "\n</body>\n</html>";
+    }
+
+    @SuppressWarnings("unchecked")
+    private String buildBodyAttributes(Map<String, Object> wireframe) {
+        Object rawBodyAttrs = wireframe.get("bodyAttributes");
+        if (!(rawBodyAttrs instanceof List<?> attributes)) {
+            return "";
+        }
+        StringBuilder out = new StringBuilder();
+        for (Object attribute : attributes) {
+            if (!(attribute instanceof Map<?, ?> attrMap)) {
+                continue;
+            }
+            String name = asString(attrMap.get("attribute"));
+            String value = asString(attrMap.get("value"));
+            if (StringUtils.hasText(name) && StringUtils.hasText(value)) {
+                out.append(' ').append(name.trim()).append("=\"").append(value.trim()).append("\"");
+            }
+        }
+        return out.toString();
     }
 
     @SuppressWarnings("unchecked")

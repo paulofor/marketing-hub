@@ -52,6 +52,12 @@ Regras fixas da etapa (formato simplificado):
 - Cada item de `estilos[]` deve ter apenas `nome` e `valor`.
 - Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto[]`, `id`, `estilos[]`, `elementosSeccao[]`.
 - Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
+- Quando `tag = "img"`, o elemento deve conter também `briefingVisual` com:
+  - `ondeEntraNoVisual`;
+  - `tipoVisualEsperado`;
+  - `funcaoComercial`;
+  - `objecaoQueRemove`;
+  - `classificacaoVisual` em: `mockup`, `foto`, `ilustração`, `diagrama`, `print conceitual`.
 - `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
 - `elementosInternos` pode ser lista vazia, mas sempre deve existir.
@@ -104,6 +110,7 @@ Campos obrigatórios:
 - pagina.corpo.estilos[] com nome, valor
 - pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, papelComercial, fasePersuasao, objeçãoQueRemove, prioridadeConversao, acaoEsperada, fonteContexto, id, estilos, elementosSeccao
 - pagina.corpo.secoes[].elementosSeccao[] com id, tag, texto, estilos, elementosInternos
+- Para `tag = "img"`, `pagina.corpo.secoes[].elementosSeccao[].briefingVisual` é obrigatório no contrato.
 - pagina.corpo.secoes[].elementosSeccao[].texto com tamMaximo, tamMinimo, conteudo
 - Em wireframe, `conteudo` deve ser sempre `""` (sem texto final).
 

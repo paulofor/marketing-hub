@@ -108,6 +108,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/mois", label: "MOIS", icon: Workflow },
       { to: "/oprm", label: "OPRM", icon: Workflow },
       { to: "/mds", label: "MDS", icon: Microscope },
+      { to: "/hotmart", label: "Hotmart", icon: Workflow },
     ],
   },
   {

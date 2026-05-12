@@ -50,7 +50,7 @@ Regras fixas da etapa (formato simplificado):
 - Entregar somente JSON válido no formato raiz `pagina`.
 - Estrutura obrigatória: `pagina.head.texto`, `pagina.corpo.estilos[]`, `pagina.corpo.secoes[]`.
 - Cada item de `estilos[]` deve ter apenas `nome` e `valor`.
-- Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `id`, `estilos[]`, `elementosSeccao[]`.
+- Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto[]`, `id`, `estilos[]`, `elementosSeccao[]`.
 - Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
 - `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
@@ -63,6 +63,14 @@ Regras fixas da etapa (formato simplificado):
 - Fase wireframe NÃO preenche copy: em TODOS os elementos, `texto.conteudo` deve ser string vazia (`""`) nesta etapa.
 - Para tags de lista (`ul`), sempre declarar os `li` internos explicitamente.
 
+- Ajuste de intenção por seção (referência do esboço):
+  - `papelComercial`: descreva a função comercial da seção no funil da landing (ex.: primeira dobra de conversão, remoção de risco, fechamento).
+  - `fasePersuasao`: explicite a fase predominante (ex.: dor-promessa-prova-acao).
+  - `objeçãoQueRemove`: declare a principal objeção que a seção resolve.
+  - `prioridadeConversao`: inteiro de 1 a 10 (10 = mais crítico para conversão).
+  - `acaoEsperada`: qual ação concreta o usuário deve tomar após consumir a seção.
+  - `fonteContexto[]`: liste de onde a seção foi derivada (ex.: `PAIN_JSON.surface`, `campaignAngle.primaryPromise`).
+
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato `landingPageWireframe` simplificado.
 
@@ -70,7 +78,7 @@ Campos obrigatórios:
 - pagina
 - pagina.head.texto
 - pagina.corpo.estilos[] com nome, valor
-- pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, id, estilos, elementosSeccao
+- pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, papelComercial, fasePersuasao, objeçãoQueRemove, prioridadeConversao, acaoEsperada, fonteContexto, id, estilos, elementosSeccao
 - pagina.corpo.secoes[].elementosSeccao[] com id, tag, texto, estilos, elementosInternos
 - pagina.corpo.secoes[].elementosSeccao[].texto com tamMaximo, tamMinimo, conteudo
 - Em wireframe, `conteudo` deve ser sempre `""` (sem texto final).

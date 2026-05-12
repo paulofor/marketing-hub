@@ -216,7 +216,8 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.tools[7].name").value("meta_graph_debug_token"))
                 .andExpect(jsonPath("$.result.tools[8].name").value("github_actions_list_workflows"))
                 .andExpect(jsonPath("$.result.tools[9].name").value("github_actions_list_runs"))
-                .andExpect(jsonPath("$.result.tools[10].name").value("github_actions_get_run_summary"));
+                .andExpect(jsonPath("$.result.tools[10].name").value("github_actions_get_run_summary"))
+                .andExpect(jsonPath("$.result.tools[11].name").value("github_actions_get_run_logs"));
     }
 
 
@@ -225,7 +226,7 @@ class McpControllerTest {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"jsonrpc":"2.0","id":14,"method":"tools/call","params":{"name":"github_actions_get_run_summary","arguments":{"run_id":123}}}
+                                {"jsonrpc":"2.0","id":14,"method":"tools/call","params":{"name":"github_actions_get_run_logs","arguments":{"run_id":123}}}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))

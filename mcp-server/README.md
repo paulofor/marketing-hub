@@ -24,6 +24,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_list_workflows`: lista workflows do repositório configurado no GitHub Actions.
 - `github_actions_list_runs`: lista execuções (runs) de workflows do repositório configurado no GitHub Actions.
 - `github_actions_get_run_summary`: verifica se uma execução terminou com sucesso e detalha jobs/steps com falha.
+- `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
 
 ## Executar localmente
 

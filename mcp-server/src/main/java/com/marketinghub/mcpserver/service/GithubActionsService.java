@@ -14,10 +14,13 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Service
 public class GithubActionsService {
@@ -96,6 +99,56 @@ public class GithubActionsService {
                 : Map.of();
 
         return buildSummary(runId, runPayload, jobsPayload, runUri.toString(), jobsUri.toString());
+    }
+
+    public Map<String, Object> getRunLogs(Long runId) {
+        ensureEnabled();
+        if (runId == null || runId <= 0) {
+            throw new IllegalArgumentException("run_id must be a positive integer");
+        }
+
+        URI logsUri = UriComponentsBuilder.fromHttpUrl(properties.github().apiBaseUrl())
+                .pathSegment("repos", properties.github().owner(), properties.github().repo(), "actions", "runs",
+                        String.valueOf(runId), "logs")
+                .build(true)
+                .toUri();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(requiredText(properties.github().token(), "mcp.github.token"));
+        headers.set("Accept", "application/vnd.github+json");
+        headers.set("X-GitHub-Api-Version", "2022-11-28");
+
+        ResponseEntity<byte[]> response = restTemplate.exchange(logsUri, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
+        byte[] body = response.getBody() == null ? new byte[0] : response.getBody();
+
+        String logs = extractZipText(body);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("run_id", runId);
+        result.put("logs_api_url", logsUri.toString());
+        result.put("statusCode", response.getStatusCode().value());
+        result.put("log_excerpt", logs.length() > 12000 ? logs.substring(0, 12000) : logs);
+        result.put("truncated", logs.length() > 12000);
+        result.put("log_length", logs.length());
+        return result;
+    }
+
+    private String extractZipText(byte[] zippedContent) {
+        try (ZipInputStream zipInputStream = new ZipInputStream(new java.io.ByteArrayInputStream(zippedContent), StandardCharsets.UTF_8)) {
+            StringBuilder logs = new StringBuilder();
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                byte[] content = zipInputStream.readAllBytes();
+                logs.append("===== ").append(entry.getName()).append(" =====\n");
+                logs.append(new String(content, StandardCharsets.UTF_8)).append("\n");
+            }
+            return logs.toString().trim();
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("failed to unzip workflow logs: " + ex.getMessage());
+        }
     }
 
     @SuppressWarnings("unchecked")

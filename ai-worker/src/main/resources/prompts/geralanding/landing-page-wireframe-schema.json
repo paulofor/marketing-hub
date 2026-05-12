@@ -138,6 +138,8 @@
                         },
                         "elementosInternos": {
                           "type": "array",
+                          "description": "Lista recursiva de elementos internos com a mesma estrutura do elemento pai.",
+                          "minItems": 0,
                           "items": {
                             "$ref": "#/properties/pagina/properties/corpo/properties/secoes/items/properties/elementosSeccao/items"
                           }

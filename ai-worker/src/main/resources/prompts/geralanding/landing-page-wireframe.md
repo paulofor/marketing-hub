@@ -52,6 +52,7 @@ Regras fixas da etapa (formato simplificado):
 - Cada item de `estilos[]` deve ter apenas `nome` e `valor`.
 - Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `id`, `estilos[]`, `elementosSeccao[]`.
 - Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
+- `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
 - `elementosInternos` pode ser lista vazia, mas sempre deve existir.
 - Não invente campos fora do schema.

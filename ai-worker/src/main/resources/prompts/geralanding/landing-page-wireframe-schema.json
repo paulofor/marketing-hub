@@ -186,7 +186,9 @@
           "minimum": 1
         },
         "conteudo": {
-          "type": "string"
+          "type": "string",
+          "maxLength": 0,
+          "description": "No wireframe não deve haver copy final; manter string vazia nesta fase."
         }
       },
       "required": [

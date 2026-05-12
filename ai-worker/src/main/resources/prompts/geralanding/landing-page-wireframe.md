@@ -59,6 +59,8 @@ Regras fixas da etapa (formato simplificado):
 - Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
 - Evite JSON dentro de strings; mantenha cada informação no seu campo próprio.
 - Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
+- Objetivo comercial obrigatório: estruturar a página para venda com foco na coleta de informação para envio de amostra/prova do produto (ex.: formulário/CTA de captura).
+- Fase wireframe NÃO preenche copy: em TODOS os elementos, `texto.conteudo` deve ser string vazia (`""`) nesta etapa.
 - Para tags de lista (`ul`), sempre declarar os `li` internos explicitamente.
 
 OUTPUT_CONTRACT
@@ -71,6 +73,7 @@ Campos obrigatórios:
 - pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, id, estilos, elementosSeccao
 - pagina.corpo.secoes[].elementosSeccao[] com id, tag, texto, estilos, elementosInternos
 - pagina.corpo.secoes[].elementosSeccao[].texto com tamMaximo, tamMinimo, conteudo
+- Em wireframe, `conteudo` deve ser sempre `""` (sem texto final).
 
 Formato de resposta:
 - Precisamos da resposta em Json-Schema.

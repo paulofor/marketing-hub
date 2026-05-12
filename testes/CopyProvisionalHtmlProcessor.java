@@ -33,6 +33,20 @@ public class CopyProvisionalHtmlProcessor {
         String baseHtml = buildHtmlFromWireframe(wireframe);
         Map<String, String> copyByItemId = collectCopyByItemId(copy);
 
+        return applyCopyByItemId(baseHtml, copyByItemId);
+    }
+
+    public String process(String html, Map<String, Object> copyJson) {
+        if (!StringUtils.hasText(html)) {
+            throw new IllegalArgumentException("HTML provisório ausente para aplicar a copy");
+        }
+        if (copyJson == null || copyJson.isEmpty()) {
+            throw new IllegalArgumentException("Copy da etapa Gera Copy ausente");
+        }
+        return applyCopyByItemId(html, collectCopyByItemId(copyJson));
+    }
+
+    private String applyCopyByItemId(String baseHtml, Map<String, String> copyByItemId) {
         Document document = Jsoup.parse(baseHtml, "", Parser.htmlParser());
         for (Map.Entry<String, String> entry : copyByItemId.entrySet()) {
             Element element = document.getElementById(entry.getKey());

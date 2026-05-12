@@ -24,8 +24,8 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 2. Convenções de engenharia
 
-- **Regra Número 1** : Sempre que tiver algum problema não tentar resolver consequencias. Buscar SEMPRE resolver a causa-raiz.
-- **Regra Número 2** : O objetivo principal do sistema é gerar vendas.
+- **Regra Número 1** : O objetivo principal do sistema é gerar vendas.
+- **Regra Número 2** : Sempre que tiver algum problema não tentar resolver consequencias. Buscar SEMPRE resolver a causa-raiz.
 - **Servidor MCP** : Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC. Quando precisar analisar casos específicos acesse o banco de dados usando esse servidor.
 - **Tecnologias padrão**: Java 21 + Spring Boot 3, React 18 + Vite + TypeScript, Zustand para state, TanStack Query para dados. Formatação: Spotless (backend) e Prettier (frontend).
 - **Banco**: MySQL 5.7. Somente o backend acessa o banco; demais módulos conversam via APIs do backend. Prefira filtros no SQL ao invés de pós-processar em memória.
@@ -40,7 +40,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Testes Unitários**: os testes unitários precisam sempre estar em concordancia com as regras dos documentos canonicos.
 - **Regra Geral (cânone x testes)**: sempre que houver alteração de regra em documento canônico, revisar e atualizar os testes unitários relacionados para manter aderência entre documentação, regras de domínio e validações automatizadas.
 - **Telas do Usuario**: as telas de usuario, ou frontend precisam sempre estar dando as informações mais importantes e precisas para  o usuario e ofereçendo so comandos necessários para o direcionamento dos fluxo de processos mantidos pelo sistema. Evite informações contraditórias, em excesso e desorganizadas. Mantenha sempre a conformidade com os documentos canonicos.
-- **Gera Landing** : se estiver fazendo trabalho relacionado ao pacote geralanding registre sempre o trabalho em : /docs/gera-landing/registros1.md
+- **Gera Landing** : se estiver fazendo trabalho relacionado ao pacote geralanding registre sempre o trabalho em : /docs/gera-landing/registros3.md
 
 ## 3. Orientações Práticas:
 

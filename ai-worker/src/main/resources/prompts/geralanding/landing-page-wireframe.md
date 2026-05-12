@@ -43,90 +43,34 @@ Briefing das Imagens dos Anuncios:
 
 
 template_id: landing-wireframe
-template_version: v1
+template_version: v2
 artifact_target: landingPageWireframe
 
-Modelo conceitual interno obrigatório (não expor no output final):
-- `entryAsset`
-- `coreOffer`
-- `activationLayer`
-- `continuityLayer`
-- `proofDevice`
-
-Regras fixas da etapa:
-- `pageGoal` deve explicitar a ação principal esperada da página.
-- `variantLayoutId` deve ser um entre: form-first, proof-first, story-first.
-- `sectionOrder` deve mapear ordem, objetivo, dependências de message match e variação intencional de seção via `surfaceSpec` (âncora estrutural) + `uiNotes`.
-- Em uiTags você vai definir as tags html que vão compor a seção esccreve em html cada tag com seu id. Somente da seção atual.
-- Quando definir um elemento `<ul>` em `uiTags`, nunca use placeholder vazio nem atributo auxiliar (ex.: `<ul id='s1-bullets' data-li-count='2'></ul>`). Declare os `<li>` explicitamente dentro do `<ul>`, cada um com id próprio (ex.: `<ul id="s1-bullets"><li id="s1-bullets-1"></li><li id="s1-bullets-2"></li></ul>`).
-- Todos os elmentos mais externos devem manter a mesma distancia da margem esquerda para manter uma visualização esteticamente harmoniosa na pagina. 
-- Em uiSizes você vai definir o tamanho de cada tag ( uiTags ) definindo como fica a apresentação na tela use codificação css.
-- **Lista permitida (fechada) de atributos CSS em `uiSizes`**: use exclusivamente os atributos abaixo, sem criar sinônimos, atalhos extras ou propriedades fora da lista:
-  `position`, `top`, `right`, `bottom`, `left`, `z-index`, `display`, `float`, `clear`, `visibility`, `overflow`, `overflow-x`, `overflow-y`, `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`, `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`, `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`, `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`, `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `justify-items`, `place-items`, `place-content`, `transform`, `translate`, `scale`, `rotate`, `transform-origin`.
-- Em uiSizes, para cada `<img>` definido em `uiTags`, especifique obrigatoriamente largura, altura, proporção e comportamento responsivo (desktop/mobile), para manter a composição estaticamente atraente.
-- Em uiSizeTexts você vai definir para cada tag de texto de ( uiTags ) o tamanho do texto em caracteres: máximo e mínimo.
-- Defina obrigatoriamente `bodyAttributes[]` para declarar os atributos do elemento `<body>` (um item por atributo), sempre com `attribute`, `value` e `notes` explicando o objetivo do atributo no layout/conversão.
-- Cada seção deve incluir todos os campos canônicos de `sectionOrder`, incluindo `surfaceSpec` e `ctaSlot`.
-- Se houver CTA na seção, preencher `ctaSlot` com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta` e `notes`.
-- `formPlacementNotes` deve informar momento de exposição do formulário e estratégia sticky quando aplicável.
-- Não exija nem produza campos fora do schema canônico atual (ex.: `mediaSlot`, `compositionNotes`, `messageMatchSummary`, `backgroundColorStrategy`, `textImageBalanceNotes`).
-- `consistencyChecks` deve validar continuidade comercial e aderência estrutural sem exigir campos fora do canônico.
-- Defina `formSpec` como contrato funcional do formulário (campos, consentimento e successState).
+Regras fixas da etapa (formato simplificado):
+- Entregar somente JSON válido no formato raiz `pagina`.
+- Estrutura obrigatória: `pagina.head.texto`, `pagina.corpo.estilos[]`, `pagina.corpo.secoes[]`.
+- Cada item de `estilos[]` deve ter apenas `nome` e `valor`.
+- Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `id`, `estilos[]`, `elementosSeccao[]`.
+- Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
+- `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
+- Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
+- `elementosInternos` pode ser lista vazia, mas sempre deve existir.
+- Não invente campos fora do schema.
 - Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
-- Manter hero compacto e alta densidade útil acima da dobra no mobile.
-- Permitir respiros visuais entre blocos para legibilidade, porém evitar grandes áreas vazias; distribua conteúdo e elementos para não criar “buracos” extensos no layout (especialmente no mobile).
-- Reduzir distância entre promessa, prova, CTA e entendimento da oferta nas primeiras seções.
-- Mobile-first obrigatório (prioridade total): projetar cada seção primeiro para viewport entre 320px e 430px; desktop é adaptação posterior.
-- Em mobile, **proibir layout de duas colunas simultâneas para conteúdo principal** (texto + imagem lado a lado no mesmo nível). Empilhar sempre em coluna única, com ordem narrativa: promessa → explicação curta → prova/lista → CTA.
-- Cada seção deve nascer com sequência vertical explícita em `uiNotes` (ordem de leitura mobile), evitando alternância confusa esquerda/direita entre blocos consecutivos.
-- Limitar blocos de texto no mobile: no máximo 1 título + 1 parágrafo curto + 1 lista curta por seção (quando aplicável). Quebrar conteúdo longo em novas seções ao invés de condensar.
-- Para listas (`<ul>`), usar itens curtos e escaneáveis no mobile (frases objetivas), evitando listas extensas que empurrem o CTA para muito abaixo.
-- Toda seção com imagem deve definir em `uiSizes` comportamento mobile sem “vazios”: imagem com largura fluida (`width: 100%`), altura proporcional e alinhamento consistente com o bloco de texto da seção.
-- Em mobile, evitar espaços verticais excessivos: definir espaçamentos progressivos e compactos entre título, texto, lista, imagem e CTA, sem áreas mortas grandes entre seções.
-- Reforçar densidade de conversão no mobile: o primeiro CTA principal deve aparecer até o final da segunda seção e se repetir em pontos de prova/oferta sem quebrar fluidez.
-- Em `mobilePriorityScore`, seções críticas de conversão (hero, prova principal, oferta e CTA) devem receber prioridade alta e tratamento de layout compacto orientado a ação.
-- A seção de oferta deve acomodar `entryAsset` e `coreOffer` quando ambos existirem, sem assumir nomes fixos.
-- Se não houver distinção clara entre ativo inicial e oferta principal, projetar seção única coerente (sem forçar duas camadas artificiais).
-- Não usar nomenclaturas internas (`entryAsset`, `coreOffer` etc.) como rótulo visível do wireframe; usar linguagem comercial apropriada ao caso.
-- Preencher obrigatoriamente `readingFlowSpec`, `conversionPathSpec`, `proofPlan`, `trustSignalsSpec` e `accessibilitySpec` (ausência bloqueia aprovação no backend).
-- Em `readingFlowSpec`, garantir `maxParagraphLinesMobile <= 4` e `bulletDensityPerSection >= 3` (especialmente em argumento/prova).
-- Em `conversionPathSpec`, manter continuidade com CTA principal da copy (`primaryAction` + `ctaLabelCanonical`) e listar variações apenas em `ctaLabelVariantsAllowed`.
-- Em `proofPlan`, incluir pelo menos 2 tipos distintos de prova e mapear `proofSectionIds` apenas para seções existentes em `sectionOrder`.
-- Para evitar erro 422, monte `proofPlan.proofSectionIds` somente após finalizar `sectionOrder`: copie os `sectionId` literalmente de `sectionOrder` (sem renomear, traduzir, resumir ou inventar IDs).
-- Antes de responder, faça checklist final obrigatório: para cada item em `proofPlan.proofSectionIds`, confirme correspondência exata (match 1:1) com algum `sectionOrder[*].sectionId`; se não existir correspondência exata, corrija/remova o item.
-- Em `trustSignalsSpec`, para páginas com formulário: `brandIdentityRequired=true`, `privacyNoticeNearForm=true`, `privacyPolicyUrl` preenchida e `legalFooterItems` com empresa/contato/política.
-- Em `accessibilitySpec`, respeitar mínimos canônicos: `minTextContrast` >= 4.5:1, `minTouchTargetPx` >= 44 e `formFieldMinHeightPx` >= 44.
+- Evite JSON dentro de strings; mantenha cada informação no seu campo próprio.
+- Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
+- Para tags de lista (`ul`), sempre declarar os `li` internos explicitamente.
 
 OUTPUT_CONTRACT
-Responda em JSON válido e estritamente aderente ao artefato `landingPageWireframe`.
+Responda em JSON válido e estritamente aderente ao artefato `landingPageWireframe` simplificado.
 
-### Responsabilidade canônica de imagem nesta etapa
-
-- Defina no wireframe todos os itens estruturais de imagem por seção (ex.: `sectionId`, `imageBindingKey`, objetivo visual e restrições de composição/layout).
-- A página deve ser visualmente rica: planeje imagens em alta cobertura de seções, priorizando hero, dor, mecanismo, prova, oferta e CTA com contexto visual claro (evitar blocos longos sem apoio visual).
-- Cada seção com potencial de conversão deve explicitar imagem conectada ao eixo **Dor → Resultado** do nicho (mostrar problema real, transformação esperada e evidência prática da melhora).
-- Em cada objetivo visual, descreva a cena de forma concreta para refletir a dor principal do nicho e o resultado desejado (antes/depois, contraste de estado, ganho percebido, redução de esforço).
-- Variar o tipo de imagem entre seções (ex.: contexto da dor, demonstração de mecanismo, prova social/documental, visual da oferta) para evitar repetição e aumentar percepção de valor.
-- O estágio `landing-page-image-planning` **não pode redefinir** esses campos estruturais; ele apenas consome o que veio do wireframe e gera o prompt final para o modelo de imagem.
 Campos obrigatórios:
-- pageGoal
-- variantLayoutId
-- bodyAttributes[] com attribute, value, notes (lista obrigatória de atributos definidos para o `<body>`).
-- sectionOrder[] com sectionId, sectionName, objective, contentType, copySource, uiNotes, uiTags, uiSizes, messageMatchDependency, sectionDependsOn, mobilePriorityScore, dropOffRisk, surfaceSpec, ctaSlot
-- mobilePriorityNotes
-- ctaPlacementNotes
-- formPlacementNotes
-- readingFlowSpec
-- conversionPathSpec
-- proofPlan
-- trustSignalsSpec
-- accessibilitySpec
-- consistencyChecks[]
-- formSpec
-
-Observação canônica:
-- Em `surfaceSpec` do wireframe, trate `surfaceToken` + `notes` como núcleo obrigatório estrutural.
-- `style` e `contrastMode` são responsabilidade da etapa `landingPageDesignPreset.sectionPresets`.
+- pagina
+- pagina.head.texto
+- pagina.corpo.estilos[] com nome, valor
+- pagina.corpo.secoes[] com nome, objetivo, oQueQuerProvocarNoUsuario, id, estilos, elementosSeccao
+- pagina.corpo.secoes[].elementosSeccao[] com id, tag, texto, estilos, elementosInternos
+- pagina.corpo.secoes[].elementosSeccao[].texto com tamMaximo, tamMinimo, conteudo
 
 Formato de resposta:
 - Precisamos da resposta em Json-Schema.

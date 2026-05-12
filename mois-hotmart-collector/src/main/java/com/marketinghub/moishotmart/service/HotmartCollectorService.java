@@ -14,6 +14,10 @@ import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import java.time.Instant;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +42,8 @@ public class HotmartCollectorService {
     private final String hotmartUsername;
     private final String hotmartPassword;
     private final boolean logFullToken;
+    private final String backendBaseUrl;
+    private final String hotmartJwtSettingKey;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public HotmartCollectorService(
@@ -49,7 +55,9 @@ public class HotmartCollectorService {
             @Value("${collector.hotmart.password:}") String hotmartPassword,
             @Value("${collector.hotmart.username-fallback:}") String hotmartUsernameFallback,
             @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback,
-            @Value("${collector.hotmart.log-full-token:false}") boolean logFullToken
+            @Value("${collector.hotmart.log-full-token:false}") boolean logFullToken,
+            @Value("${collector.backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
+            @Value("${collector.hotmart.jwt-setting-key:hotmart_access_token_jwt}") String hotmartJwtSettingKey
     ) {
         this.headless = headless;
         this.chromiumExecutablePath = chromiumExecutablePath;
@@ -58,6 +66,8 @@ public class HotmartCollectorService {
         this.hotmartUsername = pickFirstNonBlank(hotmartUsername, hotmartUsernameFallback);
         this.hotmartPassword = pickFirstNonBlank(hotmartPassword, hotmartPasswordFallback);
         this.logFullToken = logFullToken;
+        this.backendBaseUrl = backendBaseUrl;
+        this.hotmartJwtSettingKey = hotmartJwtSettingKey;
     }
 
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
@@ -65,17 +75,17 @@ public class HotmartCollectorService {
 
         List<HotmartProductSnapshot> products = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
-        String message = "Coleta executada com Playwright em modo headless=" + headless + ".";
+        String message = "Coleta executada com token JWT da configuração geral.";
         boolean hasSessionCookie = hotmartSessionCookie != null && !hotmartSessionCookie.isBlank();
         boolean hasCredentials = hotmartUsername != null && !hotmartUsername.isBlank()
                 && hotmartPassword != null && !hotmartPassword.isBlank();
 
-        if (!hasSessionCookie && !hasCredentials) {
-            log.warn("Coleta Hotmart ignorada: autenticação ausente (sem cookie de sessão e sem credenciais).");
+        String hotmartAccessToken = fetchHotmartJwtFromGeneralSettings();
+        if (hotmartAccessToken.isBlank()) {
+            log.warn("Coleta Hotmart ignorada: token JWT não encontrado em configurações gerais.");
             return new HotmartCollectionResponse(
                     "COLLECTION_SKIPPED",
-                    "Autenticação Hotmart ausente. Configure collector.hotmart.session-cookie "
-                            + "ou collector.hotmart.username/password.",
+                    "Token JWT da Hotmart ausente. Configure a chave '" + hotmartJwtSettingKey + "' em /api/settings/{name}.",
                     products
             );
         }
@@ -88,8 +98,96 @@ public class HotmartCollectorService {
                 hasSessionCookie,
                 hasCredentials
         );
-        logPlaywrightRuntimeDiagnostics();
+        logTokenDiagnostics(hotmartAccessToken);
 
+        try (Playwright ignored = Playwright.create()) {
+            int apiCollected = collectProductsViaMarketApi(hotmartAccessToken, boundedMax, products);
+            log.info("Coleta API Hotmart finalizada. produtosColetadosViaApi={}", apiCollected);
+            status = "COLLECTION_EXECUTED";
+            message = "Coleta executada via API da Hotmart usando JWT salvo em configurações gerais.";
+        } catch (Exception ex) {
+            status = "COLLECTION_ERROR";
+            message = "Falha na coleta API: " + ex.getMessage();
+            log.error("Erro na coleta Hotmart via API JWT.", ex);
+        }
+        return new HotmartCollectionResponse(status, message, products);
+    }
+
+    private String fetchHotmartJwtFromGeneralSettings() {
+        try {
+            String endpoint = backendBaseUrl + "/api/settings/" + hotmartJwtSettingKey;
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .GET()
+                    .header("accept", "application/json")
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Falha ao buscar JWT em configurações gerais. status={}, endpoint={}", response.statusCode(), endpoint);
+                return "";
+            }
+            JsonNode root = objectMapper.readTree(response.body());
+            return root.path("value").asText("");
+        } catch (Exception ex) {
+            log.warn("Erro ao buscar JWT da Hotmart em configurações gerais.", ex);
+            return "";
+        }
+    }
+
+    private int collectProductsViaMarketApi(String accessToken, int boundedMax, List<HotmartProductSnapshot> products) {
+        try {
+            String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                    "page", 1,
+                    "rows", boundedMax,
+                    "userLocale", "PT_BR",
+                    "name", "hottest"
+            ));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(HOTMART_MARKET_API_URL))
+                    .header("accept", "application/json, text/plain, */*")
+                    .header("content-type", "application/json")
+                    .header("authorization", "Bearer " + accessToken)
+                    .POST(HttpRequest.BodyPublishers.ofString(payload))
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            String body = response.body();
+            log.info("Resposta API Hotmart recebida. status={}, bodyPreview='{}'", response.statusCode(), truncateForLog(body, 1200));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return 0;
+            }
+            JsonNode data = objectMapper.readTree(body);
+            JsonNode productsNode = firstArray(data, "products", "items", "content", "results");
+            if (productsNode == null || !productsNode.isArray()) {
+                return 0;
+            }
+            for (JsonNode item : productsNode) {
+                if (products.size() >= boundedMax) break;
+                String title = firstText(item, "name", "productName", "title");
+                String url = firstText(item, "checkoutUrl", "productUrl", "url", "link");
+                if (url == null || url.isBlank()) url = hotmartMarketUrl;
+                products.add(new HotmartProductSnapshot(
+                        title == null || title.isBlank() ? "Produto sem título" : title,
+                        "N/A",
+                        "N/A",
+                        url,
+                        Instant.now()));
+            }
+            return products.size();
+        } catch (Exception ex) {
+            log.warn("Falha na coleta de produtos via API Hotmart.", ex);
+            return 0;
+        }
+    }
+
+    /* legacy Playwright flow kept below for rollback safety */
+    private HotmartCollectionResponse legacyCollect(HotmartCollectionRequest request) {
+        int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
+        List<HotmartProductSnapshot> products = new ArrayList<>();
+        String status = "COLLECTION_EXECUTED";
+        String message = "Coleta executada com Playwright em modo headless=" + headless + ".";
+        boolean hasSessionCookie = hotmartSessionCookie != null && !hotmartSessionCookie.isBlank();
+        boolean hasCredentials = hotmartUsername != null && !hotmartUsername.isBlank()
+                && hotmartPassword != null && !hotmartPassword.isBlank();
         try (Playwright playwright = Playwright.create()) {
             String browserPath = playwright.chromium().executablePath();
             List<String> launchArgs = List.of("--no-sandbox", "--disable-dev-shm-usage");

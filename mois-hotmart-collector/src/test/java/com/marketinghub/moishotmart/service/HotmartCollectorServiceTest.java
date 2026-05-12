@@ -18,7 +18,9 @@ class HotmartCollectorServiceTest {
                 "",
                 "",
                 "",
-                false
+                false,
+                "http://localhost:8000",
+                "hotmart_access_token_jwt"
         );
 
         var response = service.collect(new HotmartCollectionRequest("hotmart-market", 10));

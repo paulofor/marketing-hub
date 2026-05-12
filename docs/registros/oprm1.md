@@ -17,3 +17,5 @@
 - 2026-05-12 09:00:00 (UTC-3): reprogramado o agendamento padrão da busca/ingestão de CNAEs da Receita Federal no módulo `oprm-coletor-mei` para executar ao meio-dia (12:00) no fuso `America/Sao_Paulo` (`cron` padrão `0 0 12 * * *`), mantendo possibilidade de override por variável `OPRM_COLLECTOR_SCHEDULE_CRON`.
 
 - 2026-05-12 13:40:00 (UTC-3): habilitado endpoint Actuator de arquivo de log no módulo `oprm-coletor-mei` com exposição `logfile` e configuração de `logging.file.name` (default `/tmp/oprm-coletor-mei.log`) para permitir consulta operacional via URL `/actuator/logfile`.
+
+- 2026-05-12 19:30:00 (UTC-3): reprogramado novamente o agendamento padrão da ingestão de CNAEs da Receita Federal no módulo `oprm-coletor-mei` para executar às 19:30 no fuso `America/Sao_Paulo` (`cron` padrão `0 30 19 * * *`), mantendo override por `OPRM_COLLECTOR_SCHEDULE_CRON`.

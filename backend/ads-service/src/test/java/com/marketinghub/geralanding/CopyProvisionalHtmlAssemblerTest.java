@@ -22,7 +22,7 @@ class CopyProvisionalHtmlAssemblerTest {
                   "landingPageWireframe": {
                     "sectionOrder": [
                       {
-                        "uiTags": "<section><h1></h1><p></p><h2></h2><p></p></section>",
+                        "uiTags": "<section><h1 id=\\"s1-title\\"></h1><p id=\\"s1-subtitle\\"></p><h2 id=\\"s2-title\\"></h2><p id=\\"s2-subtitle\\"></p></section>",
                         "uiSizes": ""
                       }
                     ]
@@ -32,10 +32,13 @@ class CopyProvisionalHtmlAssemblerTest {
         String copy = """
                 {
                   "landingPageCopy": {
-                    "hero": {"headline": "Headline correta"},
-                    "bodySections": [
-                      {"sectionId": "mechanism", "summary": "Resumo correto", "copy": "Copy correta"},
-                      {"sectionId": "proof", "summary": "Prova correta"}
+                    "sections": [
+                      {"items": [
+                        {"id": "s1-title", "value": "Headline correta"},
+                        {"id": "s1-subtitle", "value": "Resumo correto"},
+                        {"id": "s2-title", "value": "Copy correta"},
+                        {"id": "s2-subtitle", "value": "Prova correta"}
+                      ]}
                     ]
                   }
                 }
@@ -44,9 +47,9 @@ class CopyProvisionalHtmlAssemblerTest {
         String html = assembler.assemble(copy, wireframe, "job-1");
 
         assertNotNull(html);
-        assertTrue(html.contains("<h1>Headline correta</h1>"));
-        assertTrue(html.contains("<p>Resumo correto</p>"));
-        assertTrue(html.contains("<h2>Copy correta</h2>"));
-        assertTrue(html.contains("<p>Prova correta</p>"));
+        assertTrue(html.contains("Headline correta"));
+        assertTrue(html.contains("Resumo correto"));
+        assertTrue(html.contains("Copy correta"));
+        assertTrue(html.contains("Prova correta"));
     }
 }

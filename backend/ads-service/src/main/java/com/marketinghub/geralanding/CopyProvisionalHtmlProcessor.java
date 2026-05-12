@@ -55,7 +55,7 @@ public class CopyProvisionalHtmlProcessor {
             }
         }
 
-        String title = firstNonBlank(copyByItemId.get("s1-title"), copyByItemId.get("s2-title"));
+        String title = firstNonBlank(copyByItemId.get("title"), copyByItemId.get("s1-title"), copyByItemId.get("s2-title"));
         if (StringUtils.hasText(title)) {
             document.title(title);
         }
@@ -101,7 +101,7 @@ public class CopyProvisionalHtmlProcessor {
     @SuppressWarnings("unchecked")
     private Map<String, String> collectCopyByItemId(Map<String, Object> copyJson) {
         Map<String, String> result = new LinkedHashMap<>();
-        Object rawSections = copyJson.get("bodySections");
+        Object rawSections = firstNonNull(copyJson.get("bodySections"), copyJson.get("sections"));
         if (!(rawSections instanceof List<?> sections)) {
             return result;
         }
@@ -110,7 +110,7 @@ public class CopyProvisionalHtmlProcessor {
             if (!(section instanceof Map<?, ?> sectionMap)) {
                 continue;
             }
-            Object rawItems = sectionMap.get("items");
+            Object rawItems = firstNonNull(sectionMap.get("items"), sectionMap.get("values"), sectionMap.get("fields"));
             if (!(rawItems instanceof List<?> items)) {
                 continue;
             }
@@ -118,8 +118,16 @@ public class CopyProvisionalHtmlProcessor {
                 if (!(item instanceof Map<?, ?> itemMap)) {
                     continue;
                 }
-                String id = asString(itemMap.get("item"));
-                String copy = asString(itemMap.get("copy"));
+                String id = firstNonBlank(
+                        asString(itemMap.get("item")),
+                        asString(itemMap.get("id")),
+                        asString(itemMap.get("tagId"))
+                );
+                String copy = firstNonBlank(
+                        asString(itemMap.get("copy")),
+                        asString(itemMap.get("value")),
+                        asString(itemMap.get("text"))
+                );
                 if (StringUtils.hasText(id) && StringUtils.hasText(copy)) {
                     result.put(id.trim(), copy.trim());
                 }
@@ -128,14 +136,25 @@ public class CopyProvisionalHtmlProcessor {
         return result;
     }
 
+    private Object firstNonNull(Object... values) {
+        for (Object value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
     private String asString(Object value) {
         return value instanceof String str ? str : null;
     }
 
-    private String firstNonBlank(String first, String second) {
-        if (StringUtils.hasText(first)) {
-            return first;
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
         }
-        return StringUtils.hasText(second) ? second : null;
+        return null;
     }
 }

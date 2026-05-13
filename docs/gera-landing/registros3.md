@@ -35,3 +35,5 @@
 - 2026-05-13 09:10:00 UTC-3 — Ajustado o schema da etapa `landing-page-wireframe` para compatibilidade com OpenAI Structured Outputs removendo o uso de `allOf` (com `if/then/else`), que é rejeitado pela API com erro `invalid_json_schema`; a regra de uso exclusivo de `briefingVisual` para `img` permanece reforçada no prompt.
 
 - 2026-05-13 09:32:00 UTC-3 — Reforçada a regra contratual no schema `landing-page-wireframe`: o campo `tag` agora explicita literalmente que `briefingVisual` só é permitido quando `tag = "img"`, e o próprio `briefingVisual` passou a repetir a instrução de omissão para demais tags.
+
+- 2026-05-13 09:55:00 UTC-3 — Corrigido o schema da etapa `landing-page-wireframe` para compatibilidade rígida com OpenAI Structured Outputs exigindo `briefingVisual` no `required` de `elementoSecao`; para preservar a regra de uso exclusivo em imagens, o campo passou a aceitar `null` e o prompt/contrato foram alinhados para usar `briefingVisual: null` quando `tag` for diferente de `img`.

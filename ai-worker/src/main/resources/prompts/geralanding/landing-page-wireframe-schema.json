@@ -257,8 +257,8 @@
           }
         },
         "briefingVisual": {
-          "type": "object",
-          "description": "Campo exclusivo para elementos de imagem (`tag = img`). Não usar em outras tags. Se `tag` for diferente de `img`, omita `briefingVisual`.",
+          "type": ["object", "null"],
+          "description": "Campo exclusivo para elementos de imagem (`tag = img`). Não usar em outras tags. Se `tag` for diferente de `img`, usar `briefingVisual: null`.",
           "additionalProperties": false,
           "properties": {
             "ondeEntraNoVisual": {
@@ -302,7 +302,8 @@
         "tag",
         "texto",
         "estilos",
-        "elementosInternos"
+        "elementosInternos",
+        "briefingVisual"
       ]
     }
   }

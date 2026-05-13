@@ -30,6 +30,7 @@ public class FrameworkImageService {
     private final Duration uploadBackoff;
     private final boolean enabled;
     private final int rolloutPercentage;
+    private final double costPerImageUsd;
 
     public FrameworkImageService(FrameworkImageBackendClient backendClient,
                                  FrameworkImageOpenAiBatchClient openAiBatchClient,
@@ -40,7 +41,8 @@ public class FrameworkImageService {
                                  @Value("${framework-image.upload.backoff:PT0.3S}") Duration uploadBackoff,
                                  @Value("${worker.id:}") String configuredWorkerId,
                                  @Value("${framework-image.enabled:true}") boolean enabled,
-                                 @Value("${framework-image.rollout.percentage:100}") int rolloutPercentage) {
+                                 @Value("${framework-image.rollout.percentage:100}") int rolloutPercentage,
+                                 @Value("${openai.image-cost-per-image-usd:0}") double costPerImageUsd) {
         this.backendClient = backendClient;
         this.openAiBatchClient = openAiBatchClient;
         this.storageClient = storageClient;
@@ -51,6 +53,7 @@ public class FrameworkImageService {
         this.uploadBackoff = normalizeDuration(uploadBackoff, DEFAULT_UPLOAD_BACKOFF);
         this.enabled = enabled;
         this.rolloutPercentage = Math.min(100, Math.max(0, rolloutPercentage));
+        this.costPerImageUsd = Math.max(0d, costPerImageUsd);
     }
 
     public void processPending() {
@@ -90,6 +93,12 @@ public class FrameworkImageService {
         try {
             Map<UUID, FrameworkImageOpenAiBatchClient.FrameworkImageBatchResult> batchResults =
                     openAiBatchClient.generateBatch(claimedJobs.values().stream().toList());
+            long successCount = batchResults.values().stream().filter(FrameworkImageOpenAiBatchClient.FrameworkImageBatchResult::success).count();
+            long failedCount = claimedJobs.size() - successCount;
+            double estimatedCost = successCount * costPerImageUsd;
+            log.info("Framework image OpenAI batch summary: workerId={} totalJobs={} success={} failed={} estimatedCostUsd={} unitCostUsd={}",
+                    workerId, claimedJobs.size(), successCount, failedCount, String.format(java.util.Locale.US, "%.4f", estimatedCost),
+                    String.format(java.util.Locale.US, "%.4f", costPerImageUsd));
 
             for (FrameworkImageJobDto claimedJob : claimedJobs.values()) {
                 FrameworkImageOpenAiBatchClient.FrameworkImageBatchResult result = batchResults.get(claimedJob.id());

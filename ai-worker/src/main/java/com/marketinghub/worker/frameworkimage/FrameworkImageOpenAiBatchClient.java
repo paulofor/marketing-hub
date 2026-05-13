@@ -77,10 +77,15 @@ public class FrameworkImageOpenAiBatchClient {
             return Map.of();
         }
 
+        log.info("Framework image batch start: preparing {} OpenAI request(s)", jobs.size());
         String batchContent = buildBatchFileContent(jobs);
         String inputFileId = uploadBatchFile(batchContent.getBytes(StandardCharsets.UTF_8));
+        log.info("Framework image batch file uploaded: fileId={} requestCount={}", inputFileId, jobs.size());
         OpenAiBatch createdBatch = createBatch(inputFileId);
+        log.info("Framework image batch created: batchId={} requestCount={}", createdBatch.id(), jobs.size());
         OpenAiBatch completedBatch = awaitCompletion(createdBatch);
+        log.info("Framework image batch finished: batchId={} status={} outputFileId={}",
+                completedBatch.id(), completedBatch.status(), completedBatch.outputFileId());
         if (!StringUtils.hasText(completedBatch.outputFileId())) {
             throw new IllegalStateException("OpenAI image batch completed without output_file_id");
         }
@@ -181,6 +186,7 @@ public class FrameworkImageOpenAiBatchClient {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("Interrupted while waiting for OpenAI image batch", e);
             }
+            log.debug("Polling OpenAI framework image batch {} (status={})", current.id(), current.status());
             current = webClient.get()
                     .uri("/batches/{id}", current.id())
                     .retrieve()

@@ -39,3 +39,4 @@
 - 2026-05-13 09:55:00 UTC-3 — Corrigido o schema da etapa `landing-page-wireframe` para compatibilidade rígida com OpenAI Structured Outputs exigindo `briefingVisual` no `required` de `elementoSecao`; para preservar a regra de uso exclusivo em imagens, o campo passou a aceitar `null` e o prompt/contrato foram alinhados para usar `briefingVisual: null` quando `tag` for diferente de `img`.
 
 - 2026-05-13 — Ajustada a fase `geralanding` do `landingPageCopy` para saída por seção com `items` contendo apenas `id` e `texto`, mantendo os mesmos ids do wireframe (sem aliases). Arquivos: `landing-page-copy.md` e `landing-page-copy-schema.json`.
+- 2026-05-12 22:50:00 UTC-3 — Ajustado o gerador de HTML provisório da etapa `landing-page-copy` para suportar o novo wireframe com raiz `pagina` quando `sectionOrder` não estiver presente, reutilizando `WireframeHtmlGenerator` para montar o HTML base antes de aplicar os textos por id; mantida compatibilidade com o formato legado.

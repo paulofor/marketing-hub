@@ -56,7 +56,7 @@ public class CopyProvisionalHtmlProcessor {
         for (Map.Entry<String, String> entry : copyByItemId.entrySet()) {
             Element element = document.getElementById(entry.getKey());
             if (element != null && StringUtils.hasText(entry.getValue())) {
-                element.text(entry.getValue().trim());
+                applyCopyToElement(element, entry.getValue().trim());
             }
         }
 
@@ -66,6 +66,16 @@ public class CopyProvisionalHtmlProcessor {
         }
 
         return normalizeSerializedHtml(document.outerHtml());
+    }
+
+
+    private void applyCopyToElement(Element element, String value) {
+        String tagName = element.tagName();
+        if ("input".equalsIgnoreCase(tagName) || "textarea".equalsIgnoreCase(tagName)) {
+            element.attr("placeholder", value);
+            return;
+        }
+        element.text(value);
     }
 
     private String normalizeSerializedHtml(String html) {
@@ -186,7 +196,8 @@ public class CopyProvisionalHtmlProcessor {
                 String copy = firstNonBlank(
                         asString(itemMap.get("copy")),
                         asString(itemMap.get("value")),
-                        asString(itemMap.get("text"))
+                        asString(itemMap.get("text")),
+                        asString(itemMap.get("texto"))
                 );
                 if (StringUtils.hasText(id) && StringUtils.hasText(copy)) {
                     result.put(id.trim(), copy.trim());

@@ -51,4 +51,37 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
         assertTrue(html.contains("Receba uma prévia em poucos minutos"));
         assertTrue(html.contains("headline"));
     }
+
+    @Test
+    void shouldApplyTextoFieldAndSetPlaceholderForInputElements() {
+        String wireframeJson = """
+                {
+                  "sectionOrder": [
+                    {
+                      "uiTags": "<section><h2 id=\\"title\\">Titulo</h2><input id=\\"email-input\\" type=\\"email\\" placeholder=\\"\\"/></section>",
+                      "uiSizes": ""
+                    }
+                  ]
+                }
+                """;
+
+        String copyJson = """
+                {
+                  "bodySections": [
+                    {
+                      "items": [
+                        {"id": "title", "texto": "Novo título"},
+                        {"id": "email-input", "texto": "seuemail@exemplo.com"}
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        String html = processor.process(wireframeJson, copyJson);
+
+        assertTrue(html.contains("Novo título"));
+        assertTrue(html.contains("id=\"email-input\""));
+        assertTrue(html.contains("placeholder=\"seuemail@exemplo.com\""));
+    }
 }

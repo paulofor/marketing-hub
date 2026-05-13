@@ -49,4 +49,10 @@ public class GeraLandingContoller {
     GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-copy");
     return ResponseEntity.accepted().body(response);
   }
+
+  @PostMapping("/image-prompts/start")
+  public ResponseEntity<GeraLandingStartResponse> startImagePrompts(@PathVariable Long experimentId) {
+    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-image-planning");
+    return ResponseEntity.accepted().body(response);
+  }
 }

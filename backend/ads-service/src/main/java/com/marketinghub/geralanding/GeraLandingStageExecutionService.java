@@ -182,13 +182,17 @@ public class GeraLandingStageExecutionService {
             }
             return copyProvisionalHtmlAssembler.assemble(request.modelResponse(), wireframe, idJob);
         }
-        return wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
+        if ("landing-page-wireframe".equalsIgnoreCase(request.stageCode())) {
+            return wireframeProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
+        }
+        return null;
     }
 
     private void persistStageArtifactOnExperiment(GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
         String stageCode = request.stageCode();
         if (!"landing-page-wireframe".equalsIgnoreCase(stageCode)
-                && !"landing-page-copy".equalsIgnoreCase(stageCode)) {
+                && !"landing-page-copy".equalsIgnoreCase(stageCode)
+                && !"landing-page-image-planning".equalsIgnoreCase(stageCode)) {
             return;
         }
         if (!StringUtils.hasText(request.modelResponse()) || StringUtils.hasText(request.errorMessage())) {
@@ -199,9 +203,11 @@ public class GeraLandingStageExecutionService {
         if ("landing-page-wireframe".equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageWireframe(request.modelResponse());
             experiment.setLandingPageWireframeJobId(execution.getIdJob());
-        } else {
+        } else if ("landing-page-copy".equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageCopy(request.modelResponse());
             experiment.setLandingPageCopyJobId(execution.getIdJob());
+        } else {
+            experiment.setLandingPageImagePlanning(request.modelResponse());
         }
         experimentRepository.save(experiment);
     }

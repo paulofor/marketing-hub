@@ -17,6 +17,6 @@ databaseChangeLog:
               - column: { name: total_empresas, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
               - column: { name: total_empresas_mei, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
               - column: { name: total_empresas_simples, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
-              - column: { name: avg_socios_por_empresa, type: DECIMAL(10,2) }
+              - column: { name: avg_socios_por_empresa, type: "DECIMAL(10,2)" }
               - column: { name: updated_at, type: DATETIME, constraints: { nullable: false } }
         - createIndex: { tableName: oprm_market_size_by_cnae, indexName: idx_market_size_total_ativos, columns: [ { column: { name: total_estabelecimentos_ativos } } ] }

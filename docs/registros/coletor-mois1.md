@@ -94,3 +94,13 @@
 - Coletor Hotmart ajustado para mapear e persistir, além do título/URL, os campos solicitados do produto: `ucode`, `image`, `temperature`, `reviewRating`, `totalAnswers`, `blueprint`, `price.value`, `category`, `format` e `producer.name`.
 - `HotmartProductSnapshot` expandido para carregar esses atributos de forma estruturada durante a coleta via API.
 - `rawMetadata` enviado ao backend passou a incluir todos os novos campos para disponibilização na camada administrativa sem depender de parsing textual.
+
+## 2026-05-13 17:16 UTC
+- Estruturado o 2º ciclo do coletor Hotmart no módulo `mois-hotmart-collector`: após listar produtos no endpoint `v2/market/search`, o serviço agora percorre produto a produto e consulta `v1/market/product/{id}/details`.
+- Implementado enriquecimento por produto com foco em `salesPageUrl` (página de vendas), preservando fallback para dados do 1º ciclo quando o detalhe falhar.
+- Adicionados logs de causa-raiz para falhas no ciclo 2 por produto (`status` HTTP e `productId`) sem interromper a coleta completa.
+
+## 2026-05-13 17:35 UTC
+- Scheduler do coletor Hotmart ajustado para alternar ciclos por hora: horas ímpares executam ciclo 1 (listagem) e horas pares executam ciclo 2 (detalhes por produto).
+- Implementado no serviço o fluxo de ciclo 2 que lê produtos do backend (`/api/v1/mois/hotmart/products`) e consulta detalhes item a item na Hotmart, priorizando `salesPageUrl`.
+- Criado documento técnico do projeto descrevendo os dois ciclos e regras de execução em `mois-hotmart-collector/docs/ciclos-coleta-hotmart.md`.

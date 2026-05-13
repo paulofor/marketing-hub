@@ -2,6 +2,7 @@ package com.marketinghub.moishotmart.service;
 
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionResponse;
+import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,8 +37,17 @@ public class HotmartCollectorScheduler {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
-        HotmartCollectionResponse response = collectorService.collect(new HotmartCollectionRequest(source, maxProducts));
-        log.info("Hotmart scheduler executado status={} produtos={} mensagem={}",
-                response.status(), response.products().size(), response.message());
+        int currentHour = LocalDateTime.now().getHour();
+        boolean isOddHour = currentHour % 2 != 0;
+        HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
+        HotmartCollectionResponse response = isOddHour
+                ? collectorService.collectFirstCycle(request)
+                : collectorService.collectSecondCycleFromBackend(request);
+        log.info("Hotmart scheduler executado hora={} ciclo={} status={} produtos={} mensagem={}",
+                currentHour,
+                isOddHour ? "CICLO_1_LISTAGEM" : "CICLO_2_DETALHES",
+                response.status(),
+                response.products().size(),
+                response.message());
     }
 }

@@ -176,20 +176,28 @@ public class HotmartCollectorService {
         int position = 1;
         for (HotmartProductSnapshot product : products) {
             Map<String, String> rawMetadata = new HashMap<>();
+            rawMetadata.put("productUcode", product.ucode());
             rawMetadata.put("productName", product.title());
+            rawMetadata.put("productImage", product.image());
             rawMetadata.put("productUrl", product.detailsUrl());
-            rawMetadata.put("salesPageUrl", coalesceNotBlank(product.salesPageUrl(), product.detailsUrl()));
+            rawMetadata.put("salesPageUrl", pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl()));
             if (product.temperature() != null) {
                 rawMetadata.put("hotmartTemperature", String.valueOf(product.temperature()));
             }
-            rawMetadata.put("producerName", null);
+            rawMetadata.put("reviewRating", product.rating());
+            if (product.totalAnswers() != null) rawMetadata.put("totalAnswers", String.valueOf(product.totalAnswers()));
+            if (product.blueprint() != null) rawMetadata.put("blueprint", String.valueOf(product.blueprint()));
+            if (product.priceValue() != null) rawMetadata.put("priceValue", String.valueOf(product.priceValue()));
+            rawMetadata.put("category", product.category());
+            rawMetadata.put("format", product.format());
+            rawMetadata.put("producerName", product.producerName());
 
             Map<String, Object> reference = new HashMap<>();
             reference.put("referenceId", "hotmart-" + position + "-" + UUID.randomUUID().toString().substring(0, 8));
             reference.put("jobId", jobId);
             reference.put("source", "HOTMART");
             reference.put("title", product.title());
-            reference.put("url", coalesceNotBlank(product.salesPageUrl(), product.detailsUrl()));
+            reference.put("url", pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl()));
             reference.put("niche", defaultNiche);
             reference.put("status", "COLLECTED");
             reference.put("favorite", false);
@@ -278,9 +286,17 @@ public class HotmartCollectorService {
                 }
                 Double temperature = extractProductNumber(item, "temperature", "temp", "hotness");
                 products.add(new HotmartProductSnapshot(
+                        extractProductText(item, "ucode"),
                         title == null || title.isBlank() ? "Produto sem título" : title,
+                        extractProductText(item, "image"),
+                        pickFirstNonBlank(extractProductText(item, "reviewRating"), "N/A"),
+                        extractProductInteger(item, "totalAnswers"),
+                        extractProductNumber(item, "blueprint"),
                         "N/A",
-                        "N/A",
+                        extractProductNumber(item, "value"),
+                        extractProductText(item, "category"),
+                        extractProductText(item, "format"),
+                        firstText(item.path("producer"), "name"),
                         url,
                         temperature,
                         salesPageUrl,
@@ -351,9 +367,19 @@ public class HotmartCollectorService {
                     detailsUrl = "https://app.hotmart.com" + detailsUrl;
                 }
                 products.add(new HotmartProductSnapshot(
+                        null,
                         title == null || title.isBlank() ? "Produto sem título" : title,
+                        null,
                         "N/A",
+                        null,
+                        null,
                         "N/A",
+                        null,
+                        null,
+                        null,
+                        null,
+                        detailsUrl == null ? hotmartMarketUrl : detailsUrl,
+                        null,
                         detailsUrl == null ? hotmartMarketUrl : detailsUrl,
                         Instant.now()
                 ));
@@ -444,10 +470,20 @@ public class HotmartCollectorService {
                     url = hotmartMarketUrl;
                 }
                 products.add(new HotmartProductSnapshot(
+                        extractProductText(item, "ucode"),
                         title == null || title.isBlank() ? "Produto sem título" : title,
+                        extractProductText(item, "image"),
+                        pickFirstNonBlank(extractProductText(item, "reviewRating"), "N/A"),
+                        extractProductInteger(item, "totalAnswers"),
+                        extractProductNumber(item, "blueprint"),
                         "N/A",
-                        "N/A",
+                        extractProductNumber(item, "value"),
+                        extractProductText(item, "category"),
+                        extractProductText(item, "format"),
+                        firstText(item.path("producer"), "name"),
                         url,
+                        extractProductNumber(item, "temperature", "temp", "hotness"),
+                        pickFirstNonBlank(extractProductText(item, "salesPageUrl", "pageUrl", "page_url"), url),
                         Instant.now()
                 ));
             }
@@ -559,6 +595,29 @@ public class HotmartCollectorService {
                 } catch (NumberFormatException ignored) {
                 }
             }
+        }
+        return null;
+    }
+
+    private Integer extractProductInteger(JsonNode item, String... keys) {
+        Double number = extractProductNumber(item, keys);
+        return number == null ? null : number.intValue();
+    }
+
+    private JsonNode findNode(JsonNode item, String key) {
+        JsonNode direct = item.path(key);
+        if (!direct.isMissingNode() && !direct.isNull()) {
+            return direct;
+        }
+        JsonNode productNode = item.path("product");
+        JsonNode nested = productNode.path(key);
+        if (!nested.isMissingNode() && !nested.isNull()) {
+            return nested;
+        }
+        JsonNode sourceObjectNode = item.path("sourceObject");
+        JsonNode sourceNested = sourceObjectNode.path(key);
+        if (!sourceNested.isMissingNode() && !sourceNested.isNull()) {
+            return sourceNested;
         }
         return null;
     }

@@ -89,3 +89,8 @@
 - Fluxo de coleta via API passou a mapear temperatura do payload (`temperature`/variantes) e URL de página de vendas separada da URL do produto.
 - Backend ajustado para persistir `hotmart_temperature` em `mois_collected_reference` e expor `salesPageUrl` e `temperature` no endpoint `/api/v1/mois/hotmart/products`.
 - Tela `/hotmart` atualizada para exibir temperatura e usar link da página de vendas no botão principal.
+
+## 2026-05-13 23:15 UTC
+- Coletor Hotmart ajustado para mapear e persistir, além do título/URL, os campos solicitados do produto: `ucode`, `image`, `temperature`, `reviewRating`, `totalAnswers`, `blueprint`, `price.value`, `category`, `format` e `producer.name`.
+- `HotmartProductSnapshot` expandido para carregar esses atributos de forma estruturada durante a coleta via API.
+- `rawMetadata` enviado ao backend passou a incluir todos os novos campos para disponibilização na camada administrativa sem depender de parsing textual.

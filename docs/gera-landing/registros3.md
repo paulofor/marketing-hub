@@ -37,3 +37,5 @@
 - 2026-05-13 09:32:00 UTC-3 — Reforçada a regra contratual no schema `landing-page-wireframe`: o campo `tag` agora explicita literalmente que `briefingVisual` só é permitido quando `tag = "img"`, e o próprio `briefingVisual` passou a repetir a instrução de omissão para demais tags.
 
 - 2026-05-13 09:55:00 UTC-3 — Corrigido o schema da etapa `landing-page-wireframe` para compatibilidade rígida com OpenAI Structured Outputs exigindo `briefingVisual` no `required` de `elementoSecao`; para preservar a regra de uso exclusivo em imagens, o campo passou a aceitar `null` e o prompt/contrato foram alinhados para usar `briefingVisual: null` quando `tag` for diferente de `img`.
+
+- 2026-05-13 — Ajustada a fase `geralanding` do `landingPageCopy` para saída por seção com `items` contendo apenas `id` e `texto`, mantendo os mesmos ids do wireframe (sem aliases). Arquivos: `landing-page-copy.md` e `landing-page-copy-schema.json`.

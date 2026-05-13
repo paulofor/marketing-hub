@@ -16,9 +16,17 @@ public final class HotmartDtos {
     }
 
     public record HotmartProductSnapshot(
+            String ucode,
             String title,
+            String image,
             String rating,
+            Integer totalAnswers,
+            Double blueprint,
             String commission,
+            Double priceValue,
+            String category,
+            String format,
+            String producerName,
             String detailsUrl,
             Double temperature,
             String salesPageUrl,

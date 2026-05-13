@@ -42,3 +42,5 @@
 - 2026-05-12 22:50:00 UTC-3 — Ajustado o gerador de HTML provisório da etapa `landing-page-copy` para suportar o novo wireframe com raiz `pagina` quando `sectionOrder` não estiver presente, reutilizando `WireframeHtmlGenerator` para montar o HTML base antes de aplicar os textos por id; mantida compatibilidade com o formato legado.
 
 - 2026-05-12 23:10:00 UTC-3 — Ajustado o merge de HTML provisório da etapa `landing-page-copy` para os JSONs novos do experimento 20: o processador passou a ler `bodySections[].items[].texto` na extração da copy por id e a aplicar conteúdo em `input`/`textarea` via `placeholder`, garantindo composição correta entre wireframe e copy no preview.
+
+- 2026-05-13 00:25:00 UTC-3 — Registrada correção no gerador de HTML provisório da etapa `landing-page-copy` (pacote `geralanding`): aplicação de copy por `id` com resolução resiliente (match exato + fallback por id normalizado com remoção de espaços, normalização de traços unicode e case-insensitive) para evitar perda de texto em elementos `<li>` e demais tags quando houver variação de formatação entre wireframe e copy.

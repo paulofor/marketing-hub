@@ -43,6 +43,7 @@ import InstantFormDetailPage from "./pages/experiment/InstantFormDetailPage";
 import ExperimentEmailDetailPage from "./pages/experiment/ExperimentEmailDetailPage";
 import ExperimentAdSetWorkflowPage from "./pages/experiment/ExperimentAdSetWorkflowPage";
 import ExperimentAdSetJobDetailPage from "./pages/experiment/ExperimentAdSetJobDetailPage";
+import ExperimentFrameworkImageDetailsPage from "./pages/experiment/ExperimentFrameworkImageDetailsPage";
 import ExperimentFacebookApiLogsPage from "./pages/experiment/ExperimentFacebookApiLogsPage";
 import ExperimentPipelineJobsPage from "./pages/experiment/ExperimentPipelineJobsPage";
 import ExperimentGeraLandingExecutionDetailPage from "./pages/experiment/ExperimentGeraLandingExecutionDetailPage";
@@ -219,6 +220,7 @@ export default function App() {
                 <Route path="geralanding/stage-executions/:jobId" element={<ExperimentGeraLandingExecutionDetailPage />} />
                 <Route path="geralanding/stage-executions/:jobId/provisional-html" element={<ExperimentGeraLandingProvisionalHtmlPage />} />
                 <Route path="adset-workflow/jobs/:jobId" element={<ExperimentAdSetJobDetailPage />} />
+                <Route path="framework-images" element={<ExperimentFrameworkImageDetailsPage />} />
               </Route>
               <Route path="/hypotheses" element={<HypothesisListPage />} />
               <Route path="/hypotheses/board" element={<HypothesesPage />} />

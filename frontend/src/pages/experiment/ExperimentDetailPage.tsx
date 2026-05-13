@@ -2112,6 +2112,9 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                   usando os prompts produzidos no Gera Prompt Imagem.
                 </p>
                 <div className="d-flex flex-wrap align-items-center gap-2">
+                  <Link to={`/experiments/${expId}/framework-images`} className="btn btn-outline-primary btn-sm">
+                    Ver detalhes das imagens
+                  </Link>
                   <button
                     type="button"
                     className="btn btn-success align-self-start"

@@ -113,3 +113,7 @@
 ## 2026-05-13 15:01:39 UTC-3
 - Porta HTTP do módulo `mois-clickbank-collector` alterada de `8096` para `9096` (acima de 9000), ajustando `application.properties`, `docker-compose.yml`, `docker-compose.deploy.yml` e `Dockerfile`.
 - README do módulo atualizado para refletir a nova porta padrão (`MOIS_HOTMART_PORT=9096`) e a nova URL de logfile via Actuator (`http://191.252.120.96:9096/internal/ops-monitor/logfile`).
+
+## 2026-05-13 17:35:14 UTC-3
+- Registrada melhoria no `mois-hotmart-collector` para incluir log explícito da resposta crua do **ciclo 2** (`HOTMART_CICLO_2_DETALHE_RESPOSTA_CRUA`) durante o fetch de detalhes por produto.
+- O log agora registra `productId`, `status` HTTP e `bodyRaw` truncado (10.000 caracteres), mantendo padrão de observabilidade já adotado no ciclo 1 para análise de causa-raiz.

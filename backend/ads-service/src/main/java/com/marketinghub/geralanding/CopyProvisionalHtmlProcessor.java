@@ -3,6 +3,8 @@ package com.marketinghub.geralanding;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
@@ -19,10 +21,13 @@ import java.util.Locale;
 @Component
 public class CopyProvisionalHtmlProcessor {
 
+    private static final Logger log = LoggerFactory.getLogger(CopyProvisionalHtmlProcessor.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final WireframeHtmlGenerator wireframeHtmlGenerator = new WireframeHtmlGenerator();
 
     public String process(String wireframeJson, String copyJson) {
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada wireframeJson: {}", wireframeJson);
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada copyJson: {}", copyJson);
         if (!StringUtils.hasText(wireframeJson)) {
             throw new IllegalArgumentException("JSON de wireframe ausente");
         }
@@ -34,9 +39,7 @@ public class CopyProvisionalHtmlProcessor {
         Map<String, Object> copy = parseJson(copyJson);
 
         String baseHtml = buildHtmlFromWireframe(wireframe);
-        Map<String, String> copyByItemId = collectCopyByItemId(copy);
-
-        return applyCopyByItemId(baseHtml, copyByItemId);
+        return process(baseHtml, copy);
     }
 
     public String process(String html, Map<String, Object> copyJson) {
@@ -67,7 +70,6 @@ public class CopyProvisionalHtmlProcessor {
         if (StringUtils.hasText(title)) {
             document.title(title);
         }
-
         return normalizeSerializedHtml(document.outerHtml());
     }
 

@@ -52,6 +52,7 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
         assertTrue(html.contains("headline"));
     }
 
+
     @Test
     void shouldApplyTextoFieldAndSetPlaceholderForInputElements() {
         String wireframeJson = """

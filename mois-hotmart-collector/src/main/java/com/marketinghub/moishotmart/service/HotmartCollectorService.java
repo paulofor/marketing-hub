@@ -408,6 +408,10 @@ public class HotmartCollectorService {
                     .GET()
                     .build();
             HttpResponse<String> detailsResponse = HttpClient.newHttpClient().send(detailsRequest, HttpResponse.BodyHandlers.ofString());
+            log.info("HOTMART_CICLO_2_DETALHE_RESPOSTA_CRUA productId={} status={} bodyRaw='{}'",
+                    productId,
+                    detailsResponse.statusCode(),
+                    truncateForLog(detailsResponse.body(), 10_000));
             if (detailsResponse.statusCode() < 200 || detailsResponse.statusCode() >= 300) {
                 log.warn("Ciclo 2 Hotmart: falha ao buscar detalhe do produto. status={}, productId={}", detailsResponse.statusCode(), productId);
                 return baseSnapshot;

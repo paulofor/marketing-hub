@@ -44,6 +44,8 @@ import {
   useGeraLandingStageExecutions,
   type GeraLandingStageExecutionItem,
 } from "../../api/experiment/useGeraLandingStageExecutions";
+import { useFrameworkImageStatuses } from "../../api/experiment/useFrameworkImageStatuses";
+import { useGenerateFrameworkImages } from "../../api/experiment/useGenerateFrameworkImages";
 
 type ChecklistItem = {
   id: string;
@@ -142,6 +144,8 @@ export default function ExperimentDetailPage() {
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const [isStartingCopy, setIsStartingCopy] = useState(false);
   const [isStartingImagePrompts, setIsStartingImagePrompts] = useState(false);
+  const [isStartingImageGeneration, setIsStartingImageGeneration] =
+    useState(false);
   const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticCopyExecution, setOptimisticCopyExecution] =
@@ -179,6 +183,9 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingCompletedGeraLandingImagePromptsExecutions,
     refetch: refetchCompletedGeraLandingImagePromptsExecutions,
   } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", true);
+  const { data: frameworkImageStatuses, isLoading: isLoadingFrameworkImageStatuses } =
+    useFrameworkImageStatuses(expId);
+  const generateFrameworkImages = useGenerateFrameworkImages(expId);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -190,6 +197,14 @@ export default function ExperimentDetailPage() {
   } = useExperimentCampaignResetPreview(expId);
   const resetCampaigns = useExperimentCampaignReset(expId);
   const releaseExperiment = useExperimentFacebookRelease(expId);
+  const frameworkImagePendingCount = useMemo(
+    () =>
+      (frameworkImageStatuses ?? []).filter((item) => {
+        const status = item.status?.toUpperCase();
+        return status === "PLANNED" || status === "FAILED";
+      }).length,
+    [frameworkImageStatuses],
+  );
   const hasCompleteTargeting = readinessSummary?.hasCompleteTargeting ?? false;
   const pipelineContentCards = useMemo<PipelineContentCard[]>(
     () => [
@@ -430,6 +445,22 @@ export default function ExperimentDetailPage() {
       toast.error(message);
     } finally {
       setIsStartingImagePrompts(false);
+    }
+  };
+
+  const handleStartImageGeneration = async () => {
+    setIsStartingImageGeneration(true);
+    try {
+      await generateFrameworkImages.mutateAsync();
+      toast.success("Gera Imagem iniciado com sucesso.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message as string | undefined) ??
+          "Não foi possível iniciar o Gera Imagem."
+        : "Não foi possível iniciar o Gera Imagem.";
+      toast.error(message);
+    } finally {
+      setIsStartingImageGeneration(false);
     }
   };
 
@@ -2064,6 +2095,44 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-body d-flex flex-column gap-3">
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                  <h5 className="card-title mb-0">Gera Imagem</h5>
+                  <span className="badge text-bg-light border fs-6 fw-semibold">
+                    Pendentes: {frameworkImagePendingCount}
+                  </span>
+                </div>
+                <p className="text-muted mb-0">
+                  Esta etapa executa a geração real das imagens em lote na OpenAI
+                  usando os prompts produzidos no Gera Prompt Imagem.
+                </p>
+                <div className="d-flex flex-wrap align-items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-success align-self-start"
+                    onClick={handleStartImageGeneration}
+                    disabled={isStartingImageGeneration || generateFrameworkImages.isPending}
+                  >
+                    {isStartingImageGeneration || generateFrameworkImages.isPending ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Iniciar"
+                    )}
+                  </button>
+                  <span className="small text-muted">
+                    Acompanhe a timeline detalhada na aba <strong>Conteúdo</strong>,
+                    bloco <strong>Gerar imagens em lote (AI Worker)</strong>.
+                  </span>
+                </div>
+                {isLoadingFrameworkImageStatuses ? (
+                  <p className="text-muted mb-0">Carregando status do Gera Imagem...</p>
+                ) : null}
               </div>
             </div>
           </div>

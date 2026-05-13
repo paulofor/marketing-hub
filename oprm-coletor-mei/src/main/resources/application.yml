@@ -21,8 +21,8 @@ oprm:
     batch-size: ${OPRM_COLLECTOR_BATCH_SIZE:500}
 
     schedule:
-      enabled: ${OPRM_COLLECTOR_SCHEDULE_ENABLED:false}
-      cron: ${OPRM_COLLECTOR_SCHEDULE_CRON:0 30 19 * * *}
+      enabled: ${OPRM_COLLECTOR_SCHEDULE_ENABLED:true}
+      cron: ${OPRM_COLLECTOR_SCHEDULE_CRON:0 0 23 * * *}
       timezone: ${OPRM_COLLECTOR_SCHEDULE_TIMEZONE:America/Sao_Paulo}
       source: ${OPRM_COLLECTOR_SCHEDULE_SOURCE:RECEITA_FEDERAL}
       payload-file: ${OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE:}

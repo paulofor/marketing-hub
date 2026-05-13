@@ -35,8 +35,14 @@ public class CnaeCatalogCollectorScheduler {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(cron = "${oprm.collector.schedule.cron}", zone = "${oprm.collector.schedule.timezone}")
+    @Scheduled(cron = "0 0 23 * * *", zone = "America/Sao_Paulo")
     public void runScheduledIngestion() {
+        log.info("Disparo do agendador de ingestão CNAE: enabled={}, cron={}, timezone={}, source={}, payloadFile={}",
+                scheduleProperties.enabled(),
+                scheduleProperties.cron(),
+                scheduleProperties.timezone(),
+                scheduleProperties.source(),
+                scheduleProperties.payloadFile());
         if (!scheduleProperties.enabled()) {
             return;
         }

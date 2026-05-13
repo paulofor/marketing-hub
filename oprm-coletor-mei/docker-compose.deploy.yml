@@ -2,3 +2,5 @@ services:
   oprm-coletor-mei:
     image: ${OPRM_COLETOR_MEI_IMAGE}
     build: null
+    environment:
+      - OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE=${OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE:?Defina OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE com o caminho do JSON de CNAEs da Receita Federal}

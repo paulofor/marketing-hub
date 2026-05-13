@@ -251,13 +251,24 @@ public class HotmartCollectorService {
             JsonNode data = objectMapper.readTree(body);
             JsonNode productsNode = firstArray(data, "products", "items", "content", "results");
             if (productsNode == null || !productsNode.isArray()) {
+                log.warn("Resposta API Hotmart sem array de produtos. keysRaiz={}", previewFieldNames(data));
                 return 0;
             }
+            log.info("Resposta API Hotmart: totalItensArray={}, chavesPrimeiroItem={}",
+                    productsNode.size(),
+                    productsNode.size() > 0 ? previewFieldNames(productsNode.get(0)) : "[]");
             for (JsonNode item : productsNode) {
                 if (products.size() >= boundedMax) break;
-                String title = firstText(item, "name", "productName", "title");
-                String url = firstText(item, "checkoutUrl", "productUrl", "url", "link");
-                if (url == null || url.isBlank()) url = hotmartMarketUrl;
+                String title = extractProductText(item, "name", "productName", "title");
+                String url = extractProductText(item, "checkoutUrl", "productUrl", "url", "link");
+                if (url == null || url.isBlank()) {
+                    url = hotmartMarketUrl;
+                }
+                if (title == null || title.isBlank()) {
+                    log.warn("Item Hotmart sem título mapeável. chavesItem={}, itemPreview={}",
+                            previewFieldNames(item),
+                            truncateForLog(item.toString(), 600));
+                }
                 products.add(new HotmartProductSnapshot(
                         title == null || title.isBlank() ? "Produto sem título" : title,
                         "N/A",
@@ -517,6 +528,40 @@ public class HotmartCollectorService {
             }
         }
         return null;
+    }
+
+    private String extractProductText(JsonNode item, String... keys) {
+        String direct = firstText(item, keys);
+        if (direct != null && !direct.isBlank()) {
+            return direct;
+        }
+        JsonNode productNode = item.path("product");
+        if (!productNode.isMissingNode() && !productNode.isNull()) {
+            String nested = firstText(productNode, keys);
+            if (nested != null && !nested.isBlank()) {
+                return nested;
+            }
+        }
+        JsonNode sourceObjectNode = item.path("sourceObject");
+        if (!sourceObjectNode.isMissingNode() && !sourceObjectNode.isNull()) {
+            String sourceObject = firstText(sourceObjectNode, keys);
+            if (sourceObject != null && !sourceObject.isBlank()) {
+                return sourceObject;
+            }
+        }
+        return null;
+    }
+
+    private String previewFieldNames(JsonNode node) {
+        if (node == null || !node.isObject()) {
+            return "[]";
+        }
+        List<String> keys = new ArrayList<>();
+        node.fieldNames().forEachRemaining(keys::add);
+        if (keys.size() > 12) {
+            return keys.subList(0, 12) + "...";
+        }
+        return keys.toString();
     }
 
     private String truncateForLog(String value, int maxLength) {

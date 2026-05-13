@@ -37,6 +37,7 @@ public class HotmartCollectorService {
     private static final int LOGIN_SUBMIT_RETRIES = 3;
     private static final int COOKIE_RETRY_ATTEMPTS = 3;
     private static final String HOTMART_MARKET_API_URL = "https://api-affiliation-market.hotmart.com/v2/market/search";
+    private static final String HOTMART_PRODUCT_DETAILS_API_URL = "https://api-affiliation-market.hotmart.com/v1/market/product/%s/details?userSessionId=%s";
 
     private final boolean headless;
     private final String chromiumExecutablePath;
@@ -83,6 +84,10 @@ public class HotmartCollectorService {
     }
 
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
+        return collectFirstCycle(request);
+    }
+
+    public HotmartCollectionResponse collectFirstCycle(HotmartCollectionRequest request) {
         int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
 
         List<HotmartProductSnapshot> products = new ArrayList<>();
@@ -124,6 +129,78 @@ public class HotmartCollectorService {
         }
         persistCollectedProductsOnBackend(request, status, products);
         return new HotmartCollectionResponse(status, message, products);
+    }
+
+    public HotmartCollectionResponse collectSecondCycleFromBackend(HotmartCollectionRequest request) {
+        List<HotmartProductSnapshot> enrichedProducts = new ArrayList<>();
+        String status = "COLLECTION_EXECUTED";
+        String message = "Ciclo 2 executado a partir dos produtos persistidos no backend.";
+        String hotmartAccessToken = fetchHotmartJwtFromGeneralSettings();
+        if (hotmartAccessToken.isBlank()) {
+            return new HotmartCollectionResponse(
+                    "COLLECTION_SKIPPED",
+                    "Token JWT da Hotmart ausente para execução do ciclo 2.",
+                    enrichedProducts
+            );
+        }
+        List<HotmartProductSnapshot> baseProducts = fetchFirstCycleProductsFromBackend(request.maxProducts());
+        for (HotmartProductSnapshot base : baseProducts) {
+            if (enrichedProducts.size() >= request.maxProducts() && request.maxProducts() > 0) {
+                break;
+            }
+            JsonNode listItem = objectMapper.createObjectNode()
+                    .put("id", pickFirstNonBlank(base.ucode(), ""))
+                    .put("ucode", pickFirstNonBlank(base.ucode(), ""))
+                    .put("userSessionId", "");
+            enrichedProducts.add(enrichProductWithDetails(hotmartAccessToken, listItem, base));
+        }
+        persistCollectedProductsOnBackend(request, status, enrichedProducts);
+        return new HotmartCollectionResponse(status, message, enrichedProducts);
+    }
+
+    private List<HotmartProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {
+        List<HotmartProductSnapshot> products = new ArrayList<>();
+        int boundedMax = maxProducts <= 0 ? 25 : Math.min(maxProducts, 100);
+        String endpoint = backendBaseUrl + "/api/v1/mois/hotmart/products?limit=" + boundedMax;
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("accept", "application/json")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Ciclo 2: falha ao obter produtos base do backend. status={}, endpoint={}", response.statusCode(), endpoint);
+                return products;
+            }
+            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode items = firstArray(root, "items", "products", "content", "results");
+            if (items == null || !items.isArray()) {
+                return products;
+            }
+            for (JsonNode item : items) {
+                products.add(new HotmartProductSnapshot(
+                        extractProductText(item, "ucode", "productUcode"),
+                        pickFirstNonBlank(extractProductText(item, "title", "name", "productName"), "Produto sem título"),
+                        extractProductText(item, "image", "productImage"),
+                        pickFirstNonBlank(extractProductText(item, "reviewRating", "rating"), "N/A"),
+                        extractProductInteger(item, "totalAnswers"),
+                        extractProductNumber(item, "blueprint"),
+                        "N/A",
+                        extractProductNumber(item, "priceValue", "value"),
+                        extractProductText(item, "category"),
+                        extractProductText(item, "format"),
+                        extractProductText(item, "producerName"),
+                        pickFirstNonBlank(extractProductText(item, "detailsUrl", "productUrl", "url"), hotmartMarketUrl),
+                        extractProductNumber(item, "temperature", "hotmartTemperature"),
+                        extractProductText(item, "salesPageUrl", "pageUrl"),
+                        Instant.now()
+                ));
+            }
+        } catch (Exception ex) {
+            log.warn("Ciclo 2: erro ao obter produtos do backend.", ex);
+        }
+        return products;
     }
 
     private void persistCollectedProductsOnBackend(
@@ -285,7 +362,7 @@ public class HotmartCollectorService {
                             truncateForLog(item.toString(), 600));
                 }
                 Double temperature = extractProductNumber(item, "temperature", "temp", "hotness");
-                products.add(new HotmartProductSnapshot(
+                HotmartProductSnapshot baseSnapshot = new HotmartProductSnapshot(
                         extractProductText(item, "ucode"),
                         title == null || title.isBlank() ? "Produto sem título" : title,
                         extractProductText(item, "image"),
@@ -300,12 +377,67 @@ public class HotmartCollectorService {
                         url,
                         temperature,
                         salesPageUrl,
-                        Instant.now()));
+                        Instant.now());
+                products.add(enrichProductWithDetails(accessToken, item, baseSnapshot));
             }
             return products.size();
         } catch (Exception ex) {
             log.warn("Falha na coleta de produtos via API Hotmart.", ex);
             return 0;
+        }
+    }
+
+    private HotmartProductSnapshot enrichProductWithDetails(String accessToken, JsonNode listItem, HotmartProductSnapshot baseSnapshot) {
+        String productId = pickFirstNonBlank(
+                extractProductText(listItem, "id", "productId", "uuid"),
+                baseSnapshot.ucode()
+        );
+        if (productId == null || productId.isBlank()) {
+            return baseSnapshot;
+        }
+        String userSessionId = pickFirstNonBlank(
+                extractProductText(listItem, "userSessionId", "sessionId"),
+                "collector-" + UUID.randomUUID()
+        );
+        String detailsUrl = HOTMART_PRODUCT_DETAILS_API_URL.formatted(productId, userSessionId);
+        try {
+            HttpRequest detailsRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(detailsUrl))
+                    .header("accept", "application/json, text/plain, */*")
+                    .header("authorization", "Bearer " + accessToken)
+                    .GET()
+                    .build();
+            HttpResponse<String> detailsResponse = HttpClient.newHttpClient().send(detailsRequest, HttpResponse.BodyHandlers.ofString());
+            if (detailsResponse.statusCode() < 200 || detailsResponse.statusCode() >= 300) {
+                log.warn("Ciclo 2 Hotmart: falha ao buscar detalhe do produto. status={}, productId={}", detailsResponse.statusCode(), productId);
+                return baseSnapshot;
+            }
+            JsonNode detailsNode = objectMapper.readTree(detailsResponse.body());
+            String salesPageFromDetails = extractProductText(detailsNode, "salesPageUrl", "salesPage", "pageUrl", "url");
+            String detailPageUrl = pickFirstNonBlank(
+                    extractProductText(detailsNode, "detailsUrl", "productUrl", "checkoutUrl"),
+                    baseSnapshot.detailsUrl()
+            );
+            return new HotmartProductSnapshot(
+                    baseSnapshot.ucode(),
+                    pickFirstNonBlank(extractProductText(detailsNode, "name", "title"), baseSnapshot.title()),
+                    pickFirstNonBlank(extractProductText(detailsNode, "image"), baseSnapshot.image()),
+                    baseSnapshot.rating(),
+                    baseSnapshot.totalAnswers(),
+                    baseSnapshot.blueprint(),
+                    baseSnapshot.commission(),
+                    baseSnapshot.priceValue(),
+                    baseSnapshot.category(),
+                    baseSnapshot.format(),
+                    pickFirstNonBlank(firstText(detailsNode.path("producer"), "name"), baseSnapshot.producerName()),
+                    detailPageUrl,
+                    baseSnapshot.temperature(),
+                    pickFirstNonBlank(pickFirstNonBlank(salesPageFromDetails, baseSnapshot.salesPageUrl()), detailPageUrl),
+                    baseSnapshot.collectedAt()
+            );
+        } catch (Exception ex) {
+            log.warn("Ciclo 2 Hotmart: erro ao enriquecer produto com detalhes. productId={}", productId, ex);
+            return baseSnapshot;
         }
     }
 

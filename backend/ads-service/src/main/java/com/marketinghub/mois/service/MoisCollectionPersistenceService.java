@@ -119,8 +119,8 @@ public class MoisCollectionPersistenceService {
                           job_id, workspace_id, reference_id, source, title, url, niche, status, favorite,
                           imported_reference_id, success_score, success_signal, confidence_level, ranking_position,
                           engagement_relative, recurrence_score, evidence_score, hotmart_description,
-                          hotmart_producer, hotmart_image_url, hotmart_highlight, product_name, product_url, producer_name, sales_page_url, collected_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          hotmart_producer, hotmart_image_url, hotmart_highlight, product_name, product_url, producer_name, sales_page_url, hotmart_temperature, collected_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 references,
                 references.size(),
@@ -150,8 +150,9 @@ public class MoisCollectionPersistenceService {
                     ps.setString(23, coalesceNotBlank(item.url(), metadataValue(item, "productUrl")));
                     ps.setString(24, coalesceNotBlank(metadataValue(item, "hotmartProducer"), metadataValue(item, "producerName"), metadataValue(item, "producer")));
                     ps.setString(25, coalesceNotBlank(metadataValue(item, "salesPageUrl"), metadataValue(item, "checkoutUrl"), item.url()));
-                    ps.setTimestamp(26, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
-                    ps.setTimestamp(27, Timestamp.from(Instant.now()));
+                    ps.setBigDecimal(26, parseDecimal(metadataValue(item, "hotmartTemperature")));
+                    ps.setTimestamp(27, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
+                    ps.setTimestamp(28, Timestamp.from(Instant.now()));
                 }
         );
     }
@@ -166,6 +167,11 @@ public class MoisCollectionPersistenceService {
             }
         }
         return null;
+    }
+
+    private java.math.BigDecimal parseDecimal(String value) {
+        if (value == null || value.isBlank()) return null;
+        try { return new java.math.BigDecimal(value.trim()); } catch (NumberFormatException ex) { return null; }
     }
 
     private String metadataValue(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse item, String key) {

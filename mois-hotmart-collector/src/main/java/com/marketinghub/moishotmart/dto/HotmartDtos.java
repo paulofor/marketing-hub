@@ -20,6 +20,8 @@ public final class HotmartDtos {
             String rating,
             String commission,
             String detailsUrl,
+            Double temperature,
+            String salesPageUrl,
             Instant collectedAt
     ) {
     }

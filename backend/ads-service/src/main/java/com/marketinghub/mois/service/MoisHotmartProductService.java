@@ -36,7 +36,7 @@ public class MoisHotmartProductService {
         List<MoisHotmartProductDtos.HotmartCollectedProductResponse> items = jdbcTemplate.query(
                 """
                         SELECT job_id, reference_id, product_name, product_url, producer_name,
-                               hotmart_image_url, success_score, collected_at
+                               hotmart_image_url, success_score, sales_page_url, hotmart_temperature, collected_at
                         FROM mois_collected_reference
                         WHERE workspace_id = ?
                           AND source = 'HOTMART'
@@ -56,6 +56,8 @@ public class MoisHotmartProductService {
                             rs.getObject("success_score", Integer.class),
                             null,
                             "BRL",
+                            rs.getString("sales_page_url"),
+                            rs.getObject("hotmart_temperature") == null ? null : rs.getDouble("hotmart_temperature"),
                             collectedAt == null ? null : collectedAt.toInstant());
                 },
                 workspaceId, latestJobId, limit

@@ -83,3 +83,9 @@
 ## 2026-05-13 22:05 UTC
 - Incluído log explícito da resposta crua do fetch da Hotmart no fluxo principal da API (`HOTMART_FETCH_RESPOSTA_CRUA`), com status HTTP e `bodyRaw` truncado em 10.000 caracteres.
 - Objetivo: deixar inequívoco no log exatamente o que o coletor conseguiu obter da Hotmart para diagnóstico de contrato/mapeamento.
+
+## 2026-05-13 22:40 UTC
+- Coletor Hotmart atualizado para extrair e enviar `hotmartTemperature` e `salesPageUrl` dentro de `rawMetadata` ao persistir referências no backend.
+- Fluxo de coleta via API passou a mapear temperatura do payload (`temperature`/variantes) e URL de página de vendas separada da URL do produto.
+- Backend ajustado para persistir `hotmart_temperature` em `mois_collected_reference` e expor `salesPageUrl` e `temperature` no endpoint `/api/v1/mois/hotmart/products`.
+- Tela `/hotmart` atualizada para exibir temperatura e usar link da página de vendas no botão principal.

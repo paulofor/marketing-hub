@@ -1,0 +1,18 @@
+services:
+  mois-clickbank-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: marketinghub/mois-clickbank-collector:0.1.0-snapshot
+    container_name: mois-clickbank-collector
+    environment:
+      - MOIS_HOTMART_PORT=8096
+      - COLLECTOR_HOTMART_USERNAME=${COLLECTOR_HOTMART_USERNAME:-}
+      - COLLECTOR_HOTMART_PASSWORD=${COLLECTOR_HOTMART_PASSWORD:-}
+      - COLLECTOR_HOTMART_SESSION_COOKIE=${COLLECTOR_HOTMART_SESSION_COOKIE:-}
+      - COLLECTOR_SCHEDULER_ENABLED=${COLLECTOR_SCHEDULER_ENABLED:-true}
+      - COLLECTOR_SCHEDULER_CRON=${COLLECTOR_SCHEDULER_CRON:-0 0 * * * *}
+      - COLLECTOR_SCHEDULER_SOURCE=${COLLECTOR_SCHEDULER_SOURCE:-clickbank-market}
+      - COLLECTOR_SCHEDULER_MAX_PRODUCTS=${COLLECTOR_SCHEDULER_MAX_PRODUCTS:-25}
+    ports:
+      - "8096:8096"

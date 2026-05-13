@@ -4,6 +4,7 @@ import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprm.market.OprmCnpjImportFile;
 import com.marketinghub.oprm.market.OprmCnpjImportRun;
 import com.marketinghub.oprm.market.dto.OprmCreateImportRunRequestDto;
+import com.marketinghub.oprm.market.dto.OprmCompleteImportRunRequestDto;
 import com.marketinghub.oprm.market.dto.OprmImportFileEventRequestDto;
 import com.marketinghub.oprm.market.dto.OprmImportRunCreatedResponseDto;
 import com.marketinghub.oprm.market.service.OprmMarketImportService;
@@ -29,6 +30,13 @@ public class OprmMarketImportController {
                                           @PathVariable Long fileId,
                                           @RequestBody OprmImportFileEventRequestDto request) {
         service.registerFileEvent(runId, fileId, request);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/{runId}/complete")
+    public ResponseEntity<Void> completeRun(@PathVariable Long runId,
+                                            @RequestBody OprmCompleteImportRunRequestDto request) {
+        service.completeRun(runId, request);
         return ResponseEntity.accepted().build();
     }
 

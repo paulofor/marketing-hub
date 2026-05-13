@@ -3,15 +3,21 @@ package com.marketinghub.oprm.market.service;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprm.market.OprmCnpjImportFile;
 import com.marketinghub.oprm.market.OprmCnpjImportRun;
+import com.marketinghub.oprm.market.OprmMarketSizeByCnae;
+import com.marketinghub.oprm.market.OprmMarketSizeByCnaeId;
 import com.marketinghub.oprm.market.dto.*;
 import com.marketinghub.oprm.market.repository.OprmCnpjCnaeDimRepository;
 import com.marketinghub.oprm.market.repository.OprmCnpjImportFileRepository;
 import com.marketinghub.oprm.market.repository.OprmCnpjImportRunRepository;
+import com.marketinghub.oprm.market.repository.OprmMarketSizeByCnaeRepository;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +25,7 @@ public class OprmMarketImportService {
     private final OprmCnpjImportRunRepository runRepository;
     private final OprmCnpjImportFileRepository fileRepository;
     private final OprmCnpjCnaeDimRepository cnaeDimRepository;
+    private final OprmMarketSizeByCnaeRepository marketSizeRepository;
 
     @Transactional
     public OprmImportRunCreatedResponseDto startRun(OprmCreateImportRunRequestDto request) {
@@ -58,7 +65,11 @@ public class OprmMarketImportService {
 
     @Transactional
     public void registerFileEvent(Long runId, Long fileId, OprmImportFileEventRequestDto request) {
-        OprmCnpjImportFile file = fileRepository.findById(fileId).orElseThrow();
+        OprmCnpjImportRun run = runRepository.findById(runId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Import run not found: " + runId));
+        OprmCnpjImportFile file = fileRepository.findById(fileId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Import file not found: " + fileId));
+        validateFileBelongsToRun(runId, file);
 
         if (request.status() != null) file.setStatus(request.status());
         if (request.rowsRead() != null) file.setRowsRead(request.rowsRead());
@@ -78,6 +89,75 @@ public class OprmMarketImportService {
                 cnaeDimRepository.save(item);
             }
         }
+
+        if (request.marketSizes() != null && !request.marketSizes().isEmpty()) {
+            for (OprmMarketSizeUpsertDto row : request.marketSizes()) {
+                if (row.cnaeCode() == null || row.cnaeCode().isBlank()) {
+                    throw new ResponseStatusException(BAD_REQUEST, "cnaeCode is required in marketSizes.");
+                }
+                OprmMarketSizeByCnaeId id = new OprmMarketSizeByCnaeId();
+                id.setSnapshotDate(run.getSnapshotDate());
+                id.setCnaeCode(row.cnaeCode());
+                OprmMarketSizeByCnae item = marketSizeRepository.findById(id).orElseGet(OprmMarketSizeByCnae::new);
+                item.setId(id);
+                item.setTotalEstabelecimentos(row.totalEstabelecimentos() != null ? row.totalEstabelecimentos() : 0L);
+                item.setTotalEstabelecimentosAtivos(row.totalEstabelecimentosAtivos() != null ? row.totalEstabelecimentosAtivos() : 0L);
+                item.setTotalEmpresas(row.totalEmpresas() != null ? row.totalEmpresas() : 0L);
+                item.setTotalEmpresasMei(row.totalEmpresasMei() != null ? row.totalEmpresasMei() : 0L);
+                item.setTotalEmpresasSimples(row.totalEmpresasSimples() != null ? row.totalEmpresasSimples() : 0L);
+                item.setAvgSociosPorEmpresa(row.avgSociosPorEmpresa());
+                item.setUpdatedAt(Instant.now());
+                marketSizeRepository.save(item);
+            }
+        }
+    }
+
+    @Transactional
+    public void completeRun(Long runId, OprmCompleteImportRunRequestDto request) {
+        OprmCnpjImportRun run = runRepository.findById(runId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Import run not found: " + runId));
+        List<OprmCnpjImportFile> files = fileRepository.findByRunId(runId);
+        if (files.isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Import run has no files to finalize: " + runId);
+        }
+        boolean hasFailure = false;
+        for (OprmCnpjImportFile file : files) {
+            if (file.getFinishedAt() == null) {
+                file.setFinishedAt(request.finishedAt() != null ? request.finishedAt() : Instant.now());
+            }
+            if ("STARTED".equalsIgnoreCase(file.getStatus())) {
+                file.setStatus("FAILED");
+                if (file.getErrorMessage() == null || file.getErrorMessage().isBlank()) {
+                    file.setErrorMessage("File closed during run finalization without explicit completion event.");
+                }
+            }
+            if ("FAILED".equalsIgnoreCase(file.getStatus())) {
+                hasFailure = true;
+            }
+        }
+        fileRepository.saveAll(files);
+
+        run.setFinishedAt(request.finishedAt() != null ? request.finishedAt() : Instant.now());
+        run.setStatus(resolveRunStatus(request.status(), hasFailure));
+        run.setFilesProcessed(request.filesProcessed() != null ? request.filesProcessed() : files.size());
+        if (request.rowsRead() != null) run.setRowsRead(request.rowsRead());
+        if (request.rowsValid() != null) run.setRowsValid(request.rowsValid());
+        if (request.rowsRejected() != null) run.setRowsRejected(request.rowsRejected());
+        if (request.errorMessage() != null) run.setErrorMessage(request.errorMessage());
+        runRepository.save(run);
+    }
+
+    private void validateFileBelongsToRun(Long runId, OprmCnpjImportFile file) {
+        if (file.getRun() == null || file.getRun().getId() == null || !runId.equals(file.getRun().getId())) {
+            throw new ResponseStatusException(BAD_REQUEST, "File does not belong to informed run.");
+        }
+    }
+
+    private String resolveRunStatus(String requestedStatus, boolean hasFailure) {
+        if (requestedStatus != null && !requestedStatus.isBlank()) {
+            return requestedStatus;
+        }
+        return hasFailure ? "PARTIAL" : "COMPLETED";
     }
 
     @Transactional(readOnly = true)

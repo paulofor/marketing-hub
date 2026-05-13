@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-13-oprm-cnpj-market-import-phase-c-d
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+      changes:
+        - createTable:
+            tableName: oprm_market_size_by_cnae
+            columns:
+              - column: { name: snapshot_date, type: DATE, constraints: { nullable: false, primaryKey: true, primaryKeyName: pk_oprm_market_size_by_cnae } }
+              - column: { name: cnae_code, type: VARCHAR(7), constraints: { nullable: false, primaryKey: true, primaryKeyName: pk_oprm_market_size_by_cnae } }
+              - column: { name: total_estabelecimentos, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: total_estabelecimentos_ativos, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: total_empresas, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: total_empresas_mei, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: total_empresas_simples, type: BIGINT, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: avg_socios_por_empresa, type: DECIMAL(10,2) }
+              - column: { name: updated_at, type: DATETIME, constraints: { nullable: false } }
+        - createIndex: { tableName: oprm_market_size_by_cnae, indexName: idx_market_size_total_ativos, columns: [ { column: { name: total_estabelecimentos_ativos } } ] }

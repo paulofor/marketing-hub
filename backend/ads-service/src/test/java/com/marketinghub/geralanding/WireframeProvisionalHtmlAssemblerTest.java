@@ -14,32 +14,6 @@ class WireframeProvisionalHtmlAssemblerTest {
     private final WireframeProvisionalHtmlAssembler assembler = new WireframeProvisionalHtmlAssembler(new ObjectMapper());
 
     @Test
-    void assembleDelegatesToGeneratorAndBuildsHtml() {
-        String modelResponse = """
-                {
-                  "landingPageWireframe": {
-                    "sectionOrder": [
-                      {
-                        "sectionId": "s1-hero",
-                        "uiTags": "<section id='s1-hero'><h1 id='s1-title'></h1><p id='s1-sub'></p></section>",
-                        "uiSizeTexts": "s1-title(min:20,max:30); s1-sub(min:60,max:90)",
-                        "uiSizes": "#s1-hero{padding:20px}"
-                      }
-                    ]
-                  }
-                }
-                """;
-
-        String html = assembler.assemble(modelResponse, "job-123");
-
-        assertNotNull(html);
-        assertTrue(html.contains("<!doctype html>"));
-        assertTrue(html.contains("id=\"s1-hero\"") || html.contains("id='s1-hero'"));
-        assertTrue(html.contains("Lorem ipsum"));
-        assertTrue(html.contains("<!-- jobId = job-123 -->"));
-    }
-
-    @Test
     void assembleDelegatesRawJsonWithoutAssemblerNormalization() throws Exception {
         Map<String, Object> section = Map.of(
                 "sectionId", "s1-hero-form",

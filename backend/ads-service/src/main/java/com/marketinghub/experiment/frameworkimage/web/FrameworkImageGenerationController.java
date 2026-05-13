@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.frameworkimage.web;
 
 import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationItemStatusDto;
+import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationSummaryDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import java.util.List;
@@ -30,5 +31,10 @@ public class FrameworkImageGenerationController {
     @GetMapping
     public List<FrameworkImageGenerationItemStatusDto> list(@PathVariable Long experimentId) {
         return service.listJobsByExperiment(experimentId);
+    }
+
+    @GetMapping("/summary")
+    public FrameworkImageGenerationSummaryDto summary(@PathVariable Long experimentId) {
+        return service.summarizeJobsByExperiment(experimentId);
     }
 }

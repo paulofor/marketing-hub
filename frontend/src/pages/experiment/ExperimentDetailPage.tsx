@@ -45,6 +45,7 @@ import {
   type GeraLandingStageExecutionItem,
 } from "../../api/experiment/useGeraLandingStageExecutions";
 import { useFrameworkImageStatuses } from "../../api/experiment/useFrameworkImageStatuses";
+import { useFrameworkImageSummary } from "../../api/experiment/useFrameworkImageSummary";
 import { useGenerateFrameworkImages } from "../../api/experiment/useGenerateFrameworkImages";
 
 type ChecklistItem = {
@@ -185,6 +186,7 @@ export default function ExperimentDetailPage() {
   } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", true);
   const { data: frameworkImageStatuses, isLoading: isLoadingFrameworkImageStatuses } =
     useFrameworkImageStatuses(expId);
+  const { data: frameworkImageSummary } = useFrameworkImageSummary(expId);
   const generateFrameworkImages = useGenerateFrameworkImages(expId);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
@@ -2130,6 +2132,25 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                     bloco <strong>Gerar imagens em lote (AI Worker)</strong>.
                   </span>
                 </div>
+                {frameworkImageSummary ? (
+                  <div className="row g-2">
+                    <div className="col-6 col-md-4">
+                      <div className="small border rounded p-2 bg-light">Em processamento: <strong>{frameworkImageSummary.processingCount}</strong></div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="small border rounded p-2 bg-light">Aguardando OpenAI batch: <strong>{frameworkImageSummary.waitingOpenAiBatchCount}</strong></div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="small border rounded p-2 bg-light">Concluídas: <strong>{frameworkImageSummary.completedCount}</strong></div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="small border rounded p-2 bg-light">Falhas: <strong>{frameworkImageSummary.failedCount}</strong></div>
+                    </div>
+                    <div className="col-6 col-md-4">
+                      <div className="small border rounded p-2 bg-light">Total de itens: <strong>{frameworkImageSummary.totalItems}</strong></div>
+                    </div>
+                  </div>
+                ) : null}
                 {isLoadingFrameworkImageStatuses ? (
                   <p className="text-muted mb-0">Carregando status do Gera Imagem...</p>
                 ) : null}

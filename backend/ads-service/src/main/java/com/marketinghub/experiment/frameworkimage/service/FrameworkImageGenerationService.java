@@ -7,6 +7,7 @@ import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStage;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStatus;
 import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationItemStatusDto;
+import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationSummaryDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
@@ -306,6 +307,49 @@ public class FrameworkImageGenerationService {
         }
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public FrameworkImageGenerationSummaryDto summarizeJobsByExperiment(Long experimentId) {
+        List<FrameworkImageGenerationItemStatusDto> items = listJobsByExperiment(experimentId);
+        int planned = 0;
+        int processing = 0;
+        int waitingOpenAiBatch = 0;
+        int completed = 0;
+        int failed = 0;
+        Instant updatedAt = null;
+
+        for (FrameworkImageGenerationItemStatusDto item : items) {
+            String status = item.status() == null ? "" : item.status().trim().toUpperCase();
+            String stage = item.stage() == null ? "" : item.stage().trim().toUpperCase();
+            if ("PLANNED".equals(status) || "PENDING".equals(status)) {
+                planned++;
+            }
+            if ("PROCESSING".equals(status)) {
+                processing++;
+            }
+            if ("WAITING_OPENAI_BATCH".equals(stage)) {
+                waitingOpenAiBatch++;
+            }
+            if ("COMPLETED".equals(status)) {
+                completed++;
+            }
+            if ("FAILED".equals(status)) {
+                failed++;
+            }
+            if (item.updatedAt() != null && (updatedAt == null || item.updatedAt().isAfter(updatedAt))) {
+                updatedAt = item.updatedAt();
+            }
+        }
+
+        return new FrameworkImageGenerationSummaryDto(
+                items.size(),
+                planned,
+                processing,
+                waitingOpenAiBatch,
+                completed,
+                failed,
+                updatedAt);
     }
 
     private FrameworkImageGenerationJob findJob(UUID jobId) {

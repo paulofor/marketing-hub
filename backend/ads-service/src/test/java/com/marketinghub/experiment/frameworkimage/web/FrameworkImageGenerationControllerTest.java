@@ -6,10 +6,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationItemStatusDto;
+import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationSummaryDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -84,5 +86,19 @@ class FrameworkImageGenerationControllerTest {
                 .andExpect(jsonPath("$[1].status").value("PLANNED"));
 
         verify(service).listJobsByExperiment(8L);
+    }
+
+    @Test
+    void summaryReturnsAggregatedCounters() throws Exception {
+        when(service.summarizeJobsByExperiment(20L)).thenReturn(
+                new FrameworkImageGenerationSummaryDto(8, 0, 8, 8, 0, 0, Instant.parse("2026-05-13T20:09:00Z")));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/experiments/20/framework-images/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").value(8))
+                .andExpect(jsonPath("$.processingCount").value(8))
+                .andExpect(jsonPath("$.waitingOpenAiBatchCount").value(8));
+
+        verify(service).summarizeJobsByExperiment(20L);
     }
 }

@@ -25,3 +25,8 @@
 
 - 2026-05-12 22:35:00 (UTC-3): ajuste solicitado: agendamento fixado diretamente no método `runScheduledIngestion` com `@Scheduled(cron = "0 0 23 * * *", zone = "America/Sao_Paulo")` para eliminar dependência de configuração externa do horário de execução.
 - 2026-05-13 03:05:00 (UTC): agendamento da ingestão CNAE (Receita Federal) alterado para 01:00 no fuso `America/Sao_Paulo` (Brasília), com atualização do cron hardcoded no `@Scheduled` e do cron padrão configurável em `application.yml` para `0 0 1 * * *`.
+
+- 2026-05-13: Criado documento `docs/novos-modulos/OPRM/cnpj-open-data-2026-04-12.md` com descrição de cada ZIP da base CNPJ (snapshot 2026-04-12), URLs diretas e relevância para o OPRM/Marketing Hub.
+- 2026-05-13 16:10:00 (UTC-3): complemento do registro do dia 2026-05-13: documento `docs/novos-modulos/OPRM/cnpj-open-data-2026-04-12.md` criado com inventário dos ZIPs, URLs diretas e importância por dataset para uso no OPRM.
+- 2026-05-13 16:30:00 (UTC-3): refinado documento `docs/novos-modulos/OPRM/cnpj-open-data-2026-04-12.md` para foco inicial exclusivamente quantitativo de tamanho de mercado, removendo priorização geográfica e adicionando métricas recomendadas sem recorte territorial.
+- 2026-05-13 16:50:00 (UTC-3): criado `docs/novos-modulos/OPRM/oprm-plano-importacao-cnpj-market-size.md` com desenho de tabelas (staging, dimensões, fatos e agregado), fluxo de importação por etapas, endpoints backend necessários e estratégia de rollout para implementação da carga CNPJ com foco em tamanho de mercado.

@@ -51,6 +51,7 @@ export OPRM_COLLECTOR_SCHEDULE_CRON="0 30 19 * * *"
 export OPRM_COLLECTOR_SCHEDULE_TIMEZONE="America/Sao_Paulo"
 export OPRM_COLLECTOR_SCHEDULE_SOURCE="RECEITA_FEDERAL"
 export OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE="/caminho/receita-cnaes.json"
+# opcional no deploy: se não definir, usa /app/config/receita-cnaes.json embarcado na imagem
 ```
 
 Formato do arquivo `receita-cnaes.json` (array de registros):

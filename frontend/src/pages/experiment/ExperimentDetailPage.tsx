@@ -141,9 +141,12 @@ export default function ExperimentDetailPage() {
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const [isStartingCopy, setIsStartingCopy] = useState(false);
+  const [isStartingImagePrompts, setIsStartingImagePrompts] = useState(false);
   const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticCopyExecution, setOptimisticCopyExecution] =
+    useState<GeraLandingStageExecutionItem | null>(null);
+  const [optimisticImagePromptsExecution, setOptimisticImagePromptsExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const hadRunningGeraLandingExecutionRef = useRef(false);
   const {
@@ -166,6 +169,16 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingCompletedGeraLandingCopyExecutions,
     refetch: refetchCompletedGeraLandingCopyExecutions,
   } = useGeraLandingStageExecutions(expId, "landing-page-copy", true);
+  const {
+    data: pendingGeraLandingImagePromptsExecutions,
+    isLoading: isLoadingPendingGeraLandingImagePromptsExecutions,
+    refetch: refetchPendingGeraLandingImagePromptsExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", false);
+  const {
+    data: completedGeraLandingImagePromptsExecutions,
+    isLoading: isLoadingCompletedGeraLandingImagePromptsExecutions,
+    refetch: refetchCompletedGeraLandingImagePromptsExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", true);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -388,6 +401,37 @@ export default function ExperimentDetailPage() {
       setIsStartingCopy(false);
     }
   };
+  const handleStartImagePrompts = async () => {
+    try {
+      setIsStartingImagePrompts(true);
+      const { data: startResponse } = await axios.post<{
+        idJob: string;
+        status: string;
+      }>(`/api/experiments/${expId}/geralanding/image-prompts/start`);
+      const localExecutionRequestedAt = new Date().toISOString();
+      setOptimisticImagePromptsExecution({
+        idJob: startResponse.idJob,
+        status: startResponse.status,
+        executionRequestedAt: localExecutionRequestedAt,
+      });
+      toast.success(
+        `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
+      );
+      await Promise.all([
+        refetchPendingGeraLandingImagePromptsExecutions(),
+        refetchCompletedGeraLandingImagePromptsExecutions(),
+      ]);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível iniciar o Gera Prompt Imagem.")
+        : "Não foi possível iniciar o Gera Prompt Imagem.";
+      toast.error(message);
+    } finally {
+      setIsStartingImagePrompts(false);
+    }
+  };
 
   const isRunningExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
@@ -522,6 +566,57 @@ export default function ExperimentDetailPage() {
       allExecutions.findIndex((candidate) => candidate.idJob === execution.idJob) === index,
     );
   }, [completedGeraLandingCopyExecutions, pendingGeraLandingCopyExecutions]);
+  const mergedPendingGeraLandingImagePromptsExecutions = useMemo(() => {
+    if (!optimisticImagePromptsExecution) {
+      return pendingGeraLandingImagePromptsExecutions ?? [];
+    }
+    const alreadyPresent = (pendingGeraLandingImagePromptsExecutions ?? []).some(
+      (execution) => execution.idJob === optimisticImagePromptsExecution.idJob,
+    );
+    if (alreadyPresent) {
+      return pendingGeraLandingImagePromptsExecutions ?? [];
+    }
+    return [optimisticImagePromptsExecution, ...(pendingGeraLandingImagePromptsExecutions ?? [])];
+  }, [optimisticImagePromptsExecution, pendingGeraLandingImagePromptsExecutions]);
+
+  useEffect(() => {
+    if (!optimisticImagePromptsExecution) {
+      return;
+    }
+    const persistedExecution = (pendingGeraLandingImagePromptsExecutions ?? []).some(
+      (execution) => execution.idJob === optimisticImagePromptsExecution.idJob,
+    );
+    if (persistedExecution) {
+      setOptimisticImagePromptsExecution(null);
+    }
+  }, [optimisticImagePromptsExecution, pendingGeraLandingImagePromptsExecutions]);
+
+  const hasRunningGeraLandingImagePromptsExecution =
+    mergedPendingGeraLandingImagePromptsExecutions.some((execution) =>
+      isRunningExecution(execution.status),
+    );
+  const runningGeraLandingImagePromptsExecutions = useMemo(
+    () =>
+      mergedPendingGeraLandingImagePromptsExecutions.filter((execution) =>
+        isRunningExecution(execution.status),
+      ),
+    [mergedPendingGeraLandingImagePromptsExecutions],
+  );
+  const historyGeraLandingImagePromptsExecutions = useMemo(() => {
+    const completedHistory = (completedGeraLandingImagePromptsExecutions ?? []).filter(
+      (execution) => isCompletedExecution(execution.status),
+    );
+    const failedFromPending = (pendingGeraLandingImagePromptsExecutions ?? []).filter(
+      (execution) =>
+        !isRunningExecution(execution.status) && !isCompletedExecution(execution.status),
+    );
+    const merged = [...failedFromPending, ...completedHistory];
+    const dedupMap = new Map<string, GeraLandingStageExecutionItem>();
+    merged.forEach((execution) => {
+      dedupMap.set(execution.idJob, execution);
+    });
+    return Array.from(dedupMap.values());
+  }, [completedGeraLandingImagePromptsExecutions, pendingGeraLandingImagePromptsExecutions]);
 const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
     isRunningExecution(execution.status),
   )?.idJob;
@@ -567,7 +662,12 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
     0,
   );
   const totalCompletedGeraLandingAllStagesCostUsd =
-    totalCompletedGeraLandingCostUsd + totalCompletedGeraLandingCopyCostUsd;
+    totalCompletedGeraLandingCostUsd +
+    totalCompletedGeraLandingCopyCostUsd +
+    historyGeraLandingImagePromptsExecutions.reduce(
+      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+      0,
+    );
   const { data: runningGeraLandingJobDetail } = useGeraLandingStageExecutionDetail(
     expId,
     runningGeraLandingJobId,
@@ -1877,6 +1977,80 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                           <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead>
                           <tbody>
                             {historyGeraLandingCopyExecutions.map((execution) => (
+                              <tr key={execution.idJob}>
+                                <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
+                                <td>{execution.status}</td>
+                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                                <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-body d-flex flex-column gap-3">
+                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                  <h5 className="card-title mb-0">Gera Prompt Imagem</h5>
+                  <span className="badge text-bg-light border fs-6 fw-semibold">
+                    Total execuções: {formatCurrencyUsd(historyGeraLandingImagePromptsExecutions.reduce(
+                      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+                      0,
+                    ))}
+                  </span>
+                </div>
+                <div className="d-flex flex-column gap-3">
+                  <button
+                    type="button"
+                    className="btn btn-primary align-self-start"
+                    onClick={handleStartImagePrompts}
+                    disabled={isStartingImagePrompts || hasRunningGeraLandingImagePromptsExecution}
+                  >
+                    {isStartingImagePrompts ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Iniciar"
+                    )}
+                  </button>
+                  {isLoadingPendingGeraLandingImagePromptsExecutions ? (
+                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
+                  ) : runningGeraLandingImagePromptsExecutions.length === 0 ? (
+                    <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th></tr></thead>
+                        <tbody>
+                          {runningGeraLandingImagePromptsExecutions.map((execution) => (
+                            <tr key={execution.idJob}>
+                              <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
+                              <td>{execution.status}</td>
+                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções</h6>
+                    {isLoadingCompletedGeraLandingImagePromptsExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : historyGeraLandingImagePromptsExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead>
+                          <tbody>
+                            {historyGeraLandingImagePromptsExecutions.map((execution) => (
                               <tr key={execution.idJob}>
                                 <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
                                 <td>{execution.status}</td>

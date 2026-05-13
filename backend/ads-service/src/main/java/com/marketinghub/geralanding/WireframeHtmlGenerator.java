@@ -23,6 +23,201 @@ public class WireframeHtmlGenerator {
             return generateFromPaginaJson(json);
         }
 
+        return generateFromLegacySectionOrderJson(json);
+    }
+
+    private String generateFromPaginaJson(String json) {
+        try {
+            Map<String, Object> root = OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
+            Map<String, Object> pagina = asMap(root.get("pagina"));
+            Map<String, Object> head = asMap(pagina.get("head"));
+            Map<String, Object> corpo = asMap(pagina.get("corpo"));
+
+            StringBuilder html = new StringBuilder();
+
+            html.append("<!doctype html>\n");
+            html.append("<html lang=\"pt-BR\">\n");
+            html.append("<head>\n");
+            html.append("<meta charset=\"UTF-8\">\n");
+            html.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
+            html.append("<title>")
+                    .append(escapeHtmlText(asText(head.get("texto"), "Wireframe provisório")))
+                    .append("</title>\n");
+            html.append("</head>\n");
+
+            html.append("<body");
+
+            String bodyStyle = renderInlineStyle(asList(corpo.get("estilos")));
+            if (StringUtils.hasText(bodyStyle)) {
+                html.append(" style=\"").append(escapeHtmlAttribute(bodyStyle)).append("\"");
+            }
+
+            html.append(">\n");
+
+            for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
+                html.append(renderSection(secao));
+            }
+
+            html.append("</body>\n");
+            html.append("</html>\n");
+
+            return html.toString();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao renderizar novo JSON de wireframe", e);
+        }
+    }
+
+    private String renderSection(Map<String, Object> secao) {
+        return renderNode(secao, "section", "elementosSeccao");
+    }
+
+    private String renderElement(Map<String, Object> node) {
+        return renderNode(node, "div", "elementosInternos");
+    }
+
+    private String renderNode(Map<String, Object> node, String defaultTag, String childrenKey) {
+        String tag = asText(node.get("tag"), defaultTag).trim().toLowerCase();
+
+        if (isVoidElement(tag)) {
+            return renderVoidElement(node, tag);
+        }
+
+        StringBuilder out = new StringBuilder();
+
+        out.append("<").append(tag);
+        appendCommonAttributes(out, node);
+        out.append(">");
+
+        out.append(resolveText(node));
+
+        for (Map<String, Object> child : asList(node.get(childrenKey))) {
+            out.append(renderElement(child));
+        }
+
+        out.append("</").append(tag).append(">\n");
+
+        return out.toString();
+    }
+
+    private String renderVoidElement(Map<String, Object> node, String tag) {
+        StringBuilder out = new StringBuilder();
+
+        out.append("<").append(tag);
+        appendCommonAttributes(out, node);
+
+        if ("img".equals(tag) && !hasAttribute(node, "alt")) {
+            out.append(" alt=\"\"");
+        }
+
+        out.append(">\n");
+
+        return out.toString();
+    }
+
+    private void appendCommonAttributes(StringBuilder out, Map<String, Object> node) {
+        String id = asText(node.get("id"), "");
+        String style = renderInlineStyle(asList(node.get("estilos")));
+        Map<String, Object> attrs = extractAttributes(node);
+
+        if (StringUtils.hasText(id)) {
+            out.append(" id=\"").append(escapeHtmlAttribute(id)).append("\"");
+        }
+
+        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+            String name = entry.getKey();
+
+            if (!isSafeHtmlAttributeName(name)) {
+                continue;
+            }
+
+            if ("id".equalsIgnoreCase(name) || "style".equalsIgnoreCase(name)) {
+                continue;
+            }
+
+            Object rawValue = entry.getValue();
+
+            if (rawValue instanceof Boolean bool) {
+                if (bool) {
+                    out.append(" ").append(name);
+                }
+                continue;
+            }
+
+            String value = asText(rawValue, "");
+
+            if (StringUtils.hasText(value)) {
+                out.append(" ")
+                        .append(name)
+                        .append("=\"")
+                        .append(escapeHtmlAttribute(value))
+                        .append("\"");
+            }
+        }
+
+        if (StringUtils.hasText(style)) {
+            out.append(" style=\"").append(escapeHtmlAttribute(style)).append("\"");
+        }
+    }
+
+    private boolean hasAttribute(Map<String, Object> node, String attributeName) {
+        Map<String, Object> attrs = extractAttributes(node);
+
+        for (String key : attrs.keySet()) {
+            if (attributeName.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Map<String, Object> extractAttributes(Map<String, Object> node) {
+        Map<String, Object> props = asMap(node.get("props"));
+        if (!props.isEmpty()) {
+            return props;
+        }
+
+        Map<String, Object> atributos = asMap(node.get("atributos"));
+        if (!atributos.isEmpty()) {
+            return atributos;
+        }
+
+        return Map.of();
+    }
+
+    private boolean isSafeHtmlAttributeName(String name) {
+        return StringUtils.hasText(name)
+                && Pattern.matches("[A-Za-z_:][-A-Za-z0-9_:.]*", name);
+    }
+
+    private boolean isVoidElement(String tag) {
+        return "area".equals(tag)
+                || "base".equals(tag)
+                || "br".equals(tag)
+                || "col".equals(tag)
+                || "embed".equals(tag)
+                || "hr".equals(tag)
+                || "img".equals(tag)
+                || "input".equals(tag)
+                || "link".equals(tag)
+                || "meta".equals(tag)
+                || "source".equals(tag)
+                || "track".equals(tag)
+                || "wbr".equals(tag);
+    }
+
+    private String resolveText(Map<String, Object> node) {
+        Map<String, Object> texto = asMap(node.get("texto"));
+        String content = asText(texto.get("conteudo"), "").trim();
+
+        if (!StringUtils.hasText(content)) {
+            return "";
+        }
+
+        return escapeHtmlText(content);
+    }
+
+    private String generateFromLegacySectionOrderJson(String json) {
         String sectionOrder = extractSectionOrderArray(json);
         List<String> tags = extractStringFieldValues(sectionOrder, "uiTags");
         List<String> sizeBlocks = extractFieldRawValues(sectionOrder, "uiSizes");
@@ -36,25 +231,22 @@ public class WireframeHtmlGenerator {
         html.append("<meta charset=\"UTF-8\">\n");
         html.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
         html.append("<title>Wireframe provisório</title>\n");
-        html.append("<style>\n");
-        html.append(baseCss());
 
-        for (String uiSizes : sizeBlocks) {
-            html.append(toCss(uiSizes)).append("\n");
+        if (!sizeBlocks.isEmpty()) {
+            html.append("<style>\n");
+
+            for (String uiSizes : sizeBlocks) {
+                html.append(toCss(uiSizes)).append("\n");
+            }
+
+            html.append("</style>\n");
         }
 
-        html.append("</style>\n");
         html.append("</head>\n");
-
         html.append("<body").append(renderBodyAttributes(bodyAttributes)).append(">\n");
 
-        int sectionIndex = 0;
-
         for (String tag : tags) {
-            String sectionHtml = fillLoremIpsumPlaceholders(tag);
-            sectionHtml = applySectionPreviewColor(sectionHtml, sectionIndex++);
-            sectionHtml = applyFormPreviewColor(sectionHtml);
-            html.append(sectionHtml).append("\n");
+            html.append(tag).append("\n");
         }
 
         html.append("</body>\n");
@@ -63,101 +255,18 @@ public class WireframeHtmlGenerator {
         return html.toString();
     }
 
-    private String generateFromPaginaJson(String json) {
-        try {
-            Map<String, Object> root = OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
-            Map<String, Object> pagina = asMap(root.get("pagina"));
-            Map<String, Object> head = asMap(pagina.get("head"));
-            Map<String, Object> corpo = asMap(pagina.get("corpo"));
-
-            StringBuilder html = new StringBuilder();
-            html.append("<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n")
-                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
-                .append("<title>").append(escapeHtmlText(asText(head.get("texto"), "Wireframe provisório"))).append("</title>\n")
-                .append("<style>\n").append(baseCss());
-            html.append("\nbody{").append(renderInlineStyle(asList(corpo.get("estilos")))).append("}\n");
-            html.append("</style>\n</head>\n<body>\n");
-            int sectionIndex = 0;
-            for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
-                html.append(renderSection(secao, sectionIndex++));
-            }
-            html.append("</body>\n</html>\n");
-            return html.toString();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Falha ao renderizar novo JSON de wireframe", e);
-        }
-    }
-
-
-    private String renderSection(Map<String, Object> secao, int sectionIndex) {
-        String sectionHtml = renderElement(secao, "elementosSeccao", "section");
-        return applySectionPreviewColor(sectionHtml, sectionIndex);
-    }
-
-    private String renderElement(Map<String, Object> node, String childKey, String defaultTag) {
-        String tag = asText(node.get("tag"), defaultTag);
-        String id = asText(node.get("id"), "");
-        String style = renderInlineStyle(asList(node.get("estilos")));
-        StringBuilder out = new StringBuilder();
-        out.append("<").append(tag);
-        if (StringUtils.hasText(id)) out.append(" id=\"").append(escapeHtmlAttribute(id)).append("\"");
-        if (StringUtils.hasText(style)) out.append(" style=\"").append(escapeHtmlAttribute(style)).append("\"");
-        out.append(">");
-        out.append(resolveText(node));
-        for (Map<String, Object> child : asList(node.get("elementosInternos"))) {
-            out.append(renderElement(child, "elementosInternos", "div"));
-        }
-        for (Map<String, Object> child : asList(node.get(childKey))) {
-            out.append(renderElement(child, "elementosInternos", "div"));
-        }
-        out.append("</").append(tag).append(">\n");
-        return out.toString();
-    }
-
-    private String resolveText(Map<String, Object> node) {
-        String tag = asText(node.get("tag"), "").trim().toLowerCase();
-        if ("img".equals(tag)) {
-            return buildImagePlaceholder(node);
-        }
-
-        Map<String, Object> texto = asMap(node.get("texto"));
-        String content = asText(texto.get("conteudo"), "").trim();
-        return escapeHtmlText(StringUtils.hasText(content) ? content : "");
-    }
-
-    private String buildImagePlaceholder(Map<String, Object> node) {
-        String style = renderInlineStyle(asList(node.get("estilos")));
-        String width = extractCssValue(style, "width", "100%");
-        String height = extractCssValue(style, "height", "180px");
-        String label = "Imagem " + width + " x " + height;
-
-        return "<div style=\"display:flex;align-items:center;justify-content:center;border:2px dashed #94a3b8;background:#e2e8f0;color:#334155;font-size:12px;width:"
-            + escapeHtmlAttribute(width)
-            + ";height:"
-            + escapeHtmlAttribute(height)
-            + ";max-width:100%;\">"
-            + escapeHtmlText(label)
-            + "</div>";
-    }
-
-    private String extractCssValue(String style, String property, String fallback) {
-        Pattern pattern = Pattern.compile("(?:^|;)\\s*" + Pattern.quote(property) + "\\s*:\s*([^;]+)", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(style == null ? "" : style);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-        return fallback;
-    }
-
     private String renderInlineStyle(List<Map<String, Object>> estilos) {
         StringBuilder out = new StringBuilder();
+
         for (Map<String, Object> estilo : estilos) {
             String nome = asText(estilo.get("nome"), "");
             String valor = asText(estilo.get("valor"), "");
+
             if (StringUtils.hasText(nome) && StringUtils.hasText(valor)) {
-                out.append(nome).append(":").append(valor).append(";");
+                out.append(nome.trim()).append(":").append(valor.trim()).append(";");
             }
         }
+
         return out.toString();
     }
 
@@ -179,136 +288,16 @@ public class WireframeHtmlGenerator {
         return escapeHtmlAttribute(value);
     }
 
-    private static String baseCss() {
-        return """
-            *{box-sizing:border-box;}
-            body{margin:0;padding:0;font-family:Arial,sans-serif;line-height:1.4;}
-            img{display:block;max-width:100%;}
-            section{border-bottom:1px solid #e5e7eb;}
-            """;
-    }
-
-    private static String fillLoremIpsumPlaceholders(String html) {
-        String output = html;
-
-        output = output.replaceAll(
-            "(?is)<(h1|h2|h3)([^>]*)>\\s*</\\1>",
-            "<$1$2>Lorem ipsum dolor sit amet</$1>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<p([^>]*)>\\s*</p>",
-            "<p$1>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<li([^>]*)>\\s*</li>",
-            "<li$1>Lorem ipsum dolor sit amet.</li>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<a([^>]*)>\\s*</a>",
-            "<a$1>Lorem ipsum dolor sit amet</a>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<button([^>]*)>\\s*</button>",
-            "<button$1>Lorem ipsum dolor sit amet</button>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<label([^>]*)>\\s*</label>",
-            "<label$1>Lorem ipsum</label>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<option([^>]*)>\\s*</option>",
-            "<option$1>Lorem ipsum</option>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<span([^>]*)>\\s*</span>",
-            "<span$1>Lorem ipsum</span>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<summary([^>]*)>\\s*</summary>",
-            "<summary$1>Lorem ipsum dolor sit amet</summary>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<strong([^>]*)>\\s*</strong>",
-            "<strong$1>Lorem ipsum</strong>"
-        );
-
-        output = output.replaceAll(
-            "(?is)<small([^>]*)>\\s*</small>",
-            "<small$1>Lorem ipsum</small>"
-        );
-
-        return output;
-    }
-
-    private static String applySectionPreviewColor(String html, int index) {
-        boolean lightSurface = index % 2 == 0;
-        String background = lightSurface ? "#ffffff" : "#111111";
-        String textColor = lightSurface ? "#111111" : "#ffffff";
-        String border = lightSurface ? "#e5e7eb" : "#374151";
-
-        String previewStyle = "background:" + background
-            + ";color:" + textColor
-            + ";border-bottom:1px solid " + border
-            + ";";
-
-        Pattern sectionPattern = Pattern.compile("<section\\b([^>]*)>", Pattern.CASE_INSENSITIVE);
-        Matcher sectionMatcher = sectionPattern.matcher(html);
-
-        if (!sectionMatcher.find()) {
-            return html;
+    private static String escapeHtmlAttribute(String value) {
+        if (value == null) {
+            return "";
         }
 
-        String attrs = sectionMatcher.group(1);
-        String mergedAttrs = mergeStyleAttribute(attrs, previewStyle);
-
-        return sectionMatcher.replaceFirst(
-            Matcher.quoteReplacement("<section" + mergedAttrs + ">")
-        );
-    }
-
-    private static String applyFormPreviewColor(String html) {
-        Pattern formPattern = Pattern.compile("<form\\b([^>]*)>", Pattern.CASE_INSENSITIVE);
-        Matcher formMatcher = formPattern.matcher(html);
-
-        if (!formMatcher.find()) {
-            return html;
-        }
-
-        String attrs = formMatcher.group(1);
-        String formStyle = "background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:12px;padding:16px;";
-        String mergedAttrs = mergeStyleAttribute(attrs, formStyle);
-
-        return formMatcher.replaceFirst(
-            Matcher.quoteReplacement("<form" + mergedAttrs + ">")
-        );
-    }
-
-    private static String mergeStyleAttribute(String attrs, String styleToAppend) {
-        Pattern stylePattern = Pattern.compile("\\sstyle=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
-        Matcher styleMatcher = stylePattern.matcher(attrs);
-
-        if (!styleMatcher.find()) {
-            return attrs + " style=\"" + styleToAppend + "\"";
-        }
-
-        String existingStyle = styleMatcher.group(1).trim();
-
-        String mergedStyle = existingStyle.endsWith(";")
-            ? existingStyle + styleToAppend
-            : existingStyle + ";" + styleToAppend;
-
-        return styleMatcher.replaceFirst(
-            " style=\"" + Matcher.quoteReplacement(mergedStyle) + "\""
-        );
+        return value
+                .replace("&", "&amp;")
+                .replace("\"", "&quot;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     private static String extractSectionOrderArray(String json) {
@@ -352,7 +341,7 @@ public class WireframeHtmlGenerator {
 
     private static List<String> extractStringFieldValues(String text, String field) {
         Pattern pattern = Pattern.compile(
-            "\\\"" + Pattern.quote(field) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\""
+                "\\\"" + Pattern.quote(field) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\""
         );
 
         Matcher matcher = pattern.matcher(text);
@@ -364,7 +353,6 @@ public class WireframeHtmlGenerator {
 
         return values;
     }
-
 
     private static List<String> extractFieldRawValues(String text, String field) {
         List<String> values = new ArrayList<>();
@@ -405,7 +393,10 @@ public class WireframeHtmlGenerator {
             }
 
             if (start == '{' || start == '[') {
-                int valueEnd = start == '{' ? findMatchingBrace(text, valueStart) : findMatchingBracket(text, valueStart);
+                int valueEnd = start == '{'
+                        ? findMatchingBrace(text, valueStart)
+                        : findMatchingBracket(text, valueStart);
+
                 values.add(text.substring(valueStart, valueEnd + 1));
                 searchFrom = valueEnd + 1;
                 continue;
@@ -491,7 +482,7 @@ public class WireframeHtmlGenerator {
 
     private static String extractStringFieldValue(String objectText, String field) {
         Pattern pattern = Pattern.compile(
-            "\\\"" + Pattern.quote(field) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\""
+                "\\\"" + Pattern.quote(field) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\""
         );
 
         Matcher matcher = pattern.matcher(objectText);
@@ -519,9 +510,9 @@ public class WireframeHtmlGenerator {
 
     private static boolean looksLikePlainCss(String value) {
         return value.contains("{")
-            && value.contains("}")
-            && value.contains(":")
-            && value.contains(";");
+                && value.contains("}")
+                && value.contains(":")
+                && value.contains(";");
     }
 
     private static String normalizePlainCssSelectors(String css) {
@@ -543,14 +534,14 @@ public class WireframeHtmlGenerator {
 
             if (selector.trim().startsWith("@media")) {
                 output.append(selector)
-                    .append("{")
-                    .append(normalizePlainCssSelectors(declarations))
-                    .append("}");
+                        .append("{")
+                        .append(normalizePlainCssSelectors(declarations))
+                        .append("}");
             } else {
                 output.append(normalizeSelectorList(selector))
-                    .append("{")
-                    .append(declarations)
-                    .append("}");
+                        .append("{")
+                        .append(declarations)
+                        .append("}");
             }
 
             index = closeBrace + 1;
@@ -580,14 +571,14 @@ public class WireframeHtmlGenerator {
 
                 if (selector.startsWith("@media")) {
                     css.append(selector)
-                        .append("{\n")
-                        .append(parseNestedRules(declarationObject))
-                        .append("}\n");
+                            .append("{\n")
+                            .append(parseNestedRules(declarationObject))
+                            .append("}\n");
                 } else {
                     css.append(normalizeSelectorList(selector))
-                        .append(" {\n")
-                        .append(parseDeclarations(declarationObject))
-                        .append("}\n");
+                            .append(" {\n")
+                            .append(parseDeclarations(declarationObject))
+                            .append("}\n");
                 }
 
                 i = objectEnd + 1;
@@ -619,9 +610,9 @@ public class WireframeHtmlGenerator {
                 String declarations = nestedObject.substring(i + 1, objectEnd);
 
                 output.append(normalizeSelectorList(selector))
-                    .append(" {\n")
-                    .append(parseDeclarations(declarations))
-                    .append("}\n");
+                        .append(" {\n")
+                        .append(parseDeclarations(declarations))
+                        .append("}\n");
 
                 i = objectEnd + 1;
             } else {
@@ -640,10 +631,10 @@ public class WireframeHtmlGenerator {
 
         while (matcher.find()) {
             output.append("  ")
-                .append(toKebabCase(matcher.group(1)))
-                .append(": ")
-                .append(matcher.group(2))
-                .append(";\n");
+                    .append(toKebabCase(matcher.group(1)))
+                    .append(": ")
+                    .append(matcher.group(2))
+                    .append(";\n");
         }
 
         return output.toString();
@@ -676,19 +667,19 @@ public class WireframeHtmlGenerator {
         }
 
         if (
-            trimmed.startsWith("#")
-                || trimmed.startsWith(".")
-                || trimmed.startsWith("[")
-                || trimmed.startsWith(":")
+                trimmed.startsWith("#")
+                        || trimmed.startsWith(".")
+                        || trimmed.startsWith("[")
+                        || trimmed.startsWith(":")
         ) {
             return trimmed;
         }
 
         if (
-            trimmed.contains(" ")
-                || trimmed.contains(">")
-                || trimmed.contains("+")
-                || trimmed.contains("~")
+                trimmed.contains(" ")
+                        || trimmed.contains(">")
+                        || trimmed.contains("+")
+                        || trimmed.contains("~")
         ) {
             return trimmed;
         }
@@ -702,29 +693,30 @@ public class WireframeHtmlGenerator {
 
     private static boolean isHtmlTagSelector(String selector) {
         return selector.equals("html")
-            || selector.equals("body")
-            || selector.equals("main")
-            || selector.equals("section")
-            || selector.equals("div")
-            || selector.equals("form")
-            || selector.equals("label")
-            || selector.equals("input")
-            || selector.equals("select")
-            || selector.equals("option")
-            || selector.equals("button")
-            || selector.equals("a")
-            || selector.equals("img")
-            || selector.equals("h1")
-            || selector.equals("h2")
-            || selector.equals("h3")
-            || selector.equals("p")
-            || selector.equals("ul")
-            || selector.equals("li")
-            || selector.equals("span")
-            || selector.equals("summary")
-            || selector.equals("details")
-            || selector.equals("strong")
-            || selector.equals("small");
+                || selector.equals("body")
+                || selector.equals("main")
+                || selector.equals("section")
+                || selector.equals("div")
+                || selector.equals("form")
+                || selector.equals("label")
+                || selector.equals("input")
+                || selector.equals("select")
+                || selector.equals("option")
+                || selector.equals("button")
+                || selector.equals("a")
+                || selector.equals("img")
+                || selector.equals("h1")
+                || selector.equals("h2")
+                || selector.equals("h3")
+                || selector.equals("p")
+                || selector.equals("ul")
+                || selector.equals("ol")
+                || selector.equals("li")
+                || selector.equals("span")
+                || selector.equals("summary")
+                || selector.equals("details")
+                || selector.equals("strong")
+                || selector.equals("small");
     }
 
     private static String renderBodyAttributes(List<BodyAttribute> attributes) {
@@ -736,10 +728,10 @@ public class WireframeHtmlGenerator {
 
         for (BodyAttribute attribute : attributes) {
             output.append(" ")
-                .append(escapeHtmlAttribute(attribute.name()))
-                .append("=\"")
-                .append(escapeHtmlAttribute(attribute.value()))
-                .append("\"");
+                    .append(escapeHtmlAttribute(attribute.name()))
+                    .append("=\"")
+                    .append(escapeHtmlAttribute(attribute.value()))
+                    .append("\"");
         }
 
         return output.toString();
@@ -747,12 +739,12 @@ public class WireframeHtmlGenerator {
 
     private static String unescapeJson(String raw) {
         return raw
-            .replace("\\\"", "\"")
-            .replace("\\n", "\n")
-            .replace("\\r", "")
-            .replace("\\t", "\t")
-            .replace("\\/", "/")
-            .replace("\\\\", "\\");
+                .replace("\\\"", "\"")
+                .replace("\\n", "\n")
+                .replace("\\r", "")
+                .replace("\\t", "\t")
+                .replace("\\/", "/")
+                .replace("\\\\", "\\");
     }
 
     private static String toKebabCase(String value) {
@@ -831,14 +823,6 @@ public class WireframeHtmlGenerator {
         }
 
         return backslashes % 2 == 1;
-    }
-
-    private static String escapeHtmlAttribute(String value) {
-        return value
-            .replace("&", "&amp;")
-            .replace("\"", "&quot;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;");
     }
 
     private record BodyAttribute(String name, String value) {

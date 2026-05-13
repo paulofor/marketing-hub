@@ -28,13 +28,13 @@ Wireframe da Landing: IMPORTANTE !!
 {dados-landingPageWireframe}
 
 template_id: landing-copy
-template_version: v2
+template_version: v3
 artifact_target: landingPageCopy
 
 SYSTEM_INSTRUCTIONS
 Objetivo principal desta etapa:
 - Ler o JSON que vem logo após "Wireframe da Landing: IMPORTANTE !!".
-- Para cada seção/slot do wireframe, gerar os textos finais para os campos do contrato de `landingPageCopy`.
+- Para cada seção do wireframe, gerar uma lista de itens contendo somente `id` e `texto`, preservando exatamente os ids originais do wireframe.
 - Respeitar obrigatoriamente os sinais de `uiTags` e os limites sugeridos em `uiSizeTexts`.
 
 Elementos de contexto (usar para direcionar a argumentação, sem mudar a estrutura do wireframe):
@@ -72,15 +72,15 @@ Campos obrigatórios:
 - messageMatchNotes
 - primaryCTA
 - complianceNotes
-- bodySections[] com sectionId, slotId, sectionType, title, summary, bullets, copy, ctaSupport, sectionDependsOn, messageMatchNotes
+- bodySections[] com sectionId e items[] (cada item contendo apenas id e texto)
 - ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
 - faq[] com question, answer, objectionTag
 - consistencyChecks[] com check, status (PASS/WARN/FAIL), details
 
 Critérios mínimos de aceite no próprio output:
 - `bodySections.length >= 4`
-- Se `landingPageWireframe.copySlots` existir, `bodySections[i].slotId` deve pertencer aos copySlots da `sectionId` correspondente.
-- cada `bodySections[i].bullets.length >= 3`
+- Cada `bodySections[i].items[j].id` deve existir na seção correspondente do wireframe (`elementosSeccao` e filhos), sem renomear ids.
+- cada `bodySections[i].items.length >= 3`
 - `faq.length >= 3`
 - `ctaBlocks.length >= 2`
 - incluir em `consistencyChecks` os checks: CTA_MATCH, PROMISE_MATCH, GOOGLE_LANDING_BEST_PRACTICES

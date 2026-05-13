@@ -3438,37 +3438,50 @@ function FrameworkImageGenerationPanel({
       ),
     [statuses],
   );
+  const readyToGenerateCount = useMemo(
+    () =>
+      statuses.filter(
+        (item) =>
+          item.status?.toUpperCase() === "PLANNED" ||
+          item.status?.toUpperCase() === "FAILED",
+      ).length,
+    [statuses],
+  );
 
   return (
     <div className="card border-0 shadow-sm mt-3">
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
           <div>
-            <h6 className="card-title mb-1">Geração das imagens planejadas</h6>
+            <h6 className="card-title mb-1">Gerar imagens em lote (AI Worker)</h6>
             <p className="text-muted small mb-0">
-              Dispare a geração final e acompanhe a timeline de cada item do
-              planejamento até a versão web-ready.
+              Após a etapa de prompt de imagem, esta etapa envia todos os prompts
+              pendentes para o AI Worker em modo batch na OpenAI e mostra a
+              timeline operacional completa.
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-success btn-sm"
-            onClick={() => void onGenerate()}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <span className="d-inline-flex align-items-center gap-1">
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-                Gerando...
-              </span>
-            ) : (
-              "Gerar imagens"
-            )}
-          </button>
+          <div className="d-flex align-items-center gap-2">
+            <span className="badge text-bg-light">{readyToGenerateCount} pendente(s)</span>
+            <button
+              type="button"
+              className="btn btn-success btn-sm"
+              onClick={() => void onGenerate()}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <span className="d-inline-flex align-items-center gap-1">
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                  Gerando...
+                </span>
+              ) : (
+                "Gerar imagens"
+              )}
+            </button>
+          </div>
         </div>
 
         {isLoading ? (

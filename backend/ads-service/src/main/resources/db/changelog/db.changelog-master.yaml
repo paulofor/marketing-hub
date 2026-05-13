@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-05-13-oprm-cnpj-market-import-phase-a-b.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-05-13-mois-collected-reference-temperature.yaml
       relativeToChangelogFile: true
 

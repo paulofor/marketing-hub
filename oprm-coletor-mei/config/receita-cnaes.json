@@ -1,0 +1,12 @@
+[
+  {
+    "cnaeCode": "62.01-5-01",
+    "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda",
+    "active": true
+  },
+  {
+    "cnaeCode": "62.02-3-00",
+    "cnaeLabel": "Desenvolvimento e licenciamento de programas de computador customizáveis",
+    "active": true
+  }
+]

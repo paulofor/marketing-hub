@@ -1,3 +1,7 @@
+  - include:
+      file: changesets/2026-05-13-mois-collected-reference-temperature.yaml
+      relativeToChangelogFile: true
+
 databaseChangeLog:
   - include:
       file: changesets/2026-05-11-oprm-niche-catalog-ingestion.yaml

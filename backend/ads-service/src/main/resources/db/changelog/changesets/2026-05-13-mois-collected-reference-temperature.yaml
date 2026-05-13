@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-13-mois-collected-reference-temperature
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: "0"
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'mois_collected_reference'
+                AND COLUMN_NAME = 'hotmart_temperature'
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_collected_reference
+                ADD COLUMN hotmart_temperature DECIMAL(10,2) NULL AFTER sales_page_url;

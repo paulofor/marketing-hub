@@ -144,6 +144,7 @@ export default function HotmartPage() {
                     const producer = item.producerName;
                     const price = item.price;
                     const currency = item.currency ?? "BRL";
+                    const salesPageUrl = item.salesPageUrl ?? item.productUrl;
 
                     return (
                       <article key={item.referenceId} className="col-12 col-md-6 col-lg-4">
@@ -162,6 +163,9 @@ export default function HotmartPage() {
                             <p className="small mb-2">
                               Score de sucesso: <strong>{item.successScore ?? "—"}</strong>
                             </p>
+                            <p className="small mb-2">
+                              Temperatura: <strong>{item.temperature ?? "—"}</strong>
+                            </p>
                             <p className="small mb-3">
                               Preço:{" "}
                               <strong>
@@ -169,12 +173,12 @@ export default function HotmartPage() {
                               </strong>
                             </p>
                             <a
-                              href={item.productUrl}
+                              href={salesPageUrl}
                               target="_blank"
                               rel="noreferrer"
                               className="btn btn-outline-primary btn-sm mt-auto"
                             >
-                              Ver produto
+                              Ver página de vendas
                             </a>
                           </div>
                         </div>

@@ -178,7 +178,10 @@ public class HotmartCollectorService {
             Map<String, String> rawMetadata = new HashMap<>();
             rawMetadata.put("productName", product.title());
             rawMetadata.put("productUrl", product.detailsUrl());
-            rawMetadata.put("salesPageUrl", product.detailsUrl());
+            rawMetadata.put("salesPageUrl", coalesceNotBlank(product.salesPageUrl(), product.detailsUrl()));
+            if (product.temperature() != null) {
+                rawMetadata.put("hotmartTemperature", String.valueOf(product.temperature()));
+            }
             rawMetadata.put("producerName", null);
 
             Map<String, Object> reference = new HashMap<>();
@@ -186,7 +189,7 @@ public class HotmartCollectorService {
             reference.put("jobId", jobId);
             reference.put("source", "HOTMART");
             reference.put("title", product.title());
-            reference.put("url", product.detailsUrl());
+            reference.put("url", coalesceNotBlank(product.salesPageUrl(), product.detailsUrl()));
             reference.put("niche", defaultNiche);
             reference.put("status", "COLLECTED");
             reference.put("favorite", false);
@@ -263,6 +266,7 @@ public class HotmartCollectorService {
             for (JsonNode item : productsNode) {
                 if (products.size() >= boundedMax) break;
                 String title = extractProductText(item, "name", "productName", "title");
+                String salesPageUrl = extractProductText(item, "salesPageUrl", "pageUrl", "page_url", "link");
                 String url = extractProductText(item, "checkoutUrl", "productUrl", "url", "link");
                 if (url == null || url.isBlank()) {
                     url = hotmartMarketUrl;
@@ -272,11 +276,14 @@ public class HotmartCollectorService {
                             previewFieldNames(item),
                             truncateForLog(item.toString(), 600));
                 }
+                Double temperature = extractProductNumber(item, "temperature", "temp", "hotness");
                 products.add(new HotmartProductSnapshot(
                         title == null || title.isBlank() ? "Produto sem título" : title,
                         "N/A",
                         "N/A",
                         url,
+                        temperature,
+                        salesPageUrl,
                         Instant.now()));
             }
             return products.size();
@@ -528,6 +535,29 @@ public class HotmartCollectorService {
             JsonNode child = node.path(key);
             if (child.isTextual() && !child.asText().isBlank()) {
                 return child.asText();
+            }
+        }
+        return null;
+    }
+
+
+    private Double extractProductNumber(JsonNode item, String... keys) {
+        if (item == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            JsonNode node = findNode(item, key);
+            if (node == null || node.isMissingNode() || node.isNull()) {
+                continue;
+            }
+            if (node.isNumber()) {
+                return node.asDouble();
+            }
+            if (node.isTextual()) {
+                try {
+                    return Double.parseDouble(node.asText().trim());
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
         return null;

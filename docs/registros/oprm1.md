@@ -19,3 +19,7 @@
 - 2026-05-12 13:40:00 (UTC-3): habilitado endpoint Actuator de arquivo de log no módulo `oprm-coletor-mei` com exposição `logfile` e configuração de `logging.file.name` (default `/tmp/oprm-coletor-mei.log`) para permitir consulta operacional via URL `/actuator/logfile`.
 
 - 2026-05-12 19:30:00 (UTC-3): reprogramado novamente o agendamento padrão da ingestão de CNAEs da Receita Federal no módulo `oprm-coletor-mei` para executar às 19:30 no fuso `America/Sao_Paulo` (`cron` padrão `0 30 19 * * *`), mantendo override por `OPRM_COLLECTOR_SCHEDULE_CRON`.
+
+- 2026-05-12 22:15:00 (UTC-3): adicionados logs explícitos nas primeiras linhas do método agendado `runScheduledIngestion` no `oprm-coletor-mei` (incluindo `enabled`, `cron`, `timezone`, `source` e `payloadFile`) para diagnosticar ausência de execução; também reprogramado o agendamento padrão para 23:00 no fuso `America/Sao_Paulo` (`cron` padrão `0 0 23 * * *`) e habilitado por padrão (`enabled=true`), mantendo overrides por variáveis de ambiente.
+
+- 2026-05-12 22:35:00 (UTC-3): ajuste solicitado: agendamento fixado diretamente no método `runScheduledIngestion` com `@Scheduled(cron = "0 0 23 * * *", zone = "America/Sao_Paulo")` para eliminar dependência de configuração externa do horário de execução.

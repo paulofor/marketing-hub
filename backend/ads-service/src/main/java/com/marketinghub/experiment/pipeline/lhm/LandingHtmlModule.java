@@ -634,7 +634,7 @@ public class LandingHtmlModule {
                     if (!slotId.equalsIgnoreCase(asTrimmedString(bodySection.get("slotId")))) {
                         continue;
                     }
-                    appendBodySectionBlock(slotted, bodySection);
+                    appendBodySectionBlock(slotted, section, bodySection);
                 }
             }
             if (slotted.length() > 0) {
@@ -647,7 +647,7 @@ public class LandingHtmlModule {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            appendBodySectionBlock(sb, bodySection);
+            appendBodySectionBlock(sb, section, bodySection);
             return sb.toString();
         }
         return "";
@@ -680,7 +680,42 @@ public class LandingHtmlModule {
                 .toList();
     }
 
-    private void appendBodySectionBlock(StringBuilder sb, Map<String, Object> bodySection) {
+    @SuppressWarnings("unchecked")
+    private void appendBodySectionBlock(StringBuilder sb, Map<String, Object> section, Map<String, Object> bodySection) {
+        if (bodySection.get("items") instanceof List<?> rawItems) {
+            Map<String, String> tagsById = buildTagsById(section);
+            StringBuilder pendingListItems = new StringBuilder();
+            for (Object rawItem : rawItems) {
+                if (!(rawItem instanceof Map<?, ?> itemMap)) {
+                    continue;
+                }
+                String itemId = asTrimmedString(((Map<String, Object>) itemMap).get("id"));
+                String text = asTrimmedString(((Map<String, Object>) itemMap).get("texto"));
+                if (!StringUtils.hasText(text)) {
+                    continue;
+                }
+                String tag = firstNonBlank(tagsById.get(itemId), "p");
+                if ("li".equalsIgnoreCase(tag)) {
+                    pendingListItems.append("<li>").append(escapeHtml(text)).append("</li>");
+                    continue;
+                }
+                if (pendingListItems.length() > 0) {
+                    sb.append("<ul>").append(pendingListItems).append("</ul>");
+                    pendingListItems.setLength(0);
+                }
+                if ("h1".equalsIgnoreCase(tag) || "h2".equalsIgnoreCase(tag) || "h3".equalsIgnoreCase(tag)) {
+                    sb.append("<").append(tag.toLowerCase(Locale.ROOT)).append(">")
+                            .append(escapeHtml(text))
+                            .append("</").append(tag.toLowerCase(Locale.ROOT)).append(">");
+                } else {
+                    appendParagraph(sb, text);
+                }
+            }
+            if (pendingListItems.length() > 0) {
+                sb.append("<ul>").append(pendingListItems).append("</ul>");
+            }
+            return;
+        }
         appendRichText(sb, asTrimmedString(bodySection.get("summary")));
         appendRichText(sb, asTrimmedString(bodySection.get("copy")));
         if (bodySection.get("bullets") instanceof List<?> rawBullets) {
@@ -697,6 +732,36 @@ public class LandingHtmlModule {
             }
         }
         appendParagraph(sb, asTrimmedString(bodySection.get("ctaSupport")));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> buildTagsById(Map<String, Object> section) {
+        if (section == null || !(section.get("elementosSeccao") instanceof List<?> rawElements)) {
+            return Map.of();
+        }
+        java.util.LinkedHashMap<String, String> tagsById = new java.util.LinkedHashMap<>();
+        for (Object rawElement : rawElements) {
+            collectTagsById(rawElement, tagsById);
+        }
+        return tagsById;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void collectTagsById(Object node, Map<String, String> target) {
+        if (!(node instanceof Map<?, ?> rawMap)) {
+            return;
+        }
+        Map<String, Object> map = (Map<String, Object>) rawMap;
+        String id = asTrimmedString(map.get("id"));
+        String tag = asTrimmedString(map.get("tag"));
+        if (StringUtils.hasText(id) && StringUtils.hasText(tag)) {
+            target.put(id, tag);
+        }
+        if (map.get("elementosInternos") instanceof List<?> internals) {
+            for (Object child : internals) {
+                collectTagsById(child, target);
+            }
+        }
     }
     private String buildFaqMarkup(String sectionId, List<Map<String, Object>> faqCopy) {
         if (!StringUtils.hasText(sectionId) || faqCopy == null || faqCopy.isEmpty()) {

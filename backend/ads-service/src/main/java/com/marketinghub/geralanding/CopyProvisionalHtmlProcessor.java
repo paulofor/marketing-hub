@@ -10,9 +10,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 @Component
 public class CopyProvisionalHtmlProcessor {
@@ -53,8 +55,9 @@ public class CopyProvisionalHtmlProcessor {
                 .prettyPrint(false)
                 .charset("utf-8")
                 .syntax(Document.OutputSettings.Syntax.html);
+        Map<String, Element> elementByNormalizedId = indexElementsByNormalizedId(document);
         for (Map.Entry<String, String> entry : copyByItemId.entrySet()) {
-            Element element = document.getElementById(entry.getKey());
+            Element element = resolveElementByItemId(document, elementByNormalizedId, entry.getKey());
             if (element != null && StringUtils.hasText(entry.getValue())) {
                 applyCopyToElement(element, entry.getValue().trim());
             }
@@ -66,6 +69,40 @@ public class CopyProvisionalHtmlProcessor {
         }
 
         return normalizeSerializedHtml(document.outerHtml());
+    }
+
+    private Element resolveElementByItemId(Document document, Map<String, Element> elementByNormalizedId, String itemId) {
+        if (!StringUtils.hasText(itemId)) {
+            return null;
+        }
+        Element directElement = document.getElementById(itemId);
+        if (directElement != null) {
+            return directElement;
+        }
+        return elementByNormalizedId.get(normalizeId(itemId));
+    }
+
+    private Map<String, Element> indexElementsByNormalizedId(Document document) {
+        Map<String, Element> result = new HashMap<>();
+        for (Element element : document.getAllElements()) {
+            String id = element.id();
+            if (!StringUtils.hasText(id)) {
+                continue;
+            }
+            result.putIfAbsent(normalizeId(id), element);
+        }
+        return result;
+    }
+
+    private String normalizeId(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return value.trim()
+                .replace('–', '-')
+                .replace('—', '-')
+                .replaceAll("\\s+", "")
+                .toLowerCase(Locale.ROOT);
     }
 
 
@@ -200,7 +237,7 @@ public class CopyProvisionalHtmlProcessor {
                         asString(itemMap.get("texto"))
                 );
                 if (StringUtils.hasText(id) && StringUtils.hasText(copy)) {
-                    result.put(id.trim(), copy.trim());
+                    result.put(normalizeId(id), copy.trim());
                 }
             }
         }

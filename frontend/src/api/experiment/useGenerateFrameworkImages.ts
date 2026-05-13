@@ -20,6 +20,9 @@ export function useGenerateFrameworkImages(experimentId?: string) {
           queryKey: ["framework-image-statuses", experimentId],
         }),
         queryClient.invalidateQueries({
+          queryKey: ["framework-image-summary", experimentId],
+        }),
+        queryClient.invalidateQueries({
           queryKey: ["experiment-pipeline-jobs", experimentId],
         }),
       ]);

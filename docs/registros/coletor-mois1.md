@@ -104,3 +104,8 @@
 - Scheduler do coletor Hotmart ajustado para alternar ciclos por hora: horas ímpares executam ciclo 1 (listagem) e horas pares executam ciclo 2 (detalhes por produto).
 - Implementado no serviço o fluxo de ciclo 2 que lê produtos do backend (`/api/v1/mois/hotmart/products`) e consulta detalhes item a item na Hotmart, priorizando `salesPageUrl`.
 - Criado documento técnico do projeto descrevendo os dois ciclos e regras de execução em `mois-hotmart-collector/docs/ciclos-coleta-hotmart.md`.
+
+## 2026-05-13 14:57:21 UTC-3
+- Criado workflow GitHub Actions `.github/workflows/mois-clickbank-collector-ci.yml` para o módulo `mois-clickbank-collector` com etapas de teste (`mvn test`), build/push no GHCR e deploy no mesmo host do MOIS (`191.252.120.96`) via Docker Compose.
+- Ajustado o Actuator do módulo ClickBank em `application.properties` para padronizar o endpoint de logfile em `/internal/ops-monitor/logfile`.
+- Documentada no `README.md` a URL operacional do logfile via Actuator para acesso direto no host do MOIS.

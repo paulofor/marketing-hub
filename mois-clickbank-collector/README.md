@@ -109,6 +109,17 @@ java -jar target/mois-clickbank-collector.jar --collector.playwright.headless=fa
 ```
 
 
+
+## URL do logfile via Actuator
+
+Com `management.endpoints.web.base-path=/internal/ops-monitor` e `management.endpoints.web.path-mapping.logfile=logfile`, o logfile do módulo fica disponível em:
+
+- `GET /internal/ops-monitor/logfile`
+
+Exemplo em produção (mesmo host do MOIS):
+
+- `http://191.252.120.96:8096/internal/ops-monitor/logfile`
+
 ## Deploy automático (GitHub Actions)
 
 O deploy deste módulo agora é automático via workflow:

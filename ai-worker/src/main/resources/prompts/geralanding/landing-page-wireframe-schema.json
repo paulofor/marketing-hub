@@ -235,7 +235,8 @@
           "type": "string"
         },
         "tag": {
-          "type": "string"
+          "type": "string",
+          "description": "Tag HTML do elemento. Regra contratual: `briefingVisual` só pode existir quando `tag` for exatamente `img`."
         },
         "texto": {
           "$ref": "#/$defs/textoElemento"
@@ -257,7 +258,7 @@
         },
         "briefingVisual": {
           "type": "object",
-          "description": "Campo exclusivo para elementos de imagem (`tag = img`). Não usar em outras tags.",
+          "description": "Campo exclusivo para elementos de imagem (`tag = img`). Não usar em outras tags. Se `tag` for diferente de `img`, omita `briefingVisual`.",
           "additionalProperties": false,
           "properties": {
             "ondeEntraNoVisual": {
@@ -302,32 +303,6 @@
         "texto",
         "estilos",
         "elementosInternos"
-      ],
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "tag": {
-                "const": "img"
-              }
-            },
-            "required": [
-              "tag"
-            ]
-          },
-          "then": {
-            "required": [
-              "briefingVisual"
-            ]
-          },
-          "else": {
-            "not": {
-              "required": [
-                "briefingVisual"
-              ]
-            }
-          }
-        }
       ]
     }
   }

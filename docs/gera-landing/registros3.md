@@ -31,3 +31,7 @@
 - 2026-05-12 21:05:00 UTC-3 — Definido no schema da etapa `landing-page-wireframe` o contrato obrigatório de `briefingVisual` para elementos com `tag="img"` (onde entra, tipo esperado, função comercial, objeção removida e classificação), mantendo a regra como exigência estrutural validável além da instrução de prompt.
 
 - 2026-05-12 21:22:00 UTC-3 — Refinado o contrato do `landing-page-wireframe` para deixar explícito que `briefingVisual` é campo exclusivo de elementos `img`: obrigatório quando `tag="img"` e proibido para outras tags (validação `if/then/else` no schema + reforço no prompt).
+
+- 2026-05-13 09:10:00 UTC-3 — Ajustado o schema da etapa `landing-page-wireframe` para compatibilidade com OpenAI Structured Outputs removendo o uso de `allOf` (com `if/then/else`), que é rejeitado pela API com erro `invalid_json_schema`; a regra de uso exclusivo de `briefingVisual` para `img` permanece reforçada no prompt.
+
+- 2026-05-13 09:32:00 UTC-3 — Reforçada a regra contratual no schema `landing-page-wireframe`: o campo `tag` agora explicita literalmente que `briefingVisual` só é permitido quando `tag = "img"`, e o próprio `briefingVisual` passou a repetir a instrução de omissão para demais tags.

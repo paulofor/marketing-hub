@@ -18,6 +18,7 @@ import java.util.Map;
 public class CopyProvisionalHtmlProcessor {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final WireframeHtmlGenerator wireframeHtmlGenerator = new WireframeHtmlGenerator();
 
     public String process(String wireframeJson, String copyJson) {
         if (!StringUtils.hasText(wireframeJson)) {
@@ -86,7 +87,7 @@ public class CopyProvisionalHtmlProcessor {
     private String buildHtmlFromWireframe(Map<String, Object> wireframe) {
         Object rawSections = wireframe.get("sectionOrder");
         if (!(rawSections instanceof List<?> sections) || sections.isEmpty()) {
-            throw new IllegalArgumentException("Wireframe sem sectionOrder para montar HTML base");
+            return buildHtmlFromWireframePaginaModel(wireframe);
         }
 
         List<String> sectionBlocks = new ArrayList<>();
@@ -123,6 +124,18 @@ public class CopyProvisionalHtmlProcessor {
                 + "\n  </style>\n</head>\n<body" + buildBodyAttributes(wireframe) + ">"
                 + String.join("\n", sectionBlocks)
                 + "\n</body>\n</html>";
+    }
+
+    private String buildHtmlFromWireframePaginaModel(Map<String, Object> wireframe) {
+        if (!wireframe.containsKey("pagina")) {
+            throw new IllegalArgumentException("Wireframe sem sectionOrder para montar HTML base");
+        }
+        try {
+            String wireframeJson = OBJECT_MAPPER.writeValueAsString(wireframe);
+            return wireframeHtmlGenerator.generateFromJson(wireframeJson);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao montar HTML base para o novo formato de wireframe", e);
+        }
     }
 
     @SuppressWarnings("unchecked")

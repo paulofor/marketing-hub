@@ -54,6 +54,19 @@ class GeraLandingContollerTest {
         verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-copy"));
     }
 
+
+    @Test
+    void shouldCreateImagePromptsExecutionAndReturnCodeAndStatus() throws Exception {
+        when(executionService.registerInitialExecution(99L, "landing-page-image-planning"))
+                .thenReturn(new GeraLandingStartResponse("job-image-1", "INICIADO"));
+
+        mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/image-prompts/start", 99L))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.idJob").value("job-image-1"))
+                .andExpect(jsonPath("$.status").value("INICIADO"));
+
+        verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-image-planning"));
+    }
     @Test
     void shouldListStageExecutionsOrderedByMostRecentFirst() throws Exception {
         when(executionService.listExperimentStageExecutions(99L, "landing-page-wireframe", true))

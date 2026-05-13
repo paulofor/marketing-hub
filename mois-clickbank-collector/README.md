@@ -92,7 +92,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 
 | Variável | Descrição | Padrão |
 |---|---|---|
-| `MOIS_HOTMART_PORT` | Porta HTTP da aplicação | `8096` |
+| `MOIS_HOTMART_PORT` | Porta HTTP da aplicação | `9096` |
 | `COLLECTOR_HOTMART_SEARCH_URL` | URL de busca Clickbank para coleta | `https://app.clickbank.com/market/search` |
 | `COLLECTOR_HOTMART_SESSION_COOKIE` | Cookie de sessão Clickbank (alternativa ao login/senha) | vazio |
 | `COLLECTOR_HOTMART_USERNAME` | Usuário Clickbank para login automatizado | vazio |
@@ -108,6 +108,17 @@ Exemplo:
 java -jar target/mois-clickbank-collector.jar --collector.playwright.headless=false
 ```
 
+
+
+## URL do logfile via Actuator
+
+Com `management.endpoints.web.base-path=/internal/ops-monitor` e `management.endpoints.web.path-mapping.logfile=logfile`, o logfile do módulo fica disponível em:
+
+- `GET /internal/ops-monitor/logfile`
+
+Exemplo em produção (mesmo host do MOIS):
+
+- `http://191.252.120.96:9096/internal/ops-monitor/logfile`
 
 ## Deploy automático (GitHub Actions)
 

@@ -38,5 +38,5 @@ COPY --from=build /ms-playwright /ms-playwright
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
-EXPOSE 8096
+EXPOSE 9096
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -109,3 +109,7 @@
 - Criado workflow GitHub Actions `.github/workflows/mois-clickbank-collector-ci.yml` para o módulo `mois-clickbank-collector` com etapas de teste (`mvn test`), build/push no GHCR e deploy no mesmo host do MOIS (`191.252.120.96`) via Docker Compose.
 - Ajustado o Actuator do módulo ClickBank em `application.properties` para padronizar o endpoint de logfile em `/internal/ops-monitor/logfile`.
 - Documentada no `README.md` a URL operacional do logfile via Actuator para acesso direto no host do MOIS.
+
+## 2026-05-13 15:01:39 UTC-3
+- Porta HTTP do módulo `mois-clickbank-collector` alterada de `8096` para `9096` (acima de 9000), ajustando `application.properties`, `docker-compose.yml`, `docker-compose.deploy.yml` e `Dockerfile`.
+- README do módulo atualizado para refletir a nova porta padrão (`MOIS_HOTMART_PORT=9096`) e a nova URL de logfile via Actuator (`http://191.252.120.96:9096/internal/ops-monitor/logfile`).

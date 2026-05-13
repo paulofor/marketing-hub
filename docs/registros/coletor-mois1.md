@@ -73,3 +73,13 @@
 - Mapeado snapshot de produto para `references` do payload de persistência, permitindo gravação em `mois_collected_reference` e exibição na tela `/hotmart`.
 - Adicionados parâmetros de configuração para `workspaceId`, `niche` e `marketTheme` no coletor.
 - Testes do módulo executados com sucesso (`mvn test -q`).
+
+## 2026-05-13 21:50 UTC
+- Adicionados logs de causa-raiz no `HotmartCollectorService` para diagnosticar porque a tela mostrava "Produto sem título" e campos "Não informado" mesmo com coleta concluída.
+- A coleta via API agora registra: chaves do objeto raiz quando não encontra array de produtos, quantidade de itens retornados e chaves do primeiro item para validar contrato real do JSON retornado pela Hotmart.
+- Incluído log por item quando título não for mapeável, com `itemPreview` truncado, para identificar exatamente quais campos vieram no payload e ajustar contrato/mapeamento sem suposições.
+- Melhorado o parser para ler campos também em objetos aninhados (`product` e `sourceObject`), reduzindo perda de dados quando a Hotmart muda o formato do JSON.
+
+## 2026-05-13 22:05 UTC
+- Incluído log explícito da resposta crua do fetch da Hotmart no fluxo principal da API (`HOTMART_FETCH_RESPOSTA_CRUA`), com status HTTP e `bodyRaw` truncado em 10.000 caracteres.
+- Objetivo: deixar inequívoco no log exatamente o que o coletor conseguiu obter da Hotmart para diagnóstico de contrato/mapeamento.

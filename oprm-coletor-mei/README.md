@@ -43,11 +43,11 @@ docker build -t oprm-coletor-mei:local .
 
 
 ## Agendamento da ingestão (Receita Federal)
-Para agendar a ingestão automática no OPRM Coletor às **19:30** (horário de Brasília), configure:
+Para agendar a ingestão automática no OPRM Coletor às **16:45** (horário de Brasília), configure:
 
 ```bash
 export OPRM_COLLECTOR_SCHEDULE_ENABLED=true
-export OPRM_COLLECTOR_SCHEDULE_CRON="0 30 19 * * *"
+export OPRM_COLLECTOR_SCHEDULE_CRON="0 45 16 * * *"
 export OPRM_COLLECTOR_SCHEDULE_TIMEZONE="America/Sao_Paulo"
 export OPRM_COLLECTOR_SCHEDULE_SOURCE="RECEITA_FEDERAL"
 export OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE="/caminho/receita-cnaes.json"

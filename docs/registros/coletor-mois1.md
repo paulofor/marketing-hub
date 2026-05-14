@@ -117,3 +117,8 @@
 ## 2026-05-13 17:35:14 UTC-3
 - Registrada melhoria no `mois-hotmart-collector` para incluir log explícito da resposta crua do **ciclo 2** (`HOTMART_CICLO_2_DETALHE_RESPOSTA_CRUA`) durante o fetch de detalhes por produto.
 - O log agora registra `productId`, `status` HTTP e `bodyRaw` truncado (10.000 caracteres), mantendo padrão de observabilidade já adotado no ciclo 1 para análise de causa-raiz.
+
+## 2026-05-14 02:10 UTC
+- Ajustado o ciclo 2 do `mois-hotmart-collector` para extrair explicitamente `pageSalesLink` na resposta de detalhe da Hotmart (`v1/market/product/{id}/details`), além de `salesPageUrl`.
+- Persistência enviada ao backend agora inclui ambos os metadados (`salesPageUrl` e `pageSalesLink`) no `rawMetadata` da referência, mantendo fallback para URL de detalhes.
+- Backend (`ads-service`) reforçado para preencher `sales_page_url` também a partir de `rawMetadata.pageSalesLink` quando `rawMetadata.salesPageUrl` não vier preenchido.

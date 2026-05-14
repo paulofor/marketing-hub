@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class ClickbankCollectorServiceTest {
 
     @Test
-    void shouldSkipWhenSessionAndCredentialsAreMissing() {
+    void shouldReturnCollectionErrorWhenPublicPageIsUnavailable() {
         ClickbankCollectorService service = new ClickbankCollectorService(
                 true,
                 "",
@@ -16,6 +16,7 @@ class ClickbankCollectorServiceTest {
                 "",
                 "",
                 "",
+                "http://127.0.0.1:1/unreachable-top-offers",
                 "",
                 "",
                 false,
@@ -28,6 +29,6 @@ class ClickbankCollectorServiceTest {
 
         var response = service.collect(new ClickbankCollectionRequest("clickbank-market", 10));
 
-        assertEquals("COLLECTION_SKIPPED", response.status());
+        assertEquals("COLLECTION_ERROR", response.status());
     }
 }

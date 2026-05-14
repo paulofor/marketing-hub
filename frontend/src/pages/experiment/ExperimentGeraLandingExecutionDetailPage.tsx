@@ -221,8 +221,24 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
               ) : null}
 
               <div className="row g-3 small">
-                <div className="col-md-6">
-                  <strong>Job ID:</strong> {detailQuery.data.idJob}
+                <div className="col-md-6 d-flex align-items-center gap-2 flex-wrap">
+                  <strong className="mb-0">Job ID:</strong>
+                  <span>{detailQuery.data.idJob}</span>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() =>
+                      handleCopyJson("idJob", detailQuery.data.idJob)
+                    }
+                    aria-label="Copiar Job ID"
+                    title="Copiar Job ID"
+                  >
+                    {copiedField === "idJob" ? (
+                      "Copiado!"
+                    ) : (
+                      <i className="bi bi-copy" aria-hidden="true" />
+                    )}
+                  </button>
                 </div>
                 <div className="col-md-6">
                   <strong>Status:</strong> {detailQuery.data.status}
@@ -338,7 +354,10 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                     );
                   })()}
                 </div>
-                <CollapsibleJsonViewer content={detailQuery.data.prompt} parseAsJson={false} />
+                <CollapsibleJsonViewer
+                  content={detailQuery.data.prompt}
+                  parseAsJson={false}
+                />
               </div>
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">

@@ -109,6 +109,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/oprm", label: "OPRM", icon: Workflow },
       { to: "/mds", label: "MDS", icon: Microscope },
       { to: "/hotmart", label: "Hotmart", icon: Workflow },
+      { to: "/clickbase", label: "Clickbase", icon: Workflow },
     ],
   },
   {

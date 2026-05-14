@@ -26,6 +26,7 @@ public class GeraLandingStageExecutionService {
     private static final String STAGE_WIREFRAME = "landing-page-wireframe";
     private static final String STAGE_COPY = "landing-page-copy";
     private static final String STAGE_IMAGE_PLANNING = "landing-page-image-planning";
+    private static final String STAGE_DESIGN_PRESET = "landing-page-design-preset";
 
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
@@ -228,6 +229,9 @@ public class GeraLandingStageExecutionService {
         if (STAGE_IMAGE_PLANNING.equalsIgnoreCase(request.stageCode())) {
             return resolveImagePlanningProvisionalHtml(idJob, request, execution);
         }
+        if (STAGE_DESIGN_PRESET.equalsIgnoreCase(request.stageCode())) {
+            return resolveDesignPresetProvisionalHtml(idJob, request, execution);
+        }
         return null;
     }
 
@@ -253,11 +257,36 @@ public class GeraLandingStageExecutionService {
                 """.formatted(htmlWithGeneratedImages);
     }
 
+    private String resolveDesignPresetProvisionalHtml(String idJob, GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
+        Experiment experiment = execution.getExperiment();
+        if (experiment == null && request.experimentId() != null) {
+            experiment = experimentRepository.findById(request.experimentId()).orElse(null);
+        }
+        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe()) || !StringUtils.hasText(experiment.getLandingPageCopy())) {
+            return null;
+        }
+        String completeHtml = copyProvisionalHtmlAssembler.assembleComplete(
+                experiment.getLandingPageCopy(),
+                experiment.getLandingPageWireframe(),
+                experiment.getLandingPageImagePlanning(),
+                request.modelResponse(),
+                idJob);
+        if (!StringUtils.hasText(completeHtml)) {
+            return null;
+        }
+        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experiment.getId(), completeHtml);
+        return """
+                <!-- AUTO: provisional html regenerated after landing-page-design-preset completion -->
+                %s
+                """.formatted(htmlWithGeneratedImages);
+    }
+
     private void persistStageArtifactOnExperiment(GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
         String stageCode = request.stageCode();
         if (!STAGE_WIREFRAME.equalsIgnoreCase(stageCode)
                 && !STAGE_COPY.equalsIgnoreCase(stageCode)
-                && !STAGE_IMAGE_PLANNING.equalsIgnoreCase(stageCode)) {
+                && !STAGE_IMAGE_PLANNING.equalsIgnoreCase(stageCode)
+                && !STAGE_DESIGN_PRESET.equalsIgnoreCase(stageCode)) {
             return;
         }
         if (!StringUtils.hasText(request.modelResponse()) || StringUtils.hasText(request.errorMessage())) {
@@ -271,8 +300,13 @@ public class GeraLandingStageExecutionService {
         } else if (STAGE_COPY.equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageCopy(request.modelResponse());
             experiment.setLandingPageCopyJobId(execution.getIdJob());
-        } else {
+        } else if (STAGE_IMAGE_PLANNING.equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageImagePlanning(request.modelResponse());
+            if (StringUtils.hasText(execution.getProvisionalHtml())) {
+                experiment.setLandingPageHtml(execution.getProvisionalHtml());
+            }
+        } else {
+            experiment.setLandingPageDesignPreset(request.modelResponse());
             if (StringUtils.hasText(execution.getProvisionalHtml())) {
                 experiment.setLandingPageHtml(execution.getProvisionalHtml());
             }

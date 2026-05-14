@@ -26,6 +26,14 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 - **Regra Número 1** : O objetivo principal do sistema é gerar vendas.
 - **Regra Número 2** : Sempre que tiver algum problema não tentar resolver consequencias. Buscar SEMPRE resolver a causa-raiz.
+- invesgtigação da causa raiz
+- Se for um erro na tela:
+- 1- Pesquisar o dado da tela de qual endpoint ele vem
+- 2- Identificar de qual base de dados vem
+- 3- Analisar se no banco de dados esta correto ou não
+- 4- Se não estiver correto pesquisar qual endpoint ou classe grava esse item na tabela.
+- 5- Verificar se existe logs desse endpoint que faz gravações
+- 6- Verificar a origem do dados antes da gravação.
 - **Servidor MCP** : Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC. Quando precisar analisar casos específicos acesse o banco de dados usando esse servidor.
 - **Tecnologias padrão**: Java 21 + Spring Boot 3, React 18 + Vite + TypeScript, Zustand para state, TanStack Query para dados. Formatação: Spotless (backend) e Prettier (frontend).
 - **Banco**: MySQL 5.7. Somente o backend acessa o banco; demais módulos conversam via APIs do backend. Prefira filtros no SQL ao invés de pós-processar em memória.

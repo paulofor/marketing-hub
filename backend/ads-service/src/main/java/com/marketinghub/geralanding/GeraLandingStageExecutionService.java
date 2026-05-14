@@ -79,11 +79,13 @@ public class GeraLandingStageExecutionService {
             throw new IllegalStateException("Não foi possível montar HTML provisório: experiment.landingPageCopy ausente");
         }
 
-        String baseHtml = copyProvisionalHtmlAssembler.assemble(
+        String completeHtml = copyProvisionalHtmlAssembler.assembleComplete(
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
+                experiment.getLandingPageImagePlanning(),
+                experiment.getLandingPageDesignPreset(),
                 jobId);
-        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experimentId, baseHtml);
+        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experimentId, completeHtml);
         String provisionalHtml = """
                 <!-- AUTO: provisional html generated manually by /geralanding/html/provisional/generate -->
                 %s

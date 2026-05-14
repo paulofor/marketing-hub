@@ -85,4 +85,56 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
         assertTrue(html.contains("id=\"email-input\""));
         assertTrue(html.contains("placeholder=\"seuemail@exemplo.com\""));
     }
+
+    @Test
+    void shouldComposeHtmlUsingCopyImagesAndDesignPreset() {
+        String wireframeJson = """
+                {
+                  "sectionOrder": [
+                    {
+                      "uiTags": "<section><h1 id=\\"title\\"></h1><img id=\\"hero-img\\" src=\\"about:blank\\"/></section>",
+                      "uiSizes": ""
+                    }
+                  ]
+                }
+                """;
+
+        String copyJson = """
+                {
+                  "bodySections": [
+                    {
+                      "items": [
+                        {"id": "title", "copy": "Landing final"}
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        String imagePlanningJson = """
+                {
+                  "images": [
+                    {"imageUrl": "https://cdn.example.com/hero.png"}
+                  ]
+                }
+                """;
+
+        String designPresetJson = """
+                {
+                  "landingPageDesignPreset": {
+                    "presetId": "preset-77",
+                    "lhmRuntime": {
+                      "baseCss": "body{background:#111;color:#fff;}"
+                    }
+                  }
+                }
+                """;
+
+        String html = processor.processComplete(wireframeJson, copyJson, imagePlanningJson, designPresetJson);
+
+        assertTrue(html.contains("Landing final"));
+        assertTrue(html.contains("https://cdn.example.com/hero.png"));
+        assertTrue(html.contains("data-preset-id=\"preset-77\""));
+        assertTrue(html.contains("lhm-base-css"));
+    }
 }

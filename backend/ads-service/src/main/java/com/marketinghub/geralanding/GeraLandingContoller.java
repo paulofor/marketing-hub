@@ -50,6 +50,12 @@ public class GeraLandingContoller {
     return ResponseEntity.accepted().body(response);
   }
 
+
+  @PostMapping("/design-preset/start")
+  public ResponseEntity<GeraLandingStartResponse> startDesignPreset(@PathVariable Long experimentId) {
+    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-design-preset");
+    return ResponseEntity.accepted().body(response);
+  }
   @PostMapping("/image-prompts/start")
   public ResponseEntity<GeraLandingStartResponse> startImagePrompts(@PathVariable Long experimentId) {
     GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-image-planning");

@@ -1,4 +1,5 @@
 # MOIS Hotmart — Mapeamento de dados (Ciclo 1, Ciclo 2 e banco)
+# [Canônico] MOIS Hotmart — Mapeamento de dados (Ciclo 1, Ciclo 2 e banco)
 
 ## Objetivo
 
@@ -102,3 +103,29 @@ A persistência acontece via payload `references` + `rawMetadata`. O backend gra
   - `backend/ads-service/src/main/java/com/marketinghub/mois/service/MoisCollectionPersistenceService.java`
 - Registro histórico da evolução dos ciclos:
   - `docs/registros/coletor-mois1.md`
+
+---
+
+## 6) Dados apresentados no frontend (cards de produto em `/hotmart`)
+
+A tela `/hotmart` consome o endpoint `GET /api/v1/mois/hotmart/products` e renderiza os cards com os campos abaixo.
+
+| Campo exibido no card | Campo da API (`/api/v1/mois/hotmart/products`) | Origem principal no banco (`mois_collected_reference`) |
+|---|---|---|
+| Título do produto | `title` | `title` |
+| Imagem do produto | `imageUrl` | `hotmart_image_url` |
+| Produtor | `producerName` | `producer_name` |
+| Score de sucesso | `successScore` | `success_score` |
+| Temperatura | `temperature` | `hotmart_temperature` |
+| Página de vendas (texto + link) | `salesPageUrl` | `sales_page_url` |
+| Preço | `price` | derivado de metadata no serviço (quando disponível) |
+| Moeda | `currency` (fallback visual para `BRL`) | derivado de metadata no serviço (quando disponível) |
+
+### Regra de exibição aplicada na UI
+
+- O frontend usa **somente** `salesPageUrl` para o link de página de vendas.
+- Se `salesPageUrl` estiver vazio/nulo:
+  - o texto mostra `Não informada`;
+  - o botão principal fica desabilitado com o rótulo `Página de vendas indisponível`.
+
+Isso evita abrir URL incorreta de fallback de ciclo 1 na experiência do usuário.

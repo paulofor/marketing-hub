@@ -64,3 +64,4 @@
 - 2026-05-14 02:10:00 UTC — Reposicionado o botão **Gerar HTML** na aba Gera Landing para aparecer na tabela de histórico do **Gera Prompt Imagem** apenas no job mais recente com status de sucesso; no frontend a chamada passou a enviar `jobId` ao endpoint de geração provisória, e no backend (`/geralanding/html/provisional/generate`) o `jobId` virou parâmetro obrigatório para também persistir o `provisional_html` no registro da execução correspondente.
 
 - 2026-05-14 12:00:00 UTC-3 — Nova etapa canônica **landing-page-design-preset** habilitada no fluxo Gera Landing do AI Worker, com prompt e schema dedicados em `prompts/geralanding` e whitelist explícita de atributos CSS por seção/elemento para geração estruturada de presets visuais.
+- 2026-05-14 13:55:00 UTC — Frontend do experimento atualizado com o card **Gera Preset Design** (botão iniciar, jobs em execução, histórico e custo total), alinhado ao mesmo padrão visual/funcional de Gera Copy e Gera WireFrame.

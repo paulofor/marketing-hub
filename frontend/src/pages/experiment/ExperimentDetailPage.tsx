@@ -144,6 +144,7 @@ export default function ExperimentDetailPage() {
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const [isStartingCopy, setIsStartingCopy] = useState(false);
+  const [isStartingDesignPreset, setIsStartingDesignPreset] = useState(false);
   const [isStartingImagePrompts, setIsStartingImagePrompts] = useState(false);
   const [isStartingImageGeneration, setIsStartingImageGeneration] =
     useState(false);
@@ -151,6 +152,8 @@ export default function ExperimentDetailPage() {
   const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticCopyExecution, setOptimisticCopyExecution] =
+    useState<GeraLandingStageExecutionItem | null>(null);
+  const [optimisticDesignPresetExecution, setOptimisticDesignPresetExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticImagePromptsExecution, setOptimisticImagePromptsExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
@@ -176,17 +179,33 @@ export default function ExperimentDetailPage() {
     refetch: refetchCompletedGeraLandingCopyExecutions,
   } = useGeraLandingStageExecutions(expId, "landing-page-copy", true);
   const {
+    data: pendingGeraLandingDesignPresetExecutions,
+    isLoading: isLoadingPendingGeraLandingDesignPresetExecutions,
+    refetch: refetchPendingGeraLandingDesignPresetExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-design-preset", false);
+  const {
+    data: completedGeraLandingDesignPresetExecutions,
+    isLoading: isLoadingCompletedGeraLandingDesignPresetExecutions,
+    refetch: refetchCompletedGeraLandingDesignPresetExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-design-preset", true);
+  const {
     data: pendingGeraLandingImagePromptsExecutions,
     isLoading: isLoadingPendingGeraLandingImagePromptsExecutions,
     refetch: refetchPendingGeraLandingImagePromptsExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", false);
+  } = useGeraLandingStageExecutions(
+    expId,
+    "landing-page-image-planning",
+    false,
+  );
   const {
     data: completedGeraLandingImagePromptsExecutions,
     isLoading: isLoadingCompletedGeraLandingImagePromptsExecutions,
     refetch: refetchCompletedGeraLandingImagePromptsExecutions,
   } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", true);
-  const { data: frameworkImageStatuses, isLoading: isLoadingFrameworkImageStatuses } =
-    useFrameworkImageStatuses(expId);
+  const {
+    data: frameworkImageStatuses,
+    isLoading: isLoadingFrameworkImageStatuses,
+  } = useFrameworkImageStatuses(expId);
   const { data: frameworkImageSummary } = useFrameworkImageSummary(expId);
   const generateFrameworkImages = useGenerateFrameworkImages(expId);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
@@ -238,7 +257,8 @@ export default function ExperimentDetailPage() {
       {
         key: "image-planning",
         title: "Etapa 5 · Planejamento de Imagens",
-        description: "Conteúdo bruto salvo na coluna landing_page_image_planning.",
+        description:
+          "Conteúdo bruto salvo na coluna landing_page_image_planning.",
         rawValue: data?.landingPageImagePlanning,
       },
       {
@@ -387,7 +407,6 @@ export default function ExperimentDetailPage() {
     }
   };
 
-
   const handleStartCopy = async () => {
     try {
       setIsStartingCopy(true);
@@ -419,6 +438,38 @@ export default function ExperimentDetailPage() {
       setIsStartingCopy(false);
     }
   };
+  const handleStartDesignPreset = async () => {
+    try {
+      setIsStartingDesignPreset(true);
+      const { data: startResponse } = await axios.post<{
+        idJob: string;
+        status: string;
+      }>(`/api/experiments/${expId}/geralanding/design-preset/start`);
+      const localExecutionRequestedAt = new Date().toISOString();
+      setOptimisticDesignPresetExecution({
+        idJob: startResponse.idJob,
+        status: startResponse.status,
+        executionRequestedAt: localExecutionRequestedAt,
+      });
+      toast.success(
+        `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
+      );
+      await Promise.all([
+        refetchPendingGeraLandingDesignPresetExecutions(),
+        refetchCompletedGeraLandingDesignPresetExecutions(),
+      ]);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível iniciar o Gera Preset Design.")
+        : "Não foi possível iniciar o Gera Preset Design.";
+      toast.error(message);
+    } finally {
+      setIsStartingDesignPreset(false);
+    }
+  };
+
   const handleStartImagePrompts = async () => {
     try {
       setIsStartingImagePrompts(true);
@@ -458,8 +509,8 @@ export default function ExperimentDetailPage() {
       toast.success("Gera Imagem iniciado com sucesso.");
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? (error.response?.data?.message as string | undefined) ??
-          "Não foi possível iniciar o Gera Imagem."
+        ? ((error.response?.data?.message as string | undefined) ??
+          "Não foi possível iniciar o Gera Imagem.")
         : "Não foi possível iniciar o Gera Imagem.";
       toast.error(message);
     } finally {
@@ -478,8 +529,8 @@ export default function ExperimentDetailPage() {
       toast.success("Geração de HTML iniciada com sucesso.");
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? (error.response?.data?.message as string | undefined) ??
-          "Não foi possível iniciar a geração de HTML."
+        ? ((error.response?.data?.message as string | undefined) ??
+          "Não foi possível iniciar a geração de HTML.")
         : "Não foi possível iniciar a geração de HTML.";
       toast.error(message);
     } finally {
@@ -489,15 +540,27 @@ export default function ExperimentDetailPage() {
 
   const isRunningExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
-    return ["AGUARDANDO_RETORNO_OPENAI", "EM_PROCESSAMENTO", "PROCESSING", "RUNNING", "IN_PROGRESS", "PENDING", "INICIADO", "STARTED"].includes(
-      normalizedStatus,
-    );
+    return [
+      "AGUARDANDO_RETORNO_OPENAI",
+      "EM_PROCESSAMENTO",
+      "PROCESSING",
+      "RUNNING",
+      "IN_PROGRESS",
+      "PENDING",
+      "INICIADO",
+      "STARTED",
+    ].includes(normalizedStatus);
   };
   const isCompletedExecution = (status?: string | null) => {
     const normalizedStatus = (status ?? "").trim().toUpperCase();
-    return ["CONCLUIDO", "CONCLUÍDO", "COMPLETED", "SUCCESS", "SUCCEEDED", "DONE"].includes(
-      normalizedStatus,
-    );
+    return [
+      "CONCLUIDO",
+      "CONCLUÍDO",
+      "COMPLETED",
+      "SUCCESS",
+      "SUCCEEDED",
+      "DONE",
+    ].includes(normalizedStatus);
   };
   const mergedPendingGeraLandingExecutions = useMemo(() => {
     if (!optimisticWireframeExecution) {
@@ -509,7 +572,10 @@ export default function ExperimentDetailPage() {
     if (alreadyPresent) {
       return pendingGeraLandingExecutions ?? [];
     }
-    return [optimisticWireframeExecution, ...(pendingGeraLandingExecutions ?? [])];
+    return [
+      optimisticWireframeExecution,
+      ...(pendingGeraLandingExecutions ?? []),
+    ];
   }, [optimisticWireframeExecution, pendingGeraLandingExecutions]);
 
   useEffect(() => {
@@ -524,9 +590,10 @@ export default function ExperimentDetailPage() {
     }
   }, [optimisticWireframeExecution, pendingGeraLandingExecutions]);
 
-  const hasRunningGeraLandingExecution = mergedPendingGeraLandingExecutions.some(
-    (execution) => isRunningExecution(execution.status),
-  );
+  const hasRunningGeraLandingExecution =
+    mergedPendingGeraLandingExecutions.some((execution) =>
+      isRunningExecution(execution.status),
+    );
   const runningGeraLandingExecutions = useMemo(
     () =>
       mergedPendingGeraLandingExecutions.filter((execution) =>
@@ -540,28 +607,41 @@ export default function ExperimentDetailPage() {
   };
   const historyGeraLandingExecutions = useMemo(() => {
     const completedHistory = (completedGeraLandingExecutions ?? []).filter(
-      (execution) => isCompletedExecution(execution.status) || hasFailedExecution(execution.status),
+      (execution) =>
+        isCompletedExecution(execution.status) ||
+        hasFailedExecution(execution.status),
     );
-    const failedFromPending = (pendingGeraLandingExecutions ?? []).filter((execution) =>
-      hasFailedExecution(execution.status),
+    const failedFromPending = (pendingGeraLandingExecutions ?? []).filter(
+      (execution) => hasFailedExecution(execution.status),
     );
 
     const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
       (leftExecution, rightExecution) => {
-        const leftTimestamp = Date.parse(leftExecution.executionRequestedAt ?? "");
-        const rightTimestamp = Date.parse(rightExecution.executionRequestedAt ?? "");
-        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp) ? 0 : leftTimestamp;
-        const normalizedRightTimestamp = Number.isNaN(rightTimestamp) ? 0 : rightTimestamp;
+        const leftTimestamp = Date.parse(
+          leftExecution.executionRequestedAt ?? "",
+        );
+        const rightTimestamp = Date.parse(
+          rightExecution.executionRequestedAt ?? "",
+        );
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp)
+          ? 0
+          : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp)
+          ? 0
+          : rightTimestamp;
 
         return normalizedRightTimestamp - normalizedLeftTimestamp;
       },
     );
 
-    return sortedExecutions.filter((execution, index, allExecutions) =>
-      allExecutions.findIndex((candidate) => candidate.idJob === execution.idJob) === index,
+    return sortedExecutions.filter(
+      (execution, index, allExecutions) =>
+        allExecutions.findIndex(
+          (candidate) => candidate.idJob === execution.idJob,
+        ) === index,
     );
   }, [completedGeraLandingExecutions, pendingGeraLandingExecutions]);
-  
+
   const mergedPendingGeraLandingCopyExecutions = useMemo(() => {
     if (!optimisticCopyExecution) {
       return pendingGeraLandingCopyExecutions ?? [];
@@ -572,7 +652,10 @@ export default function ExperimentDetailPage() {
     if (alreadyPresent) {
       return pendingGeraLandingCopyExecutions ?? [];
     }
-    return [optimisticCopyExecution, ...(pendingGeraLandingCopyExecutions ?? [])];
+    return [
+      optimisticCopyExecution,
+      ...(pendingGeraLandingCopyExecutions ?? []),
+    ];
   }, [optimisticCopyExecution, pendingGeraLandingCopyExecutions]);
 
   useEffect(() => {
@@ -587,9 +670,10 @@ export default function ExperimentDetailPage() {
     }
   }, [optimisticCopyExecution, pendingGeraLandingCopyExecutions]);
 
-  const hasRunningGeraLandingCopyExecution = mergedPendingGeraLandingCopyExecutions.some(
-    (execution) => isRunningExecution(execution.status),
-  );
+  const hasRunningGeraLandingCopyExecution =
+    mergedPendingGeraLandingCopyExecutions.some((execution) =>
+      isRunningExecution(execution.status),
+    );
   const runningGeraLandingCopyExecutions = useMemo(
     () =>
       mergedPendingGeraLandingCopyExecutions.filter((execution) =>
@@ -599,51 +683,168 @@ export default function ExperimentDetailPage() {
   );
   const historyGeraLandingCopyExecutions = useMemo(() => {
     const completedHistory = (completedGeraLandingCopyExecutions ?? []).filter(
-      (execution) => isCompletedExecution(execution.status) || hasFailedExecution(execution.status),
+      (execution) =>
+        isCompletedExecution(execution.status) ||
+        hasFailedExecution(execution.status),
     );
-    const failedFromPending = (pendingGeraLandingCopyExecutions ?? []).filter((execution) =>
-      hasFailedExecution(execution.status),
+    const failedFromPending = (pendingGeraLandingCopyExecutions ?? []).filter(
+      (execution) => hasFailedExecution(execution.status),
     );
 
     const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
       (leftExecution, rightExecution) => {
-        const leftTimestamp = Date.parse(leftExecution.executionRequestedAt ?? "");
-        const rightTimestamp = Date.parse(rightExecution.executionRequestedAt ?? "");
-        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp) ? 0 : leftTimestamp;
-        const normalizedRightTimestamp = Number.isNaN(rightTimestamp) ? 0 : rightTimestamp;
+        const leftTimestamp = Date.parse(
+          leftExecution.executionRequestedAt ?? "",
+        );
+        const rightTimestamp = Date.parse(
+          rightExecution.executionRequestedAt ?? "",
+        );
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp)
+          ? 0
+          : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp)
+          ? 0
+          : rightTimestamp;
 
         return normalizedRightTimestamp - normalizedLeftTimestamp;
       },
     );
 
-    return sortedExecutions.filter((execution, index, allExecutions) =>
-      allExecutions.findIndex((candidate) => candidate.idJob === execution.idJob) === index,
+    return sortedExecutions.filter(
+      (execution, index, allExecutions) =>
+        allExecutions.findIndex(
+          (candidate) => candidate.idJob === execution.idJob,
+        ) === index,
     );
   }, [completedGeraLandingCopyExecutions, pendingGeraLandingCopyExecutions]);
+  const mergedPendingGeraLandingDesignPresetExecutions = useMemo(() => {
+    if (!optimisticDesignPresetExecution) {
+      return pendingGeraLandingDesignPresetExecutions ?? [];
+    }
+    const alreadyPresent = (
+      pendingGeraLandingDesignPresetExecutions ?? []
+    ).some(
+      (execution) => execution.idJob === optimisticDesignPresetExecution.idJob,
+    );
+    if (alreadyPresent) {
+      return pendingGeraLandingDesignPresetExecutions ?? [];
+    }
+    return [
+      optimisticDesignPresetExecution,
+      ...(pendingGeraLandingDesignPresetExecutions ?? []),
+    ];
+  }, [
+    optimisticDesignPresetExecution,
+    pendingGeraLandingDesignPresetExecutions,
+  ]);
+
+  useEffect(() => {
+    if (!optimisticDesignPresetExecution) {
+      return;
+    }
+    const persistedExecution = (
+      pendingGeraLandingDesignPresetExecutions ?? []
+    ).some(
+      (execution) => execution.idJob === optimisticDesignPresetExecution.idJob,
+    );
+    if (persistedExecution) {
+      setOptimisticDesignPresetExecution(null);
+    }
+  }, [
+    optimisticDesignPresetExecution,
+    pendingGeraLandingDesignPresetExecutions,
+  ]);
+
+  const hasRunningGeraLandingDesignPresetExecution =
+    mergedPendingGeraLandingDesignPresetExecutions.some((execution) =>
+      isRunningExecution(execution.status),
+    );
+  const runningGeraLandingDesignPresetExecutions = useMemo(
+    () =>
+      mergedPendingGeraLandingDesignPresetExecutions.filter((execution) =>
+        isRunningExecution(execution.status),
+      ),
+    [mergedPendingGeraLandingDesignPresetExecutions],
+  );
+  const historyGeraLandingDesignPresetExecutions = useMemo(() => {
+    const completedHistory = (
+      completedGeraLandingDesignPresetExecutions ?? []
+    ).filter(
+      (execution) =>
+        isCompletedExecution(execution.status) ||
+        hasFailedExecution(execution.status),
+    );
+    const failedFromPending = (
+      pendingGeraLandingDesignPresetExecutions ?? []
+    ).filter((execution) => hasFailedExecution(execution.status));
+
+    const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
+      (leftExecution, rightExecution) => {
+        const leftTimestamp = Date.parse(
+          leftExecution.executionRequestedAt ?? "",
+        );
+        const rightTimestamp = Date.parse(
+          rightExecution.executionRequestedAt ?? "",
+        );
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp)
+          ? 0
+          : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp)
+          ? 0
+          : rightTimestamp;
+
+        return normalizedRightTimestamp - normalizedLeftTimestamp;
+      },
+    );
+
+    return sortedExecutions.filter(
+      (execution, index, allExecutions) =>
+        allExecutions.findIndex(
+          (candidate) => candidate.idJob === execution.idJob,
+        ) === index,
+    );
+  }, [
+    completedGeraLandingDesignPresetExecutions,
+    pendingGeraLandingDesignPresetExecutions,
+  ]);
+
   const mergedPendingGeraLandingImagePromptsExecutions = useMemo(() => {
     if (!optimisticImagePromptsExecution) {
       return pendingGeraLandingImagePromptsExecutions ?? [];
     }
-    const alreadyPresent = (pendingGeraLandingImagePromptsExecutions ?? []).some(
+    const alreadyPresent = (
+      pendingGeraLandingImagePromptsExecutions ?? []
+    ).some(
       (execution) => execution.idJob === optimisticImagePromptsExecution.idJob,
     );
     if (alreadyPresent) {
       return pendingGeraLandingImagePromptsExecutions ?? [];
     }
-    return [optimisticImagePromptsExecution, ...(pendingGeraLandingImagePromptsExecutions ?? [])];
-  }, [optimisticImagePromptsExecution, pendingGeraLandingImagePromptsExecutions]);
+    return [
+      optimisticImagePromptsExecution,
+      ...(pendingGeraLandingImagePromptsExecutions ?? []),
+    ];
+  }, [
+    optimisticImagePromptsExecution,
+    pendingGeraLandingImagePromptsExecutions,
+  ]);
 
   useEffect(() => {
     if (!optimisticImagePromptsExecution) {
       return;
     }
-    const persistedExecution = (pendingGeraLandingImagePromptsExecutions ?? []).some(
+    const persistedExecution = (
+      pendingGeraLandingImagePromptsExecutions ?? []
+    ).some(
       (execution) => execution.idJob === optimisticImagePromptsExecution.idJob,
     );
     if (persistedExecution) {
       setOptimisticImagePromptsExecution(null);
     }
-  }, [optimisticImagePromptsExecution, pendingGeraLandingImagePromptsExecutions]);
+  }, [
+    optimisticImagePromptsExecution,
+    pendingGeraLandingImagePromptsExecutions,
+  ]);
 
   const hasRunningGeraLandingImagePromptsExecution =
     mergedPendingGeraLandingImagePromptsExecutions.some((execution) =>
@@ -657,12 +858,15 @@ export default function ExperimentDetailPage() {
     [mergedPendingGeraLandingImagePromptsExecutions],
   );
   const historyGeraLandingImagePromptsExecutions = useMemo(() => {
-    const completedHistory = (completedGeraLandingImagePromptsExecutions ?? []).filter(
-      (execution) => isCompletedExecution(execution.status),
-    );
-    const failedFromPending = (pendingGeraLandingImagePromptsExecutions ?? []).filter(
+    const completedHistory = (
+      completedGeraLandingImagePromptsExecutions ?? []
+    ).filter((execution) => isCompletedExecution(execution.status));
+    const failedFromPending = (
+      pendingGeraLandingImagePromptsExecutions ?? []
+    ).filter(
       (execution) =>
-        !isRunningExecution(execution.status) && !isCompletedExecution(execution.status),
+        !isRunningExecution(execution.status) &&
+        !isCompletedExecution(execution.status),
     );
     const merged = [...failedFromPending, ...completedHistory];
     const dedupMap = new Map<string, GeraLandingStageExecutionItem>();
@@ -670,12 +874,16 @@ export default function ExperimentDetailPage() {
       dedupMap.set(execution.idJob, execution);
     });
     return Array.from(dedupMap.values());
-  }, [completedGeraLandingImagePromptsExecutions, pendingGeraLandingImagePromptsExecutions]);
-  const latestSuccessfulImagePromptExecution = historyGeraLandingImagePromptsExecutions.find(
-    (execution) => isCompletedExecution(execution.status),
-  );
-const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
-    isRunningExecution(execution.status),
+  }, [
+    completedGeraLandingImagePromptsExecutions,
+    pendingGeraLandingImagePromptsExecutions,
+  ]);
+  const latestSuccessfulImagePromptExecution =
+    historyGeraLandingImagePromptsExecutions.find((execution) =>
+      isCompletedExecution(execution.status),
+    );
+  const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find(
+    (execution) => isRunningExecution(execution.status),
   )?.idJob;
 
   const formatCurrencyUsd = (value?: number | null) =>
@@ -686,19 +894,32 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
         }).format(value)
       : "—";
 
-  const resolveExecutionCostUsd = (execution: GeraLandingStageExecutionItem) => {
+  const resolveExecutionCostUsd = (
+    execution: GeraLandingStageExecutionItem,
+  ) => {
     const candidateValues = [
       execution.costUsd,
-      (execution as GeraLandingStageExecutionItem & { totalCostUsd?: number | string | null })
-        .totalCostUsd,
-      (execution as GeraLandingStageExecutionItem & { cost?: number | string | null }).cost,
-      (execution as GeraLandingStageExecutionItem & { totalCost?: number | string | null })
-        .totalCost,
+      (
+        execution as GeraLandingStageExecutionItem & {
+          totalCostUsd?: number | string | null;
+        }
+      ).totalCostUsd,
+      (
+        execution as GeraLandingStageExecutionItem & {
+          cost?: number | string | null;
+        }
+      ).cost,
+      (
+        execution as GeraLandingStageExecutionItem & {
+          totalCost?: number | string | null;
+        }
+      ).totalCost,
     ];
 
     for (const candidate of candidateValues) {
       if (candidate == null) continue;
-      if (typeof candidate === "number" && Number.isFinite(candidate)) return candidate;
+      if (typeof candidate === "number" && Number.isFinite(candidate))
+        return candidate;
       if (typeof candidate === "string") {
         const normalizedCandidate = candidate.replace(",", ".").trim();
         if (!normalizedCandidate) continue;
@@ -714,25 +935,29 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
     (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
     0,
   );
-  const totalCompletedGeraLandingCopyCostUsd = historyGeraLandingCopyExecutions.reduce(
-    (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
-    0,
-  );
+  const totalCompletedGeraLandingCopyCostUsd =
+    historyGeraLandingCopyExecutions.reduce(
+      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+      0,
+    );
+  const totalCompletedGeraLandingDesignPresetCostUsd =
+    historyGeraLandingDesignPresetExecutions.reduce(
+      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+      0,
+    );
   const totalCompletedGeraLandingAllStagesCostUsd =
     totalCompletedGeraLandingCostUsd +
     totalCompletedGeraLandingCopyCostUsd +
+    totalCompletedGeraLandingDesignPresetCostUsd +
     historyGeraLandingImagePromptsExecutions.reduce(
       (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
       0,
     );
-  const { data: runningGeraLandingJobDetail } = useGeraLandingStageExecutionDetail(
-    expId,
-    runningGeraLandingJobId,
-    {
+  const { data: runningGeraLandingJobDetail } =
+    useGeraLandingStageExecutionDetail(expId, runningGeraLandingJobId, {
       enabled: Boolean(runningGeraLandingJobId),
       refetchInterval: 10000,
-    },
-  );
+    });
 
   useEffect(() => {
     if (!runningGeraLandingJobId || !runningGeraLandingJobDetail) return;
@@ -1016,7 +1241,9 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
       action: hasFacebookPixelRegistered
         ? undefined
         : () => navigate(`/niches/${data.nicheId}#niche-facebook-pixel`),
-      actionLabel: hasFacebookPixelRegistered ? undefined : "Ver pixel do nicho",
+      actionLabel: hasFacebookPixelRegistered
+        ? undefined
+        : "Ver pixel do nicho",
     },
   ];
   const checklistGroups = [
@@ -1298,7 +1525,10 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
               ) : null}
               <p className="mb-2">{diagnostics.description}</p>
               {diagnostics.failureDetails ? (
-                <div className="alert alert-light border small mb-2" role="alert">
+                <div
+                  className="alert alert-light border small mb-2"
+                  role="alert"
+                >
                   <div className="fw-semibold mb-1">
                     Último erro retornado pelo worker / Meta Ads
                   </div>
@@ -1323,7 +1553,9 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                     <li>
                       <strong>Horário do erro:</strong>{" "}
                       {diagnostics.failureDetails.occurredAt
-                        ? formatDateTimeValue(diagnostics.failureDetails.occurredAt)
+                        ? formatDateTimeValue(
+                            diagnostics.failureDetails.occurredAt,
+                          )
                         : "—"}
                     </li>
                   </ul>
@@ -1679,10 +1911,7 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
               >
                 Logs da Graph API
               </Link>
-              <Link
-                to="pipeline-jobs"
-                className="btn btn-outline-dark btn-sm"
-              >
+              <Link to="pipeline-jobs" className="btn btn-outline-dark btn-sm">
                 Jobs do pipeline
               </Link>
             </div>
@@ -1784,164 +2013,139 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
       ) : null}
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
-        <Tabs.List className="nav nav-tabs">
-          <Tabs.Trigger value="overview" className="nav-link">
-            Overview
-          </Tabs.Trigger>
-          <Tabs.Trigger value="funnel" className="nav-link">
-            Funil de vendas
-          </Tabs.Trigger>
-          <Tabs.Trigger value="targeting" className="nav-link">
-            Segmentação
-          </Tabs.Trigger>
-          <Tabs.Trigger value="creatives" className="nav-link">
-            Criativos
-          </Tabs.Trigger>
-          <Tabs.Trigger value="landing" className="nav-link">
-            Landing
-          </Tabs.Trigger>
-          <Tabs.Trigger value="gera-landing" className="nav-link">
-            Gera landing
-          </Tabs.Trigger>
-          <Tabs.Trigger value="sample-emails" className="nav-link">
-            E-mails de amostra
-          </Tabs.Trigger>
-          <Tabs.Trigger value="lead-portal" className="nav-link">
-            Portal do Lead
-          </Tabs.Trigger>
-          <Tabs.Trigger value="content-structure" className="nav-link">
-            Estrutura de conteúdo
-          </Tabs.Trigger>
-          <Tabs.Trigger value="conteudo" className="nav-link">
-            Conteúdo
-          </Tabs.Trigger>
-        </Tabs.List>
-        <Tabs.Content value="overview" asChild>
-          <div className="d-flex flex-column gap-3">
-            <div className="card">
-              <div className="card-body p-0">
-                <dl className="row mb-0">
-                  {rows.map((r, idx) => (
-                    <Fragment key={r.label}>
-                      <dt
-                        className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                      >
-                        {r.label}
-                      </dt>
-                      <dd
-                        className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
-                      >
-                        {r.value}
-                      </dd>
-                    </Fragment>
-                  ))}
-                </dl>
+          <Tabs.List className="nav nav-tabs">
+            <Tabs.Trigger value="overview" className="nav-link">
+              Overview
+            </Tabs.Trigger>
+            <Tabs.Trigger value="funnel" className="nav-link">
+              Funil de vendas
+            </Tabs.Trigger>
+            <Tabs.Trigger value="targeting" className="nav-link">
+              Segmentação
+            </Tabs.Trigger>
+            <Tabs.Trigger value="creatives" className="nav-link">
+              Criativos
+            </Tabs.Trigger>
+            <Tabs.Trigger value="landing" className="nav-link">
+              Landing
+            </Tabs.Trigger>
+            <Tabs.Trigger value="gera-landing" className="nav-link">
+              Gera landing
+            </Tabs.Trigger>
+            <Tabs.Trigger value="sample-emails" className="nav-link">
+              E-mails de amostra
+            </Tabs.Trigger>
+            <Tabs.Trigger value="lead-portal" className="nav-link">
+              Portal do Lead
+            </Tabs.Trigger>
+            <Tabs.Trigger value="content-structure" className="nav-link">
+              Estrutura de conteúdo
+            </Tabs.Trigger>
+            <Tabs.Trigger value="conteudo" className="nav-link">
+              Conteúdo
+            </Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Content value="overview" asChild>
+            <div className="d-flex flex-column gap-3">
+              <div className="card">
+                <div className="card-body p-0">
+                  <dl className="row mb-0">
+                    {rows.map((r, idx) => (
+                      <Fragment key={r.label}>
+                        <dt
+                          className={`col-sm-3 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                        >
+                          {r.label}
+                        </dt>
+                        <dd
+                          className={`col-sm-9 py-2${idx % 2 === 0 ? " bg-light" : ""}`}
+                        >
+                          {r.value}
+                        </dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                </div>
               </div>
+              <ExperimentLearningPanel experimentId={expId} />
+              <ExperimentReportPanel experimentId={expId} />
             </div>
-            <ExperimentLearningPanel experimentId={expId} />
-            <ExperimentReportPanel experimentId={expId} />
-          </div>
-        </Tabs.Content>
-        <Tabs.Content value="funnel" asChild>
-          <ExperimentFunnelTab
-            experimentId={expId}
-            totalSpend={data?.campaignMetric?.spend}
-            spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
-          />
-        </Tabs.Content>
-        <Tabs.Content value="targeting" asChild>
-          <TargetingTab
-            nicheId={data.nicheId}
-            hypothesisId={data.hypothesisId}
-            experimentId={Number(expId)}
-            nicheName={niche?.name}
-            hypothesisTitle={hyp?.title}
-          />
-        </Tabs.Content>
-        <Tabs.Content value="creatives" asChild>
-          <CriativosTab experimentId={expId} />
-        </Tabs.Content>
-        <Tabs.Content value="landing" asChild>
-          <LandingTab experiment={data} />
-        </Tabs.Content>
-        <Tabs.Content value="gera-landing" asChild>
-          <div className="d-flex flex-column gap-3">
-            <div className="card">
-              <div className="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <h5 className="card-title mb-0">Total Gera Landing (todas as etapas)</h5>
-                <span className="badge text-bg-primary fs-6 fw-semibold">
-                  {formatCurrencyUsd(totalCompletedGeraLandingAllStagesCostUsd)}
-                </span>
-              </div>
-            </div>
-            <div className="card">
-              <div className="card-body d-flex flex-column gap-3">
-                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                  <h5 className="card-title mb-0">Gera WireFrame</h5>
-                  <span className="badge text-bg-light border fs-6 fw-semibold">
-                    Total execuções: {formatCurrencyUsd(totalCompletedGeraLandingCostUsd)}
+          </Tabs.Content>
+          <Tabs.Content value="funnel" asChild>
+            <ExperimentFunnelTab
+              experimentId={expId}
+              totalSpend={data?.campaignMetric?.spend}
+              spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="targeting" asChild>
+            <TargetingTab
+              nicheId={data.nicheId}
+              hypothesisId={data.hypothesisId}
+              experimentId={Number(expId)}
+              nicheName={niche?.name}
+              hypothesisTitle={hyp?.title}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="creatives" asChild>
+            <CriativosTab experimentId={expId} />
+          </Tabs.Content>
+          <Tabs.Content value="landing" asChild>
+            <LandingTab experiment={data} />
+          </Tabs.Content>
+          <Tabs.Content value="gera-landing" asChild>
+            <div className="d-flex flex-column gap-3">
+              <div className="card">
+                <div className="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <h5 className="card-title mb-0">
+                    Total Gera Landing (todas as etapas)
+                  </h5>
+                  <span className="badge text-bg-primary fs-6 fw-semibold">
+                    {formatCurrencyUsd(
+                      totalCompletedGeraLandingAllStagesCostUsd,
+                    )}
                   </span>
                 </div>
-                <div className="d-flex flex-column gap-3">
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={handleStartWireframe}
-                    disabled={isStartingWireframe || hasRunningGeraLandingExecution}
-                  >
-                    {isStartingWireframe ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
-                  </button>
-                  {isLoadingPendingGeraLandingExecutions ? (
-                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
-                  ) : runningGeraLandingExecutions.length === 0 ? (
-                    <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-sm align-middle mb-0">
-                        <thead>
-                          <tr>
-                            <th scope="col">Job ID</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Data-hora</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {runningGeraLandingExecutions.map((execution) => (
-                            <tr key={execution.idJob}>
-                              <td>
-                                <Link
-                                  to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
-                                  className="fw-semibold text-decoration-none"
-                                >
-                                  {execution.idJob}
-                                </Link>
-                              </td>
-                              <td>{execution.status}</td>
-                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                    <h6 className="mb-0">Histórico de execuções</h6>
-                    {isLoadingCompletedGeraLandingExecutions ? (
-                      <p className="text-muted mb-0">Carregando execuções...</p>
-                    ) : historyGeraLandingExecutions.length === 0 ? (
-                      <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+              </div>
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">Gera WireFrame</h5>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Total execuções:{" "}
+                      {formatCurrencyUsd(totalCompletedGeraLandingCostUsd)}
+                    </span>
+                  </div>
+                  <div className="d-flex flex-column gap-3">
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartWireframe}
+                      disabled={
+                        isStartingWireframe || hasRunningGeraLandingExecution
+                      }
+                    >
+                      {isStartingWireframe ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
+                    </button>
+                    {isLoadingPendingGeraLandingExecutions ? (
+                      <p className="text-muted mb-0">
+                        Carregando jobs da etapa...
+                      </p>
+                    ) : runningGeraLandingExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhum job pendente ou em execução.
+                      </p>
                     ) : (
                       <div className="table-responsive">
                         <table className="table table-sm align-middle mb-0">
@@ -1950,11 +2154,10 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                               <th scope="col">Job ID</th>
                               <th scope="col">Status</th>
                               <th scope="col">Data-hora</th>
-                              <th scope="col" className="text-end">Custo</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {historyGeraLandingExecutions.map((execution) => (
+                            {runningGeraLandingExecutions.map((execution) => (
                               <tr key={execution.idJob}>
                                 <td>
                                   <Link
@@ -1965,230 +2168,630 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                                   </Link>
                                 </td>
                                 <td>{execution.status}</td>
-                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                                <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
+                                <td>
+                                  {formatDateTimeValue(
+                                    execution.executionRequestedAt,
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
                     )}
+
+                    <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                      <h6 className="mb-0">Histórico de execuções</h6>
+                      {isLoadingCompletedGeraLandingExecutions ? (
+                        <p className="text-muted mb-0">
+                          Carregando execuções...
+                        </p>
+                      ) : historyGeraLandingExecutions.length === 0 ? (
+                        <p className="text-muted mb-0">
+                          Nenhuma execução registrada para esta etapa.
+                        </p>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-sm align-middle mb-0">
+                            <thead>
+                              <tr>
+                                <th scope="col">Job ID</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Data-hora</th>
+                                <th scope="col" className="text-end">
+                                  Custo
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {historyGeraLandingExecutions.map((execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                  <td className="text-end">
+                                    {formatCurrencyUsd(
+                                      resolveExecutionCostUsd(execution),
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="card">
-              <div className="card-body d-flex flex-column gap-3">
-                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                  <h5 className="card-title mb-0">Gera Copy</h5>
-                  <span className="badge text-bg-light border fs-6 fw-semibold">
-                    Total execuções: {formatCurrencyUsd(totalCompletedGeraLandingCopyCostUsd)}
-                  </span>
-                </div>
-                <div className="d-flex flex-column gap-3">
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={handleStartCopy}
-                    disabled={isStartingCopy || hasRunningGeraLandingCopyExecution}
-                  >
-                    {isStartingCopy ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
-                  </button>
-                  {isLoadingPendingGeraLandingCopyExecutions ? (
-                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
-                  ) : runningGeraLandingCopyExecutions.length === 0 ? (
-                    <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-sm align-middle mb-0">
-                        <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th></tr></thead>
-                        <tbody>
-                          {runningGeraLandingCopyExecutions.map((execution) => (
-                            <tr key={execution.idJob}>
-                              <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
-                              <td>{execution.status}</td>
-                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                    <h6 className="mb-0">Histórico de execuções</h6>
-                    {isLoadingCompletedGeraLandingCopyExecutions ? (
-                      <p className="text-muted mb-0">Carregando execuções...</p>
-                    ) : historyGeraLandingCopyExecutions.length === 0 ? (
-                      <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">Gera Copy</h5>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Total execuções:{" "}
+                      {formatCurrencyUsd(totalCompletedGeraLandingCopyCostUsd)}
+                    </span>
+                  </div>
+                  <div className="d-flex flex-column gap-3">
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartCopy}
+                      disabled={
+                        isStartingCopy || hasRunningGeraLandingCopyExecution
+                      }
+                    >
+                      {isStartingCopy ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
+                    </button>
+                    {isLoadingPendingGeraLandingCopyExecutions ? (
+                      <p className="text-muted mb-0">
+                        Carregando jobs da etapa...
+                      </p>
+                    ) : runningGeraLandingCopyExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhum job pendente ou em execução.
+                      </p>
                     ) : (
                       <div className="table-responsive">
                         <table className="table table-sm align-middle mb-0">
-                          <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead>
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                            </tr>
+                          </thead>
                           <tbody>
-                            {historyGeraLandingCopyExecutions.map((execution) => (
-                              <tr key={execution.idJob}>
-                                <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
-                                <td>{execution.status}</td>
-                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                                <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
+                            {runningGeraLandingCopyExecutions.map(
+                              (execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                      <h6 className="mb-0">Histórico de execuções</h6>
+                      {isLoadingCompletedGeraLandingCopyExecutions ? (
+                        <p className="text-muted mb-0">
+                          Carregando execuções...
+                        </p>
+                      ) : historyGeraLandingCopyExecutions.length === 0 ? (
+                        <p className="text-muted mb-0">
+                          Nenhuma execução registrada para esta etapa.
+                        </p>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-sm align-middle mb-0">
+                            <thead>
+                              <tr>
+                                <th scope="col">Job ID</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Data-hora</th>
+                                <th scope="col" className="text-end">
+                                  Custo
+                                </th>
                               </tr>
-                            ))}
+                            </thead>
+                            <tbody>
+                              {historyGeraLandingCopyExecutions.map(
+                                (execution) => (
+                                  <tr key={execution.idJob}>
+                                    <td>
+                                      <Link
+                                        to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                        className="fw-semibold text-decoration-none"
+                                      >
+                                        {execution.idJob}
+                                      </Link>
+                                    </td>
+                                    <td>{execution.status}</td>
+                                    <td>
+                                      {formatDateTimeValue(
+                                        execution.executionRequestedAt,
+                                      )}
+                                    </td>
+                                    <td className="text-end">
+                                      {formatCurrencyUsd(
+                                        resolveExecutionCostUsd(execution),
+                                      )}
+                                    </td>
+                                  </tr>
+                                ),
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">Gera Preset Design</h5>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Total execuções:{" "}
+                      {formatCurrencyUsd(
+                        totalCompletedGeraLandingDesignPresetCostUsd,
+                      )}
+                    </span>
+                  </div>
+                  <div className="d-flex flex-column gap-3">
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartDesignPreset}
+                      disabled={
+                        isStartingDesignPreset ||
+                        hasRunningGeraLandingDesignPresetExecution
+                      }
+                    >
+                      {isStartingDesignPreset ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
+                    </button>
+                    {isLoadingPendingGeraLandingDesignPresetExecutions ? (
+                      <p className="text-muted mb-0">
+                        Carregando jobs da etapa...
+                      </p>
+                    ) : runningGeraLandingDesignPresetExecutions.length ===
+                      0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhum job pendente ou em execução.
+                      </p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {runningGeraLandingDesignPresetExecutions.map(
+                              (execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                      <h6 className="mb-0">Histórico de execuções</h6>
+                      {isLoadingCompletedGeraLandingDesignPresetExecutions ? (
+                        <p className="text-muted mb-0">
+                          Carregando execuções...
+                        </p>
+                      ) : historyGeraLandingDesignPresetExecutions.length ===
+                        0 ? (
+                        <p className="text-muted mb-0">
+                          Nenhuma execução registrada para esta etapa.
+                        </p>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-sm align-middle mb-0">
+                            <thead>
+                              <tr>
+                                <th scope="col">Job ID</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Data-hora</th>
+                                <th scope="col" className="text-end">
+                                  Custo
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {historyGeraLandingDesignPresetExecutions.map(
+                                (execution) => (
+                                  <tr key={execution.idJob}>
+                                    <td>
+                                      <Link
+                                        to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                        className="fw-semibold text-decoration-none"
+                                      >
+                                        {execution.idJob}
+                                      </Link>
+                                    </td>
+                                    <td>{execution.status}</td>
+                                    <td>
+                                      {formatDateTimeValue(
+                                        execution.executionRequestedAt,
+                                      )}
+                                    </td>
+                                    <td className="text-end">
+                                      {formatCurrencyUsd(
+                                        resolveExecutionCostUsd(execution),
+                                      )}
+                                    </td>
+                                  </tr>
+                                ),
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">Gera Imagem</h5>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Pendentes: {frameworkImagePendingCount}
+                    </span>
+                  </div>
+                  <p className="text-muted mb-0">
+                    Esta etapa executa a geração real das imagens em lote na
+                    OpenAI usando os prompts produzidos no Gera Prompt Imagem.
+                  </p>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <Link
+                      to={`/experiments/${expId}/framework-images`}
+                      className="btn btn-outline-primary btn-sm"
+                    >
+                      Ver detalhes das imagens
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-success align-self-start"
+                      onClick={handleStartImageGeneration}
+                      disabled={
+                        isStartingImageGeneration ||
+                        generateFrameworkImages.isPending
+                      }
+                    >
+                      {isStartingImageGeneration ||
+                      generateFrameworkImages.isPending
+                        ? "Iniciando..."
+                        : "Iniciar"}
+                    </button>
+                    <span className="small text-muted">
+                      Acompanhe a timeline detalhada na aba{" "}
+                      <strong>Conteúdo</strong>, bloco{" "}
+                      <strong>Gerar imagens em lote (AI Worker)</strong>.
+                    </span>
+                  </div>
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                      <h6 className="mb-0">Gera Prompt Imagem</h6>
+                      <span className="badge text-bg-light border fs-6 fw-semibold">
+                        Total execuções:{" "}
+                        {formatCurrencyUsd(
+                          historyGeraLandingImagePromptsExecutions.reduce(
+                            (sum, execution) =>
+                              sum + (resolveExecutionCostUsd(execution) ?? 0),
+                            0,
+                          ),
+                        )}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartImagePrompts}
+                      disabled={
+                        isStartingImagePrompts ||
+                        hasRunningGeraLandingImagePromptsExecution
+                      }
+                    >
+                      {isStartingImagePrompts ? "Iniciando..." : "Iniciar"}
+                    </button>
+                  </div>
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções</h6>
+                    {isLoadingCompletedGeraLandingImagePromptsExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : historyGeraLandingImagePromptsExecutions.length ===
+                      0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhuma execução registrada para esta etapa.
+                      </p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                              <th scope="col" className="text-end">
+                                Custo
+                              </th>
+                              <th scope="col" className="text-end">
+                                Ações
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historyGeraLandingImagePromptsExecutions.map(
+                              (execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                  <td className="text-end">
+                                    {formatCurrencyUsd(
+                                      resolveExecutionCostUsd(execution),
+                                    )}
+                                  </td>
+                                  <td className="text-end">
+                                    {latestSuccessfulImagePromptExecution?.idJob ===
+                                    execution.idJob ? (
+                                      <button
+                                        type="button"
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() =>
+                                          handleGenerateLandingHtml(
+                                            execution.idJob,
+                                          )
+                                        }
+                                        disabled={
+                                          isGeneratingLandingHtml ||
+                                          frameworkImagePendingCount > 0
+                                        }
+                                      >
+                                        {isGeneratingLandingHtml ? (
+                                          <>
+                                            <span
+                                              className="spinner-border spinner-border-sm me-2"
+                                              role="status"
+                                              aria-hidden="true"
+                                            />
+                                            Gerando HTML...
+                                          </>
+                                        ) : (
+                                          "Gerar HTML"
+                                        )}
+                                      </button>
+                                    ) : null}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
                           </tbody>
                         </table>
                       </div>
                     )}
                   </div>
+                  {frameworkImageSummary ? (
+                    <div className="row g-2">
+                      <div className="col-6 col-md-4">
+                        <div className="small border rounded p-2 bg-light">
+                          Em processamento:{" "}
+                          <strong>
+                            {frameworkImageSummary.processingCount}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-4">
+                        <div className="small border rounded p-2 bg-light">
+                          Aguardando OpenAI batch:{" "}
+                          <strong>
+                            {frameworkImageSummary.waitingOpenAiBatchCount}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-4">
+                        <div className="small border rounded p-2 bg-light">
+                          Concluídas:{" "}
+                          <strong>
+                            {frameworkImageSummary.completedCount}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-4">
+                        <div className="small border rounded p-2 bg-light">
+                          Falhas:{" "}
+                          <strong>{frameworkImageSummary.failedCount}</strong>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-4">
+                        <div className="small border rounded p-2 bg-light">
+                          Total de itens:{" "}
+                          <strong>{frameworkImageSummary.totalItems}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {isLoadingFrameworkImageStatuses ? (
+                    <p className="text-muted mb-0">
+                      Carregando status do Gera Imagem...
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
-            <div className="card">
-              <div className="card-body d-flex flex-column gap-3">
-                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                  <h5 className="card-title mb-0">Gera Imagem</h5>
-                  <span className="badge text-bg-light border fs-6 fw-semibold">
-                    Pendentes: {frameworkImagePendingCount}
-                  </span>
-                </div>
-                <p className="text-muted mb-0">
-                  Esta etapa executa a geração real das imagens em lote na OpenAI
-                  usando os prompts produzidos no Gera Prompt Imagem.
-                </p>
-                <div className="d-flex flex-wrap align-items-center gap-2">
-                  <Link to={`/experiments/${expId}/framework-images`} className="btn btn-outline-primary btn-sm">
-                    Ver detalhes das imagens
-                  </Link>
-                  <button type="button" className="btn btn-success align-self-start" onClick={handleStartImageGeneration} disabled={isStartingImageGeneration || generateFrameworkImages.isPending}>
-                    {isStartingImageGeneration || generateFrameworkImages.isPending ? "Iniciando..." : "Iniciar"}
-                  </button>
-                  <span className="small text-muted">
-                    Acompanhe a timeline detalhada na aba <strong>Conteúdo</strong>,
-                    bloco <strong>Gerar imagens em lote (AI Worker)</strong>.
-                  </span>
-                </div>
-                <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h6 className="mb-0">Gera Prompt Imagem</h6>
-                    <span className="badge text-bg-light border fs-6 fw-semibold">
-                      Total execuções: {formatCurrencyUsd(historyGeraLandingImagePromptsExecutions.reduce((sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0), 0))}
-                    </span>
-                  </div>
-                  <button type="button" className="btn btn-primary align-self-start" onClick={handleStartImagePrompts} disabled={isStartingImagePrompts || hasRunningGeraLandingImagePromptsExecution}>
-                    {isStartingImagePrompts ? "Iniciando..." : "Iniciar"}
-                  </button>
-                </div>
-                <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                  <h6 className="mb-0">Histórico de execuções</h6>
-                  {isLoadingCompletedGeraLandingImagePromptsExecutions ? (
-                    <p className="text-muted mb-0">Carregando execuções...</p>
-                  ) : historyGeraLandingImagePromptsExecutions.length === 0 ? (
-                    <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
-                  ) : (
-                    <div className="table-responsive"><table className="table table-sm align-middle mb-0"><thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th><th scope="col" className="text-end">Ações</th></tr></thead><tbody>{historyGeraLandingImagePromptsExecutions.map((execution) => (<tr key={execution.idJob}><td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td><td>{execution.status}</td><td>{formatDateTimeValue(execution.executionRequestedAt)}</td><td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td><td className="text-end">{latestSuccessfulImagePromptExecution?.idJob === execution.idJob ? (<button type="button" className="btn btn-primary btn-sm" onClick={() => handleGenerateLandingHtml(execution.idJob)} disabled={isGeneratingLandingHtml || frameworkImagePendingCount > 0}>{isGeneratingLandingHtml ? (<><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Gerando HTML...</>) : "Gerar HTML"}</button>) : null}</td></tr>))}</tbody></table></div>
-                  )}
-                </div>
-                {frameworkImageSummary ? (
-                  <div className="row g-2">
-                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Em processamento: <strong>{frameworkImageSummary.processingCount}</strong></div></div>
-                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Aguardando OpenAI batch: <strong>{frameworkImageSummary.waitingOpenAiBatchCount}</strong></div></div>
-                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Concluídas: <strong>{frameworkImageSummary.completedCount}</strong></div></div>
-                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Falhas: <strong>{frameworkImageSummary.failedCount}</strong></div></div>
-                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Total de itens: <strong>{frameworkImageSummary.totalItems}</strong></div></div>
-                  </div>
-                ) : null}
-                {isLoadingFrameworkImageStatuses ? <p className="text-muted mb-0">Carregando status do Gera Imagem...</p> : null}
-              </div>
-            </div>
-          </div>
-        </Tabs.Content>
-        <Tabs.Content value="sample-emails" asChild>
-          <SampleEmailsTab
-            experimentId={expId}
-            requestedSampleEmails={data.sampleEmailsToGenerate}
-            selectedSampleEmailId={data.selectedSampleEmailId}
-            selectedSampleEmailSubject={data.selectedSampleEmailSubject}
-            selectedSampleEmailUpdatedAt={data.selectedSampleEmailUpdatedAt}
-          />
-        </Tabs.Content>
-        <Tabs.Content value="lead-portal" asChild>
-          <LeadPortalFlowTab experiment={data} />
-        </Tabs.Content>
-        <Tabs.Content value="content-structure" asChild>
-          <ExperimentContentGenerationTab
-            experimentId={expId}
-            experimentName={data?.name}
-            hypothesis={hyp}
-            campaignAngle={data?.campaignAngle}
-            adCopy={data?.adCopy}
-          />
-        </Tabs.Content>
-        <Tabs.Content value="conteudo" asChild>
-          <div className="d-flex flex-column gap-3">
-            {pipelineContentCards.map((card) => {
-              const formattedValue = formatPipelineJson(card.rawValue);
-              return (
-                <div className="card" key={card.key}>
-                  <div className="card-body">
-                    <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
-                      <h5 className="card-title mb-1">{card.title}</h5>
-                      {formattedValue ? (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm"
-                          disabled={copyingCardKey === card.key}
-                          onClick={async () => {
-                            try {
-                              setCopyingCardKey(card.key);
-                              await copyToClipboard(formattedValue);
-                              setCopiedCardKey(card.key);
-                              window.setTimeout(() => {
-                                setCopiedCardKey((current) =>
+          </Tabs.Content>
+          <Tabs.Content value="sample-emails" asChild>
+            <SampleEmailsTab
+              experimentId={expId}
+              requestedSampleEmails={data.sampleEmailsToGenerate}
+              selectedSampleEmailId={data.selectedSampleEmailId}
+              selectedSampleEmailSubject={data.selectedSampleEmailSubject}
+              selectedSampleEmailUpdatedAt={data.selectedSampleEmailUpdatedAt}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="lead-portal" asChild>
+            <LeadPortalFlowTab experiment={data} />
+          </Tabs.Content>
+          <Tabs.Content value="content-structure" asChild>
+            <ExperimentContentGenerationTab
+              experimentId={expId}
+              experimentName={data?.name}
+              hypothesis={hyp}
+              campaignAngle={data?.campaignAngle}
+              adCopy={data?.adCopy}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="conteudo" asChild>
+            <div className="d-flex flex-column gap-3">
+              {pipelineContentCards.map((card) => {
+                const formattedValue = formatPipelineJson(card.rawValue);
+                return (
+                  <div className="card" key={card.key}>
+                    <div className="card-body">
+                      <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                        <h5 className="card-title mb-1">{card.title}</h5>
+                        {formattedValue ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled={copyingCardKey === card.key}
+                            onClick={async () => {
+                              try {
+                                setCopyingCardKey(card.key);
+                                await copyToClipboard(formattedValue);
+                                setCopiedCardKey(card.key);
+                                window.setTimeout(() => {
+                                  setCopiedCardKey((current) =>
+                                    current === card.key ? null : current,
+                                  );
+                                }, 1600);
+                              } catch {
+                                toast.error(
+                                  "Não foi possível copiar esta etapa para a área de transferência.",
+                                );
+                              } finally {
+                                setCopyingCardKey((current) =>
                                   current === card.key ? null : current,
                                 );
-                              }, 1600);
-                            } catch {
-                              toast.error(
-                                "Não foi possível copiar esta etapa para a área de transferência.",
-                              );
-                            } finally {
-                              setCopyingCardKey((current) =>
-                                current === card.key ? null : current,
-                              );
-                            }
-                          }}
-                        >
-                          {copyingCardKey === card.key ? (
-                            <span
-                              className="spinner-border spinner-border-sm me-1"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                          ) : null}
-                          {copiedCardKey === card.key ? "Copiado!" : "Copiar etapa"}
-                        </button>
-                      ) : null}
-                    </div>
-                    <p className="text-muted small mb-3">{card.description}</p>
-                    {formattedValue ? (
-                      <CollapsibleJsonViewer content={formattedValue} />
-                    ) : (
-                      <div className="alert alert-secondary mb-0" role="alert">
-                        Sem conteúdo salvo para esta etapa.
+                              }
+                            }}
+                          >
+                            {copyingCardKey === card.key ? (
+                              <span
+                                className="spinner-border spinner-border-sm me-1"
+                                role="status"
+                                aria-hidden="true"
+                              />
+                            ) : null}
+                            {copiedCardKey === card.key
+                              ? "Copiado!"
+                              : "Copiar etapa"}
+                          </button>
+                        ) : null}
                       </div>
-                    )}
+                      <p className="text-muted small mb-3">
+                        {card.description}
+                      </p>
+                      {formattedValue ? (
+                        <CollapsibleJsonViewer content={formattedValue} />
+                      ) : (
+                        <div
+                          className="alert alert-secondary mb-0"
+                          role="alert"
+                        >
+                          Sem conteúdo salvo para esta etapa.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </Tabs.Content>
+                );
+              })}
+            </div>
+          </Tabs.Content>
         </Tabs.Root>
       </div>
       {isResetModalOpen ? (

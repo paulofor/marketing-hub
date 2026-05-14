@@ -25,6 +25,7 @@ public class GeraLandingExecutionService {
     private static final String STAGE_WIREFRAME = "landing-page-wireframe";
     private static final String STAGE_COPY = "landing-page-copy";
     private static final String STAGE_IMAGE_PROMPTS = "landing-page-image-planning";
+    private static final String STAGE_DESIGN_PRESET = "landing-page-design-preset";
     private static final Pattern BANNED_COPY_TEXT_PATTERN = Pattern.compile(
             "(?i)(adCopy\\.|campaignAngle\\.|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\bV[1-3]-|lorem ipsum|como funciona \\(passo)");
 
@@ -36,6 +37,7 @@ public class GeraLandingExecutionService {
     private final Resource wireframeSchemaResource;
     private final Resource copySchemaResource;
     private final Resource imagePlanningSchemaResource;
+    private final Resource designPresetSchemaResource;
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
@@ -47,7 +49,9 @@ public class GeraLandingExecutionService {
                                        @Value("classpath:prompts/geralanding/landing-page-copy-schema.json")
                                        Resource copySchemaResource,
                                        @Value("classpath:prompts/geralanding/landing-page-image-planning-schema.json")
-                                       Resource imagePlanningSchemaResource) {
+                                       Resource imagePlanningSchemaResource,
+                                       @Value("classpath:prompts/geralanding/landing-page-design-preset-schema.json")
+                                       Resource designPresetSchemaResource) {
         this.backendClient = backendClient;
         this.geraLandingService = geraLandingService;
         this.openAiClient = openAiClient;
@@ -56,6 +60,7 @@ public class GeraLandingExecutionService {
         this.wireframeSchemaResource = wireframeSchemaResource;
         this.copySchemaResource = copySchemaResource;
         this.imagePlanningSchemaResource = imagePlanningSchemaResource;
+        this.designPresetSchemaResource = designPresetSchemaResource;
     }
 
     public void processPendingExecutions() {
@@ -81,7 +86,8 @@ public class GeraLandingExecutionService {
         String normalizedStage = execution.stageCode().trim().toLowerCase(Locale.ROOT);
         if (!STAGE_WIREFRAME.equals(normalizedStage)
                 && !STAGE_COPY.equals(normalizedStage)
-                && !STAGE_IMAGE_PROMPTS.equals(normalizedStage)) {
+                && !STAGE_IMAGE_PROMPTS.equals(normalizedStage)
+                && !STAGE_DESIGN_PRESET.equals(normalizedStage)) {
             log.info("Skipping gera-landing executionId={} because stageCode {} is not supported",
                     execution.idJob(), execution.stageCode());
             return;
@@ -261,6 +267,8 @@ public class GeraLandingExecutionService {
             schemaResource = copySchemaResource;
         } else if (STAGE_IMAGE_PROMPTS.equals(stageCode)) {
             schemaResource = imagePlanningSchemaResource;
+        } else if (STAGE_DESIGN_PRESET.equals(stageCode)) {
+            schemaResource = designPresetSchemaResource;
         }
         try {
             return objectMapper.readValue(schemaResource.getInputStream(), Map.class);

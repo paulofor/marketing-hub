@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "landingPageDesignPreset"
+  ],
+  "properties": {
+    "landingPageDesignPreset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "presetId",
+        "theme",
+        "sectionPresets",
+        "elementPresets"
+      ],
+      "properties": {
+        "presetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "theme": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "sectionPresets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sectionId",
+              "surfaceStyle",
+              "contrastMode",
+              "sectionAttributes"
+            ],
+            "properties": {
+              "sectionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "surfaceStyle": {
+                "type": "string",
+                "enum": [
+                  "band",
+                  "solid",
+                  "gradient-soft",
+                  "image-tint"
+                ]
+              },
+              "contrastMode": {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "high",
+                  "soft"
+                ]
+              },
+              "sectionAttributes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/attribute"
+                }
+              }
+            }
+          }
+        },
+        "elementPresets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sectionId",
+              "elementId",
+              "tag",
+              "attributes",
+              "tokenBindings"
+            ],
+            "properties": {
+              "sectionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "elementId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tag": {
+                "type": "string",
+                "minLength": 1
+              },
+              "attributes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/attribute"
+                }
+              },
+              "tokenBindings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "attributeName",
+                    "tokenPath"
+                  ],
+                  "properties": {
+                    "attributeName": {
+                      "type": "string",
+                      "enum": [
+                        "color",
+                        "background",
+                        "background-color",
+                        "background-image",
+                        "background-size",
+                        "background-position",
+                        "background-repeat",
+                        "background-attachment",
+                        "background-clip",
+                        "background-origin",
+                        "font",
+                        "font-family",
+                        "font-size",
+                        "font-weight",
+                        "font-style",
+                        "font-variant",
+                        "line-height",
+                        "letter-spacing",
+                        "word-spacing",
+                        "text-align",
+                        "text-decoration",
+                        "text-decoration-line",
+                        "text-decoration-color",
+                        "text-decoration-style",
+                        "text-transform",
+                        "text-shadow",
+                        "white-space",
+                        "border",
+                        "border-width",
+                        "border-style",
+                        "border-color",
+                        "border-top",
+                        "border-right",
+                        "border-bottom",
+                        "border-left",
+                        "border-radius",
+                        "outline",
+                        "outline-width",
+                        "outline-style",
+                        "outline-color",
+                        "outline-offset",
+                        "box-shadow",
+                        "opacity",
+                        "filter",
+                        "backdrop-filter",
+                        "mix-blend-mode",
+                        "isolation",
+                        "cursor",
+                        "appearance",
+                        "caret-color",
+                        "accent-color",
+                        "list-style",
+                        "list-style-type",
+                        "list-style-position",
+                        "list-style-image",
+                        "object-fit",
+                        "object-position",
+                        "transition",
+                        "transition-property",
+                        "transition-duration",
+                        "transition-timing-function",
+                        "transition-delay",
+                        "animation",
+                        "animation-name",
+                        "animation-duration",
+                        "animation-timing-function",
+                        "animation-delay",
+                        "animation-iteration-count",
+                        "animation-direction",
+                        "animation-fill-mode",
+                        "animation-play-state"
+                      ]
+                    },
+                    "tokenPath": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "attribute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "color",
+            "background",
+            "background-color",
+            "background-image",
+            "background-size",
+            "background-position",
+            "background-repeat",
+            "background-attachment",
+            "background-clip",
+            "background-origin",
+            "font",
+            "font-family",
+            "font-size",
+            "font-weight",
+            "font-style",
+            "font-variant",
+            "line-height",
+            "letter-spacing",
+            "word-spacing",
+            "text-align",
+            "text-decoration",
+            "text-decoration-line",
+            "text-decoration-color",
+            "text-decoration-style",
+            "text-transform",
+            "text-shadow",
+            "white-space",
+            "border",
+            "border-width",
+            "border-style",
+            "border-color",
+            "border-top",
+            "border-right",
+            "border-bottom",
+            "border-left",
+            "border-radius",
+            "outline",
+            "outline-width",
+            "outline-style",
+            "outline-color",
+            "outline-offset",
+            "box-shadow",
+            "opacity",
+            "filter",
+            "backdrop-filter",
+            "mix-blend-mode",
+            "isolation",
+            "cursor",
+            "appearance",
+            "caret-color",
+            "accent-color",
+            "list-style",
+            "list-style-type",
+            "list-style-position",
+            "list-style-image",
+            "object-fit",
+            "object-position",
+            "transition",
+            "transition-property",
+            "transition-duration",
+            "transition-timing-function",
+            "transition-delay",
+            "animation",
+            "animation-name",
+            "animation-duration",
+            "animation-timing-function",
+            "animation-delay",
+            "animation-iteration-count",
+            "animation-direction",
+            "animation-fill-mode",
+            "animation-play-state"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

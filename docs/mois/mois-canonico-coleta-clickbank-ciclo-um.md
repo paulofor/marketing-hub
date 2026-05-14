@@ -1,0 +1,82 @@
+# MOIS — Documento Canônico da Coleta ClickBank (Ciclo Um)
+
+## 1. Objetivo do ciclo
+
+Este documento define o **Ciclo Um** da coleta ClickBank no MOIS, com foco em:
+- coletar ofertas públicas da página Top Offers;
+- normalizar os dados coletados;
+- persistir no backend MOIS com rastreabilidade de origem;
+- manter mapeamento explícito **fonte → destino** dos dados.
+
+Referência de origem da coleta pública:
+- `https://www.clickbank.com/blog/clickbank-top-offers/`
+
+## 2. Escopo do Ciclo Um
+
+O Ciclo Um cobre exclusivamente:
+1. leitura da página pública de Top Offers;
+2. extração de bloco de produto (título, nickname, categoria e links);
+3. montagem de snapshots internos (`ClickbankProductSnapshot`);
+4. transformação para payload de persistência (`references` + `rawMetadata`);
+5. envio para endpoint de persistência MOIS.
+
+Não cobre neste ciclo:
+- enriquecimento por outras fontes externas;
+- classificação avançada por IA;
+- reconciliação cross-source.
+
+## 3. Mapeamento de dados (Fonte → Destino)
+
+### 3.1 Fonte primária (HTML ClickBank Top Offers)
+
+| Campo de origem (ClickBank Top Offers) | Regra de extração no ciclo um | Campo de destino interno (snapshot) | Campo de destino na persistência MOIS |
+|---|---|---|---|
+| Heading numerado com link do produto (`<h1-3>...<a href=...>Título</a>`) | Extrair texto do link e sanitizar HTML | `title` | `references[].title` |
+| `href` do link do título no heading | Normalizar URL relativa para absoluta | `detailsUrl` | `references[].rawMetadata.productUrl` |
+| Linha “Nickname: ...” no bloco do produto | Extrair texto após label | `rating` *(uso atual para nickname)* | `references[].rawMetadata.productNickname` |
+| Linha “Category: ...” no bloco do produto | Extrair texto após label | `commission` *(uso atual para categoria)* | `references[].rawMetadata.productCategory` |
+| Link “Check out their landing page here.” | Extrair `href` e normalizar | `salesPageUrl` | `references[].url` e `references[].rawMetadata.salesPageUrl` |
+| Momento da coleta | `Instant.now()` | `collectedAt` | `references[].collectedAt` |
+
+### 3.2 Fonte de contexto operacional (requisição do coletor)
+
+| Campo de origem | Destino na persistência MOIS |
+|---|---|
+| `request.source` | `references[].sourceContext` |
+| `request.maxProducts` | `job.limitPerSource` (com regra de limite aplicado no coletor) |
+| `workspaceId` configurado | `job.workspaceId` |
+| `defaultNiche` configurado | `job.niche` e `references[].niche` |
+| `defaultMarketTheme` configurado | `job.marketTheme` |
+
+## 4. Contrato de persistência no MOIS (Ciclo Um)
+
+No Ciclo Um, cada produto coletado deve gerar:
+- `references[].title` preenchido com nome do produto;
+- `references[].url` apontando para landing page quando existir;
+- `references[].rawMetadata` com campos mínimos:
+  - `productName`
+  - `productUrl`
+  - `salesPageUrl`
+  - `productNickname`
+  - `productCategory`
+  - `clickbankTemperature` *(opcional quando disponível)*
+
+## 5. Regras canônicas de qualidade do ciclo
+
+1. **Priorizar URL de landing page do produto** para `references[].url`.
+2. **Normalizar URLs relativas** para absolutas antes de persistir.
+3. **Evitar duplicidade** por chave composta (`title + nickname + detailsUrl`).
+4. Se nenhum produto for encontrado, registrar aviso operacional no log.
+5. Persistência deve manter rastreabilidade mínima no `rawMetadata` para auditoria.
+
+## 6. Observações de compatibilidade
+
+- No estado atual do DTO, o campo `rating` é utilizado para nickname e `commission` para categoria.
+- Esta adaptação é aceita no Ciclo Um por compatibilidade, mas deve evoluir em ciclo posterior para campos semânticos próprios.
+
+## 7. Evolução prevista (Ciclo Dois)
+
+No Ciclo Dois, recomenda-se:
+- DTO dedicado para produto ClickBank com campos semânticos explícitos (`nickname`, `category`);
+- validações automatizadas de consistência de URL;
+- testes de regressão com múltiplos formatos de HTML da página Top Offers.

@@ -471,7 +471,7 @@ export default function ExperimentDetailPage() {
     setIsGeneratingLandingHtml(true);
     try {
       await axios.post(
-        `/api/experiments/${expId}/pipeline/landing-page-html/generate-with-lhm`,
+        `/api/experiments/${expId}/geralanding/html/provisional/generate`,
       );
       toast.success("Geração de HTML iniciada com sucesso.");
     } catch (error) {

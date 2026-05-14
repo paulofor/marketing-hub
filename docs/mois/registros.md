@@ -260,3 +260,8 @@
 - Mantidas as proteções anti-overlay já existentes, com foco em eliminar o bloqueio do cookie policy que impede a transição de estado autenticado.
 - Validação executada no módulo Java: `mvn -q test` com sucesso.
 - Registro criado por solicitação explícita: "registre as alterações".
+
+## 2026-05-14 22:30:00 UTC
+- Definido como orientação canônica do módulo MOIS o documento **Biblioteca de Sales Pages**: `docs/novos-modulos/mois/especificacao-biblioteca-sales-pages.md`.
+- Registro explícito para o time: a execução do **Ciclo 2 do coletor Clickbase/ClickBank** passa a ser tratada como etapa inicial de construção da biblioteca de páginas de vendas, em aderência ao direcionamento do módulo.
+- Objetivo operacional consolidado: usar os links resolvidos/persistidos no ciclo 2 como base para evolução da biblioteca e análises estruturadas de sales pages no MOIS.

@@ -134,7 +134,55 @@ public class ClickbankCollectorService {
             products.add(collectSalesPageFromProduct(base));
         }
         persistCollectedProductsOnBackend(request, status, products);
+        publishSalesPagesToLibrary(products);
         return new ClickbankCollectionResponse(status, message, products);
+    }
+
+    private void publishSalesPagesToLibrary(List<ClickbankProductSnapshot> products) {
+        if (products == null || products.isEmpty()) {
+            return;
+        }
+        List<Map<String, Object>> urls = new ArrayList<>();
+        for (ClickbankProductSnapshot product : products) {
+            String salesPageUrl = coalesceNotBlank(product.salesPageUrl(), product.detailsUrl());
+            if (salesPageUrl == null || salesPageUrl.isBlank()) {
+                continue;
+            }
+            Map<String, Object> item = new HashMap<>();
+            item.put("url", salesPageUrl);
+            item.put("source", "CLICKBANK");
+            item.put("workspaceId", workspaceId);
+            item.put("title", product.title());
+            item.put("capturedAt", Instant.now().toString());
+            urls.add(item);
+        }
+        if (urls.isEmpty()) {
+            log.info("Ciclo 2: nenhuma URL elegível para ingestão na biblioteca de sales pages.");
+            return;
+        }
+        String endpoint = backendBaseUrl + "/api/mois/sales-library/urls:ingest";
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("workspaceId", workspaceId);
+            body.put("source", "CLICKBANK");
+            body.put("urls", urls);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Ciclo 2: ingestão de sales pages enviada com sucesso. endpoint={}, totalUrls={}", endpoint, urls.size());
+            } else {
+                log.warn("Ciclo 2: backend rejeitou ingestão de sales pages. endpoint={}, status={}, body={}",
+                        endpoint,
+                        response.statusCode(),
+                        truncate(response.body(), 500));
+            }
+        } catch (Exception ex) {
+            log.warn("Ciclo 2: falha ao enviar URLs para biblioteca de sales pages. endpoint={}", endpoint, ex);
+        }
     }
 
     private List<ClickbankProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {
@@ -1015,5 +1063,12 @@ public class ClickbankCollectorService {
         } catch (Exception ignored) {
             log.debug("Overlay '{}' ainda visível após timeout de espera.", selector);
         }
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength) + "...";
     }
 }

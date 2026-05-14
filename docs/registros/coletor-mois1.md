@@ -151,3 +151,9 @@
 - Implementado o ciclo 2 no `mois-clickbank-collector`: leitura dos produtos base via backend MOIS (`/api/v1/mois/clickbase/products`), acesso da `detailsUrl` produto a produto e persistência do resultado no endpoint de coleta (`/api/v1/mois/persistence/collection-jobs/{jobId}`).
 - Scheduler do coletor ClickBank ajustado para alternância por hora: horas ímpares executam ciclo 1 (Top Offers) e horas pares executam ciclo 2 (página de vendas).
 - Atualizada a documentação canônica de coleta ClickBank com definição operacional do novo ciclo 2 e responsabilidades entre backend MOIS e módulo coletor.
+
+## 2026-05-14 22:45:00 UTC
+- Iniciada implementação prática do objetivo da biblioteca de páginas de vendas no **Ciclo 2** do `mois-clickbank-collector`.
+- O `ClickbankCollectorService.collectSecondCycleFromBackend` passou a, além de persistir no endpoint MOIS já existente, enviar as URLs resolvidas de página de vendas para o endpoint de ingestão da biblioteca: `POST /api/mois/sales-library/urls:ingest`.
+- Payload enviado inclui `workspaceId`, `source=CLICKBANK` e lista `urls` com `url`, `title` e `capturedAt`.
+- Comportamento resiliente: falhas na ingestão da biblioteca são registradas em log (warn), sem interromper a persistência padrão do ciclo 2.

@@ -94,6 +94,10 @@ jobs:
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}
         run: |
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "Erro: nenhuma chave SSH foi encontrada nos secrets esperados." >&2
+            exit 1
+          fi
           install -m 700 -d ~/.ssh
           printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519

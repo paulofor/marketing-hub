@@ -56,6 +56,7 @@ public class MoisHotmartProductService {
                             rs.getString("hotmart_price"),
                             "BRL",
                             rs.getString("sales_page_url"),
+                            rs.getString("sales_page_url"),
                             rs.getObject("hotmart_temperature") == null ? null : rs.getDouble("hotmart_temperature"),
                             collectedAt == null ? null : collectedAt.toInstant());
                 },

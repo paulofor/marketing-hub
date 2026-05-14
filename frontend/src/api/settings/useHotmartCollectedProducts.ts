@@ -11,6 +11,7 @@ export interface HotmartCollectedProduct {
   price?: string | null;
   currency?: string | null;
   salesPageUrl?: string | null;
+  pageSalesLink?: string | null;
   temperature?: number | null;
   collectedAt?: string | null;
 }

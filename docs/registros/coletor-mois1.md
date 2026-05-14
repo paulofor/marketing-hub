@@ -138,3 +138,6 @@
 ## 2026-05-14 00:00 UTC
 - Corrigido o workflow do `mois-clickbank-collector` para autenticar no deploy com o mesmo usuário do `mois-hotmart-collector` (`DEPLOY_USER=root`) no host `177.153.62.107`, eliminando falha `Permission denied (publickey,password)` ao executar o SSH.
 - Mantido o mesmo fluxo de chave/known_hosts e compose do Hotmart, alterando apenas o usuário remoto para alinhar ao ambiente já funcional.
+
+## 2026-05-14 04:45 UTC
+- Adicionado log no início do método agendado `collectHourly` do módulo `mois-clickbank-collector` para registrar início da execução automática com `source` e `maxProducts`, facilitando rastreamento operacional do scheduler.

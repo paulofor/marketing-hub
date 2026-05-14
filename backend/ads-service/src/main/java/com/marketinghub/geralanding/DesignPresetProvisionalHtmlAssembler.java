@@ -10,10 +10,10 @@ import java.util.Map;
 @Component
 public class DesignPresetProvisionalHtmlAssembler {
 
-    private final CopyProvisionalHtmlProcessor processor;
+    private final DesignPresetProvisionalHtmlProcessor processor;
     private final ObjectMapper objectMapper;
 
-    public DesignPresetProvisionalHtmlAssembler(CopyProvisionalHtmlProcessor processor, ObjectMapper objectMapper) {
+    public DesignPresetProvisionalHtmlAssembler(DesignPresetProvisionalHtmlProcessor processor, ObjectMapper objectMapper) {
         this.processor = processor;
         this.objectMapper = objectMapper;
     }
@@ -33,7 +33,7 @@ public class DesignPresetProvisionalHtmlAssembler {
         try {
             Map<String, Object> wireframePayload = normalizePayload(wireframeJson, "landingPageWireframe");
             Map<String, Object> copyPayload = normalizePayload(copyJson, "landingPageCopy");
-            String html = processor.processComplete(
+            String html = processor.process(
                     objectMapper.writeValueAsString(wireframePayload),
                     objectMapper.writeValueAsString(copyPayload),
                     imagePlanningJson,

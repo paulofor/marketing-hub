@@ -17,6 +17,7 @@ import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.geralanding.CopyProvisionalHtmlAssembler;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
@@ -77,6 +78,8 @@ class ExperimentPipelineGenerationServiceTest {
     @Mock
     private LandingHtmlModule landingHtmlModule;
     @Mock
+    private CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
+    @Mock
     private FrameworkImageGenerationService frameworkImageGenerationService;
     @Mock
     private OpenAiPricingService openAiPricingService;
@@ -99,6 +102,7 @@ class ExperimentPipelineGenerationServiceTest {
                 new ObjectMapper(),
                 landingPageImageInjector,
                 landingHtmlModule,
+                copyProvisionalHtmlAssembler,
                 frameworkImageGenerationService,
                 openAiPricingService,
                 leadPortalPublicUrlResolver,
@@ -301,18 +305,21 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
-    void generateLandingHtmlWithLhmFailsWhenDesignPresetMissing() {
+    void generateLandingHtmlWithLhmFallsBackToCopyHtmlWhenDesignPresetMissing() {
         Experiment experiment = new Experiment();
         experiment.setId(36L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\"}}}");
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[{\"sectionId\":\"hero\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}],\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-36/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"}}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
+        when(copyProvisionalHtmlAssembler.assemble(experiment.getLandingPageCopy(), experiment.getLandingPageWireframe(), null))
+                .thenReturn("<html><body><section data-section-id=\"hero\" data-surface-token=\"surface-base\" data-surface-style=\"band\" data-surface-contrast=\"normal\"><img src=\"placeholder\"/><form id=\"lead-capture-primary\"><input type=\"text\" name=\"nome\" required/></form></section></body></html>");
+        when(landingPageImageInjector.injectImages(36L, "<html><body><section data-section-id=\"hero\" data-surface-token=\"surface-base\" data-surface-style=\"band\" data-surface-contrast=\"normal\"><img src=\"placeholder\"/><form id=\"lead-capture-primary\"><input type=\"text\" name=\"nome\" required/></form></section></body></html>"))
+                .thenReturn("<html><body><section data-section-id=\"hero\" data-surface-token=\"surface-base\" data-surface-style=\"band\" data-surface-contrast=\"normal\"><img src=\"https://cdn.test/image-1.png\"/><form id=\"lead-capture-primary\"><input type=\"text\" name=\"nome\" required/></form></section></body></html>");
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
         when(experimentRepository.findById(36L)).thenReturn(Optional.of(experiment));
 
-        ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.generateLandingHtmlWithLhm(36L));
+        service.generateLandingHtmlWithLhm(36L);
 
-        assertEquals(409, error.getStatusCode().value());
-        assertTrue(error.getReason().contains("Preset de design"));
+        assertTrue(experiment.getLandingPageHtml().contains("https://cdn.test/image-1.png"));
     }
 
     @Test

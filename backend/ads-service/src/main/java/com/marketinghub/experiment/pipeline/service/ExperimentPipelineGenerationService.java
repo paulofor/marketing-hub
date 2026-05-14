@@ -25,6 +25,7 @@ import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerati
 import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.geralanding.CopyProvisionalHtmlAssembler;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
@@ -132,6 +133,7 @@ public class ExperimentPipelineGenerationService {
     private final ObjectMapper objectMapper;
     private final LandingPageImageInjector landingPageImageInjector;
     private final LandingHtmlModule landingHtmlModule;
+    private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
     private final FrameworkImageGenerationService frameworkImageGenerationService;
     private final OpenAiPricingService openAiPricingService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
@@ -146,6 +148,7 @@ public class ExperimentPipelineGenerationService {
                                                ObjectMapper objectMapper,
                                                LandingPageImageInjector landingPageImageInjector,
                                                LandingHtmlModule landingHtmlModule,
+                                               CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler,
                                                FrameworkImageGenerationService frameworkImageGenerationService,
                                                OpenAiPricingService openAiPricingService,
                                                LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
@@ -159,6 +162,7 @@ public class ExperimentPipelineGenerationService {
         this.objectMapper = objectMapper;
         this.landingPageImageInjector = landingPageImageInjector;
         this.landingHtmlModule = landingHtmlModule;
+        this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
         this.frameworkImageGenerationService = frameworkImageGenerationService;
         this.openAiPricingService = openAiPricingService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
@@ -338,8 +342,13 @@ public class ExperimentPipelineGenerationService {
                     "Copy da landing ainda não foi gerada para este experimento");
         }
         if (!StringUtils.hasText(experiment.getLandingPageDesignPreset())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Preset de design da landing ainda não foi gerado para este experimento");
+            String provisionalHtml = copyProvisionalHtmlAssembler.assemble(
+                    experiment.getLandingPageCopy(),
+                    experiment.getLandingPageWireframe(),
+                    null);
+            String htmlWithImages = landingPageImageInjector.injectImages(experiment.getId(), provisionalHtml);
+            applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, htmlWithImages);
+            return experimentMapper.toDto(experiment);
         }
         Map<String, Object> monitoringPayload = buildLhmMonitoringPayload(experiment, experimentId);
         ExperimentPipelineGenerationJob monitoringJob = createInlineGenerationJob(

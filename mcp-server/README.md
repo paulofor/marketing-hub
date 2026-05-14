@@ -88,7 +88,7 @@ Quando `MCP_META_ENABLED=false`, as tools `meta_*` continuam aparecendo em `tool
 
 As tools GitHub podem ser ativadas/desativadas por configuração:
 
-- `MCP_GITHUB_ENABLED` (default `false`);
+- `MCP_GITHUB_ENABLED` (default `true`);
 - `MCP_GITHUB_API_BASE_URL` (default `https://api.github.com`);
 - `MCP_GITHUB_OWNER` (owner do repositório, obrigatório quando habilitado);
 - `MCP_GITHUB_REPO` (nome do repositório, obrigatório quando habilitado);

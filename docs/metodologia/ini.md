@@ -4,3 +4,4 @@
   - poder usar o framework que mantem isolado pacotes. archunit
  
 --> isso vai ajudar muito no futuro para desenvolver sem quebrar o que ja tem
+- a busca de padrões ajuda o modelo a entender melhor comandos em alto nivel

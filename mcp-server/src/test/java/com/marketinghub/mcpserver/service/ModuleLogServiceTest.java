@@ -66,6 +66,7 @@ class ModuleLogServiceTest {
                 logUrl,
                 logUrl,
                 logUrl,
+                logUrl,
                 2,
                 3,
                 1,

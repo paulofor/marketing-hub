@@ -189,7 +189,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, oprm-coletor-receita"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita"));
     }
 
     @Test

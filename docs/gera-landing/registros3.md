@@ -65,3 +65,4 @@
 
 - 2026-05-14 12:00:00 UTC-3 — Nova etapa canônica **landing-page-design-preset** habilitada no fluxo Gera Landing do AI Worker, com prompt e schema dedicados em `prompts/geralanding` e whitelist explícita de atributos CSS por seção/elemento para geração estruturada de presets visuais.
 - 2026-05-14 13:55:00 UTC — Frontend do experimento atualizado com o card **Gera Preset Design** (botão iniciar, jobs em execução, histórico e custo total), alinhado ao mesmo padrão visual/funcional de Gera Copy e Gera WireFrame.
+- 2026-05-14 17:25:00 UTC — Corrigida a causa-raiz de erro 404 no card **Gera Preset Design**: adicionado no backend (`com.marketinghub.geralanding`) o endpoint canônico `POST /api/experiments/{experimentId}/geralanding/design-preset/start`, registrando execução inicial com `stageCode=landing-page-design-preset` e retorno `202 Accepted` (idJob/status), em paridade com wireframe/copy/image-prompts.

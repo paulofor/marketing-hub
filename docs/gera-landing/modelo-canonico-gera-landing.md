@@ -107,7 +107,19 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 ## 3.1 Endpoints públicos (admin)
 
 - `POST /api/experiments/{experimentId}/geralanding/wireframe/start`
-  - cria execução inicial;
+  - cria execução inicial da etapa `landing-page-wireframe`;
+  - retorna `202 Accepted` com `{ idJob, status }`.
+
+- `POST /api/experiments/{experimentId}/geralanding/copy/start`
+  - cria execução inicial da etapa `landing-page-copy`;
+  - retorna `202 Accepted` com `{ idJob, status }`.
+
+- `POST /api/experiments/{experimentId}/geralanding/design-preset/start`
+  - cria execução inicial da etapa `landing-page-design-preset`;
+  - retorna `202 Accepted` com `{ idJob, status }`.
+
+- `POST /api/experiments/{experimentId}/geralanding/image-prompts/start`
+  - cria execução inicial da etapa `landing-page-image-planning`;
   - retorna `202 Accepted` com `{ idJob, status }`.
 
 - `GET /api/experiments/{experimentId}/geralanding/stage-executions`

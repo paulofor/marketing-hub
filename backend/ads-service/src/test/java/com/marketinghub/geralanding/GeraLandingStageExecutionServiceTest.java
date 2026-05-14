@@ -268,8 +268,10 @@ class GeraLandingStageExecutionServiceTest {
                 experiment.getLandingPageWireframe(),
                 request.modelResponse(),
                 experiment.getLandingPageDesignPreset(),
-                "id-image-planning")).thenReturn("<html>completo</html>");
-        when(landingPageImageInjector.injectImages(66L, "<html>completo</html>")).thenReturn("<html>com-imagens</html>");
+                "id-image-planning"))
+                .thenReturn("<html>com-imagens</html>");
+        when(landingPageImageInjector.injectImages(66L, "<html>com-imagens</html>"))
+                .thenReturn("<html>com-imagens</html>");
 
         service.receiveResult("id-image-planning", request);
 
@@ -424,9 +426,9 @@ class GeraLandingStageExecutionServiceTest {
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-design".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
         when(experimentRepository.findById(79L)).thenReturn(Optional.of(experiment), Optional.of(experiment));
-        when(copyProvisionalHtmlAssembler.assembleComplete(
-                experiment.getLandingPageCopy(),
+        when(designPresetProvisionalHtmlAssembler.assemble(
                 experiment.getLandingPageWireframe(),
+                experiment.getLandingPageCopy(),
                 experiment.getLandingPageImagePlanning(),
                 request.modelResponse(),
                 "id-design"))

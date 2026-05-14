@@ -53,11 +53,11 @@ Exemplo:
 
 ```env
 # Autenticação Clickbank (opção 1: login/senha)
-COLLECTOR_HOTMART_USERNAME=seu_usuario
-COLLECTOR_HOTMART_PASSWORD=sua_senha
+COLLECTOR_CLICKBANK_USERNAME=seu_usuario
+COLLECTOR_CLICKBANK_PASSWORD=sua_senha
 
 # Autenticação Clickbank (opção 2: cookie de sessão)
-COLLECTOR_HOTMART_SESSION_COOKIE=
+COLLECTOR_CLICKBANK_SESSION_COOKIE=
 
 # Agendamento (execução automática)
 COLLECTOR_SCHEDULER_ENABLED=true
@@ -92,11 +92,11 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 
 | Variável | Descrição | Padrão |
 |---|---|---|
-| `MOIS_HOTMART_PORT` | Porta HTTP da aplicação | `9096` |
-| `COLLECTOR_HOTMART_SEARCH_URL` | URL de busca Clickbank para coleta | `https://app.clickbank.com/market/search` |
-| `COLLECTOR_HOTMART_SESSION_COOKIE` | Cookie de sessão Clickbank (alternativa ao login/senha) | vazio |
-| `COLLECTOR_HOTMART_USERNAME` | Usuário Clickbank para login automatizado | vazio |
-| `COLLECTOR_HOTMART_PASSWORD` | Senha Clickbank para login automatizado | vazio |
+| `MOIS_CLICKBANK_PORT` | Porta HTTP da aplicação | `9096` |
+| `COLLECTOR_CLICKBANK_SEARCH_URL` | URL de busca Clickbank para coleta | `https://app.clickbank.com/market/search` |
+| `COLLECTOR_CLICKBANK_SESSION_COOKIE` | Cookie de sessão Clickbank (alternativa ao login/senha) | vazio |
+| `COLLECTOR_CLICKBANK_USERNAME` | Usuário Clickbank para login automatizado | vazio |
+| `COLLECTOR_CLICKBANK_PASSWORD` | Senha Clickbank para login automatizado | vazio |
 | `COLLECTOR_SCHEDULER_ENABLED` | Habilita/desabilita execução automática | `true` |
 | `COLLECTOR_SCHEDULER_CRON` | Expressão cron da execução automática | `0 0 * * * *` |
 | `COLLECTOR_SCHEDULER_SOURCE` | Identificador da fonte usada no job agendado | `clickbank-market` |
@@ -118,7 +118,7 @@ Com `management.endpoints.web.base-path=/internal/ops-monitor` e `management.end
 
 Exemplo em produção (mesmo host do MOIS):
 
-- `http://191.252.120.96:9096/internal/ops-monitor/logfile`
+- `http://177.153.62.107:9096/internal/ops-monitor/logfile`
 
 ## Deploy automático (GitHub Actions)
 
@@ -136,7 +136,7 @@ Use o script central do repositório para build/push/deploy:
 
 ```bash
 cd /workspace/marketing-hub
-DEPLOY_HOST=ubuntu@191.252.120.96 \
+DEPLOY_HOST=ubuntu@177.153.62.107 \
 IMAGE_TAG=2026.05.06-1 \
 IMAGE_REPO=marketinghub/mois-clickbank-collector \
 bash ./scripts/deploy-mois-clickbank-collector.sh

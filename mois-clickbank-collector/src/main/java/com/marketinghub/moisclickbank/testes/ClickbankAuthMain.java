@@ -10,11 +10,11 @@ import com.microsoft.playwright.options.WaitUntilState;
 public class ClickbankAuthMain {
 
     public static void main(String[] args) {
-        String username = System.getenv("HOTMART_USERNAME");
-        String password = System.getenv("HOTMART_PASSWORD");
+        String username = System.getenv("CLICKBANK_USERNAME");
+        String password = System.getenv("CLICKBANK_PASSWORD");
 
         if (isBlank(username) || isBlank(password)) {
-            System.err.println("Defina HOTMART_USERNAME e HOTMART_PASSWORD antes de executar.");
+            System.err.println("Defina CLICKBANK_USERNAME e CLICKBANK_PASSWORD antes de executar.");
             System.exit(1);
         }
 

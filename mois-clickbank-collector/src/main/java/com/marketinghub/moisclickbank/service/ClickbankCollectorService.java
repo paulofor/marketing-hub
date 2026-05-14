@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ public class ClickbankCollectorService {
     private final String clickbankSessionCookie;
     private final String clickbankUsername;
     private final String clickbankPassword;
+    private final String clickbankTopOffersUrl;
     private final boolean logFullToken;
     private final String backendBaseUrl;
     private final String clickbankJwtSettingKey;
@@ -59,6 +61,7 @@ public class ClickbankCollectorService {
             @Value("${collector.clickbank.session-cookie:}") String clickbankSessionCookie,
             @Value("${collector.clickbank.username:}") String clickbankUsername,
             @Value("${collector.clickbank.password:}") String clickbankPassword,
+            @Value("${collector.clickbank.top-offers-url:https://www.clickbank.com/blog/clickbank-top-offers/}") String clickbankTopOffersUrl,
             @Value("${collector.clickbank.username-fallback:}") String clickbankUsernameFallback,
             @Value("${collector.clickbank.password-fallback:}") String clickbankPasswordFallback,
             @Value("${collector.clickbank.log-full-token:false}") boolean logFullToken,
@@ -74,6 +77,7 @@ public class ClickbankCollectorService {
         this.clickbankSessionCookie = clickbankSessionCookie;
         this.clickbankUsername = pickFirstNonBlank(clickbankUsername, clickbankUsernameFallback);
         this.clickbankPassword = pickFirstNonBlank(clickbankPassword, clickbankPasswordFallback);
+        this.clickbankTopOffersUrl = clickbankTopOffersUrl;
         this.logFullToken = logFullToken;
         this.backendBaseUrl = backendBaseUrl;
         this.clickbankJwtSettingKey = clickbankJwtSettingKey;
@@ -87,43 +91,64 @@ public class ClickbankCollectorService {
 
         List<ClickbankProductSnapshot> products = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
-        String message = "Coleta executada com token JWT da configuração geral.";
-        boolean hasSessionCookie = clickbankSessionCookie != null && !clickbankSessionCookie.isBlank();
-        boolean hasCredentials = clickbankUsername != null && !clickbankUsername.isBlank()
-                && clickbankPassword != null && !clickbankPassword.isBlank();
-
-        String clickbankAccessToken = fetchClickbankJwtFromGeneralSettings();
-        if (clickbankAccessToken.isBlank()) {
-            log.warn("Coleta Clickbank ignorada: token JWT não encontrado em configurações gerais.");
-            return new ClickbankCollectionResponse(
-                    "COLLECTION_SKIPPED",
-                    "Token JWT da Clickbank ausente. Configure a chave '" + clickbankJwtSettingKey + "' em /api/settings/{name}.",
-                    products
-            );
-        }
+        String message = "Coleta executada a partir da página pública de Top Offers da ClickBank.";
 
         log.info(
-                "Iniciando coleta Clickbank com Playwright. headless={}, maxProductsSolicitado={}, maxProductsAplicado={}, hasSessionCookie={}, hasCredentials={}",
-                headless,
+                "Iniciando coleta Clickbank por página pública. maxProductsSolicitado={}, maxProductsAplicado={}, topOffersUrl={}",
                 request.maxProducts(),
                 boundedMax,
-                hasSessionCookie,
-                hasCredentials
+                clickbankTopOffersUrl
         );
-        logTokenDiagnostics(clickbankAccessToken);
 
-        try (Playwright ignored = Playwright.create()) {
-            int apiCollected = collectProductsViaMarketApi(clickbankAccessToken, boundedMax, products);
-            log.info("Coleta API Clickbank finalizada. produtosColetadosViaApi={}", apiCollected);
+        try {
+            int apiCollected = collectProductsFromTopOffersPage(boundedMax, products);
+            log.info("Coleta página Top Offers finalizada. produtosColetados={}", apiCollected);
             status = "COLLECTION_EXECUTED";
-            message = "Coleta executada via API da Clickbank usando JWT salvo em configurações gerais.";
+            message = "Coleta executada via página pública Top Offers da ClickBank.";
         } catch (Exception ex) {
             status = "COLLECTION_ERROR";
-            message = "Falha na coleta API: " + ex.getMessage();
-            log.error("Erro na coleta Clickbank via API JWT.", ex);
+            message = "Falha na coleta da página Top Offers: " + ex.getMessage();
+            log.error("Erro na coleta Clickbank da página Top Offers.", ex);
         }
         persistCollectedProductsOnBackend(request, status, products);
         return new ClickbankCollectionResponse(status, message, products);
+    }
+
+    private int collectProductsFromTopOffersPage(int boundedMax, List<ClickbankProductSnapshot> products) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(clickbankTopOffersUrl))
+                    .header("accept", "text/html")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException("Top Offers retornou status " + response.statusCode());
+            }
+            String html = response.body();
+            java.util.regex.Pattern anchorPattern = java.util.regex.Pattern.compile(
+                    "<a[^>]+href\\s*=\\s*\"([^\"]+)\"[^>]*>(.*?)</a>",
+                    java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL
+            );
+            java.util.regex.Matcher matcher = anchorPattern.matcher(html);
+            LinkedHashSet<String> dedupe = new LinkedHashSet<>();
+            while (matcher.find() && products.size() < boundedMax) {
+                String href = matcher.group(1).trim();
+                String title = matcher.group(2).replaceAll("<[^>]*>", "").replaceAll("\\s+", " ").trim();
+                if (title.isBlank() || href.isBlank()) {
+                    continue;
+                }
+                String normalizedUrl = href.startsWith("http") ? href : "https://www.clickbank.com" + href;
+                String dedupeKey = title.toLowerCase() + "|" + normalizedUrl.toLowerCase();
+                if (!dedupe.add(dedupeKey)) {
+                    continue;
+                }
+                products.add(new ClickbankProductSnapshot(title, "N/A", "N/A", normalizedUrl, null, normalizedUrl, Instant.now()));
+            }
+            return products.size();
+        } catch (Exception ex) {
+            throw new RuntimeException("Não foi possível coletar top offers públicos.", ex);
+        }
     }
 
     private void persistCollectedProductsOnBackend(
@@ -248,7 +273,7 @@ public class ClickbankCollectorService {
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
             String body = response.body();
             log.info("Resposta API Clickbank recebida. status={}, bodyPreview='{}'", response.statusCode(), truncateForLog(body, 1200));
-            log.info("HOTMART_FETCH_RESPOSTA_CRUA status={} bodyRaw='{}'",
+            log.info("CLICKBANK_FETCH_RESPOSTA_CRUA status={} bodyRaw='{}'",
                     response.statusCode(),
                     truncateForLog(body, 10_000));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {

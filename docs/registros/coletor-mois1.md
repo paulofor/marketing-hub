@@ -122,3 +122,9 @@
 - Ajustado o ciclo 2 do `mois-hotmart-collector` para extrair explicitamente `pageSalesLink` na resposta de detalhe da Hotmart (`v1/market/product/{id}/details`), além de `salesPageUrl`.
 - Persistência enviada ao backend agora inclui ambos os metadados (`salesPageUrl` e `pageSalesLink`) no `rawMetadata` da referência, mantendo fallback para URL de detalhes.
 - Backend (`ads-service`) reforçado para preencher `sales_page_url` também a partir de `rawMetadata.pageSalesLink` quando `rawMetadata.salesPageUrl` não vier preenchido.
+
+## 2026-05-14 10:20 UTC
+- Coletor `mois-clickbank-collector` ajustado para usar a página pública de Top Offers da ClickBank (`https://www.clickbank.com/blog/clickbank-top-offers/`) como fonte primária, sem dependência de sessão/token por enquanto.
+- Serviço passou a coletar links e títulos diretamente do HTML da página pública e normalizar para `ClickbankProductSnapshot`.
+- `application.properties` corrigido para remover credenciais hardcoded, passando a usar variáveis de ambiente para usuário/senha e incluindo variável dedicada `COLLECTOR_CLICKBANK_TOP_OFFERS_URL`.
+- Teste unitário atualizado para validar comportamento de erro quando a URL pública estiver indisponível.

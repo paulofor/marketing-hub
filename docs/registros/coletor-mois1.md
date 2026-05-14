@@ -141,3 +141,8 @@
 
 ## 2026-05-14 04:45 UTC
 - Adicionado log no início do método agendado `collectHourly` do módulo `mois-clickbank-collector` para registrar início da execução automática com `source` e `maxProducts`, facilitando rastreamento operacional do scheduler.
+
+## 2026-05-14 10:30:23 UTC-3
+- Atendendo solicitação de registro, a tela `/hotmart` no frontend foi atualizada para exibir informação explícita de que o ciclo 2 captura `pageSalesLink`.
+- Registrado também na UI que a persistência ocorre em `mois_collected_reference.sales_page_url`, reduzindo ambiguidade operacional sobre origem/destino do link de página de vendas.
+- Mantido o comportamento já existente do botão **Ver página de vendas**, com orientação textual de que ele usa essa URL quando disponível.

@@ -166,6 +166,16 @@ export default function HotmartPage() {
                             <p className="small mb-2">
                               Temperatura: <strong>{item.temperature ?? "—"}</strong>
                             </p>
+                            <p className="small mb-2">
+                              Página de vendas:{" "}
+                              {salesPageUrl ? (
+                                <a href={salesPageUrl} target="_blank" rel="noreferrer">
+                                  {salesPageUrl}
+                                </a>
+                              ) : (
+                                <span>Não informada</span>
+                              )}
+                            </p>
                             <p className="small mb-3">
                               Preço:{" "}
                               <strong>

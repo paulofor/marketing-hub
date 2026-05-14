@@ -34,6 +34,30 @@ public class CopyProvisionalHtmlAssembler {
         }
     }
 
+
+
+    public String assembleComplete(String copyModelResponse,
+                                   String wireframeModelResponse,
+                                   String imagePlanningModelResponse,
+                                   String designPresetModelResponse,
+                                   String jobId) {
+        if (!StringUtils.hasText(copyModelResponse) || !StringUtils.hasText(wireframeModelResponse)) {
+            return null;
+        }
+        try {
+            CopyProvisionalHtmlPayloadResolver.CopyProvisionalHtmlPayload payload =
+                    payloadResolver.resolve(copyModelResponse, wireframeModelResponse);
+
+            String html = processor.processComplete(
+                    payloadResolverToJson(payload.wireframe()),
+                    payloadResolverToJson(payload.copy()),
+                    imagePlanningModelResponse,
+                    designPresetModelResponse);
+            return appendJobIdCommentBeforeHead(html, jobId);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao montar HTML provisório completo", e);
+        }
+    }
     private String payloadResolverToJson(Object payload) throws Exception {
         return objectMapper.writeValueAsString(payload);
     }

@@ -314,9 +314,11 @@ class GeraLandingStageExecutionServiceTest {
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder().idJob("job-999".getBytes(java.nio.charset.StandardCharsets.UTF_8)).build();
 
         when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
-        when(copyProvisionalHtmlAssembler.assemble(
+        when(copyProvisionalHtmlAssembler.assembleComplete(
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
+                experiment.getLandingPageImagePlanning(),
+                experiment.getLandingPageDesignPreset(),
                 "job-999")).thenReturn("<html>base</html>");
         when(landingPageImageInjector.injectImages(88L, "<html>base</html>"))
                 .thenReturn("<html>with-images</html>");

@@ -1,6 +1,8 @@
 
 #Todo trabalho executado nesse projeto deve ser registrado em : /docs/registros/coletor-mois1.md
 
+**Leia do documento : /docs/mois/mois-hotmart-mapeamento-ciclos-campos-banco.md**
+
 Exemplo para acessar dados de produtos na hotmart depois de logado e usando o token:
 
 depois que vc consegue o token pode acessar por aqui :

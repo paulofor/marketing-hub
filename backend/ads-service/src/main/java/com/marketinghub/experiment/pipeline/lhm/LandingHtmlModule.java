@@ -34,14 +34,14 @@ public class LandingHtmlModule {
         }
         String landingPageWireframe = requireArtifact(experiment.getLandingPageWireframe(), "landingPageWireframe");
         String landingPageCopy = requireArtifact(experiment.getLandingPageCopy(), "landingPageCopy");
-        String landingPageDesignPreset = requireArtifact(experiment.getLandingPageDesignPreset(), "landingPageDesignPreset");
+        String landingPageDesignPreset = experiment.getLandingPageDesignPreset();
         String landingPageImagePlanning = requireArtifact(experiment.getLandingPageImagePlanning(), "landingPageImagePlanning");
         StringBuilder sb = new StringBuilder();
         sb.append("\nPrompt v2 (inputs mínimos para LANDING_PAGE_HTML):\n");
-        sb.append("Use apenas os 4 insumos abaixo como fonte de verdade para montar o HTML final.\n");
+        sb.append("Use apenas os 3 insumos obrigatórios abaixo como fonte de verdade para montar o HTML provisório.\n");
         appendIfPresent(sb, "1) Wireframe aprovado (JSON)", landingPageWireframe);
         appendIfPresent(sb, "2) Texto da landing aprovado (JSON)", landingPageCopy);
-        appendIfPresent(sb, "3) Preset de design aprovado (JSON)", landingPageDesignPreset);
+        appendIfPresent(sb, "3) Preset de design aprovado (JSON) [opcional nesta fase]", landingPageDesignPreset);
         String imageUrls = summarizeImageUrlsFromPlanning(landingPageImagePlanning);
         if (StringUtils.hasText(imageUrls)) {
             sb.append("4) URLs de imagens aprovadas por seção:\n").append(imageUrls);
@@ -58,7 +58,7 @@ public class LandingHtmlModule {
         }
         String landingPageWireframe = requireArtifact(experiment.getLandingPageWireframe(), "landingPageWireframe");
         String landingPageCopy = requireArtifact(experiment.getLandingPageCopy(), "landingPageCopy");
-        String landingPageDesignPreset = requireArtifact(experiment.getLandingPageDesignPreset(), "landingPageDesignPreset");
+        String landingPageDesignPreset = experiment.getLandingPageDesignPreset();
         String landingPageImagePlanning = requireArtifact(experiment.getLandingPageImagePlanning(), "landingPageImagePlanning");
 
         Map<String, Object> wireframeRoot = safeReadObject(landingPageWireframe, "landingPageWireframe");
@@ -118,8 +118,7 @@ public class LandingHtmlModule {
         List<Map<String, Object>> plannedImages = extractImages(landingPageImagePlanning);
         log.info("LHM assemble start (experimentId={}): sections={}, plannedImages={}",
                 experiment.getId(), sections.size(), plannedImages.size());
-        Map<String, Object> designRoot = safeReadObject(landingPageDesignPreset, "landingPageDesignPreset");
-        Map<String, Object> designPreset = unwrapSectionPayload(designRoot, "landingPageDesignPreset");
+        Map<String, Object> designPreset = readOptionalDesignPreset(landingPageDesignPreset);
         Map<String, Object> palette = extractPalette(designPreset);
         Map<String, Object> typography = extractTypography(designPreset);
         Map<String, SectionVisualPreset> sectionVisualPresets = extractSectionVisualPresets(designPreset);
@@ -220,9 +219,32 @@ public class LandingHtmlModule {
         if (StringUtils.hasText(cssFromContract)) {
             return "<style>" + cssFromContract + "</style>";
         }
-        throw new IllegalStateException("landingPageDesignPreset.lhmRuntime.baseCss (ou baseCss) é obrigatório para renderização LHM.");
+        return "<style>" + defaultBaseCss() + "</style>";
     }
 
+
+    private Map<String, Object> readOptionalDesignPreset(String landingPageDesignPreset) {
+        if (!StringUtils.hasText(landingPageDesignPreset)) {
+            return Map.of();
+        }
+        Map<String, Object> designRoot = safeReadObject(landingPageDesignPreset, "landingPageDesignPreset");
+        return unwrapSectionPayload(designRoot, "landingPageDesignPreset");
+    }
+
+    private String defaultBaseCss() {
+        return """
+            :root { color-scheme: light; }
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Inter, Arial, sans-serif; background: #f7f7f8; color: #111827; }
+            main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 56px; display: grid; gap: 16px; }
+            .lhm-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; }
+            h1, h2 { margin-top: 0; }
+            img { max-width: 100%; height: auto; border-radius: 12px; margin-top: 12px; }
+            form { display: grid; gap: 10px; margin-top: 14px; }
+            input, textarea, button { font: inherit; }
+            button { border: 0; border-radius: 10px; padding: 12px 14px; background: #111827; color: #fff; cursor: pointer; }
+            """;
+    }
     @SuppressWarnings("unchecked")
     private String summarizeImageUrlsFromPlanning(String imagePlanningPayload) {
         Map<String, Object> root = safeReadObject(imagePlanningPayload, "landingPageImagePlanning");

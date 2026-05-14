@@ -337,10 +337,6 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Copy da landing ainda não foi gerada para este experimento");
         }
-        if (!StringUtils.hasText(experiment.getLandingPageDesignPreset())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Preset de design da landing ainda não foi gerado para este experimento");
-        }
         Map<String, Object> monitoringPayload = buildLhmMonitoringPayload(experiment, experimentId);
         ExperimentPipelineGenerationJob monitoringJob = createInlineGenerationJob(
                 experiment,

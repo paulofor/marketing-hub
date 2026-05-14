@@ -87,6 +87,10 @@ public class ClickbankCollectorService {
     }
 
     public ClickbankCollectionResponse collect(ClickbankCollectionRequest request) {
+        return collectFirstCycle(request);
+    }
+
+    public ClickbankCollectionResponse collectFirstCycle(ClickbankCollectionRequest request) {
         int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
 
         List<ClickbankProductSnapshot> products = new ArrayList<>();
@@ -114,6 +118,89 @@ public class ClickbankCollectorService {
         return new ClickbankCollectionResponse(status, message, products);
     }
 
+
+
+    public ClickbankCollectionResponse collectSecondCycleFromBackend(ClickbankCollectionRequest request) {
+        int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
+        List<ClickbankProductSnapshot> products = new ArrayList<>();
+        String status = "COLLECTION_EXECUTED";
+        String message = "Ciclo 2 executado a partir dos produtos persistidos no backend.";
+
+        List<ClickbankProductSnapshot> baseProducts = fetchFirstCycleProductsFromBackend(boundedMax);
+        for (ClickbankProductSnapshot base : baseProducts) {
+            if (products.size() >= boundedMax) {
+                break;
+            }
+            products.add(collectSalesPageFromProduct(base));
+        }
+        persistCollectedProductsOnBackend(request, status, products);
+        return new ClickbankCollectionResponse(status, message, products);
+    }
+
+    private List<ClickbankProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {
+        List<ClickbankProductSnapshot> products = new ArrayList<>();
+        String endpoint = backendBaseUrl + "/api/v1/mois/clickbase/products?workspaceId=" + workspaceId + "&limit=" + Math.max(1, Math.min(maxProducts, 100));
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("accept", "application/json")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Ciclo 2: falha ao obter produtos base do backend. status={}, endpoint={}", response.statusCode(), endpoint);
+                return products;
+            }
+            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode items = firstArray(root, "items", "products", "content", "results");
+            if (items == null || !items.isArray()) {
+                return products;
+            }
+            for (JsonNode item : items) {
+                String title = pickFirstNonBlank(extractProductText(item, "title", "name", "productName"), "Produto sem título");
+                String detailsUrl = pickFirstNonBlank(extractProductText(item, "detailsUrl", "productUrl", "url"), clickbankTopOffersUrl);
+                String salesPageUrl = pickFirstNonBlank(extractProductText(item, "salesPageUrl", "pageUrl"), detailsUrl);
+                products.add(new ClickbankProductSnapshot(
+                        title,
+                        pickFirstNonBlank(extractProductText(item, "productNickname", "nickname", "rating"), "N/A"),
+                        pickFirstNonBlank(extractProductText(item, "productCategory", "category", "commission"), "N/A"),
+                        detailsUrl,
+                        extractProductNumber(item, "temperature", "clickbankTemperature"),
+                        salesPageUrl,
+                        Instant.now()));
+            }
+        } catch (Exception ex) {
+            log.warn("Ciclo 2: erro ao obter produtos do backend.", ex);
+        }
+        return products;
+    }
+
+    private ClickbankProductSnapshot collectSalesPageFromProduct(ClickbankProductSnapshot base) {
+        String normalizedDetailsUrl = coalesceNotBlank(base.detailsUrl(), clickbankTopOffersUrl);
+        String salesPageUrl = coalesceNotBlank(base.salesPageUrl(), normalizedDetailsUrl);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(normalizedDetailsUrl))
+                    .header("accept", "text/html")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 400 && response.uri() != null) {
+                salesPageUrl = response.uri().toString();
+            }
+        } catch (Exception ex) {
+            log.warn("Ciclo 2: falha ao resolver página de vendas para detailsUrl={}", normalizedDetailsUrl);
+        }
+        return new ClickbankProductSnapshot(
+                base.title(),
+                base.rating(),
+                base.commission(),
+                normalizedDetailsUrl,
+                base.temperature(),
+                salesPageUrl,
+                Instant.now()
+        );
+    }
     private int collectProductsFromTopOffersPage(int boundedMax, List<ClickbankProductSnapshot> products) {
         try {
             HttpRequest request = HttpRequest.newBuilder()

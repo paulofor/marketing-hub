@@ -80,3 +80,21 @@ No Ciclo Dois, recomenda-se:
 - DTO dedicado para produto ClickBank com campos semânticos explícitos (`nickname`, `category`);
 - validações automatizadas de consistência de URL;
 - testes de regressão com múltiplos formatos de HTML da página Top Offers.
+
+## 8. Definição canônica do Ciclo Dois (ativada)
+
+O Ciclo Dois do coletor ClickBank passa a operar com o seguinte fluxo obrigatório:
+
+1. Ler do backend MOIS (`/api/v1/mois/clickbase/products`) a lista de produtos já persistidos no ciclo 1.
+2. Para cada produto, acessar a `detailsUrl` do produto para resolver a URL final da página de vendas.
+3. Persistir novamente no backend MOIS via endpoint de persistência (`/api/v1/mois/persistence/collection-jobs/{jobId}`), garantindo armazenamento em base de páginas de venda para análises futuras.
+
+### 8.1 Regras de execução agendada
+
+- **Horas ímpares:** executar **Ciclo 1** (Top Offers).
+- **Horas pares:** executar **Ciclo 2** (resolução/persistência de páginas de venda).
+
+### 8.2 Responsabilidades por módulo
+
+- **Leitura e persistência:** backend pacote **MOIS**.
+- **Coleta e tratamentos:** módulo **mois-clickbank-collector**.

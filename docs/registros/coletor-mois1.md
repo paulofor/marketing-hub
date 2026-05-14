@@ -133,3 +133,8 @@
 - Workflow `.github/workflows/mois-clickbank-collector-ci.yml` atualizado para publicar/deploy no host `177.153.62.107`.
 - Limpeza de nomenclaturas legadas de Hotmart no módulo `mois-clickbank-collector` (workflow, compose, README, properties, utilitário de autenticação e logs), padronizando para ClickBank.
 - Variáveis de ambiente e imagem de deploy renomeadas para prefixo `CLICKBANK`/`MOIS_CLICKBANK`.
+
+
+## 2026-05-14 00:00 UTC
+- Corrigido o workflow do `mois-clickbank-collector` para autenticar no deploy com o mesmo usuário do `mois-hotmart-collector` (`DEPLOY_USER=root`) no host `177.153.62.107`, eliminando falha `Permission denied (publickey,password)` ao executar o SSH.
+- Mantido o mesmo fluxo de chave/known_hosts e compose do Hotmart, alterando apenas o usuário remoto para alinhar ao ambiente já funcional.

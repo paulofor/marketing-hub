@@ -83,7 +83,7 @@ jobs:
     environment: production
     env:
       DEPLOY_HOST: 177.153.62.107
-      DEPLOY_USER: ubuntu
+      DEPLOY_USER: root
       REMOTE_PATH: /opt/marketinghub/mois-clickbank-collector
 
     steps:

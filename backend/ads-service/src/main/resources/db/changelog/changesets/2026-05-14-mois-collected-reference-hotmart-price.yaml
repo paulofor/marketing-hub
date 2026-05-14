@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-14-mois-collected-reference-hotmart-price
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: mois_collected_reference
+              columnName: hotmart_price
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_collected_reference
+                ADD COLUMN hotmart_price VARCHAR(128) NULL AFTER hotmart_temperature;

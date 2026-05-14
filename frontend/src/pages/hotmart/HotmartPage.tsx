@@ -34,7 +34,13 @@ export default function HotmartPage() {
   }, [data?.value]);
 
   const updatedAt = useMemo(() => formatUpdatedAt(data?.updatedAt), [data?.updatedAt]);
-  const latestHotmartJobId = useMemo(() => hotmartProductsQuery.data?.[0]?.jobId, [hotmartProductsQuery.data]);
+  const latestHotmartJob = useMemo(() => {
+    const firstItem = hotmartProductsQuery.data?.[0];
+    return {
+      id: firstItem?.jobId,
+      collectedAt: formatUpdatedAt(firstItem?.collectedAt),
+    };
+  }, [hotmartProductsQuery.data]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -134,7 +140,7 @@ export default function HotmartPage() {
           {hotmartProductsQuery.data && hotmartProductsQuery.data.length > 0 ? (
             <>
               <p className="small text-muted mb-3">
-                Job mais recente: <strong>{latestHotmartJobId}</strong>
+                Job mais recente: <strong>{latestHotmartJob.id}</strong> · Data/hora: <strong>{latestHotmartJob.collectedAt}</strong>
               </p>
 
               {hotmartProductsQuery.data && hotmartProductsQuery.data.length > 0 ? (
@@ -160,9 +166,6 @@ export default function HotmartPage() {
                           <div className="card-body d-flex flex-column">
                             <h6 className="card-title">{item.title}</h6>
                             <p className="small text-muted mb-2">Produtor: {producer || "Não informado"}</p>
-                            <p className="small mb-2">
-                              Score de sucesso: <strong>{item.successScore ?? "—"}</strong>
-                            </p>
                             <p className="small mb-2">
                               Temperatura: <strong>{item.temperature ?? "—"}</strong>
                             </p>

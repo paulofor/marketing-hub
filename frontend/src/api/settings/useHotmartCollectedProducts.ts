@@ -8,7 +8,6 @@ export interface HotmartCollectedProduct {
   productUrl: string;
   producerName?: string | null;
   imageUrl?: string | null;
-  successScore?: number | null;
   price?: string | null;
   currency?: string | null;
   salesPageUrl?: string | null;

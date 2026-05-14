@@ -1,6 +1,7 @@
 package com.marketinghub.geralanding;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,8 @@ class GeraLandingStageExecutionServiceTest {
 
     @Mock
     private CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
+    @Mock
+    private LandingPageImageInjector landingPageImageInjector;
 
     @InjectMocks
     private GeraLandingStageExecutionService service;
@@ -259,5 +262,46 @@ class GeraLandingStageExecutionServiceTest {
         assertEquals("detalhe tecnico", execution.getErrorDetail());
         assertEquals("<html>fallback</html>", execution.getProvisionalHtml());
         verify(experimentRepository, times(0)).save(any(Experiment.class));
+    }
+
+    @Test
+    void shouldPersistProvisionalHtmlOnImagePlanningAndExperimentLandingPageHtml() {
+        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
+                77L,
+                "landing-page-image-planning",
+                "{\"images\":[]}",
+                null,
+                null,
+                null,
+                "job-openai-image",
+                20,
+                30,
+                null);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(77L)
+                .stageCode("landing-page-image-planning")
+                .executionRequestedAt(Instant.parse("2026-05-14T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-14T00:00:00Z"))
+                .status("EM_PROCESSAMENTO")
+                .idJob("id-image".getBytes(StandardCharsets.UTF_8))
+                .build();
+        Experiment experiment = new Experiment();
+        experiment.setId(77L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[]}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"sections\":[]}}");
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-image".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
+        when(copyProvisionalHtmlAssembler.assemble(experiment.getLandingPageCopy(), experiment.getLandingPageWireframe(), "id-image"))
+                .thenReturn("<html><img src=\"about:blank\"></html>");
+        when(landingPageImageInjector.injectImages(77L, "<html><img src=\"about:blank\"></html>"))
+                .thenReturn("<html><img src=\"https://cdn/img-1.png\"></html>");
+
+        service.receiveResult("id-image", request);
+
+        assertTrue(execution.getProvisionalHtml().contains("https://cdn/img-1.png"));
+        assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageHtml());
+        verify(experimentRepository).save(experiment);
     }
 }

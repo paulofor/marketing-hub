@@ -133,6 +133,7 @@ import MdsRequestDetailPage from "./pages/mds/MdsRequestDetailPage";
 import MdsArtifactsPage from "./pages/mds/MdsArtifactsPage";
 import MdsReportPage from "./pages/mds/MdsReportPage";
 import HotmartPage from "./pages/hotmart/HotmartPage";
+import ClickbasePage from "./pages/clickbase/ClickbasePage";
 
 export default function App() {
   return (
@@ -296,6 +297,7 @@ export default function App() {
               <Route path="/mds/requests/:requestId/artifacts" element={<MdsArtifactsPage />} />
               <Route path="/mds/reports/:requestId" element={<MdsReportPage />} />
               <Route path="/hotmart" element={<HotmartPage />} />
+              <Route path="/clickbase" element={<ClickbasePage />} />
               <Route
                 path="/oprm/routine/:occupationSeedRef"
                 element={<OprmRoutinePage />}

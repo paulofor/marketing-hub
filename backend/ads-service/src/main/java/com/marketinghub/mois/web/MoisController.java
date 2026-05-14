@@ -1,11 +1,13 @@
 package com.marketinghub.mois.web;
 
 import com.marketinghub.mois.dto.MoisArtifactDtos;
+import com.marketinghub.mois.dto.MoisClickbaseProductDtos;
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
+import com.marketinghub.mois.service.MoisClickbaseProductService;
 import com.marketinghub.mois.service.MoisCollectionPersistenceService;
 import com.marketinghub.mois.service.MoisHotmartProductService;
 import com.marketinghub.mois.service.MoisModuleGateway;
@@ -32,6 +34,7 @@ public class MoisController {
     private final MoisModuleGateway gateway;
     private final MoisCollectionPersistenceService collectionPersistenceService;
     private final MoisHotmartProductService moisHotmartProductService;
+    private final MoisClickbaseProductService moisClickbaseProductService;
 
     @PostMapping("/discovery-requests")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -264,4 +267,17 @@ public class MoisController {
         int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
         return moisHotmartProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
     }
+
+    @GetMapping("/clickbase/products")
+    public MoisClickbaseProductDtos.ClickbaseCollectedProductListResponse listClickbaseProducts(
+            @RequestParam(defaultValue = "workspace-001") String workspaceId,
+            @RequestParam(defaultValue = "24") Integer limit
+    ) {
+        if (!StringUtils.hasText(workspaceId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
+        }
+        int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
+        return moisClickbaseProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
+    }
+
 }

@@ -243,9 +243,11 @@ public class GeraLandingStageExecutionService {
         if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe()) || !StringUtils.hasText(experiment.getLandingPageCopy())) {
             return null;
         }
-        String baseHtml = copyProvisionalHtmlAssembler.assemble(
+        String baseHtml = copyProvisionalHtmlAssembler.assembleComplete(
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
+                request.modelResponse(),
+                experiment.getLandingPageDesignPreset(),
                 idJob);
         if (!StringUtils.hasText(baseHtml)) {
             return null;

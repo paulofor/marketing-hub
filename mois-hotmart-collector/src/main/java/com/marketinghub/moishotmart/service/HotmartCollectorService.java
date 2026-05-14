@@ -257,7 +257,9 @@ public class HotmartCollectorService {
             rawMetadata.put("productName", product.title());
             rawMetadata.put("productImage", product.image());
             rawMetadata.put("productUrl", product.detailsUrl());
-            rawMetadata.put("salesPageUrl", pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl()));
+            String resolvedSalesPageUrl = pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl());
+            rawMetadata.put("salesPageUrl", resolvedSalesPageUrl);
+            rawMetadata.put("pageSalesLink", resolvedSalesPageUrl);
             if (product.temperature() != null) {
                 rawMetadata.put("hotmartTemperature", String.valueOf(product.temperature()));
             }
@@ -417,7 +419,7 @@ public class HotmartCollectorService {
                 return baseSnapshot;
             }
             JsonNode detailsNode = objectMapper.readTree(detailsResponse.body());
-            String salesPageFromDetails = extractProductText(detailsNode, "salesPageUrl", "salesPage", "pageUrl", "url");
+            String salesPageFromDetails = extractProductText(detailsNode, "salesPageUrl", "pageSalesLink", "salesPage", "pageUrl", "url");
             String detailPageUrl = pickFirstNonBlank(
                     extractProductText(detailsNode, "detailsUrl", "productUrl", "checkoutUrl"),
                     baseSnapshot.detailsUrl()

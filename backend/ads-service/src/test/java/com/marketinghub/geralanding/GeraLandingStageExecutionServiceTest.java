@@ -333,4 +333,52 @@ class GeraLandingStageExecutionServiceTest {
         verify(experimentRepository).save(experiment);
         verify(executionRepository).save(execution);
     }
+
+    @Test
+    void shouldPersistProvisionalHtmlOnDesignPresetAndExperimentLandingPageHtml() {
+        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
+                79L,
+                "landing-page-design-preset",
+                "{\"designPreset\":{}}",
+                null,
+                null,
+                null,
+                "job-openai-design",
+                50,
+                70,
+                null);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(79L)
+                .stageCode("landing-page-design-preset")
+                .executionRequestedAt(Instant.parse("2026-05-14T00:00:00Z"))
+                .createdAt(Instant.parse("2026-05-14T00:00:00Z"))
+                .status("EM_PROCESSAMENTO")
+                .idJob("id-design".getBytes(StandardCharsets.UTF_8))
+                .build();
+        Experiment experiment = new Experiment();
+        experiment.setId(79L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[]}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"sections\":[]}}");
+        experiment.setLandingPageImagePlanning("{\"images\":[]}");
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-design".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(experimentRepository.findById(79L)).thenReturn(Optional.of(experiment));
+        when(copyProvisionalHtmlAssembler.assembleComplete(
+                experiment.getLandingPageCopy(),
+                experiment.getLandingPageWireframe(),
+                experiment.getLandingPageImagePlanning(),
+                request.modelResponse(),
+                "id-design"))
+                .thenReturn("<html><img src=\"about:blank\"></html>");
+        when(landingPageImageInjector.injectImages(79L, "<html><img src=\"about:blank\"></html>"))
+                .thenReturn("<html><img src=\"https://cdn/design-1.png\"></html>");
+
+        service.receiveResult("id-design", request);
+
+        assertTrue(execution.getProvisionalHtml().contains("design-1.png"));
+        assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageHtml());
+        assertEquals(request.modelResponse(), experiment.getLandingPageDesignPreset());
+        verify(experimentRepository).save(experiment);
+    }
 }

@@ -22,7 +22,79 @@
         },
         "theme": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "required": [
+            "palette",
+            "typography",
+            "spacing",
+            "accessibility"
+          ],
+          "properties": {
+            "palette": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "background",
+                "surface",
+                "textPrimary",
+                "textMuted",
+                "brandPrimary",
+                "brandSecondary",
+                "ctaPrimary"
+              ],
+              "properties": {
+                "background": {"type": "string"},
+                "surface": {"type": "string"},
+                "textPrimary": {"type": "string"},
+                "textMuted": {"type": "string"},
+                "brandPrimary": {"type": "string"},
+                "brandSecondary": {"type": "string"},
+                "ctaPrimary": {"type": "string"}
+              }
+            },
+            "typography": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lineHeightBody",
+                "maxLineLength"
+              ],
+              "properties": {
+                "lineHeightBody": {"type": "string"},
+                "maxLineLength": {"type": "string"}
+              }
+            },
+            "spacing": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sectionGapMobile"
+              ],
+              "properties": {
+                "sectionGapMobile": {"type": "string"}
+              }
+            },
+            "accessibility": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "textContrastBody",
+                "focusRing"
+              ],
+              "properties": {
+                "textContrastBody": {"type": "string"},
+                "focusRing": {"type": "string"}
+              }
+            },
+            "radius": {
+              "type": "object",
+              "additionalProperties": false
+            },
+            "shadow": {
+              "type": "object",
+              "additionalProperties": false
+            }
+          }
         },
         "sectionPresets": {
           "type": "array",

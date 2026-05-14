@@ -32,6 +32,7 @@ public class GeraLandingStageExecutionService {
     private final GeraLandingStageExecutionRepository executionRepository;
     private final WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler;
     private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
+    private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
     private final LandingPageImageInjector landingPageImageInjector;
 
     public GeraLandingStageExecutionService(
@@ -39,11 +40,13 @@ public class GeraLandingStageExecutionService {
             GeraLandingStageExecutionRepository executionRepository,
             WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler,
             CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler,
+            DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler,
             LandingPageImageInjector landingPageImageInjector) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.wireframeProvisionalHtmlAssembler = wireframeProvisionalHtmlAssembler;
         this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
+        this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
         this.landingPageImageInjector = landingPageImageInjector;
     }
 
@@ -267,9 +270,9 @@ public class GeraLandingStageExecutionService {
         if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe()) || !StringUtils.hasText(experiment.getLandingPageCopy())) {
             return null;
         }
-        String completeHtml = copyProvisionalHtmlAssembler.assembleComplete(
-                experiment.getLandingPageCopy(),
+        String completeHtml = designPresetProvisionalHtmlAssembler.assemble(
                 experiment.getLandingPageWireframe(),
+                experiment.getLandingPageCopy(),
                 experiment.getLandingPageImagePlanning(),
                 request.modelResponse(),
                 idJob);

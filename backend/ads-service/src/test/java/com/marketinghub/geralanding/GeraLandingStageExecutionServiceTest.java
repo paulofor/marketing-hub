@@ -38,6 +38,8 @@ class GeraLandingStageExecutionServiceTest {
     @Mock
     private CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
     @Mock
+    private DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
+    @Mock
     private LandingPageImageInjector landingPageImageInjector;
 
     @InjectMocks
@@ -417,10 +419,11 @@ class GeraLandingStageExecutionServiceTest {
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[]}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{\"sections\":[]}}");
         experiment.setLandingPageImagePlanning("{\"images\":[]}");
+        execution.setExperiment(experiment);
 
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-design".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
-        when(experimentRepository.findById(79L)).thenReturn(Optional.of(experiment));
+        when(experimentRepository.findById(79L)).thenReturn(Optional.of(experiment), Optional.of(experiment));
         when(copyProvisionalHtmlAssembler.assembleComplete(
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),

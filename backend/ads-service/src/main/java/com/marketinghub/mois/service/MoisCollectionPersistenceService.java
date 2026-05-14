@@ -151,9 +151,9 @@ public class MoisCollectionPersistenceService {
                     ps.setString(24, coalesceNotBlank(metadataValue(item, "hotmartProducer"), metadataValue(item, "producerName"), metadataValue(item, "producer")));
                     ps.setString(25, coalesceNotBlank(
                             metadataValue(item, "salesPageUrl"),
+                            metadataValue(item, "salesPageUrls"),
                             metadataValue(item, "pageSalesLink"),
-                            metadataValue(item, "checkoutUrl"),
-                            item.url()));
+                            metadataValue(item, "checkoutUrl")));
                     ps.setBigDecimal(26, parseDecimal(metadataValue(item, "hotmartTemperature")));
                     ps.setString(27, coalesceNotBlank(metadataValue(item, "priceValue"), metadataValue(item, "price")));
                     ps.setTimestamp(28, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));

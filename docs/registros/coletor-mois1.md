@@ -146,3 +146,8 @@
 - Atendendo solicitação de registro, a tela `/hotmart` no frontend foi atualizada para exibir informação explícita de que o ciclo 2 captura `pageSalesLink`.
 - Registrado também na UI que a persistência ocorre em `mois_collected_reference.sales_page_url`, reduzindo ambiguidade operacional sobre origem/destino do link de página de vendas.
 - Mantido o comportamento já existente do botão **Ver página de vendas**, com orientação textual de que ele usa essa URL quando disponível.
+
+## 2026-05-14 18:08:32 UTC-3
+- Implementado o ciclo 2 no `mois-clickbank-collector`: leitura dos produtos base via backend MOIS (`/api/v1/mois/clickbase/products`), acesso da `detailsUrl` produto a produto e persistência do resultado no endpoint de coleta (`/api/v1/mois/persistence/collection-jobs/{jobId}`).
+- Scheduler do coletor ClickBank ajustado para alternância por hora: horas ímpares executam ciclo 1 (Top Offers) e horas pares executam ciclo 2 (página de vendas).
+- Atualizada a documentação canônica de coleta ClickBank com definição operacional do novo ciclo 2 e responsabilidades entre backend MOIS e módulo coletor.

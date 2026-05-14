@@ -32,6 +32,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **URL do BACKEND** : http://191.252.181.168:8000
 - **Modelo único**: entidades residem no backend. Os demais módulos acessam o banco de dados pelo backend.
 - **Fluxo entre containers**: nada de chamadas diretas entre serviços (frontend, workers, lead-portal etc). Todo tráfego passa pelo backend principal; apenas o backend fala com o banco.
+- **Escopo de controllers por módulo**: cada módulo só pode acessar os controllers do próprio módulo (ex.: MOIS usa apenas controllers do pacote MOIS; OPRM usa apenas controllers do pacote OPRM; e assim sucessivamente). É proibido um módulo consumir controllers de outro módulo diretamente.
 - **Novos endpoints**: verifique se o contrato já existe; caso contrário, defina-o no backend, atualize a documentação e adicione testes.
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.
 - **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host.

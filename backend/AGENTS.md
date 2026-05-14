@@ -9,4 +9,5 @@
 - Liquibase (YAML): em `preConditions`, nunca misture mapeamento e lista no mesmo nível de indentação (ex.: `onFail:` seguido de `- dbms:`). Use sempre lista explícita (`- onFail: ...`, `- onError: ...`, `- dbms:`) para evitar `ParserException` de YAML.
 - Os endpoints de contas do Facebook não podem descartar valores que não aparecem na UI (por exemplo, tokens de acesso ou IDs padrão). Ao atualizar um registro existente, preserve qualquer campo que não tenha sido enviado explicitamente na requisição.
 - JDBC + MySQL: ao ler colunas `UUID`, nunca use `ResultSet#getObject` com `UUID.class`. Faça a conversão explícita de acordo com o tipo da coluna (`CHAR(36)`/`VARCHAR`: `UUID.fromString(rs.getString(...))`; `BINARY(16)`: converta o `byte[]` para `UUID` com utilitário dedicado ou `UUID.nameUUIDFromBytes`).
+- Escopo de controllers por módulo: cada módulo só pode acessar os controllers do próprio módulo/pacote (ex.: MOIS -> controllers de MOIS; OPRM -> controllers de OPRM). É proibido consumir controllers de outro módulo diretamente.
 - Depois de uma alteração execute os testes unitários antes da criação do PR.

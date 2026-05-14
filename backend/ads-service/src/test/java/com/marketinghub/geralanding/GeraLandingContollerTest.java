@@ -70,14 +70,15 @@ class GeraLandingContollerTest {
 
     @Test
     void shouldGenerateAndPersistProvisionalHtml() throws Exception {
-        when(executionService.generateAndPersistProvisionalHtmlFromExperiment(99L))
+        when(executionService.generateAndPersistProvisionalHtmlFromExperiment(99L, "job-123"))
                 .thenReturn("<html>preview</html>");
 
-        mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/html/provisional/generate", 99L))
+        mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/html/provisional/generate", 99L)
+                        .param("jobId", "job-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.provisionalHtml").value("<html>preview</html>"));
 
-        verify(executionService).generateAndPersistProvisionalHtmlFromExperiment(eq(99L));
+        verify(executionService).generateAndPersistProvisionalHtmlFromExperiment(eq(99L), eq("job-123"));
     }
     @Test
     void shouldListStageExecutionsOrderedByMostRecentFirst() throws Exception {

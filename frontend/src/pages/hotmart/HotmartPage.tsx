@@ -144,7 +144,7 @@ export default function HotmartPage() {
                     const producer = item.producerName;
                     const price = item.price;
                     const currency = item.currency ?? "BRL";
-                    const salesPageUrl = item.salesPageUrl ?? item.productUrl;
+                    const salesPageUrl = item.salesPageUrl;
 
                     return (
                       <article key={item.referenceId} className="col-12 col-md-6 col-lg-4">
@@ -182,14 +182,20 @@ export default function HotmartPage() {
                                 {price ? `${currency} ${price}` : "Não informado"}
                               </strong>
                             </p>
-                            <a
-                              href={salesPageUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="btn btn-outline-primary btn-sm mt-auto"
-                            >
-                              Ver página de vendas
-                            </a>
+                            {salesPageUrl ? (
+                              <a
+                                href={salesPageUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn btn-outline-primary btn-sm mt-auto"
+                              >
+                                Ver página de vendas
+                              </a>
+                            ) : (
+                              <button type="button" className="btn btn-outline-secondary btn-sm mt-auto" disabled>
+                                Página de vendas indisponível
+                              </button>
+                            )}
                           </div>
                         </div>
                       </article>

@@ -67,6 +67,18 @@ class GeraLandingContollerTest {
 
         verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-image-planning"));
     }
+
+    @Test
+    void shouldGenerateAndPersistProvisionalHtml() throws Exception {
+        when(executionService.generateAndPersistProvisionalHtmlFromExperiment(99L))
+                .thenReturn("<html>preview</html>");
+
+        mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/html/provisional/generate", 99L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provisionalHtml").value("<html>preview</html>"));
+
+        verify(executionService).generateAndPersistProvisionalHtmlFromExperiment(eq(99L));
+    }
     @Test
     void shouldListStageExecutionsOrderedByMostRecentFirst() throws Exception {
         when(executionService.listExperimentStageExecutions(99L, "landing-page-wireframe", true))

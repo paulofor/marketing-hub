@@ -304,4 +304,26 @@ class GeraLandingStageExecutionServiceTest {
         assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageHtml());
         verify(experimentRepository).save(experiment);
     }
+
+    @Test
+    void shouldGenerateAndPersistProvisionalHtmlFromExperimentData() {
+        Experiment experiment = new Experiment();
+        experiment.setId(88L);
+        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{}}");
+        experiment.setLandingPageCopy("{\"landingPageCopy\":{}}");
+
+        when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+        when(copyProvisionalHtmlAssembler.assemble(
+                experiment.getLandingPageCopy(),
+                experiment.getLandingPageWireframe(),
+                "manual-generate-provisional-html")).thenReturn("<html>base</html>");
+        when(landingPageImageInjector.injectImages(88L, "<html>base</html>"))
+                .thenReturn("<html>with-images</html>");
+
+        String html = service.generateAndPersistProvisionalHtmlFromExperiment(88L);
+
+        assertTrue(html.contains("with-images"));
+        assertEquals(html, experiment.getLandingPageHtml());
+        verify(experimentRepository).save(experiment);
+    }
 }

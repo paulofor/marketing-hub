@@ -68,6 +68,33 @@ public class GeraLandingStageExecutionService {
     }
 
     @Transactional
+    public String generateAndPersistProvisionalHtmlFromExperiment(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+
+        if (!StringUtils.hasText(experiment.getLandingPageWireframe())) {
+            throw new IllegalStateException("Não foi possível montar HTML provisório: experiment.landingPageWireframe ausente");
+        }
+        if (!StringUtils.hasText(experiment.getLandingPageCopy())) {
+            throw new IllegalStateException("Não foi possível montar HTML provisório: experiment.landingPageCopy ausente");
+        }
+
+        String baseHtml = copyProvisionalHtmlAssembler.assemble(
+                experiment.getLandingPageCopy(),
+                experiment.getLandingPageWireframe(),
+                "manual-generate-provisional-html");
+        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experimentId, baseHtml);
+        String provisionalHtml = """
+                <!-- AUTO: provisional html generated manually by /geralanding/html/provisional/generate -->
+                %s
+                """.formatted(htmlWithGeneratedImages);
+
+        experiment.setLandingPageHtml(provisionalHtml);
+        experimentRepository.save(experiment);
+        return provisionalHtml;
+    }
+
+    @Transactional
     public void registerWorkerPromptExecution(GeraLandingWorkerPromptRequest request) {
         Instant now = Instant.now();
         Experiment experiment = experimentRepository.findById(request.experimentId())

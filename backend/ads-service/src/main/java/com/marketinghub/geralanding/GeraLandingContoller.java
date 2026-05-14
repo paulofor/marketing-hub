@@ -55,4 +55,10 @@ public class GeraLandingContoller {
     GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-image-planning");
     return ResponseEntity.accepted().body(response);
   }
+
+  @PostMapping("/html/provisional/generate")
+  public ResponseEntity<GeraLandingProvisionalHtmlResponse> generateProvisionalHtml(@PathVariable Long experimentId) {
+    String provisionalHtml = executionService.generateAndPersistProvisionalHtmlFromExperiment(experimentId);
+    return ResponseEntity.ok(new GeraLandingProvisionalHtmlResponse(provisionalHtml));
+  }
 }

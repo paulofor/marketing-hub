@@ -82,7 +82,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: production
     env:
-      DEPLOY_HOST: 191.252.120.96
+      DEPLOY_HOST: 177.153.62.107
       DEPLOY_USER: ubuntu
       REMOTE_PATH: /opt/marketinghub/mois-clickbank-collector
 
@@ -110,7 +110,7 @@ jobs:
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
-            && export MOIS_HOTMART_COLLECTOR_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA} \
+            && export MOIS_CLICKBANK_COLLECTOR_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA} \
             && export COMPOSE_PROJECT_NAME=marketinghub-mois-clickbank-collector \
             && docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \

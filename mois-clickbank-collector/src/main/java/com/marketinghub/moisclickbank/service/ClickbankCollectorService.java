@@ -273,7 +273,7 @@ public class ClickbankCollectorService {
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
             String body = response.body();
             log.info("Resposta API Clickbank recebida. status={}, bodyPreview='{}'", response.statusCode(), truncateForLog(body, 1200));
-            log.info("HOTMART_FETCH_RESPOSTA_CRUA status={} bodyRaw='{}'",
+            log.info("CLICKBANK_FETCH_RESPOSTA_CRUA status={} bodyRaw='{}'",
                     response.statusCode(),
                     truncateForLog(body, 10_000));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {

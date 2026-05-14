@@ -106,13 +106,13 @@
 - Criado documento técnico do projeto descrevendo os dois ciclos e regras de execução em `mois-hotmart-collector/docs/ciclos-coleta-hotmart.md`.
 
 ## 2026-05-13 14:57:21 UTC-3
-- Criado workflow GitHub Actions `.github/workflows/mois-clickbank-collector-ci.yml` para o módulo `mois-clickbank-collector` com etapas de teste (`mvn test`), build/push no GHCR e deploy no mesmo host do MOIS (`191.252.120.96`) via Docker Compose.
+- Criado workflow GitHub Actions `.github/workflows/mois-clickbank-collector-ci.yml` para o módulo `mois-clickbank-collector` com etapas de teste (`mvn test`), build/push no GHCR e deploy no mesmo host do MOIS (`177.153.62.107`) via Docker Compose.
 - Ajustado o Actuator do módulo ClickBank em `application.properties` para padronizar o endpoint de logfile em `/internal/ops-monitor/logfile`.
 - Documentada no `README.md` a URL operacional do logfile via Actuator para acesso direto no host do MOIS.
 
 ## 2026-05-13 15:01:39 UTC-3
 - Porta HTTP do módulo `mois-clickbank-collector` alterada de `8096` para `9096` (acima de 9000), ajustando `application.properties`, `docker-compose.yml`, `docker-compose.deploy.yml` e `Dockerfile`.
-- README do módulo atualizado para refletir a nova porta padrão (`MOIS_HOTMART_PORT=9096`) e a nova URL de logfile via Actuator (`http://191.252.120.96:9096/internal/ops-monitor/logfile`).
+- README do módulo atualizado para refletir a nova porta padrão (`MOIS_HOTMART_PORT=9096`) e a nova URL de logfile via Actuator (`http://177.153.62.107:9096/internal/ops-monitor/logfile`).
 
 ## 2026-05-13 17:35:14 UTC-3
 - Registrada melhoria no `mois-hotmart-collector` para incluir log explícito da resposta crua do **ciclo 2** (`HOTMART_CICLO_2_DETALHE_RESPOSTA_CRUA`) durante o fetch de detalhes por produto.
@@ -128,3 +128,8 @@
 - Serviço passou a coletar links e títulos diretamente do HTML da página pública e normalizar para `ClickbankProductSnapshot`.
 - `application.properties` corrigido para remover credenciais hardcoded, passando a usar variáveis de ambiente para usuário/senha e incluindo variável dedicada `COLLECTOR_CLICKBANK_TOP_OFFERS_URL`.
 - Teste unitário atualizado para validar comportamento de erro quando a URL pública estiver indisponível.
+
+## 2026-05-14 03:48 UTC
+- Workflow `.github/workflows/mois-clickbank-collector-ci.yml` atualizado para publicar/deploy no host `177.153.62.107`.
+- Limpeza de nomenclaturas legadas de Hotmart no módulo `mois-clickbank-collector` (workflow, compose, README, properties, utilitário de autenticação e logs), padronizando para ClickBank.
+- Variáveis de ambiente e imagem de deploy renomeadas para prefixo `CLICKBANK`/`MOIS_CLICKBANK`.

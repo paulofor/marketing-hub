@@ -147,6 +147,7 @@ export default function ExperimentDetailPage() {
   const [isStartingImagePrompts, setIsStartingImagePrompts] = useState(false);
   const [isStartingImageGeneration, setIsStartingImageGeneration] =
     useState(false);
+  const [isGeneratingLandingHtml, setIsGeneratingLandingHtml] = useState(false);
   const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticCopyExecution, setOptimisticCopyExecution] =
@@ -463,6 +464,24 @@ export default function ExperimentDetailPage() {
       toast.error(message);
     } finally {
       setIsStartingImageGeneration(false);
+    }
+  };
+
+  const handleGenerateLandingHtml = async () => {
+    setIsGeneratingLandingHtml(true);
+    try {
+      await axios.post(
+        `/api/experiments/${expId}/pipeline/landing-page-html/generate-with-lhm`,
+      );
+      toast.success("Geração de HTML iniciada com sucesso.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message as string | undefined) ??
+          "Não foi possível iniciar a geração de HTML."
+        : "Não foi possível iniciar a geração de HTML.";
+      toast.error(message);
+    } finally {
+      setIsGeneratingLandingHtml(false);
     }
   };
 
@@ -2028,80 +2047,6 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
             <div className="card">
               <div className="card-body d-flex flex-column gap-3">
                 <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                  <h5 className="card-title mb-0">Gera Prompt Imagem</h5>
-                  <span className="badge text-bg-light border fs-6 fw-semibold">
-                    Total execuções: {formatCurrencyUsd(historyGeraLandingImagePromptsExecutions.reduce(
-                      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
-                      0,
-                    ))}
-                  </span>
-                </div>
-                <div className="d-flex flex-column gap-3">
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={handleStartImagePrompts}
-                    disabled={isStartingImagePrompts || hasRunningGeraLandingImagePromptsExecution}
-                  >
-                    {isStartingImagePrompts ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
-                  </button>
-                  {isLoadingPendingGeraLandingImagePromptsExecutions ? (
-                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
-                  ) : runningGeraLandingImagePromptsExecutions.length === 0 ? (
-                    <p className="text-muted mb-0">Nenhum job pendente ou em execução.</p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-sm align-middle mb-0">
-                        <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th></tr></thead>
-                        <tbody>
-                          {runningGeraLandingImagePromptsExecutions.map((execution) => (
-                            <tr key={execution.idJob}>
-                              <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
-                              <td>{execution.status}</td>
-                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                    <h6 className="mb-0">Histórico de execuções</h6>
-                    {isLoadingCompletedGeraLandingImagePromptsExecutions ? (
-                      <p className="text-muted mb-0">Carregando execuções...</p>
-                    ) : historyGeraLandingImagePromptsExecutions.length === 0 ? (
-                      <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
-                    ) : (
-                      <div className="table-responsive">
-                        <table className="table table-sm align-middle mb-0">
-                          <thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead>
-                          <tbody>
-                            {historyGeraLandingImagePromptsExecutions.map((execution) => (
-                              <tr key={execution.idJob}>
-                                <td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td>
-                                <td>{execution.status}</td>
-                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                                <td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="card">
-              <div className="card-body d-flex flex-column gap-3">
-                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
                   <h5 className="card-title mb-0">Gera Imagem</h5>
                   <span className="badge text-bg-light border fs-6 fw-semibold">
                     Pendentes: {frameworkImagePendingCount}
@@ -2115,48 +2060,48 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                   <Link to={`/experiments/${expId}/framework-images`} className="btn btn-outline-primary btn-sm">
                     Ver detalhes das imagens
                   </Link>
-                  <button
-                    type="button"
-                    className="btn btn-success align-self-start"
-                    onClick={handleStartImageGeneration}
-                    disabled={isStartingImageGeneration || generateFrameworkImages.isPending}
-                  >
-                    {isStartingImageGeneration || generateFrameworkImages.isPending ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
+                  <button type="button" className="btn btn-success align-self-start" onClick={handleStartImageGeneration} disabled={isStartingImageGeneration || generateFrameworkImages.isPending}>
+                    {isStartingImageGeneration || generateFrameworkImages.isPending ? "Iniciando..." : "Iniciar"}
+                  </button>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={handleGenerateLandingHtml} disabled={isGeneratingLandingHtml || frameworkImagePendingCount > 0}>
+                    {isGeneratingLandingHtml ? "Gerando HTML..." : "Gerar HTML"}
                   </button>
                   <span className="small text-muted">
                     Acompanhe a timeline detalhada na aba <strong>Conteúdo</strong>,
                     bloco <strong>Gerar imagens em lote (AI Worker)</strong>.
                   </span>
                 </div>
+                <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h6 className="mb-0">Gera Prompt Imagem</h6>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Total execuções: {formatCurrencyUsd(historyGeraLandingImagePromptsExecutions.reduce((sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0), 0))}
+                    </span>
+                  </div>
+                  <button type="button" className="btn btn-primary align-self-start" onClick={handleStartImagePrompts} disabled={isStartingImagePrompts || hasRunningGeraLandingImagePromptsExecution}>
+                    {isStartingImagePrompts ? "Iniciando..." : "Iniciar"}
+                  </button>
+                </div>
+                <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                  <h6 className="mb-0">Histórico de execuções</h6>
+                  {isLoadingCompletedGeraLandingImagePromptsExecutions ? (
+                    <p className="text-muted mb-0">Carregando execuções...</p>
+                  ) : historyGeraLandingImagePromptsExecutions.length === 0 ? (
+                    <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
+                  ) : (
+                    <div className="table-responsive"><table className="table table-sm align-middle mb-0"><thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead><tbody>{historyGeraLandingImagePromptsExecutions.map((execution) => (<tr key={execution.idJob}><td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td><td>{execution.status}</td><td>{formatDateTimeValue(execution.executionRequestedAt)}</td><td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td></tr>))}</tbody></table></div>
+                  )}
+                </div>
                 {frameworkImageSummary ? (
                   <div className="row g-2">
-                    <div className="col-6 col-md-4">
-                      <div className="small border rounded p-2 bg-light">Em processamento: <strong>{frameworkImageSummary.processingCount}</strong></div>
-                    </div>
-                    <div className="col-6 col-md-4">
-                      <div className="small border rounded p-2 bg-light">Aguardando OpenAI batch: <strong>{frameworkImageSummary.waitingOpenAiBatchCount}</strong></div>
-                    </div>
-                    <div className="col-6 col-md-4">
-                      <div className="small border rounded p-2 bg-light">Concluídas: <strong>{frameworkImageSummary.completedCount}</strong></div>
-                    </div>
-                    <div className="col-6 col-md-4">
-                      <div className="small border rounded p-2 bg-light">Falhas: <strong>{frameworkImageSummary.failedCount}</strong></div>
-                    </div>
-                    <div className="col-6 col-md-4">
-                      <div className="small border rounded p-2 bg-light">Total de itens: <strong>{frameworkImageSummary.totalItems}</strong></div>
-                    </div>
+                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Em processamento: <strong>{frameworkImageSummary.processingCount}</strong></div></div>
+                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Aguardando OpenAI batch: <strong>{frameworkImageSummary.waitingOpenAiBatchCount}</strong></div></div>
+                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Concluídas: <strong>{frameworkImageSummary.completedCount}</strong></div></div>
+                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Falhas: <strong>{frameworkImageSummary.failedCount}</strong></div></div>
+                    <div className="col-6 col-md-4"><div className="small border rounded p-2 bg-light">Total de itens: <strong>{frameworkImageSummary.totalItems}</strong></div></div>
                   </div>
                 ) : null}
-                {isLoadingFrameworkImageStatuses ? (
-                  <p className="text-muted mb-0">Carregando status do Gera Imagem...</p>
-                ) : null}
+                {isLoadingFrameworkImageStatuses ? <p className="text-muted mb-0">Carregando status do Gera Imagem...</p> : null}
               </div>
             </div>
           </div>

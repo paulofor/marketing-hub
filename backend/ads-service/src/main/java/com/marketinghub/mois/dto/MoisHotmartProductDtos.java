@@ -14,7 +14,6 @@ public final class MoisHotmartProductDtos {
             String productUrl,
             String producerName,
             String imageUrl,
-            Integer successScore,
             String price,
             String currency,
             String salesPageUrl,

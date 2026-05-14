@@ -751,3 +751,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-09-gera-landing-openai-model-column.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-05-14-mois-collected-reference-hotmart-price.yaml
+      relativeToChangelogFile: true

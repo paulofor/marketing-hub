@@ -36,12 +36,12 @@ public class MoisHotmartProductService {
         List<MoisHotmartProductDtos.HotmartCollectedProductResponse> items = jdbcTemplate.query(
                 """
                         SELECT job_id, reference_id, product_name, product_url, producer_name,
-                               hotmart_image_url, success_score, sales_page_url, hotmart_temperature, collected_at
+                               hotmart_image_url, hotmart_price, sales_page_url, hotmart_temperature, collected_at
                         FROM mois_collected_reference
                         WHERE workspace_id = ?
                           AND source = 'HOTMART'
                           AND job_id = ?
-                        ORDER BY success_score DESC, collected_at DESC
+                        ORDER BY collected_at DESC
                         LIMIT ?
                         """,
                 (rs, rowNum) -> {
@@ -53,8 +53,7 @@ public class MoisHotmartProductService {
                             rs.getString("product_url"),
                             rs.getString("producer_name"),
                             rs.getString("hotmart_image_url"),
-                            rs.getObject("success_score", Integer.class),
-                            null,
+                            rs.getString("hotmart_price"),
                             "BRL",
                             rs.getString("sales_page_url"),
                             rs.getObject("hotmart_temperature") == null ? null : rs.getDouble("hotmart_temperature"),

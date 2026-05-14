@@ -119,8 +119,8 @@ public class MoisCollectionPersistenceService {
                           job_id, workspace_id, reference_id, source, title, url, niche, status, favorite,
                           imported_reference_id, success_score, success_signal, confidence_level, ranking_position,
                           engagement_relative, recurrence_score, evidence_score, hotmart_description,
-                          hotmart_producer, hotmart_image_url, hotmart_highlight, product_name, product_url, producer_name, sales_page_url, hotmart_temperature, collected_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          hotmart_producer, hotmart_image_url, hotmart_highlight, product_name, product_url, producer_name, sales_page_url, hotmart_temperature, hotmart_price, collected_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 references,
                 references.size(),
@@ -155,8 +155,9 @@ public class MoisCollectionPersistenceService {
                             metadataValue(item, "checkoutUrl"),
                             item.url()));
                     ps.setBigDecimal(26, parseDecimal(metadataValue(item, "hotmartTemperature")));
-                    ps.setTimestamp(27, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
-                    ps.setTimestamp(28, Timestamp.from(Instant.now()));
+                    ps.setString(27, coalesceNotBlank(metadataValue(item, "priceValue"), metadataValue(item, "price")));
+                    ps.setTimestamp(28, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
+                    ps.setTimestamp(29, Timestamp.from(Instant.now()));
                 }
         );
     }

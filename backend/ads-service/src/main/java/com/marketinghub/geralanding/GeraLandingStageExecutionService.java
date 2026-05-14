@@ -68,7 +68,7 @@ public class GeraLandingStageExecutionService {
     }
 
     @Transactional
-    public String generateAndPersistProvisionalHtmlFromExperiment(Long experimentId) {
+    public String generateAndPersistProvisionalHtmlFromExperiment(Long experimentId, String jobId) {
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
 
@@ -82,7 +82,7 @@ public class GeraLandingStageExecutionService {
         String baseHtml = copyProvisionalHtmlAssembler.assemble(
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
-                "manual-generate-provisional-html");
+                jobId);
         String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experimentId, baseHtml);
         String provisionalHtml = """
                 <!-- AUTO: provisional html generated manually by /geralanding/html/provisional/generate -->
@@ -91,6 +91,10 @@ public class GeraLandingStageExecutionService {
 
         experiment.setLandingPageHtml(provisionalHtml);
         experimentRepository.save(experiment);
+        GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(jobId))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + jobId));
+        execution.setProvisionalHtml(provisionalHtml);
+        executionRepository.save(execution);
         return provisionalHtml;
     }
 

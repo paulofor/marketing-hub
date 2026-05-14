@@ -57,8 +57,10 @@ public class GeraLandingContoller {
   }
 
   @PostMapping("/html/provisional/generate")
-  public ResponseEntity<GeraLandingProvisionalHtmlResponse> generateProvisionalHtml(@PathVariable Long experimentId) {
-    String provisionalHtml = executionService.generateAndPersistProvisionalHtmlFromExperiment(experimentId);
+  public ResponseEntity<GeraLandingProvisionalHtmlResponse> generateProvisionalHtml(
+      @PathVariable Long experimentId,
+      @RequestParam String jobId) {
+    String provisionalHtml = executionService.generateAndPersistProvisionalHtmlFromExperiment(experimentId, jobId);
     return ResponseEntity.ok(new GeraLandingProvisionalHtmlResponse(provisionalHtml));
   }
 }

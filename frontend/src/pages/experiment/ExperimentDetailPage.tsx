@@ -467,11 +467,13 @@ export default function ExperimentDetailPage() {
     }
   };
 
-  const handleGenerateLandingHtml = async () => {
+  const handleGenerateLandingHtml = async (jobId: string) => {
     setIsGeneratingLandingHtml(true);
     try {
       await axios.post(
         `/api/experiments/${expId}/geralanding/html/provisional/generate`,
+        null,
+        { params: { jobId } },
       );
       toast.success("Geração de HTML iniciada com sucesso.");
     } catch (error) {
@@ -669,6 +671,9 @@ export default function ExperimentDetailPage() {
     });
     return Array.from(dedupMap.values());
   }, [completedGeraLandingImagePromptsExecutions, pendingGeraLandingImagePromptsExecutions]);
+  const latestSuccessfulImagePromptExecution = historyGeraLandingImagePromptsExecutions.find(
+    (execution) => isCompletedExecution(execution.status),
+  );
 const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((execution) =>
     isRunningExecution(execution.status),
   )?.idJob;
@@ -2063,9 +2068,6 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                   <button type="button" className="btn btn-success align-self-start" onClick={handleStartImageGeneration} disabled={isStartingImageGeneration || generateFrameworkImages.isPending}>
                     {isStartingImageGeneration || generateFrameworkImages.isPending ? "Iniciando..." : "Iniciar"}
                   </button>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={handleGenerateLandingHtml} disabled={isGeneratingLandingHtml || frameworkImagePendingCount > 0}>
-                    {isGeneratingLandingHtml ? "Gerando HTML..." : "Gerar HTML"}
-                  </button>
                   <span className="small text-muted">
                     Acompanhe a timeline detalhada na aba <strong>Conteúdo</strong>,
                     bloco <strong>Gerar imagens em lote (AI Worker)</strong>.
@@ -2089,7 +2091,7 @@ const runningGeraLandingJobId = mergedPendingGeraLandingExecutions.find((executi
                   ) : historyGeraLandingImagePromptsExecutions.length === 0 ? (
                     <p className="text-muted mb-0">Nenhuma execução registrada para esta etapa.</p>
                   ) : (
-                    <div className="table-responsive"><table className="table table-sm align-middle mb-0"><thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th></tr></thead><tbody>{historyGeraLandingImagePromptsExecutions.map((execution) => (<tr key={execution.idJob}><td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td><td>{execution.status}</td><td>{formatDateTimeValue(execution.executionRequestedAt)}</td><td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td></tr>))}</tbody></table></div>
+                    <div className="table-responsive"><table className="table table-sm align-middle mb-0"><thead><tr><th scope="col">Job ID</th><th scope="col">Status</th><th scope="col">Data-hora</th><th scope="col" className="text-end">Custo</th><th scope="col" className="text-end">Ações</th></tr></thead><tbody>{historyGeraLandingImagePromptsExecutions.map((execution) => (<tr key={execution.idJob}><td><Link to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`} className="fw-semibold text-decoration-none">{execution.idJob}</Link></td><td>{execution.status}</td><td>{formatDateTimeValue(execution.executionRequestedAt)}</td><td className="text-end">{formatCurrencyUsd(resolveExecutionCostUsd(execution))}</td><td className="text-end">{latestSuccessfulImagePromptExecution?.idJob === execution.idJob ? (<button type="button" className="btn btn-primary btn-sm" onClick={() => handleGenerateLandingHtml(execution.idJob)} disabled={isGeneratingLandingHtml || frameworkImagePendingCount > 0}>{isGeneratingLandingHtml ? (<><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Gerando HTML...</>) : "Gerar HTML"}</button>) : null}</td></tr>))}</tbody></table></div>
                   )}
                 </div>
                 {frameworkImageSummary ? (

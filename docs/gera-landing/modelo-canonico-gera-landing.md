@@ -36,7 +36,8 @@ Ele cobre:
 ### 1.2 Etapas suportadas oficialmente no código atual
 
 - `landing-page-wireframe`;
-- `landing-page-copy`.
+- `landing-page-copy`;
+- `landing-page-design-preset`.
 
 Observação operacional: no worker `geralanding`, etapas fora desse conjunto ainda são ignoradas com log informativo.
 

@@ -126,29 +126,82 @@ public class ClickbankCollectorService {
                 throw new IllegalStateException("Top Offers retornou status " + response.statusCode());
             }
             String html = response.body();
-            java.util.regex.Pattern anchorPattern = java.util.regex.Pattern.compile(
-                    "<a[^>]+href\\s*=\\s*\"([^\"]+)\"[^>]*>(.*?)</a>",
+            java.util.regex.Pattern productPattern = java.util.regex.Pattern.compile(
+                    "<h[1-3][^>]*>\\s*(?:\\d+\\)\\s*)?<a[^>]+href\\s*=\\s*\"([^\"]+)\"[^>]*>(.*?)</a>\\s*</h[1-3]>(.*?)(?=<h[1-3][^>]*>\\s*(?:\\d+\\)\\s*)?<a|$)",
                     java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL
             );
-            java.util.regex.Matcher matcher = anchorPattern.matcher(html);
+            java.util.regex.Pattern nicknamePattern = java.util.regex.Pattern.compile(
+                    "Nickname:\\s*(.*?)\\s*(?=Category:|$)",
+                    java.util.regex.Pattern.CASE_INSENSITIVE
+            );
+            java.util.regex.Pattern categoryPattern = java.util.regex.Pattern.compile(
+                    "Category:\\s*(.*?)\\s*(?=Check out their landing page here\\.?|$)",
+                    java.util.regex.Pattern.CASE_INSENSITIVE
+            );
+            java.util.regex.Pattern landingPagePattern = java.util.regex.Pattern.compile(
+                    "<a[^>]+href\\s*=\\s*\"([^\"]+)\"[^>]*>\\s*Check out their landing page here\\.?\\s*</a>",
+                    java.util.regex.Pattern.CASE_INSENSITIVE | java.util.regex.Pattern.DOTALL
+            );
+            java.util.regex.Matcher matcher = productPattern.matcher(html);
             LinkedHashSet<String> dedupe = new LinkedHashSet<>();
             while (matcher.find() && products.size() < boundedMax) {
                 String href = matcher.group(1).trim();
-                String title = matcher.group(2).replaceAll("<[^>]*>", "").replaceAll("\\s+", " ").trim();
+                String title = stripHtml(matcher.group(2));
+                String sectionHtml = matcher.group(3);
+                String sectionText = stripHtml(sectionHtml);
                 if (title.isBlank() || href.isBlank()) {
                     continue;
                 }
-                String normalizedUrl = href.startsWith("http") ? href : "https://www.clickbank.com" + href;
-                String dedupeKey = title.toLowerCase() + "|" + normalizedUrl.toLowerCase();
+
+                String nickname = "N/A";
+                java.util.regex.Matcher nicknameMatcher = nicknamePattern.matcher(sectionText);
+                if (nicknameMatcher.find()) {
+                    nickname = nicknameMatcher.group(1).trim();
+                }
+
+                String category = "N/A";
+                java.util.regex.Matcher categoryMatcher = categoryPattern.matcher(sectionText);
+                if (categoryMatcher.find()) {
+                    category = categoryMatcher.group(1).trim();
+                }
+
+                String detailsUrl = normalizeClickbankUrl(href);
+                String salesPageUrl = detailsUrl;
+                java.util.regex.Matcher landingPageMatcher = landingPagePattern.matcher(sectionHtml);
+                if (landingPageMatcher.find()) {
+                    salesPageUrl = normalizeClickbankUrl(landingPageMatcher.group(1));
+                }
+                String dedupeKey = title.toLowerCase() + "|" + nickname.toLowerCase() + "|" + detailsUrl.toLowerCase();
                 if (!dedupe.add(dedupeKey)) {
                     continue;
                 }
-                products.add(new ClickbankProductSnapshot(title, "N/A", "N/A", normalizedUrl, null, normalizedUrl, Instant.now()));
+                products.add(new ClickbankProductSnapshot(title, nickname, category, detailsUrl, null, salesPageUrl, Instant.now()));
+            }
+            if (products.isEmpty()) {
+                log.warn("Parser Top Offers não encontrou blocos de produtos. url={}", clickbankTopOffersUrl);
             }
             return products.size();
         } catch (Exception ex) {
             throw new RuntimeException("Não foi possível coletar top offers públicos.", ex);
         }
+    }
+
+    private String stripHtml(String htmlFragment) {
+        if (htmlFragment == null) {
+            return "";
+        }
+        return htmlFragment
+                .replaceAll("<[^>]*>", " ")
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private String normalizeClickbankUrl(String href) {
+        if (href == null || href.isBlank()) {
+            return clickbankTopOffersUrl;
+        }
+        return href.startsWith("http") ? href : "https://www.clickbank.com" + href;
     }
 
     private void persistCollectedProductsOnBackend(
@@ -204,6 +257,8 @@ public class ClickbankCollectorService {
             rawMetadata.put("productName", product.title());
             rawMetadata.put("productUrl", product.detailsUrl());
             rawMetadata.put("salesPageUrl", coalesceNotBlank(product.salesPageUrl(), product.detailsUrl()));
+            rawMetadata.put("productNickname", product.rating());
+            rawMetadata.put("productCategory", product.commission());
             if (product.temperature() != null) {
                 rawMetadata.put("clickbankTemperature", String.valueOf(product.temperature()));
             }

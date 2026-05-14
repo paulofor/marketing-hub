@@ -17,6 +17,7 @@ public final class MoisHotmartProductDtos {
             String price,
             String currency,
             String salesPageUrl,
+            String pageSalesLink,
             Double temperature,
             Instant collectedAt
     ) {}

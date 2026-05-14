@@ -6,6 +6,20 @@ export default function ClickbasePage() {
   const workspaceId = "workspace-001";
   const clickbaseProductsQuery = useClickbaseCollectedProducts(workspaceId, 24);
   const latestJobId = useMemo(() => clickbaseProductsQuery.data?.[0]?.jobId, [clickbaseProductsQuery.data]);
+  const latestJobDate = useMemo(() => {
+    const collectedAt = clickbaseProductsQuery.data?.[0]?.collectedAt;
+    if (!collectedAt) {
+      return null;
+    }
+    const parsed = new Date(collectedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(parsed);
+  }, [clickbaseProductsQuery.data]);
 
   return (
     <div className="mt-3">
@@ -32,6 +46,9 @@ export default function ClickbasePage() {
             <>
               <p className="small text-muted mb-3">
                 Job mais recente: <strong>{latestJobId}</strong>
+              </p>
+              <p className="small text-muted mb-3">
+                Data do job: <strong>{latestJobDate ?? "Não informada"}</strong>
               </p>
               <div className="row g-3">
                 {clickbaseProductsQuery.data.map((item) => (

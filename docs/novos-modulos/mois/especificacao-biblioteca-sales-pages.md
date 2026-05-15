@@ -190,6 +190,22 @@ Essa taxonomia é obrigatória para comparabilidade entre páginas.
 - `POST /api/mois/sales-library/pages/{pageId}:reanalyze`
   - reexecuta análise a partir do snapshot persistido.
 
+
+### 8.4 Consulta paginada de entradas ingeridas (implementado)
+
+- `GET /api/mois/sales-library/entries`
+  - parâmetros: `workspaceId` (obrigatório), `page` (default `1`), `pageSize` (default `20`, máx `100`);
+  - ordenação: `updated_at desc`;
+  - retorno: `page`, `pageSize`, `total`, `items[]` com URL original/canônica, origem, título e contadores de ingestão.
+
+### 8.5 Organização de código no backend (implementado)
+
+Para manter o domínio da biblioteca isolado dentro do contexto MOIS no backend principal, os componentes da biblioteca ficam no pacote:
+
+- `com.marketinghub.mois.biblioteca.dto`
+- `com.marketinghub.mois.biblioteca.service`
+- `com.marketinghub.mois.biblioteca.web`
+
 ---
 
 ## 9. Regras de qualidade

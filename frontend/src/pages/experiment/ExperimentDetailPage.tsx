@@ -262,8 +262,15 @@ export default function ExperimentDetailPage() {
         rawValue: data?.landingPageImagePlanning,
       },
       {
+        key: "design-preset",
+        title: "Etapa 6 · Preset Design",
+        description:
+          "Conteúdo bruto salvo na coluna landing_page_design_preset.",
+        rawValue: data?.landingPageDesignPreset,
+      },
+      {
         key: "landing-html",
-        title: "Etapa 6 · Landing HTML",
+        title: "Etapa 7 · Landing HTML",
         description: "Conteúdo bruto salvo na coluna landing_page_html.",
         rawValue: data?.landingPageHtml,
       },
@@ -272,6 +279,7 @@ export default function ExperimentDetailPage() {
       data?.adCopy,
       data?.campaignAngle,
       data?.landingPageCopy,
+      data?.landingPageDesignPreset,
       data?.landingPageHtml,
       data?.landingPageImagePlanning,
       data?.landingPageWireframe,

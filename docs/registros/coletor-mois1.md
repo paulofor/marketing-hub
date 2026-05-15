@@ -164,3 +164,5 @@
   - remover duplicidades legadas mantendo o menor `id` por `url_canonical`;
   - trocar índice único de `(workspace_id, url_canonical)` para índice único em `url_canonical`.
 - Atualizado o modelo de dados para documentar explicitamente a regra canônica: URL única na biblioteca independentemente de workspace/source.
+
+- Exposta sinalização de falha da última coleta Hotmart na tela `/hotmart` via `status/message` do último `collection-job` para orientar quando ocorrer JWT expirado (`invalid_token`).

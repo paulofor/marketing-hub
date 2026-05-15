@@ -173,3 +173,14 @@
 - Botão de salvar com estado assíncrono (desabilitado + spinner) e campo obrigatório com asterisco para garantir consistência de UX.
 - Ajuste solicitado: removida a tentativa de capturar `salesPageUrl` no ciclo de listagem (`/v2/market/search`).
 - A página de vendas agora é resolvida somente no ciclo de detalhes (`/v1/market/product/{id}/details`), reduzindo risco de URL incorreta vinda do search.
+
+## 2026-05-15 15:10:02 UTC-3
+- Registrado no módulo Clickbase o novo fetch de consulta para iniciar o próximo ciclo de coleta via endpoint GraphQL da conta ClickBank (`POST https://accounts.clickbank.com/graphql`).
+- Documentado o contrato da consulta `marketplaceSearch` com `sortField=rank`, `productAttributes=["shippable"]`, `resultsPerPage=30` e `offset=0`, incluindo os campos de retorno necessários para listagem e enriquecimento (`hits`, `marketplaceStats`, `affiliateToolsUrl`, `affiliateSupportEmail`, `skypeName`, `telegramName`, `offerImageUrl`, `facets`).
+- Por segurança, o registro mantém a orientação de uso com `Authorization: Bearer <CLICKBANK_JWT_TOKEN>` em vez de persistir token real em texto plano na documentação.
+- Este fetch fica definido como referência oficial para abertura do novo ciclo de consulta do Clickbase no coletor MOIS ClickBank.
+
+## 2026-05-15 15:14:00 UTC-3
+- Criado documento dedicado no módulo `mois-clickbank-collector` para registrar o fetch base do novo ciclo de consulta do Clickbase: `mois-clickbank-collector/docs/clickbase-fetch-ciclo-consulta.md`.
+- O documento inclui o fetch completo para `POST https://accounts.clickbank.com/graphql`, com query `marketplaceSearch` e parâmetros de paginação/ordenação.
+- Token de autenticação foi sanitizado no documento para `Bearer <CLICKBANK_JWT_TOKEN>`, evitando credencial sensível em texto plano.

@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-15-experiment-landing-deliverables-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: landing_page_deliverables
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN landing_page_deliverables LONGTEXT NULL
+                AFTER landing_page_design_preset;

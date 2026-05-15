@@ -37,7 +37,8 @@ Ele cobre:
 
 - `landing-page-wireframe`;
 - `landing-page-copy`;
-- `landing-page-design-preset`.
+- `landing-page-design-preset`;
+- `landing-page-deliverables`.
 
 Observação operacional: no worker `geralanding`, etapas fora desse conjunto ainda são ignoradas com log informativo.
 
@@ -120,6 +121,10 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 
 - `POST /api/experiments/{experimentId}/geralanding/image-prompts/start`
   - cria execução inicial da etapa `landing-page-image-planning`;
+  - retorna `202 Accepted` com `{ idJob, status }`.
+
+- `POST /api/experiments/{experimentId}/geralanding/deliverables/start`
+  - cria execução inicial da etapa `landing-page-deliverables`;
   - retorna `202 Accepted` com `{ idJob, status }`.
 
 - `GET /api/experiments/{experimentId}/geralanding/stage-executions`

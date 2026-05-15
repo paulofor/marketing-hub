@@ -27,6 +27,7 @@ public class GeraLandingStageExecutionService {
     private static final String STAGE_COPY = "landing-page-copy";
     private static final String STAGE_IMAGE_PLANNING = "landing-page-image-planning";
     private static final String STAGE_DESIGN_PRESET = "landing-page-design-preset";
+    private static final String STAGE_DELIVERABLES = "landing-page-deliverables";
 
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
@@ -297,7 +298,8 @@ public class GeraLandingStageExecutionService {
         if (!STAGE_WIREFRAME.equalsIgnoreCase(stageCode)
                 && !STAGE_COPY.equalsIgnoreCase(stageCode)
                 && !STAGE_IMAGE_PLANNING.equalsIgnoreCase(stageCode)
-                && !STAGE_DESIGN_PRESET.equalsIgnoreCase(stageCode)) {
+                && !STAGE_DESIGN_PRESET.equalsIgnoreCase(stageCode)
+                && !STAGE_DELIVERABLES.equalsIgnoreCase(stageCode)) {
             return;
         }
         if (!StringUtils.hasText(request.modelResponse()) || StringUtils.hasText(request.errorMessage())) {
@@ -316,6 +318,8 @@ public class GeraLandingStageExecutionService {
             if (StringUtils.hasText(execution.getProvisionalHtml())) {
                 experiment.setLandingPageHtml(execution.getProvisionalHtml());
             }
+        } else if (STAGE_DELIVERABLES.equalsIgnoreCase(stageCode)) {
+            experiment.setLandingPageDeliverables(request.modelResponse());
         } else {
             experiment.setLandingPageDesignPreset(request.modelResponse());
             String htmlFromDesignPreset = execution.getProvisionalHtml();

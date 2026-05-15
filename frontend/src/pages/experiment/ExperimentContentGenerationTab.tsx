@@ -109,17 +109,17 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
     defaultQuantity: 4,
   },
   {
-    key: "landing-image-planning",
-    label: "Planejamento de Imagens da Landing",
-    description:
-      "Planeje prompts, posicionamento e direção visual das imagens antes da geração final do HTML.",
-    defaultQuantity: 1,
-  },
-  {
     key: "landing-design-preset",
     label: "Preset de Design da Landing",
     description:
       "Defina tema visual, paleta e presets por seção antes da composição final do HTML.",
+    defaultQuantity: 1,
+  },
+  {
+    key: "landing-image-planning",
+    label: "Planejamento de Imagens da Landing",
+    description:
+      "Planeje prompts, posicionamento e direção visual das imagens antes da geração final do HTML.",
     defaultQuantity: 1,
   },
   {
@@ -622,7 +622,7 @@ artifact {
 
 const LANDING_DESIGN_PRESET_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
-Criar o Preset de Design da Landing após o planejamento de imagens e antes do HTML final.
+Criar o Preset de Design da Landing antes do HTML final, mantendo alinhamento com o plano de imagens da landing.
 
 Objetivo:
 Estruturar tema visual reutilizável (paleta, estilos e presets por seção) mantendo coerência com copy, wireframe e planejamento de imagens.

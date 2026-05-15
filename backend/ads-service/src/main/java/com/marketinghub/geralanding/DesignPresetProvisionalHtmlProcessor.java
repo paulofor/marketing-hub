@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -14,11 +15,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Component
 public class DesignPresetProvisionalHtmlProcessor {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final WireframeHtmlGenerator wireframeHtmlGenerator = new WireframeHtmlGenerator();
 
     public String process(String wireframeJson,
@@ -35,10 +38,25 @@ public class DesignPresetProvisionalHtmlProcessor {
             throw new IllegalArgumentException("JSON de design preset ausente");
         }
 
-        Document document = Jsoup.parse(wireframeHtmlGenerator.generateFromJson(wireframeJson), "", Parser.htmlParser());
-        applyCopy(document, parseJson(copyJson));
-        applyImageUrls(document, imagePlanningJson);
-        applyDesignPreset(document, designPresetJson);
+        String baseHtml = wireframeHtmlGenerator.generateFromJson(wireframeJson);
+        if (!StringUtils.hasText(baseHtml)) {
+            throw new IllegalArgumentException("Falha ao gerar HTML base a partir do wireframe");
+        }
+
+        Document document = Jsoup.parse(baseHtml, "", Parser.htmlParser());
+        document.outputSettings()
+                .prettyPrint(false)
+                .charset("utf-8")
+                .syntax(Document.OutputSettings.Syntax.html);
+
+        Map<String, Object> copyRoot = parseJson(copyJson);
+        Map<String, Object> designRoot = parseJson(designPresetJson);
+
+        applyCopy(document, copyRoot);
+        applyCtaUrls(document, copyRoot);
+        applyImageUrlsByElementId(document, imagePlanningJson);
+        applyDesignPreset(document, designRoot);
+
         return normalizeSerializedHtml(document.outerHtml());
     }
 
@@ -52,103 +70,231 @@ public class DesignPresetProvisionalHtmlProcessor {
 
     private void applyCopy(Document document, Map<String, Object> copyRoot) {
         Map<String, String> copyById = collectCopyByItemId(copyRoot);
+
         for (Map.Entry<String, String> entry : copyById.entrySet()) {
             Element target = resolveElementById(document, entry.getKey());
+
             if (target == null || !StringUtils.hasText(entry.getValue())) {
                 continue;
             }
-            String tag = target.tagName();
-            if ("input".equalsIgnoreCase(tag) || "textarea".equalsIgnoreCase(tag)) {
-                target.attr("placeholder", entry.getValue().trim());
-            } else {
-                target.text(entry.getValue().trim());
-            }
+
+            applyCopyToElement(target, entry.getValue().trim());
         }
+
+        String title = firstNonBlank(
+                copyById.get(normalizeId("title")),
+                copyById.get(normalizeId("el-s1-h1")),
+                copyById.get(normalizeId("el-s2-h2"))
+        );
+
+        if (StringUtils.hasText(title)) {
+            document.title(title);
+        }
+    }
+
+    private void applyCopyToElement(Element target, String text) {
+        String tag = target.tagName().toLowerCase(Locale.ROOT);
+
+        if ("input".equals(tag) || "textarea".equals(tag)) {
+            target.attr("placeholder", text);
+            return;
+        }
+
+        if ("img".equals(tag)) {
+            if (!StringUtils.hasText(target.attr("alt"))) {
+                target.attr("alt", text);
+            }
+            return;
+        }
+
+        if (target.children().isEmpty()) {
+            target.text(text);
+            return;
+        }
+
+        if (canHaveDirectTextBeforeChildren(tag)) {
+            replaceOwnTextBeforeChildren(target, text);
+            return;
+        }
+
+        // Importante:
+        // Não aplicar copy diretamente em containers com filhos,
+        // para não destruir form, div, ul, ol, details, section etc.
+    }
+
+    private boolean canHaveDirectTextBeforeChildren(String tag) {
+        return "li".equals(tag)
+                || "summary".equals(tag)
+                || "label".equals(tag)
+                || "button".equals(tag)
+                || "a".equals(tag);
+    }
+
+    private void replaceOwnTextBeforeChildren(Element element, String text) {
+        List<TextNode> textNodes = new ArrayList<>(element.textNodes());
+        for (TextNode node : textNodes) {
+            node.remove();
+        }
+
+        element.insertChildren(0, new TextNode(text + " "));
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, String> collectCopyByItemId(Map<String, Object> copyRoot) {
         Map<String, String> result = new LinkedHashMap<>();
+
         Object sectionsObj = firstNonNull(copyRoot.get("bodySections"), copyRoot.get("sections"));
         if (!(sectionsObj instanceof List<?> sections)) {
             return result;
         }
+
         for (Object section : sections) {
             if (!(section instanceof Map<?, ?> sectionMap)) {
                 continue;
             }
-            Object itemsObj = firstNonNull(sectionMap.get("items"), sectionMap.get("fields"), sectionMap.get("values"));
+
+            Object itemsObj = firstNonNull(
+                    sectionMap.get("items"),
+                    sectionMap.get("fields"),
+                    sectionMap.get("values")
+            );
+
             if (!(itemsObj instanceof List<?> items)) {
                 continue;
             }
+
             for (Object item : items) {
                 if (!(item instanceof Map<?, ?> map)) {
                     continue;
                 }
-                String id = firstNonBlank(asString(map.get("id")), asString(map.get("item")), asString(map.get("tagId")));
-                String text = firstNonBlank(asString(map.get("texto")), asString(map.get("text")), asString(map.get("copy")), asString(map.get("value")));
-                if (StringUtils.hasText(id) && StringUtils.hasText(text)) {
+
+                String id = firstNonBlank(
+                        asString(map.get("id")),
+                        asString(map.get("item")),
+                        asString(map.get("tagId"))
+                );
+
+                String text = firstNonBlank(
+                        asString(map.get("texto")),
+                        asString(map.get("text")),
+                        asString(map.get("copy")),
+                        asString(map.get("value"))
+                );
+
+                if (StringUtils.hasText(id) && text != null) {
                     result.put(normalizeId(id), text.trim());
                 }
             }
         }
+
         return result;
     }
 
-    private Element resolveElementById(Document document, String normalizedId) {
-        if (!StringUtils.hasText(normalizedId)) {
-            return null;
+    private void applyCtaUrls(Document document, Map<String, Object> copyRoot) {
+        String defaultCtaUrl = collectDefaultCtaUrl(copyRoot);
+
+        if (!StringUtils.hasText(defaultCtaUrl)) {
+            return;
         }
-        Element direct = document.getElementById(normalizedId);
-        if (direct != null) {
-            return direct;
-        }
-        for (Element element : document.getAllElements()) {
-            if (normalizeId(element.id()).equals(normalizedId)) {
-                return element;
+
+        for (Element link : document.select("a[id*=cta]")) {
+            if (!StringUtils.hasText(link.attr("href"))) {
+                link.attr("href", defaultCtaUrl);
             }
         }
+    }
+
+    private String collectDefaultCtaUrl(Map<String, Object> copyRoot) {
+        Object ctaBlocksObj = copyRoot.get("ctaBlocks");
+
+        if (!(ctaBlocksObj instanceof List<?> ctaBlocks)) {
+            return null;
+        }
+
+        for (Object cta : ctaBlocks) {
+            if (!(cta instanceof Map<?, ?> map)) {
+                continue;
+            }
+
+            String url = asString(map.get("ctaUrl"));
+            if (StringUtils.hasText(url)) {
+                return url.trim();
+            }
+        }
+
         return null;
     }
 
-    private void applyImageUrls(Document document, String imagePlanningJson) {
+    private void applyImageUrlsByElementId(Document document, String imagePlanningJson) {
         if (!StringUtils.hasText(imagePlanningJson)) {
             return;
         }
-        Map<String, Object> planning = parseJson(imagePlanningJson);
-        Object rawImages = firstNonNull(planning.get("images"), planning.get("landingPageImagePlanning"));
-        List<String> urls = new ArrayList<>();
-        if (rawImages instanceof List<?> list) {
-            collectUrls(list, urls);
-        } else if (rawImages instanceof Map<?, ?> wrapper && wrapper.get("images") instanceof List<?> nested) {
-            collectUrls(nested, urls);
-        }
 
-        int index = 0;
-        for (Element img : document.select("img")) {
-            if (index >= urls.size()) {
-                break;
+        Map<String, Object> planning = parseJson(imagePlanningJson);
+        Map<String, ImageSpec> imageByElementId = collectImagesByElementId(planning);
+
+        for (Map.Entry<String, ImageSpec> entry : imageByElementId.entrySet()) {
+            Element img = resolveElementById(document, entry.getKey());
+
+            if (img == null || !"img".equalsIgnoreCase(img.tagName())) {
+                continue;
             }
-            img.attr("src", urls.get(index++));
+
+            ImageSpec spec = entry.getValue();
+
+            img.attr("src", spec.url());
+
+            if (StringUtils.hasText(spec.alt()) && !StringUtils.hasText(img.attr("alt"))) {
+                img.attr("alt", spec.alt());
+            }
         }
     }
 
-    private void collectUrls(List<?> images, List<String> urls) {
+    private Map<String, ImageSpec> collectImagesByElementId(Map<String, Object> planning) {
+        Map<String, ImageSpec> result = new LinkedHashMap<>();
+
+        Object rawImages = firstNonNull(
+                planning.get("images"),
+                planning.get("landingPageImagePlanning")
+        );
+
+        if (rawImages instanceof Map<?, ?> wrapper) {
+            rawImages = wrapper.get("images");
+        }
+
+        if (!(rawImages instanceof List<?> images)) {
+            return result;
+        }
+
         for (Object item : images) {
             if (!(item instanceof Map<?, ?> map)) {
                 continue;
             }
-            String url = firstNonBlank(asString(map.get("imageUrl")), asString(map.get("url")));
-            if (StringUtils.hasText(url)) {
-                urls.add(url.trim());
+
+            String elementId = asString(map.get("elementId"));
+            String url = firstNonBlank(
+                    asString(map.get("imageUrl")),
+                    asString(map.get("url"))
+            );
+
+            String alt = firstNonBlank(
+                    asString(map.get("imageGoal")),
+                    asString(map.get("alt")),
+                    asString(map.get("description"))
+            );
+
+            if (StringUtils.hasText(elementId) && StringUtils.hasText(url)) {
+                result.put(normalizeId(elementId), new ImageSpec(url.trim(), alt));
             }
         }
+
+        return result;
     }
 
     @SuppressWarnings("unchecked")
-    private void applyDesignPreset(Document document, String designPresetJson) {
-        Map<String, Object> root = parseJson(designPresetJson);
+    private void applyDesignPreset(Document document, Map<String, Object> root) {
         Map<String, Object> preset = root;
+
         Object nested = root.get("landingPageDesignPreset");
         if (nested instanceof Map<?, ?> nestedMap) {
             preset = (Map<String, Object>) nestedMap;
@@ -159,22 +305,187 @@ public class DesignPresetProvisionalHtmlProcessor {
             document.body().attr("data-preset-id", presetId.trim());
         }
 
-        Element head = document.head();
-        if (head == null) {
+        applyThemeToBody(document, asMap(preset.get("theme")));
+        applySectionPresets(document, asList(preset.get("sectionPresets")));
+        applyElementPresets(document, asList(preset.get("elementPresets")));
+        appendTokenCss(document, asMap(preset.get("theme")));
+        appendRuntimeCss(document, preset);
+    }
+
+    private void applyThemeToBody(Document document, Map<String, Object> theme) {
+        Element body = document.body();
+        if (body == null || theme.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> palette = asMap(theme.get("palette"));
+
+        Map<String, String> styles = new LinkedHashMap<>();
+
+        String background = asString(palette.get("background"));
+        String textPrimary = asString(palette.get("textPrimary"));
+
+        if (StringUtils.hasText(background)) {
+            styles.put("background", background.trim());
+        }
+
+        if (StringUtils.hasText(textPrimary)) {
+            styles.put("color", textPrimary.trim());
+        }
+
+        mergeStyle(body, styles);
+    }
+
+    private void applySectionPresets(Document document, List<Map<String, Object>> sectionPresets) {
+        for (Map<String, Object> sectionPreset : sectionPresets) {
+            String sectionId = asString(sectionPreset.get("sectionId"));
+            if (!StringUtils.hasText(sectionId)) {
+                continue;
+            }
+
+            Element section = resolveElementById(document, sectionId);
+            if (section == null) {
+                continue;
+            }
+
+            Map<String, String> styles = collectNameValueStyles(sectionPreset.get("sectionAttributes"));
+            mergeStyle(section, styles);
+        }
+    }
+
+    private void applyElementPresets(Document document, List<Map<String, Object>> elementPresets) {
+        for (Map<String, Object> elementPreset : elementPresets) {
+            String elementId = asString(elementPreset.get("elementId"));
+            if (!StringUtils.hasText(elementId)) {
+                continue;
+            }
+
+            Element element = resolveElementById(document, elementId);
+            if (element == null) {
+                continue;
+            }
+
+            Map<String, String> styles = collectNameValueStyles(elementPreset.get("attributes"));
+            mergeStyle(element, styles);
+        }
+    }
+
+    private Map<String, String> collectNameValueStyles(Object attributesObj) {
+        Map<String, String> styles = new LinkedHashMap<>();
+
+        if (!(attributesObj instanceof List<?> attributes)) {
+            return styles;
+        }
+
+        for (Object attribute : attributes) {
+            if (!(attribute instanceof Map<?, ?> map)) {
+                continue;
+            }
+
+            String name = asString(map.get("name"));
+            String value = asString(map.get("value"));
+
+            if (!isSafeCssPropertyName(name) || !StringUtils.hasText(value)) {
+                continue;
+            }
+
+            styles.put(name.trim(), value.trim());
+        }
+
+        return styles;
+    }
+
+    private void mergeStyle(Element element, Map<String, String> stylesToApply) {
+        if (element == null || stylesToApply == null || stylesToApply.isEmpty()) {
+            return;
+        }
+
+        Map<String, String> merged = parseInlineStyle(element.attr("style"));
+
+        for (Map.Entry<String, String> entry : stylesToApply.entrySet()) {
+            merged.put(entry.getKey(), entry.getValue());
+        }
+
+        element.attr("style", serializeInlineStyle(merged));
+    }
+
+    private Map<String, String> parseInlineStyle(String style) {
+        Map<String, String> result = new LinkedHashMap<>();
+
+        if (!StringUtils.hasText(style)) {
+            return result;
+        }
+
+        String[] declarations = style.split(";");
+
+        for (String declaration : declarations) {
+            int colonIndex = declaration.indexOf(':');
+
+            if (colonIndex <= 0) {
+                continue;
+            }
+
+            String name = declaration.substring(0, colonIndex).trim();
+            String value = declaration.substring(colonIndex + 1).trim();
+
+            if (StringUtils.hasText(name) && StringUtils.hasText(value)) {
+                result.put(name, value);
+            }
+        }
+
+        return result;
+    }
+
+    private String serializeInlineStyle(Map<String, String> styles) {
+        StringBuilder out = new StringBuilder();
+
+        for (Map.Entry<String, String> entry : styles.entrySet()) {
+            out.append(entry.getKey())
+                    .append(":")
+                    .append(entry.getValue())
+                    .append(";");
+        }
+
+        return out.toString();
+    }
+
+    private boolean isSafeCssPropertyName(String name) {
+        return StringUtils.hasText(name)
+                && Pattern.matches("-?[A-Za-z][A-Za-z0-9-]*", name);
+    }
+
+    private void appendTokenCss(Document document, Map<String, Object> theme) {
+        if (theme.isEmpty() || document.head() == null) {
+            return;
+        }
+
+        String tokenCss = buildTokenCss(theme);
+
+        if (StringUtils.hasText(tokenCss)) {
+            document.head()
+                    .appendElement("style")
+                    .attr("id", "lhm-theme-tokens")
+                    .text(tokenCss);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void appendRuntimeCss(Document document, Map<String, Object> preset) {
+        if (document.head() == null) {
             return;
         }
 
         Object runtimeObj = preset.get("lhmRuntime");
-        if (runtimeObj instanceof Map<?, ?> runtime) {
-            String baseCss = asString(runtime.get("baseCss"));
-            if (StringUtils.hasText(baseCss)) {
-                head.appendElement("style").attr("id", "lhm-base-css").text(baseCss.trim());
-            }
+        if (!(runtimeObj instanceof Map<?, ?> runtime)) {
+            return;
         }
 
-        String tokenCss = buildTokenCss((Map<String, Object>) preset.get("theme"));
-        if (StringUtils.hasText(tokenCss)) {
-            head.appendElement("style").attr("id", "lhm-theme-tokens").text(tokenCss);
+        String baseCss = asString(runtime.get("baseCss"));
+        if (StringUtils.hasText(baseCss)) {
+            document.head()
+                    .appendElement("style")
+                    .attr("id", "lhm-base-css")
+                    .text(baseCss.trim());
         }
     }
 
@@ -182,39 +493,86 @@ public class DesignPresetProvisionalHtmlProcessor {
         if (theme == null || theme.isEmpty()) {
             return null;
         }
+
         StringBuilder css = new StringBuilder(":root{\n");
+
         appendVars(css, "palette", theme.get("palette"));
         appendVars(css, "typography", theme.get("typography"));
         appendVars(css, "spacing", theme.get("spacing"));
+        appendVars(css, "accessibility", theme.get("accessibility"));
         appendVars(css, "radius", theme.get("radius"));
         appendVars(css, "shadow", theme.get("shadow"));
+
         css.append("}\n");
-        css.append("body{color:var(--lhm-palette-text,#111827);background:var(--lhm-palette-background,#ffffff);}");
+
         return css.toString();
     }
 
-    @SuppressWarnings("unchecked")
     private void appendVars(StringBuilder css, String prefix, Object obj) {
         if (!(obj instanceof Map<?, ?> map)) {
             return;
         }
-        for (Map.Entry<?, ?> e : map.entrySet()) {
-            if (!(e.getKey() instanceof String key) || e.getValue() == null) {
+
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (!(entry.getKey() instanceof String key) || entry.getValue() == null) {
                 continue;
             }
-            if (e.getValue() instanceof Map<?, ?> nested) {
+
+            if (entry.getValue() instanceof Map<?, ?> nested) {
                 appendVars(css, prefix + "-" + key, nested);
             } else {
-                css.append("--lhm-").append(prefix).append("-").append(key).append(":").append(e.getValue()).append(";\n");
+                css.append("--lhm-")
+                        .append(prefix)
+                        .append("-")
+                        .append(key)
+                        .append(":")
+                        .append(entry.getValue())
+                        .append(";\n");
             }
         }
+    }
+
+    private Element resolveElementById(Document document, String id) {
+        if (!StringUtils.hasText(id)) {
+            return null;
+        }
+
+        Element direct = document.getElementById(id);
+        if (direct != null) {
+            return direct;
+        }
+
+        String normalizedId = normalizeId(id);
+
+        for (Element element : document.getAllElements()) {
+            if (normalizeId(element.id()).equals(normalizedId)) {
+                return element;
+            }
+        }
+
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asMap(Object value) {
+        return value instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> asList(Object value) {
+        return value instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
     private String normalizeId(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
         }
-        return value.trim().replace('–', '-').replace('—', '-').replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+
+        return value.trim()
+                .replace('–', '-')
+                .replace('—', '-')
+                .replaceAll("\\s+", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private Object firstNonNull(Object... values) {
@@ -223,6 +581,7 @@ public class DesignPresetProvisionalHtmlProcessor {
                 return value;
             }
         }
+
         return null;
     }
 
@@ -236,10 +595,17 @@ public class DesignPresetProvisionalHtmlProcessor {
                 return value;
             }
         }
+
         return null;
     }
 
     private String normalizeSerializedHtml(String html) {
-        return html.replace("/*<![CDATA[*/", "").replace("/*]]>*/", "").replace(" />", "/>");
+        return html
+                .replace("/*<![CDATA[*/", "")
+                .replace("/*]]>*/", "")
+                .replace(" />", "/>");
+    }
+
+    private record ImageSpec(String url, String alt) {
     }
 }

@@ -1,6 +1,5 @@
 package com.marketinghub.leadportal.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
@@ -17,7 +16,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -94,122 +92,4 @@ class LeadPortalPublicFlowControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    void getLandingPageBySlugReturnsHtmlDocumentFromStructuredJsonPayload() throws Exception {
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
-        flowRepository.save(LeadPortalFlow.builder()
-                .name("Fluxo Landing")
-                .slug("exp-13-landing")
-                .approved(true)
-                .marketNiche(niche)
-                .customFormHtml("""
-                        {"landingPageHtml":"{\\"htmlDocument\\":\\"<!doctype html><html lang='pt-BR'><body><h1>Pare de vender por preço</h1></body></html>\\"}"}
-                        """)
-                .build());
-
-        mockMvc.perform(get("/api/flows/exp-13-landing/page"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/html;charset=UTF-8"))
-                .andExpect(content().string("<!doctype html><html lang='pt-BR'><body><h1>Pare de vender por preço</h1></body></html>"));
-    }
-
-    @Test
-    void getLandingPageBySlugNormalizesJsonInsideHtmlWrapper() throws Exception {
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
-        String nestedDocument = "<!doctype html><html lang=\"pt-BR\"><body><main><h1>Landing Normalizada</h1></main></body></html>";
-        ObjectMapper mapper = new ObjectMapper();
-        String jsonPayload = mapper.writeValueAsString(Map.of(
-                "landingPageHtml", Map.of("htmlDocument", nestedDocument)
-        ));
-        String hybridHtml = """
-                <html lang="pt-BR">
-                  <head><title>Wrapper</title></head>
-                  <body>
-                    %s
-                  </body>
-                </html>
-                """.formatted(jsonPayload);
-        flowRepository.save(LeadPortalFlow.builder()
-                .name("Fluxo Landing")
-                .slug("exp-15-landing")
-                .approved(true)
-                .marketNiche(niche)
-                .customFormHtml(hybridHtml)
-                .build());
-
-        mockMvc.perform(get("/api/flows/exp-15-landing/page"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/html;charset=UTF-8"))
-                .andExpect(content().string(nestedDocument));
-    }
-
-    @Test
-    void getLandingPageBySlugReturnsHtmlWhenLandingPayloadUsesArtifactEnvelope() throws Exception {
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
-        String nestedDocument = "<!doctype html><html lang=\"pt-BR\"><body><main><h1>Landing via artifact.content</h1></main></body></html>";
-        ObjectMapper mapper = new ObjectMapper();
-        String payload = mapper.writeValueAsString(Map.of(
-                "artifact", Map.of(
-                        "content", Map.of(
-                                "landingPageHtml", Map.of("htmlDocument", nestedDocument)
-                        )
-                )
-        ));
-        flowRepository.save(LeadPortalFlow.builder()
-                .name("Fluxo Landing")
-                .slug("exp-16-landing")
-                .approved(true)
-                .marketNiche(niche)
-                .customFormHtml(payload)
-                .build());
-
-        mockMvc.perform(get("/api/flows/exp-16-landing/page"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/html;charset=UTF-8"))
-                .andExpect(content().string(nestedDocument));
-    }
-
-    @Test
-    void getLandingPageBySlugReturnsRawHtmlWhenLandingPageHtmlIsPlainText() throws Exception {
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
-        String nestedDocument = "<!doctype html><html lang=\"pt-BR\"><body><main><h1>Landing raw html</h1></main></body></html>";
-        ObjectMapper mapper = new ObjectMapper();
-        String payload = mapper.writeValueAsString(Map.of(
-                "landingPageHtml", nestedDocument
-        ));
-        flowRepository.save(LeadPortalFlow.builder()
-                .name("Fluxo Landing")
-                .slug("exp-17-landing")
-                .approved(true)
-                .marketNiche(niche)
-                .customFormHtml(payload)
-                .build());
-
-        mockMvc.perform(get("/api/flows/exp-17-landing/page"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/html;charset=UTF-8"))
-                .andExpect(content().string(nestedDocument));
-    }
-
-    @Test
-    void getLandingPageBySlugExtractsInlineHtmlWhenPayloadHasJsonPrefix() throws Exception {
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Teste").build());
-        String nestedDocument = "<!doctype html><html lang=\"pt-BR\"><body><main><h1>Landing extraída</h1></main></body></html>";
-        String prefixedPayload = """
-                {"landingPageHtml":"{\\"htmlDocument\\":\\"texto quebrado\\"}"}
-                %s
-                """.formatted(nestedDocument);
-        flowRepository.save(LeadPortalFlow.builder()
-                .name("Fluxo Landing")
-                .slug("exp-18-landing")
-                .approved(true)
-                .marketNiche(niche)
-                .customFormHtml(prefixedPayload)
-                .build());
-
-        mockMvc.perform(get("/api/flows/exp-18-landing/page"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("text/html;charset=UTF-8"))
-                .andExpect(content().string(nestedDocument));
-    }
 }

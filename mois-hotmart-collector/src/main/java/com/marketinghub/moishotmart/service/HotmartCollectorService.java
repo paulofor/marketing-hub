@@ -257,9 +257,8 @@ public class HotmartCollectorService {
             rawMetadata.put("productName", product.title());
             rawMetadata.put("productImage", product.image());
             rawMetadata.put("productUrl", product.detailsUrl());
-            String resolvedSalesPageUrl = pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl());
+            String resolvedSalesPageUrl = normalizeBlankToNull(product.salesPageUrl());
             rawMetadata.put("salesPageUrl", resolvedSalesPageUrl);
-            rawMetadata.put("pageSalesLink", resolvedSalesPageUrl);
             if (product.temperature() != null) {
                 rawMetadata.put("hotmartTemperature", String.valueOf(product.temperature()));
             }
@@ -276,7 +275,7 @@ public class HotmartCollectorService {
             reference.put("jobId", jobId);
             reference.put("source", "HOTMART");
             reference.put("title", product.title());
-            reference.put("url", pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl()));
+            reference.put("url", resolvedSalesPageUrl);
             reference.put("niche", defaultNiche);
             reference.put("status", "COLLECTED");
             reference.put("favorite", false);
@@ -437,7 +436,7 @@ public class HotmartCollectorService {
                     pickFirstNonBlank(firstText(detailsNode.path("producer"), "name"), baseSnapshot.producerName()),
                     detailPageUrl,
                     baseSnapshot.temperature(),
-                    pickFirstNonBlank(pickFirstNonBlank(salesPageFromDetails, baseSnapshot.salesPageUrl()), detailPageUrl),
+                    pickFirstNonBlank(salesPageFromDetails, baseSnapshot.salesPageUrl()),
                     baseSnapshot.collectedAt()
             );
         } catch (Exception ex) {
@@ -771,6 +770,13 @@ public class HotmartCollectorService {
                 return nested;
             }
         }
+        JsonNode productDetailsNode = item.path("productDetails");
+        if (!productDetailsNode.isMissingNode() && !productDetailsNode.isNull()) {
+            String detailsText = firstText(productDetailsNode, keys);
+            if (detailsText != null && !detailsText.isBlank()) {
+                return detailsText;
+            }
+        }
         JsonNode sourceObjectNode = item.path("sourceObject");
         if (!sourceObjectNode.isMissingNode() && !sourceObjectNode.isNull()) {
             String sourceObject = firstText(sourceObjectNode, keys);
@@ -808,6 +814,13 @@ public class HotmartCollectorService {
             return fallback;
         }
         return "";
+    }
+
+    private String normalizeBlankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value;
     }
 
     private void logPlaywrightRuntimeDiagnostics() {

@@ -157,3 +157,10 @@
 - O `ClickbankCollectorService.collectSecondCycleFromBackend` passou a, além de persistir no endpoint MOIS já existente, enviar as URLs resolvidas de página de vendas para o endpoint de ingestão da biblioteca: `POST /api/mois/sales-library/urls:ingest`.
 - Payload enviado inclui `workspaceId`, `source=CLICKBANK` e lista `urls` com `url`, `title` e `capturedAt`.
 - Comportamento resiliente: falhas na ingestão da biblioteca são registradas em log (warn), sem interromper a persistência padrão do ciclo 2.
+
+## 2026-05-15 03:20 UTC
+- Aplicada a regra de negócio de não duplicação por URL na biblioteca de sales pages: a unicidade passa a ser por `url_canonical`.
+- Criado changelog incremental no backend para:
+  - remover duplicidades legadas mantendo o menor `id` por `url_canonical`;
+  - trocar índice único de `(workspace_id, url_canonical)` para índice único em `url_canonical`.
+- Atualizado o modelo de dados para documentar explicitamente a regra canônica: URL única na biblioteca independentemente de workspace/source.

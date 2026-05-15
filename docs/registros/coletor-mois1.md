@@ -186,3 +186,10 @@
 - Token de autenticação foi sanitizado no documento para `Bearer <CLICKBANK_JWT_TOKEN>`, evitando credencial sensível em texto plano.
 
 - 2026-05-15: Documento de referência do fetch JWT do Clickbase movido de `mois-clickbank-collector/docs/clickbase-fetch-ciclo-consulta.md` para `docs/mois/clickbase-fetch-ciclo-consulta.md` para centralização na documentação MOIS.
+
+## 2026-05-15 18:00:03 UTC-3
+- Implementado novo fluxo de coleta ClickBank com prioridade para consulta GraphQL autenticada em `POST /graphql` (accounts.clickbank.com), usando JWT salvo em `/api/settings/clickbank_access_token_jwt`.
+- Novo mapeamento de importação prioriza os campos comerciais solicitados: nome do produto (`title`), categoria (`marketplaceStats.category`), gravity (`marketplaceStats.gravity`) e URL da página de vendas (fallback para `url` do hit).
+- Mantido fallback resiliente para Top Offers público quando o JWT não estiver disponível ou quando a consulta GraphQL falhar.
+- Incluído log obrigatório de ingestão com payload bruto retornado pela fonte (`CLICKBANK_GRAPHQL_PAYLOAD_CRU`) antes de qualquer transformação.
+- Ajustados os testes unitários do coletor para o novo contrato do construtor com a configuração `collector.clickbank.graphql-url`.

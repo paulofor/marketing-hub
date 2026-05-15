@@ -184,3 +184,5 @@
 - Criado documento dedicado no módulo `mois-clickbank-collector` para registrar o fetch base do novo ciclo de consulta do Clickbase: `mois-clickbank-collector/docs/clickbase-fetch-ciclo-consulta.md`.
 - O documento inclui o fetch completo para `POST https://accounts.clickbank.com/graphql`, com query `marketplaceSearch` e parâmetros de paginação/ordenação.
 - Token de autenticação foi sanitizado no documento para `Bearer <CLICKBANK_JWT_TOKEN>`, evitando credencial sensível em texto plano.
+
+- 2026-05-15: Documento de referência do fetch JWT do Clickbase movido de `mois-clickbank-collector/docs/clickbase-fetch-ciclo-consulta.md` para `docs/mois/clickbase-fetch-ciclo-consulta.md` para centralização na documentação MOIS.

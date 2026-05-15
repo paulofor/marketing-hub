@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
 import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
 import java.util.ArrayList;
@@ -56,6 +57,64 @@ public class LandingPageImageInjector {
         }
 
         return updateHtmlDocument(landingPagePayload, sectionImages);
+    }
+
+    public String injectImageUrlsIntoPlanning(Long experimentId, String rawPlanningPayload) {
+        if (experimentId == null || !StringUtils.hasText(rawPlanningPayload)) {
+            return rawPlanningPayload;
+        }
+        Map<String, String> sectionImages = resolveSectionImages(experimentId);
+        if (CollectionUtils.isEmpty(sectionImages)) {
+            return rawPlanningPayload;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(rawPlanningPayload);
+            if (!(root instanceof ObjectNode rootObject)) {
+                return rawPlanningPayload;
+            }
+            ObjectNode planningNode = resolvePlanningObject(rootObject);
+            if (planningNode == null) {
+                return rawPlanningPayload;
+            }
+            JsonNode imagesNode = planningNode.path("images");
+            if (!(imagesNode instanceof ArrayNode imagesArray)) {
+                return rawPlanningPayload;
+            }
+            boolean changed = false;
+            for (JsonNode imageNode : imagesArray) {
+                if (!(imageNode instanceof ObjectNode imageObject)) {
+                    continue;
+                }
+                String sectionId = imageObject.path("sectionId").asText(null);
+                String url = StringUtils.hasText(sectionId) ? sectionImages.get(sectionId.trim().toLowerCase()) : null;
+                if (!StringUtils.hasText(url)) {
+                    continue;
+                }
+                if (!url.equals(imageObject.path("imageUrl").asText(null))) {
+                    imageObject.put("imageUrl", url);
+                    changed = true;
+                }
+            }
+            return changed ? objectMapper.writeValueAsString(rootObject) : rawPlanningPayload;
+        } catch (JsonProcessingException ex) {
+            return rawPlanningPayload;
+        }
+    }
+
+    private ObjectNode resolvePlanningObject(ObjectNode rootObject) {
+        JsonNode direct = rootObject.path("landingPageImagePlanning");
+        if (direct instanceof ObjectNode objectNode) {
+            return objectNode;
+        }
+        JsonNode imagePlan = rootObject.path("imagePlan");
+        if (imagePlan instanceof ObjectNode objectNode) {
+            return objectNode;
+        }
+        JsonNode artifactContent = rootObject.path("artifact").path("content");
+        if (artifactContent instanceof ObjectNode objectNode) {
+            return objectNode;
+        }
+        return rootObject;
     }
 
     private Map<String, String> resolveSectionImages(Long experimentId) {

@@ -131,6 +131,24 @@ class LandingPageImageInjectorTest {
         assertThat(injector.injectImages(1L, payload)).isEqualTo(payload);
     }
 
+    @Test
+    void injectsImageUrlsIntoPlanningPayload() throws Exception {
+        String payload = """
+                {"landingPageImagePlanning":{"images":[{"sectionId":"s0-hero","imagePrompt":"Hero"},{"sectionId":"s1-proof","imagePrompt":"Proof"}]}}
+                """;
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(10L)).thenReturn(List.of(
+                completedJob("s0-hero", "https://cdn.example.com/hero.webp", null),
+                completedJob("s1-proof", null, "https://cdn.example.com/proof.jpg")));
+
+        String enriched = injector.injectImageUrlsIntoPlanning(10L, payload);
+
+        JsonNode root = objectMapper.readTree(enriched);
+        assertThat(root.at("/landingPageImagePlanning/images/0/imageUrl").asText())
+                .isEqualTo("https://cdn.example.com/hero.webp");
+        assertThat(root.at("/landingPageImagePlanning/images/1/imageUrl").asText())
+                .isEqualTo("https://cdn.example.com/proof.jpg");
+    }
+
     private FrameworkImageGenerationJob completedJob(String sectionId, String webUrl, String sourceUrl) {
         FrameworkImageGenerationJob job = new FrameworkImageGenerationJob();
         job.setId(UUID.randomUUID());

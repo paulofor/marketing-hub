@@ -634,3 +634,12 @@ Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cad
 - Chave única: (`snapshot_date`, `source`, `cnae_code`, `uf`, `municipio`).
 - Endpoint de ingestão no backend: `POST /api/niches/snapshots:ingest`.
 - Regra operacional: coletor como cliente da API backend; sem escrita direta no banco.
+
+## MOIS — Biblioteca de páginas de vendas (2026-05-15)
+
+- Nova tabela backend: `mois_sales_library_url_ingest`.
+- Objetivo: receber e persistir relacionalmente as URLs canônicas de páginas de venda enviadas pelos coletores (início: ciclo 2 do ClickBank).
+- Chave única: (`workspace_id`, `url_canonical`) para garantir idempotência de ingestão por workspace.
+- Colunas operacionais: `url_original`, `url_canonical`, `source`, `title`, `first_captured_at`, `last_captured_at`, `ingest_count`, `created_at`, `updated_at`.
+- Endpoint backend de ingestão: `POST /api/mois/sales-library/urls:ingest`.
+- Regra operacional: o coletor envia URL para o backend principal; somente o backend persiste no banco.

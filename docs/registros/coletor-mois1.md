@@ -193,3 +193,5 @@
 - Mantido fallback resiliente para Top Offers público quando o JWT não estiver disponível ou quando a consulta GraphQL falhar.
 - Incluído log obrigatório de ingestão com payload bruto retornado pela fonte (`CLICKBANK_GRAPHQL_PAYLOAD_CRU`) antes de qualquer transformação.
 - Ajustados os testes unitários do coletor para o novo contrato do construtor com a configuração `collector.clickbank.graphql-url`.
+
+- 2026-05-15 21:14 UTC — Ajustado agendamento padrão do coletor Clickbank GraphQL para horas pares (`0 0 */2 * * *`) em `application.properties`, `ClickbankCollectorScheduler` e README do módulo.

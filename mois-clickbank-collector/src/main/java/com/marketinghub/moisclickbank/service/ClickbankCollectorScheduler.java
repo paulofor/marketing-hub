@@ -31,22 +31,31 @@ public class ClickbankCollectorScheduler {
         this.maxProducts = maxProducts;
     }
 
-    @Scheduled(cron = "${collector.scheduler.cron:0 0 */2 * * *}")
-    public void collectEvenHours() {
+    @Scheduled(cron = "${collector.scheduler.cron:0 0 * * * *}")
+    public void collectHourly() {
         log.info("Iniciando execução agendada do Clickbank Collector source={} maxProducts={}", source, maxProducts);
         if (!enabled) {
             log.info("Clickbank scheduler desabilitado por configuração.");
             return;
         }
         int currentHour = LocalDateTime.now().getHour();
-        boolean isOddHour = currentHour % 2 != 0;
+        int cycleSlot = currentHour % 3;
         ClickbankCollectionRequest request = new ClickbankCollectionRequest(source, maxProducts);
-        ClickbankCollectionResponse response = isOddHour
-                ? collectorService.collectFirstCycle(request)
-                : collectorService.collectSecondCycleFromBackend(request);
+        ClickbankCollectionResponse response;
+        String cycleName;
+        if (cycleSlot == 0) {
+            cycleName = "CICLO_1_TOP_OFFERS";
+            response = collectorService.collectFirstCycle(request);
+        } else if (cycleSlot == 1) {
+            cycleName = "CICLO_2_VENDAS_PAGE";
+            response = collectorService.collectSecondCycleFromBackend(request);
+        } else {
+            cycleName = "CICLO_3_GRAPHQL";
+            response = collectorService.collectThirdCycleGraphql(request);
+        }
         log.info("Clickbank scheduler executado hora={} ciclo={} status={} produtos={} mensagem={}",
                 currentHour,
-                isOddHour ? "CICLO_1_TOP_OFFERS" : "CICLO_2_VENDAS_PAGE",
+                cycleName,
                 response.status(),
                 response.products().size(),
                 response.message());

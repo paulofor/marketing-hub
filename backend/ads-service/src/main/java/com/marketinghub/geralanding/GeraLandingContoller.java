@@ -62,6 +62,13 @@ public class GeraLandingContoller {
     return ResponseEntity.accepted().body(response);
   }
 
+
+  @PostMapping("/deliverables/start")
+  public ResponseEntity<GeraLandingStartResponse> startDeliverables(@PathVariable Long experimentId) {
+    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-deliverables");
+    return ResponseEntity.accepted().body(response);
+  }
+
   @PostMapping("/html/provisional/generate")
   public ResponseEntity<GeraLandingProvisionalHtmlResponse> generateProvisionalHtml(
       @PathVariable Long experimentId,

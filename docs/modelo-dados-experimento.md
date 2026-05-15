@@ -42,6 +42,15 @@ Atualização incremental — rastreio explícito de modelo OpenAI no Gera Landi
   - armazena o identificador do modelo usado na execução (ex.: `gpt-5.2`), sem depender apenas do parse de `openai_request_body`;
   - objetivo: facilitar auditoria, filtros e diagnósticos operacionais por modelo no histórico de execuções.
 
+
+## Atualização incremental — Pipeline de Landing (Deliverables finais)
+
+Campo adicionado na entidade/tabela `experiment` para suportar a etapa final canônica de entregáveis da landing:
+
+- `landing_page_deliverables` (`LONGTEXT`)
+  - armazena o artefato estruturado `landingPageDeliverables` gerado na etapa final `landing-page-deliverables`;
+  - objetivo: persistir em nível de experimento o JSON final de entregáveis da amostra e do produto completo para consulta operacional e uso comercial.
+
 ## Atualização incremental — Pipeline de Landing (HTML duplo público, 27/04/2026)
 
 Atualização de contrato de persistência/auditoria para a etapa `landingPageHtml`:

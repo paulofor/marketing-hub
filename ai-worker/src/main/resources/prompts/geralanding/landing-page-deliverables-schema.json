@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sampleDeliverables", "finalProductDeliverables"],
+  "properties": {
+    "sampleDeliverables": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/deliverable" }
+    },
+    "finalProductDeliverables": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/deliverable" }
+    }
+  },
+  "$defs": {
+    "deliverable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "format", "description", "painAddressed", "expectedOutcome"],
+      "properties": {
+        "id": { "type": "string", "minLength": 2 },
+        "name": { "type": "string", "minLength": 3 },
+        "format": { "type": "string", "minLength": 2 },
+        "description": { "type": "string", "minLength": 10 },
+        "painAddressed": { "type": "string", "minLength": 5 },
+        "expectedOutcome": { "type": "string", "minLength": 5 }
+      }
+    }
+  }
+}

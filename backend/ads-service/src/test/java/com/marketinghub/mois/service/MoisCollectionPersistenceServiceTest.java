@@ -127,7 +127,8 @@ class MoisCollectionPersistenceServiceTest {
                 25,
                 80,
                 List.of("HOTMART"),
-                Instant.parse("2026-04-28T00:00:00Z")
+                Instant.parse("2026-04-28T00:00:00Z"),
+                null
         );
         return new MoisCollectionPersistenceDtos.CollectionJobStateResponse(job, List.of(), java.util.Map.of(), null, List.of());
     }

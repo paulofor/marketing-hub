@@ -33,3 +33,29 @@ export function useHotmartCollectedProducts(workspaceId: string, limit = 24) {
     },
   });
 }
+
+
+export interface HotmartCollectionJob {
+  jobId: string;
+  workspaceId: string;
+  status: string;
+  createdAt?: string | null;
+  message?: string | null;
+}
+
+interface HotmartCollectionJobListResponse {
+  items: HotmartCollectionJob[];
+}
+
+export function useHotmartCollectionJobs(workspaceId: string) {
+  return useQuery({
+    queryKey: ["settings", "hotmart", "jobs", workspaceId],
+    enabled: workspaceId.trim().length > 0,
+    queryFn: async () => {
+      const { data } = await axios.get<HotmartCollectionJobListResponse>("/api/v1/mois/collection-jobs", {
+        params: { workspaceId },
+      });
+      return data.items;
+    },
+  });
+}

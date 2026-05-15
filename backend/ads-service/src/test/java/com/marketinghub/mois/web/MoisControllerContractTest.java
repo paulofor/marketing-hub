@@ -409,7 +409,8 @@ class MoisControllerContractTest {
                         50,
                         60,
                         List.of("META_AD_LIBRARY", "CLICKBANK"),
-                        Instant.parse("2026-04-25T12:00:00Z")
+                        Instant.parse("2026-04-25T12:00:00Z"),
+                        null
                 ));
 
         mockMvc.perform(post("/api/v1/mois/collection-jobs")
@@ -460,7 +461,8 @@ class MoisControllerContractTest {
                                         50,
                                         60,
                                         List.of("META_AD_LIBRARY"),
-                                        Instant.parse("2026-04-25T12:00:00Z")
+                                        Instant.parse("2026-04-25T12:00:00Z"),
+                                        null
                                 ),
                                 List.of(),
                                 java.util.Map.of(),

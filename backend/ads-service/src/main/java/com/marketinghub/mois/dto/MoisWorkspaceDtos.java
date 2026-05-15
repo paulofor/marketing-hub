@@ -190,7 +190,8 @@ public final class MoisWorkspaceDtos {
             int limitPerSource,
             int minSuccessScore,
             List<String> sources,
-            Instant createdAt
+            Instant createdAt,
+            String message
     ) {
     }
 

@@ -4,7 +4,10 @@ import {
   useHotmartAccessTokenSetting,
   useUpdateHotmartAccessTokenSetting,
 } from "../../api/settings/useHotmartAccessTokenSetting";
-import { useHotmartCollectedProducts } from "../../api/settings/useHotmartCollectedProducts";
+import {
+  useHotmartCollectedProducts,
+  useHotmartCollectionJobs,
+} from "../../api/settings/useHotmartCollectedProducts";
 
 function formatUpdatedAt(value?: string | null) {
   if (!value) return "—";
@@ -24,6 +27,7 @@ export default function HotmartPage() {
   const { data, isLoading, isError } = useHotmartAccessTokenSetting();
   const updateSetting = useUpdateHotmartAccessTokenSetting();
   const hotmartProductsQuery = useHotmartCollectedProducts(workspaceId, 24);
+  const hotmartJobsQuery = useHotmartCollectionJobs(workspaceId);
   const [tokenValue, setTokenValue] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -41,6 +45,8 @@ export default function HotmartPage() {
       collectedAt: formatUpdatedAt(firstItem?.collectedAt),
     };
   }, [hotmartProductsQuery.data]);
+
+  const latestHotmartExecution = useMemo(() => hotmartJobsQuery.data?.[0], [hotmartJobsQuery.data]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -115,6 +121,12 @@ export default function HotmartPage() {
           ) : null}
 
           {feedback ? <div className="alert alert-info mt-3 mb-0">{feedback}</div> : null}
+          {latestHotmartExecution?.status === "COLLECTION_ERROR" ? (
+            <div className="alert alert-warning mt-3 mb-0" role="alert">
+              <strong>Falha na última coleta:</strong> {latestHotmartExecution.message || "Verifique o token JWT da Hotmart."}
+            </div>
+          ) : null}
+
         </div>
       </section>
 

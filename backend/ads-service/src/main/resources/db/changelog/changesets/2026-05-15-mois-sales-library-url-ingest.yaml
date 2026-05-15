@@ -28,7 +28,7 @@ databaseChangeLog:
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
-                UNIQUE KEY uk_mois_sales_library_workspace_url (workspace_id, url_canonical),
+                UNIQUE KEY uk_mois_sales_library_workspace_url (workspace_id, url_canonical(512)),
                 KEY idx_mois_sales_library_updated_at (updated_at),
                 KEY idx_mois_sales_library_source (source)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

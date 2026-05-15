@@ -13,6 +13,7 @@ const baseItems: OprmNavItem[] = [
   { label: "Workspace", to: "/oprm" },
   { label: "Catálogo", to: "/oprm/occupations" },
   { label: "Operações", to: "/oprm/operations" },
+  { label: "CNAEs", to: "/oprm/cnaes-volume" },
 ];
 
 export default function OprmModuleNavigation({

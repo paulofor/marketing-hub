@@ -755,3 +755,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-14-mois-collected-reference-hotmart-price.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-05-15-mois-sales-library-url-ingest.yaml
+      relativeToChangelogFile: true

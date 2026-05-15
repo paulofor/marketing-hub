@@ -45,6 +45,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Novos endpoints**: verifique se o contrato já existe; caso contrário, defina-o no backend, atualize a documentação e adicione testes.
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.
 - **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host.
+- **Frontend → Backend (validação de endpoint)**: sempre que criar no frontend uma chamada para o backend, verifique primeiro se o endpoint já existe. Se não existir, crie o endpoint no pacote/backend referente ao assunto da tela (ex.: MOIS, OPRM, etc.), respeitando o escopo do módulo.
 - **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
 - **Logs**: os logs dos modulos Java Spring Boot podem ser acessados pelo MCP Server.  Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC.
 - **GitHub Actions (logs e execuções)**: também podem ser consultados via MCP Server usando as tools `github_actions_list_workflows`, `github_actions_list_runs`, `github_actions_get_run_summary` e `github_actions_get_run_logs` no endpoint https://mcpserverdigi.shop/mcp (JSON-RPC).

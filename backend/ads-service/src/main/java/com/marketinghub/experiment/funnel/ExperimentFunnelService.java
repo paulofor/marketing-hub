@@ -9,7 +9,9 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.model.Lead;
 import com.marketinghub.repository.LeadRepository;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
+import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExperimentFunnelService {
 
     private final ExperimentRepository experimentRepository;
@@ -165,6 +168,34 @@ public class ExperimentFunnelService {
                 request.submittedAt(),
                 request.campaignCode());
         return registerFormSubmission(flowSlug, legacyRequest);
+    }
+
+
+    @Transactional
+    public void registerLandingPageAnalyticsEvent(String flowSlug, RegisterLandingPageAnalyticsEventRequest request) {
+        if (flowSlug == null || flowSlug.isBlank()) {
+            throw new IllegalArgumentException("Slug do fluxo é obrigatório");
+        }
+        if (request == null || request.eventId() == null || request.eventId().isBlank()) {
+            throw new IllegalArgumentException("eventId é obrigatório");
+        }
+        if (request.eventType() == null || request.eventType().isBlank()) {
+            throw new IllegalArgumentException("eventType é obrigatório");
+        }
+        Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+
+        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} eventType={} sectionId={} visibleMs={} sessionId={} pageUrl={} occurredAt={} userAgent={}",
+                experiment.getId(),
+                flowSlug.trim(),
+                request.eventId().trim(),
+                request.eventType().trim(),
+                request.sectionId(),
+                request.visibleMs(),
+                request.sessionId(),
+                request.pageUrl(),
+                Optional.ofNullable(request.occurredAt()).orElse(Instant.now()),
+                request.userAgent());
     }
 
     private Lead resolveLead(UUID leadId) {

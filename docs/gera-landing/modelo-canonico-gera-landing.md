@@ -650,3 +650,50 @@ O padrão de Assembler dedicado por etapa traz:
 - depuração mais rápida (erro localizado por estágio);
 - melhor governança entre backend, worker e frontend administrativo;
 - base consistente para futuras etapas além de Wireframe, Copy, Image Briefing e Design Preset.
+
+## 13) Publicação da landing final, injeção de Pixel e telemetria pública
+
+### 13.1 Momento canônico de injeção do Meta/Facebook Pixel
+
+A injeção do Pixel **não** ocorre no momento em que o visitante abre a página.
+
+Ela ocorre no fluxo de aprovação/publicação da landing (`landing-page-html/approve-and-publish`), durante a montagem do payload de publicação do `LeadPortalFlow`, quando o backend prepara o `customFormHtml` e aplica o snippet de pixel (quando elegível).
+
+Regras canônicas:
+- Injetar pixel somente em fluxo aprovado e vinculado a experimento.
+- Injetar apenas quando houver `facebookPixelId` válido no contexto de nicho/mercado.
+- Não duplicar snippet quando já houver marcador de pixel no HTML.
+
+### 13.1.1 Tela canônica onde a publicação final é acionada
+
+A publicação final da landing é acionada na UI administrativa do experimento, na tela de **Conteúdo do Experimento** (`ExperimentContentGenerationTab`), na seção de **Landing HTML** pelo botão **"Aprovar e publicar landing"**.
+
+Referência de contrato UI→Backend:
+- A ação da tela chama o endpoint `POST /api/experiments/{experimentId}/pipeline/landing-page-html/approve-and-publish`.
+- Essa ação dispara o fluxo final de aprovação/publicação que prepara o payload de `LeadPortalFlow`, injeta Pixel quando elegível e inicia a publicação pública.
+
+### 13.2 Momento canônico de disponibilização da URL pública
+
+A URL pública da landing fica disponível **após a publicação bem-sucedida do flow** no Lead Portal.
+
+Ordem operacional:
+1. Aprovar/publicar landing no backend.
+2. Backend publica o flow no Lead Portal.
+3. Flow publicado passa a responder via slug público.
+4. URL pública (`/api/flows/{slug}/page`) fica acessível para tráfego real.
+
+### 13.3 Momento canônico de execução da telemetria de acesso/seções
+
+A telemetria de página e seções executa no lado cliente **somente após a página pública ser carregada no navegador**.
+
+Eventos mínimos:
+- `page_view`: disparado no carregamento da página.
+- `section_view`: disparado ao finalizar janela de visibilidade da seção com duração (`visibleMs`).
+
+Canal de ingestão pública:
+- `POST /api/public/lead-portal/flows/{slug}/page-analytics`
+
+Objetivo operacional:
+- contagem de acessos,
+- medição de leitura/atenção por seção,
+- base de sinal para futuras estratégias de público e otimização.

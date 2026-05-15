@@ -1,10 +1,12 @@
-package com.marketinghub.mois.service;
+package com.marketinghub.mois.biblioteca.service;
 
-import com.marketinghub.mois.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.biblioteca.dto.MoisSalesLibraryDtos;
 import java.net.URI;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -58,6 +60,57 @@ public class MoisSalesLibraryService {
         );
     }
 
+
+
+    public MoisSalesLibraryDtos.SalesLibraryEntryPageResponse listEntries(String workspaceId, int page, int pageSize) {
+        int normalizedPage = Math.max(1, page);
+        int normalizedPageSize = Math.max(1, Math.min(pageSize, 100));
+        int offset = (normalizedPage - 1) * normalizedPageSize;
+
+        Long total = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM mois_sales_library_url_ingest
+                        WHERE workspace_id = ?
+                        """,
+                Long.class,
+                workspaceId
+        );
+
+        List<MoisSalesLibraryDtos.SalesLibraryEntryResponse> items = jdbcTemplate.query(
+                """
+                        SELECT id, workspace_id, source, url_original, url_canonical, title, ingest_count,
+                               first_captured_at, last_captured_at, updated_at
+                        FROM mois_sales_library_url_ingest
+                        WHERE workspace_id = ?
+                        ORDER BY updated_at DESC
+                        LIMIT ? OFFSET ?
+                        """,
+                (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryEntryResponse(
+                        rs.getLong("id"),
+                        rs.getString("workspace_id"),
+                        rs.getString("source"),
+                        rs.getString("url_original"),
+                        rs.getString("url_canonical"),
+                        rs.getString("title"),
+                        rs.getInt("ingest_count"),
+                        toInstant(rs.getTimestamp("first_captured_at")),
+                        toInstant(rs.getTimestamp("last_captured_at")),
+                        toInstant(rs.getTimestamp("updated_at"))
+                ),
+                workspaceId,
+                normalizedPageSize,
+                offset
+        );
+
+        return new MoisSalesLibraryDtos.SalesLibraryEntryPageResponse(
+                normalizedPage,
+                normalizedPageSize,
+                total == null ? 0 : total,
+                items
+        );
+    }
+
     private String canonicalize(String rawUrl) {
         if (rawUrl == null || rawUrl.isBlank()) {
             return null;
@@ -76,4 +129,9 @@ public class MoisSalesLibraryService {
             return rawUrl.trim();
         }
     }
+
+    private Instant toInstant(Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toInstant();
+    }
 }
+

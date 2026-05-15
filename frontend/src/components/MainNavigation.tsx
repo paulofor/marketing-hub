@@ -106,6 +106,7 @@ const NAV_SECTIONS: NavSection[] = [
           },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
       { to: "/mois", label: "MOIS", icon: Workflow },
+      { to: "/mois/sales-pages-library", label: "Biblioteca Sales Pages", icon: Workflow },
       { to: "/oprm", label: "OPRM", icon: Workflow },
       { to: "/mds", label: "MDS", icon: Microscope },
       { to: "/hotmart", label: "Hotmart", icon: Workflow },

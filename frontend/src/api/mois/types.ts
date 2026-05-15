@@ -212,3 +212,24 @@ export interface MoisCollectedReferenceLineageResponse {
   generatedLibraryBlockIds: string[];
   updatedAt: string;
 }
+
+
+export interface MoisSalesLibraryEntry {
+  id: number;
+  workspaceId: string;
+  source: string;
+  urlOriginal: string;
+  urlCanonical: string;
+  title?: string;
+  ingestCount: number;
+  firstCapturedAt?: string;
+  lastCapturedAt?: string;
+  updatedAt: string;
+}
+
+export interface MoisSalesLibraryEntryPageResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: MoisSalesLibraryEntry[];
+}

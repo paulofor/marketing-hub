@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Iterator;
+import java.util.Locale;
 
 /**
  * Public API used by the portal application to fetch approved lead portal flows by slug.
@@ -38,7 +39,7 @@ public class LeadPortalPublicFlowController {
     @GetMapping(value = "/{slug}/page", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> getLandingPageBySlug(@PathVariable String slug) {
         LeadPortalFlow flow = flowService.getApprovedBySlug(slug);
-        String htmlDocument = extractHtmlDocument(flow.getCustomFormHtml());
+        String htmlDocument = injectLandingAnalyticsScript(slug, extractHtmlDocument(flow.getCustomFormHtml()));
         return ResponseEntity.ok()
                 .contentType(new MediaType("text", "html", java.nio.charset.StandardCharsets.UTF_8))
                 .body(htmlDocument);
@@ -217,5 +218,78 @@ public class LeadPortalPublicFlowController {
 
     private String extractFromLandingPageNode(JsonNode landingPageHtmlNode) throws java.io.IOException {
         return extractHtmlDocumentFromNode(landingPageHtmlNode);
+    }
+
+    private String injectLandingAnalyticsScript(String slug, String htmlDocument) {
+        if (!StringUtils.hasText(htmlDocument)) {
+            return htmlDocument;
+        }
+        if (htmlDocument.toLowerCase(Locale.ROOT).contains("data-mh-landing-analytics")) {
+            return htmlDocument;
+        }
+        String analyticsScript = """
+                <script data-mh-landing-analytics="true">
+                (function(){
+                  const slugValue = %s;
+                  const endpoint = '/api/public/lead-portal/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
+                  const sessionKey = 'mh_lp_session_' + slugValue;
+                  const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
+                  sessionStorage.setItem(sessionKey, sessionId);
+                  const sendEvent = function(eventType, sectionId, visibleMs){
+                    const payload = {
+                      eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
+                      eventType: eventType,
+                      sessionId: sessionId,
+                      sectionId: sectionId || null,
+                      visibleMs: typeof visibleMs === 'number' ? Math.round(visibleMs) : null,
+                      pageUrl: window.location.href,
+                      occurredAt: new Date().toISOString(),
+                      userAgent: navigator.userAgent
+                    };
+                    if (navigator.sendBeacon) {
+                      navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                      return;
+                    }
+                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true}).catch(function(){});
+                  };
+                  sendEvent('page_view', null, null);
+                  const visibleSince = new Map();
+                  const observer = new IntersectionObserver(function(entries){
+                    const now = performance.now();
+                    entries.forEach(function(entry){
+                      const sectionId = entry.target.id || entry.target.getAttribute('data-section-id') || entry.target.getAttribute('data-track-section');
+                      if (!sectionId) return;
+                      if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        if (!visibleSince.has(sectionId)) visibleSince.set(sectionId, now);
+                      } else if (visibleSince.has(sectionId)) {
+                        const startedAt = visibleSince.get(sectionId);
+                        visibleSince.delete(sectionId);
+                        sendEvent('section_view', sectionId, now - startedAt);
+                      }
+                    });
+                  }, {threshold:[0.5]});
+                  document.querySelectorAll('section[id], [data-section-id], [data-track-section]').forEach(function(el){ observer.observe(el); });
+                  window.addEventListener('beforeunload', function(){
+                    const now = performance.now();
+                    visibleSince.forEach(function(startedAt, sectionId){ sendEvent('section_view', sectionId, now - startedAt); });
+                  });
+                })();
+                </script>
+                """.formatted(toJsStringLiteral(slug));
+        if (containsIgnoreCase(htmlDocument, "</body>")) {
+            return htmlDocument.replaceFirst("(?i)</body>", java.util.regex.Matcher.quoteReplacement(analyticsScript + "\n</body>"));
+        }
+        return htmlDocument + "\n" + analyticsScript;
+    }
+
+    private String toJsStringLiteral(String rawValue) {
+        String safeValue = rawValue == null ? "" : rawValue;
+        return "\"" + safeValue
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"") + "\"";
+    }
+
+    private boolean containsIgnoreCase(String source, String token) {
+        return source.toLowerCase(Locale.ROOT).contains(token.toLowerCase(Locale.ROOT));
     }
 }

@@ -1,6 +1,7 @@
 package com.marketinghub.leadportal.web;
 
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalRenderCompleteRequest;
 import jakarta.validation.Valid;
@@ -61,6 +62,19 @@ public class LeadPortalFlowEngagementController {
             String submissionId,
             String status,
             String message) {
+    }
+
+    @PostMapping("/{slug}/page-analytics")
+    public ResponseEntity<LeadPortalEngagementAckResponse> registerPageAnalytics(
+            @PathVariable String slug,
+            @RequestBody @Valid RegisterLandingPageAnalyticsEventRequest request) {
+        experimentFunnelService.registerLandingPageAnalyticsEvent(slug, request);
+        return ResponseEntity.ok(new LeadPortalEngagementAckResponse(
+                LeadPortalSubmissionEngagementContractV1.VERSION,
+                slug,
+                request.eventId(),
+                "accepted",
+                "Evento de analytics da landing registrado com sucesso."));
     }
 
 }

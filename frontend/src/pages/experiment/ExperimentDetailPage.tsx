@@ -26,14 +26,12 @@ import {
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
-import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentReportPanel from "./ExperimentReportPanel";
 import ExperimentLearningPanel from "./ExperimentLearningPanel";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import LandingTab from "./LandingTab";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
-import { useExperimentAdSetWorkflow } from "../../api/experiment/useExperimentAdSetWorkflow";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
   useGeraLandingStageExecutionDetail,
@@ -124,8 +122,6 @@ export default function ExperimentDetailPage() {
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
-  const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
-    useExperimentAdSetWorkflow(expId);
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -229,7 +225,6 @@ export default function ExperimentDetailPage() {
       }).length,
     [frameworkImageStatuses],
   );
-  const hasCompleteTargeting = readinessSummary?.hasCompleteTargeting ?? false;
   const pipelineContentCards = useMemo<PipelineContentCard[]>(
     () => [
       {
@@ -1172,19 +1167,6 @@ export default function ExperimentDetailPage() {
       action: hasLeadPortalFlow ? undefined : () => setTab("lead-portal"),
       actionLabel: hasLeadPortalFlow ? undefined : "Ir para Portal do Lead",
     },
-    {
-      id: "targeting",
-      title: "Público completo",
-      isMet: hasCompleteTargeting,
-      isLoading: isLoadingReadiness,
-      hint: isLoadingReadiness
-        ? "Verificando elementos aprovados..."
-        : hasCompleteTargeting
-          ? "Público salvo na aba Segmentação."
-          : "Selecione e salve pelo menos uma segmentação com ID da Meta na aba Segmentação.",
-      action: hasCompleteTargeting ? undefined : () => setTab("targeting"),
-      actionLabel: hasCompleteTargeting ? undefined : "Ir para Segmentação",
-    },
   ];
 
   const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
@@ -1433,23 +1415,6 @@ export default function ExperimentDetailPage() {
         ? `${instagramAccount.name} (${instagramAccount.handle})`
         : "—",
     },
-    ...(data.journeyTemplateName
-      ? [
-          {
-            label: "Template de Jornada",
-            value: data.journeyTemplateId ? (
-              <Link
-                to={`/journey-templates/${data.journeyTemplateId}`}
-                className="btn btn-link p-0 align-baseline"
-              >
-                {data.journeyTemplateName}
-              </Link>
-            ) : (
-              data.journeyTemplateName
-            ),
-          },
-        ]
-      : []),
     { label: "Preset de Métricas", value: preset?.name || "—" },
     {
       label: "Sample size",
@@ -1941,74 +1906,6 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       </div>
-      <div className="card border-0 shadow-sm rounded-3 mt-3">
-        <div className="card-body">
-          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
-            <div>
-              <h5 className="card-title mb-1">Pipeline de Públicos</h5>
-              <p className="text-muted small mb-0">
-                Geração automatizada de segmentações validadas com a Meta Ads
-              </p>
-            </div>
-            <div className="d-flex flex-wrap gap-2">
-              <Link
-                to="adset-workflow"
-                className="btn btn-outline-primary btn-sm"
-              >
-                Ver playbook
-              </Link>
-              <Link
-                to="facebook-api-logs"
-                className="btn btn-outline-secondary btn-sm"
-              >
-                Logs da Graph API
-              </Link>
-              <Link to="pipeline-jobs" className="btn btn-outline-dark btn-sm">
-                Jobs do pipeline
-              </Link>
-            </div>
-          </div>
-          {isLoadingAdSetWorkflow ? (
-            <p className="text-muted small mt-3 mb-0">Carregando pipeline...</p>
-          ) : adSetWorkflow ? (
-            <>
-              <div className="d-flex flex-wrap gap-3 align-items-center mt-3">
-                <span
-                  className={`badge text-bg-${workflowStatusVariant[adSetWorkflow.status ?? "NOT_STARTED"] ?? "secondary"}`}
-                >
-                  {workflowStatusLabel[adSetWorkflow.status ?? "NOT_STARTED"]}
-                </span>
-                <div className="small text-muted">
-                  Specs prontas:{" "}
-                  {adSetWorkflow.specs?.filter(
-                    (spec) => spec.reachStatus?.toUpperCase() === "READY",
-                  ).length ?? 0}{" "}
-                  / {adSetWorkflow.specs?.length ?? 0}
-                </div>
-                <div className="small text-muted">
-                  Última atualização:{" "}
-                  {formatDateTimeValue(
-                    adSetWorkflow.updatedAt ??
-                      adSetWorkflow.completedAt ??
-                      adSetWorkflow.createdAt,
-                  )}
-                </div>
-              </div>
-              {adSetWorkflow.lastError ? (
-                <div className="alert alert-warning mt-3 mb-0" role="alert">
-                  <strong>Último erro:</strong> {adSetWorkflow.lastError}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-muted small mt-3 mb-0">
-              Este experimento ainda não iniciou o playbook de públicos. Use o
-              botão acima para configurar.
-            </p>
-          )}
-        </div>
-      </div>
-
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
           <Tabs.List className="nav nav-tabs">
@@ -2017,9 +1914,6 @@ export default function ExperimentDetailPage() {
             </Tabs.Trigger>
             <Tabs.Trigger value="funnel" className="nav-link">
               Funil de vendas
-            </Tabs.Trigger>
-            <Tabs.Trigger value="targeting" className="nav-link">
-              Segmentação
             </Tabs.Trigger>
             <Tabs.Trigger value="creatives" className="nav-link">
               Criativos
@@ -2074,15 +1968,6 @@ export default function ExperimentDetailPage() {
               experimentId={expId}
               totalSpend={data?.campaignMetric?.spend}
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
-            />
-          </Tabs.Content>
-          <Tabs.Content value="targeting" asChild>
-            <TargetingTab
-              nicheId={data.nicheId}
-              hypothesisId={data.hypothesisId}
-              experimentId={Number(expId)}
-              nicheName={niche?.name}
-              hypothesisTitle={hyp?.title}
             />
           </Tabs.Content>
           <Tabs.Content value="creatives" asChild>

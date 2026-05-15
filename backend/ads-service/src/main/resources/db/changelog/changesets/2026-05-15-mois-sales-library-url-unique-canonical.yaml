@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-15-mois-sales-library-url-unique-canonical-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_library_url_ingest
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE t1
+              FROM mois_sales_library_url_ingest t1
+              JOIN mois_sales_library_url_ingest t2
+                ON t1.url_canonical = t2.url_canonical
+               AND t1.id > t2.id;
+
+              ALTER TABLE mois_sales_library_url_ingest
+                DROP INDEX uk_mois_sales_library_workspace_url;
+
+              ALTER TABLE mois_sales_library_url_ingest
+                ADD UNIQUE KEY uk_mois_sales_library_url_canonical (url_canonical(512));

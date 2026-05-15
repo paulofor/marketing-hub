@@ -90,11 +90,17 @@ public class GeraLandingStageExecutionService {
                 experiment.getLandingPageDesignPreset(),
                 jobId);
         String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experimentId, completeHtml);
+        String enrichedImagePlanning = landingPageImageInjector.injectImageUrlsIntoPlanning(
+                experimentId,
+                experiment.getLandingPageImagePlanning());
         String provisionalHtml = """
                 <!-- AUTO: provisional html generated manually by /geralanding/html/provisional/generate -->
                 %s
                 """.formatted(htmlWithGeneratedImages);
 
+        if (StringUtils.hasText(enrichedImagePlanning)) {
+            experiment.setLandingPageImagePlanning(enrichedImagePlanning);
+        }
         experiment.setLandingPageHtml(provisionalHtml);
         experimentRepository.save(experiment);
         GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(jobId))

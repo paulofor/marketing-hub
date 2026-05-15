@@ -372,6 +372,7 @@ class GeraLandingStageExecutionServiceTest {
         experiment.setId(88L);
         experiment.setLandingPageWireframe("{\"landingPageWireframe\":{}}");
         experiment.setLandingPageCopy("{\"landingPageCopy\":{}}");
+        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder().idJob("job-999".getBytes(java.nio.charset.StandardCharsets.UTF_8)).build();
 
         when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
@@ -383,6 +384,8 @@ class GeraLandingStageExecutionServiceTest {
                 "job-999")).thenReturn("<html>base</html>");
         when(landingPageImageInjector.injectImages(88L, "<html>base</html>"))
                 .thenReturn("<html>with-images</html>");
+        when(landingPageImageInjector.injectImageUrlsIntoPlanning(88L, experiment.getLandingPageImagePlanning()))
+                .thenReturn("{\"landingPageImagePlanning\":{\"images\":[{\"sectionId\":\"s0-hero\",\"imageUrl\":\"https://cdn.example.com/hero.jpg\"}]}}");
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(Optional.of(execution));
 
@@ -390,6 +393,7 @@ class GeraLandingStageExecutionServiceTest {
 
         assertTrue(html.contains("with-images"));
         assertEquals(html, experiment.getLandingPageHtml());
+        assertTrue(experiment.getLandingPageImagePlanning().contains("imageUrl"));
         assertEquals(html, execution.getProvisionalHtml());
         verify(experimentRepository).save(experiment);
         verify(executionRepository).save(execution);

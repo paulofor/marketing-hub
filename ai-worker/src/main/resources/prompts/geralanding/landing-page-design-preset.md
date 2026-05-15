@@ -12,6 +12,13 @@ Regras obrigatórias:
 5. Todo item de `attributes[].name` deve vir exatamente da whitelist abaixo.
 6. Não usar json em string. Campos estruturados devem ser objetos/arrays JSON reais.
 7. Manter consistência com objetivo comercial de conversão (clareza visual, contraste, hierarquia e foco no CTA).
+8. `theme.typography` é obrigatório e detalhado por tokens semânticos: `display`, `h1`, `h2`, `h3`, `body`, `lead`, `caption`, `overline`, `button`, `legal`.
+9. Para cada token tipográfico, declarar explicitamente todos os atributos CSS abaixo (sem omissões): `font`, `font-family`, `font-size`, `font-weight`, `font-style`, `font-variant`, `line-height`, `letter-spacing`, `word-spacing`, `text-align`, `text-decoration`, `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-transform`, `text-shadow`, `white-space`.
+10. Cada atributo tipográfico deve ter valor CSS concreto e válido; não usar vazio/null e evitar valores genéricos (`inherit`, `unset`, `initial`, `revert`) quando não houver intenção explícita.
+11. Reforçar hierarquia tipográfica: diferença perceptível entre títulos, subtítulos, corpo, apoio e CTA (escala, peso, espaçamento e contraste), mantendo legibilidade em desktop e mobile.
+12. Gerar variações `desktop` e `mobile` para cada token tipográfico, preservando a mesma hierarquia visual entre breakpoints.
+13. Em `consistencyChecks`, validar explicitamente: presença de todos os atributos tipográficos obrigatórios, legibilidade, contraste e força tipográfica de `display/h1/button`.
+14. Se faltar qualquer atributo obrigatório em qualquer token, registrar `FAIL` em `consistencyChecks` com detalhes objetivos; não omitir erro silenciosamente.
 
 Whitelist de atributos CSS permitidos (`attributes[].name`):
 - color
@@ -116,6 +123,13 @@ Formato de saída:
         "tokenBindings": [
           { "attributeName": "font-size", "tokenPath": "theme.typography.baseSize" }
         ]
+      }
+    ],
+    "consistencyChecks": [
+      {
+        "check": "TYPOGRAPHY_REQUIRED_ATTRIBUTES",
+        "status": "PASS|WARN|FAIL",
+        "details": "string"
       }
     ]
   }

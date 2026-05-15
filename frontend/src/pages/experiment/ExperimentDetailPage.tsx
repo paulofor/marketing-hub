@@ -18,9 +18,6 @@ import SampleEmailsTab from "./SampleEmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
-import { useJourneyTemplate } from "../../api/journey/useJourneyTemplate";
-import { useExperimentJourneyAssignments } from "../../api/experiment/useExperimentJourneyAssignments";
-import { useRebuildExperimentJourney } from "../../api/experiment/useRebuildExperimentJourney";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
 import { useExperimentReadiness } from "../../api/experiment/useExperimentReadiness";
 import {
@@ -28,7 +25,6 @@ import {
   useExperimentCampaignResetPreview,
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
-import type { JourneyAssignment, JourneyStep } from "../../api/journey/types";
 import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import TargetingTab from "./TargetingTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
@@ -126,15 +122,8 @@ export default function ExperimentDetailPage() {
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
-  const [journeyError, setJourneyError] = useState<string | null>(null);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
-  const { data: journeyAssignments, isLoading: isLoadingJourneyAssignments } =
-    useExperimentJourneyAssignments(expId);
-  const { data: template } = useJourneyTemplate(
-    data?.journeyTemplateId ?? undefined,
-  );
-  const rebuildJourney = useRebuildExperimentJourney(expId);
   const { data: adSetWorkflow, isLoading: isLoadingAdSetWorkflow } =
     useExperimentAdSetWorkflow(expId);
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
@@ -317,42 +306,7 @@ export default function ExperimentDetailPage() {
     },
     { label: data?.name || "...", icon: experimentIcon },
   ]);
-  const templateSteps = template?.steps ?? [];
-  const hasEmailSteps = templateSteps.some(
-    (step) => step.stimulusType === "EMAIL",
-  );
-
-  useEffect(() => {
-    if (tab === "instant-form") {
-      setTab("overview");
-    }
-    if (tab === "emails" && !hasEmailSteps) {
-      setTab("overview");
-    }
-  }, [tab, hasEmailSteps]);
-
-  const assignmentsWithSteps = useMemo(() => {
-    const assignments = journeyAssignments?.assignments ?? [];
-    if (assignments.length === 0) {
-      return [] as { assignment: JourneyAssignment; step?: JourneyStep }[];
-    }
-    const stepIndex = new Map<number, JourneyStep>(
-      templateSteps.map((step) => [step.id, step]),
-    );
-    const pairs = assignments.map((assignment) => ({
-      assignment,
-      step: assignment.nextStepId
-        ? stepIndex.get(assignment.nextStepId)
-        : undefined,
-    }));
-    pairs.sort((a, b) => {
-      const posA = a.step?.position ?? Number.MAX_SAFE_INTEGER;
-      const posB = b.step?.position ?? Number.MAX_SAFE_INTEGER;
-      if (posA !== posB) return posA - posB;
-      return a.assignment.id - b.assignment.id;
-    });
-    return pairs;
-  }, [journeyAssignments?.assignments, templateSteps]);
+  const hasEmailSteps = false;
 
   const openResetModal = () => setIsResetModalOpen(true);
 
@@ -1553,18 +1507,6 @@ export default function ExperimentDetailPage() {
     { label: "Início", value: data.startDate },
     { label: "Término", value: data.endDate },
   ];
-  const handleCreateJourney = async () => {
-    setJourneyError(null);
-    try {
-      await rebuildJourney.mutateAsync();
-    } catch (error) {
-      console.error("Failed to rebuild journey assignments", error);
-      setJourneyError("Não foi possível criar a jornada. Tente novamente.");
-    }
-  };
-
-  const isJourneyActionDisabled =
-    rebuildJourney.isPending || !data?.journeyTemplateId || isLoading;
   return (
     <div>
       <div className="d-flex justify-content-between align-items-start">
@@ -1573,24 +1515,6 @@ export default function ExperimentDetailPage() {
           <p className="text-muted mb-0">{data.hypothesis}</p>
         </div>
         <div className="d-flex align-items-center">
-          <button
-            type="button"
-            className="btn btn-primary me-2"
-            onClick={handleCreateJourney}
-            disabled={isJourneyActionDisabled}
-          >
-            {rebuildJourney.isPending ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                />
-                Criando jornada...
-              </>
-            ) : (
-              "Criar jornada"
-            )}
-          </button>
           <Link to="edit" className="btn btn-outline-secondary me-2">
             Editar
           </Link>
@@ -2085,60 +2009,6 @@ export default function ExperimentDetailPage() {
         </div>
       </div>
 
-      {data.journeyTemplateId ? (
-        <div className="card border-0 shadow-sm rounded-3 mt-3">
-          <div className="card-body">
-            <div className="d-flex justify-content-between align-items-start">
-              <div>
-                <h5 className="card-title mb-0">Jornada</h5>
-                <p className="text-muted mb-0">
-                  Template associado: {data.journeyTemplateName ?? "—"}
-                </p>
-              </div>
-              {journeyAssignments?.journeyId ? (
-                <span className="badge text-bg-secondary">
-                  Jornada #{journeyAssignments.journeyId}
-                </span>
-              ) : null}
-            </div>
-            {journeyError ? (
-              <div className="alert alert-danger mt-3" role="alert">
-                {journeyError}
-              </div>
-            ) : null}
-            {isLoadingJourneyAssignments ? (
-              <div className="text-muted small mt-3">Carregando jornada...</div>
-            ) : assignmentsWithSteps.length > 0 ? (
-              <ul className="list-group list-group-flush mt-3">
-                {assignmentsWithSteps.map(({ assignment, step }) => (
-                  <li key={assignment.id} className="list-group-item px-0">
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div>
-                        <div className="fw-semibold">
-                          {step?.name ??
-                            step?.phase ??
-                            `Passo ${assignment.nextStepId ?? "—"}`}
-                        </div>
-                        <div className="text-muted small">
-                          {step?.phase ?? "—"} · {step?.stimulusType ?? "—"}
-                        </div>
-                      </div>
-                      <span className="badge text-bg-light text-dark">
-                        {assignment.status}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-muted small mt-3">
-                Nenhuma jornada criada ainda. Clique em "Criar jornada" para
-                gerar os passos do template.
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
           <Tabs.List className="nav nav-tabs">

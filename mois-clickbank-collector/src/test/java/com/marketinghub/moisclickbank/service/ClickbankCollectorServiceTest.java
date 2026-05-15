@@ -27,6 +27,7 @@ class ClickbankCollectorServiceTest {
                 false,
                 "http://localhost:8000",
                 "clickbank_access_token_jwt",
+                "https://accounts.clickbank.com/graphql",
                 "workspace-001",
                 "marketing-digital",
                 "ofertas-clickbank"
@@ -62,7 +63,8 @@ class ClickbankCollectorServiceTest {
             ClickbankCollectorService service = new ClickbankCollectorService(
                     true, "", "https://app.clickbank.com/market/search", "", "", "",
                     topOffersUrl, "", "", false, "http://127.0.0.1:1",
-                    "clickbank_access_token_jwt", "workspace-001", "marketing-digital", "ofertas-clickbank"
+                    "clickbank_access_token_jwt", "https://accounts.clickbank.com/graphql",
+                    "workspace-001", "marketing-digital", "ofertas-clickbank"
             );
             var response = service.collect(new ClickbankCollectionRequest("clickbank-market", 10));
 

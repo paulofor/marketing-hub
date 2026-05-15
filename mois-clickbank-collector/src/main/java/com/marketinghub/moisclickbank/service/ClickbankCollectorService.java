@@ -38,6 +38,22 @@ public class ClickbankCollectorService {
     private static final int LOGIN_SUBMIT_RETRIES = 3;
     private static final int COOKIE_RETRY_ATTEMPTS = 3;
     private static final String CLICKBANK_MARKET_API_URL = "https://api.clickbank.com/v2/marketplace";
+    private static final String CLICKBANK_GRAPHQL_QUERY = """
+            query ($parameters: MarketplaceSearchParameters!) {
+              marketplaceSearch(parameters: $parameters) {
+                hits {
+                  title
+                  url
+                  marketplaceStats {
+                    category
+                    gravity
+                    rank
+                    sellerVolume
+                  }
+                }
+              }
+            }
+            """;
 
     private final boolean headless;
     private final String chromiumExecutablePath;
@@ -49,6 +65,7 @@ public class ClickbankCollectorService {
     private final boolean logFullToken;
     private final String backendBaseUrl;
     private final String clickbankJwtSettingKey;
+    private final String clickbankGraphqlUrl;
     private final String workspaceId;
     private final String defaultNiche;
     private final String defaultMarketTheme;
@@ -67,6 +84,7 @@ public class ClickbankCollectorService {
             @Value("${collector.clickbank.log-full-token:false}") boolean logFullToken,
             @Value("${collector.backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
             @Value("${collector.clickbank.jwt-setting-key:clickbank_access_token_jwt}") String clickbankJwtSettingKey,
+            @Value("${collector.clickbank.graphql-url:https://accounts.clickbank.com/graphql}") String clickbankGraphqlUrl,
             @Value("${collector.backend.workspace-id:workspace-001}") String workspaceId,
             @Value("${collector.backend.niche:marketing-digital}") String defaultNiche,
             @Value("${collector.backend.market-theme:ofertas-clickbank}") String defaultMarketTheme
@@ -81,6 +99,7 @@ public class ClickbankCollectorService {
         this.logFullToken = logFullToken;
         this.backendBaseUrl = backendBaseUrl;
         this.clickbankJwtSettingKey = clickbankJwtSettingKey;
+        this.clickbankGraphqlUrl = clickbankGraphqlUrl;
         this.workspaceId = workspaceId;
         this.defaultNiche = defaultNiche;
         this.defaultMarketTheme = defaultMarketTheme;
@@ -105,8 +124,14 @@ public class ClickbankCollectorService {
         );
 
         try {
-            int apiCollected = collectProductsFromTopOffersPage(boundedMax, products);
-            log.info("Coleta página Top Offers finalizada. produtosColetados={}", apiCollected);
+            String accessToken = fetchClickbankJwtFromGeneralSettings();
+            int apiCollected = collectProductsFromGraphql(accessToken, boundedMax, products);
+            if (apiCollected == 0) {
+                apiCollected = collectProductsFromTopOffersPage(boundedMax, products);
+                log.info("Coleta fallback Top Offers finalizada. produtosColetados={}", apiCollected);
+            } else {
+                log.info("Coleta GraphQL Clickbank finalizada. produtosColetados={}", apiCollected);
+            }
             status = "COLLECTION_EXECUTED";
             message = "Coleta executada via página pública Top Offers da ClickBank.";
         } catch (Exception ex) {
@@ -116,6 +141,60 @@ public class ClickbankCollectorService {
         }
         persistCollectedProductsOnBackend(request, status, products);
         return new ClickbankCollectionResponse(status, message, products);
+    }
+
+    private int collectProductsFromGraphql(String accessToken, int boundedMax, List<ClickbankProductSnapshot> products) {
+        if (accessToken == null || accessToken.isBlank()) {
+            log.warn("JWT Clickbank ausente para consulta GraphQL; ativando fallback de coleta pública.");
+            return 0;
+        }
+        try {
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("sortField", "rank");
+            parameters.put("sortDescending", false);
+            parameters.put("productAttributes", List.of("shippable"));
+            parameters.put("resultsPerPage", boundedMax);
+            parameters.put("offset", 0);
+            parameters.put("nicknameMasq", null);
+            Map<String, Object> body = Map.of("query", CLICKBANK_GRAPHQL_QUERY, "variables", Map.of("parameters", parameters));
+            String payload = objectMapper.writeValueAsString(body);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(clickbankGraphqlUrl))
+                    .header("accept", "application/json")
+                    .header("content-type", "application/json")
+                    .header("authorization", "Bearer " + accessToken)
+                    .POST(HttpRequest.BodyPublishers.ofString(payload))
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            log.info("CLICKBANK_GRAPHQL_PAYLOAD_CRU status={} bodyRaw='{}'", response.statusCode(), truncateForLog(response.body(), 10_000));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return 0;
+            }
+            JsonNode hits = objectMapper.readTree(response.body()).path("data").path("marketplaceSearch").path("hits");
+            if (!hits.isArray()) {
+                return 0;
+            }
+            LinkedHashSet<String> dedupe = new LinkedHashSet<>();
+            for (JsonNode hit : hits) {
+                if (products.size() >= boundedMax) {
+                    break;
+                }
+                String title = pickFirstNonBlank(extractProductText(hit, "title", "name"), "Produto sem título");
+                String detailsUrl = normalizeClickbankUrl(extractProductText(hit, "url", "productUrl"));
+                JsonNode stats = hit.path("marketplaceStats");
+                String category = pickFirstNonBlank(extractProductText(stats, "category"), "N/A");
+                Double gravity = extractProductNumber(stats, "gravity");
+                String dedupeKey = (title + "|" + category + "|" + detailsUrl).toLowerCase();
+                if (!dedupe.add(dedupeKey)) {
+                    continue;
+                }
+                products.add(new ClickbankProductSnapshot(title, "N/A", category, detailsUrl, gravity, detailsUrl, Instant.now()));
+            }
+            return products.size();
+        } catch (Exception ex) {
+            log.warn("Falha na coleta GraphQL Clickbank.", ex);
+            return 0;
+        }
     }
 
 

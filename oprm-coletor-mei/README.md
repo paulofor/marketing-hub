@@ -1,6 +1,6 @@
 # OPRM Coletor MEI
 
-Serviço Spring Boot para coleta e normalização de dados MEI (fonte Receita Federal) para integração com o backend do Marketing Hub.
+Serviço Spring Boot do OPRM para orquestrar a ingestão da base pública de CNPJ da Receita Federal no backend do Marketing Hub, usando **arquivos ZIP oficiais** como fonte primária.
 
 ## Stack
 - Java 21
@@ -17,47 +17,22 @@ mvn spring-boot:run
 Health check:
 - `GET http://localhost:8094/api/oprm-mei/health`
 
-Coleta + ingestão de catálogo CNAE (OPRM):
-- `POST http://localhost:8094/api/oprm-mei/catalog/collect`
-- O coletor aplica normalização de `cnaeCode`, deduplicação e envio em lotes para o backend (`/api/niches/catalog:ingest`).
+## Pipeline real (produção): ingestão CNPJ por ZIP
 
-Logs de execução (acesso por URL):
-- `GET http://localhost:8094/api/oprm-mei/catalog/executions`
-- Retorna histórico em memória das últimas execuções (manual e agendada), com `timestamp`, `trigger`, `status`, `message` e totais (`received`, `normalized`, `persisted`).
+A referência oficial do módulo OPRM é o pipeline de importação por snapshot CNPJ (Receita), com processamento dos ZIPs oficiais.
 
-Exemplo de payload:
-```json
-{
-  "source": "RECEITA_CNPJ_PUBLIC",
-  "records": [
-    { "cnaeCode": "62.01-5-01", "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda", "active": true },
-    { "cnaeCode": "6201501", "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda", "active": true }
-  ]
-}
-```
+### Etapas do pipeline
+1. Criar execução em `oprm_cnpj_import_run` (`STARTED`) e registrar arquivos em `oprm_cnpj_import_file`.
+2. Importar dimensão de CNAE a partir de `Cnaes.zip` em `oprm_cnpj_cnae_dim`.
+3. Processar os arquivos `Empresas*.zip`, `Estabelecimentos*.zip`, `Simples.zip` e `Socios*.zip` em lotes.
+4. Consolidar e persistir o agregado em `oprm_market_size_by_cnae`.
+5. Finalizar execução com status (`COMPLETED`/`PARTIAL`/`FAILED`).
+
+### Fontes de verdade do pipeline
+- `docs/novos-modulos/OPRM/oprm-plano-importacao-cnpj-market-size.md`
+- `docs/novos-modulos/OPRM/cnpj-open-data-2026-04-12.md`
 
 ## Build Docker
 ```bash
 docker build -t oprm-coletor-mei:local .
-```
-
-
-## Agendamento da ingestão (Receita Federal)
-Para agendar a ingestão automática no OPRM Coletor às **16:45** (horário de Brasília), configure:
-
-```bash
-export OPRM_COLLECTOR_SCHEDULE_ENABLED=true
-export OPRM_COLLECTOR_SCHEDULE_CRON="0 45 16 * * *"
-export OPRM_COLLECTOR_SCHEDULE_TIMEZONE="America/Sao_Paulo"
-export OPRM_COLLECTOR_SCHEDULE_SOURCE="RECEITA_FEDERAL"
-export OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE="/caminho/receita-cnaes.json"
-# opcional no deploy: se não definir, usa /app/config/receita-cnaes.json embarcado na imagem
-```
-
-Formato do arquivo `receita-cnaes.json` (array de registros):
-```json
-[
-  { "cnaeCode": "62.01-5-01", "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda", "active": true },
-  { "cnaeCode": "6201501", "cnaeLabel": "Desenvolvimento de programas de computador sob encomenda", "active": true }
-]
 ```

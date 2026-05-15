@@ -6,4 +6,3 @@ services:
       - "8094:8094"
     environment:
       - SPRING_PROFILES_ACTIVE=default
-      - OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE=${OPRM_COLLECTOR_SCHEDULE_PAYLOAD_FILE:-/app/config/receita-cnaes.json}

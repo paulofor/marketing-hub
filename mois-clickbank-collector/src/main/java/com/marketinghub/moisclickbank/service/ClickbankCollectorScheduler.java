@@ -31,8 +31,8 @@ public class ClickbankCollectorScheduler {
         this.maxProducts = maxProducts;
     }
 
-    @Scheduled(cron = "${collector.scheduler.cron:0 0 * * * *}")
-    public void collectHourly() {
+    @Scheduled(cron = "${collector.scheduler.cron:0 0 */2 * * *}")
+    public void collectEvenHours() {
         log.info("Iniciando execução agendada do Clickbank Collector source={} maxProducts={}", source, maxProducts);
         if (!enabled) {
             log.info("Clickbank scheduler desabilitado por configuração.");

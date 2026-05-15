@@ -193,7 +193,7 @@ public class HotmartCollectorService {
                         extractProductText(item, "producerName"),
                         pickFirstNonBlank(extractProductText(item, "detailsUrl", "productUrl", "url"), hotmartMarketUrl),
                         extractProductNumber(item, "temperature", "hotmartTemperature"),
-                        extractProductText(item, "salesPageUrl", "pageUrl"),
+                        null,
                         Instant.now()
                 ));
             }
@@ -353,7 +353,6 @@ public class HotmartCollectorService {
             for (JsonNode item : productsNode) {
                 if (products.size() >= boundedMax) break;
                 String title = extractProductText(item, "name", "productName", "title");
-                String salesPageUrl = extractProductText(item, "salesPageUrl", "pageUrl", "page_url", "link");
                 String url = extractProductText(item, "checkoutUrl", "productUrl", "url", "link");
                 if (url == null || url.isBlank()) {
                     url = hotmartMarketUrl;
@@ -378,7 +377,7 @@ public class HotmartCollectorService {
                         firstText(item.path("producer"), "name"),
                         url,
                         temperature,
-                        salesPageUrl,
+                        null,
                         Instant.now());
                 products.add(enrichProductWithDetails(accessToken, item, baseSnapshot));
             }
@@ -621,7 +620,7 @@ public class HotmartCollectorService {
                         firstText(item.path("producer"), "name"),
                         url,
                         extractProductNumber(item, "temperature", "temp", "hotness"),
-                        pickFirstNonBlank(extractProductText(item, "salesPageUrl", "pageUrl", "page_url"), url),
+                        null,
                         Instant.now()
                 ));
             }

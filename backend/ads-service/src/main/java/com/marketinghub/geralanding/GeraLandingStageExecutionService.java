@@ -318,8 +318,15 @@ public class GeraLandingStageExecutionService {
             }
         } else {
             experiment.setLandingPageDesignPreset(request.modelResponse());
-            if (StringUtils.hasText(execution.getProvisionalHtml())) {
-                experiment.setLandingPageHtml(execution.getProvisionalHtml());
+            String htmlFromDesignPreset = execution.getProvisionalHtml();
+            if (!StringUtils.hasText(htmlFromDesignPreset)) {
+                htmlFromDesignPreset = resolveDesignPresetProvisionalHtml(
+                        fromDatabaseIdJob(execution.getIdJob()),
+                        request,
+                        execution);
+            }
+            if (StringUtils.hasText(htmlFromDesignPreset)) {
+                experiment.setLandingPageHtml(htmlFromDesignPreset);
             }
         }
         experimentRepository.save(experiment);

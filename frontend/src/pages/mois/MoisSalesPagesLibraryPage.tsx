@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useMoisSalesLibraryEntries } from "../../api/mois/useMoisSalesLibrary";
 
-const WORKSPACE_ID = "workspace-default";
+const WORKSPACE_ID = "workspace-001";
 const PAGE_SIZE = 20;
 
 export default function MoisSalesPagesLibraryPage() {

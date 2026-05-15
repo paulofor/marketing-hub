@@ -200,40 +200,6 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Interações",
-    items: [
-      { to: "/interaction-journeys", label: "Jornadas de interação", icon: Workflow },
-    ],
-  },
-  {
-    title: "Jornadas",
-    items: [
-      {
-        to: "/journeys",
-        label: "Jornadas",
-        icon: Map,
-        children: [
-          {
-            to: "/journeys",
-            label: "Visão geral",
-            icon: Compass,
-            end: true,
-          },
-          {
-            to: "/journey-templates",
-            label: "Templates",
-            icon: Layers,
-          },
-          {
-            to: "/journey-templates/new",
-            label: "Novo template",
-            icon: PlusCircle,
-          },
-        ],
-      },
-    ],
-  },
-  {
     title: "Configurações",
     items: [
       {

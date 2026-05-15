@@ -171,3 +171,5 @@
 - Frontend da tela `/clickbase` atualizado para incluir formulário de token JWT do Clickbank, seguindo o padrão da tela Hotmart.
 - Adicionado hook de configuração (`useClickbankAccessTokenSetting`) usando `/api/settings/clickbank_access_token_jwt` para carregar/salvar token persistido no backend (banco de dados).
 - Botão de salvar com estado assíncrono (desabilitado + spinner) e campo obrigatório com asterisco para garantir consistência de UX.
+- Ajuste solicitado: removida a tentativa de capturar `salesPageUrl` no ciclo de listagem (`/v2/market/search`).
+- A página de vendas agora é resolvida somente no ciclo de detalhes (`/v1/market/product/{id}/details`), reduzindo risco de URL incorreta vinda do search.

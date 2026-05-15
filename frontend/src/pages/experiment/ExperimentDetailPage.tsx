@@ -2238,7 +2238,9 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">Gera WireFrame</h5>
+                    <h5 className="card-title mb-0">
+                      1 - Gera WireFrame
+                    </h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(totalCompletedGeraLandingCostUsd)}
@@ -2367,7 +2369,7 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">Gera Copy</h5>
+                    <h5 className="card-title mb-0">2 - Gera Copy</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(totalCompletedGeraLandingCopyCostUsd)}
@@ -2498,7 +2500,9 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">Gera Preset Design</h5>
+                    <h5 className="card-title mb-0">
+                      4 - Gera Preset Design
+                    </h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(
@@ -2635,7 +2639,9 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">Gera Entregáveis</h5>
+                    <h5 className="card-title mb-0">
+                      5 - Gera Entregáveis
+                    </h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(
@@ -2752,7 +2758,7 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">Gera Imagem</h5>
+                    <h5 className="card-title mb-0">3 - Gera Imagem</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Pendentes: {frameworkImagePendingCount}
                     </span>

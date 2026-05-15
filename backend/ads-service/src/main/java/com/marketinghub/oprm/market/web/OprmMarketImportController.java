@@ -7,6 +7,7 @@ import com.marketinghub.oprm.market.dto.OprmCreateImportRunRequestDto;
 import com.marketinghub.oprm.market.dto.OprmCompleteImportRunRequestDto;
 import com.marketinghub.oprm.market.dto.OprmImportFileEventRequestDto;
 import com.marketinghub.oprm.market.dto.OprmImportRunCreatedResponseDto;
+import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
 import com.marketinghub.oprm.market.service.OprmMarketImportService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -53,5 +54,10 @@ public class OprmMarketImportController {
     @GetMapping("/cnaes")
     public List<OprmCnpjCnaeDim> listCnaes() {
         return service.listCnaes();
+    }
+
+    @GetMapping("/cnaes/top-volume")
+    public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByVolume(@RequestParam(defaultValue = "20") int limit) {
+        return service.listTopCnaesByMarketVolume(limit);
     }
 }

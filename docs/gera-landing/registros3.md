@@ -82,3 +82,5 @@
 - 2026-05-15 10:30:00 UTC-3 — Criada a nova etapa final canônica `landing-page-deliverables` no fluxo Gera Landing para geração de JSON de entregáveis da **amostra** e do **produto final**, com endpoint de start no backend (`/deliverables/start`) e prompt/schema dedicados no AI Worker (`prompts/geralanding/landing-page-deliverables.*`).
 
 - 2026-05-15 11:25:00 UTC-3 — Persistência final habilitada para a etapa `landing-page-deliverables`: adicionado o campo `experiment.landing_page_deliverables` (artefato JSON final de entregáveis da amostra e do produto completo), com gravação automática no fechamento com sucesso da etapa.
+
+- 2026-05-15 17:55:00 UTC — Corrigida falha de compilação nos testes do AI Worker (pacote `geralanding`): `GeraLandingExecutionServiceTest` foi atualizado para refletir a nova assinatura do construtor de `GeraLandingExecutionService`, incluindo o quinto recurso de schema (`landing-page-deliverables-schema.json`) exigido pela etapa canônica `landing-page-deliverables`.

@@ -23,10 +23,10 @@ A referência oficial do módulo OPRM é o pipeline de importação por snapshot
 
 ### Etapas do pipeline
 1. Criar execução em `oprm_cnpj_import_run` (`STARTED`) e registrar arquivos em `oprm_cnpj_import_file`.
-2. Importar dimensão de CNAE a partir de `Cnaes.zip` em `oprm_cnpj_cnae_dim`.
-3. Processar os arquivos `Empresas*.zip`, `Estabelecimentos*.zip`, `Simples.zip` e `Socios*.zip` em lotes.
-4. Consolidar e persistir o agregado em `oprm_market_size_by_cnae`.
-5. Finalizar execução com status (`COMPLETED`/`PARTIAL`/`FAILED`).
+2. Fazer download de cada ZIP oficial para diretório temporário local por execução (`/tmp/oprm-cnpj-import/run-<runId>` por padrão).
+3. Fazer unzip/leitura de cada arquivo com logs explícitos por etapa (`download`, `unzip`, `leitura`, `persistência de status`).
+4. Publicar evento por arquivo no backend (`/files/{fileId}/events`) com `rowsRead/rowsValid/rowsRejected` e status.
+5. Finalizar execução no backend (`/complete`) e limpar todos os arquivos temporários ao final (incluindo cenários de erro).
 
 ### Fontes de verdade do pipeline
 - `docs/novos-modulos/OPRM/oprm-plano-importacao-cnpj-market-size.md`

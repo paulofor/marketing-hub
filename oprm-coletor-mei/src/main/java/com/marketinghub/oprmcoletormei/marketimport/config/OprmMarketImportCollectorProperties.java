@@ -4,5 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "oprm.market-import.collector")
 public record OprmMarketImportCollectorProperties(
-        String backendBaseUrl
+        String backendBaseUrl,
+        String tempDir
 ) {}

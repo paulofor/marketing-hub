@@ -47,7 +47,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critérios usados pelo cartão **Campanha de Facebook Ads** e pelo `facebook-ads-worker`. **Todos os itens abaixo precisam estar resolvidos** para que o worker gere conjuntos de anúncios.
 
 1. **Criativos aprovados**
-   - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status IN ('READY','IN_PRODUCTION')`.
+   - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'`.
    - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-1.5`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
 2. **Fluxo do Portal do Lead**

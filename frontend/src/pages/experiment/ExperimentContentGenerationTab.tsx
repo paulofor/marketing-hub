@@ -620,60 +620,6 @@ artifact {
   }
 }`;
 
-const LANDING_DESIGN_PRESET_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
-
-Criar o Preset de Design da Landing antes do HTML final, mantendo alinhamento com o plano de imagens da landing.
-
-Objetivo:
-Estruturar tema visual reutilizável (paleta, estilos e presets por seção) mantendo coerência com copy, wireframe e planejamento de imagens.
-
-Regras:
-1. Entregar objeto landingPageDesignPreset com:
-   - presetId
-   - theme.palette
-   - theme.typography (obrigatório e detalhado)
-   - sectionPresets[]
-   - componentPresets
-   - motion
-   - consistencyChecks[]
-2. sectionPresets deve cobrir as sectionId existentes no wireframe atual.
-3. surfaceStyle permitido: band | solid | gradient-soft | image-tint.
-4. contrastMode permitido: normal | high | soft.
-5. Não gerar HTML/CSS/JS nesta etapa.
-6. Typography é obrigatório no theme e em cada sectionPreset/componentPreset com tokens semânticos (display, h1, h2, h3, body, lead, caption, overline, button, legal).
-7. Para cada token tipográfico, declarar explicitamente os atributos CSS abaixo:
-   - font
-   - font-family
-   - font-size
-   - font-weight
-   - font-style
-   - font-variant
-   - line-height
-   - letter-spacing
-   - word-spacing
-   - text-align
-   - text-decoration
-   - text-decoration-line
-   - text-decoration-color
-   - text-decoration-style
-   - text-transform
-   - text-shadow
-   - white-space
-8. Exigir hierarquia tipográfica forte: diferença clara entre títulos, subtítulos, corpo, apoio e CTA (escala, peso e espaçamento), preservando legibilidade em desktop e mobile.
-9. consistencyChecks deve validar contraste, legibilidade, coerência da hierarquia e presença de todos os atributos tipográficos obrigatórios.
-
-Formato esperado:
-JSON com envelope canônico:
-{
-  landingPageDesignPreset: {
-    presetId,
-    theme,
-    sectionPresets,
-    componentPresets,
-    motion,
-    consistencyChecks
-  }
-}`;
 
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
@@ -682,7 +628,6 @@ const SECTION_PROMPT_DEFAULTS: Partial<
   "landing-copy": LANDING_COPY_PROMPT_TEMPLATE,
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
   "landing-image-planning": LANDING_IMAGE_PLANNING_PROMPT_TEMPLATE,
-  "landing-design-preset": LANDING_DESIGN_PRESET_PROMPT_TEMPLATE,
   "landing-html": LANDING_HTML_PROMPT_TEMPLATE,
 };
 

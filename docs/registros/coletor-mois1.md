@@ -166,3 +166,8 @@
 - Atualizado o modelo de dados para documentar explicitamente a regra canônica: URL única na biblioteca independentemente de workspace/source.
 
 - Exposta sinalização de falha da última coleta Hotmart na tela `/hotmart` via `status/message` do último `collection-job` para orientar quando ocorrer JWT expirado (`invalid_token`).
+
+## 2026-05-15 10:30 UTC
+- Frontend da tela `/clickbase` atualizado para incluir formulário de token JWT do Clickbank, seguindo o padrão da tela Hotmart.
+- Adicionado hook de configuração (`useClickbankAccessTokenSetting`) usando `/api/settings/clickbank_access_token_jwt` para carregar/salvar token persistido no backend (banco de dados).
+- Botão de salvar com estado assíncrono (desabilitado + spinner) e campo obrigatório com asterisco para garantir consistência de UX.

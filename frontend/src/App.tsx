@@ -73,16 +73,6 @@ import AgentListPage from "./pages/agent/AgentListPage";
 import NewAgentPage from "./pages/agent/NewAgentPage";
 import EditAgentPage from "./pages/agent/EditAgentPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
-import JourneyListPage from "./pages/journey/JourneyListPage";
-import JourneyDetailPage from "./pages/journey/JourneyDetailPage";
-import EditJourneyPage from "./pages/journey/EditJourneyPage";
-import JourneyTemplatesPage from "./pages/journey/JourneyTemplatesPage";
-import JourneyTemplateDetailPage from "./pages/journey/JourneyTemplateDetailPage";
-import NewJourneyTemplatePage from "./pages/journey/NewJourneyTemplatePage";
-import EditJourneyTemplatePage from "./pages/journey/EditJourneyTemplatePage";
-import InteractionJourneyListPage from "./pages/interactionJourney/InteractionJourneyListPage";
-import NewInteractionJourneyPage from "./pages/interactionJourney/NewInteractionJourneyPage";
-import EditInteractionJourneyPage from "./pages/interactionJourney/EditInteractionJourneyPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MainNavigation from "./components/MainNavigation";
@@ -401,40 +391,6 @@ export default function App() {
               <Route
                 path="/facebook-campaigns/ready"
                 element={<FacebookExperimentsReadyPage />}
-              />
-              <Route path="/journeys" element={<JourneyListPage />} />
-              <Route path="/journeys/:id" element={<JourneyDetailPage />} />
-              <Route
-                path="/journeys/:id/edit"
-                element={<EditJourneyPage />}
-              />
-              <Route
-                path="/journey-templates"
-                element={<JourneyTemplatesPage />}
-              />
-              <Route
-                path="/journey-templates/:id"
-                element={<JourneyTemplateDetailPage />}
-              />
-              <Route
-                path="/journey-templates/:id/edit"
-                element={<EditJourneyTemplatePage />}
-              />
-              <Route
-                path="/journey-templates/new"
-                element={<NewJourneyTemplatePage />}
-              />
-              <Route
-                path="/interaction-journeys"
-                element={<InteractionJourneyListPage />}
-              />
-              <Route
-                path="/interaction-journeys/new"
-                element={<NewInteractionJourneyPage />}
-              />
-              <Route
-                path="/interaction-journeys/:id/edit"
-                element={<EditInteractionJourneyPage />}
               />
               <Route path="/whatsapp" element={<WhatsAppConsolePage />} />
               <Route

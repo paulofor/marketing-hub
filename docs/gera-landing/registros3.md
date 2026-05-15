@@ -84,3 +84,6 @@
 - 2026-05-15 11:25:00 UTC-3 — Persistência final habilitada para a etapa `landing-page-deliverables`: adicionado o campo `experiment.landing_page_deliverables` (artefato JSON final de entregáveis da amostra e do produto completo), com gravação automática no fechamento com sucesso da etapa.
 
 - 2026-05-15 17:55:00 UTC — Corrigida falha de compilação nos testes do AI Worker (pacote `geralanding`): `GeraLandingExecutionServiceTest` foi atualizado para refletir a nova assinatura do construtor de `GeraLandingExecutionService`, incluindo o quinto recurso de schema (`landing-page-deliverables-schema.json`) exigido pela etapa canônica `landing-page-deliverables`.
+
+- 2026-05-15 18:20:00 UTC-3 — Atualizado o documento canônico do Gera Landing (`modelo-canonico-gera-landing.md`) para explicitar a ordem oficial do fluxo Total Gera Landing: (1) Gera Wireframe, (2) Gera Copy, (3) Gera Imagem, (4) Gera Preset Design e (5) Gera Entregáveis.
+- 2026-05-15 18:45:00 UTC-3 — Ajustada a tela da aba Gera Landing (ExperimentDetailPage) para refletir visualmente a ordem canônica do fluxo Total Gera Landing com numeração explícita nos cards: 1-Wireframe, 2-Copy, 3-Imagem, 4-Preset Design e 5-Entregáveis.

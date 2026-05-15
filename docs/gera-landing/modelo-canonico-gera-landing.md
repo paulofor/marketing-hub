@@ -37,8 +37,19 @@ Ele cobre:
 
 - `landing-page-wireframe`;
 - `landing-page-copy`;
+- `landing-page-image-planning`;
 - `landing-page-design-preset`;
 - `landing-page-deliverables`.
+
+### 1.3 Ordem canônica das etapas (Total Gera Landing)
+
+A ordem oficial de execução no fluxo **Total Gera Landing (todas as etapas)** é:
+
+1. **Gera Wireframe** (`landing-page-wireframe`)
+2. **Gera Copy** (`landing-page-copy`)
+3. **Gera Imagem** (`landing-page-image-planning` + geração em lote das imagens)
+4. **Gera Preset Design** (`landing-page-design-preset`)
+5. **Gera Entregáveis** (`landing-page-deliverables`)
 
 Observação operacional: no worker `geralanding`, etapas fora desse conjunto ainda são ignoradas com log informativo.
 

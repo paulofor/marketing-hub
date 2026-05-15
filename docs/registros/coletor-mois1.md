@@ -195,3 +195,10 @@
 - Ajustados os testes unitários do coletor para o novo contrato do construtor com a configuração `collector.clickbank.graphql-url`.
 
 - 2026-05-15 21:14 UTC — Ajustado agendamento padrão do coletor Clickbank GraphQL para horas pares (`0 0 */2 * * *`) em `application.properties`, `ClickbankCollectorScheduler` e README do módulo.
+
+## 2026-05-15 22:10 UTC
+- Refatorado o agendamento do coletor ClickBank para modelo de 3 ciclos com execução horária (`0 0 * * * *`) e roteamento por `horaAtual % 3`.
+- Ciclo 1 consolidado como coleta exclusiva Top Offers público (sem fallback GraphQL embutido).
+- Ciclo 2 mantido para resolução e persistência de páginas de venda a partir dos produtos salvos no backend MOIS.
+- Implementado Ciclo 3 independente para coleta via GraphQL ClickBank com status explícito `COLLECTION_SKIPPED` quando JWT estiver ausente/inválido ou sem hits.
+- Atualizado cânone MOIS (`docs/mois/mois-canonico-coleta-clickbank-ciclo-um.md`) para oficializar o Ciclo 3 e as regras de execução em 3 slots.

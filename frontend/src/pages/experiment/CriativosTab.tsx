@@ -1,37 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
 import { Creative, useCreatives } from "../../api/creative/useCreatives";
-import { useCreateCreative } from "../../api/creative/useCreateCreative";
 import { useUpdateCreative } from "../../api/creative/useUpdateCreative";
 import { useDeleteCreative } from "../../api/creative/useDeleteCreative";
-import { useAngles } from "../../api/angle/useAngles";
-import { useVisualProofs } from "../../api/visualProof/useVisualProofs";
-import { useEmotionalTriggers } from "../../api/emotionalTrigger/useEmotionalTriggers";
-import { useUpdateCreativeLabels } from "../../api/creative/useUpdateCreativeLabels";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import type { UpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
-import { ASSET_UPLOAD_CATEGORY } from "../../constants/assetUploadCategory";
 import InstagramAdPreview from "../../components/InstagramAdPreview";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
-import { parseAssetUploadResponse } from "../../utils/parseAssetUploadResponse";
-import { buildApiUrl } from "../../utils/buildApiUrl";
-import { FACEBOOK_CALL_TO_ACTIONS } from "../../constants/facebookCallToActions";
 import {
   AlertTriangle,
   CheckCircle2,
-  Edit3,
   Eye,
-  Plus,
   Sparkles,
   Trash2,
   X,
   XCircle,
 } from "lucide-react";
 import "./CriativosTab.css";
-import CreativeLibraryBanner from "./CreativeLibraryBanner";
 import { hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
 import { hasImagePromptContent, parseImagePromptPayload } from "./imageBriefingParser";
 import { useRequestPipelineCreatives } from "../../api/experiment/useRequestPipelineCreatives";
@@ -40,34 +27,8 @@ interface Props {
   experimentId: string;
 }
 
-interface CreativeForm {
-  format: string;
-  primaryText: string;
-  headline: string;
-  description: string;
-  cta: string;
-  destinationUrl: string;
-  leadGenFormId: string;
-  imageUrl: string;
-  instagramUserId: string;
-  status: string;
-}
-
-const createEmptyForm = (): CreativeForm => ({
-  format: "LINK",
-  headline: "",
-  primaryText: "",
-  description: "",
-  cta: "LEARN_MORE",
-  destinationUrl: "",
-  leadGenFormId: "",
-  imageUrl: "",
-  instagramUserId: "",
-  status: "DRAFT",
-});
 
 const ICON_SIZE = 16;
-const ASSET_UPLOAD_URL = buildApiUrl("/api/assets");
 
 
 type FeedbackVariant = "success" | "warning" | "error";
@@ -275,40 +236,14 @@ export default function CriativosTab({ experimentId }: Props) {
   const pipelineButtonDisabled = pipelineRequest.isPending || pipelineInProgress || pendingCreativeRequests > 0 || !pipelineAvailable;
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const updatePromptsMutation = useUpdateExperiment(experimentId);
-  const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [form, setForm] = useState<CreativeForm>(() => createEmptyForm());
   const [experimentPageId, setExperimentPageId] = useState("");
   const [experimentInstagramAccountId, setExperimentInstagramAccountId] =
     useState("");
-  const { handleSubmit: handleFormSubmit } = useForm<CreativeForm>();
-  const { data: angles } = useAngles();
-  const { data: proofs } = useVisualProofs();
-  const { data: triggers } = useEmotionalTriggers();
-  const [selectedAngle, setSelectedAngle] = useState<string>("");
-  const [selectedProof, setSelectedProof] = useState<string>("");
-  const [selectedTrigger, setSelectedTrigger] = useState<string>("");
-  const resetManualLabels = () => {
-    setSelectedAngle("");
-    setSelectedProof("");
-    setSelectedTrigger("");
-  };
-  const resetFormState = () => {
-    setForm(createEmptyForm());
-  };
-  const openManualCreation = () => {
-    setEditing(null);
-    resetFormState();
-    resetManualLabels();
-    setShowForm(true);
-  };
-  const closeForm = () => {
-    setShowForm(false);
+  const closeEdit = () => {
     setEditing(null);
   };
-  const patchLabels = useUpdateCreativeLabels(experimentId);
-  const create = useCreateCreative(experimentId);
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
   const [showPreview, setShowPreview] = useState(false);
@@ -332,15 +267,6 @@ export default function CriativosTab({ experimentId }: Props) {
     !isLoadingInstagramAccounts &&
     Array.isArray(instagramAccounts) &&
     instagramAccounts.length === 0;
-
-  const renderManualButtonContent = () => (
-    <>
-      <Plus size={ICON_SIZE} />
-      <span>Adicionar anúncio manual</span>
-    </>
-  );
-
-  const isSavingCreative = create.isPending || update.isPending;
 
   useEffect(() => {
     if (!feedback) return;
@@ -535,75 +461,6 @@ export default function CriativosTab({ experimentId }: Props) {
   const isSavingPageId = updateExperimentMutation.isPending;
   const isSavingPrompts = updatePromptsMutation.isPending;
 
-  const fillFormFromCreative = (c: Creative) => {
-    setForm({
-      format: c.format || "LINK",
-      headline: c.headline,
-      primaryText: c.primaryText,
-      description: c.description || "",
-      cta: c.cta || "LEARN_MORE",
-      destinationUrl: c.destinationUrl || "",
-      leadGenFormId: c.leadGenFormId || "",
-      imageUrl: c.imageUrl,
-      instagramUserId: c.instagramUserId || "",
-      status: c.status,
-    });
-  };
-
-  const openEdit = (c: Creative) => {
-    setEditing(c);
-    fillFormFromCreative(c);
-    setShowForm(true);
-  };
-
-  const submit = async () => {
-    const trimmedDestinationUrl = form.destinationUrl.trim();
-    const trimmedLeadGenFormId = form.leadGenFormId.trim();
-    const payload = {
-      format: form.format,
-      headline: form.headline,
-      primaryText: form.primaryText,
-      imageUrl: form.imageUrl,
-      description: form.description,
-      cta: form.cta,
-      destinationUrl: trimmedDestinationUrl,
-      leadGenFormId: trimmedLeadGenFormId,
-      instagramUserId: form.instagramUserId,
-      status: form.status,
-    };
-    const isEditing = Boolean(editing);
-    try {
-      if (isEditing && editing) {
-        await update.mutateAsync({ id: editing.id, ...payload });
-      } else {
-        const created = await create.mutateAsync(payload);
-        if (selectedAngle || selectedProof || selectedTrigger) {
-          await patchLabels.mutateAsync({
-            id: created.id,
-            labels: {
-              angleId: selectedAngle ? Number(selectedAngle) : undefined,
-              visualProofId: selectedProof ? Number(selectedProof) : undefined,
-              emotionalTriggerId: selectedTrigger
-                ? Number(selectedTrigger)
-                : undefined,
-            },
-          });
-        }
-      }
-      closeForm();
-      if (!isEditing) {
-        resetFormState();
-        resetManualLabels();
-      }
-    } catch {
-      setFeedback({
-        variant: "error",
-        title: "Não foi possível salvar o criativo",
-        description: "Tente novamente em instantes.",
-      });
-    }
-  };
-
   const startPreview = (c: Creative) => {
     setEditing(c);
     setShowPreview(true);
@@ -652,88 +509,7 @@ export default function CriativosTab({ experimentId }: Props) {
     }
   };
 
-  const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const input = e.target;
-    const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
-    img.onload = async () => {
-      if (img.width < 600) {
-        setFeedback({
-          variant: "warning",
-          title: "Imagem muito pequena",
-          description:
-            "Use arquivos com pelo menos 600px de largura para manter a qualidade dos criativos.",
-        });
-        URL.revokeObjectURL(objectUrl);
-        input.value = "";
-        return;
-      }
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("category", ASSET_UPLOAD_CATEGORY.EXPERIMENT_CREATIVE);
-      const normalizedExperimentId = experimentId.trim();
-      if (normalizedExperimentId) {
-        fd.append("experimentId", normalizedExperimentId);
-      }
-      const promptPayload =
-        imagePrompt.trim() || form.primaryText || form.headline || "Manual upload";
-      fd.append("prompt", promptPayload);
-      try {
-        const res = await fetch(ASSET_UPLOAD_URL, { method: "POST", body: fd });
-        if (!res.ok) {
-          throw new Error("Upload failed");
-        }
-        const url = await parseAssetUploadResponse(res);
-        setForm((prev) => ({ ...prev, imageUrl: url }));
-        setFeedback({
-          variant: "success",
-          title: "Imagem carregada",
-          description: "O criativo foi atualizado com a nova imagem.",
-        });
-      } catch {
-        setFeedback({
-          variant: "error",
-          title: "Não foi possível enviar a imagem",
-          description: "Tente novamente em instantes.",
-        });
-      } finally {
-        URL.revokeObjectURL(objectUrl);
-        input.value = "";
-      }
-    };
-    img.onerror = () => {
-      setFeedback({
-        variant: "error",
-        title: "Não foi possível ler a imagem",
-        description: "Selecione outro arquivo ou tente novamente.",
-      });
-      URL.revokeObjectURL(objectUrl);
-      input.value = "";
-    };
-    img.src = objectUrl;
-  };
-
   const totalCreatives = creatives.length;
-  const solicitedCreatives = pendingCreativeRequests;
-
-  const handleCreativeRequestSuccess = (qty: number) => {
-    setFeedback({
-      variant: "success",
-      title: "Solicitação enviada",
-      description: `Geraremos ${qty} ${qty === 1 ? "criativo" : "criativos"} em breve.`,
-    });
-  };
-
-  const handleCreativeRequestError = () => {
-    setFeedback({
-      variant: "error",
-      title: "Erro ao solicitar criativos",
-      description: "Tente novamente em instantes.",
-    });
-  };
-
   const handlePipelineRequest = async () => {
     try {
       await pipelineRequest.mutateAsync();
@@ -1182,13 +958,6 @@ export default function CriativosTab({ experimentId }: Props) {
           </div>
         </div>
       </section>
-      <CreativeLibraryBanner
-        experimentId={experimentId}
-        requestedCreatives={solicitedCreatives}
-        onRequestSuccess={handleCreativeRequestSuccess}
-        onRequestError={handleCreativeRequestError}
-      />
-
       {pipelineAvailable ? (
         <div className="alert alert-primary d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mt-3">
           <div>
@@ -1225,20 +994,6 @@ export default function CriativosTab({ experimentId }: Props) {
         </div>
       ) : null}
 
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
-        <div>
-          <h3 className="h6 fw-semibold mb-1">Cadastro manual de anúncios</h3>
-          <p className="text-muted small mb-0">Envie textos e imagens prontos para complementar os testes do experimento.</p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary d-flex align-items-center gap-2"
-          onClick={openManualCreation}
-        >
-          {renderManualButtonContent()}
-        </button>
-      </div>
-
       {isLoading ? (
         <div className="d-flex justify-content-center py-5">
           <div className="spinner-border text-primary" role="status">
@@ -1252,16 +1007,9 @@ export default function CriativosTab({ experimentId }: Props) {
           </div>
           <h3 className="h6 fw-semibold mb-1">Nenhum criativo cadastrado</h3>
           <p className="text-muted mb-2">
-            Gere sugestões com IA para começar a testar variações e construa seu
-            acervo criativo com os resultados aprovados.
+            Gere anúncios pelo pipeline para começar a testar variações e
+            construir seu acervo criativo.
           </p>
-          <button
-            type="button"
-            className="btn btn-primary d-inline-flex align-items-center gap-2"
-            onClick={openManualCreation}
-          >
-            {renderManualButtonContent()}
-          </button>
         </div>
       ) : creativeSections.length === 0 ? (
         <div className="creative-grid">
@@ -1292,205 +1040,6 @@ export default function CriativosTab({ experimentId }: Props) {
           ))}
         </div>
       )}
-      {showForm && (
-        <div className="modal d-block" tabIndex={-1}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {editing ? "Editar" : "Novo"} Criativo
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeForm}
-                />
-              </div>
-              <div className="modal-body">
-                <select
-                  className="form-select mb-2"
-                  value={form.format}
-                  onChange={(e) => setForm({ ...form, format: e.target.value })}
-                >
-                  <option value="LINK">LINK</option>
-                  <option value="VIDEO">VIDEO</option>
-                  <option value="CAROUSEL">CAROUSEL</option>
-                </select>
-                <textarea
-                  className="form-control mb-2"
-                  placeholder="Primary Text"
-                  maxLength={125}
-                  value={form.primaryText}
-                  title="máx. 125 caracteres"
-                  onChange={(e) =>
-                    setForm({ ...form, primaryText: e.target.value })
-                  }
-                />
-                <input
-                  className="form-control mb-2"
-                  placeholder="Headline"
-                  maxLength={40}
-                  value={form.headline}
-                  title="máx. 40 caracteres"
-                  onChange={(e) =>
-                    setForm({ ...form, headline: e.target.value })
-                  }
-                />
-                <input
-                  className="form-control mb-2"
-                  placeholder="Descrição (opcional)"
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                />
-                <label className="form-label" htmlFor="creative-cta">
-                  Chamada para ação
-                </label>
-                <select
-                  id="creative-cta"
-                  className="form-select mb-2"
-                  value={form.cta}
-                  onChange={(e) => setForm({ ...form, cta: e.target.value })}
-                >
-                  {FACEBOOK_CALL_TO_ACTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-                <label className="form-label" htmlFor="creative-destination-url">
-                  URL de destino
-                </label>
-                <input
-                  id="creative-destination-url"
-                  className="form-control mb-2"
-                  placeholder="https://exemplo.com/pagina"
-                  value={form.destinationUrl}
-                  onChange={(e) =>
-                    setForm({ ...form, destinationUrl: e.target.value })
-                  }
-                />
-                <label className="form-label" htmlFor="creative-lead-form">
-                  ID do formulário de leads (Instagram/Facebook)
-                </label>
-                <input
-                  id="creative-lead-form"
-                  className="form-control mb-2"
-                  placeholder="Ex.: 123456789012345"
-                  value={form.leadGenFormId}
-                  onChange={(e) =>
-                    setForm({ ...form, leadGenFormId: e.target.value })
-                  }
-                />
-                <div className="form-text mb-2">
-                  Informe ao menos uma das opções de destino (URL ou formulário). O worker usará o formulário quando ambos estiverem preenchidos.
-                </div>
-                <input
-                  type="file"
-                  className="form-control mb-2"
-                  onChange={upload}
-                />
-                <input
-                  className="form-control mb-2"
-                  placeholder="instagram_user_id"
-                  value={form.instagramUserId}
-                  onChange={(e) =>
-                    setForm({ ...form, instagramUserId: e.target.value })
-                  }
-                />
-                {!editing && (
-                  <>
-                    <select
-                      className="form-select mb-2"
-                      value={selectedAngle}
-                      onChange={(e) => setSelectedAngle(e.target.value)}
-                    >
-                      <option value="">Selecione um ângulo</option>
-                      {Array.isArray(angles) &&
-                        angles.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                    </select>
-                    <select
-                      className="form-select mb-2"
-                      value={selectedProof}
-                      onChange={(e) => setSelectedProof(e.target.value)}
-                    >
-                      <option value="">Selecione uma prova visual</option>
-                      {Array.isArray(proofs) &&
-                        proofs.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </select>
-                    <select
-                      className="form-select mb-2"
-                      value={selectedTrigger}
-                      onChange={(e) => setSelectedTrigger(e.target.value)}
-                    >
-                      <option value="">Selecione um gatilho emocional</option>
-                      {Array.isArray(triggers) &&
-                        triggers.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
-                  </>
-                )}
-                <select
-                  className="form-select"
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                >
-                  <option value="DRAFT">DRAFT</option>
-                  <option value="READY">READY</option>
-                </select>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={closeForm}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary d-inline-flex align-items-center gap-2"
-                  disabled={isSavingCreative}
-                  onClick={handleFormSubmit(
-                    async () => {
-                      await submit();
-                    },
-                    (errors) => {
-                      console.log("Validation errors", errors);
-                    },
-                  )}
-                >
-                  {isSavingCreative ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden
-                      />
-                      <span>Salvando...</span>
-                    </>
-                  ) : (
-                    <span>Salvar</span>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showPreview && editing && (
         <div className="modal d-block" tabIndex={-1}>
           <div className="modal-dialog">
@@ -1500,7 +1049,10 @@ export default function CriativosTab({ experimentId }: Props) {
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={() => setShowPreview(false)}
+                  onClick={() => {
+                    setShowPreview(false);
+                    closeEdit();
+                  }}
                 />
               </div>
               <div className="modal-body">

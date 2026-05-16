@@ -2689,7 +2689,7 @@ export default function ExperimentDetailPage() {
             />
           </Tabs.Content>
           <Tabs.Content value="publico" asChild>
-            <ExperimentAudienceTab experimentId={expId} nicheId={data?.marketNicheId} />
+            <ExperimentAudienceTab experimentId={Number(expId)} nicheId={data?.nicheId} />
           </Tabs.Content>
           <Tabs.Content value="conteudo" asChild>
             <div className="d-flex flex-column gap-3">

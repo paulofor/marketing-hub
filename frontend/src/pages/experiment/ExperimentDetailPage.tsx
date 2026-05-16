@@ -1636,13 +1636,7 @@ export default function ExperimentDetailPage() {
                 ))}
               </ul>
             </div>
-          ) : (
-            <div className="alert alert-secondary mt-3" role="status">
-              Nenhuma inconsistência detectada pelo worker. Este experimento
-              pode ser publicado quando você liberar o status e demais
-              automações.
-            </div>
-          )}
+          ) : null}
           <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
             <button
               type="button"

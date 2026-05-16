@@ -155,7 +155,64 @@ public class HotmartCollectorService {
             enrichedProducts.add(enrichProductWithDetails(hotmartAccessToken, listItem, base));
         }
         persistCollectedProductsOnBackend(request, status, enrichedProducts);
+        publishSalesPagesToLibrary(enrichedProducts);
         return new HotmartCollectionResponse(status, message, enrichedProducts);
+    }
+
+    private void publishSalesPagesToLibrary(List<HotmartProductSnapshot> products) {
+        if (products == null || products.isEmpty()) {
+            log.info("Ciclo 2: publishSalesPagesToLibrary ignorado porque lista de produtos está vazia.");
+            return;
+        }
+        log.info("Ciclo 2: iniciando publishSalesPagesToLibrary. totalProdutosRecebidos={}", products.size());
+        List<Map<String, Object>> urls = new ArrayList<>();
+        int skippedWithoutUrl = 0;
+        for (HotmartProductSnapshot product : products) {
+            String salesPageUrl = pickFirstNonBlank(product.salesPageUrl(), product.detailsUrl());
+            if (salesPageUrl == null || salesPageUrl.isBlank()) {
+                skippedWithoutUrl++;
+                continue;
+            }
+            Map<String, Object> item = new HashMap<>();
+            item.put("url", salesPageUrl);
+            item.put("source", "HOTMART");
+            item.put("workspaceId", workspaceId);
+            item.put("title", product.title());
+            item.put("capturedAt", Instant.now().toString());
+            urls.add(item);
+        }
+        log.info("Ciclo 2: preparo de URLs concluído. totalElegiveis={}, totalSemUrl={}", urls.size(), skippedWithoutUrl);
+        if (urls.isEmpty()) {
+            log.info("Ciclo 2: nenhuma URL elegível para ingestão na biblioteca de sales pages.");
+            return;
+        }
+        String endpoint = backendBaseUrl + "/api/mois/sales-library/urls:ingest";
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("workspaceId", workspaceId);
+            body.put("source", "HOTMART");
+            body.put("urls", urls);
+            String payloadJson = objectMapper.writeValueAsString(body);
+            log.info("Ciclo 2: payload de ingestão para biblioteca de sales pages. endpoint={}, payload={}",
+                    endpoint,
+                    truncateForLog(payloadJson, 4000));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(payloadJson))
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Ciclo 2: ingestão de sales pages enviada com sucesso. endpoint={}, totalUrls={}", endpoint, urls.size());
+            } else {
+                log.warn("Ciclo 2: backend rejeitou ingestão de sales pages. endpoint={}, status={}, body={}",
+                        endpoint,
+                        response.statusCode(),
+                        truncateForLog(response.body(), 500));
+            }
+        } catch (Exception ex) {
+            log.warn("Ciclo 2: falha ao enviar URLs para biblioteca de sales pages. endpoint={}", endpoint, ex);
+        }
     }
 
     private List<HotmartProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {

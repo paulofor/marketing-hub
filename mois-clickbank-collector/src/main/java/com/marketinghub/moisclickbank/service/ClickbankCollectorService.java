@@ -184,6 +184,12 @@ public class ClickbankCollectorService {
             parameters.put("nicknameMasq", null);
             Map<String, Object> body = Map.of("query", CLICKBANK_GRAPHQL_QUERY, "variables", Map.of("parameters", parameters));
             String payload = objectMapper.writeValueAsString(body);
+            log.info(
+                    "CLICKBANK_GRAPHQL_REQUEST endpoint={} method=POST hasAuthorizationHeader={} payloadPreview='{}'",
+                    clickbankGraphqlUrl,
+                    true,
+                    truncateForLog(payload, 1200)
+            );
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(clickbankGraphqlUrl))
                     .header("accept", "application/json")
@@ -532,6 +538,7 @@ public class ClickbankCollectorService {
     private String fetchClickbankJwtFromGeneralSettings() {
         try {
             String endpoint = backendBaseUrl + "/api/settings/" + clickbankJwtSettingKey;
+            log.info("Buscando JWT Clickbank nas configurações gerais. endpoint={}, settingKey={}", endpoint, clickbankJwtSettingKey);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .GET()
@@ -543,7 +550,14 @@ public class ClickbankCollectorService {
                 return "";
             }
             JsonNode root = objectMapper.readTree(response.body());
-            return root.path("value").asText("");
+            String token = root.path("value").asText("");
+            log.info(
+                    "JWT Clickbank carregado das configurações gerais. endpoint={}, tokenPresente={}, tokenTamanho={}",
+                    endpoint,
+                    token != null && !token.isBlank(),
+                    token == null ? 0 : token.length()
+            );
+            return token;
         } catch (Exception ex) {
             log.warn("Erro ao buscar JWT da Clickbank em configurações gerais.", ex);
             return "";

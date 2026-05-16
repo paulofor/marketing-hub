@@ -1107,6 +1107,10 @@ export default function ExperimentDetailPage() {
     diagnosticsUpdatedAt > 0
       ? formatDateTimeValue(new Date(diagnosticsUpdatedAt).toISOString())
       : null;
+  const shouldShowDiagnostics =
+    !!diagnostics &&
+    diagnostics.headline.trim().toLowerCase() !==
+      "nenhuma inconsistência detectada";
   const baseKpi = data.kpiTarget ?? data.kpiTargetCpl;
   const stopLossFactor = preset?.stopLossFactor;
   const stopLossCpl =
@@ -1499,7 +1503,7 @@ export default function ExperimentDetailPage() {
           />
           <span>Carregando diagnóstico da publicação...</span>
         </div>
-      ) : diagnostics ? (
+      ) : shouldShowDiagnostics ? (
         <div
           className={`alert alert-${diagnosticsVariant[diagnostics.severity] ?? "secondary"} mt-3`}
           role="alert"

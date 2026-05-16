@@ -202,3 +202,13 @@
 - Ciclo 2 mantido para resolução e persistência de páginas de venda a partir dos produtos salvos no backend MOIS.
 - Implementado Ciclo 3 independente para coleta via GraphQL ClickBank com status explícito `COLLECTION_SKIPPED` quando JWT estiver ausente/inválido ou sem hits.
 - Atualizado cânone MOIS (`docs/mois/mois-canonico-coleta-clickbank-ciclo-um.md`) para oficializar o Ciclo 3 e as regras de execução em 3 slots.
+
+## 2026-05-16 00:00 UTC
+- Hotmart (MOIS) alinhado ao fluxo já existente do ClickBank para publicar URLs na biblioteca de páginas de vendas ao final do Ciclo 2.
+- Adicionado envio para `POST /api/mois/sales-library/urls:ingest` com payload contendo `workspaceId`, `source=HOTMART` e lista de URLs resolvidas (`salesPageUrl` com fallback para `detailsUrl`).
+- Incluídos logs de sucesso, rejeição de contrato e erro de transporte para rastreabilidade da ingestão da biblioteca.
+
+## 2026-05-16 00:20 UTC
+- Adicionados logs detalhados no método `publishSalesPagesToLibrary` do coletor Hotmart para diagnóstico da ingestão na biblioteca.
+- Incluído log de início do método, contagem de produtos elegíveis vs. sem URL e log do payload JSON enviado para `POST /api/mois/sales-library/urls:ingest` (com truncamento para segurança operacional).
+- Ajustado envio HTTP para reutilizar o mesmo `payloadJson` registrado em log, garantindo rastreabilidade exata entre payload logado e payload transmitido.

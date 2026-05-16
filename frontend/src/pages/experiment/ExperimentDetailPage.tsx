@@ -29,6 +29,7 @@ import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentReportPanel from "./ExperimentReportPanel";
 import ExperimentLearningPanel from "./ExperimentLearningPanel";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
+import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
 import LandingTab from "./LandingTab";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
@@ -1904,6 +1905,9 @@ export default function ExperimentDetailPage() {
             <Tabs.Trigger value="conteudo" className="nav-link">
               Conteúdo
             </Tabs.Trigger>
+            <Tabs.Trigger value="publico" className="nav-link">
+              Público
+            </Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="overview" asChild>
             <div className="d-flex flex-column gap-3">
@@ -2690,6 +2694,9 @@ export default function ExperimentDetailPage() {
               campaignAngle={data?.campaignAngle}
               adCopy={data?.adCopy}
             />
+          </Tabs.Content>
+          <Tabs.Content value="publico" asChild>
+            <ExperimentAudienceTab experimentId={expId} nicheId={data?.marketNicheId} />
           </Tabs.Content>
           <Tabs.Content value="conteudo" asChild>
             <div className="d-flex flex-column gap-3">

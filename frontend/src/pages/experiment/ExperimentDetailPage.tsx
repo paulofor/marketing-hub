@@ -24,7 +24,6 @@ import {
   useExperimentCampaignResetPreview,
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
-import LeadPortalFlowTab from "./LeadPortalFlowTab";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentReportPanel from "./ExperimentReportPanel";
 import ExperimentLearningPanel from "./ExperimentLearningPanel";
@@ -1167,9 +1166,9 @@ export default function ExperimentDetailPage() {
         ? leadPortalFlowLabel
           ? `Fluxo ${leadPortalFlowLabel} vinculado ao experimento.`
           : "Já existe um fluxo do Portal do Lead vinculado."
-        : "Solicite ou vincule um fluxo aprovado na aba Portal do Lead.",
-      action: hasLeadPortalFlow ? undefined : () => setTab("lead-portal"),
-      actionLabel: hasLeadPortalFlow ? undefined : "Ir para Portal do Lead",
+        : "Solicite ou vincule um fluxo aprovado para o experimento.",
+      action: undefined,
+      actionLabel: undefined,
     },
   ];
 
@@ -1895,9 +1894,6 @@ export default function ExperimentDetailPage() {
             </Tabs.Trigger>
             <Tabs.Trigger value="gera-landing" className="nav-link">
               Gera landing
-            </Tabs.Trigger>
-            <Tabs.Trigger value="lead-portal" className="nav-link">
-              Portal do Lead
             </Tabs.Trigger>
             <Tabs.Trigger value="content-structure" className="nav-link">
               Estrutura de conteúdo
@@ -2682,9 +2678,6 @@ export default function ExperimentDetailPage() {
                 </div>
               </div>
             </div>
-          </Tabs.Content>
-          <Tabs.Content value="lead-portal" asChild>
-            <LeadPortalFlowTab experiment={data} />
           </Tabs.Content>
           <Tabs.Content value="content-structure" asChild>
             <ExperimentContentGenerationTab

@@ -107,7 +107,18 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
       { to: "/mois", label: "MOIS", icon: Workflow },
       { to: "/mois/sales-pages-library", label: "Biblioteca Sales Pages", icon: Workflow },
-      { to: "/oprm", label: "OPRM", icon: Workflow },
+      {
+        to: "/oprm",
+        label: "OPRM",
+        icon: Workflow,
+        children: [
+          {
+            to: "/oprm/cnaes-volume",
+            label: "CNAEs",
+            icon: Workflow,
+          },
+        ],
+      },
       { to: "/mds", label: "MDS", icon: Microscope },
       { to: "/hotmart", label: "Hotmart", icon: Workflow },
       { to: "/clickbase", label: "Clickbase", icon: Workflow },
@@ -197,40 +208,6 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Financeiro",
     items: [
       { to: "/payments", label: "Pagamentos", icon: CreditCard },
-    ],
-  },
-  {
-    title: "Interações",
-    items: [
-      { to: "/interaction-journeys", label: "Jornadas de interação", icon: Workflow },
-    ],
-  },
-  {
-    title: "Jornadas",
-    items: [
-      {
-        to: "/journeys",
-        label: "Jornadas",
-        icon: Map,
-        children: [
-          {
-            to: "/journeys",
-            label: "Visão geral",
-            icon: Compass,
-            end: true,
-          },
-          {
-            to: "/journey-templates",
-            label: "Templates",
-            icon: Layers,
-          },
-          {
-            to: "/journey-templates/new",
-            label: "Novo template",
-            icon: PlusCircle,
-          },
-        ],
-      },
     ],
   },
   {

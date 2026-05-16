@@ -91,8 +91,26 @@ O Ciclo Dois do coletor ClickBank passa a operar com o seguinte fluxo obrigatór
 
 ### 8.1 Regras de execução agendada
 
-- **Horas ímpares:** executar **Ciclo 1** (Top Offers).
-- **Horas pares:** executar **Ciclo 2** (resolução/persistência de páginas de venda).
+A execução passa a ocorrer **a cada hora**, com roteamento por `horaAtual % 3`:
+
+- **Resto 0:** executar **Ciclo 1** (Top Offers público).
+- **Resto 1:** executar **Ciclo 2** (resolução/persistência de páginas de venda).
+- **Resto 2:** executar **Ciclo 3** (coleta via GraphQL ClickBank).
+
+## 9. Definição canônica do Ciclo Três (ativada)
+
+O Ciclo Três do coletor ClickBank passa a operar com o seguinte fluxo obrigatório:
+
+1. Ler JWT ClickBank salvo no backend MOIS (`general-settings`).
+2. Executar consulta no endpoint GraphQL da ClickBank (`/graphql`) para retornar produtos ranqueados.
+3. Mapear os hits para o snapshot canônico do MOIS (`title`, `detailsUrl`, `category`, `temperature`, `salesPageUrl`).
+4. Persistir no backend MOIS via endpoint de persistência (`/api/v1/mois/persistence/collection-jobs/{jobId}`).
+
+### 9.1 Regras do Ciclo 3
+
+- O Ciclo 3 é **independente** do Ciclo 1 e não deve ser tratado apenas como fallback interno.
+- Sem JWT válido, o ciclo deve registrar status explícito de coleta sem dados (skipped), preservando rastreabilidade operacional.
+- Logs de ingestão devem registrar payload bruto retornado do GraphQL antes de normalização.
 
 ### 8.2 Responsabilidades por módulo
 

@@ -33,6 +33,14 @@ describe("OPRM navigation", () => {
     expect(link.getAttribute("href")).toBe("/oprm");
   });
 
+
+  it("has menu link to /oprm/cnaes-volume", () => {
+    setup(<App />, ["/"]);
+    const link = screen.getByRole("link", { name: /^cnaes$/i });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe("/oprm/cnaes-volume");
+  });
+
   it("renders loading state on /oprm/operations route", async () => {
     setup(<App />, ["/oprm/operations"]);
     expect(await screen.findByText(/carregando jobs do oprm/i)).toBeTruthy();

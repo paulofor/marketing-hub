@@ -106,7 +106,7 @@ public class ClickbankCollectorService {
     }
 
     public ClickbankCollectionResponse collect(ClickbankCollectionRequest request) {
-        return collectFirstCycle(request);
+        return collectThirdCycleGraphql(request);
     }
 
     public ClickbankCollectionResponse collectFirstCycle(ClickbankCollectionRequest request) {
@@ -117,28 +117,54 @@ public class ClickbankCollectorService {
         String message = "Coleta executada a partir da página pública de Top Offers da ClickBank.";
 
         log.info(
-                "Iniciando coleta Clickbank por página pública. maxProductsSolicitado={}, maxProductsAplicado={}, topOffersUrl={}",
+                "Iniciando Ciclo 1 Clickbank (Top Offers público). maxProductsSolicitado={}, maxProductsAplicado={}, topOffersUrl={}",
                 request.maxProducts(),
                 boundedMax,
                 clickbankTopOffersUrl
         );
 
         try {
+            int collected = collectProductsFromTopOffersPage(boundedMax, products);
+            log.info("Ciclo 1 Top Offers finalizado. produtosColetados={}", collected);
+            status = "COLLECTION_EXECUTED";
+            message = "Ciclo 1 executado via página pública Top Offers da ClickBank.";
+        } catch (Exception ex) {
+            status = "COLLECTION_ERROR";
+            message = "Falha no Ciclo 1 (Top Offers): " + ex.getMessage();
+            log.error("Erro no Ciclo 1 Clickbank (Top Offers).", ex);
+        }
+        persistCollectedProductsOnBackend(request, status, products);
+        return new ClickbankCollectionResponse(status, message, products);
+    }
+
+
+    public ClickbankCollectionResponse collectThirdCycleGraphql(ClickbankCollectionRequest request) {
+        int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
+        List<ClickbankProductSnapshot> products = new ArrayList<>();
+        String status = "COLLECTION_EXECUTED";
+        String message = "Ciclo 3 executado via GraphQL da ClickBank.";
+
+        log.info("Iniciando Ciclo 3 Clickbank (GraphQL). maxProductsSolicitado={}, maxProductsAplicado={}, graphqlUrl={}",
+                request.maxProducts(),
+                boundedMax,
+                clickbankGraphqlUrl);
+
+        try {
             String accessToken = fetchClickbankJwtFromGeneralSettings();
             int apiCollected = collectProductsFromGraphql(accessToken, boundedMax, products);
             if (apiCollected == 0) {
-                apiCollected = collectProductsFromTopOffersPage(boundedMax, products);
-                log.info("Coleta fallback Top Offers finalizada. produtosColetados={}", apiCollected);
+                status = "COLLECTION_SKIPPED";
+                message = "Ciclo 3 não coletou produtos via GraphQL (JWT ausente/inválido ou retorno vazio).";
+                log.warn("Ciclo 3 GraphQL sem dados coletados. produtosColetados={}", apiCollected);
             } else {
-                log.info("Coleta GraphQL Clickbank finalizada. produtosColetados={}", apiCollected);
+                log.info("Ciclo 3 GraphQL finalizado. produtosColetados={}", apiCollected);
             }
-            status = "COLLECTION_EXECUTED";
-            message = "Coleta executada via página pública Top Offers da ClickBank.";
         } catch (Exception ex) {
             status = "COLLECTION_ERROR";
-            message = "Falha na coleta da página Top Offers: " + ex.getMessage();
-            log.error("Erro na coleta Clickbank da página Top Offers.", ex);
+            message = "Falha no Ciclo 3 (GraphQL): " + ex.getMessage();
+            log.error("Erro no Ciclo 3 Clickbank (GraphQL).", ex);
         }
+
         persistCollectedProductsOnBackend(request, status, products);
         return new ClickbankCollectionResponse(status, message, products);
     }
@@ -158,6 +184,14 @@ public class ClickbankCollectorService {
             parameters.put("nicknameMasq", null);
             Map<String, Object> body = Map.of("query", CLICKBANK_GRAPHQL_QUERY, "variables", Map.of("parameters", parameters));
             String payload = objectMapper.writeValueAsString(body);
+            boolean tokenPresent = accessToken != null && !accessToken.isBlank();
+            log.info(
+                    "CLICKBANK_GRAPHQL_REQUEST endpoint={} method=POST hasAuthorizationHeader={} tokenLength={} payloadPreview='{}'",
+                    clickbankGraphqlUrl,
+                    tokenPresent,
+                    tokenPresent ? accessToken.length() : 0,
+                    truncateForLog(payload, 1200)
+            );
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(clickbankGraphqlUrl))
                     .header("accept", "application/json")
@@ -506,6 +540,7 @@ public class ClickbankCollectorService {
     private String fetchClickbankJwtFromGeneralSettings() {
         try {
             String endpoint = backendBaseUrl + "/api/settings/" + clickbankJwtSettingKey;
+            log.info("Buscando JWT Clickbank nas configurações gerais. endpoint={}, settingKey={}", endpoint, clickbankJwtSettingKey);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .GET()
@@ -517,7 +552,14 @@ public class ClickbankCollectorService {
                 return "";
             }
             JsonNode root = objectMapper.readTree(response.body());
-            return root.path("value").asText("");
+            String token = root.path("value").asText("");
+            log.info(
+                    "JWT Clickbank carregado das configurações gerais. endpoint={}, tokenPresente={}, tokenTamanho={}",
+                    endpoint,
+                    token != null && !token.isBlank(),
+                    token == null ? 0 : token.length()
+            );
+            return token;
         } catch (Exception ex) {
             log.warn("Erro ao buscar JWT da Clickbank em configurações gerais.", ex);
             return "";

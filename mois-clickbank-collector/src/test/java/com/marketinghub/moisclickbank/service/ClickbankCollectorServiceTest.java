@@ -33,7 +33,7 @@ class ClickbankCollectorServiceTest {
                 "ofertas-clickbank"
         );
 
-        var response = service.collect(new ClickbankCollectionRequest("clickbank-market", 10));
+        var response = service.collectFirstCycle(new ClickbankCollectionRequest("clickbank-market", 10));
 
         assertEquals("COLLECTION_ERROR", response.status());
     }
@@ -66,7 +66,7 @@ class ClickbankCollectorServiceTest {
                     "clickbank_access_token_jwt", "https://accounts.clickbank.com/graphql",
                     "workspace-001", "marketing-digital", "ofertas-clickbank"
             );
-            var response = service.collect(new ClickbankCollectionRequest("clickbank-market", 10));
+            var response = service.collectFirstCycle(new ClickbankCollectionRequest("clickbank-market", 10));
 
             assertEquals("COLLECTION_EXECUTED", response.status());
             assertEquals(1, response.products().size());

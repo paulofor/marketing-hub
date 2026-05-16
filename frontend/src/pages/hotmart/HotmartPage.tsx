@@ -162,7 +162,7 @@ export default function HotmartPage() {
                     const producer = item.producerName;
                     const price = item.price;
                     const currency = item.currency ?? "BRL";
-                    const salesPageUrl = item.pageSalesLink?.trim() || item.salesPageUrl?.trim() || null;
+                    const salesPageUrl = item.salesPageUrl?.trim() || null;
 
                     return (
                       <article key={item.referenceId} className="col-12 col-md-6 col-lg-4">
@@ -182,7 +182,7 @@ export default function HotmartPage() {
                               Temperatura: <strong>{item.temperature ?? "—"}</strong>
                             </p>
                             <p className="small mb-2">
-                              pageSalesLink:{" "}
+                              Página de vendas:{" "}
                               {salesPageUrl ? (
                                 <a href={salesPageUrl} target="_blank" rel="noreferrer">
                                   {salesPageUrl}

@@ -173,13 +173,7 @@ class FlowSubmissionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_PNG));
 
-        assertThat(imagePackageRepository.count()).isEqualTo(1);
-        assertThat(imagePackageRepository.findAll())
-                .first()
-                .satisfies(pkg -> {
-                    assertThat(pkg.getSubmissionId()).isEqualTo(id);
-                    assertThat(pkg.getStatus()).isEqualTo("RECENT");
-                });
+        assertThat(imagePackageRepository.count()).isZero();
     }
 
     @Test

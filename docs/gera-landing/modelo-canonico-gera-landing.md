@@ -28,7 +28,7 @@ Ele cobre:
 
 - **AI Worker (`com.marketinghub.worker.geralanding`)**
   - Faz polling de pendências.
-  - Monta prompt de wireframe com dados do experimento.
+  - Monta prompt da etapa com dados do experimento (wireframe, copy, image-planning, design-preset e deliverables).
   - Monta request da Responses API com `json_schema strict`.
   - Executa ciclo batch (upload JSONL → create batch → polling → download output).
   - Devolve status de dispatch e resultado (ou falha) para o backend.
@@ -71,7 +71,7 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 
 | Campo | Tipo (MySQL 5.7) | Obrigatório | Papel no fluxo |
 |---|---|---:|---|
-| `id_job` | `BINARY(36)` (trafega como string) | Sim | Identificador da execução ponta a ponta. |
+| `id_job` | `VARBINARY(36)` (mapeado em Java como `byte[]` UTF-8) | Sim | Identificador da execução ponta a ponta. |
 | `experiment_id` | `BIGINT` | Sim | Dono da execução (experimento). |
 | `stage_code` | `VARCHAR(100)` | Sim | Etapa lógica (`landing-page-wireframe`). |
 | `execution_requested_at` | `DATETIME(3)` | Sim | Momento em que a execução foi criada/solicitada. |
@@ -79,7 +79,7 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 | `processing_started_at` | `DATETIME(3)` | Não | Preenchido quando prompt auditável é recebido no backend. |
 | `completed_at` | `DATETIME(3)` | Não | Preenchido em sucesso **ou** falha final. |
 | `prompt_template_id` | `VARCHAR(191)` | Não | Identificador técnico da origem do prompt inicial. |
-| `prompt_content` | `LONGTEXT` | Sim | Prompt inicial do start/manual ou registro worker. |
+| `prompt_content` | `TINYTEXT` | Sim | Prompt inicial do start/manual ou registro worker. |
 | `prompt` | `LONGTEXT` | Não | Prompt final montado no worker (envelope de tarefa + instruções). |
 | `openai_request_body` | `LONGTEXT` | Não | Request JSON efetivo para Responses API em batch. |
 | `schema_json` | `LONGTEXT` | Não | Schema serializado usado em `text.format.schema`. |
@@ -193,7 +193,7 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 4. Para cada item:
    - valida `stageCode` e `idJob` não vazios;
    - normaliza etapa (`trim + lowerCase`);
-   - processa somente `landing-page-wireframe`.
+   - processa apenas etapas suportadas: `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-planning`, `landing-page-design-preset` e `landing-page-deliverables`.
 
 ## 4.3 Montagem do contexto de dados
 
@@ -544,7 +544,7 @@ Esse contrato é a base concreta para suportar **qualquer estágio** na tela de 
 
 ### 12.1 Objetivo do mecanismo
 
-No pipeline Gera Landing, cada etapa de geração (ex.: `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-briefing`, `landing-page-design-preset`) deve possuir seu próprio **Assembler** responsável por transformar a saída estruturada do modelo em um HTML provisório visualizável e auditável.
+No pipeline Gera Landing, cada etapa de geração (ex.: `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-planning`, `landing-page-design-preset` e `landing-page-deliverables`) deve possuir seu próprio **Assembler** responsável por transformar a saída estruturada do modelo em um HTML provisório visualizável e auditável quando aplicável à etapa.
 
 Esse HTML provisório é um artefato operacional de inspeção rápida e validação humana do conteúdo da etapa. Ele **não substitui** o render final da landing, mas garante:
 

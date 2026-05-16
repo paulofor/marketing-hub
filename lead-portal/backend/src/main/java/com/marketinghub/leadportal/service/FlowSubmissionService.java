@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -63,6 +64,7 @@ public class FlowSubmissionService {
     private final FlowSubmissionImagePackageStatusHistoryService statusHistoryService;
     private final FlowImagePromptService imagePromptService;
     private final ExperimentFunnelTrackingClient trackingClient;
+    private final boolean imagePipelineEnabled;
 
     public FlowSubmissionService(
             FlowService flowService,
@@ -71,7 +73,8 @@ public class FlowSubmissionService {
             FileStorageService fileStorageService,
             FlowSubmissionImagePackageStatusHistoryService statusHistoryService,
             FlowImagePromptService imagePromptService,
-            ExperimentFunnelTrackingClient trackingClient) {
+            ExperimentFunnelTrackingClient trackingClient,
+            @Value("${lead-portal.image-pipeline.enabled:false}") boolean imagePipelineEnabled) {
         this.flowService = flowService;
         this.repository = repository;
         this.imagePackageRepository = imagePackageRepository;
@@ -79,6 +82,7 @@ public class FlowSubmissionService {
         this.statusHistoryService = statusHistoryService;
         this.imagePromptService = imagePromptService;
         this.trackingClient = trackingClient;
+        this.imagePipelineEnabled = imagePipelineEnabled;
     }
 
     public FlowSubmission create(String slug, FlowSubmissionRequest request, MultipartFile imageFile) {
@@ -271,6 +275,13 @@ public class FlowSubmissionService {
     }
 
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {
+        if (!imagePipelineEnabled) {
+            log.info(
+                    "Image pipeline disabled. Submission {} from flow {} will only register lead data.",
+                    submission.id(),
+                    flow.slug());
+            return;
+        }
         Optional<FlowImagePrompt> promptSpec = imagePromptService.buildPrompt(flow, submission);
         if (promptSpec.isEmpty() && !hasImage) {
             log.info("Skipping image package for submission {} in flow {} because there is no prompt/template.",

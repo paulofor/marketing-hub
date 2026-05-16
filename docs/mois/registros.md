@@ -1,5 +1,8 @@
 # Registros — MOIS
 
+> ⚠️ Para alterações operacionais dos coletores MOIS (Hotmart/ClickBank), use como arquivo canônico principal: `docs/registros/coletor-mois1.md`.
+> Este arquivo `docs/mois/registros.md` permanece para registros gerais do módulo MOIS que não sejam do coletor.
+
 > Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
 > Neste documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 

@@ -494,7 +494,8 @@ export default function CriativosTab({ experimentId }: Props) {
     const isProcessing = processingCreativeId === c.id;
     const hasImagePrompt = Boolean(c.imagePrompt?.trim());
     const isPromptExpanded = Boolean(expandedPromptByCreativeId[c.id]);
-    const hasPreviousImagePrompt = Boolean(imagePrompt.trim());
+    const previousImagePrompt = experiment?.creativeImagePrompt?.trim() ?? "";
+    const hasPreviousImagePrompt = Boolean(previousImagePrompt);
     const isPreviousPromptExpanded = Boolean(
       expandedPreviousPromptByCreativeId[c.id],
     );
@@ -685,7 +686,7 @@ export default function CriativosTab({ experimentId }: Props) {
               </button>
               {isPreviousPromptExpanded && (
                 <p className="creative-card-prompt-text mb-0 mt-2">
-                  {imagePrompt.trim()}
+                  {previousImagePrompt}
                 </p>
               )}
             </div>

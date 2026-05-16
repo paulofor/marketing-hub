@@ -542,29 +542,13 @@ public class ExperimentPipelineGenerationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Landing HTML ainda não foi gerado para este experimento");
         }
-        ExperimentPipelineGenerationJob latestLhmJob = jobRepository
-                .findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
-                        experimentId,
-                        ExperimentPipelineSection.LANDING_PAGE_HTML,
-                        ExperimentPipelineGenerationJobStatus.COMPLETED,
-                        LHM_MODEL)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.CONFLICT,
-                        "HTML determinístico (LHM) não encontrado. Gere novamente em 'LHM + IA' antes de publicar."));
-        String lhmHtml = firstNonBlank(latestLhmJob.getResponseContent(), latestLhmJob.getRawResponse());
-        if (!StringUtils.hasText(lhmHtml)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "HTML determinístico (LHM) está vazio. Gere novamente em 'LHM + IA' antes de publicar.");
-        }
         LeadPortalFlow iaFlow = upsertLandingVariantFlow(
                 experiment,
                 "gerar-com-ia",
                 GERAR_COM_IA_MODEL,
                 experiment.getLandingPageHtml());
-        LeadPortalFlow lhmFlow = upsertLandingVariantFlow(experiment, "lhm", LHM_MODEL, lhmHtml);
 
-        for (LeadPortalFlow flow : List.of(iaFlow, lhmFlow)) {
+        for (LeadPortalFlow flow : List.of(iaFlow)) {
             flow.setApproved(true);
             if (flow.getApprovedAt() == null) {
                 flow.setApprovedAt(Instant.now());
@@ -584,15 +568,13 @@ public class ExperimentPipelineGenerationService {
         experiment.setSchemaFirstLeadPortalEnabled(true);
         experimentRepository.save(experiment);
 
-        List<LandingPageVariantLinksDto> variantLinks = List.of(
-                toVariantLinks("Gerar com IA", iaFlow),
-                toVariantLinks("LHM", lhmFlow));
+        List<LandingPageVariantLinksDto> variantLinks = List.of(toVariantLinks("Gera Landing", iaFlow));
 
         String pixelId = iaFlow.getMarketNiche() != null ? iaFlow.getMarketNiche().getFacebookPixelId() : null;
         return new LandingPagePublicationResultDto(
                 experimentId,
                 iaFlow.getId(),
-                iaFlow.isApproved() && lhmFlow.isApproved(),
+                iaFlow.isApproved(),
                 true,
                 leadPortalPublicUrlResolver.resolve(iaFlow),
                 variantLinks,

@@ -34,6 +34,30 @@ public final class MoisSalesLibraryDtos {
     }
 
 
+
+    public record SalesLibraryJobResponse(
+            long id,
+            long urlIngestId,
+            String status,
+            int attempts,
+            String errorCategory,
+            String errorMessage,
+            Instant nextRetryAt,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant startedAt,
+            Instant finishedAt
+    ) {
+    }
+
+    public record SalesLibraryJobPageResponse(
+            int page,
+            int pageSize,
+            long total,
+            List<SalesLibraryJobResponse> items
+    ) {
+    }
+
     public record SalesLibraryEntryResponse(
             long id,
             String workspaceId,

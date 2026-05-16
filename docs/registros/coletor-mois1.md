@@ -1,5 +1,18 @@
 # Registros — Coletor Mois
 
+> 🔴 **Arquivo canônico principal (atual)** para registro operacional dos módulos coletores do MOIS.
+> Toda alteração em `mois-hotmart-collector` e `mois-clickbank-collector` deve ser registrada neste arquivo.
+> Em caso de dúvida entre arquivos de registro, este é o ponto único de verdade.
+
+## Template obrigatório de novo registro
+
+```md
+## YYYY-MM-DD HH:mm:ss UTC-3
+- descrição breve do problema
+- descrição breve do raciocínio para a solução
+- registro do que foi feito
+```
+
 > Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
 > Neste documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 
@@ -214,3 +227,13 @@
 - Adicionados logs detalhados no método `publishSalesPagesToLibrary` do coletor Hotmart para diagnóstico da ingestão na biblioteca.
 - Incluído log de início do método, contagem de produtos elegíveis vs. sem URL e log do payload JSON enviado para `POST /api/mois/sales-library/urls:ingest` (com truncamento para segurança operacional).
 - Ajustado envio HTTP para reutilizar o mesmo `payloadJson` registrado em log, garantindo rastreabilidade exata entre payload logado e payload transmitido.
+
+## 2026-05-16 19:07:15 UTC-3
+- havia ambiguidade sobre o arquivo oficial de registro dos módulos coletores MOIS, causando dispersão de lançamentos entre documentos diferentes.
+- para eliminar a causa-raiz, foi definido um único ponto canônico explícito e um template obrigatório único no topo do arquivo.
+- atualizado  com bloco de governança de "arquivo canônico principal" e template obrigatório; atualizado  com aviso de redirecionamento para o arquivo canônico dos coletores.
+
+## 2026-05-16 19:07:23 UTC-3
+- havia ambiguidade sobre o arquivo oficial de registro dos módulos coletores MOIS, causando dispersão de lançamentos entre documentos diferentes.
+- para eliminar a causa-raiz, foi definido um único ponto canônico explícito e um template obrigatório único no topo do arquivo.
+- atualizado docs/registros/coletor-mois1.md com bloco de governança de "arquivo canônico principal" e template obrigatório; atualizado docs/mois/registros.md com aviso de redirecionamento para o arquivo canônico dos coletores.

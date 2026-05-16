@@ -4123,6 +4123,27 @@ function LandingHtmlPreview({
           </div>
         </div>
       </div>
+      <div className="d-flex justify-content-end">
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={isApplying || !experimentId || !canRender}
+          onClick={handleApplyToForm}
+        >
+          {isApplying ? (
+            <span className="d-inline-flex align-items-center gap-1">
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              />
+              Publicando...
+            </span>
+          ) : (
+            "Aprovar landing e liberar para campanha"
+          )}
+        </button>
+      </div>
       {content.htmlDocument ? (
         <details>
           <summary className="small text-muted">Ver HTML bruto</summary>

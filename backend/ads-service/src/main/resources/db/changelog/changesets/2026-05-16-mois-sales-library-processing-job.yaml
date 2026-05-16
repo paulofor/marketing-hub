@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-16-mois-sales-library-processing-job-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: mois_sales_library_processing_job
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_library_processing_job (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                url_ingest_id BIGINT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                attempts INT NOT NULL DEFAULT 0,
+                error_category VARCHAR(80) NULL,
+                error_message VARCHAR(1000) NULL,
+                next_retry_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                started_at DATETIME NULL,
+                finished_at DATETIME NULL,
+                PRIMARY KEY (id),
+                KEY idx_mois_sales_library_job_status_updated (status, updated_at),
+                KEY idx_mois_sales_library_job_url_ingest (url_ingest_id),
+                CONSTRAINT fk_mois_sales_library_job_url_ingest
+                  FOREIGN KEY (url_ingest_id) REFERENCES mois_sales_library_url_ingest(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

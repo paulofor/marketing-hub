@@ -653,3 +653,16 @@ Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cad
 - Endpoint backend de ingestão: `POST /api/mois/sales-library/urls:ingest`.
 - Regra de unicidade: `url_canonical` (URL canônica única na biblioteca, independente de `workspace_id` e `source`).
 - Regra operacional: o coletor envia URL para o backend principal; somente o backend persiste no banco.
+
+## MOIS — Biblioteca de páginas de vendas (jobs de processamento, 2026-05-16)
+
+- Nova tabela backend: `mois_sales_library_processing_job`.
+- Objetivo: registrar a fila de processamento assíncrono por URL ingerida da biblioteca de sales pages.
+- Relacionamento: `mois_sales_library_processing_job.url_ingest_id -> mois_sales_library_url_ingest.id`.
+- Estados operacionais iniciais suportados: `PENDING` (com evolução prevista para `FETCHING`, `FETCHED`, `ANALYZING`, `DONE`, `FAILED`, `RETRY_SCHEDULED`).
+- Colunas operacionais: `status`, `attempts`, `error_category`, `error_message`, `next_retry_at`, `started_at`, `finished_at`, `created_at`, `updated_at`.
+- Índices operacionais: `(status, updated_at)` para observabilidade de fila e `url_ingest_id` para correlação por URL.
+- Endpoints backend adicionados para observabilidade:
+  - `GET /api/mois/sales-library/jobs/{jobId}`
+  - `GET /api/mois/sales-library/jobs?workspaceId=...&status=...`
+- Regra operacional: cada ingestão válida em `POST /api/mois/sales-library/urls:ingest` também cria um job inicial `PENDING`.

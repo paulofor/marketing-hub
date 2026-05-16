@@ -14,7 +14,6 @@ import { getExperimentStageLabel } from "./stageLabels";
 import nicheIcon from "../../assets/icons/niche-icon.svg";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
-import SampleEmailsTab from "./SampleEmailsTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
@@ -1352,32 +1351,6 @@ export default function ExperimentDetailPage() {
     FAILED: "Com erro",
   };
 
-  const selectedEmailOverview = data.selectedSampleEmailSubject ? (
-    <div className="d-flex flex-column">
-      <span>{data.selectedSampleEmailSubject}</span>
-      {data.selectedSampleEmailUpdatedAt ? (
-        <span className="text-muted small">
-          Atualizado em {formatDateTimeValue(data.selectedSampleEmailUpdatedAt)}
-        </span>
-      ) : null}
-      <button
-        type="button"
-        className="btn btn-link btn-sm p-0 mt-1 align-self-start"
-        onClick={() => setTab("sample-emails")}
-      >
-        Ver e-mails
-      </button>
-    </div>
-  ) : (
-    <button
-      type="button"
-      className="btn btn-link btn-sm p-0"
-      onClick={() => setTab("sample-emails")}
-    >
-      Escolher e-mail
-    </button>
-  );
-
   const rows = [
     {
       label: "Nicho",
@@ -1427,8 +1400,8 @@ export default function ExperimentDetailPage() {
       value: data.sampleEmailsToGenerate ?? "—",
     },
     {
-      label: "E-mail de amostra selecionado",
-      value: selectedEmailOverview,
+      label: "E-mail de amostra",
+      value: "Obsoleto",
     },
     {
       label: "Fluxo de portal do lead",
@@ -1923,9 +1896,6 @@ export default function ExperimentDetailPage() {
             </Tabs.Trigger>
             <Tabs.Trigger value="gera-landing" className="nav-link">
               Gera landing
-            </Tabs.Trigger>
-            <Tabs.Trigger value="sample-emails" className="nav-link">
-              E-mails de amostra
             </Tabs.Trigger>
             <Tabs.Trigger value="lead-portal" className="nav-link">
               Portal do Lead
@@ -2710,15 +2680,6 @@ export default function ExperimentDetailPage() {
                 </div>
               </div>
             </div>
-          </Tabs.Content>
-          <Tabs.Content value="sample-emails" asChild>
-            <SampleEmailsTab
-              experimentId={expId}
-              requestedSampleEmails={data.sampleEmailsToGenerate}
-              selectedSampleEmailId={data.selectedSampleEmailId}
-              selectedSampleEmailSubject={data.selectedSampleEmailSubject}
-              selectedSampleEmailUpdatedAt={data.selectedSampleEmailUpdatedAt}
-            />
           </Tabs.Content>
           <Tabs.Content value="lead-portal" asChild>
             <LeadPortalFlowTab experiment={data} />

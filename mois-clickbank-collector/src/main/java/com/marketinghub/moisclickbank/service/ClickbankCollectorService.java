@@ -184,10 +184,12 @@ public class ClickbankCollectorService {
             parameters.put("nicknameMasq", null);
             Map<String, Object> body = Map.of("query", CLICKBANK_GRAPHQL_QUERY, "variables", Map.of("parameters", parameters));
             String payload = objectMapper.writeValueAsString(body);
+            boolean tokenPresent = accessToken != null && !accessToken.isBlank();
             log.info(
-                    "CLICKBANK_GRAPHQL_REQUEST endpoint={} method=POST hasAuthorizationHeader={} payloadPreview='{}'",
+                    "CLICKBANK_GRAPHQL_REQUEST endpoint={} method=POST hasAuthorizationHeader={} tokenLength={} payloadPreview='{}'",
                     clickbankGraphqlUrl,
-                    true,
+                    tokenPresent,
+                    tokenPresent ? accessToken.length() : 0,
                     truncateForLog(payload, 1200)
             );
             HttpRequest request = HttpRequest.newBuilder()

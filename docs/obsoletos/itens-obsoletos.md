@@ -49,3 +49,18 @@ Apesar da remoção no frontend, ainda existem dependências de jornada no backe
 
 ### Sinalização de obsolescência mantida na UI
 - No overview do experimento, o campo **E-mail de amostra** permanece visível com valor fixo **Obsoleto** para registrar a descontinuação.
+
+## Backend — Readiness por workflow de adset (obsoleto)
+
+### Status
+- **Obsoleto**
+- **Data do registro:** 2026-05-16
+- **Motivo:** o workflow automático de adset não deve mais ser considerado requisito de prontidão para publicação/criação de campanha.
+
+### Mudança aplicada
+- A validação de readiness do experimento **não** usa mais `experiment_adset_workflow`/`experiment_adset_spec` como critério para considerar público completo.
+- O requisito de público permanece baseado em seleção salva em `experiment_targeting_selection` (cargo/work position).
+
+### Impacto de dependência na criação de campanha
+- A criação/publicação de campanha **não depende** mais de workflow de adset concluído.
+- O bloqueio de público passa a depender apenas da existência de seleção de segmentação salva no experimento.

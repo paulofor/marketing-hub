@@ -380,37 +380,21 @@ class ExperimentPipelineGenerationServiceTest {
         iaFlow.setSlug("exp-22-landing-gerar-com-ia");
         iaFlow.setApproved(false);
 
-        LeadPortalFlow lhmFlow = new LeadPortalFlow();
-        lhmFlow.setId(903L);
-        lhmFlow.setSlug("exp-22-landing-lhm");
-        lhmFlow.setApproved(false);
-
         MarketNiche niche = new MarketNiche();
         niche.setFacebookPixelId("pixel-abc");
         iaFlow.setMarketNiche(niche);
-        lhmFlow.setMarketNiche(niche);
 
         Experiment experiment = new Experiment();
         experiment.setId(22L);
         experiment.setNiche(niche);
         experiment.setLandingPageHtml("<section>ia</section>");
 
-        ExperimentPipelineGenerationJob lhmJob = new ExperimentPipelineGenerationJob();
-        lhmJob.setResponseContent("<section>lhm</section>");
         when(experimentRepository.findById(22L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.findTopByExperimentIdAndSectionAndStatusAndModelOrderByCreatedAtDesc(
-                22L,
-                ExperimentPipelineSection.LANDING_PAGE_HTML,
-                ExperimentPipelineGenerationJobStatus.COMPLETED,
-                "LHM")).thenReturn(Optional.of(lhmJob));
         when(leadPortalFlowRepository.findBySlug("exp-22-landing-gerar-com-ia")).thenReturn(Optional.of(iaFlow));
-        when(leadPortalFlowRepository.findBySlug("exp-22-landing-lhm")).thenReturn(Optional.of(lhmFlow));
         when(leadPortalFlowRepository.save(any(LeadPortalFlow.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(experimentRepository.save(any(Experiment.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(landingPageImageInjector.injectImages(22L, "<section>ia</section>")).thenReturn("<section>ia</section>");
-        when(landingPageImageInjector.injectImages(22L, "<section>lhm</section>")).thenReturn("<section>lhm</section>");
         when(leadPortalPublicUrlResolver.resolve(iaFlow)).thenReturn("https://lead.portal/flows/exp-22-landing-gerar-com-ia");
-        when(leadPortalPublicUrlResolver.resolve(lhmFlow)).thenReturn("https://lead.portal/flows/exp-22-landing-lhm");
 
         LandingPagePublicationResultDto result = service.approveAndPublishLandingPage(22L);
 
@@ -420,12 +404,10 @@ class ExperimentPipelineGenerationServiceTest {
         assertTrue(result.pixelAppliedAutomatically());
         assertEquals("pixel-abc", result.facebookPixelId());
         assertEquals("https://lead.portal/flows/exp-22-landing-gerar-com-ia", result.publicUrl());
-        assertEquals(2, result.variantLinks().size());
-        assertEquals("Gerar com IA", result.variantLinks().get(0).variant());
+        assertEquals(1, result.variantLinks().size());
+        assertEquals("Gera Landing", result.variantLinks().get(0).variant());
         assertEquals("https://lead.portal/api/flows/exp-22-landing-gerar-com-ia/page", result.variantLinks().get(0).standaloneUrl());
-        assertEquals("LHM", result.variantLinks().get(1).variant());
-        assertEquals("https://lead.portal/api/flows/exp-22-landing-lhm/page", result.variantLinks().get(1).standaloneUrl());
-        verify(leadPortalFlowPublisher, times(2)).publish(any(LeadPortalFlow.class));
+        verify(leadPortalFlowPublisher, times(1)).publish(any(LeadPortalFlow.class));
     }
 
     @Test

@@ -12,6 +12,7 @@ import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import {
   AlertTriangle,
   CheckCircle2,
+  Edit3,
   Eye,
   Sparkles,
   Trash2,
@@ -460,6 +461,11 @@ export default function CriativosTab({ experimentId }: Props) {
 
   const isSavingPageId = updateExperimentMutation.isPending;
   const isSavingPrompts = updatePromptsMutation.isPending;
+
+  const openEdit = (c: Creative) => {
+    setEditing(c);
+    setShowPreview(true);
+  };
 
   const startPreview = (c: Creative) => {
     setEditing(c);

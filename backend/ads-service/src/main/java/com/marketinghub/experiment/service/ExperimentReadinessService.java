@@ -6,18 +6,11 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetSpec;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetSpecSlot;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflow;
-import com.marketinghub.facebookads.playbook.ExperimentAdSetWorkflowStatus;
-import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetSpecRepository;
-import com.marketinghub.facebookads.playbook.repository.ExperimentAdSetWorkflowRepository;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,19 +23,13 @@ public class ExperimentReadinessService {
     private final ExperimentService experimentService;
     private final CreativeRepository creativeRepository;
     private final ExperimentTargetingSelectionRepository targetingSelectionRepository;
-    private final ExperimentAdSetWorkflowRepository adSetWorkflowRepository;
-    private final ExperimentAdSetSpecRepository adSetSpecRepository;
 
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
-                                      ExperimentTargetingSelectionRepository targetingSelectionRepository,
-                                      ExperimentAdSetWorkflowRepository adSetWorkflowRepository,
-                                      ExperimentAdSetSpecRepository adSetSpecRepository) {
+                                      ExperimentTargetingSelectionRepository targetingSelectionRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
-        this.adSetWorkflowRepository = adSetWorkflowRepository;
-        this.adSetSpecRepository = adSetSpecRepository;
     }
 
     @Transactional(readOnly = true)
@@ -130,7 +117,7 @@ public class ExperimentReadinessService {
         if (experiment == null) {
             return false;
         }
-        return hasReadyAdSetSpecs(experiment.getId()) || hasSelectedTargeting(experiment.getId());
+        return hasSelectedTargeting(experiment.getId());
     }
 
     private boolean hasApprovedCreative(Experiment experiment) {
@@ -155,36 +142,5 @@ public class ExperimentReadinessService {
                 experimentId, TargetingCandidateType.WORK_POSITION) > 0;
     }
 
-    private boolean hasReadyAdSetSpecs(Long experimentId) {
-        if (experimentId == null) {
-            return false;
-        }
-        return adSetWorkflowRepository.findByExperimentId(experimentId)
-                .filter(workflow -> workflow.getStatus() == ExperimentAdSetWorkflowStatus.COMPLETED)
-                .filter(this::hasEnoughReadySpecs)
-                .isPresent();
-    }
-
-    private boolean hasEnoughReadySpecs(ExperimentAdSetWorkflow workflow) {
-        List<ExperimentAdSetSpec> specs = adSetSpecRepository.findByWorkflowId(workflow.getId());
-        if (specs.isEmpty()) {
-            return false;
-        }
-        long readyCount = specs.stream()
-                .filter(this::isSpecReady)
-                .count();
-        return readyCount >= ExperimentAdSetSpecSlot.values().length;
-    }
-
-    private boolean isSpecReady(ExperimentAdSetSpec spec) {
-        if (spec == null) {
-            return false;
-        }
-        if (!"READY".equalsIgnoreCase(spec.getReachStatus())) {
-            return false;
-        }
-        String validation = spec.getValidationStatus();
-        return !StringUtils.hasText(validation) || "VALID".equalsIgnoreCase(validation.trim());
-    }
 
 }

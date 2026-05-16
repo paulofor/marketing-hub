@@ -118,6 +118,7 @@ import OprmEvidencePage from "./pages/oprm/OprmEvidencePage";
 import OprmFeedbackPage from "./pages/oprm/OprmFeedbackPage";
 import OprmOperationsPage from "./pages/oprm/OprmOperationsPage";
 import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
+import OprmCnaeVolumePage from "./pages/oprm/OprmCnaeVolumePage";
 import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
 import MoisReferenceIntakePage from "./pages/mois/MoisReferenceIntakePage";
 import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
@@ -323,6 +324,10 @@ export default function App() {
               <Route
                 path="/oprm/occupations"
                 element={<OprmOccupationCatalogPage />}
+              />
+              <Route
+                path="/oprm/cnaes-volume"
+                element={<OprmCnaeVolumePage />}
               />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />

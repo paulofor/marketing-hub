@@ -12,6 +12,8 @@ import com.marketinghub.oprm.market.repository.OprmCnpjImportRunRepository;
 import com.marketinghub.oprm.market.repository.OprmMarketSizeByCnaeRepository;
 import java.time.Instant;
 import java.util.List;
+import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
+import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -173,5 +175,11 @@ public class OprmMarketImportService {
     @Transactional(readOnly = true)
     public List<OprmCnpjCnaeDim> listCnaes() {
         return cnaeDimRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByMarketVolume(int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 100);
+        return marketSizeRepository.findTopByLatestSnapshot(PageRequest.of(0, safeLimit));
     }
 }

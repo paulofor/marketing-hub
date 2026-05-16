@@ -34,3 +34,18 @@ Este documento centraliza itens que foram marcados como obsoletos no Marketing H
 
 ### Observação de dependência de dados
 Apesar da remoção no frontend, ainda existem dependências de jornada no backend/banco (FKs e modelo), então a remoção total deve ser planejada de forma incremental.
+
+## Frontend — E-mails de amostra no Experimento (obsoleto)
+
+### Status
+- **Obsoleto**
+- **Data do registro:** 2026-05-16
+- **Motivo:** aba de e-mails de amostra aposentada por decisão de produto; fluxo não deve mais ser acessível na tela de experimento.
+
+### Itens removidos da superfície da aplicação
+- A tela de detalhe de experimento (`/experiments/:id`) não exibe mais:
+  - Aba **E-mails de amostra**.
+  - Conteúdo da tab `sample-emails` com o componente `SampleEmailsTab`.
+
+### Sinalização de obsolescência mantida na UI
+- No overview do experimento, o campo **E-mail de amostra** permanece visível com valor fixo **Obsoleto** para registrar a descontinuação.

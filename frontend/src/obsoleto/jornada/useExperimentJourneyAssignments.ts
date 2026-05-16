@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import type { JourneyAssignment } from "../journey/types";
+import type { JourneyAssignment } from "../../api/journey/types";
 
 export interface ExperimentJourneyAssignments {
   journeyId?: number | null;

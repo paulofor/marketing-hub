@@ -87,3 +87,15 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/LandingTab.tsx
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-05-17 00:00:00 UTC
+- solicitação para investigar e corrigir `400 Bad Request` no `PUT /api/experiments/20`.
+- causa-raiz identificada: ao enviar `leadPortalFlowId: null` no payload de atualização, o backend tratava o campo como obrigatório quando presente e lançava erro `leadPortalFlowId required`.
+- correção aplicada: ajuste no `ExperimentService.update` para permitir `leadPortalFlowId` nulo quando informado explicitamente (limpando o vínculo do fluxo), mantendo validação normal quando um ID é enviado.
+- validação automatizada adicionada com teste unitário cobrindo o cenário de limpeza do `leadPortalFlowId` via update.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+  - backend/ads-service/src/test/java/com/marketinghub/experiment/ExperimentServiceTest.java

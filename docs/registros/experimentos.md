@@ -192,3 +192,10 @@
   - `docs/canonical/facebook-campaign-publication-canon.v1.md`
 - registro desta tarefa realizado em:
   - `docs/registros/experimentos.md`
+## 2026-05-17 22:04:14 UTC
+- ajuste no prompt da etapa de copy da landing para evitar sinais tipográficos ambíguos no texto final.
+- causa-raiz tratada: a geração estava produzindo trechos com `~` e `+` (ex.: "em ~3 min" e "PDF + mini-kit"), que reduzem clareza comercial e padronização de linguagem.
+- foi feito: inclusão de regra explícita no prompt `landing-copy` orientando substituir `~` por linguagem textual (ex.: "aproximadamente") e `+` por conectivos textuais (ex.: "e"), aplicada a todos os campos de copy.
+- arquivos alterados:
+  - ai-worker/src/main/resources/prompts/experiment/landing-copy.md
+  - docs/registros/experimentos.md

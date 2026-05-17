@@ -564,11 +564,14 @@ public class ExperimentPipelineGenerationService {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, message, ex);
             }
         }
+        LandingPageVariantLinksDto primaryLinks = toVariantLinks("Gera Landing", iaFlow);
+
         experiment.setLeadPortalFlow(iaFlow);
         experiment.setSchemaFirstLeadPortalEnabled(true);
+        experiment.setFollowUpActionUrl(primaryLinks.standaloneUrl());
         experimentRepository.save(experiment);
 
-        List<LandingPageVariantLinksDto> variantLinks = List.of(toVariantLinks("Gera Landing", iaFlow));
+        List<LandingPageVariantLinksDto> variantLinks = List.of(primaryLinks);
 
         String pixelId = iaFlow.getMarketNiche() != null ? iaFlow.getMarketNiche().getFacebookPixelId() : null;
         return new LandingPagePublicationResultDto(

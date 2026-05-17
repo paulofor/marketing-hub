@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Experiment } from "../../api/experiment/useExperiments";
-import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
+import { useApproveAndPublishLanding } from "../../api/experiment/useApproveAndPublishLanding";
 
 interface LandingTabProps {
   experiment: Experiment;
@@ -28,14 +28,15 @@ function normalizeUrl(url?: string | null) {
 }
 
 export default function LandingTab({ experiment }: LandingTabProps) {
-  const updateExperiment = useUpdateExperiment(experiment.id);
+  const approveAndPublishLanding = useApproveAndPublishLanding(experiment.id);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const landingHtml = useMemo(() => {
     const raw = experiment.landingPageHtml;
     return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
   }, [experiment.landingPageHtml]);
 
-  const selectedDestinationUrl = normalizeUrl(experiment.followUpActionUrl);
+  const [publishedUrls, setPublishedUrls] = useState<{ iframeUrl: string | null; standaloneUrl: string | null } | null>(null);
+  const selectedDestinationUrl = normalizeUrl(publishedUrls?.standaloneUrl ?? experiment.followUpActionUrl);
   const campaignDestinationUrl = resolveStandaloneLandingUrl(`/landing/${experiment.id}`);
 
   const handleApproveLanding = async () => {
@@ -49,35 +50,18 @@ export default function LandingTab({ experiment }: LandingTabProps) {
       return;
     }
 
-    const destinationUrl = resolveStandaloneLandingUrl(`/landing/${experiment.id}`);
     setFeedback(null);
 
     try {
-      await updateExperiment.mutateAsync({
-        name: experiment.name,
-        hypothesis: experiment.hypothesis,
-        kpiTarget: Number(kpiTargetValue),
-        metricPresetId: experiment.metricPresetId ?? undefined,
-        sampleSize: experiment.sampleSize ?? undefined,
-        mde: experiment.mdePercent ?? undefined,
-        startDate: experiment.startDate ?? undefined,
-        endDate: experiment.endDate ?? undefined,
-        creativesToGenerate: experiment.creativesToGenerate ?? undefined,
-        instantFormsToGenerate: experiment.instantFormsToGenerate ?? undefined,
-        emailsToGenerate: experiment.emailsToGenerate ?? undefined,
-        deliverablesToGenerate: experiment.deliverablesToGenerate ?? undefined,
-        leadPortalFlowsToGenerate: experiment.leadPortalFlowsToGenerate ?? undefined,
-        journeyTemplateId: experiment.journeyTemplateId ?? undefined,
-        facebookPageId: experiment.facebookPage?.id ?? null,
-        facebookInstantFormId: experiment.facebookInstantForm?.id ?? null,
-        instagramAccountId: experiment.instagramAccount?.id ?? null,
-        leadPortalFlowId: experiment.leadPortalFlowId ?? null,
-        followUpActionUrl: destinationUrl,
+      const publication = await approveAndPublishLanding.mutateAsync();
+      const primaryVariant = publication.variantLinks?.[0] ?? null;
+      setPublishedUrls({
+        iframeUrl: primaryVariant?.iframeUrl ?? publication.publicUrl ?? null,
+        standaloneUrl: primaryVariant?.standaloneUrl ?? null,
       });
-
       setFeedback({
         variant: "success",
-        message: "Landing aprovada e definida como URL de destino da campanha.",
+        message: publication.message || "Landing aprovada e publicada no Lead Portal.",
       });
     } catch {
       setFeedback({
@@ -128,9 +112,17 @@ export default function LandingTab({ experiment }: LandingTabProps) {
                   {campaignDestinationUrl}
                 </a>
               </div>
+              {publishedUrls?.iframeUrl ? (
+                <div>
+                  <strong>URL do iframe (Lead Portal):</strong>{" "}
+                  <a href={publishedUrls.iframeUrl} target="_blank" rel="noreferrer">
+                    {publishedUrls.iframeUrl}
+                  </a>
+                </div>
+              ) : null}
               {selectedDestinationUrl ? (
                 <div>
-                  <strong>URL atualmente aprovada:</strong>{" "}
+                  <strong>URL standalone (usar na campanha):</strong>{" "}
                   <a href={selectedDestinationUrl} target="_blank" rel="noreferrer">
                     {selectedDestinationUrl}
                   </a>
@@ -153,9 +145,9 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           onClick={() =>
             handleApproveLanding()
           }
-          disabled={updateExperiment.isPending || !landingHtml}
+          disabled={approveAndPublishLanding.isPending || !landingHtml}
         >
-          {updateExperiment.isPending ? (
+          {approveAndPublishLanding.isPending ? (
             <span className="d-inline-flex align-items-center gap-2">
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
               Aprovando...

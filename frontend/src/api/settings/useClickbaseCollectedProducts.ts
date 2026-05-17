@@ -28,3 +28,29 @@ export function useClickbaseCollectedProducts(workspaceId: string, limit = 24) {
     },
   });
 }
+
+
+export interface ClickbaseCollectionJob {
+  jobId: string;
+  workspaceId: string;
+  status: string;
+  createdAt?: string | null;
+  message?: string | null;
+}
+
+interface ClickbaseCollectionJobListResponse {
+  items: ClickbaseCollectionJob[];
+}
+
+export function useClickbaseCollectionJobs(workspaceId: string) {
+  return useQuery({
+    queryKey: ["settings", "clickbase", "jobs", workspaceId],
+    enabled: workspaceId.trim().length > 0,
+    queryFn: async () => {
+      const { data } = await axios.get<ClickbaseCollectionJobListResponse>("/api/v1/mois/collection-jobs", {
+        params: { workspaceId },
+      });
+      return data.items;
+    },
+  });
+}

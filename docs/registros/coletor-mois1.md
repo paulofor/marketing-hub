@@ -245,3 +245,14 @@
 - Criado workflow dedicado `CI - MOIS Sales Library Worker` para o novo projeto `mois-sales-library-worker`, com esteiras de teste (`mvn test`), build/push de imagem no GHCR e deploy automático em `main`.
 - Deploy configurado no mesmo host dos demais módulos MOIS (`177.153.62.107`), com sincronização para `/opt/marketinghub/mois-sales-library-worker` e subida via `docker compose` com project name isolado (`marketinghub-mois-sales-library-worker`).
 - Adicionado arquivo `mois-sales-library-worker/docker-compose.deploy.yml` para fixar a imagem publicada (`MOIS_SALES_LIBRARY_WORKER_IMAGE`) no ambiente de produção, mantendo padrão operacional já usado nos outros coletores MOIS.
+
+## 2026-05-17 16:05 UTC
+- Análise operacional dos logs de ingestão do `clickbank-coletor-mois` via MCP (`java_module_logs`) focada no envio de token para a consulta GraphQL da ClickBank.
+- Evidência confirmada de envio do token no request: `hasAuthorizationHeader=true` e `tokenLength=1005` em múltiplas execuções do Ciclo 3 (08h, 11h, 14h UTC).
+- Em todas as tentativas do Ciclo 3 observadas, a resposta da origem foi `status=403` com corpo HTML do CloudFront (`Request blocked`), seguida de classificação interna `motivo=JWT_EXPIRED_OR_INVALID` e coleta zerada.
+- Conclusão de causa-raiz desta rodada: o coletor está enviando o token, porém a origem está bloqueando a requisição no edge (CloudFront) antes de qualquer payload útil de negócio; portanto o problema atual é de aceitação/autorização na origem e não de ausência de header no coletor.
+
+## 2026-05-17 16:35 UTC
+- Ajustada tela Clickbase no frontend para exibir alerta operacional quando a última execução de coleta apontar indício de falha de autenticação/token (ex.: `JWT_EXPIRED_OR_INVALID`, `403`, `REQUEST BLOCKED`, `UNAUTHORIZED`).
+- O alerta é exibido ao lado do textarea de JWT orientando o usuário a atualizar o token e salvar, reduzindo ambiguidade no tratamento do erro observado no GraphQL da ClickBank.
+- Implementada leitura de jobs em `useClickbaseCollectionJobs` via endpoint já existente `GET /api/v1/mois/collection-jobs` para suportar a lógica da mensagem sem criar novo contrato.

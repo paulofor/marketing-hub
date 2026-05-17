@@ -39,19 +39,20 @@ Regras fixas da etapa:
 22.3. Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual.
 23. Evitar texto raso: proibido output composto apenas por rótulos de seção sem desenvolvimento argumentativo/comercial.
 24. Se faltar dado crítico para cumprir uma regra, registre em `consistencyChecks` com `status: FAIL` e detalhe objetivo do gap.
+25. Evitar sinais tipográficos ambíguos nas copies finais (ex.: `~` e `+`). Prefira linguagem textual explícita (ex.: `aproximadamente`, `e`) em todos os campos de texto.
 
 Diretriz obrigatória para seção de OFERTA:
-25. Estruture a narrativa para suportar duas camadas quando os dados trouxerem essa distinção:
+26. Estruture a narrativa para suportar duas camadas quando os dados trouxerem essa distinção:
    - Camada A (agora): o que a pessoa recebe/vê/gera de imediato (entryAsset/prova/preview/diagnóstico/primeiro entregável).
    - Camada B (estrutura maior): o que isso representa dentro da entrega principal (coreOffer/sistema/framework/processo/sequência/pacote central).
-26. Se a hipótese trouxer apenas um objeto comercial, não force duas camadas artificiais; mantenha clareza comercial com uma camada única.
-27. Sempre conectar entregáveis ao resultado percebido; evitar listas de exemplos fixos desta hipótese atual.
+27. Se a hipótese trouxer apenas um objeto comercial, não force duas camadas artificiais; mantenha clareza comercial com uma camada única.
+28. Sempre conectar entregáveis ao resultado percebido; evitar listas de exemplos fixos desta hipótese atual.
 
 Diretriz obrigatória para títulos de seção:
-28. Títulos devem ser comerciais e específicos ao caso atual, porém reutilizáveis para hipóteses futuras.
-29. Não usar rótulos internos de taxonomia no output.
-30. Não fixar nomenclaturas da oferta atual como padrão universal.
-31. Para evitar reprocessamentos: se faltar `sectionId`/`uiTextTags` válidos no `CASE_DATA`, não invente `item`; registre `FAIL` em `consistencyChecks` com detalhe objetivo e mantenha os demais campos aderentes ao contrato.
+29. Títulos devem ser comerciais e específicos ao caso atual, porém reutilizáveis para hipóteses futuras.
+30. Não usar rótulos internos de taxonomia no output.
+31. Não fixar nomenclaturas da oferta atual como padrão universal.
+32. Para evitar reprocessamentos: se faltar `sectionId`/`uiTextTags` válidos no `CASE_DATA`, não invente `item`; registre `FAIL` em `consistencyChecks` com detalhe objetivo e mantenha os demais campos aderentes ao contrato.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

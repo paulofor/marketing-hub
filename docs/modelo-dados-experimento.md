@@ -666,3 +666,18 @@ Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cad
   - `GET /api/mois/sales-library/jobs/{jobId}`
   - `GET /api/mois/sales-library/jobs?workspaceId=...&status=...`
 - Regra operacional: cada ingestão válida em `POST /api/mois/sales-library/urls:ingest` também cria um job inicial `PENDING`.
+
+## MOIS — Biblioteca de páginas de vendas (camada de análise, 2026-05-17)
+
+- Nova tabela backend: `mois_sales_library_page_analysis`.
+- Objetivo: persistir versões de análise estruturada por página ingerida, com rastreabilidade de parser/prompt/modelo e status operacional.
+- Relacionamentos:
+  - `mois_sales_library_page_analysis.url_ingest_id -> mois_sales_library_url_ingest.id`.
+  - `mois_sales_library_page_analysis.job_id -> mois_sales_library_processing_job.id` (opcional, `ON DELETE SET NULL`).
+- Colunas operacionais: `status`, `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`, `analyzed_at`, `created_at`, `updated_at`.
+- Índices operacionais: `(url_ingest_id, updated_at)` para recuperar a versão mais recente por página e `(status, updated_at)` para observabilidade de backlog de análise.
+- Endpoints backend adicionados para consulta e acionamento:
+  - `GET /api/mois/sales-library/pages`
+  - `GET /api/mois/sales-library/pages/{pageId}`
+  - `GET /api/mois/sales-library/pages/{pageId}/analysis`
+  - `POST /api/mois/sales-library/pages/{pageId}:reanalyze`

@@ -15,6 +15,7 @@ import java.util.List;
 import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
 import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,6 +23,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class OprmMarketImportService {
     private final OprmCnpjImportRunRepository runRepository;
@@ -81,6 +83,19 @@ public class OprmMarketImportService {
         if (request.finishedAt() != null) file.setFinishedAt(request.finishedAt());
         fileRepository.save(file);
 
+        int cnaesReceived = request.cnaes() != null ? request.cnaes().size() : 0;
+        int marketSizesReceived = request.marketSizes() != null ? request.marketSizes().size() : 0;
+        log.info("[runId={} fileId={}] registerFileEvent status={} rowsRead={} rowsValid={} rowsRejected={} cnaesReceived={} marketSizesReceived={} finishedAt={}",
+                runId,
+                fileId,
+                file.getStatus(),
+                file.getRowsRead(),
+                file.getRowsValid(),
+                file.getRowsRejected(),
+                cnaesReceived,
+                marketSizesReceived,
+                file.getFinishedAt());
+
         if (request.cnaes() != null && !request.cnaes().isEmpty()) {
             for (OprmCnaeUpsertDto row : request.cnaes()) {
                 OprmCnpjCnaeDim item = cnaeDimRepository.findById(row.cnaeCode()).orElseGet(OprmCnpjCnaeDim::new);
@@ -93,6 +108,11 @@ public class OprmMarketImportService {
         }
 
         if (request.marketSizes() != null && !request.marketSizes().isEmpty()) {
+            log.info("[runId={} fileId={}] Consolidando marketSizes para snapshotDate={} totalRegistros={}",
+                    runId,
+                    fileId,
+                    run.getSnapshotDate(),
+                    request.marketSizes().size());
             for (OprmMarketSizeUpsertDto row : request.marketSizes()) {
                 if (row.cnaeCode() == null || row.cnaeCode().isBlank()) {
                     throw new ResponseStatusException(BAD_REQUEST, "cnaeCode is required in marketSizes.");
@@ -111,6 +131,11 @@ public class OprmMarketImportService {
                 item.setUpdatedAt(Instant.now());
                 marketSizeRepository.save(item);
             }
+            log.info("[runId={} fileId={}] Consolidacao marketSizes persistida com sucesso. snapshotDate={} totalRegistros={}",
+                    runId,
+                    fileId,
+                    run.getSnapshotDate(),
+                    request.marketSizes().size());
         }
     }
 

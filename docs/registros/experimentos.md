@@ -99,3 +99,13 @@
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
   - backend/ads-service/src/test/java/com/marketinghub/experiment/ExperimentServiceTest.java
+
+## 2026-05-17 13:20:14 UTC-3
+- solicitação para corrigir a lista de pendências de publicação no Facebook Ads exibindo item duplicado de Landing e removendo bloqueio indevido de status planejado.
+- raciocínio aplicado: padronizar a renderização da lista para evitar duplicidade por chave/label e filtrar explicitamente entradas de status que não devem bloquear publicação.
+- foi feito no frontend: atualização do componente `MissingConfigurationList` para deduplicar pendências por rótulo e ignorar entradas de status `planned/planejado`.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/facebook/MissingConfigurationList.tsx

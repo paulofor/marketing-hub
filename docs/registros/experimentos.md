@@ -109,3 +109,16 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/facebook/MissingConfigurationList.tsx
+
+
+## 2026-05-17 — Ajuste de liberação Facebook Ads (experimento 20)
+
+- contexto: experimento 20 estava com botão de liberação inconsistente com a regra operacional vigente de landing.
+- causa-raiz identificada: a prontidão bloqueante usava `hasLeadPortalFlow` (dependência de fluxo do portal), enquanto a operação atual exige apenas landing criada no experimento e aprovação na aba Landing.
+- ajustes realizados:
+  - frontend: checklist bloqueante da liberação passou a validar landing aprovada via `followUpActionUrl`, removendo `leadPortalFlowId/leadPortalFlowName` como bloqueio.
+  - documentação canônica: atualização do `facebook-campaign-publication-canon.v1.md` para formalizar que a dependência bloqueante de landing é `experiment.follow_up_action_url` (landing aprovada), sem bloqueio por `lead_portal_flow`.
+- arquivos alterados:
+  - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+  - `docs/registros/experimentos.md`

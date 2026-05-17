@@ -28,7 +28,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 
 | Regra | Dono | Consumidores |
 | --- | --- | --- |
-| Invariantes de prontidão (`creative`, `lead_portal_flow`, `targeting_element`) | Backend `ads-service` + domínio de experimentos | Frontend (cartão checklist), `facebook-ads-worker`, `ai-worker` |
+| Invariantes de prontidão (`creative`, `experiment.follow_up_action_url`, `targeting_element`) | Backend `ads-service` + domínio de experimentos | Frontend (cartão checklist), `facebook-ads-worker`, `ai-worker` |
 | Fluxo de liberação (`facebook_release_requested_at`, `status`, `market_niche.facebook_pixel_id`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
 | Funil de 9 etapas (`experiment_campaign_metric`, eventos do Lead Portal e checkout) | Backend `ads-service` + `lead-portal` | Frontend (aba Funil), operadores, times de mídia |
 
@@ -37,7 +37,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | Entidade / Campo | Fonte | Observações |
 | --- | --- | --- |
 | `experiment.creative_approved`, `creative.status` | Tabelas do schema `marketinghubdb` | Ao menos um `creative` do experimento precisa estar em `READY` ou `IN_PRODUCTION` após aprovação. |
-| `lead_portal_flow.experiment_id` + `lead_portal_flow.slug` | `marketinghubdb.lead_portal_flow` | O fluxo precisa estar vinculado ao experimento ativo para liberar o portal em `https://oportunidadebrasil.shop/api/flows/{slug}/page` (ex.: experimento 11 usa `slug='exp-11-landing'`). |
+| `experiment.follow_up_action_url` | `marketinghubdb.experiment` | Representa a landing aprovada na aba Landing; com valor preenchido, a página está publicada para uso como destino da campanha. |
 | `targeting_element` (job_title) | `marketinghubdb.targeting_element` | Para publicação manual, pelo menos **1** elemento `JOB_TITLE` com `status='APPROVED'`. |
 | `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
 | `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher o funil e o custo por etapa. |
@@ -50,10 +50,10 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'`.
    - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-1.5`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
-2. **Landing/formulário do experimento (Gera Landing)**
-   - O experimento precisa ter a landing/formulário do experimento gerada e publicada pelo fluxo do **Gera Landing** no domínio `oportunidadebrasil.shop`.
-   - O link de campanha deve apontar para `https://oportunidadebrasil.shop/api/flows/{slug}/page` (exemplo atual do experimento 11: `https://oportunidadebrasil.shop/api/flows/exp-11-landing/page`).
-   - A página de formulário precisa carregar o pixel do Facebook do nicho (`market_niche.facebook_pixel_id`) antes da publicação.
+2. **Landing criada e aprovada na aba Landing**
+   - A landing precisa estar criada no próprio experimento (artefato persistido em `experiment`) e aprovada na aba **Landing**.
+   - O critério operacional de publicação é `experiment.follow_up_action_url` preenchido com a URL aprovada para destino da campanha.
+   - O vínculo é do experimento com a própria landing aprovada; não há dependência bloqueante de `lead_portal_flow` para liberar campanha no Facebook Ads Worker.
 3. **Público completo**
    - Para seleção manual de público, o mínimo de liberação é ter pelo menos **1 cargo (`JOB_TITLE`) aprovado** em `targeting_element`.
    - Como alternativa, o playbook de ad sets finalizado também atende o requisito de público.

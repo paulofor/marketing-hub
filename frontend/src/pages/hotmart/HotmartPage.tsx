@@ -48,6 +48,27 @@ export default function HotmartPage() {
 
   const latestHotmartExecution = useMemo(() => hotmartJobsQuery.data?.[0], [hotmartJobsQuery.data]);
 
+  const hotmartCycleStats = useMemo(() => {
+    const products = hotmartProductsQuery.data ?? [];
+    const jobs = hotmartJobsQuery.data ?? [];
+
+    const productsByCycle = new Map<string, number>();
+    for (const product of products) {
+      productsByCycle.set(product.jobId, (productsByCycle.get(product.jobId) ?? 0) + 1);
+    }
+
+    return {
+      totalExecutedJobs: jobs.length,
+      totalProducts: products.length,
+      cycles: jobs.map((job) => ({
+        jobId: job.jobId,
+        status: job.status,
+        createdAt: formatUpdatedAt(job.createdAt),
+        productsCount: productsByCycle.get(job.jobId) ?? 0,
+      })),
+    };
+  }, [hotmartJobsQuery.data, hotmartProductsQuery.data]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedback(null);
@@ -127,6 +148,74 @@ export default function HotmartPage() {
             </div>
           ) : null}
 
+        </div>
+      </section>
+
+
+      <section className="card mt-3 shadow-sm border-0">
+        <div className="card-header">
+          <h5 className="mb-1">Resumo de ciclos Hotmart</h5>
+          <p className="text-muted small mb-0">
+            Mostra a quantidade de jobs executados e o total de produtos coletados no período carregado.
+          </p>
+        </div>
+        <div className="card-body">
+          {hotmartJobsQuery.isLoading || hotmartProductsQuery.isLoading ? (
+            <p className="mb-0">Carregando resumo...</p>
+          ) : null}
+
+          {hotmartJobsQuery.isError || hotmartProductsQuery.isError ? (
+            <p className="text-danger mb-0">Não foi possível carregar o resumo de ciclos.</p>
+          ) : null}
+
+          {!hotmartJobsQuery.isLoading &&
+          !hotmartProductsQuery.isLoading &&
+          !hotmartJobsQuery.isError &&
+          !hotmartProductsQuery.isError ? (
+            <>
+              <div className="row g-3 mb-3">
+                <div className="col-12 col-md-6">
+                  <div className="border rounded p-3 h-100">
+                    <div className="text-muted small">Jobs executados</div>
+                    <div className="fs-4 fw-semibold">{hotmartCycleStats.totalExecutedJobs}</div>
+                  </div>
+                </div>
+                <div className="col-12 col-md-6">
+                  <div className="border rounded p-3 h-100">
+                    <div className="text-muted small">Total de produtos (geral)</div>
+                    <div className="fs-4 fw-semibold">{hotmartCycleStats.totalProducts}</div>
+                  </div>
+                </div>
+              </div>
+
+              {hotmartCycleStats.cycles.length > 0 ? (
+                <div className="table-responsive">
+                  <table className="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Ciclo (job)</th>
+                        <th>Status</th>
+                        <th>Executado em</th>
+                        <th className="text-end">Produtos no ciclo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hotmartCycleStats.cycles.map((cycle) => (
+                        <tr key={cycle.jobId}>
+                          <td className="small">{cycle.jobId}</td>
+                          <td>{cycle.status}</td>
+                          <td>{cycle.createdAt}</td>
+                          <td className="text-end fw-semibold">{cycle.productsCount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mb-0 text-secondary">Nenhum ciclo encontrado para o workspace.</p>
+              )}
+            </>
+          ) : null}
         </div>
       </section>
 

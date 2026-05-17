@@ -222,14 +222,21 @@ public class OprmMarketImportScheduler {
     }
 
     private void publishFileEvent(Long runId, Long fileId, OprmImportFileEventRequestDto event) {
+        log.info("[run={} fileId={}] Publicando evento de arquivo status={} rowsRead={} rowsValid={} rowsRejected={} finishedAt={}",
+                runId, fileId, event.status(), event.rowsRead(), event.rowsValid(), event.rowsRejected(), event.finishedAt());
         restClient.post().uri(collectorProperties.backendBaseUrl() + "/api/oprm/market/import-runs/" + runId + "/files/" + fileId + "/events")
                 .body(event).retrieve().toBodilessEntity();
+        log.info("[run={} fileId={}] Evento de arquivo persistido com sucesso.", runId, fileId);
     }
 
     private void publishRunComplete(Long runId, int filesProcessed, long rowsRead, long rowsValid, long rowsRejected, boolean hasFailure) {
+        String finalStatus = hasFailure ? "PARTIAL" : "COMPLETED";
+        log.info("[run={}] Publicando consolidação final do run status={} filesProcessed={} rowsRead={} rowsValid={} rowsRejected={}",
+                runId, finalStatus, filesProcessed, rowsRead, rowsValid, rowsRejected);
         restClient.post().uri(collectorProperties.backendBaseUrl() + "/api/oprm/market/import-runs/" + runId + "/complete")
-                .body(new OprmCompleteImportRunRequestDto(hasFailure ? "PARTIAL" : "COMPLETED", Instant.now(), filesProcessed, rowsRead, rowsValid, rowsRejected, null))
+                .body(new OprmCompleteImportRunRequestDto(finalStatus, Instant.now(), filesProcessed, rowsRead, rowsValid, rowsRejected, null))
                 .retrieve().toBodilessEntity();
+        log.info("[run={}] Consolidação final do run persistida com sucesso.", runId);
     }
 
     private void cleanupDirectory(Path runTempDir, Long runId) {

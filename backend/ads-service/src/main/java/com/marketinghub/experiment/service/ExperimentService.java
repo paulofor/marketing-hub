@@ -227,6 +227,10 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesisId required");
         }
         com.marketinghub.hypothesis.Hypothesis hyp = attachHypothesis(request.getHypothesisId());
+        if (hyp.getMarketNiche() == null || hyp.getMarketNiche().getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "hypothesis is not associated with a market niche");
+        }
         if (!hyp.getMarketNiche().getId().equals(nicheId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
         }

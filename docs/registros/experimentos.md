@@ -220,3 +220,11 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/NewExperimentPage.tsx
   - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+
+## 2026-05-17 23:22:00 UTC
+- investigação de erro `500 Internal Server Error` no `POST /api/experiments` após simplificação da criação de experimentos.
+- causa-raiz tratada: hipótese sem vínculo de nicho (`market_niche`) acionava `NullPointerException` na validação de consistência (`hyp.getMarketNiche().getId()`), resultando em 500.
+- foi feito: validação defensiva no backend para retornar `400 Bad Request` com mensagem explícita quando a hipótese não estiver associada a nicho, evitando falha genérica e orientando correção dos dados.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+  - docs/registros/experimentos.md

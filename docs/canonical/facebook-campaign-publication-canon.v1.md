@@ -15,7 +15,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 
 - Garantir que a decisão de publicar campanhas de experimento siga invariantes únicos e rastreáveis no backend.
 - Amarrar UI, worker e integrações ao mesmo contrato para evitar drift entre checklist, botões de liberação e funil.
-- Explicitar dependências externas (Marketing API e domínio do Lead Portal) que condicionam a execução.
+- Explicitar dependências externas (Marketing API e domínio de publicação da landing) que condicionam a execução.
 
 ## 2. Escopo e exclusões
 
@@ -50,8 +50,8 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'`.
    - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-1.5`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
-2. **Fluxo do Portal do Lead**
-   - O experimento precisa ter um `lead_portal_flow` associado e ativo, servindo páginas pelo domínio `oportunidadebrasil.shop`.
+2. **Landing/formulário do experimento (Gera Landing)**
+   - O experimento precisa ter a landing/formulário do experimento gerada e publicada pelo fluxo do **Gera Landing** no domínio `oportunidadebrasil.shop`.
    - O link de campanha deve apontar para `https://oportunidadebrasil.shop/api/flows/{slug}/page` (exemplo atual do experimento 11: `https://oportunidadebrasil.shop/api/flows/exp-11-landing/page`).
    - A página de formulário precisa carregar o pixel do Facebook do nicho (`market_niche.facebook_pixel_id`) antes da publicação.
 3. **Público completo**
@@ -68,7 +68,7 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 - **Página do Facebook** e **Conta do Instagram** – precisam existir no hub e permanecer válidas para evitar erros de publicação.
 - **Orçamento diário** – `experiment.daily_budget` deve estar preenchido para refletir a automação de mídia.
 - **Formulário de captação** – quando existir link válido de formulário no fluxo do experimento, ele é tratado como publicado para operação do Marketing Hub.
-- **Importante**: o formulário usado neste checklist é o formulário interno do fluxo do Marketing Hub (Lead Portal/fluxo), **não** o Instant Form nativo do Facebook Ads.
+- **Importante**: o formulário usado neste checklist é o formulário interno publicado pelo **Gera Landing** no Marketing Hub, **não** o Instant Form nativo do Facebook Ads.
 
 ## 7. Contrato de liberação para o Facebook Ads Worker
 

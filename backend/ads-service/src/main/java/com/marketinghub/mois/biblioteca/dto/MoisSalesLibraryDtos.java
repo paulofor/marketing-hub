@@ -9,6 +9,48 @@ import java.util.List;
 
 public final class MoisSalesLibraryDtos {
 
+
+    public record SalesLibraryClaimRequest(
+            @NotBlank String workspaceId,
+            @NotBlank String source
+    ) {
+    }
+
+    public record SalesLibraryClaimedJob(
+            long jobId,
+            long pageId,
+            String urlCanonical,
+            String title
+    ) {
+    }
+
+    public record SalesLibraryClaimResponse(
+            boolean claimed,
+            SalesLibraryClaimedJob job
+    ) {
+    }
+
+    public record SalesLibraryCompleteRequest(
+            BigDecimal scoreTotal,
+            String sectionsJson,
+            String copyJson,
+            String visualJson,
+            String imageJson,
+            String analysisNotes,
+            String parserVersion,
+            String promptVersion,
+            String modelName,
+            Instant analyzedAt
+    ) {
+    }
+
+    public record SalesLibraryFailRequest(
+            String errorCategory,
+            String errorMessage
+    ) {
+    }
+
+
     private MoisSalesLibraryDtos() {
     }
 

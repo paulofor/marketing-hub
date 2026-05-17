@@ -22,6 +22,45 @@ public class MoisSalesLibraryService {
 
     private final JdbcTemplate jdbcTemplate;
 
+
+
+    @Transactional
+    public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(MoisSalesLibraryDtos.SalesLibraryClaimRequest request) {
+        List<MoisSalesLibraryDtos.SalesLibraryClaimedJob> rows = jdbcTemplate.query("""
+                SELECT j.id AS job_id, i.id AS page_id, i.url_canonical, i.title
+                FROM mois_sales_library_processing_job j
+                JOIN mois_sales_library_url_ingest i ON i.id = j.url_ingest_id
+                WHERE j.status = 'PENDING' AND i.workspace_id = ? AND i.source = ?
+                ORDER BY j.created_at ASC
+                LIMIT 1
+                """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryClaimedJob(
+                rs.getLong("job_id"), rs.getLong("page_id"), rs.getString("url_canonical"), rs.getString("title")),
+                request.workspaceId(), request.source().trim().toUpperCase(Locale.ROOT));
+        if (rows.isEmpty()) {
+            return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(false, null);
+        }
+        MoisSalesLibraryDtos.SalesLibraryClaimedJob job = rows.get(0);
+        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FETCHING', started_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=? AND status='PENDING'", job.jobId());
+        return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(true, job);
+    }
+
+    @Transactional
+    public void completeJob(long jobId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
+        Long pageId = jdbcTemplate.queryForObject("SELECT url_ingest_id FROM mois_sales_library_processing_job WHERE id = ? LIMIT 1", Long.class, jobId);
+        if (pageId == null) throw new IllegalArgumentException("Job not found: " + jobId);
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_page_analysis
+                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, analyzed_at, created_at, updated_at)
+                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
+        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
+    }
+
+    @Transactional
+    public void failJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
+        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), request.errorMessage(), jobId);
+    }
+
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryIngestResponse ingestUrls(MoisSalesLibraryDtos.SalesLibraryIngestRequest request) {
         int persisted = 0;

@@ -1,0 +1,10 @@
+services:
+  mois-sales-library-worker:
+    build: .
+    container_name: mois-sales-library-worker
+    restart: unless-stopped
+    environment:
+      BACKEND_BASE_URL: http://191.252.181.168:8000
+      MOIS_WORKSPACE_ID: workspace-001
+      MOIS_SOURCE: CLICKBANK
+      MOIS_POLL_INTERVAL_MS: 15000

@@ -240,3 +240,8 @@
 - havia ambiguidade sobre o arquivo oficial de registro dos módulos coletores MOIS, causando dispersão de lançamentos entre documentos diferentes.
 - para eliminar a causa-raiz, foi definido um único ponto canônico explícito e um template obrigatório único no topo do arquivo.
 - atualizado docs/registros/coletor-mois1.md com bloco de governança de "arquivo canônico principal" e template obrigatório; atualizado docs/mois/registros.md com aviso de redirecionamento para o arquivo canônico dos coletores.
+
+## 2026-05-17 12:10 UTC-3
+- Criado workflow dedicado `CI - MOIS Sales Library Worker` para o novo projeto `mois-sales-library-worker`, com esteiras de teste (`mvn test`), build/push de imagem no GHCR e deploy automático em `main`.
+- Deploy configurado no mesmo host dos demais módulos MOIS (`177.153.62.107`), com sincronização para `/opt/marketinghub/mois-sales-library-worker` e subida via `docker compose` com project name isolado (`marketinghub-mois-sales-library-worker`).
+- Adicionado arquivo `mois-sales-library-worker/docker-compose.deploy.yml` para fixar a imagem publicada (`MOIS_SALES_LIBRARY_WORKER_IMAGE`) no ambiente de produção, mantendo padrão operacional já usado nos outros coletores MOIS.

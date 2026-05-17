@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import axios from "axios";
 import type { Experiment } from "../../api/experiment/useExperiments";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 import { useLandingPages } from "../../api/landing/useLandingPages";
@@ -11,13 +10,6 @@ interface LandingTabProps {
 type FeedbackState = {
   variant: "success" | "error";
   message: string;
-};
-
-type VariantLandingLinks = {
-  variant: string;
-  flowId?: number;
-  standaloneUrl?: string | null;
-  iframeUrl?: string | null;
 };
 
 function resolveStandaloneLandingUrl(path: string): string {
@@ -36,24 +28,11 @@ function normalizeUrl(url?: string | null) {
   return (url ?? "").trim().replace(/\/$/, "");
 }
 
-function normalizeVariantLabel(variant: string): string {
-  const upper = variant.trim().toUpperCase();
-  if (upper === "LHM") {
-    return "LHM (determinística)";
-  }
-  if (upper === "IA" || upper === "WORKER_IA" || upper === "GERAR COM IA" || upper === "GERAR_COM_IA") {
-    return "Gerar com IA";
-  }
-  return variant;
-}
-
 export default function LandingTab({ experiment }: LandingTabProps) {
   const { data: landingPages, isLoading, isError } = useLandingPages(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [pendingLandingId, setPendingLandingId] = useState<number | null>(null);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [publishedVariantLinks, setPublishedVariantLinks] = useState<VariantLandingLinks[]>([]);
+  const [selectedLandingId, setSelectedLandingId] = useState<number | null>(null);
 
   const sortedLandingPages = useMemo(() => {
     if (!Array.isArray(landingPages)) {
@@ -64,51 +43,10 @@ export default function LandingTab({ experiment }: LandingTabProps) {
   }, [landingPages]);
 
   const selectedDestinationUrl = normalizeUrl(experiment.followUpActionUrl);
-  const hasGeneratedLandingHtml = Boolean(experiment.landingPageHtml?.trim());
-
-  const handleApproveAndPublish = async () => {
-    if (!hasGeneratedLandingHtml) {
-      setFeedback({
-        variant: "error",
-        message: "Gere o HTML da landing na aba Estrutura de conteúdo antes de aprovar e publicar.",
-      });
-      return;
-    }
-
-    setFeedback(null);
-    setIsPublishing(true);
-    try {
-      const { data } = await axios.post<{
-        publicUrl?: string | null;
-        facebookPixelId?: string | null;
-        pixelAppliedAutomatically?: boolean;
-        variantLinks?: VariantLandingLinks[] | null;
-      }>(`/api/experiments/${experiment.id}/pipeline/landing-page-html/approve-and-publish`);
-      setPublishedVariantLinks(
-        Array.isArray(data?.variantLinks)
-          ? data.variantLinks.filter((item) => item?.standaloneUrl || item?.iframeUrl)
-          : [],
-      );
-
-      const pixelFeedback =
-        data?.pixelAppliedAutomatically && data.facebookPixelId
-          ? ` Pixel do nicho aplicado automaticamente (${data.facebookPixelId}).`
-          : " Pixel do nicho será aplicado automaticamente ao ficar disponível.";
-      setFeedback({
-        variant: "success",
-        message: data?.publicUrl
-          ? `Landing aprovada e publicada automaticamente em ${data.publicUrl}.${pixelFeedback}`
-          : `Landing aprovada e publicação automática iniciada.${pixelFeedback}`,
-      });
-    } catch {
-      setFeedback({
-        variant: "error",
-        message: "Não foi possível aprovar/publicar a landing agora. Tente novamente em instantes.",
-      });
-    } finally {
-      setIsPublishing(false);
-    }
-  };
+  const resolvedSelectedLanding = useMemo(
+    () => sortedLandingPages.find((landing) => landing.id === selectedLandingId) ?? null,
+    [selectedLandingId, sortedLandingPages],
+  );
 
   const handleApproveLanding = async (landingId: number, landingUrl: string) => {
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
@@ -122,7 +60,6 @@ export default function LandingTab({ experiment }: LandingTabProps) {
     }
 
     const destinationUrl = resolveStandaloneLandingUrl(landingUrl);
-    setPendingLandingId(landingId);
     setFeedback(null);
 
     try {
@@ -158,8 +95,6 @@ export default function LandingTab({ experiment }: LandingTabProps) {
         message:
           "Não foi possível aprovar esta landing agora. Tente novamente em instantes.",
       });
-    } finally {
-      setPendingLandingId(null);
     }
   };
 
@@ -168,61 +103,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
       <div className="card border-0 shadow-sm">
         <div className="card-body">
           <h5 className="card-title mb-1">Landing do experimento</h5>
-          <p className="text-muted mb-0">
-            Aprove a landing que deve ser usada como URL de destino da campanha.
-          </p>
-          <div className="mt-3">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleApproveAndPublish}
-              disabled={isPublishing || !hasGeneratedLandingHtml}
-            >
-              {isPublishing ? (
-                <span className="d-inline-flex align-items-center gap-2">
-                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                  Publicando...
-                </span>
-              ) : (
-                "Aprovar e publicar landing"
-              )}
-            </button>
-          </div>
-          {!hasGeneratedLandingHtml ? (
-            <p className="text-muted small mt-2 mb-0">
-              Gere o HTML na aba Estrutura de conteúdo para habilitar a aprovação nesta aba.
-            </p>
-          ) : null}
-          {publishedVariantLinks.length > 0 ? (
-            <div className="mt-3">
-              <p className="text-muted small mb-1">Variantes públicas (LHM + IA)</p>
-              {publishedVariantLinks.map((variantLink) => (
-                <div key={`${variantLink.variant}-${variantLink.flowId ?? "flow"}`} className="mb-2">
-                  <p className="small fw-semibold mb-1">{normalizeVariantLabel(variantLink.variant)}</p>
-                  {variantLink.standaloneUrl ? (
-                    <a
-                      href={variantLink.standaloneUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="small text-break d-block"
-                    >
-                      Standalone: {variantLink.standaloneUrl}
-                    </a>
-                  ) : null}
-                  {variantLink.iframeUrl ? (
-                    <a
-                      href={variantLink.iframeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="small text-break d-block"
-                    >
-                      Iframe: {variantLink.iframeUrl}
-                    </a>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <p className="text-muted mb-0">Selecione uma landing e aprove no botão final da aba.</p>
         </div>
       </div>
 
@@ -248,9 +129,6 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           {sortedLandingPages.map((landing) => {
             const standaloneUrl = resolveStandaloneLandingUrl(landing.url);
             const isSelected = normalizeUrl(standaloneUrl) === selectedDestinationUrl;
-            const isApproving =
-              pendingLandingId === landing.id ||
-              (updateExperiment.isPending && pendingLandingId === landing.id);
 
             return (
               <div key={landing.id} className="card border-0 shadow-sm">
@@ -266,21 +144,19 @@ export default function LandingTab({ experiment }: LandingTabProps) {
                       <p className="text-muted small mb-1">Tipo: {landing.type}</p>
                       <p className="text-muted small mb-0">Status: {landing.status}</p>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      onClick={() => handleApproveLanding(landing.id, landing.url)}
-                      disabled={isApproving || updateExperiment.isPending}
-                    >
-                      {isApproving ? (
-                        <span className="spinner-border spinner-border-sm" role="status" />
-                      ) : null}
-                      {isApproving
-                        ? "Aprovando..."
-                        : isSelected
-                          ? "Landing aprovada"
-                          : "Aprovar landing"}
-                    </button>
+                    <div className="form-check">
+                      <input
+                        id={`landing-choice-${landing.id}`}
+                        className="form-check-input"
+                        type="radio"
+                        name="landing-choice"
+                        checked={selectedLandingId === landing.id}
+                        onChange={() => setSelectedLandingId(landing.id)}
+                      />
+                      <label className="form-check-label small" htmlFor={`landing-choice-${landing.id}`}>
+                        Selecionar para campanha
+                      </label>
+                    </div>
                   </div>
 
                   <div>
@@ -300,6 +176,28 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           })}
         </div>
       )}
+
+      <div className="d-flex justify-content-end">
+        <button
+          type="button"
+          className="btn btn-success"
+          onClick={() =>
+            resolvedSelectedLanding
+              ? handleApproveLanding(resolvedSelectedLanding.id, resolvedSelectedLanding.url)
+              : undefined
+          }
+          disabled={updateExperiment.isPending || !resolvedSelectedLanding}
+        >
+          {updateExperiment.isPending ? (
+            <span className="d-inline-flex align-items-center gap-2">
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+              Aprovando...
+            </span>
+          ) : (
+            "Aprovar landing para campanha"
+          )}
+        </button>
+      </div>
     </div>
   );
 }

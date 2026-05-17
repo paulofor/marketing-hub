@@ -11,6 +11,9 @@
 - descrição breve do problema
 - descrição breve do raciocínio para a solução
 - registro do que foi feito
+- documentos lidos para tratar a situação:
+  - caminho/do/documento-1.md
+  - caminho/do/documento-2.md
 ```
 
 > Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.

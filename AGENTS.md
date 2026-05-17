@@ -63,9 +63,9 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
   6. Seguindo os objetivo maiores do sistema que é vendas. Sugira o que pode ser feito a seguir.
   7. Se existir um problema detectado pesquise e sugira a solução sempre buscando causa-raiz.
 - **Registros após tarefas** : sempre que for feito alguma tarefa faça o registro dela no local adequado:
-     . Tema: Experimentos, registre em /docs/registros/experimentos.md
-     . Tema: Módulos Mois, registre em /docs/registros/mois1.md
-     . Tema: Módulos OPRM, regsitre em /docs/registros/oprm1.md
+     > Tema: Experimentos, registre em /docs/registros/experimentos.md
+     > Tema: Módulos Mois, registre em /docs/registros/mois1.md
+     > Tema: Módulos OPRM, regsitre em /docs/registros/oprm1.md
 
 ## 3. Orientações Práticas:
 

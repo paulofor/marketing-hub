@@ -80,3 +80,19 @@
   - docs/mois-clickbank-coletor.md
   - docs/mois/clickbase-fetch-ciclo-consulta.md
   - docs/registros/mois1.md
+## 2026-05-17 13:43:57 UTC-3
+- consolidado o conteúdo de documentação dos ciclos de coleta Hotmart em um único documento canônico.
+- fonte de verdade passou a ser a documentação alinhada ao comportamento atual implementado no coletor e no backend.
+- removido documento duplicado do módulo para evitar divergência de manutenção.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - mois-hotmart-collector/docs/ciclos-coleta-hotmart.md
+
+
+## 2026-05-17 13:47:47 UTC-3
+- documento canônico do fluxo de ingestão Hotmart movido para /docs/canonical conforme orientação.
+- referências internas atualizadas para apontar o novo caminho canônico.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - mois-hotmart-collector/AGENTS.md
+

@@ -569,9 +569,10 @@ public class ExperimentService {
         }
         if (request.isLeadPortalFlowIdPresent()) {
             if (request.getLeadPortalFlowId() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "leadPortalFlowId required");
+                exp.setLeadPortalFlow(null);
+            } else {
+                exp.setLeadPortalFlow(attachLeadPortalFlow(request.getLeadPortalFlowId(), exp.getNiche().getId()));
             }
-            exp.setLeadPortalFlow(attachLeadPortalFlow(request.getLeadPortalFlowId(), exp.getNiche().getId()));
         }
         if (request.isImageModelIdPresent() || request.isImageModelQualityIdPresent()) {
             Long currentModelId = request.isImageModelIdPresent()

@@ -875,6 +875,56 @@ class ExperimentServiceTest {
     }
 
     @Test
+    void updateClearsLeadPortalFlowWhenNullIsProvided() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("T")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        Long flowId = createLeadPortalFlow(niche);
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp1");
+        req.setHypothesis("Teste");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setJourneyTemplateId(template.getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(flowId);
+        Experiment exp = service.create(req);
+
+        UpdateExperimentRequest updateReq = new UpdateExperimentRequest();
+        applyStageDefaults(updateReq);
+        updateReq.setName("Exp1");
+        updateReq.setHypothesis("Teste");
+        updateReq.setKpiTargetCpl(new BigDecimal("45"));
+        updateReq.setMetricPresetId("LEAN_150");
+        updateReq.setJourneyTemplateId(template.getId());
+        updateReq.setLeadPortalFlowId(null);
+
+        Experiment updated = service.update(exp.getId(), updateReq);
+
+        assertThat(updated.getLeadPortalFlow()).isNull();
+    }
+
+    @Test
     void updateChangesLeadPortalFlowWhenProvided() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());

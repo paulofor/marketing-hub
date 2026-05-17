@@ -158,3 +158,16 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
   - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentReadinessService.java
+
+## 2026-05-17 20:35:00 UTC
+- ajuste na aprovação da landing para campanha para publicar automaticamente no Lead Portal e expor as duas URLs esperadas na aba Landing.
+- backend (`approve-and-publish`) agora também persiste no experimento a URL standalone publicada (destino oficial de campanha) ao concluir a aprovação.
+- frontend da aba Landing passou a chamar o endpoint de aprovação/publicação (`/pipeline/landing-page-html/approve-and-publish`) e a exibir:
+  - URL do iframe (Lead Portal)
+  - URL standalone (para uso na campanha)
+- criada nova API client no frontend para o fluxo de aprovação/publicação de landing.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `frontend/src/api/experiment/useApproveAndPublishLanding.ts`
+  - `frontend/src/pages/experiment/LandingTab.tsx`
+  - `docs/registros/experimentos.md`

@@ -1,7 +1,7 @@
 
 
 
-**Leia do documento : /docs/mois/mois-hotmart-mapeamento-ciclos-campos-banco.md**
+**Leia do documento : /docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md**
 
 Exemplo para acessar dados de produtos na hotmart depois de logado e usando o token:
 

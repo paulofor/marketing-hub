@@ -177,3 +177,27 @@ E usa esse valor tanto no texto quanto no botão “Ver página de vendas”.
 Com a implementação atual, o link exibido na tela será exatamente o conteúdo de `sales_page_url` do banco para o último job. Se a Hotmart não devolver `salesPageUrl` e o fallback cair em `checkoutUrl`, a tela abre checkout/detalhe em vez da página de vendas.
 
 Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo retornado na coleta/fallback e é propagado corretamente até a tela.
+
+---
+
+## 9) Regras de agendamento e execução dos ciclos
+
+O coletor executa de hora em hora e decide o ciclo pela hora atual:
+
+- Hora ímpar (`hour % 2 != 0`) → executa `collectFirstCycle(...)`.
+- Hora par (`hour % 2 == 0`) → executa `collectSecondCycleFromBackend(...)`.
+
+Sequência operacional consolidada:
+
+1. Obter token JWT da Hotmart via configuração geral no backend.
+2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base.
+3. No ciclo 2, buscar produtos já persistidos em `/api/v1/mois/hotmart/products`.
+4. Para cada produto do ciclo 2, chamar `GET https://api-affiliation-market.hotmart.com/v1/market/product/{id}/details?userSessionId={session}`.
+5. Persistir novamente no backend para atualizar as referências com foco em `salesPageUrl`.
+
+## 10) Tratamento de falhas (ingestão)
+
+- Se falhar a obtenção do token: marcar ciclo como `COLLECTION_SKIPPED`.
+- Se falhar o detalhe de um produto no ciclo 2: manter dados do ciclo 1 para o item e continuar os demais.
+- Registrar em log `status` HTTP e `productId` para diagnóstico de causa-raiz.
+

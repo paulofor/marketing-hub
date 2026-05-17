@@ -46,3 +46,37 @@
 > Nunca crie registro com timestamp futuro em relação ao horário atual de `America/Sao_Paulo`.
 > Em caso de timestamp incorreto já registrado, não apague nem edite o registro antigo; adicione um novo registro de correção explicando o erro.
 > Neste documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
+
+## 2026-05-17 13:47:25 UTC-3
+- consolidação da documentação do módulo MOIS ClickBank em um único documento canônico
+- foi usado o código implementado como fonte de verdade para garantir aderência de endpoint, fluxo default e fetch GraphQL
+- criado documento unificado em , e os documentos antigos passaram a apontar para o consolidado
+- documentos lidos para tratar a situação:
+  - docs/mois-clickbank-coletor.md
+  - docs/mois/mois-canonico-coleta-clickbank-ciclo-um.md
+  - docs/mois/clickbase-fetch-ciclo-consulta.md
+  - mois-clickbank-collector/src/main/java/com/marketinghub/moisclickbank/web/ClickbankCollectorController.java
+  - mois-clickbank-collector/src/main/java/com/marketinghub/moisclickbank/service/ClickbankCollectorService.java
+  - mois-clickbank-collector/src/main/resources/application.properties
+
+## 2026-05-17 13:47:32 UTC-3
+- consolidação da documentação do módulo MOIS ClickBank em um único documento canônico
+- foi usado o código implementado como fonte de verdade para garantir aderência de endpoint, fluxo default e fetch GraphQL
+- criado documento unificado em docs/mois/mois-canonico-coleta-clickbank-ciclo-um.md, e os documentos antigos passaram a apontar para o consolidado
+- documentos lidos para tratar a situação:
+  - docs/mois-clickbank-coletor.md
+  - docs/mois/mois-canonico-coleta-clickbank-ciclo-um.md
+  - docs/mois/clickbase-fetch-ciclo-consulta.md
+  - mois-clickbank-collector/src/main/java/com/marketinghub/moisclickbank/web/ClickbankCollectorController.java
+  - mois-clickbank-collector/src/main/java/com/marketinghub/moisclickbank/service/ClickbankCollectorService.java
+  - mois-clickbank-collector/src/main/resources/application.properties
+
+## 2026-05-17 14:23:53 UTC-3
+- ajuste solicitado pós-revisão: mover o documento canônico unificado de ClickBank para a pasta /docs/canonical
+- foi adotado nome versionado de cânone para facilitar evolução controlada: docs/canonical/mois-clickbank-collection-canon.v1.md
+- atualizados os documentos de ponte para apontarem para o novo caminho canônico
+- documentos lidos para tratar a situação:
+  - docs/mois/mois-canonico-coleta-clickbank-ciclo-um.md
+  - docs/mois-clickbank-coletor.md
+  - docs/mois/clickbase-fetch-ciclo-consulta.md
+  - docs/registros/mois1.md

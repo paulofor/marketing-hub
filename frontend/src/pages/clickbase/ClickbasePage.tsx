@@ -1,6 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import PageTitle from "../../components/PageTitle";
-import { useClickbaseCollectedProducts } from "../../api/settings/useClickbaseCollectedProducts";
+import {
+  useClickbaseCollectedProducts,
+  useClickbaseCollectionJobs,
+} from "../../api/settings/useClickbaseCollectedProducts";
 import {
   useClickbankAccessTokenSetting,
   useUpdateClickbankAccessTokenSetting,
@@ -22,6 +25,7 @@ function formatUpdatedAt(value?: string | null) {
 export default function ClickbasePage() {
   const workspaceId = "workspace-001";
   const clickbaseProductsQuery = useClickbaseCollectedProducts(workspaceId, 24);
+  const clickbaseJobsQuery = useClickbaseCollectionJobs(workspaceId);
   const { data: clickbankSetting, isLoading: isLoadingSetting, isError: isErrorSetting } =
     useClickbankAccessTokenSetting();
   const updateClickbankSetting = useUpdateClickbankAccessTokenSetting();
@@ -36,6 +40,24 @@ export default function ClickbasePage() {
 
   const updatedAt = useMemo(() => formatUpdatedAt(clickbankSetting?.updatedAt), [clickbankSetting?.updatedAt]);
   const latestJobId = useMemo(() => clickbaseProductsQuery.data?.[0]?.jobId, [clickbaseProductsQuery.data]);
+
+  const latestClickbaseExecution = useMemo(() => clickbaseJobsQuery.data?.[0], [clickbaseJobsQuery.data]);
+  const shouldShowTokenRefreshAlert = useMemo(() => {
+    if (!latestClickbaseExecution) {
+      return false;
+    }
+
+    const message = (latestClickbaseExecution.message ?? "").toUpperCase();
+    const hasTokenHint =
+      message.includes("JWT_EXPIRED_OR_INVALID") ||
+      message.includes("TOKEN") ||
+      message.includes("403") ||
+      message.includes("UNAUTHORIZED") ||
+      message.includes("REQUEST BLOCKED");
+
+    return (latestClickbaseExecution.status === "COLLECTION_ERROR" || latestClickbaseExecution.status === "COLLECTION_SKIPPED") && hasTokenHint;
+  }, [latestClickbaseExecution]);
+
   const latestJobDate = useMemo(() => {
     const collectedAt = clickbaseProductsQuery.data?.[0]?.collectedAt;
     if (!collectedAt) {
@@ -118,6 +140,13 @@ export default function ClickbasePage() {
           ) : null}
 
           {feedback ? <div className="alert alert-info mt-3 mb-0">{feedback}</div> : null}
+
+          {shouldShowTokenRefreshAlert ? (
+            <div className="alert alert-warning mt-3 mb-0" role="alert">
+              <strong>Atenção:</strong> a última coleta indicou falha de autenticação no Graph da ClickBank.
+              Atualize o token JWT no campo acima e salve para liberar as próximas coletas.
+            </div>
+          ) : null}
         </div>
       </section>
 

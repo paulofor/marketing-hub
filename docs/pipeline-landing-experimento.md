@@ -6,7 +6,7 @@ Este guia descreve a sequência obrigatória de ações para gerar, aplicar e ap
 >
 > - Estrutura do pipeline (`CAMPAIGN_ANGLE` → `LANDING_PAGE_HTML`) em `docs/experiment-pipeline-artifacts-visual.md` e na tela **Experimentos › Conteúdo › Geração** (`frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`).
 > - Planejamento e geração de imagens do framework em `useFrameworkImageStatuses`/`useGenerateFrameworkImages`.
-> - Seleção/aprovação do fluxo do portal em `frontend/src/pages/experiment/LeadPortalFlowTab.tsx`.
+> - Aplicação/aprovação do formulário diretamente no fluxo do Gera Landing (sem aba Portal do Lead).
 > - Service de deploy automático do formulário via `ExperimentLeadPortalFlowScheduler` (AI Worker).
 
 Consulta ao MySQL confirmou o contexto do experimento monitorado:
@@ -30,7 +30,7 @@ Os logs em produção reforçam que o fluxo `exp-10-landing` está ativo (`FlowE
 | 4 | **Gerar as imagens** do framework | Painel "Geração das imagens planejadas" (mesma tela) | Planejamento aprovado | Status `WEB_READY` com `webUrl` por item | 
 | 5 | **Solicitar o HTML da Landing** (`LANDING_PAGE_HTML`) e revisar | aba HTML da Landing | Steps 1–4 concluídos | HTML final com imagens reais (sem placeholder) | 
 | 6 | **Aplicar HTML ao formulário** | Botão "Usar como formulário do experimento" | HTML validado | `customFormHtml` atualizado no fluxo vinculado | 
-| 7 | **Selecionar e aprovar o formulário** | Experimento › aba Portal do Lead | HTML aplicado | `lead_portal_flow_id` apontando para o slug correto + `approved=true` |
+| 7 | **Aplicar e publicar o formulário via Gera Landing** | Experimento › Conteúdo › Geração | HTML aplicado | fluxo aplicado/publicado sem depender da aba Portal do Lead |
 
 ## Passo a passo detalhado
 
@@ -62,13 +62,12 @@ Os logs em produção reforçam que o fluxo `exp-10-landing` está ativo (`FlowE
 
 ### 6. Aplicar ao formulário do experimento
 1. Ainda no preview, clique em **Usar como formulário do experimento**. A chamada `POST /api/experiments/:id/pipeline/landing-page-html/apply-to-form` atualiza o `customFormHtml` do fluxo vinculado.
-2. Volte para o card "Portal do Lead" da página do experimento e confirme que o slug correto aparece em "Fluxo atribuído".
+2. Confirme no próprio fluxo do Gera Landing que a aplicação/publicação foi concluída para o slug correto.
 
-### 7. Selecionar e aprovar o formulário
-1. Na aba **Portal do Lead**, use o seletor para vincular o fluxo desejado ao experimento (campo `lead_portal_flow_id`).
-2. Ative a aprovação com o toggle **Aprovar/Revogar** (chamada `PATCH /api/lead-portal-flows/:id/approval`).
-3. Se já estava aprovado e o HTML foi substituído, clique em **Revogar** e depois **Aprovar** para propagar o novo artefato.
-4. Esta etapa dispara automaticamente o deploy para `https://oportunidadebrasil.shop/flows/{slug}`; não há passos manuais adicionais.
+### 7. Aplicar e publicar o formulário via Gera Landing
+1. Com o HTML final revisado, execute a aplicação/publicação no próprio fluxo do **Gera Landing**.
+2. Confirme que o deploy foi propagado para `https://oportunidadebrasil.shop/flows/{slug}`.
+3. Não use mais a antiga aba **Portal do Lead**; ela foi descontinuada.
 
 ## Evitando o placeholder do hero
 - **Causa raiz:** HTML gerado antes das imagens chegarem em `WEB_READY`. O worker injeta `https://placehold.co/...` apenas para manter layout válido.
@@ -85,7 +84,7 @@ Os logs em produção reforçam que o fluxo `exp-10-landing` está ativo (`FlowE
 - [ ] `LANDING_PAGE_COPY`, `LANDING_PAGE_WIREFRAME`, `LANDING_PAGE_IMAGE_PLANNING` e `LANDING_PAGE_HTML` em `COMPLETED` no histórico do pipeline.
 - [ ] Painel de imagens sem registros `PENDING/FAILED` e todas com `webUrl` válido.
 - [ ] HTML aplicado ao experimento (`Última aplicação` exibida no card do preview).
-- [ ] Fluxo correto selecionado no experimento e aprovado novamente após ajustes.
+- [ ] Aplicação/publicação concluída no fluxo do Gera Landing após ajustes finais.
 - [ ] Acesso público (`/flows/{slug}`) renderizando hero real (sem `placehold`).
 - [ ] Logs do Portal confirmando `render-complete` após a última aprovação.
 

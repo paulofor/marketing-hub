@@ -6,7 +6,7 @@ e está pronto para ser enviado ao Facebook Ads Worker.
 ## Pré-requisitos
 
 - Criativos aprovados e prontos para uso.
-- Ao menos um fluxo do Portal do Lead associado ao experimento.
+- Landing/formulário do experimento gerado e aplicado pelo fluxo do Gera Landing.
 - Segmentação completa (interesses, cargos e comportamentos aprovados).
 - Configurações operacionais feitas: conta/página do Facebook, Instagram e
   orçamento diário.

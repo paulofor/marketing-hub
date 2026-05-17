@@ -45,3 +45,13 @@
 > Em caso de timestamp incorreto já registrado, não apague nem edite o registro antigo; adicione um novo registro de correção explicando o erro.
 > Neste documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 >
+
+## 2026-05-17 03:38:52 UTC-3
+- Atualização documental para remover referências à aba descontinuada "Portal do Lead" no fluxo de liberação para Facebook Ads.
+- Raciocínio: a operação atual é centralizada no Gera Landing; manter instruções antigas induzia erro operacional e bloqueio indevido na liberação do experimento.
+- Foi feito: revisão e ajuste dos documentos operacionais/canônicos para substituir instruções de aprovação em aba por aplicação/publicação via Gera Landing.
+- documentos lidos para tratar a situação:
+  - docs/manual-usuario/aihub/liberar-facebook-ads-worker.md
+  - docs/pipeline-landing-experimento.md
+  - docs/canonical/facebook-campaign-publication-canon.v1.md
+  - docs/registros/experimentos.md

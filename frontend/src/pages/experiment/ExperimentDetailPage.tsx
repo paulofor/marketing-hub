@@ -1087,6 +1087,16 @@ export default function ExperimentDetailPage() {
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
   const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
+  const openLandingActions = () => {
+    setTab("landing");
+    window.requestAnimationFrame(() => {
+      tabsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
   const blockingChecklist: ChecklistItem[] = [
     {
       id: "creatives",
@@ -1126,15 +1136,6 @@ export default function ExperimentDetailPage() {
     isReadyForFacebook && data.platform === "FACEBOOK";
   const releaseButtonDisabled =
     releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
-  const openLandingActions = () => {
-    setTab("landing");
-    window.requestAnimationFrame(() => {
-      tabsSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
-  };
 
   const configurationChecklist: ChecklistItem[] = [
     {

@@ -122,3 +122,15 @@
   - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
   - `docs/canonical/facebook-campaign-publication-canon.v1.md`
   - `docs/registros/experimentos.md`
+
+## 2026-05-17 14:40:45 UTC-3
+- correção de erro de typecheck no `ExperimentDetailPage` por uso de função antes da declaração.
+- o checklist bloqueante da aba Facebook referenciava `openLandingActions` antes da inicialização do `const`, causando TS2448/TS2454.
+- foi movida a declaração de `openLandingActions` para antes de `blockingChecklist`, mantendo o mesmo comportamento de navegação/scroll para a aba Landing.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+  - docs/registros/experimentos.md

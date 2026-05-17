@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Experiment } from "../../api/experiment/useExperiments";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
-import { useLandingPages } from "../../api/landing/useLandingPages";
 
 interface LandingTabProps {
   experiment: Experiment;
@@ -29,26 +28,16 @@ function normalizeUrl(url?: string | null) {
 }
 
 export default function LandingTab({ experiment }: LandingTabProps) {
-  const { data: landingPages, isLoading, isError } = useLandingPages(experiment.id);
   const updateExperiment = useUpdateExperiment(experiment.id);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [selectedLandingId, setSelectedLandingId] = useState<number | null>(null);
-
-  const sortedLandingPages = useMemo(() => {
-    if (!Array.isArray(landingPages)) {
-      return [];
-    }
-
-    return [...landingPages].sort((a, b) => b.id - a.id);
-  }, [landingPages]);
+  const landingHtml = useMemo(() => {
+    const raw = experiment.landingPageHtml;
+    return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
+  }, [experiment.landingPageHtml]);
 
   const selectedDestinationUrl = normalizeUrl(experiment.followUpActionUrl);
-  const resolvedSelectedLanding = useMemo(
-    () => sortedLandingPages.find((landing) => landing.id === selectedLandingId) ?? null,
-    [selectedLandingId, sortedLandingPages],
-  );
 
-  const handleApproveLanding = async (landingId: number, landingUrl: string) => {
+  const handleApproveLanding = async () => {
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
     if (kpiTargetValue == null || experiment.metricPresetId == null) {
       setFeedback({
@@ -59,7 +48,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
       return;
     }
 
-    const destinationUrl = resolveStandaloneLandingUrl(landingUrl);
+    const destinationUrl = resolveStandaloneLandingUrl(`/landing/${experiment.id}`);
     setFeedback(null);
 
     try {
@@ -103,7 +92,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
       <div className="card border-0 shadow-sm">
         <div className="card-body">
           <h5 className="card-title mb-1">Landing do experimento</h5>
-          <p className="text-muted mb-0">Selecione uma landing e aprove no botão final da aba.</p>
+          <p className="text-muted mb-0">Pré-visualização do HTML salvo no experimento.</p>
         </div>
       </div>
 
@@ -116,64 +105,27 @@ export default function LandingTab({ experiment }: LandingTabProps) {
         </div>
       ) : null}
 
-      {isLoading ? (
-        <p className="text-muted">Carregando landings do experimento...</p>
-      ) : isError ? (
-        <p className="text-danger">Não foi possível carregar as landings deste experimento.</p>
-      ) : sortedLandingPages.length === 0 ? (
+      {!landingHtml ? (
         <p className="text-muted mb-0">
-          Nenhuma landing gerada ainda. Gere o HTML na aba Estrutura de conteúdo para publicar aqui.
+          Nenhum HTML de landing encontrado no registro do experimento.
         </p>
       ) : (
-        <div className="d-flex flex-column gap-3">
-          {sortedLandingPages.map((landing) => {
-            const standaloneUrl = resolveStandaloneLandingUrl(landing.url);
-            const isSelected = normalizeUrl(standaloneUrl) === selectedDestinationUrl;
-
-            return (
-              <div key={landing.id} className="card border-0 shadow-sm">
-                <div className="card-body d-flex flex-column gap-3">
-                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                    <div>
-                      <h6 className="mb-1 d-flex align-items-center gap-2">
-                        Landing #{landing.id}
-                        {isSelected ? (
-                          <span className="badge text-bg-success">Destino ativo</span>
-                        ) : null}
-                      </h6>
-                      <p className="text-muted small mb-1">Tipo: {landing.type}</p>
-                      <p className="text-muted small mb-0">Status: {landing.status}</p>
-                    </div>
-                    <div className="form-check">
-                      <input
-                        id={`landing-choice-${landing.id}`}
-                        className="form-check-input"
-                        type="radio"
-                        name="landing-choice"
-                        checked={selectedLandingId === landing.id}
-                        onChange={() => setSelectedLandingId(landing.id)}
-                      />
-                      <label className="form-check-label small" htmlFor={`landing-choice-${landing.id}`}>
-                        Selecionar para campanha
-                      </label>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-muted small mb-1">URL standalone</p>
-                    <a
-                      href={standaloneUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="small text-break"
-                    >
-                      {standaloneUrl}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="card border-0 shadow-sm">
+          <div className="card-body d-flex flex-column gap-3">
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              <span className="fw-semibold">Destino atual:</span>
+              {selectedDestinationUrl ? (
+                <span className="badge text-bg-success">URL de campanha definida</span>
+              ) : (
+                <span className="badge text-bg-secondary">Sem URL aprovada</span>
+              )}
+            </div>
+            <iframe
+              title="Prévia da landing do experimento"
+              srcDoc={landingHtml}
+              style={{ width: "100%", minHeight: 560, border: "1px solid #dee2e6", borderRadius: 8 }}
+            />
+          </div>
         </div>
       )}
 
@@ -182,11 +134,9 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           type="button"
           className="btn btn-success"
           onClick={() =>
-            resolvedSelectedLanding
-              ? handleApproveLanding(resolvedSelectedLanding.id, resolvedSelectedLanding.url)
-              : undefined
+            handleApproveLanding()
           }
-          disabled={updateExperiment.isPending || !resolvedSelectedLanding}
+          disabled={updateExperiment.isPending || !landingHtml}
         >
           {updateExperiment.isPending ? (
             <span className="d-inline-flex align-items-center gap-2">

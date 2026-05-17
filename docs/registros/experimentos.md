@@ -74,3 +74,16 @@
   - AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentFunnelTab.tsx
+
+## 2026-05-17 04:08:17 UTC-3
+- solicitação para ajustar a aba Landing do experimento para usar o HTML salvo no próprio registro da tabela `experiment` e alinhar com a migração da geração para o Gera Landing.
+- raciocínio aplicado: remover dependência da listagem antiga de landings do pipeline e exibir diretamente a prévia do HTML final que agora pertence ao fluxo Gera Landing.
+- foi feito no frontend:
+  - atualização da aba Landing para renderizar o `landingPageHtml` do experimento em preview (`iframe` com `srcDoc`) e manter o botão de aprovação para campanha apontando o destino da campanha para `/landing/{id}`.
+  - remoção dos blocos de landing do conteúdo do pipeline na aba "Conteúdo" (mantidas apenas etapas de Campaign Angle e Ad Copy).
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/LandingTab.tsx
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx

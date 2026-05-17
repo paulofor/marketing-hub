@@ -10,8 +10,10 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingCandidateType;
+import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,6 +35,8 @@ class ExperimentReadinessServiceTest {
     private CreativeRepository creativeRepository;
     @Mock
     private ExperimentTargetingSelectionRepository targetingSelectionRepository;
+    @Mock
+    private TargetingElementRepository targetingElementRepository;
 
     @InjectMocks
     private ExperimentReadinessService service;
@@ -47,6 +51,8 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(false);
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
                 .thenReturn(0L);
+        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
+                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId())).thenReturn(List.of());
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -76,6 +82,8 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
                 .thenReturn(1L);
+        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
+                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId())).thenReturn(List.of());
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -99,6 +107,8 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
         when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
                 .thenReturn(0L);
+        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
+                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId())).thenReturn(List.of());
 
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -106,6 +116,29 @@ class ExperimentReadinessServiceTest {
         assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .contains(ExperimentReadinessIssueType.TARGETING);
+    }
+
+    @Test
+    void shouldTreatApprovedTargetingPackageAsReadyEvenWithoutSelection() {
+        Long experimentId = 15L;
+        Experiment experiment = buildExperiment(experimentId, 21L);
+        LeadPortalFlow flow = new LeadPortalFlow();
+        flow.setApproved(true);
+        experiment.setLeadPortalFlow(flow);
+
+        when(experimentService.get(experimentId)).thenReturn(experiment);
+        when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
+        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
+                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId()))
+                .thenReturn(List.of(new TargetingElement()));
+
+        ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+        assertThat(summary.hasCompleteTargeting()).isTrue();
+        assertThat(summary.missingTargetingTypes()).isEmpty();
+        assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
+                .doesNotContain(ExperimentReadinessIssueType.TARGETING);
     }
 
 

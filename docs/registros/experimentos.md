@@ -134,3 +134,15 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
   - docs/registros/experimentos.md
+
+## 2026-05-17 18:10:00 UTC
+- investigação da inconsistência entre a tela `/facebook-campaigns` e o comportamento do facebook-ads worker para o experimento 20.
+- causa-raiz identificada: `ExperimentReadinessService` exigia apenas seleção local de público (`experiment_targeting_selection`), enquanto o worker bloqueia por ausência de pacote aprovado de targeting (job titles aprovados por nicho/hipótese em `targeting_element`).
+- correção aplicada no backend:
+  - `ExperimentReadinessService` passou a considerar o experimento pronto em targeting quando houver **pacote aprovado de targeting** (JOB_TITLE aprovado para nicho/hipótese), mantendo fallback para seleção local para compatibilidade.
+  - atualização dos testes unitários para cobrir o novo critério de prontidão e evitar regressão.
+- resultado esperado: a tela de campanhas e a elegibilidade real do worker passam a refletir a mesma regra de prontidão de público.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentReadinessService.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/service/ExperimentReadinessServiceTest.java`
+  - `docs/registros/experimentos.md`

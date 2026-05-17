@@ -9,6 +9,7 @@ import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
+import com.marketinghub.targeting.repository.TargetingElementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +24,16 @@ public class ExperimentReadinessService {
     private final ExperimentService experimentService;
     private final CreativeRepository creativeRepository;
     private final ExperimentTargetingSelectionRepository targetingSelectionRepository;
+    private final TargetingElementRepository targetingElementRepository;
 
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
-                                      ExperimentTargetingSelectionRepository targetingSelectionRepository) {
+                                      ExperimentTargetingSelectionRepository targetingSelectionRepository,
+                                      TargetingElementRepository targetingElementRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
+        this.targetingElementRepository = targetingElementRepository;
     }
 
     @Transactional(readOnly = true)
@@ -98,13 +102,13 @@ public class ExperimentReadinessService {
             missing.add("leadPortalFlow");
         }
         if (!hasConfiguredTargeting(experiment)) {
-            missing.add("targetingSelections");
+            missing.add("approvedTargetingPackage");
         }
         return List.copyOf(missing);
     }
 
     private List<TargetingElementType> mapMissingTargetingTypes(List<String> missingConfiguration) {
-        if (!missingConfiguration.contains("targetingSelections")) {
+        if (!missingConfiguration.contains("approvedTargetingPackage")) {
             return List.of();
         }
         return List.of(
@@ -117,7 +121,20 @@ public class ExperimentReadinessService {
         if (experiment == null) {
             return false;
         }
+        if (hasApprovedTargetingPackage(experiment)) {
+            return true;
+        }
         return hasSelectedTargeting(experiment.getId());
+    }
+
+    private boolean hasApprovedTargetingPackage(Experiment experiment) {
+        if (experiment.getNiche() == null || experiment.getNiche().getId() == null) {
+            return false;
+        }
+        return !targetingElementRepository.findApprovedForExperiment(
+                experiment.getNiche().getId(),
+                TargetingElementType.JOB_TITLE,
+                experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null).isEmpty();
     }
 
     private boolean hasApprovedCreative(Experiment experiment) {

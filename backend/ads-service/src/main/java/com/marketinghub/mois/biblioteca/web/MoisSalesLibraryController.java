@@ -52,6 +52,43 @@ public class MoisSalesLibraryController {
         }
     }
 
+    @GetMapping("/pages")
+    public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(
+            @RequestParam String workspaceId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        return service.listPages(workspaceId, page, pageSize);
+    }
+
+    @GetMapping("/pages/{pageId}")
+    public MoisSalesLibraryDtos.SalesLibraryPageResponse getPage(@PathVariable long pageId) {
+        try {
+            return service.getPage(pageId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    @GetMapping("/pages/{pageId}/analysis")
+    public MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse getPageAnalysis(@PathVariable long pageId) {
+        try {
+            return service.getPageAnalysis(pageId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    @PostMapping("/pages/{pageId}:reanalyze")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse reanalyzePage(@PathVariable long pageId) {
+        try {
+            return service.reanalyzePage(pageId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
     @PostMapping("/urls:ingest")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisSalesLibraryDtos.SalesLibraryIngestResponse ingestUrls(

@@ -769,3 +769,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-15-mois-sales-library-url-unique-canonical.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-05-17-mois-sales-library-analysis.yaml
+      relativeToChangelogFile: true

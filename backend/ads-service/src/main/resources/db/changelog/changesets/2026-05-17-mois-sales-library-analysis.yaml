@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-17-mois-sales-library-analysis-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_library_url_ingest
+        - not:
+            tableExists:
+              tableName: mois_sales_library_page_analysis
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_library_page_analysis (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                url_ingest_id BIGINT NOT NULL,
+                job_id BIGINT NULL,
+                snapshot_hash VARCHAR(128) NULL,
+                parser_version VARCHAR(64) NULL,
+                prompt_version VARCHAR(64) NULL,
+                model_name VARCHAR(120) NULL,
+                status VARCHAR(32) NOT NULL,
+                score_total DECIMAL(6,2) NULL,
+                sections_json LONGTEXT NULL,
+                copy_json LONGTEXT NULL,
+                visual_json LONGTEXT NULL,
+                image_json LONGTEXT NULL,
+                analysis_notes VARCHAR(1000) NULL,
+                analyzed_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mois_sales_library_analysis_url_updated (url_ingest_id, updated_at),
+                KEY idx_mois_sales_library_analysis_status_updated (status, updated_at),
+                CONSTRAINT fk_mois_sales_library_analysis_url_ingest
+                  FOREIGN KEY (url_ingest_id) REFERENCES mois_sales_library_url_ingest(id)
+                  ON DELETE CASCADE,
+                CONSTRAINT fk_mois_sales_library_analysis_job
+                  FOREIGN KEY (job_id) REFERENCES mois_sales_library_processing_job(id)
+                  ON DELETE SET NULL
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

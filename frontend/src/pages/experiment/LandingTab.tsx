@@ -36,6 +36,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
   }, [experiment.landingPageHtml]);
 
   const selectedDestinationUrl = normalizeUrl(experiment.followUpActionUrl);
+  const campaignDestinationUrl = resolveStandaloneLandingUrl(`/landing/${experiment.id}`);
 
   const handleApproveLanding = async () => {
     const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
@@ -119,6 +120,22 @@ export default function LandingTab({ experiment }: LandingTabProps) {
               ) : (
                 <span className="badge text-bg-secondary">Sem URL aprovada</span>
               )}
+            </div>
+            <div className="small text-body-secondary">
+              <div>
+                <strong>URL usada na campanha:</strong>{" "}
+                <a href={campaignDestinationUrl} target="_blank" rel="noreferrer">
+                  {campaignDestinationUrl}
+                </a>
+              </div>
+              {selectedDestinationUrl ? (
+                <div>
+                  <strong>URL atualmente aprovada:</strong>{" "}
+                  <a href={selectedDestinationUrl} target="_blank" rel="noreferrer">
+                    {selectedDestinationUrl}
+                  </a>
+                </div>
+              ) : null}
             </div>
             <iframe
               title="Prévia da landing do experimento"

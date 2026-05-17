@@ -1082,19 +1082,11 @@ export default function ExperimentDetailPage() {
   const isFacebookWorkerReady = facebookWorker?.ready ?? false;
   const facebookAccountLabel =
     facebookWorker?.accountName ?? facebookWorker?.accountId ?? null;
-  const hasLeadPortalFlow =
-    readinessSummary?.hasLeadPortalFlow ??
-    Boolean(data.leadPortalFlowId ?? data.leadPortalFlowName);
   const hasFacebookPixelRegistered = Boolean(niche?.facebookPixelId);
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
   const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
-  const leadPortalFlowLabel =
-    data.leadPortalFlowName ??
-    data.leadPortalFlowSlug ??
-    (data.leadPortalFlowId ? `#${data.leadPortalFlowId}` : null);
-
   const blockingChecklist: ChecklistItem[] = [
     {
       id: "creatives",
@@ -1112,17 +1104,15 @@ export default function ExperimentDetailPage() {
       actionLabel: hasCreativesReady ? undefined : "Ir para Criativos",
     },
     {
-      id: "lead-portal-flow",
-      title: "Fluxo do Portal do Lead",
-      isMet: hasLeadPortalFlow,
+      id: "landing-destination",
+      title: "Landing criada e aprovada",
+      isMet: Boolean(data.followUpActionUrl),
       isLoading: isLoadingReadiness,
-      hint: hasLeadPortalFlow
-        ? leadPortalFlowLabel
-          ? `Fluxo ${leadPortalFlowLabel} vinculado ao experimento.`
-          : "Já existe um fluxo do Portal do Lead vinculado."
-        : "Solicite ou vincule um fluxo aprovado para o experimento.",
-      action: undefined,
-      actionLabel: undefined,
+      hint: data.followUpActionUrl
+        ? `Landing aprovada e URL de destino ativa: ${data.followUpActionUrl}.`
+        : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
+      action: data.followUpActionUrl ? undefined : openLandingActions,
+      actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
     },
   ];
 

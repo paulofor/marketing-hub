@@ -26,7 +26,7 @@ export interface CreateExperiment {
   imagesPerPackage?: number;
   openImagesPerPackage?: number;
   compressedImagesPerPackage?: number;
-  journeyTemplateId: number;
+  journeyTemplateId?: number;
   facebookPageId?: number;
   facebookInstantFormId?: number;
   instagramAccountId: number;

@@ -12,6 +12,12 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
 });
 
+const BACKTEST_TARGET_TOTAL = 500;
+
+function formatPercentage(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
 interface ExperimentFunnelTabProps {
   experimentId: string;
   totalSpend?: number | null;
@@ -139,6 +145,21 @@ export default function ExperimentFunnelTab({
     },
   ];
   const selectableStages = stages.length > 0 ? stages : fallbackStages;
+  const outcomeQuantities = selectableStages.map((stage) => ({
+    label: stage.label,
+    quantity: stage.totalCount,
+  }));
+  const maxOutcomeQuantity = outcomeQuantities.reduce((max, item) =>
+    Math.max(max, item.quantity), 0,
+  );
+  const totalOutcomes = outcomeQuantities.reduce(
+    (accumulator, item) => accumulator + item.quantity,
+    0,
+  );
+  const outcomeTargetPercent =
+    BACKTEST_TARGET_TOTAL > 0
+      ? (totalOutcomes / BACKTEST_TARGET_TOTAL) * 100
+      : 0;
   const registerEvent = useRegisterExperimentFunnelEvent(experimentId);
   const resetFunnel = useResetExperimentFunnel(experimentId);
   const [form, setForm] = useState({
@@ -224,6 +245,44 @@ export default function ExperimentFunnelTab({
           Cada custo por conversão abaixo divide o total gasto pela quantidade
           de conversões registradas em cada etapa.
         </p>
+
+        <div className="rounded-3 border p-3 mb-4">
+          <div className="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+            <div>
+              <div className="text-uppercase text-muted small fw-semibold">
+                Backtest · total atual de outcomes
+              </div>
+              <div className="fs-2 fw-bold">{totalOutcomes}</div>
+            </div>
+            <div className="text-end">
+              <div className="text-muted small">Meta ideal: {BACKTEST_TARGET_TOTAL}</div>
+              <div className="fs-5 fw-semibold">
+                {formatPercentage(outcomeTargetPercent)} da meta
+              </div>
+            </div>
+          </div>
+          <div className="d-flex flex-column gap-2">
+            {outcomeQuantities.map((item) => {
+              const widthPercent = maxOutcomeQuantity > 0
+                ? (item.quantity / maxOutcomeQuantity) * 100
+                : 0;
+              return (
+                <div key={item.label}>
+                  <div className="d-flex justify-content-between small">
+                    <span>{item.label}</span>
+                    <strong>{item.quantity}</strong>
+                  </div>
+                  <div className="progress" role="img" aria-label={`Quantidade do outcome ${item.label}: ${item.quantity}`}>
+                    <div
+                      className="progress-bar"
+                      style={{ width: `${Math.max(widthPercent, item.quantity > 0 ? 4 : 0)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="text-muted">Carregando funil...</div>

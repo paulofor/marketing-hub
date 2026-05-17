@@ -49,23 +49,17 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(0L);
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(false);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
-                .thenReturn(0L);
-        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
-                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId())).thenReturn(List.of());
-
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCreatives()).isFalse();
         assertThat(summary.hasLeadPortalFlow()).isFalse();
-        assertThat(summary.hasCompleteTargeting()).isFalse();
-        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
-        assertThat(summary.issues()).hasSize(3);
+        assertThat(summary.hasCompleteTargeting()).isTrue();
+        assertThat(summary.missingTargetingTypes()).isEmpty();
+        assertThat(summary.issues()).hasSize(2);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .containsExactlyInAnyOrder(
                         ExperimentReadinessIssueType.CREATIVE,
-                        ExperimentReadinessIssueType.LEAD_PORTAL_FLOW,
-                        ExperimentReadinessIssueType.TARGETING
+                        ExperimentReadinessIssueType.LEAD_PORTAL_FLOW
                 );
     }
 
@@ -80,11 +74,6 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
-                .thenReturn(1L);
-        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
-                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId())).thenReturn(List.of());
-
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCreatives()).isTrue();
@@ -95,7 +84,7 @@ class ExperimentReadinessServiceTest {
     }
 
     @Test
-    void shouldReportTargetingIssueWhenThereIsNoApprovedJobTitleSelection() {
+    void shouldNotReportTargetingIssueWhenThereIsNoApprovedJobTitleSelection() {
         Long experimentId = 11L;
         Experiment experiment = buildExperiment(experimentId, 19L);
         LeadPortalFlow flow = new LeadPortalFlow();
@@ -105,17 +94,12 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(experimentId, TargetingCandidateType.WORK_POSITION))
-                .thenReturn(0L);
-        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
-                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId())).thenReturn(List.of());
-
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
-        assertThat(summary.hasCompleteTargeting()).isFalse();
-        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
+        assertThat(summary.hasCompleteTargeting()).isTrue();
+        assertThat(summary.missingTargetingTypes()).isEmpty();
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
-                .contains(ExperimentReadinessIssueType.TARGETING);
+                .doesNotContain(ExperimentReadinessIssueType.TARGETING);
     }
 
     @Test
@@ -129,16 +113,34 @@ class ExperimentReadinessServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
-        when(targetingElementRepository.findApprovedForExperiment(experiment.getNiche().getId(),
-                TargetingElementType.JOB_TITLE, experiment.getHypothesisRef().getId()))
-                .thenReturn(List.of(new TargetingElement()));
-
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCompleteTargeting()).isTrue();
         assertThat(summary.missingTargetingTypes()).isEmpty();
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .doesNotContain(ExperimentReadinessIssueType.TARGETING);
+    }
+
+    @Test
+    void shouldRequireLandingDestinationInCampaignPendingChecklist() {
+        Experiment experiment = buildExperiment(20L, 30L);
+        experiment.setFollowUpActionUrl(null);
+
+        when(creativeRepository.existsByExperimentIdAndStatus(20L, CreativeStatus.READY)).thenReturn(true);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("landingDestination");
+    }
+
+    @Test
+    void shouldBeReadyForCampaignWhenCreativeAndLandingAreReady() {
+        Experiment experiment = buildExperiment(21L, 31L);
+        experiment.setFollowUpActionUrl("https://example.com/landing/21");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(21L, CreativeStatus.READY)).thenReturn(true);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
 

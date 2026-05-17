@@ -5,6 +5,7 @@ export interface MissingConfigurationInfo {
 
 const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   creativeApproval: { label: "Aprovar pelo menos um criativo" },
+  landingDestination: { label: "Aprovar a landing para definir URL de destino" },
   kpiTargetCpl: { label: "Definir o KPI alvo (CPL)" },
   stopLossCpl: { label: "Definir o stop-loss de CPL" },
   sampleSize: { label: "Informar o tamanho da amostra" },

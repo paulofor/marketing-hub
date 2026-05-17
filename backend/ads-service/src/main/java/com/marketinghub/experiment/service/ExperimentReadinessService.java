@@ -98,11 +98,8 @@ public class ExperimentReadinessService {
         if (!hasApprovedCreative(experiment)) {
             missing.add("creativeApproval");
         }
-        if (!hasReadyLeadPortalFlow(experiment)) {
-            missing.add("leadPortalFlow");
-        }
-        if (!hasConfiguredTargeting(experiment)) {
-            missing.add("approvedTargetingPackage");
+        if (!hasApprovedLandingDestination(experiment)) {
+            missing.add("landingDestination");
         }
         return List.copyOf(missing);
     }
@@ -159,5 +156,10 @@ public class ExperimentReadinessService {
                 experimentId, TargetingCandidateType.WORK_POSITION) > 0;
     }
 
+    private boolean hasApprovedLandingDestination(Experiment experiment) {
+        return experiment != null
+                && experiment.getFollowUpActionUrl() != null
+                && !experiment.getFollowUpActionUrl().isBlank();
+    }
 
 }

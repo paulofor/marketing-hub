@@ -146,3 +146,15 @@
   - `backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentReadinessService.java`
   - `backend/ads-service/src/test/java/com/marketinghub/experiment/service/ExperimentReadinessServiceTest.java`
   - `docs/registros/experimentos.md`
+
+## 2026-05-17 17:03:52 UTC-3
+- solicitação para unificar os critérios de pendência de campanhas com a verdade da tela de experimento (`/experiments/{id}`).
+- raciocínio aplicado: a tela de campanhas deve seguir o mesmo gate principal da tela de experimento para evitar duas verdades operacionais sobre aprovação.
+- foi feito: ajuste no backend para `missingConfiguration` considerar apenas os mesmos bloqueios principais da tela de experimento (criativo aprovado + landing com URL de destino), além de inclusão de novo rótulo de pendência no frontend e testes unitários cobrindo o novo comportamento.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentReadinessService.java

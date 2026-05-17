@@ -96,3 +96,10 @@
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - mois-hotmart-collector/AGENTS.md
 
+
+## 2026-05-17 15:10:00 UTC
+- atualização da tela /hotmart para exibir métricas de execução por ciclo: quantidade de jobs executados, total geral de produtos e total de produtos por ciclo (job).
+- adicionada seção "Resumo de ciclos Hotmart" com cards de indicadores e tabela por ciclo.
+- documentos/códigos consultados:
+  - frontend/src/pages/hotmart/HotmartPage.tsx
+  - frontend/src/api/settings/useHotmartCollectedProducts.ts

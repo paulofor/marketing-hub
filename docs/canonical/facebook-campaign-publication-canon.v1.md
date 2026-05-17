@@ -60,6 +60,25 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
 
 Se qualquer bloqueio falhar o worker interrompe a publicação e retorna a lista de pendências no alerta cinza da UI.
 
+## 5.1 Explicação complementar em linguagem simples (para operação)
+
+Este resumo existe para facilitar o entendimento de quem opera a campanha no dia a dia.
+
+Em termos práticos, o experimento só pode ser liberado para campanha quando 3 perguntas forem respondidas com **sim**:
+
+1. **Tem anúncio aprovado?**
+   - Pelo menos um criativo do experimento precisa estar pronto para uso.
+2. **Tem página de destino publicada?**
+   - A landing precisa estar aprovada e com URL final preenchida para receber o tráfego.
+3. **Tem público definido?**
+   - Precisa haver público aprovado (no fluxo manual, no mínimo 1 cargo aprovado).
+
+Se qualquer resposta for **não**, a liberação deve ser interrompida até a pendência ser resolvida.
+
+Depois que estiver tudo certo e o operador clicar em **Liberar para o Facebook Ads Worker**, o sistema coloca o experimento na fila de publicação e mantém o controle para evitar campanha duplicada do mesmo experimento.
+
+> Esta seção é apenas explicativa para operação; as regras válidas continuam sendo as regras canônicas e técnicas definidas nas seções 5, 6 e 7.
+
 ## 6. Configurações monitoradas (não bloqueantes)
 
 O cartão também lista itens operacionais que não travam o worker, mas devem ser revisados antes da liberação:

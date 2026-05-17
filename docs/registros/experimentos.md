@@ -184,6 +184,14 @@
   - frontend/src/pages/experiment/LandingTab.tsx
   - docs/registros/experimentos.md
 
+
+## 2026-05-17 21:05:00 UTC
+- atualização documental no cânone de publicação de campanhas para incluir explicação complementar em linguagem menos técnica para usuários operacionais.
+- objetivo: facilitar entendimento do gate de liberação sem alterar regras de domínio já estabelecidas.
+- documento alterado:
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+- registro desta tarefa realizado em:
+  - `docs/registros/experimentos.md`
 ## 2026-05-17 22:04:14 UTC
 - ajuste no prompt da etapa de copy da landing para evitar sinais tipográficos ambíguos no texto final.
 - causa-raiz tratada: a geração estava produzindo trechos com `~` e `+` (ex.: "em ~3 min" e "PDF + mini-kit"), que reduzem clareza comercial e padronização de linguagem.

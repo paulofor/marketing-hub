@@ -220,3 +220,15 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/NewExperimentPage.tsx
   - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+
+
+## 2026-05-17 21:10:00 UTC
+- solicitação para investigar erro `500 Internal Server Error` no `POST /api/experiments` após simplificação da criação de experimento.
+- análise de causa-raiz: a cadeia de validação do backend usava `MetricPresetService.get(...)` com `orElseThrow()` sem mapeamento HTTP; quando o payload chegava com `metricPresetId` inválido/vazio, o backend lançava `NoSuchElementException` e retornava 500 em vez de erro de contrato (400).
+- foi feito: ajuste no backend para validar `metricPresetId` nulo/vazio e inexistente com `ResponseStatusException(HttpStatus.BAD_REQUEST, ...)`, além de teste unitário cobrindo os dois cenários para evitar regressão.
+- tentativa de investigação operacional via MCP: endpoint respondeu com timeout para `java_module_logs` (module=backend), então a correção foi aplicada pela análise direta da causa no código do serviço e pela cobertura de teste.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/MetricPresetService.java

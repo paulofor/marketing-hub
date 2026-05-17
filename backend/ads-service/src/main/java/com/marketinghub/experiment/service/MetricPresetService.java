@@ -2,7 +2,9 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.repository.MetricPresetRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service layer for metric presets.
@@ -20,6 +22,10 @@ public class MetricPresetService {
     }
 
     public MetricPreset get(String id) {
-        return repository.findById(id).orElseThrow();
+        if (id == null || id.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
+        }
+        return repository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId not found: " + id));
     }
 }

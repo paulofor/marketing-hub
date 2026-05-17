@@ -171,3 +171,15 @@
   - `frontend/src/api/experiment/useApproveAndPublishLanding.ts`
   - `frontend/src/pages/experiment/LandingTab.tsx`
   - `docs/registros/experimentos.md`
+
+## 2026-05-17 17:34:07 UTC-3
+- correção de erro de typecheck na aba Landing do experimento ao aprovar/publicar landing.
+- causa-raiz: `experiment.id` é tipado como `string` no frontend, mas o hook `useApproveAndPublishLanding` exige `number` para compor a rota do endpoint.
+- foi feito: conversão explícita para número na chamada do hook (`Number(experiment.id)`), eliminando o conflito de tipos TS2345.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+- arquivos alterados:
+  - frontend/src/pages/experiment/LandingTab.tsx
+  - docs/registros/experimentos.md

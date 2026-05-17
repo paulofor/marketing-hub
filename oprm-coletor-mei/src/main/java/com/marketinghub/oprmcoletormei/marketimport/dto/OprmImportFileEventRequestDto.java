@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.marketimport.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 public record OprmImportFileEventRequestDto(
         String status,
@@ -8,6 +9,8 @@ public record OprmImportFileEventRequestDto(
         Long rowsValid,
         Long rowsRejected,
         String errorMessage,
-        Instant finishedAt
+        Instant finishedAt,
+        List<OprmCnaeUpsertDto> cnaes,
+        List<OprmMarketSizeUpsertDto> marketSizes
 ) {
 }

@@ -33,7 +33,9 @@ export function useClickbaseCollectedProducts(workspaceId: string, limit = 24) {
 export interface ClickbaseCollectionJob {
   jobId: string;
   workspaceId: string;
+  niche?: string | null;
   status: string;
+  sources?: string[];
   createdAt?: string | null;
   message?: string | null;
 }

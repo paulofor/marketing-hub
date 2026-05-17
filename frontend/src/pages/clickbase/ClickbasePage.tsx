@@ -41,7 +41,15 @@ export default function ClickbasePage() {
   const updatedAt = useMemo(() => formatUpdatedAt(clickbankSetting?.updatedAt), [clickbankSetting?.updatedAt]);
   const latestJobId = useMemo(() => clickbaseProductsQuery.data?.[0]?.jobId, [clickbaseProductsQuery.data]);
 
-  const latestClickbaseExecution = useMemo(() => clickbaseJobsQuery.data?.[0], [clickbaseJobsQuery.data]);
+  const clickbankJobs = useMemo(() => {
+    const jobs = clickbaseJobsQuery.data ?? [];
+    return jobs.filter((job) =>
+      (job.sources ?? []).some((source) => source.toUpperCase() === "CLICKBANK"),
+    );
+  }, [clickbaseJobsQuery.data]);
+
+  const latestClickbaseExecution = useMemo(() => clickbankJobs[0], [clickbankJobs]);
+  const latestSixClickbankJobs = useMemo(() => clickbankJobs.slice(0, 6), [clickbankJobs]);
   const shouldShowTokenRefreshAlert = useMemo(() => {
     if (!latestClickbaseExecution) {
       return false;
@@ -145,6 +153,47 @@ export default function ClickbasePage() {
             <div className="alert alert-warning mt-3 mb-0" role="alert">
               <strong>Atenção:</strong> a última coleta indicou falha de autenticação no Graph da ClickBank.
               Atualize o token JWT no campo acima e salve para liberar as próximas coletas.
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="card mt-3 shadow-sm border-0">
+        <div className="card-header">
+          <h5 className="mb-1">Últimas execuções de jobs Clickbank</h5>
+          <p className="text-muted small mb-0">Mostra as 6 execuções mais recentes com fonte Clickbank para este workspace.</p>
+        </div>
+        <div className="card-body">
+          {clickbaseJobsQuery.isLoading ? <p className="mb-0">Carregando execuções...</p> : null}
+          {clickbaseJobsQuery.isError ? <p className="text-danger mb-0">Não foi possível carregar os jobs de execução.</p> : null}
+          {!clickbaseJobsQuery.isLoading && !clickbaseJobsQuery.isError && latestSixClickbankJobs.length === 0 ? (
+            <p className="mb-0 text-secondary">Nenhuma execução Clickbank encontrada até o momento.</p>
+          ) : null}
+
+          {latestSixClickbankJobs.length > 0 ? (
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Job</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Nicho</th>
+                    <th scope="col">Criado em</th>
+                    <th scope="col">Mensagem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {latestSixClickbankJobs.map((job) => (
+                    <tr key={job.jobId}>
+                      <td className="fw-semibold">{job.jobId}</td>
+                      <td>{job.status}</td>
+                      <td>{job.niche || "—"}</td>
+                      <td>{formatUpdatedAt(job.createdAt)}</td>
+                      <td className="small text-muted">{job.message || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : null}
         </div>

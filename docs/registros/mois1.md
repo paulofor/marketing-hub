@@ -103,3 +103,13 @@
 - documentos/códigos consultados:
   - frontend/src/pages/hotmart/HotmartPage.tsx
   - frontend/src/api/settings/useHotmartCollectedProducts.ts
+
+## 2026-05-17 15:35:00 UTC
+- atualização da tela /clickbase para exibir as 6 últimas execuções de jobs da fonte Clickbank.
+- adicionada seção com tabela contendo job, status, nicho, data de criação e mensagem de execução.
+- ajuste de tipagem no frontend para incluir campos de `sources` e `niche` retornados pelo endpoint `/api/v1/mois/collection-jobs`.
+- documentos/códigos consultados:
+  - frontend/src/pages/clickbase/ClickbasePage.tsx
+  - frontend/src/api/settings/useClickbaseCollectedProducts.ts
+  - backend/ads-service/src/main/java/com/marketinghub/mois/dto/MoisWorkspaceDtos.java
+  - backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java

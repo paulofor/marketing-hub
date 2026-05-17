@@ -3885,7 +3885,6 @@ function LandingHtmlPreview({
   content: LandingHtmlContent;
   experimentId?: string;
 }) {
-  const [isApplying, setIsApplying] = useState(false);
   const canRender = Boolean(content.htmlDocument?.trim());
   const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
   const resolvedGeneratedImages = useMemo(
@@ -3905,34 +3904,6 @@ function LandingHtmlPreview({
   );
   const deterministicUrl = content.deterministic?.publicUrl?.trim();
   const aiUrl = content.ai?.publicUrl?.trim();
-
-  const handleApplyToForm = async () => {
-    if (!experimentId) return;
-    try {
-      setIsApplying(true);
-      const { data } = await axios.post<{
-        publicUrl?: string | null;
-        facebookPixelId?: string | null;
-        pixelAppliedAutomatically?: boolean;
-      }>(
-        `/api/experiments/${experimentId}/pipeline/landing-page-html/approve-and-publish`,
-      );
-      const publicationUrl = data?.publicUrl;
-      const pixelFeedback =
-        data?.pixelAppliedAutomatically && data.facebookPixelId
-          ? ` Pixel do nicho aplicado automaticamente (${data.facebookPixelId}).`
-          : " Pixel do nicho será aplicado automaticamente ao ficar disponível.";
-      toast.success(
-        publicationUrl
-          ? `Landing aprovada e publicada automaticamente em ${publicationUrl}.${pixelFeedback}`
-          : `Landing aprovada e publicação automática iniciada.${pixelFeedback}`,
-      );
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setIsApplying(false);
-    }
-  };
 
   return (
     <div className="d-flex flex-column gap-3 mt-3">
@@ -3976,26 +3947,9 @@ function LandingHtmlPreview({
           </div>
         </div>
       ) : null}
-      <div className="d-flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="btn btn-outline-primary"
-          disabled={isApplying || !experimentId || !canRender}
-          onClick={handleApplyToForm}
-        >
-          {isApplying ? (
-            <span className="d-inline-flex align-items-center gap-1">
-              <span
-                className="spinner-border spinner-border-sm"
-                role="status"
-                aria-hidden="true"
-              />
-              Aplicando...
-            </span>
-          ) : (
-            "Aprovar e publicar landing"
-          )}
-        </button>
+      <div className="alert alert-info py-2 mb-0 small" role="status">
+        A aprovação final da landing para campanha acontece exclusivamente na aba
+        <strong> Landing</strong> deste experimento.
       </div>
       {canRender ? (
         <div className="border rounded overflow-hidden">
@@ -4122,27 +4076,6 @@ function LandingHtmlPreview({
             </div>
           </div>
         </div>
-      </div>
-      <div className="d-flex justify-content-end">
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={isApplying || !experimentId || !canRender}
-          onClick={handleApplyToForm}
-        >
-          {isApplying ? (
-            <span className="d-inline-flex align-items-center gap-1">
-              <span
-                className="spinner-border spinner-border-sm"
-                role="status"
-                aria-hidden="true"
-              />
-              Publicando...
-            </span>
-          ) : (
-            "Aprovar landing e liberar para campanha"
-          )}
-        </button>
       </div>
       {content.htmlDocument ? (
         <details>

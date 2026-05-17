@@ -28,7 +28,7 @@ function normalizeUrl(url?: string | null) {
 }
 
 export default function LandingTab({ experiment }: LandingTabProps) {
-  const approveAndPublishLanding = useApproveAndPublishLanding(experiment.id);
+  const approveAndPublishLanding = useApproveAndPublishLanding(Number(experiment.id));
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const landingHtml = useMemo(() => {
     const raw = experiment.landingPageHtml;

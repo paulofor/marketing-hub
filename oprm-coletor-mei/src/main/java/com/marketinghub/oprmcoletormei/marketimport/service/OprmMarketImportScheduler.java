@@ -4,11 +4,13 @@ import com.marketinghub.oprmcoletormei.marketimport.config.OprmMarketImportColle
 import com.marketinghub.oprmcoletormei.marketimport.config.OprmMarketImportScheduleProperties;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmCompleteImportRunRequestDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmCreateImportRunRequestDto;
+import com.marketinghub.oprmcoletormei.marketimport.dto.OprmCnaeUpsertDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportFileEventRequestDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportFileSeedDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportRunCreatedResponseDto;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -107,18 +109,21 @@ public class OprmMarketImportScheduler {
                     long rowsRead = countRowsFromZip(zipPath, runResponse.runId(), fileId, file.fileName());
                     long rowsValid = rowsRead;
                     long rowsRejected = 0L;
+                    List<OprmCnaeUpsertDto> cnaes = "CNAE".equalsIgnoreCase(file.datasetType())
+                            ? parseCnaesFromZip(zipPath, runResponse.runId(), fileId, file.fileName())
+                            : null;
                     totalRowsRead += rowsRead;
                     totalRowsValid += rowsValid;
                     totalRowsRejected += rowsRejected;
                     filesProcessed++;
                     publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
-                            "COMPLETED", rowsRead, rowsValid, rowsRejected, null, Instant.now()));
+                            "COMPLETED", rowsRead, rowsValid, rowsRejected, null, Instant.now(), cnaes, null));
                     log.info("[run={} fileId={}] Persistência status COMPLETED enviada. rowsRead={}", runResponse.runId(), fileId, rowsRead);
                 } catch (Exception e) {
                     hasFailure = true;
                     log.error("[run={} fileId={}] Falha no processamento de arquivo {}", runResponse.runId(), fileId, file.fileName(), e);
                     publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
-                            "FAILED", 0L, 0L, 0L, e.getMessage(), Instant.now()));
+                            "FAILED", 0L, 0L, 0L, e.getMessage(), Instant.now(), null, null));
                 }
             }
         } catch (IOException e) {
@@ -132,6 +137,42 @@ public class OprmMarketImportScheduler {
                 snapshotDate,
                 scheduleProperties.timezone(),
                 files.size());
+    }
+
+    private List<OprmCnaeUpsertDto> parseCnaesFromZip(Path zipPath, Long runId, Long fileId, String fileName) throws IOException {
+        log.info("[run={} fileId={}] Início parse CNAE de {}", runId, fileId, fileName);
+        List<OprmCnaeUpsertDto> cnaes = new ArrayList<>();
+        try (InputStream in = Files.newInputStream(zipPath);
+             java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) continue;
+                String content = new String(zipInputStream.readAllBytes(), StandardCharsets.ISO_8859_1);
+                String[] lines = content.split("\\R");
+                for (String rawLine : lines) {
+                    if (rawLine == null || rawLine.isBlank()) continue;
+                    log.info("[run={} fileId={}] payload_bruto_cnae='{}'", runId, fileId, rawLine);
+                    String[] cols = rawLine.split(";", 2);
+                    if (cols.length < 2) continue;
+                    String cnaeCode = normalizeField(cols[0]);
+                    String description = normalizeField(cols[1]);
+                    if (cnaeCode.isBlank() || description.isBlank()) continue;
+                    cnaes.add(new OprmCnaeUpsertDto(cnaeCode, description, true));
+                }
+                zipInputStream.closeEntry();
+            }
+        }
+        log.info("[run={} fileId={}] Parse CNAE concluído. totalRegistros={}", runId, fileId, cnaes.size());
+        return cnaes;
+    }
+
+    private String normalizeField(String value) {
+        if (value == null) return "";
+        String trimmed = value.trim();
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
+            return trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        return trimmed;
     }
 
     private List<OprmImportFileSeedDto> buildFiles(String sourceUrl) {

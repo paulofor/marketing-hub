@@ -89,6 +89,32 @@ public class MoisSalesLibraryController {
         }
     }
 
+
+    @PostMapping("/jobs:claim")
+    public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(
+            @Valid @RequestBody MoisSalesLibraryDtos.SalesLibraryClaimRequest request
+    ) {
+        return service.claimJob(request);
+    }
+
+    @PostMapping("/jobs/{jobId}:complete")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void completeJob(
+            @PathVariable long jobId,
+            @RequestBody MoisSalesLibraryDtos.SalesLibraryCompleteRequest request
+    ) {
+        service.completeJob(jobId, request);
+    }
+
+    @PostMapping("/jobs/{jobId}:fail")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void failJob(
+            @PathVariable long jobId,
+            @RequestBody MoisSalesLibraryDtos.SalesLibraryFailRequest request
+    ) {
+        service.failJob(jobId, request);
+    }
+
     @PostMapping("/urls:ingest")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisSalesLibraryDtos.SalesLibraryIngestResponse ingestUrls(

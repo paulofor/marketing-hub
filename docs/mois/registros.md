@@ -268,3 +268,8 @@
 - Definido como orientação canônica do módulo MOIS o documento **Biblioteca de Sales Pages**: `docs/novos-modulos/mois/especificacao-biblioteca-sales-pages.md`.
 - Registro explícito para o time: a execução do **Ciclo 2 do coletor Clickbase/ClickBank** passa a ser tratada como etapa inicial de construção da biblioteca de páginas de vendas, em aderência ao direcionamento do módulo.
 - Objetivo operacional consolidado: usar os links resolvidos/persistidos no ciclo 2 como base para evolução da biblioteca e análises estruturadas de sales pages no MOIS.
+
+## 2026-05-17 00:00 UTC
+- Criado módulo `mois-sales-library-worker` (Java 21 + Maven + Spring Boot + Docker) para processar jobs PENDING da biblioteca de sales pages via backend MOIS.
+- Criados endpoints backend para claim/complete/fail do job da pipeline assíncrona.
+- Criado cânone: `docs/canonical/mois-sales-library-worker-canon.v1.md`.

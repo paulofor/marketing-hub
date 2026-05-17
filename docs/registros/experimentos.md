@@ -183,3 +183,12 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/LandingTab.tsx
   - docs/registros/experimentos.md
+
+
+## 2026-05-17 21:05:00 UTC
+- atualização documental no cânone de publicação de campanhas para incluir explicação complementar em linguagem menos técnica para usuários operacionais.
+- objetivo: facilitar entendimento do gate de liberação sem alterar regras de domínio já estabelecidas.
+- documento alterado:
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+- registro desta tarefa realizado em:
+  - `docs/registros/experimentos.md`

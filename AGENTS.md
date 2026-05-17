@@ -21,6 +21,8 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Artefatos**: docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md sempre leia e atualize se necessário.
 - **Modelo de dados**: `docs/modelo-dados-experimento.md`. Alterou entidades ou relacionamentos? Atualize o documento imediatamente.
 - **Liquibase / MySQL 5.7**: `docs/database/liquibase-mysql57.md`. Use sempre `databaseChangeLog` em YAML, `preConditions` com `dbms:mysql`, `splitStatements: true`, `stripComments: true` e valide mentalmente o SQL.
+- **Documentos canônicos básicos**: os documentos canônicos básicos do projeto ficam em `/docs/canonical` e devem ser consultados como referência primária.
+- **Decisão de mudança de regras (obrigatório)**: quando o usuário decidir mudar regras, altere imediatamente o documento correspondente em `/docs/canonical` referente ao tema.
 
 ## 2. Convenções de engenharia
 

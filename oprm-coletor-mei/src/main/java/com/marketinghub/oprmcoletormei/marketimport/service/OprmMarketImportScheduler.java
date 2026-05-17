@@ -178,7 +178,7 @@ public class OprmMarketImportScheduler {
     private List<OprmImportFileSeedDto> buildFiles(String sourceUrl) {
         List<OprmImportFileSeedDto> files = new ArrayList<>();
         files.add(file("Cnaes.zip", sourceUrl, "CNAE"));
-        for (int i = 0; i < 10; i++) files.add(file("Empresas" + i + ".zip", sourceUrl, "EMPRESAS"));
+        for (int i = 1; i < 10; i++) files.add(file("Empresas" + i + ".zip", sourceUrl, "EMPRESAS"));
         for (int i = 0; i < 10; i++) files.add(file("Estabelecimentos" + i + ".zip", sourceUrl, "ESTABELECIMENTOS"));
         files.add(file("Simples.zip", sourceUrl, "SIMPLES"));
         for (int i = 0; i < 10; i++) files.add(file("Socios" + i + ".zip", sourceUrl, "SOCIOS"));

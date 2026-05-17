@@ -209,3 +209,14 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/NewExperimentPage.tsx
+
+## 2026-05-17 19:31:55 UTC-3
+- investigação do erro ao salvar na tela `/experiments/new` após simplificação recente.
+- causa-raiz identificada: o backend continua exigindo `journeyTemplateId` na criação do experimento, porém a UI simplificada deixou de coletar/enviar esse campo.
+- foi feito: ajuste no frontend para carregar templates de jornada, selecionar automaticamente o primeiro template disponível no payload de criação, bloquear salvamento quando não existir template cadastrado e exibir alerta orientando cadastro.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/NewExperimentPage.tsx
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java

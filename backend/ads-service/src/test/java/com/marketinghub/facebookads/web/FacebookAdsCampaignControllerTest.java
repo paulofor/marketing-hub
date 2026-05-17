@@ -133,6 +133,7 @@ class FacebookAdsCampaignControllerTest {
                 .name("Exp")
                 .hypothesis("Hipótese")
                 .hypothesisRef(hypothesis)
+                .followUpActionUrl("https://landing.example.com/exp")
                 .kpiTargetCpl(BigDecimal.TEN)
                 .stopLossCpl(BigDecimal.valueOf(20))
                 .sampleSize(1200)

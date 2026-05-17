@@ -191,3 +191,13 @@
 - arquivos alterados:
   - ai-worker/src/main/resources/prompts/experiment/landing-copy.md
   - docs/registros/experimentos.md
+
+## 2026-05-17 19:14:15 UTC-3
+- solicitação para simplificar a tela de criação de experimento removendo campos operacionais considerados obsoletos.
+- raciocínio aplicado: manter a criação focada no essencial e mover configurações listadas para obsoleto, reduzindo complexidade visual e de preenchimento.
+- foi feito: remoção na UI de criação dos campos de etapa, variável/métrica principal, meta de KPI, template de jornada, qualidade/quantidades de imagens e parâmetros estatísticos (amostra e margem de erro); no envio, esses campos passam a usar valores obsoletos/defaults compatíveis.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/NewExperimentPage.tsx

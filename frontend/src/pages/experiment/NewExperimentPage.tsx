@@ -1,20 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
-import type { ExperimentStage } from "../../api/experiment/useExperiments";
-import { useMetricPresets } from "../../api/experiment/useMetricPresets";
-import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
-import { useExperimentPlaybook } from "../../api/experiment/useExperimentPlaybook";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
-import { experimentStageLabels } from "./stageLabels";
 
 type FormState = {
   nicheId: string;
@@ -37,7 +32,7 @@ type FormState = {
   imagesPerPackage: string;
   openImagesPerPackage: string;
   compressedImagesPerPackage: string;
-  stage: ExperimentStage;
+  stage: string;
   primaryVariable: string;
   primaryMetric: string;
 };
@@ -83,10 +78,7 @@ export default function NewExperimentPage() {
   const selectedNiche = niches?.find(
     (n) => n.id === Number(form.nicheId),
   );
-  const { data: presets } = useMetricPresets();
-  const { data: journeyTemplatePage } = useJourneyTemplates({ size: 200 });
   const { data: imageModels } = useImageGenerationModels();
-  const { data: playbook } = useExperimentPlaybook();
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -97,91 +89,7 @@ export default function NewExperimentPage() {
     instagramAccounts.length === 0;
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
-  const stageEntries = playbook ?? [];
-  const stageSelectOptions =
-    stageEntries.length > 0
-      ? stageEntries.map((entry) => ({ value: entry.stage, label: entry.title }))
-      : (Object.entries(experimentStageLabels) as [ExperimentStage, string][]).map(([value, label]) => ({
-          value,
-          label,
-        }));
-  const selectedStageEntry = stageEntries.find((entry) => entry.stage === form.stage);
-
-  const metricSuggestions = selectedStageEntry
-    ? [
-        selectedStageEntry.defaultPrimaryMetric,
-        ...(selectedStageEntry.guardrailMetrics ?? []),
-      ].filter((metric): metric is string => Boolean(metric))
-    : [];
-
-  const selectedJourneyTemplateId = form.journeyTemplateId
-    ? Number(form.journeyTemplateId)
-    : undefined;
-  const selectedJourneyTemplate =
-    selectedJourneyTemplateId !== undefined &&
-    !Number.isNaN(selectedJourneyTemplateId)
-      ? journeyTemplatePage?.content?.find(
-          (template) => template.id === selectedJourneyTemplateId,
-        )
-      : undefined;
-  const workerRequests = (selectedJourneyTemplate?.steps ?? []).reduce(
-    (acc, step) => {
-      if (step.stimulusType === "INSTANT_FORM") {
-        acc.instantForms += 1;
-      }
-      if (step.stimulusType === "EMAIL") {
-        acc.emails += 1;
-      }
-      return acc;
-    },
-    { instantForms: 0, emails: 0 },
-  );
-  const usdFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 3,
-      }),
-    [],
-  );
-
-  const hasWorkerRequests =
-    workerRequests.instantForms > 0 || workerRequests.emails > 0;
-
-  const selectedImageModelId = form.imageModelId
-    ? Number(form.imageModelId)
-    : undefined;
-  const selectedImageModel =
-    selectedImageModelId !== undefined && !Number.isNaN(selectedImageModelId)
-      ? imageModels?.find((model) => model.id === selectedImageModelId)
-      : undefined;
-  const availableImageQualities = selectedImageModel?.qualities ?? [];
-  const selectedImageQualityId = form.imageModelQualityId
-    ? Number(form.imageModelQualityId)
-    : undefined;
-  const selectedImageQuality =
-    selectedImageQualityId !== undefined && !Number.isNaN(selectedImageQualityId)
-      ? availableImageQualities.find((quality) => quality.id === selectedImageQualityId)
-      : undefined;
-  const preferredImagePrice = selectedImageQuality?.prices?.find((price) => price.preferred)
-    ?? selectedImageQuality?.prices?.[0];
-
-  const selectedQualityPriceLabel = preferredImagePrice?.unitPriceUsd != null
-    ? `${usdFormatter.format(preferredImagePrice.unitPriceUsd)} por imagem`
-    : undefined;
-
-  const handleApplyVariableSuggestion = (label: string, metric?: string | null) => {
-    setForm((prev) => ({
-      ...prev,
-      primaryVariable: label,
-      primaryMetric: metric ?? prev.primaryMetric,
-    }));
-  };
-
-  const handleApplyMetricSuggestion = (metric: string) => {
-    setForm((prev) => ({ ...prev, primaryMetric: metric }));
-  };
+  const workerRequests = { instantForms: 0, emails: 0 };
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
@@ -219,27 +127,6 @@ export default function NewExperimentPage() {
     });
   }, [autoSampleSize, autoMde, form.dailyBudget]);
 
-  useEffect(() => {
-    if (!selectedStageEntry) {
-      return;
-    }
-    setForm((prev) => {
-      if (prev.stage !== selectedStageEntry.stage) {
-        return prev;
-      }
-      let changed = false;
-      const next: FormState = { ...prev };
-      if (!prev.primaryVariable.trim() && selectedStageEntry.variables.length > 0) {
-        next.primaryVariable = selectedStageEntry.variables[0].label;
-        changed = true;
-      }
-      if (!prev.primaryMetric.trim() && selectedStageEntry.defaultPrimaryMetric) {
-        next.primaryMetric = selectedStageEntry.defaultPrimaryMetric;
-        changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [selectedStageEntry]);
 
   const submit = async () => {
     try {
@@ -253,18 +140,6 @@ export default function NewExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
-      if (!form.journeyTemplateId) {
-        alert("Selecione um template de jornada");
-        return;
-      }
-      if (!form.primaryVariable.trim()) {
-        alert("Defina a variável principal que será testada");
-        return;
-      }
-      if (!form.primaryMetric.trim()) {
-        alert("Informe a métrica principal do experimento");
-        return;
-      }
       const parsedDailyBudget = Number(form.dailyBudget);
       if (!form.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
         alert("Informe um orçamento diário válido");
@@ -275,38 +150,14 @@ export default function NewExperimentPage() {
         alert("Informe um preço unitário válido");
         return;
       }
-      const parsedImagesPerPackage = Number(form.imagesPerPackage);
-      if (!form.imagesPerPackage || Number.isNaN(parsedImagesPerPackage) || parsedImagesPerPackage <= 0) {
-        alert("Informe uma quantidade válida de imagens por pacote");
-        return;
-      }
-      let parsedOpenImagesPerPackage: number | undefined;
-      if (form.openImagesPerPackage) {
-        parsedOpenImagesPerPackage = Number(form.openImagesPerPackage);
-        if (Number.isNaN(parsedOpenImagesPerPackage) || parsedOpenImagesPerPackage <= 0) {
-          alert("Informe uma quantidade válida de imagens abertas");
-          return;
-        }
-      }
-      let parsedCompressedImagesPerPackage: number | undefined;
-      if (form.compressedImagesPerPackage) {
-        parsedCompressedImagesPerPackage = Number(form.compressedImagesPerPackage);
-        if (
-          Number.isNaN(parsedCompressedImagesPerPackage) ||
-          parsedCompressedImagesPerPackage <= 0
-        ) {
-          alert("Informe uma quantidade válida de imagens compactadas");
-          return;
-        }
-      }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
         name: form.name,
         hypothesis: form.hypothesis,
-        stage: form.stage as ExperimentStage,
-        primaryVariable: form.primaryVariable.trim(),
-        primaryMetric: form.primaryMetric.trim(),
+        stage: "AD",
+        primaryVariable: "OBSOLETO",
+        primaryMetric: "OBSOLETO",
         kpiTarget: Number(form.kpiTarget),
         metricPresetId: form.metricPresetId,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
@@ -319,22 +170,16 @@ export default function NewExperimentPage() {
           workerRequests.instantForms > 0 ? workerRequests.instantForms : undefined,
         emailsToGenerate:
           workerRequests.emails > 0 ? workerRequests.emails : undefined,
-        journeyTemplateId: Number(form.journeyTemplateId),
+        journeyTemplateId: undefined,
         facebookPageId: form.facebookPageId
           ? Number(form.facebookPageId)
           : undefined,
         instagramAccountId: Number(form.instagramAccountId),
         imageModelId: form.imageModelId ? Number(form.imageModelId) : undefined,
-        imageModelQualityId: form.imageModelQualityId
-          ? Number(form.imageModelQualityId)
-          : undefined,
-        imagesPerPackage: parsedImagesPerPackage,
-        openImagesPerPackage:
-          form.openImagesPerPackage === "" ? undefined : parsedOpenImagesPerPackage,
-        compressedImagesPerPackage:
-          form.compressedImagesPerPackage === ""
-            ? undefined
-            : parsedCompressedImagesPerPackage,
+        imageModelQualityId: undefined,
+        imagesPerPackage: 20,
+        openImagesPerPackage: undefined,
+        compressedImagesPerPackage: undefined,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -435,120 +280,11 @@ export default function NewExperimentPage() {
       {form.hypothesis && (
         <h2 className="h5 mb-2">{form.hypothesis}</h2>
       )}
-      <label className="form-label" htmlFor="stageSelect">
-        Etapa do experimento <span className="text-danger">*</span>
-      </label>
-      <select
-        id="stageSelect"
-        className="form-select mb-2"
-        value={form.stage}
-        onChange={(e) => {
-          const nextStage = e.target.value as ExperimentStage;
-          setForm((prev) => ({
-            ...prev,
-            stage: nextStage,
-            primaryVariable: "",
-            primaryMetric: "",
-          }));
-        }}
-      >
-        {stageSelectOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <div className="form-text mb-3">
-        {selectedStageEntry?.description ??
-          "Escolha qual etapa do funil este experimento prioriza."}
-      </div>
-      <label className="form-label" htmlFor="primaryVariable">
-        Variável principal <span className="text-danger">*</span>
-      </label>
-      <input
-        id="primaryVariable"
-        className="form-control mb-2"
-        placeholder="Ex.: Dor vs Resultado"
-        value={form.primaryVariable}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, primaryVariable: e.target.value }))
-        }
-      />
-      {selectedStageEntry?.variables?.length ? (
-        <div className="d-flex flex-wrap gap-2 mb-3">
-          {selectedStageEntry.variables.map((variable) => (
-            <button
-              type="button"
-              key={variable.id}
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() =>
-                handleApplyVariableSuggestion(
-                  variable.label,
-                  variable.suggestedPrimaryMetric,
-                )
-              }
-            >
-              {variable.label}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="form-text mb-3">
-          Registre o que está sendo comparado neste experimento.
-        </div>
-      )}
-      <label className="form-label" htmlFor="primaryMetric">
-        Métrica principal <span className="text-danger">*</span>
-      </label>
-      <input
-        id="primaryMetric"
-        className="form-control mb-2"
-        placeholder="Ex.: CTR de link (%)"
-        value={form.primaryMetric}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, primaryMetric: e.target.value }))
-        }
-      />
-      {selectedStageEntry ? (
-        <div className="form-text">
-          Sugestão do playbook: <strong>{selectedStageEntry.defaultPrimaryMetric}</strong>
-        </div>
-      ) : (
-        <div className="form-text">
-          Descreva qual indicador decidirá se a variável funcionou.
-        </div>
-      )}
-      {selectedStageEntry?.guardrailMetrics?.length ? (
-        <div className="text-muted small mb-2">
-          Guardrails: {selectedStageEntry.guardrailMetrics.join(" · " )}
-        </div>
-      ) : null}
-      {metricSuggestions.length > 0 ? (
-        <div className="d-flex flex-wrap gap-2 mb-3">
-          {metricSuggestions.map((metric) => (
-            <button
-              type="button"
-              key={metric}
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() => handleApplyMetricSuggestion(metric)}
-            >
-              {metric}
-            </button>
-          ))}
-        </div>
-      ) : null}
       <input
         className="form-control mb-2"
         placeholder="Nome"
         value={form.name}
         onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-      />
-      <input
-        className="form-control mb-2"
-        placeholder="Meta do KPI"
-        type="number"
-        value={form.kpiTarget}
-        onChange={(e) => setForm((prev) => ({ ...prev, kpiTarget: e.target.value }))}
       />
       <label className="form-label" htmlFor="dailyBudget">
         Orçamento diário <span className="text-danger">*</span>
@@ -595,39 +331,6 @@ export default function NewExperimentPage() {
       <div className="form-text mb-2">
         Usado para gerar o link de pagamento no Mercado Pago.
       </div>
-      <select
-        className="form-select mb-2"
-        value={form.metricPresetId}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, metricPresetId: e.target.value }))
-        }
-      >
-        <option value="">Selecione Preset de Métricas</option>
-        {Array.isArray(presets) &&
-          presets.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-      </select>
-      <label className="form-label" htmlFor="journeyTemplate">
-        Template de Jornada <span className="text-danger">*</span>
-      </label>
-      <select
-        id="journeyTemplate"
-        className="form-select mb-2"
-        value={form.journeyTemplateId}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, journeyTemplateId: e.target.value }))
-        }
-      >
-        <option value="">Selecione um template de jornada</option>
-        {journeyTemplatePage?.content?.map((template) => (
-          <option key={template.id} value={template.id}>
-            {template.name}
-          </option>
-        ))}
-      </select>
       <label className="form-label" htmlFor="imageModel">
         Modelo de geração de imagem
       </label>
@@ -650,98 +353,6 @@ export default function NewExperimentPage() {
           </option>
         ))}
       </select>
-      <label className="form-label" htmlFor="imageModelQuality">
-        Qualidade das variações
-      </label>
-      <select
-        id="imageModelQuality"
-        className="form-select mb-2"
-        value={form.imageModelQualityId}
-        onChange={(e) =>
-          setForm((prev) => ({
-            ...prev,
-            imageModelQualityId: e.target.value,
-          }))
-        }
-        disabled={!availableImageQualities.length}
-      >
-        <option value="">Selecione a qualidade</option>
-        {availableImageQualities.map((quality) => (
-          <option key={quality.id} value={quality.id}>
-            {quality.name}
-          </option>
-        ))}
-      </select>
-      {selectedQualityPriceLabel ? (
-        <p className="form-text">
-          Custo estimado: {selectedQualityPriceLabel}
-          {preferredImagePrice?.sizeLabel ? ` (tamanho: ${preferredImagePrice.sizeLabel})` : ""}
-        </p>
-      ) : null}
-      <label className="form-label" htmlFor="imagesPerPackage">
-        Quantidade de imagens por pacote <span className="text-danger">*</span>
-      </label>
-      <input
-        id="imagesPerPackage"
-        className="form-control mb-2"
-        type="number"
-        min="1"
-        step="1"
-        value={form.imagesPerPackage}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, imagesPerPackage: e.target.value }))
-        }
-      />
-      <label className="form-label" htmlFor="openImagesPerPackage">
-        Quantidade de imagens abertas
-      </label>
-      <input
-        id="openImagesPerPackage"
-        className="form-control mb-2"
-        type="number"
-        min="1"
-        step="1"
-        value={form.openImagesPerPackage}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, openImagesPerPackage: e.target.value }))
-        }
-      />
-      <label className="form-label" htmlFor="compressedImagesPerPackage">
-        Quantidade de imagens compactadas
-      </label>
-      <input
-        id="compressedImagesPerPackage"
-        className="form-control mb-2"
-        type="number"
-        min="1"
-        step="1"
-        value={form.compressedImagesPerPackage}
-        onChange={(e) =>
-          setForm((prev) => ({
-            ...prev,
-            compressedImagesPerPackage: e.target.value,
-          }))
-        }
-      />
-      {hasWorkerRequests && (
-        <div className="mb-3" aria-live="polite">
-          <p className="text-muted small mb-2">
-            Este template solicitará conteúdos ao Worker AI:
-          </p>
-          <div className="d-flex flex-wrap gap-2">
-            {workerRequests.instantForms > 0 && (
-              <span className="badge rounded-pill text-bg-info">
-                Instant forms: {workerRequests.instantForms}
-              </span>
-            )}
-            {workerRequests.emails > 0 && (
-              <span className="badge rounded-pill text-bg-info">
-                E-mails: {workerRequests.emails}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
       <label className="form-label" htmlFor="instagramAccount">
         Conta do Instagram <span className="text-danger">*</span>
       </label>
@@ -808,36 +419,6 @@ export default function NewExperimentPage() {
             </option>
           ))}
       </select>
-      <label className="form-label" htmlFor="sampleSize">
-        Tamanho da amostra
-      </label>
-      <input
-        id="sampleSize"
-        className="form-control mb-2"
-        placeholder="Tamanho da amostra"
-        type="number"
-        value={form.sampleSize}
-        onChange={(e) => {
-          const value = e.target.value;
-          setAutoSampleSize(value.trim() === "");
-          setForm((prev) => ({ ...prev, sampleSize: value }));
-        }}
-      />
-      <label className="form-label" htmlFor="marginOfError">
-        Margem de erro (MDE %)
-      </label>
-      <input
-        id="marginOfError"
-        className="form-control mb-2"
-        placeholder="MDE %"
-        type="number"
-        value={form.mde}
-        onChange={(e) => {
-          const value = e.target.value;
-          setAutoMde(value.trim() === "");
-          setForm((prev) => ({ ...prev, mde: value }));
-        }}
-      />
       <input
         className="form-control mb-2"
         placeholder="Data de Início"
@@ -856,7 +437,7 @@ export default function NewExperimentPage() {
         className="btn btn-primary d-flex align-items-center gap-2"
         onClick={submit}
         disabled={
-          create.isPending || noInstagramAccounts || !form.journeyTemplateId
+          create.isPending || noInstagramAccounts
         }
       >
         {create.isPending ? (

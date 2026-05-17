@@ -22,10 +22,16 @@ public class PipelineRunner {
 
     @Scheduled(fixedDelayString = "${worker.poll-interval-ms:15000}")
     public void runCycle() {
+        log.info("MOIS sales-library worker cycle started. workspaceId={}, source={}, pollIntervalMs={}, requestTimeoutMs={}",
+                properties.workspaceId(), properties.source(), properties.pollIntervalMs(), properties.requestTimeoutMs());
         ClaimResponse claim = backendClient.claim(new ClaimRequest(properties.workspaceId(), properties.source()));
-        if (claim == null || !claim.claimed() || claim.job() == null) return;
+        if (claim == null || !claim.claimed() || claim.job() == null) {
+            log.info("MOIS sales-library worker cycle finished without claimed job.");
+            return;
+        }
         long jobId = claim.job().jobId();
         try {
+            log.info("MOIS sales-library worker claimed job. jobId={}, pageId={}, urlCanonical={}", jobId, claim.job().pageId(), claim.job().urlCanonical());
             var doc = Jsoup.connect(claim.job().urlCanonical()).timeout(properties.requestTimeoutMs()).get();
             String text = doc.body() != null ? doc.body().text() : "";
             Map<String, Object> sections = new HashMap<>();
@@ -38,7 +44,7 @@ public class PipelineRunner {
             log.info("MOIS library job {} completed for page {}", jobId, claim.job().pageId());
         } catch (Exception ex) {
             backendClient.fail(jobId, new FailRequest("PIPELINE_ERROR", ex.getMessage()));
-            log.warn("MOIS library job {} failed: {}", jobId, ex.getMessage());
+            log.warn("MOIS library job {} failed: {}", jobId, ex.getMessage(), ex);
         }
     }
 }

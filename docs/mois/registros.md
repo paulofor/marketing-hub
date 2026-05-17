@@ -273,3 +273,13 @@
 - Criado módulo `mois-sales-library-worker` (Java 21 + Maven + Spring Boot + Docker) para processar jobs PENDING da biblioteca de sales pages via backend MOIS.
 - Criados endpoints backend para claim/complete/fail do job da pipeline assíncrona.
 - Criado cânone: `docs/canonical/mois-sales-library-worker-canon.v1.md`.
+
+## 2026-05-17 04:03:18 UTC-3
+- Adicionada observabilidade operacional no `mois-sales-library-worker` para validar execução de agendamento e integração com backend do MOIS.
+- O `PipelineRunner` agora registra no início de cada ciclo agendado (`@Scheduled`) os parâmetros principais (`workspaceId`, `source`, `pollIntervalMs`, `requestTimeoutMs`) e também loga explicitamente quando nenhum job foi reivindicado.
+- Ao reivindicar job com sucesso, o worker passa a registrar `jobId`, `pageId` e `urlCanonical` antes da coleta da página.
+- O `BackendClient` passou a logar chamadas e retornos dos endpoints do backend:
+  - `POST /api/mois/sales-library/jobs:claim` (entrada e saída com `claimed/hasJob`);
+  - `POST /api/mois/sales-library/jobs/{jobId}:complete` (entrada e status HTTP de retorno);
+  - `POST /api/mois/sales-library/jobs/{jobId}:fail` (entrada com categoria/erro e status HTTP de retorno).
+- Objetivo: permitir validação objetiva de que o agendamento está executando corretamente, que o backend está sendo chamado e qual foi o retorno de cada chamada.

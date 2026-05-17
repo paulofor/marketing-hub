@@ -7,6 +7,7 @@ import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche"
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
+import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
@@ -79,6 +80,8 @@ export default function NewExperimentPage() {
     (n) => n.id === Number(form.nicheId),
   );
   const { data: imageModels } = useImageGenerationModels();
+  const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
+    useJourneyTemplates({ size: 200 });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -140,6 +143,13 @@ export default function NewExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
+      const defaultJourneyTemplateId = journeyTemplates?.content?.[0]?.id;
+      if (!defaultJourneyTemplateId) {
+        alert(
+          "Cadastre ao menos um template de jornada antes de criar o experimento.",
+        );
+        return;
+      }
       const parsedDailyBudget = Number(form.dailyBudget);
       if (!form.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
         alert("Informe um orçamento diário válido");
@@ -170,7 +180,7 @@ export default function NewExperimentPage() {
           workerRequests.instantForms > 0 ? workerRequests.instantForms : undefined,
         emailsToGenerate:
           workerRequests.emails > 0 ? workerRequests.emails : undefined,
-        journeyTemplateId: undefined,
+        journeyTemplateId: defaultJourneyTemplateId,
         facebookPageId: form.facebookPageId
           ? Number(form.facebookPageId)
           : undefined,
@@ -396,6 +406,20 @@ export default function NewExperimentPage() {
           </div>
         </div>
       )}
+      {!isLoadingJourneyTemplates && !journeyTemplates?.content?.length && (
+        <div className="alert alert-warning" role="alert">
+          Nenhum template de jornada está cadastrado. Cadastre um template antes
+          de criar novos experimentos.
+          <div className="mt-2">
+            <a
+              className="btn btn-outline-primary btn-sm"
+              href="/journey-templates"
+            >
+              Abrir templates de jornada
+            </a>
+          </div>
+        </div>
+      )}
       <label className="form-label" htmlFor="facebookPage">
         Página do Facebook
       </label>
@@ -437,7 +461,9 @@ export default function NewExperimentPage() {
         className="btn btn-primary d-flex align-items-center gap-2"
         onClick={submit}
         disabled={
-          create.isPending || noInstagramAccounts
+          create.isPending ||
+          noInstagramAccounts ||
+          (!isLoadingJourneyTemplates && !journeyTemplates?.content?.length)
         }
       >
         {create.isPending ? (

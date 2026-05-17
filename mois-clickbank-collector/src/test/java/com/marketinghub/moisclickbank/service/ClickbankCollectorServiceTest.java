@@ -81,4 +81,59 @@ class ClickbankCollectorServiceTest {
             server.stop(0);
         }
     }
+
+    @Test
+    void shouldReturnSkippedWithJwtAbsentReasonOnThirdCycle() {
+        ClickbankCollectorService service = new ClickbankCollectorService(
+                true, "", "https://app.clickbank.com/market/search", "", "", "",
+                "http://127.0.0.1:1", "", "", false, "http://127.0.0.1:1",
+                "clickbank_access_token_jwt", "https://accounts.clickbank.com/graphql",
+                "workspace-001", "marketing-digital", "ofertas-clickbank"
+        );
+
+        var response = service.collectThirdCycleGraphql(new ClickbankCollectionRequest("clickbank-market", 10));
+
+        assertEquals("COLLECTION_SKIPPED", response.status());
+        assertTrue(response.message().contains("motivo=JWT_ABSENT"));
+    }
+
+    @Test
+    void shouldReturnSkippedWithJwtExpiredReasonWhenGraphqlReturns401() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/api/settings/clickbank_access_token_jwt", exchange -> {
+            String body = "{\"name\":\"clickbank_access_token_jwt\",\"value\":\"valid-looking-token\"}";
+            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        });
+        server.createContext("/graphql", exchange -> {
+            String body = "{\"errors\":[{\"message\":\"token expired\"}]}";
+            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(401, bytes.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(bytes);
+            }
+        });
+        server.start();
+        String base = "http://127.0.0.1:" + server.getAddress().getPort();
+        try {
+            ClickbankCollectorService service = new ClickbankCollectorService(
+                    true, "", "https://app.clickbank.com/market/search", "", "", "",
+                    "http://127.0.0.1:1", "", "", false, base,
+                    "clickbank_access_token_jwt", base + "/graphql",
+                    "workspace-001", "marketing-digital", "ofertas-clickbank"
+            );
+
+            var response = service.collectThirdCycleGraphql(new ClickbankCollectionRequest("clickbank-market", 10));
+
+            assertEquals("COLLECTION_SKIPPED", response.status());
+            assertTrue(response.message().contains("motivo=JWT_EXPIRED_OR_INVALID"));
+        } finally {
+            server.stop(0);
+        }
+    }
 }

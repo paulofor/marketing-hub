@@ -54,6 +54,13 @@ public class ClickbankCollectorService {
               }
             }
             """;
+    private enum GraphqlSkipReason {
+        JWT_ABSENT,
+        JWT_EXPIRED_OR_INVALID,
+        GRAPHQL_EMPTY_RESULT,
+        HTTP_ERROR,
+        REQUEST_ERROR
+    }
 
     private final boolean headless;
     private final String chromiumExecutablePath;
@@ -151,11 +158,12 @@ public class ClickbankCollectorService {
 
         try {
             String accessToken = fetchClickbankJwtFromGeneralSettings();
-            int apiCollected = collectProductsFromGraphql(accessToken, boundedMax, products);
+            GraphqlCollectionOutcome outcome = collectProductsFromGraphql(accessToken, boundedMax, products);
+            int apiCollected = outcome.collectedProducts();
             if (apiCollected == 0) {
                 status = "COLLECTION_SKIPPED";
-                message = "Ciclo 3 não coletou produtos via GraphQL (JWT ausente/inválido ou retorno vazio).";
-                log.warn("Ciclo 3 GraphQL sem dados coletados. produtosColetados={}", apiCollected);
+                message = "Ciclo 3 não coletou produtos via GraphQL. motivo=" + outcome.skipReason();
+                log.warn("Ciclo 3 GraphQL sem dados coletados. produtosColetados={} motivo={}", apiCollected, outcome.skipReason());
             } else {
                 log.info("Ciclo 3 GraphQL finalizado. produtosColetados={}", apiCollected);
             }
@@ -169,10 +177,10 @@ public class ClickbankCollectorService {
         return new ClickbankCollectionResponse(status, message, products);
     }
 
-    private int collectProductsFromGraphql(String accessToken, int boundedMax, List<ClickbankProductSnapshot> products) {
+    private GraphqlCollectionOutcome collectProductsFromGraphql(String accessToken, int boundedMax, List<ClickbankProductSnapshot> products) {
         if (accessToken == null || accessToken.isBlank()) {
-            log.warn("JWT Clickbank ausente para consulta GraphQL; ativando fallback de coleta pública.");
-            return 0;
+            log.warn("JWT Clickbank ausente para consulta GraphQL.");
+            return new GraphqlCollectionOutcome(0, GraphqlSkipReason.JWT_ABSENT);
         }
         try {
             Map<String, Object> parameters = new HashMap<>();
@@ -202,11 +210,15 @@ public class ClickbankCollectorService {
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
             log.info("CLICKBANK_GRAPHQL_PAYLOAD_CRU status={} bodyRaw='{}'", response.statusCode(), truncateForLog(response.body(), 10_000));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                return 0;
+                GraphqlSkipReason reason = response.statusCode() == 401 || response.statusCode() == 403
+                        ? GraphqlSkipReason.JWT_EXPIRED_OR_INVALID
+                        : GraphqlSkipReason.HTTP_ERROR;
+                log.warn("Ciclo 3 GraphQL retornou status não 2xx. status={} motivo={}", response.statusCode(), reason);
+                return new GraphqlCollectionOutcome(0, reason);
             }
             JsonNode hits = objectMapper.readTree(response.body()).path("data").path("marketplaceSearch").path("hits");
             if (!hits.isArray()) {
-                return 0;
+                return new GraphqlCollectionOutcome(0, GraphqlSkipReason.GRAPHQL_EMPTY_RESULT);
             }
             LinkedHashSet<String> dedupe = new LinkedHashSet<>();
             for (JsonNode hit : hits) {
@@ -224,12 +236,17 @@ public class ClickbankCollectorService {
                 }
                 products.add(new ClickbankProductSnapshot(title, "N/A", category, detailsUrl, gravity, detailsUrl, Instant.now()));
             }
-            return products.size();
+            if (products.isEmpty()) {
+                return new GraphqlCollectionOutcome(0, GraphqlSkipReason.GRAPHQL_EMPTY_RESULT);
+            }
+            return new GraphqlCollectionOutcome(products.size(), null);
         } catch (Exception ex) {
             log.warn("Falha na coleta GraphQL Clickbank.", ex);
-            return 0;
+            return new GraphqlCollectionOutcome(0, GraphqlSkipReason.REQUEST_ERROR);
         }
     }
+
+    private record GraphqlCollectionOutcome(int collectedProducts, GraphqlSkipReason skipReason) {}
 
 
 

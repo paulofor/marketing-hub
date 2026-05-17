@@ -45,3 +45,12 @@
 > Em caso de timestamp incorreto já registrado, não apague nem edite o registro antigo; adicione um novo registro de correção explicando o erro.
 > Neste documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 >
+## 2026-05-17 03:30:43 UTC-3
+- solicitação para registrar formalmente o tema experimento no local canônico após ajuste de fluxo de aprovação de landing.
+- o raciocínio foi garantir rastreabilidade operacional no arquivo obrigatório de registros do domínio de experimentos, mantendo aderência ao contrato append-only.
+- registro realizado neste documento informando a centralização da aprovação final de landing apenas na aba "Landing" e a remoção dos demais pontos de aprovação na visualização de conteúdo.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx

@@ -64,3 +64,13 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
+
+
+## 2026-05-17 00:00:00 UTC
+- solicitação para evoluir o frontend na aba de backtest com visualização das quantidades por outcome e indicadores de progresso.
+- implementação realizada na aba de funil/backtest com gráfico de barras por outcome (quantidade por etapa), destaque do total atual e percentual em relação à referência ideal de 500.
+- também foi adicionado cálculo explícito da meta (500) para facilitar leitura operacional durante acompanhamento de performance.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentFunnelTab.tsx

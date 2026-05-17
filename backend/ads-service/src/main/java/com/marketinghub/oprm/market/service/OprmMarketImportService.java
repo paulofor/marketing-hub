@@ -141,12 +141,37 @@ public class OprmMarketImportService {
 
     @Transactional
     public void completeRun(Long runId, OprmCompleteImportRunRequestDto request) {
+        log.info("[OPRM-TOTALIZACAO] completeRun recebido. runId={}, requestedStatus={}, requestedFinishedAt={}, requestedFilesProcessed={}, requestedRowsRead={}, requestedRowsValid={}, requestedRowsRejected={}, requestedErrorMessage={}",
+                runId,
+                request.status(),
+                request.finishedAt(),
+                request.filesProcessed(),
+                request.rowsRead(),
+                request.rowsValid(),
+                request.rowsRejected(),
+                request.errorMessage());
+
         OprmCnpjImportRun run = runRepository.findById(runId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Import run not found: " + runId));
         List<OprmCnpjImportFile> files = fileRepository.findByRunId(runId);
         if (files.isEmpty()) {
+            log.warn("[OPRM-TOTALIZACAO] completeRun abortado: runId={} não possui arquivos vinculados.", runId);
             throw new ResponseStatusException(BAD_REQUEST, "Import run has no files to finalize: " + runId);
         }
+
+        long startedCount = files.stream().filter(file -> "STARTED".equalsIgnoreCase(file.getStatus())).count();
+        long failedCount = files.stream().filter(file -> "FAILED".equalsIgnoreCase(file.getStatus())).count();
+        long completedCount = files.stream().filter(file -> "COMPLETED".equalsIgnoreCase(file.getStatus())).count();
+        long partialCount = files.stream().filter(file -> "PARTIAL".equalsIgnoreCase(file.getStatus())).count();
+
+        log.info("[OPRM-TOTALIZACAO] Estado pré-finalização runId={}: filesTotal={}, started={}, completed={}, partial={}, failed={}",
+                runId,
+                files.size(),
+                startedCount,
+                completedCount,
+                partialCount,
+                failedCount);
+
         boolean hasFailure = false;
         for (OprmCnpjImportFile file : files) {
             if (file.getFinishedAt() == null) {
@@ -172,6 +197,15 @@ public class OprmMarketImportService {
         if (request.rowsRejected() != null) run.setRowsRejected(request.rowsRejected());
         if (request.errorMessage() != null) run.setErrorMessage(request.errorMessage());
         runRepository.save(run);
+        log.info("[OPRM-TOTALIZACAO] completeRun persistido. runId={}, finalStatus={}, finishedAt={}, filesProcessed={}, rowsRead={}, rowsValid={}, rowsRejected={}, errorMessage={}",
+                runId,
+                run.getStatus(),
+                run.getFinishedAt(),
+                run.getFilesProcessed(),
+                run.getRowsRead(),
+                run.getRowsValid(),
+                run.getRowsRejected(),
+                run.getErrorMessage());
     }
 
     private void validateFileBelongsToRun(Long runId, OprmCnpjImportFile file) {

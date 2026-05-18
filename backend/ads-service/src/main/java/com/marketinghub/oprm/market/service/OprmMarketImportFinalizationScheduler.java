@@ -8,7 +8,6 @@ import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,21 +15,28 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OprmMarketImportFinalizationScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmMarketImportFinalizationScheduler.class);
-
-    @Value("${oprm.market-import.totalization.schedule.timezone:America/Sao_Paulo}")
-    private String scheduleTimezone;
+    private static final String SCHEDULE_TIMEZONE = "America/Sao_Paulo";
 
     private final OprmCnpjImportRunRepository runRepository;
     private final OprmMarketImportService importService;
 
-    @Scheduled(cron = "${oprm.market-import.totalization.schedule.cron:0 40 19 * * *}", zone = "${oprm.market-import.totalization.schedule.timezone:America/Sao_Paulo}")
+    @Scheduled(cron = "0 40 19 * * *", zone = SCHEDULE_TIMEZONE)
     public void finalizeLatestStartedRunAt1940() {
+        finalizeLatestStartedRun("19:40");
+    }
+
+    @Scheduled(cron = "0 30 23 * * *", zone = SCHEDULE_TIMEZONE)
+    public void finalizeLatestStartedRunAt2330() {
+        finalizeLatestStartedRun("23:30");
+    }
+
+    private void finalizeLatestStartedRun(String scheduleLabel) {
         Instant executionAt = Instant.now();
-        ZoneId zoneId = ZoneId.of(scheduleTimezone);
+        ZoneId zoneId = ZoneId.of(SCHEDULE_TIMEZONE);
         log.info("[OPRM-TOTALIZACAO] Scheduler iniciado. executionAtUtc={}, executionAtZone={}, timezone={}",
                 executionAt,
                 executionAt.atZone(zoneId),
-                scheduleTimezone);
+                SCHEDULE_TIMEZONE);
 
         OprmCnpjImportRun run = runRepository.findFirstByStatusOrderByStartedAtDesc("STARTED").orElse(null);
         if (run == null) {
@@ -44,7 +50,7 @@ public class OprmMarketImportFinalizationScheduler {
                 run.getStartedAt(),
                 run.getStatus());
 
-        log.info("[OPRM-TOTALIZACAO] Iniciando completeRun para runId={} (agendamento 19:40).", run.getId());
+        log.info("[OPRM-TOTALIZACAO] Iniciando completeRun para runId={} (agendamento {}).", run.getId(), scheduleLabel);
         importService.completeRun(run.getId(), new OprmCompleteImportRunRequestDto(
                 null,
                 executionAt,
@@ -52,7 +58,7 @@ public class OprmMarketImportFinalizationScheduler {
                 null,
                 null,
                 null,
-                "Finalização automática da etapa de totalização (19:40 America/Sao_Paulo)"));
+                "Finalização automática da etapa de totalização (" + scheduleLabel + " America/Sao_Paulo)"));
         log.info("[OPRM-TOTALIZACAO] completeRun concluído com sucesso para runId={}", run.getId());
     }
 }

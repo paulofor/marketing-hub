@@ -312,3 +312,30 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/LandingTab.tsx
+## 2026-05-18 18:34:00 UTC
+- solicitação: criar endpoint no pacote `geralanding` para aprovar/publicar landing diretamente usando `landing_page_html` do experimento.
+- foi feito no backend:
+  - novo endpoint `POST /api/experiments/{experimentId}/geralanding/landing/approve-and-publish`.
+  - serviço publica no lead portal, retorna URL iframe e URL standalone para uso em campanha.
+  - fluxo injeta controles de funil no HTML antes da publicação; o pixel do Facebook permanece injetado no payload de publicação do Lead Portal.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingContoller.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingPublishResponse.java
+  - docs/registros/experimentos.md
+
+## 2026-05-18 18:41:00 UTC
+- solicitação: incluir explicitamente o pixel do Facebook no HTML publicado pelo endpoint de aprovação/publicação do GeraLanding.
+- foi feito no backend: adição de injeção direta do pixel no `customFormHtml` antes da publicação, usando `experiment.niche.facebookPixelId` e marcador `data-mh-facebook-pixel` para evitar duplicidade.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+  - docs/registros/experimentos.md
+
+## 2026-05-18 18:55:00 UTC
+- solicitação: no endpoint do GeraLanding, não depender de classes externas ao pacote para publicar.
+- ajuste aplicado: remoção da dependência de classes de `leadportal` no serviço do GeraLanding, com payload e publicação HTTP próprios no pacote `geralanding`.
+- comportamento mantido: usa `landing_page_html` pronto, injeta pixel do Facebook e controles de funil, publica e devolve URL iframe/standalone.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingLeadPortalPublishRequest.java
+  - docs/registros/experimentos.md

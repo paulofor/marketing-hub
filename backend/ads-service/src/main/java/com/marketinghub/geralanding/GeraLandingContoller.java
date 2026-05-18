@@ -76,4 +76,9 @@ public class GeraLandingContoller {
     String provisionalHtml = executionService.generateAndPersistProvisionalHtmlFromExperiment(experimentId, jobId);
     return ResponseEntity.ok(new GeraLandingProvisionalHtmlResponse(provisionalHtml));
   }
+
+  @PostMapping("/landing/approve-and-publish")
+  public ResponseEntity<GeraLandingPublishResponse> approveAndPublishLanding(@PathVariable Long experimentId) {
+    return ResponseEntity.ok(executionService.approveAndPublishLanding(experimentId));
+  }
 }

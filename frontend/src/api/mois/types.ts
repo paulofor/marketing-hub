@@ -233,3 +233,69 @@ export interface MoisSalesLibraryEntryPageResponse {
   total: number;
   items: MoisSalesLibraryEntry[];
 }
+
+
+export interface MoisSalesLibraryJob {
+  id: number;
+  urlIngestId: number;
+  status: string;
+  attempts: number;
+  errorCategory?: string;
+  errorMessage?: string;
+  nextRetryAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+}
+
+export interface MoisSalesLibraryJobPageResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: MoisSalesLibraryJob[];
+}
+
+export interface MoisSalesLibraryPage {
+  pageId: number;
+  workspaceId: string;
+  source: string;
+  urlCanonical: string;
+  title?: string;
+  analysisStatus?: string;
+  scoreTotal?: number;
+  analyzedAt?: string;
+  updatedAt: string;
+}
+
+export interface MoisSalesLibraryPageListResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  items: MoisSalesLibraryPage[];
+}
+
+export interface MoisSalesLibraryPageAnalysis {
+  analysisId: number;
+  pageId: number;
+  jobId?: number;
+  status: string;
+  scoreTotal?: number;
+  parserVersion?: string;
+  promptVersion?: string;
+  modelName?: string;
+  sectionsJson?: string;
+  copyJson?: string;
+  visualJson?: string;
+  imageJson?: string;
+  analysisNotes?: string;
+  analyzedAt?: string;
+  updatedAt: string;
+}
+
+export interface MoisSalesLibraryReanalyzeResponse {
+  pageId: number;
+  jobId: number;
+  status: string;
+  createdAt: string;
+}

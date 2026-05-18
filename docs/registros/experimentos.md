@@ -259,3 +259,8 @@
 - arquivos alterados:
   - backend/ads-service/src/test/java/com/marketinghub/experiment/ExperimentServiceTest.java
   - docs/registros/experimentos.md
+
+## 2026-05-18 — Remoção de dependências obsoletas no create de experimento
+- Removida a obrigatoriedade de `metricPresetId`, `primaryVariable` e `primaryMetric` na criação de experimento.
+- Backend agora aceita payload sem esses campos e calcula `stopLossCpl` apenas quando `metricPresetId` está preenchido com preset válido.
+- Frontend de criação deixou de enviar os valores obsoletos `primaryVariable: "OBSOLETO"` e `primaryMetric: "OBSOLETO"`; `metricPresetId` passa a ser opcional no payload.

@@ -237,13 +237,15 @@ public class ExperimentService {
         if (repository.existsByNicheAndName(niche, request.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
         }
-        if (request.getMetricPresetId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
-        }
-        String normalizedPrimaryVariable = normalizePrimaryDescriptor(request.getPrimaryVariable(), "primaryVariable");
-        String normalizedPrimaryMetric = normalizePrimaryDescriptor(request.getPrimaryMetric(), "primaryMetric");
-        MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
-        java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl() != null ? request.getKpiTargetCpl().multiply(preset.getStopLossFactor()) : null;
+        String normalizedPrimaryVariable = normalizeOptionalPrimaryDescriptor(request.getPrimaryVariable());
+        String normalizedPrimaryMetric = normalizeOptionalPrimaryDescriptor(request.getPrimaryMetric());
+        MetricPreset preset = request.getMetricPresetId() == null || request.getMetricPresetId().isBlank()
+                ? null
+                : metricPresetService.get(request.getMetricPresetId());
+        java.math.BigDecimal computedStopLoss =
+                (request.getKpiTargetCpl() != null && preset != null)
+                        ? request.getKpiTargetCpl().multiply(preset.getStopLossFactor())
+                        : null;
         if (request.getSampleSize() != null && request.getSampleSize() < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
         }
@@ -769,6 +771,14 @@ public class ExperimentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unitPrice must be greater than zero");
         }
         return unitPrice.setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+
+    private String normalizeOptionalPrimaryDescriptor(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
     }
 
     private String normalizePrimaryDescriptor(String value, String fieldName) {

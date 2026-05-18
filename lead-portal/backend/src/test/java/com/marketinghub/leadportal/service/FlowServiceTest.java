@@ -53,7 +53,8 @@ class FlowServiceTest {
                 meterRegistry,
                 simpleFlowCatalog,
                 flowAssetService,
-                simpleFormStyleDefaults);
+                simpleFormStyleDefaults,
+                new CustomFormHtmlResolver());
         when(simpleFlowCatalog.find(anyString())).thenReturn(Optional.empty());
     }
 

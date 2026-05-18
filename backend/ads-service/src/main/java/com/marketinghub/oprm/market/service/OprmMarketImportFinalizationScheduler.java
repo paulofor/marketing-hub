@@ -20,11 +20,6 @@ public class OprmMarketImportFinalizationScheduler {
     private final OprmCnpjImportRunRepository runRepository;
     private final OprmMarketImportService importService;
 
-    @Scheduled(cron = "0 40 19 * * *", zone = SCHEDULE_TIMEZONE)
-    public void finalizeLatestStartedRunAt1940() {
-        finalizeLatestStartedRun("19:40");
-    }
-
     @Scheduled(cron = "0 30 23 * * *", zone = SCHEDULE_TIMEZONE)
     public void finalizeLatestStartedRunAt2330() {
         finalizeLatestStartedRun("23:30");

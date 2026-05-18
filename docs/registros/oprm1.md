@@ -72,3 +72,5 @@
 - 2026-05-18 01:55:58 (UTC): adicionado novo agendamento diário de totalização OPRM para 23:30 (America/Sao_Paulo) no backend, mantendo o agendamento existente de 19:40; scheduler agora possui execuções separadas com label de horário e propriedade configurável `oprm.market-import.totalization.schedule.cron-2330`.
 
 - 2026-05-18 02:05:00 (UTC): ajuste solicitado no backend OPRM para deixar os agendamentos de totalização fixos em código (sem variáveis/propriedades): 19:40 e 23:30 em America/Sao_Paulo, removendo configuração via `application.properties`.
+
+- 2026-05-18 02:12:52 (UTC): ajuste solicitado no backend OPRM para remover o agendamento das 19:40 e manter somente a totalização diária fixa às 23:30 no fuso America/Sao_Paulo.

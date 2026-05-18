@@ -238,8 +238,55 @@ export default function ExperimentDetailPage() {
         description: "Conteúdo bruto salvo na coluna ad_copy.",
         rawValue: data?.adCopy,
       },
+      {
+        key: "wireframe",
+        title: "Etapa 3 · Landing Wireframe",
+        description: "Conteúdo bruto salvo na coluna landing_page_wireframe.",
+        rawValue: data?.landingPageWireframe,
+      },
+      {
+        key: "copy",
+        title: "Etapa 4 · Landing Copy",
+        description: "Conteúdo bruto salvo na coluna landing_page_copy.",
+        rawValue: data?.landingPageCopy,
+      },
+      {
+        key: "image-planning",
+        title: "Etapa 5 · Planejamento de Imagens",
+        description:
+          "Conteúdo bruto salvo na coluna landing_page_image_planning.",
+        rawValue: data?.landingPageImagePlanning,
+      },
+      {
+        key: "design-preset",
+        title: "Etapa 6 · Preset Design",
+        description:
+          "Conteúdo bruto salvo na coluna landing_page_design_preset.",
+        rawValue: data?.landingPageDesignPreset,
+      },
+      {
+        key: "landing-page-deliverables",
+        title: "Etapa 8 · Landing Page Deliverables",
+        description: "JSON final dos entregáveis da amostra e do produto final.",
+        rawValue: data?.landingPageDeliverables,
+      },
+      {
+        key: "landing-html",
+        title: "Etapa 7 · Landing HTML",
+        description: "Conteúdo bruto salvo na coluna landing_page_html.",
+        rawValue: data?.landingPageHtml,
+      },
     ],
-    [data?.adCopy, data?.campaignAngle],
+    [
+      data?.adCopy,
+      data?.campaignAngle,
+      data?.landingPageCopy,
+      data?.landingPageDesignPreset,
+      data?.landingPageDeliverables,
+      data?.landingPageHtml,
+      data?.landingPageImagePlanning,
+      data?.landingPageWireframe,
+    ],
   );
   useBreadcrumbs([
     {

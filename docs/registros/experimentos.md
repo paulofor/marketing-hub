@@ -288,3 +288,11 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
   - docs/registros/experimentos.md
+
+## 2026-05-18 12:45:00 UTC
+- solicitação: voltar com o bloco de etapas de landing na aba "Conteúdo" da página de experimentos.
+- causa-raiz: o array `pipelineContentCards` em `ExperimentDetailPage` estava reduzido às etapas 1 e 2, ocultando os campos de landing persistidos no experimento.
+- foi feito no frontend: reintroduzidos os cards de conteúdo bruto para `landing_page_wireframe`, `landing_page_copy`, `landing_page_image_planning`, `landing_page_design_preset`, `landing_page_html` e `landing_page_deliverables`, com as dependências do `useMemo` atualizadas para re-renderizar corretamente.
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+  - docs/registros/experimentos.md

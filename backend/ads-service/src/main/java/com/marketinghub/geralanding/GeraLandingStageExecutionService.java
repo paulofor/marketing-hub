@@ -71,41 +71,73 @@ public class GeraLandingStageExecutionService {
 
     @Transactional
     public GeraLandingPublishResponse approveAndPublishLanding(Long experimentId) {
+        log.info("GeraLanding publish approval started (experimentId={})", experimentId);
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
-        if (!StringUtils.hasText(experiment.getLandingPageHtml())) {
+        log.info("GeraLanding publish approval loaded experiment (experimentId={}, experimentName={})",
+                experimentId, experiment.getName());
+
+        String landingPageHtml = experiment.getLandingPageHtml();
+        if (!StringUtils.hasText(landingPageHtml)) {
+            log.warn("GeraLanding publish approval blocked because landing HTML is missing (experimentId={})",
+                    experimentId);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Landing HTML ainda não foi gerado para este experimento");
         }
+        log.info("GeraLanding publish approval found landing HTML (experimentId={}, htmlLength={})",
+                experimentId, landingPageHtml.length());
+
         String slug = "exp-" + experimentId + "-landing-geralanding";
-        String htmlWithFunnelControls = injectFunnelControls(experiment.getLandingPageHtml());
-        String htmlWithFacebookPixel = injectFacebookPixel(htmlWithFunnelControls, resolveFacebookPixelId(experiment));
+        log.info("GeraLanding publish approval resolved slug (experimentId={}, slug={})", experimentId, slug);
+
+        String htmlWithFunnelControls = injectFunnelControls(landingPageHtml);
+        log.info("GeraLanding publish approval injected funnel controls (experimentId={}, htmlLengthBefore={}, htmlLengthAfter={})",
+                experimentId, landingPageHtml.length(), htmlWithFunnelControls.length());
+
+        String facebookPixelId = resolveFacebookPixelId(experiment);
+        log.info("GeraLanding publish approval resolved Facebook Pixel (experimentId={}, hasPixelId={})",
+                experimentId, StringUtils.hasText(facebookPixelId));
+        String htmlWithFacebookPixel = injectFacebookPixel(htmlWithFunnelControls, facebookPixelId);
+        log.info("GeraLanding publish approval injected Facebook Pixel (experimentId={}, htmlLengthBefore={}, htmlLengthAfter={})",
+                experimentId, htmlWithFunnelControls.length(), htmlWithFacebookPixel.length());
+
+        log.info("GeraLanding publish approval sending flow to Lead Portal (experimentId={}, slug={}, htmlLength={})",
+                experimentId, slug, htmlWithFacebookPixel.trim().length());
         publishToLeadPortal(slug, "Landing GeraLanding - Experimento " + experimentId, htmlWithFacebookPixel.trim());
-        try {
-            String iframeUrl = resolveIframeUrl(slug);
-            String standaloneUrl = resolveStandaloneLandingUrl(iframeUrl);
-            experiment.setFollowUpActionUrl(standaloneUrl);
-            experimentRepository.save(experiment);
-            return new GeraLandingPublishResponse(experimentId, null, iframeUrl, standaloneUrl,
-                    "Landing publicada com sucesso pelo GeraLanding.");
-        } catch (RuntimeException ex) {
-            String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Falha ao publicar landing do GeraLanding: " + rootCauseMessage, ex);
-        }
+        log.info("GeraLanding publish approval sent flow to Lead Portal successfully (experimentId={}, slug={})",
+                experimentId, slug);
+        log.info("GeraLanding publish approval resolving publication URLs (experimentId={}, slug={})", experimentId, slug);
+        String iframeUrl = resolveIframeUrl(slug);
+        String standaloneUrl = resolveStandaloneLandingUrl(iframeUrl);
+        log.info("GeraLanding publish approval resolved publication URLs (experimentId={}, iframeUrl={}, standaloneUrl={})",
+                experimentId, iframeUrl, standaloneUrl);
+
+        experiment.setFollowUpActionUrl(standaloneUrl);
+        experimentRepository.save(experiment);
+        log.info("GeraLanding publish approval saved follow-up URL (experimentId={}, followUpActionUrl={})",
+                experimentId, standaloneUrl);
+        return new GeraLandingPublishResponse(experimentId, null, iframeUrl, standaloneUrl,
+                "Landing publicada com sucesso pelo GeraLanding.");
     }
 
     private void publishToLeadPortal(String slug, String name, String html) {
         if (!StringUtils.hasText(leadPortalBaseUrl)) {
+            log.warn("GeraLanding Lead Portal publication blocked because base URL is not configured (slug={})", slug);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Lead Portal base URL não configurada");
         }
         URI uri = UriComponentsBuilder.fromHttpUrl(leadPortalBaseUrl).path("/api/flows/{slug}").buildAndExpand(slug).toUri();
+        log.info("GeraLanding Lead Portal publication request prepared (slug={}, uri={}, name={}, htmlLength={})",
+                slug, uri, name, html == null ? 0 : html.length());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         GeraLandingLeadPortalPublishRequest payload = new GeraLandingLeadPortalPublishRequest(
                 slug, name, "Fluxo publicado pelo módulo GeraLanding", html, html, "custom_html");
         try {
             restTemplate.put(uri, new HttpEntity<>(payload, headers));
+            log.info("GeraLanding Lead Portal publication request completed (slug={}, uri={})", slug, uri);
         } catch (RestClientException ex) {
+            String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
+            log.error("GeraLanding Lead Portal publication request failed (slug={}, uri={}, rootCause={})",
+                    slug, uri, rootCauseMessage, ex);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Falha ao enviar fluxo para o Lead Portal", ex);
         }
     }

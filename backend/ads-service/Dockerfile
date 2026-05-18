@@ -23,19 +23,19 @@ FROM eclipse-temurin:21-jre
 ENV JAVA_OPTS ""
 WORKDIR /app
 
-# Install curl for healthcheck probes
+# Install curl for healthcheck probes and socat to forward 80 -> 8000 inside the container
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl socat \
     && rm -rf /var/lib/apt/lists/*
 
 # Create directories that will be mounted as volumes
 RUN mkdir -p uploads logs
 
 COPY --from=build /workspace/backend/ads-service/target/app.jar /app/app.jar
-EXPOSE 8000
+EXPOSE 8000 80
 VOLUME ["/app/uploads", "/app/logs"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8000/ops-mh-observability-v2/health || exit 1
 
-ENTRYPOINT ["/bin/sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["/bin/sh", "-c", "socat TCP-LISTEN:80,fork,reuseaddr TCP:127.0.0.1:8000 & exec java $JAVA_OPTS -jar /app/app.jar"]

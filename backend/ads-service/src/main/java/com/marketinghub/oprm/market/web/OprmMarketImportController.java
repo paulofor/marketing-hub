@@ -41,6 +41,14 @@ public class OprmMarketImportController {
         return ResponseEntity.accepted().build();
     }
 
+
+
+    @PostMapping("/finalize-latest-started")
+    public ResponseEntity<Void> finalizeLatestStartedRun() {
+        service.finalizeLatestStartedRun("endpoint /api/oprm/market/import-runs/finalize-latest-started");
+        return ResponseEntity.accepted().build();
+    }
+
     @GetMapping
     public List<OprmCnpjImportRun> listRuns() {
         return service.listRuns();

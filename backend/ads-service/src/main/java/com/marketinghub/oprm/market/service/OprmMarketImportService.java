@@ -208,6 +208,39 @@ public class OprmMarketImportService {
                 run.getErrorMessage());
     }
 
+
+    @Transactional
+    public void finalizeLatestStartedRun(String triggerLabel) {
+        Instant executionAt = Instant.now();
+        OprmCnpjImportRun run = runRepository.findFirstByStatusOrderByStartedAtDesc("STARTED").orElse(null);
+        if (run == null) {
+            log.info("[OPRM-TOTALIZACAO] Nenhum run STARTED encontrado para finalização automática. triggerLabel={} executionAtUtc={}",
+                    triggerLabel,
+                    executionAt);
+            return;
+        }
+
+        log.info("[OPRM-TOTALIZACAO] Finalização automática iniciada. triggerLabel={} runId={} snapshotDate={} startedAt={} status={}",
+                triggerLabel,
+                run.getId(),
+                run.getSnapshotDate(),
+                run.getStartedAt(),
+                run.getStatus());
+
+        completeRun(run.getId(), new OprmCompleteImportRunRequestDto(
+                null,
+                executionAt,
+                null,
+                null,
+                null,
+                null,
+                "Finalização automática da etapa de totalização (" + triggerLabel + ")"));
+
+        log.info("[OPRM-TOTALIZACAO] Finalização automática concluída com sucesso. triggerLabel={} runId={}",
+                triggerLabel,
+                run.getId());
+    }
+
     private void validateFileBelongsToRun(Long runId, OprmCnpjImportFile file) {
         if (file.getRun() == null || file.getRun().getId() == null || !runId.equals(file.getRun().getId())) {
             throw new ResponseStatusException(BAD_REQUEST, "File does not belong to informed run.");

@@ -252,8 +252,8 @@ Definição operacional do LHM:
 - entrega como saída canônica: `htmlDocument` final da landing;
 - roda no backend como fonte única de verdade para aplicação de contratos e
   validações de publicação.
-- a UI pode oferecer o comando `Gerar com LHM` como alternativa explícita ao
-  `Gerar com IA` na etapa `landing-page-html`.
+- a UI deve expor apenas o comando canônico vigente para geração de HTML na etapa
+  `landing-page-html`, sem distinção por tipos/variantes de acionamento.
 
 ### 8.7 Aba canônica de destino da campanha (Landing)
 

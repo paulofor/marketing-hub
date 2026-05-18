@@ -288,3 +288,11 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
   - docs/registros/experimentos.md
+
+## 2026-05-18 14:24:03 UTC-3
+- ajuste de documentação do fluxo Gera Landing para remover referência a dois tipos de acionamento de geração de HTML.
+- raciocínio: a documentação precisava refletir o estado atual informado pelo usuário, sem citar tipos/variantes que não existem mais.
+- registro do que foi feito: atualizado o cânone `experiments-automation-flow-canon.v1.md` para manter apenas comando canônico único na etapa `landing-page-html`.
+- documentos lidos para pesquisar e resolver o problema:
+  - docs/canonical/experiments-automation-flow-canon.v1.md
+  - docs/registros/experimentos.md

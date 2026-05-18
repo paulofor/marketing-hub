@@ -40,16 +40,6 @@ export default function LandingTab({ experiment }: LandingTabProps) {
   const campaignDestinationUrl = resolveStandaloneLandingUrl(`/landing/${experiment.id}`);
 
   const handleApproveLanding = async () => {
-    const kpiTargetValue = experiment.kpiTarget ?? experiment.kpiTargetCpl;
-    if (kpiTargetValue == null || experiment.metricPresetId == null) {
-      setFeedback({
-        variant: "error",
-        message:
-          "Defina a meta de KPI e o preset de métricas antes de aprovar a landing como destino da campanha.",
-      });
-      return;
-    }
-
     setFeedback(null);
 
     try {

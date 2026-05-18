@@ -251,3 +251,11 @@
   - backend/ads-service/src/main/java/com/marketinghub/experiment/Experiment.java
   - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
   - docs/registros/experimentos.md
+
+## 2026-05-18 02:06:00 UTC
+- solicitação: remover dos testes unitários a premissa obsoleta de criação de experimento sem `journeyTemplateId`.
+- foi feito: ajuste no teste `ExperimentServiceTest` para validar o comportamento atual do backend (rejeitar criação sem `journeyTemplateId` com `400 BAD_REQUEST` e mensagem `journeyTemplateId required`), substituindo o cenário anterior que permitia ausência desse campo.
+- validação executada: `mvn -Dtest=ExperimentServiceTest test` com sucesso.
+- arquivos alterados:
+  - backend/ads-service/src/test/java/com/marketinghub/experiment/ExperimentServiceTest.java
+  - docs/registros/experimentos.md

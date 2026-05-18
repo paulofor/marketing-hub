@@ -692,7 +692,7 @@ class ExperimentServiceTest {
     }
 
     @Test
-    void createAllowsMissingJourneyTemplateId() {
+    void createRejectsMissingJourneyTemplateId() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -723,9 +723,10 @@ class ExperimentServiceTest {
         req.setInstagramAccountId(createInstagramAccount().getId());
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        Experiment created = service.create(req);
-
-        assertThat(created.getJourneyTemplate()).isNull();
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("400 BAD_REQUEST")
+                .hasMessageContaining("journeyTemplateId required");
     }
 
     @Test

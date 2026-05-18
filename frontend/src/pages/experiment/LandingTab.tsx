@@ -46,8 +46,8 @@ export default function LandingTab({ experiment }: LandingTabProps) {
       const publication = await approveAndPublishLanding.mutateAsync();
       const primaryVariant = publication.variantLinks?.[0] ?? null;
       setPublishedUrls({
-        iframeUrl: primaryVariant?.iframeUrl ?? publication.publicUrl ?? null,
-        standaloneUrl: primaryVariant?.standaloneUrl ?? null,
+        iframeUrl: primaryVariant?.iframeUrl ?? publication.iframeUrl ?? publication.publicUrl ?? null,
+        standaloneUrl: primaryVariant?.standaloneUrl ?? publication.standaloneUrl ?? null,
       });
       setFeedback({
         variant: "success",

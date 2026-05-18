@@ -775,3 +775,4 @@ databaseChangeLog:
 
   - include:
       file: changesets/2026-05-17-experiment-create-simplification-columns.yaml
+      relativeToChangelogFile: true

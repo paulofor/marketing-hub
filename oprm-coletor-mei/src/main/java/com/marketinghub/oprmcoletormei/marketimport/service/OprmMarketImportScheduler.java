@@ -139,6 +139,18 @@ public class OprmMarketImportScheduler {
                 files.size());
     }
 
+
+
+    @Scheduled(cron = "0 0 11 * * *", zone = "America/Sao_Paulo")
+    public void runScheduledFinalization() {
+        log.info("[OPRM-TOTALIZACAO] Disparo de finalização automática iniciado via OPRM-MEI.");
+        restClient.post()
+                .uri(collectorProperties.backendBaseUrl() + "/api/oprm/market/import-runs/finalize-latest-started")
+                .retrieve()
+                .toBodilessEntity();
+        log.info("[OPRM-TOTALIZACAO] Disparo de finalização automática concluído via OPRM-MEI.");
+    }
+
     private List<OprmCnaeUpsertDto> parseCnaesFromZip(Path zipPath, Long runId, Long fileId, String fileName) throws IOException {
         log.info("[run={} fileId={}] Início parse CNAE de {}", runId, fileId, fileName);
         List<OprmCnaeUpsertDto> cnaes = new ArrayList<>();

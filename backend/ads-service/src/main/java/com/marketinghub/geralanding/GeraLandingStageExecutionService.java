@@ -13,7 +13,19 @@ import java.time.Instant;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import java.util.Locale;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
+import java.net.URI;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class GeraLandingStageExecutionService {
@@ -35,6 +47,8 @@ public class GeraLandingStageExecutionService {
     private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
     private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
     private final LandingPageImageInjector landingPageImageInjector;
+    private final RestTemplate restTemplate;
+    private final String leadPortalBaseUrl;
 
     public GeraLandingStageExecutionService(
             ExperimentRepository experimentRepository,
@@ -42,13 +56,141 @@ public class GeraLandingStageExecutionService {
             WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler,
             CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler,
             DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler,
-            LandingPageImageInjector landingPageImageInjector) {
+            LandingPageImageInjector landingPageImageInjector,
+            RestTemplate restTemplate,
+            @Value("${integrations.lead-portal.base-url:}") String leadPortalBaseUrl) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.wireframeProvisionalHtmlAssembler = wireframeProvisionalHtmlAssembler;
         this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
         this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
         this.landingPageImageInjector = landingPageImageInjector;
+        this.restTemplate = restTemplate;
+        this.leadPortalBaseUrl = leadPortalBaseUrl;
+    }
+
+    @Transactional
+    public GeraLandingPublishResponse approveAndPublishLanding(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+        if (!StringUtils.hasText(experiment.getLandingPageHtml())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Landing HTML ainda não foi gerado para este experimento");
+        }
+        String slug = "exp-" + experimentId + "-landing-geralanding";
+        String htmlWithFunnelControls = injectFunnelControls(experiment.getLandingPageHtml());
+        String htmlWithFacebookPixel = injectFacebookPixel(htmlWithFunnelControls, resolveFacebookPixelId(experiment));
+        publishToLeadPortal(slug, "Landing GeraLanding - Experimento " + experimentId, htmlWithFacebookPixel.trim());
+        try {
+            String iframeUrl = resolveIframeUrl(slug);
+            String standaloneUrl = resolveStandaloneLandingUrl(iframeUrl);
+            experiment.setFollowUpActionUrl(standaloneUrl);
+            experimentRepository.save(experiment);
+            return new GeraLandingPublishResponse(experimentId, null, iframeUrl, standaloneUrl,
+                    "Landing publicada com sucesso pelo GeraLanding.");
+        } catch (RuntimeException ex) {
+            String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Falha ao publicar landing do GeraLanding: " + rootCauseMessage, ex);
+        }
+    }
+
+    private void publishToLeadPortal(String slug, String name, String html) {
+        if (!StringUtils.hasText(leadPortalBaseUrl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Lead Portal base URL não configurada");
+        }
+        URI uri = UriComponentsBuilder.fromHttpUrl(leadPortalBaseUrl).path("/api/flows/{slug}").buildAndExpand(slug).toUri();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        GeraLandingLeadPortalPublishRequest payload = new GeraLandingLeadPortalPublishRequest(
+                slug, name, "Fluxo publicado pelo módulo GeraLanding", html, html, "custom_html");
+        try {
+            restTemplate.put(uri, new HttpEntity<>(payload, headers));
+        } catch (RestClientException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Falha ao enviar fluxo para o Lead Portal", ex);
+        }
+    }
+
+    private String resolveIframeUrl(String slug) {
+        return UriComponentsBuilder.fromHttpUrl(leadPortalBaseUrl)
+                .path("/api/public/flows/{slug}")
+                .buildAndExpand(slug)
+                .toUriString();
+    }
+
+    private String injectFunnelControls(String html) {
+        String controls = """
+                <script data-mh-funnel-controls=\"true\">
+                  window.__MH_FUNNEL_CONTROLS__ = { enabled: true, source: 'geralanding' };
+                </script>
+                """;
+        if (html.toLowerCase(Locale.ROOT).contains("data-mh-funnel-controls")) {
+            return html;
+        }
+        if (html.toLowerCase(Locale.ROOT).contains("</head>")) {
+            return html.replaceFirst("(?i)</head>", controls + "\n</head>");
+        }
+        return controls + "\n" + html;
+    }
+
+    private String resolveFacebookPixelId(Experiment experiment) {
+        if (experiment == null || experiment.getNiche() == null) {
+            return null;
+        }
+        String pixelId = experiment.getNiche().getFacebookPixelId();
+        return StringUtils.hasText(pixelId) ? pixelId.trim() : null;
+    }
+
+    private String injectFacebookPixel(String html, String facebookPixelId) {
+        if (!StringUtils.hasText(html) || !StringUtils.hasText(facebookPixelId)) {
+            return html;
+        }
+        if (html.contains("data-mh-facebook-pixel")) {
+            return html;
+        }
+        String pixelSnippet = """
+                <script data-mh-facebook-pixel="true">
+                  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+                  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+                  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script',
+                  'https://connect.facebook.net/en_US/fbevents.js');
+                  fbq('init', '%s');
+                  fbq('track', 'PageView');
+                </script>
+                <noscript><img height="1" width="1" style="display:none"
+                  src="https://www.facebook.com/tr?id=%s&ev=PageView&noscript=1"
+                /></noscript>
+                """.formatted(facebookPixelId, facebookPixelId).trim();
+        if (html.toLowerCase(Locale.ROOT).contains("</head>")) {
+            return html.replaceFirst("(?i)</head>", pixelSnippet + "\n</head>");
+        }
+        if (html.toLowerCase(Locale.ROOT).contains("<body")) {
+            return html.replaceFirst("(?i)<body", pixelSnippet + "\n<body");
+        }
+        return pixelSnippet + "\n" + html;
+    }
+
+    private String resolveStandaloneLandingUrl(String iframeUrl) {
+        if (!StringUtils.hasText(iframeUrl)) {
+            return null;
+        }
+        try {
+            URI parsed = URI.create(iframeUrl);
+            String[] segments = parsed.getPath().split("/");
+            String slug = segments.length == 0 ? "" : segments[segments.length - 1];
+            if (!StringUtils.hasText(slug)) {
+                return null;
+            }
+            return UriComponentsBuilder.newInstance()
+                    .scheme(parsed.getScheme())
+                    .host(parsed.getHost())
+                    .port(parsed.getPort())
+                    .path("/api/flows/{slug}/page")
+                    .buildAndExpand(slug)
+                    .toUriString();
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 
     @Transactional

@@ -692,7 +692,7 @@ class ExperimentServiceTest {
     }
 
     @Test
-    void createRequiresJourneyTemplateId() {
+    void createAllowsMissingJourneyTemplateId() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -723,9 +723,9 @@ class ExperimentServiceTest {
         req.setInstagramAccountId(createInstagramAccount().getId());
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
 
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("journeyTemplateId required");
+        Experiment created = service.create(req);
+
+        assertThat(created.getJourneyTemplate()).isNull();
     }
 
     @Test

@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-17-experiment-create-simplification-columns
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+      changes:
+        - dropNotNullConstraint:
+            tableName: experiment
+            columnName: journey_template_id
+            columnDataType: BIGINT
+        - dropNotNullConstraint:
+            tableName: experiment
+            columnName: stage
+            columnDataType: VARCHAR(32)
+        - dropNotNullConstraint:
+            tableName: experiment
+            columnName: images_per_package
+            columnDataType: INT
+        - addDefaultValue:
+            tableName: experiment
+            columnName: stage
+            defaultValue: AD
+        - addDefaultValue:
+            tableName: experiment
+            columnName: images_per_package
+            defaultValueNumeric: 20

@@ -232,3 +232,22 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/experiment/service/MetricPresetService.java
+
+## 2026-05-17 22:20:00 UTC
+- validação solicitada sobre remoção de campos obsoletos na criação de experimentos e aderência do modelo de dados documental.
+- foi feito: atualização do documento `docs/modelo-dados-experimento.md` para refletir que os campos removidos da criação (etapa, variável/métrica principal, meta de KPI, template de jornada, qualidade/quantidades de imagens, tamanho da amostra e margem de erro) não compõem mais contrato obrigatório de entrada no cadastro.
+- ajuste adicional: limpeza do diagrama ER textual da entidade `EXPERIMENT`, removendo colunas obsoletas da visão focada de criação (`journey_template_id`, `stage`, `primary_variable`, `primary_metric`).
+- arquivos alterados:
+  - docs/modelo-dados-experimento.md
+  - docs/registros/experimentos.md
+
+## 2026-05-17 22:45:00 UTC
+- ajuste complementar solicitado: não apenas documentação, mas também alteração estrutural nas tabelas para refletir simplificação da criação de experimentos.
+- foi feito no backend/Liquibase: criação de changeset para flexibilizar colunas antes obrigatórias no cadastro (`journey_template_id`, `stage`, `images_per_package`) e manter defaults compatíveis (`stage='AD'`, `images_per_package=20`).
+- foi feito no serviço de criação: remoção das validações obrigatórias de `stage`, `journeyTemplateId` e `kpiTargetCpl`, com fallback para `stage=AD` quando ausente e stop-loss somente quando houver KPI.
+- arquivos alterados:
+  - backend/ads-service/src/main/resources/db/changelog/changesets/2026-05-17-experiment-create-simplification-columns.yaml
+  - backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/Experiment.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+  - docs/registros/experimentos.md

@@ -237,22 +237,13 @@ public class ExperimentService {
         if (repository.existsByNicheAndName(niche, request.getName())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
         }
-        if (request.getKpiTargetCpl() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kpiTargetCpl required");
-        }
         if (request.getMetricPresetId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metricPresetId required");
         }
-        if (request.getStage() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stage required");
-        }
         String normalizedPrimaryVariable = normalizePrimaryDescriptor(request.getPrimaryVariable(), "primaryVariable");
         String normalizedPrimaryMetric = normalizePrimaryDescriptor(request.getPrimaryMetric(), "primaryMetric");
-        if (request.getJourneyTemplateId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
-        }
         MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
-        java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl().multiply(preset.getStopLossFactor());
+        java.math.BigDecimal computedStopLoss = request.getKpiTargetCpl() != null ? request.getKpiTargetCpl().multiply(preset.getStopLossFactor()) : null;
         if (request.getSampleSize() != null && request.getSampleSize() < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
         }
@@ -263,7 +254,7 @@ public class ExperimentService {
                 request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
-        JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
+        JourneyTemplate journeyTemplate = request.getJourneyTemplateId() != null ? attachJourneyTemplate(request.getJourneyTemplateId()) : null;
         LeadPortalFlow leadPortalFlow = attachLeadPortalFlow(request.getLeadPortalFlowId(), niche.getId());
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
         ImageGenerationSelection imageSelection =
@@ -295,7 +286,7 @@ public class ExperimentService {
                 .endDate(request.getEndDate())
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
-                .stage(request.getStage())
+                .stage(request.getStage() != null ? request.getStage() : ExperimentStage.AD)
                 .primaryVariable(normalizedPrimaryVariable)
                 .primaryMetric(normalizedPrimaryMetric)
                 .creativesToGenerate(request.getCreativesToGenerate())

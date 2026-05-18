@@ -74,3 +74,5 @@
 - 2026-05-18 02:05:00 (UTC): ajuste solicitado no backend OPRM para deixar os agendamentos de totalização fixos em código (sem variáveis/propriedades): 19:40 e 23:30 em America/Sao_Paulo, removendo configuração via `application.properties`.
 
 - 2026-05-18 02:12:52 (UTC): ajuste solicitado no backend OPRM para remover o agendamento das 19:40 e manter somente a totalização diária fixa às 23:30 no fuso America/Sao_Paulo.
+
+- 2026-05-18 02:30:00 (UTC): ajuste solicitado no backend OPRM para reagendar a execução do totalizador para **00:00 do dia 18 de maio** (fuso `America/Sao_Paulo`), alterando o cron do `OprmMarketImportFinalizationScheduler` para `0 0 0 18 5 *` e atualizando o rótulo de execução para `00:00 18/05`.

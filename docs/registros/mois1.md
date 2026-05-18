@@ -125,3 +125,12 @@
   - frontend/src/api/mois/useMoisSalesLibrary.ts
   - frontend/src/api/mois/types.ts
   - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java
+
+
+## 2026-05-18 00:00:00 UTC
+- solicitado registro documental das seções da tela Biblioteca de Páginas de Vendas (MOIS).
+- criado documento em `docs/novos-modulos/mois-biblioteca-pagina-venda/guia-secoes-biblioteca-paginas-vendas.md` descrevendo acesso, seções, comportamentos e objetivo operacional.
+- documentos/códigos consultados:
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+  - frontend/src/components/MainNavigation.tsx
+  - frontend/src/App.tsx

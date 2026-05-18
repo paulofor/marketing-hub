@@ -272,3 +272,11 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
   - docs/registros/experimentos.md
+
+## 2026-05-18 11:30:00 UTC
+- solicitação: corrigir erro na aba "Estrutura de Conteúdo" após refatoração recente, com crash `Cannot read properties of undefined (reading 'completedAt')` em `ExperimentContentGenerationTab.tsx`.
+- causa-raiz: a refatoração removeu seções de landing da constante `CONTENT_GENERATION_SECTIONS`; isso também reduziu o estado inicial de requisições e deixou chaves ainda usadas por cálculos de fluxo (`landing-image-planning`) como `undefined`.
+- foi feito: criação da constante `ALL_CONTENT_GENERATION_SECTION_KEYS` para manter o estado inicial completo de todas as seções (inclusive as ocultas na UI), preservando cálculos internos e evitando acesso a propriedades em `undefined`.
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
+  - docs/registros/experimentos.md

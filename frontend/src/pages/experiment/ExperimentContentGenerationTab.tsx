@@ -144,11 +144,22 @@ interface AutoQueueState {
 
 type LandingImageFlowStatus = "NOT_STARTED" | "STARTED" | "PROCESSING" | "COMPLETED";
 
+const ALL_CONTENT_GENERATION_SECTION_KEYS: ContentGenerationSectionKey[] = [
+  "campaign-angle",
+  "ad-copy",
+  "image-prompt",
+  "landing-copy",
+  "landing-layout",
+  "landing-image-planning",
+  "landing-design-preset",
+  "landing-html",
+];
+
 const SECTION_REQUEST_INITIAL_STATE: Record<
   ContentGenerationSectionKey,
   SectionRequestState
-> = CONTENT_GENERATION_SECTIONS.reduce(
-  (acc, section) => ({ ...acc, [section.key]: { status: "IDLE" } }),
+> = ALL_CONTENT_GENERATION_SECTION_KEYS.reduce(
+  (acc, sectionKey) => ({ ...acc, [sectionKey]: { status: "IDLE" } }),
   {} as Record<ContentGenerationSectionKey, SectionRequestState>,
 );
 

@@ -33,6 +33,7 @@
 8.1. **Paridade obrigatória em geração paralela de landing.** Quando houver geração de múltiplas variantes públicas de HTML para o mesmo experimento (ex.: `deterministic` e `ai`), todas devem usar o mesmo snapshot de entrada canônica e o mesmo conjunto de validações obrigatórias.
 9. **Arquitetura robusta orientada a vendas.** Robustez técnica, validações e contratos existem para sustentar resultado comercial: melhorar conversão, reduzir fricção e manter continuidade de mensagem entre criativo, landing e oferta. Toda decisão arquitetural deve explicitar seu impacto em receita (CVR, CPL/CPA e avanço de funil), não apenas conformidade técnica.
 10. **Stack mandatória para módulos de apoio + deploy rastreável.** Módulos de apoio/satélites devem adotar baseline **Spring Boot + Java + Maven** e manter workflow CI/CD dedicado com teste, build e deploy por **disparo manual (`workflow_dispatch`)** além dos gatilhos automáticos necessários.
+11. **Exceções capturadas preservam ponto de falha.** Todo tratamento de exceção que captura, converte ou relança erro deve registrar log com contexto operacional e a exceção completa para manter stack trace e permitir diagnóstico de causa-raiz. Mensagens resumidas de causa raiz podem ser retornadas ao usuário/API, mas não substituem o log completo no ponto da captura.
 
 ## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
 

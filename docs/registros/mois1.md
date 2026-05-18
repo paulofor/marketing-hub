@@ -113,3 +113,15 @@
   - frontend/src/api/settings/useClickbaseCollectedProducts.ts
   - backend/ads-service/src/main/java/com/marketinghub/mois/dto/MoisWorkspaceDtos.java
   - backend/ads-service/src/main/java/com/marketinghub/mois/web/MoisController.java
+
+## 2026-05-18 12:07:38 UTC-3
+- necessidade de telas no frontend para acompanhar análises da biblioteca de páginas de vendas do MOIS.
+- foi mapeado o contrato já existente no backend (`/api/mois/sales-library`) para evitar criação desnecessária de endpoint e garantir aderência ao escopo do módulo.
+- implementadas seções de acompanhamento no frontend: entradas ingeridas, fila de jobs, páginas com status/score, ação de reanálise com botão desabilitado + spinner durante requisição e painel de detalhe da análise por página.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+  - frontend/src/api/mois/useMoisSalesLibrary.ts
+  - frontend/src/api/mois/types.ts
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java

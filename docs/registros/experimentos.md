@@ -347,3 +347,15 @@
 - arquivos alterados:
   - lead-portal/backend/src/main/java/com/marketinghub/leadportal/service/FlowService.java
   - docs/registros/experimentos.md
+
+## 2026-05-18 18:20:35 UTC-3
+- solicitação para aprovar a landing page do experimento 21 e validar nos logs se o processamento ficou correto.
+- raciocínio aplicado: executar tentativa de aprovação via endpoint oficial de aprovação/publicação da landing e, em seguida, consultar logs do backend via MCP para evidências do resultado.
+- foi feito:
+  - tentativa de POST no endpoint `/api/experiments/21/pipeline/landing-page-html/approve-and-publish` no backend `http://191.252.181.168:8000`, porém o serviço respondeu indisponível (`503 Service Unavailable` com `connection refused`).
+  - consulta dos logs do módulo `backend` via MCP tool `java_module_logs` para verificar estado geral do processamento; não houve confirmação de aprovação da landing do experimento 21 nesta rodada.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/api/experiment/useApproveAndPublishLanding.ts
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/web/ExperimentPipelineController.java

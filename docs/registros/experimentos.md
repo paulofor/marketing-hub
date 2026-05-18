@@ -302,3 +302,13 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
   - docs/registros/experimentos.md
+
+## 2026-05-18 14:48:47 UTC-3
+- solicitação para corrigir bloqueio indevido no botão de aprovação de landing na aba de experimento, que exigia campos obsoletos (meta de KPI e preset de métricas).
+- raciocínio aplicado: a validação local no frontend estava impondo pré-condição que não faz mais parte do fluxo vigente, impedindo aprovação mesmo com landing válida.
+- foi feito: remoção da checagem de `kpiTarget`/`metricPresetId` antes da chamada de aprovação/publicação da landing, mantendo apenas os bloqueios reais (HTML existente e request em andamento).
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/LandingTab.tsx

@@ -264,3 +264,11 @@
 - Removida a obrigatoriedade de `metricPresetId`, `primaryVariable` e `primaryMetric` na criação de experimento.
 - Backend agora aceita payload sem esses campos e calcula `stopLossCpl` apenas quando `metricPresetId` está preenchido com preset válido.
 - Frontend de criação deixou de enviar os valores obsoletos `primaryVariable: "OBSOLETO"` e `primaryMetric: "OBSOLETO"`; `metricPresetId` passa a ser opcional no payload.
+
+## 2026-05-18 10:15:00 UTC
+- solicitação: na tela de experimento, aba "Estrutura de Conteúdo", remover as etapas que migraram para o fluxo Gera Landing.
+- foi feito no frontend: removidas da listagem da aba as seções de landing `landing-layout`, `landing-copy`, `landing-design-preset`, `landing-image-planning` e `landing-html`.
+- resultado: a aba "Estrutura de Conteúdo" passa a exibir apenas as etapas de conteúdo base (dor, mecanismo, provas, ângulos, anúncio e prompt de imagem), evitando duplicidade com o fluxo Gera Landing.
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
+  - docs/registros/experimentos.md

@@ -94,41 +94,6 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
       "Crie prompts para orientar a geração de criativos visuais coerentes com o ângulo.",
     defaultQuantity: 4,
   },
-  {
-    key: "landing-layout",
-    label: "Layout da Landing",
-    description:
-      "Sugira estruturas visuais e ordem de seções para a página de conversão.",
-    defaultQuantity: 2,
-  },
-  {
-    key: "landing-copy",
-    label: "Texto da Landing",
-    description:
-      "Produza blocos de copy para título, prova, benefícios e CTA da landing.",
-    defaultQuantity: 4,
-  },
-  {
-    key: "landing-design-preset",
-    label: "Preset de Design da Landing",
-    description:
-      "Defina tema visual, paleta e presets por seção antes da composição final do HTML.",
-    defaultQuantity: 1,
-  },
-  {
-    key: "landing-image-planning",
-    label: "Planejamento de Imagens da Landing",
-    description:
-      "Planeje prompts, posicionamento e direção visual das imagens antes da geração final do HTML.",
-    defaultQuantity: 1,
-  },
-  {
-    key: "landing-html",
-    label: "HTML da Landing",
-    description:
-      "Integre copy + layout e gere o HTML final com CSS e scripts para uso no formulário.",
-    defaultQuantity: 1,
-  },
 ];
 
 const SECTION_LABEL_BY_KEY: Record<ContentGenerationSectionKey, string> =

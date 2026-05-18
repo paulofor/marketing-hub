@@ -379,3 +379,23 @@
   - docs/registros/experimentos.md
   - frontend/src/api/experiment/useApproveAndPublishLanding.ts
   - frontend/src/pages/experiment/LandingTab.tsx
+
+## 2026-05-18 22:30:00 UTC
+- solicitação: instrumentar o trecho de aprovação/publicação da landing do GeraLanding para diagnosticar cada etapa do experimento 21.
+- raciocínio aplicado: adicionar logs explícitos antes/depois das etapas críticas, preservando a causa-raiz da falha de publicação no Lead Portal sem alterar contrato de API nem modelo de dados.
+- foi feito:
+  - adicionados logs de início da aprovação, carregamento do experimento, presença/tamanho do HTML, slug resolvido, injeção de controles de funil, resolução/injeção de Facebook Pixel, envio ao Lead Portal, URLs publicadas e gravação de `followUpActionUrl`.
+  - adicionados logs no `publishToLeadPortal` para registrar URL de destino, tamanho do HTML e root cause de falha da chamada HTTP ao Lead Portal.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+  - docs/registros/experimentos.md
+
+## 2026-05-18 22:45:00 UTC
+- solicitação: remover o `try/catch` após a publicação no Lead Portal no fluxo de aprovação da landing do GeraLanding para deixar o erro aparecer diretamente nos logs.
+- raciocínio aplicado: preservar os logs de passagem por etapa, mas eliminar a captura genérica que mascarava exceções posteriores à publicação com `ResponseStatusException`.
+- foi feito:
+  - removido o bloco `try/catch (RuntimeException ex)` em `approveAndPublishLanding` depois de `publishToLeadPortal`.
+  - mantidos os logs de resolução de URLs, gravação de `followUpActionUrl` e retorno de sucesso no fluxo linear.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+  - docs/registros/experimentos.md

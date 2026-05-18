@@ -89,10 +89,38 @@ const CONTENT_GENERATION_SECTIONS: ContentGenerationSection[] = [
   },
   {
     key: "image-prompt",
-    label: "Prompt da Imagem",
+    label: "Gera Prompt Imagens",
     description:
       "Crie prompts para orientar a geração de criativos visuais coerentes com o ângulo.",
     defaultQuantity: 4,
+  },
+  {
+    key: "landing-layout",
+    label: "Gere Wireframe",
+    description:
+      "Estruture a arquitetura da landing em seções com hierarquia e fluxo de leitura.",
+    defaultQuantity: 1,
+  },
+  {
+    key: "landing-copy",
+    label: "Gera Copy",
+    description:
+      "Produza a copy completa da landing seguindo o framework canônico de conversão.",
+    defaultQuantity: 1,
+  },
+  {
+    key: "landing-design-preset",
+    label: "Gera Preset Design",
+    description:
+      "Defina direcionamentos visuais para garantir consistência de estilo e identidade.",
+    defaultQuantity: 1,
+  },
+  {
+    key: "landing-html",
+    label: "Gera Html",
+    description:
+      "Monte o HTML provisório da landing com base nas etapas anteriores.",
+    defaultQuantity: 1,
   },
 ];
 

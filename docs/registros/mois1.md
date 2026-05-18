@@ -4,6 +4,22 @@
 > Toda alteração em `mois-hotmart-collector` , `mois-sales-library-worker` e `mois-clickbank-collector` deve ser registrada neste arquivo.
 > Em caso de dúvida entre arquivos de registro, este é o ponto único de verdade.
 
+
+## 2026-05-18 19:27:36 UTC-3
+- criada a camada backend de snapshots brutos da Biblioteca de Páginas de Vendas do MOIS.
+- adicionado endpoint `POST /api/mois/sales-library/snapshots:capture` para capturar HTML bruto e screenshot PNG básico das URLs ingeridas.
+- adicionado endpoint `GET /api/mois/sales-library/pages/{pageId}/snapshots` para consultar snapshots por página.
+- criado agendamento `MoisSalesLibrarySnapshotScheduler` com cron fixo a cada 30 minutos para capturar URLs sem snapshot no workspace operacional inicial.
+- criadas tabelas `mois_sales_library_page_snapshot` e `mois_sales_library_snapshot_artifact` via Liquibase para separar metadados do snapshot e artefatos (`RAW_HTML`, `SCREENSHOT_PNG`).
+- atualizado `docs/modelo-dados-experimento.md` e a especificação da biblioteca de sales pages para registrar o novo contrato e o modelo de dados.
+- teste unitário criado para validar persistência de HTML bruto e screenshot PNG em artefatos separados.
+- arquivos principais alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/service/MoisSalesLibrarySnapshotService.java
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/service/MoisSalesLibrarySnapshotScheduler.java
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java
+  - backend/ads-service/src/main/resources/db/changelog/changesets/2026-05-18-mois-sales-library-page-snapshot.yaml
+  - backend/ads-service/src/test/java/com/marketinghub/mois/biblioteca/service/MoisSalesLibrarySnapshotServiceTest.java
+
 ## Template obrigatório de novo registro
 
 ```md

@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-18-mois-sales-library-page-snapshot-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_library_url_ingest
+        - not:
+            tableExists:
+              tableName: mois_sales_library_page_snapshot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_library_page_snapshot (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                url_ingest_id BIGINT NOT NULL,
+                snapshot_hash VARCHAR(128) NULL,
+                status VARCHAR(32) NOT NULL,
+                http_status INT NULL,
+                content_type VARCHAR(255) NULL,
+                error_message VARCHAR(1000) NULL,
+                captured_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_sales_library_snapshot_hash (url_ingest_id, snapshot_hash),
+                KEY idx_mois_sales_library_snapshot_page_captured (url_ingest_id, captured_at),
+                KEY idx_mois_sales_library_snapshot_status (status, updated_at),
+                CONSTRAINT fk_mois_sales_library_snapshot_url_ingest
+                  FOREIGN KEY (url_ingest_id) REFERENCES mois_sales_library_url_ingest(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  - changeSet:
+      id: 2026-05-18-mois-sales-library-page-snapshot-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_library_page_snapshot
+        - not:
+            tableExists:
+              tableName: mois_sales_library_snapshot_artifact
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_library_snapshot_artifact (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                snapshot_id BIGINT NOT NULL,
+                artifact_type VARCHAR(40) NOT NULL,
+                content_type VARCHAR(255) NOT NULL,
+                storage_kind VARCHAR(40) NOT NULL,
+                content_text LONGTEXT NULL,
+                content_blob LONGBLOB NULL,
+                size_bytes BIGINT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_sales_library_snapshot_artifact_type (snapshot_id, artifact_type),
+                KEY idx_mois_sales_library_artifact_snapshot (snapshot_id),
+                CONSTRAINT fk_mois_sales_library_artifact_snapshot
+                  FOREIGN KEY (snapshot_id) REFERENCES mois_sales_library_page_snapshot(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

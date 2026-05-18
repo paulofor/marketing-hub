@@ -206,6 +206,23 @@ Para manter o domínio da biblioteca isolado dentro do contexto MOIS no backend 
 - `com.marketinghub.mois.biblioteca.service`
 - `com.marketinghub.mois.biblioteca.web`
 
+
+### 8.6 Captura de snapshots brutos e artefatos (implementado)
+
+- `POST /api/mois/sales-library/snapshots:capture`
+  - entrada: `workspaceId`, `limit` e `force`;
+  - função: buscar páginas ingeridas sem snapshot bruto, capturar HTML e gerar artefato PNG de screenshot básico;
+  - uso: execução manual/operacional e suporte ao agendamento de captura incremental.
+
+- `GET /api/mois/sales-library/pages/{pageId}/snapshots`
+  - função: listar snapshots capturados para uma página, com status, hash, bytes de HTML e bytes de screenshot.
+
+- Agendamento backend: `MoisSalesLibrarySnapshotScheduler` executa `captureSnapshots` a cada 30 minutos para reduzir o backlog de páginas sem camada bruta.
+
+- Persistência física:
+  - `mois_sales_library_page_snapshot` guarda metadados do snapshot bruto;
+  - `mois_sales_library_snapshot_artifact` guarda os artefatos separados `RAW_HTML` e `SCREENSHOT_PNG`.
+
 ---
 
 ## 9. Regras de qualidade

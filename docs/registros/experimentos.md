@@ -339,3 +339,11 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingLeadPortalPublishRequest.java
   - docs/registros/experimentos.md
+
+## 2026-05-18 20:36:00 UTC
+- solicitação: remover validação/normalização de `customFormHtml` no Lead Portal para desbloquear publicação da campanha 21.
+- ajuste aplicado: `FlowService` deixou de injetar `CustomFormHtmlResolver` e o método `normalizeCustomFormHtml` agora apenas retorna o fluxo original, sem validação restritiva de HTML.
+- impacto esperado: o endpoint de publicação não deve mais rejeitar payload com a mensagem `customFormHtml deve ser HTML puro...`.
+- arquivos alterados:
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/service/FlowService.java
+  - docs/registros/experimentos.md

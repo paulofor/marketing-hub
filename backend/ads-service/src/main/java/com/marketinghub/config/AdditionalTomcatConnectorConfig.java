@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AdditionalTomcatConnectorConfig {
 
-    private static final int ADDITIONAL_HTTP_PORT = 8000;
+    private static final int ADDITIONAL_HTTP_PORT = 80;
 
     @Bean
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatConnectorCustomizer() {

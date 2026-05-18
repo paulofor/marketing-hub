@@ -674,3 +674,23 @@ Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cad
   - `GET /api/mois/sales-library/pages/{pageId}`
   - `GET /api/mois/sales-library/pages/{pageId}/analysis`
   - `POST /api/mois/sales-library/pages/{pageId}:reanalyze`
+
+
+## MOIS — Biblioteca de páginas de vendas (snapshots brutos e artefatos, 2026-05-18)
+
+- Novas tabelas backend: `mois_sales_library_page_snapshot` e `mois_sales_library_snapshot_artifact`.
+- Objetivo: persistir a camada bruta prevista para a biblioteca de sales pages, separando metadados do snapshot dos artefatos capturados.
+- Relacionamentos:
+  - `mois_sales_library_page_snapshot.url_ingest_id -> mois_sales_library_url_ingest.id`.
+  - `mois_sales_library_snapshot_artifact.snapshot_id -> mois_sales_library_page_snapshot.id`.
+- Artefatos iniciais suportados:
+  - `RAW_HTML`: HTML bruto recebido da URL, salvo em `content_text` com `content_type = text/html; charset=UTF-8`.
+  - `SCREENSHOT_PNG`: renderização PNG básica do HTML capturado, salva em `content_blob` com `content_type = image/png`.
+- Colunas operacionais de snapshot: `snapshot_hash`, `status`, `http_status`, `content_type`, `error_message`, `captured_at`, `created_at`, `updated_at`.
+- Colunas operacionais de artefato: `artifact_type`, `content_type`, `storage_kind`, `content_text`, `content_blob`, `size_bytes`, `created_at`.
+- Índices/regras: unicidade por `(url_ingest_id, snapshot_hash)` para evitar duplicar o mesmo HTML bruto de uma página; unicidade por `(snapshot_id, artifact_type)` para manter um artefato de cada tipo por snapshot.
+- Endpoints backend adicionados:
+  - `POST /api/mois/sales-library/snapshots:capture` para acionar captura manual de URLs sem snapshot ou recaptura com `force=true`.
+  - `GET /api/mois/sales-library/pages/{pageId}/snapshots` para consultar os snapshots/artefatos de uma página.
+- Agendamento: `MoisSalesLibrarySnapshotScheduler` executa a cada 30 minutos para capturar uma pequena leva de páginas sem snapshot no workspace operacional inicial (`workspace-001`).
+- Regra operacional: o backend principal busca a URL, registra o HTML bruto recebido em log de ingestão com prévia truncada e persiste os artefatos antes da análise estruturada.

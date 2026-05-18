@@ -2,7 +2,9 @@ package com.marketinghub.mois.biblioteca.web;
 
 import com.marketinghub.mois.biblioteca.dto.MoisSalesLibraryDtos;
 import com.marketinghub.mois.biblioteca.service.MoisSalesLibraryService;
+import com.marketinghub.mois.biblioteca.service.MoisSalesLibrarySnapshotService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class MoisSalesLibraryController {
 
     private final MoisSalesLibraryService service;
+    private final MoisSalesLibrarySnapshotService snapshotService;
 
     @GetMapping("/entries")
     public MoisSalesLibraryDtos.SalesLibraryEntryPageResponse listEntries(
@@ -89,6 +92,18 @@ public class MoisSalesLibraryController {
         }
     }
 
+    @PostMapping("/snapshots:capture")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureResponse captureSnapshots(
+            @Valid @RequestBody MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureRequest request
+    ) {
+        return snapshotService.captureSnapshots(request);
+    }
+
+    @GetMapping("/pages/{pageId}/snapshots")
+    public List<MoisSalesLibraryDtos.SalesLibraryPageSnapshotResponse> listPageSnapshots(@PathVariable long pageId) {
+        return snapshotService.listSnapshots(pageId);
+    }
 
     @PostMapping("/jobs:claim")
     public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(

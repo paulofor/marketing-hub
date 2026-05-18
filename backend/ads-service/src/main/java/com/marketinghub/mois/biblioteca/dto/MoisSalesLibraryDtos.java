@@ -168,4 +168,51 @@ public final class MoisSalesLibraryDtos {
             Instant createdAt
     ) {
     }
+
+    public record SalesLibrarySnapshotCaptureRequest(
+            @NotBlank String workspaceId,
+            Integer limit,
+            Boolean force
+    ) {
+    }
+
+    public record SalesLibrarySnapshotCaptureItem(
+            long pageId,
+            Long snapshotId,
+            String urlCanonical,
+            String status,
+            String snapshotHash,
+            Integer httpStatus,
+            long rawHtmlBytes,
+            long screenshotBytes,
+            String errorMessage
+    ) {
+    }
+
+    public record SalesLibrarySnapshotCaptureResponse(
+            String workspaceId,
+            int requestedLimit,
+            boolean force,
+            int processed,
+            int captured,
+            int failed,
+            List<SalesLibrarySnapshotCaptureItem> items,
+            Instant capturedAt
+    ) {
+    }
+
+    public record SalesLibraryPageSnapshotResponse(
+            long snapshotId,
+            long pageId,
+            String snapshotHash,
+            String status,
+            Integer httpStatus,
+            String contentType,
+            long rawHtmlBytes,
+            long screenshotBytes,
+            Instant capturedAt,
+            Instant updatedAt
+    ) {
+    }
+
 }

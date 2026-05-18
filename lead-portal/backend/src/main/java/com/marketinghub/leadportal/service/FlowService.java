@@ -12,7 +12,6 @@ import com.marketinghub.leadportal.repository.FlowRepository;
 import com.marketinghub.leadportal.style.SimpleFormStyleDefaults;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
-import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +24,6 @@ public class FlowService {
     private final SimpleFlowCatalog simpleFlowCatalog;
     private final FlowAssetService flowAssetService;
     private final SimpleFormStyleDefaults simpleFormStyleDefaults;
-    private final CustomFormHtmlResolver customFormHtmlResolver;
 
     public FlowService(
             FlowRepository repository,
@@ -33,15 +31,13 @@ public class FlowService {
             MeterRegistry meterRegistry,
             SimpleFlowCatalog simpleFlowCatalog,
             FlowAssetService flowAssetService,
-            SimpleFormStyleDefaults simpleFormStyleDefaults,
-            CustomFormHtmlResolver customFormHtmlResolver) {
+            SimpleFormStyleDefaults simpleFormStyleDefaults) {
         this.repository = repository;
         this.accessRepository = accessRepository;
         this.meterRegistry = meterRegistry;
         this.simpleFlowCatalog = simpleFlowCatalog;
         this.flowAssetService = flowAssetService;
         this.simpleFormStyleDefaults = simpleFormStyleDefaults;
-        this.customFormHtmlResolver = customFormHtmlResolver;
     }
 
     @Transactional
@@ -164,25 +160,7 @@ public class FlowService {
         if (flow == null) {
             return null;
         }
-        String normalizedHtml = customFormHtmlResolver.normalize(flow.customFormHtml());
-        if (Objects.equals(normalizedHtml, flow.customFormHtml())) {
-            return flow;
-        }
-        return new Flow(
-                flow.slug(),
-                flow.name(),
-                flow.description(),
-                normalizedHtml,
-                flow.model(),
-                flow.prompt(),
-                flow.imagePromptModel(),
-                flow.imagePromptTemplate(),
-                flow.imageBatchSize(),
-                flow.questions(),
-                flow.simpleFormStyle(),
-                flow.facebookPixelId(),
-                flow.facebookPixelCode(),
-                flow.facebookPixelCreatedAt());
+        return flow;
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

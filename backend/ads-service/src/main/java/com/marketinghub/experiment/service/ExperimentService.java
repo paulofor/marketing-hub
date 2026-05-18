@@ -254,7 +254,10 @@ public class ExperimentService {
                 request.getBaselineCvr().compareTo(request.getTargetCvr()) >= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
         }
-        JourneyTemplate journeyTemplate = request.getJourneyTemplateId() != null ? attachJourneyTemplate(request.getJourneyTemplateId()) : null;
+        if (request.getJourneyTemplateId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "journeyTemplateId required");
+        }
+        JourneyTemplate journeyTemplate = attachJourneyTemplate(request.getJourneyTemplateId());
         LeadPortalFlow leadPortalFlow = attachLeadPortalFlow(request.getLeadPortalFlowId(), niche.getId());
         String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
         ImageGenerationSelection imageSelection =

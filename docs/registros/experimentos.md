@@ -359,3 +359,23 @@
   - docs/registros/experimentos.md
   - frontend/src/api/experiment/useApproveAndPublishLanding.ts
   - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/web/ExperimentPipelineController.java
+
+## 2026-05-18 18:36:41 UTC-3
+- solicitação para marcar como obsoleto todo o fluxo antigo de aprovação/publicação de landing no pipeline legado.
+- raciocínio aplicado: bloquear explicitamente os endpoints legados para forçar uso do endpoint canônico do Gera Landing e evitar execução em rota descontinuada.
+- foi feito: endpoints legados de landing no `ExperimentPipelineController` foram marcados como `@Deprecated` e passam a retornar `410 GONE` com mensagem de migração para `/api/experiments/{id}/geralanding/landing/approve-and-publish`, incluindo log de advertência quando acessados.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/web/ExperimentPipelineController.java
+
+## 2026-05-18 18:41:50 UTC-3
+- solicitação para alterar o botão do frontend e usar endpoint do Gera Landing na aprovação/publicação da landing.
+- raciocínio aplicado: remover chamada do fluxo legado de pipeline e direcionar para o endpoint canônico do módulo `geralanding`, mantendo compatibilidade de leitura do retorno para exibição das URLs na tela.
+- foi feito: hook de aprovação/publicação atualizado para `POST /api/experiments/{id}/geralanding/landing/approve-and-publish` e ajuste na aba Landing para consumir `iframeUrl/standaloneUrl` do novo contrato, com fallback para contrato legado.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/api/experiment/useApproveAndPublishLanding.ts
+  - frontend/src/pages/experiment/LandingTab.tsx

@@ -49,26 +49,22 @@ public class ExperimentPipelineController {
         return generationService.generate(id, parsed, payload);
     }
 
+    @Deprecated(forRemoval = false)
     @PostMapping("/landing-page-html/apply-to-form")
     public ExperimentDto applyLandingHtmlToForm(@PathVariable Long id) {
-        return generationService.applyLandingHtmlToLeadPortalForm(id);
+        throw obsoleteLandingEndpoint("/landing-page-html/apply-to-form", id);
     }
 
+    @Deprecated(forRemoval = false)
     @PostMapping("/landing-page-html/approve-and-publish")
     public LandingPagePublicationResultDto approveAndPublishLanding(@PathVariable Long id) {
-        return generationService.approveAndPublishLandingPage(id);
+        throw obsoleteLandingEndpoint("/landing-page-html/approve-and-publish", id);
     }
 
+    @Deprecated(forRemoval = false)
     @PostMapping("/landing-page-html/generate-with-lhm")
     public ExperimentDto generateLandingHtmlWithLhm(@PathVariable Long id) {
-        try {
-            return generationService.generateLandingHtmlWithLhm(id);
-        } catch (ResponseStatusException ex) {
-            if (ex.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) {
-                log.warn("Geração LHM da landing falhou com 422 (experimentId={}): {}", id, ex.getReason());
-            }
-            throw ex;
-        }
+        throw obsoleteLandingEndpoint("/landing-page-html/generate-with-lhm", id);
     }
 
     @GetMapping("/jobs")
@@ -116,6 +112,13 @@ public class ExperimentPipelineController {
     public int closeOpenJobs(@PathVariable Long id,
                              @RequestParam(value = "reason", required = false) String reason) {
         return generationService.closeOpenJobs(id, reason);
+    }
+
+    private ResponseStatusException obsoleteLandingEndpoint(String endpoint, Long experimentId) {
+        log.warn("Endpoint obsoleto acessado no pipeline legado. experimentId={}, endpoint={}", experimentId, endpoint);
+        return new ResponseStatusException(
+                HttpStatus.GONE,
+                "Fluxo legado de landing no pipeline está obsoleto. Use /api/experiments/{id}/geralanding/landing/approve-and-publish.");
     }
 
     private ExperimentPipelineSection parseSection(String section) {

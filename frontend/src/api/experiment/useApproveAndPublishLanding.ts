@@ -11,12 +11,14 @@ export interface LandingVariantLinks {
 export interface LandingPublicationResult {
   experimentId: number;
   flowId: number;
-  approved: boolean;
-  published: boolean;
-  publicUrl: string | null;
-  variantLinks: LandingVariantLinks[];
-  facebookPixelId: string | null;
-  pixelAppliedAutomatically: boolean;
+  approved?: boolean;
+  published?: boolean;
+  publicUrl?: string | null;
+  variantLinks?: LandingVariantLinks[];
+  facebookPixelId?: string | null;
+  pixelAppliedAutomatically?: boolean;
+  iframeUrl?: string | null;
+  standaloneUrl?: string | null;
   message: string;
 }
 
@@ -24,7 +26,7 @@ export function useApproveAndPublishLanding(experimentId: number) {
   return useMutation({
     mutationFn: async () => {
       const { data } = await axios.post<LandingPublicationResult>(
-        `/api/experiments/${experimentId}/pipeline/landing-page-html/approve-and-publish`,
+        `/api/experiments/${experimentId}/geralanding/landing/approve-and-publish`,
       );
       return data;
     },

@@ -50,6 +50,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Frontend → Backend (validação de endpoint)**: sempre que criar no frontend uma chamada para o backend, verifique primeiro se o endpoint já existe. Se não existir, crie o endpoint no pacote/backend referente ao assunto da tela (ex.: MOIS, OPRM, etc.), respeitando o escopo do módulo.
 - **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
 - **Logs**: os logs dos modulos Java Spring Boot podem ser acessados pelo MCP Server.  Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC.
+- **Agendamentos Spring Boot**: quando criar rotinas agendadas com `@Scheduled`, não usar variáveis para o cron; definir diretamente a string no formato cron na anotação.
 - **Logs de ingestão (obrigatório)**: sempre que for construído um fluxo de ingestão de dados, registrar em log o dado bruto recebido da fonte (payload original), antes de qualquer transformação/normalização.
 - **GitHub Actions (logs e execuções)**: também podem ser consultados via MCP Server usando as tools `github_actions_list_workflows`, `github_actions_list_runs`, `github_actions_get_run_summary` e `github_actions_get_run_logs` no endpoint https://mcpserverdigi.shop/mcp (JSON-RPC).
 - **Testes Unitários**: os testes unitários precisam sempre estar em concordancia com as regras dos documentos canonicos.

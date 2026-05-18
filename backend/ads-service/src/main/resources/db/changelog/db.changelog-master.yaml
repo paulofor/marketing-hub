@@ -772,3 +772,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-17-mois-sales-library-analysis.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-05-17-experiment-create-simplification-columns.yaml

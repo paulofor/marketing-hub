@@ -226,13 +226,9 @@ erDiagram
       BIGINT facebook_page_id FK
       BIGINT facebook_instant_form_id FK
       BIGINT lead_portal_flow_id FK
-      BIGINT journey_template_id FK
       DECIMAL daily_budget
       VARCHAR status
-      VARCHAR stage
       VARCHAR creative_generation_mode
-      VARCHAR primary_variable
-      VARCHAR primary_metric
       DATE start_date
       DATE end_date
       DATETIME facebook_release_requested_at
@@ -512,11 +508,8 @@ erDiagram
 
 ## Observações de implementação
 
-- Cada registro de `EXPERIMENT` guarda agora `stage`, `primary_variable` e `primary_metric`.
-  - `stage` representa a etapa do funil (AD, LANDING, SAMPLE ou SALES) e direciona o que está sendo testado.
-  - `primary_variable` descreve o ângulo/variável do experimento em linguagem natural.
-  - `primary_metric` registra qual indicador decide o sucesso da hipótese e deve ser tratado como texto legível (ex.: "CTR de link (%)").
-- O endpoint `/api/experiment-playbook` provê o playbook canônico por etapa com descrições e sugestões para preencher esses campos.
+- A criação de experimento foi simplificada e não exige mais os campos de configuração tática removidos da UI (etapa do experimento, variável principal, métrica principal, meta de KPI, template de jornada, qualidade das variações, quantidades de imagens por lote/abertas/compactadas, tamanho da amostra e margem de erro).
+- Esses parâmetros deixam de fazer parte do contrato obrigatório de entrada no fluxo de criação e não devem ser considerados como fonte primária de verdade no modelo de dados de cadastro.
 - Registros gerados por processos do Worker IA devem manter `model` e `prompt`
   preenchidos nos objetos aplicáveis (ex.: `targeting_element`, `ad_set`,
   `lead_portal_flow`, `deliverable_package`, `proof_artifact`).

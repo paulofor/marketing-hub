@@ -90,8 +90,8 @@ public class Experiment {
     @JoinColumn(name = "metric_preset_id")
     private MetricPreset metricPreset;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "journey_template_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "journey_template_id")
     private JourneyTemplate journeyTemplate;
 
     @Column(precision = 10, scale = 2)
@@ -145,7 +145,7 @@ public class Experiment {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "stage", length = 32, nullable = false)
+    @Column(name = "stage", length = 32)
     private ExperimentStage stage = ExperimentStage.AD;
 
     @Enumerated(EnumType.STRING)
@@ -228,7 +228,7 @@ public class Experiment {
 
     /** Quantidade de imagens que cada pacote deve conter. */
     @Builder.Default
-    @Column(name = "images_per_package", nullable = false)
+    @Column(name = "images_per_package")
     private Integer imagesPerPackage = 20;
 
     /** Quantidade de imagens abertas por pacote. */

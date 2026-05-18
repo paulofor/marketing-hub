@@ -280,3 +280,11 @@
 - arquivos alterados:
   - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
   - docs/registros/experimentos.md
+
+## 2026-05-18 12:10:00 UTC
+- solicitação: na tela de experimento, aba de conteúdo, voltar a exibir as etapas do fluxo Gera Landing.
+- causa-raiz: as etapas de landing haviam sido removidas da constante `CONTENT_GENERATION_SECTIONS`, então a UI mostrava apenas etapas parciais.
+- foi feito no frontend: reintroduzidas as seções de Gera Landing na aba de conteúdo: `Gere Wireframe`, `Gera Copy`, `Gera Prompt Imagens`, `Gera Preset Design` e `Gera Html`.
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
+  - docs/registros/experimentos.md

@@ -8,10 +8,10 @@ export interface CreateExperiment {
   name: string;
   hypothesis: string;
   stage: ExperimentStage;
-  primaryVariable: string;
-  primaryMetric: string;
+  primaryVariable?: string;
+  primaryMetric?: string;
   kpiTarget: number;
-  metricPresetId: string;
+  metricPresetId?: string;
   sampleSize?: number;
   mde?: number;
   dailyBudget?: number;

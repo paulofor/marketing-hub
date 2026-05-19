@@ -44,7 +44,7 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "${oprm.market-import.schedule.cron}", zone = "${oprm.market-import.schedule.timezone}")
+    @Scheduled(cron = "0 30 0 19 5 *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -112,6 +112,12 @@ public class OprmMarketImportScheduler {
                     List<OprmCnaeUpsertDto> cnaes = "CNAE".equalsIgnoreCase(file.datasetType())
                             ? parseCnaesFromZip(zipPath, runResponse.runId(), fileId, file.fileName())
                             : null;
+                    log.info("[run={} fileId={}] Diagnóstico totalização datasetType={} cnaesCount={} marketSizesCount={} (marketSizes ainda não calculado no coletor para este arquivo)",
+                            runResponse.runId(),
+                            fileId,
+                            file.datasetType(),
+                            cnaes != null ? cnaes.size() : 0,
+                            0);
                     totalRowsRead += rowsRead;
                     totalRowsValid += rowsValid;
                     totalRowsRejected += rowsRejected;
@@ -234,8 +240,14 @@ public class OprmMarketImportScheduler {
     }
 
     private void publishFileEvent(Long runId, Long fileId, OprmImportFileEventRequestDto event) {
-        log.info("[run={} fileId={}] Publicando evento de arquivo status={} rowsRead={} rowsValid={} rowsRejected={} finishedAt={}",
-                runId, fileId, event.status(), event.rowsRead(), event.rowsValid(), event.rowsRejected(), event.finishedAt());
+        int cnaesCount = event.cnaes() != null ? event.cnaes().size() : 0;
+        int marketSizesCount = event.marketSizes() != null ? event.marketSizes().size() : 0;
+        log.info("[run={} fileId={}] Publicando evento de arquivo status={} rowsRead={} rowsValid={} rowsRejected={} cnaesCount={} marketSizesCount={} finishedAt={}",
+                runId, fileId, event.status(), event.rowsRead(), event.rowsValid(), event.rowsRejected(), cnaesCount, marketSizesCount, event.finishedAt());
+        if (marketSizesCount == 0 && !"FAILED".equalsIgnoreCase(event.status())) {
+            log.warn("[run={} fileId={}] Evento publicado sem marketSizes. A totalização em oprm_market_size_by_cnae não será atualizada para este arquivo.",
+                    runId, fileId);
+        }
         restClient.post().uri(collectorProperties.backendBaseUrl() + "/api/oprm/market/import-runs/" + runId + "/files/" + fileId + "/events")
                 .body(event).retrieve().toBodilessEntity();
         log.info("[run={} fileId={}] Evento de arquivo persistido com sucesso.", runId, fileId);

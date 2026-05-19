@@ -150,3 +150,13 @@
   - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
   - frontend/src/components/MainNavigation.tsx
   - frontend/src/App.tsx
+
+## 2026-05-19 00:00:00 UTC
+- solicitada especificação formal do worker da biblioteca de páginas de vendas do MOIS.
+- criado documento `docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-worker-biblioteca-sales-pages.md` contendo objetivo, escopo, fluxo, estados, contratos de API, configuração, observabilidade, critérios de aceite e riscos operacionais.
+- documentos/códigos consultados:
+  - docs/canonical/mois-sales-library-worker-canon.v1.md
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/service/MoisSalesLibraryService.java
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/libraryworker/service/PipelineRunner.java
+  - mois-sales-library-worker/src/main/resources/application.yml

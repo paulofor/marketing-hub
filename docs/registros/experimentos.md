@@ -458,3 +458,14 @@
 - documentos lidos para tratar a situação:
   - AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-19 01:10:00 UTC-3
+- solicitação para remover o comentário AUTO injetado no início do HTML provisório após a etapa de image planning.
+- causa-raiz: o comentário era prefixado no payload HTML e estava interferindo no consumo/renderização downstream.
+- foi feito:
+  - `resolveImagePlanningProvisionalHtml` passou a retornar somente o HTML final com imagens injetadas, sem prefixar comentário `<!-- AUTO: ... -->`.
+- impacto esperado: o HTML publicado deixa de conter metadado textual no topo e evita interferência no processamento do cliente.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md

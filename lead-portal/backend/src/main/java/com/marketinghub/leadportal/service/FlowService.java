@@ -24,7 +24,6 @@ public class FlowService {
     private final SimpleFlowCatalog simpleFlowCatalog;
     private final FlowAssetService flowAssetService;
     private final SimpleFormStyleDefaults simpleFormStyleDefaults;
-    private final CustomFormHtmlResolver customFormHtmlResolver;
 
     public FlowService(
             FlowRepository repository,
@@ -32,15 +31,13 @@ public class FlowService {
             MeterRegistry meterRegistry,
             SimpleFlowCatalog simpleFlowCatalog,
             FlowAssetService flowAssetService,
-            SimpleFormStyleDefaults simpleFormStyleDefaults,
-            CustomFormHtmlResolver customFormHtmlResolver) {
+            SimpleFormStyleDefaults simpleFormStyleDefaults) {
         this.repository = repository;
         this.accessRepository = accessRepository;
         this.meterRegistry = meterRegistry;
         this.simpleFlowCatalog = simpleFlowCatalog;
         this.flowAssetService = flowAssetService;
         this.simpleFormStyleDefaults = simpleFormStyleDefaults;
-        this.customFormHtmlResolver = customFormHtmlResolver;
     }
 
     @Transactional
@@ -164,27 +161,7 @@ public class FlowService {
             return null;
         }
 
-        String normalizedCustomFormHtml = customFormHtmlResolver.normalize(flow.customFormHtml());
-        if ((flow.customFormHtml() == null && normalizedCustomFormHtml == null)
-                || (flow.customFormHtml() != null && flow.customFormHtml().equals(normalizedCustomFormHtml))) {
-            return flow;
-        }
-
-        return new Flow(
-                flow.slug(),
-                flow.name(),
-                flow.description(),
-                normalizedCustomFormHtml,
-                flow.model(),
-                flow.prompt(),
-                flow.imagePromptModel(),
-                flow.imagePromptTemplate(),
-                flow.imageBatchSize(),
-                flow.questions(),
-                flow.simpleFormStyle(),
-                flow.facebookPixelId(),
-                flow.facebookPixelCode(),
-                flow.facebookPixelCreatedAt());
+        return flow;
     }
 
     private void registerAccess(String slug, FlowAccessMetadata metadata) {

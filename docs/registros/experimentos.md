@@ -446,3 +446,15 @@
 - documentos lidos para tratar a situação:
   - AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-19 00:58:10 UTC-3
+- solicitação para retirar a etapa de validação com `CustomFormHtmlResolver` na publicação de HTML para o Lead Portal.
+- causa-raiz: a validação/normalização restritiva em `FlowService` bloqueava o fluxo de publicação quando o HTML não passava no resolver.
+- foi feito:
+  - `FlowService` deixou de depender de `CustomFormHtmlResolver` no construtor/injeção.
+  - método `normalizeCustomFormHtml` simplificado para no-op (retorna o fluxo original sem validação de conteúdo).
+  - `FlowServiceTest` atualizado para refletir a nova assinatura do serviço (sem resolver).
+- impacto esperado: publicação/sincronização de `customFormHtml` no Lead Portal segue sem bloqueio por validação do resolver.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md

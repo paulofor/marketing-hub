@@ -5,5 +5,6 @@ worker:
   backend-base-url: ${BACKEND_BASE_URL:http://191.252.181.168:8000}
   workspace-id: ${MOIS_WORKSPACE_ID:workspace-001}
   source: ${MOIS_SOURCE:CLICKBANK}
+  sources: ${MOIS_SOURCES:}
   poll-interval-ms: ${MOIS_POLL_INTERVAL_MS:15000}
   request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:30000}

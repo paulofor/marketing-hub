@@ -130,7 +130,7 @@ public class GeraLandingStageExecutionService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         GeraLandingLeadPortalPublishRequest payload = new GeraLandingLeadPortalPublishRequest(
-                slug, name, "Fluxo publicado pelo módulo GeraLanding", html, html, "custom_html");
+                slug, name, "Fluxo publicado pelo módulo GeraLanding", html);
         log.info("GeraLanding Lead Portal publication request parameters (slug={}, uri={}, headers={}, payload={})",
                 slug, uri, headers, payload);
         try {
@@ -140,7 +140,13 @@ public class GeraLandingStageExecutionService {
             String rootCauseMessage = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
             log.error("GeraLanding Lead Portal publication request failed (slug={}, uri={}, rootCause={})",
                     slug, uri, rootCauseMessage, ex);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Falha ao enviar fluxo para o Lead Portal", ex);
+            throw new GeraLandingContractViolationException(
+                    "publishToLeadPortal",
+                    uri.toString(),
+                    "Esperado: payload JSON contendo apenas slug, name, description e customFormHtml (HTML puro).",
+                    payload.toString(),
+                    rootCauseMessage,
+                    ex);
         }
     }
 

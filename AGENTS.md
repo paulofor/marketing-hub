@@ -101,6 +101,29 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 - **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
 
+- 🚨 **PADRÃO OFICIAL — EXCEPTION DE CONTRATO GERALANDING (OBRIGATÓRIO)**:
+  - Para falhas de contrato na publicação do GeraLanding para Lead Portal, usar a exception específica `GeraLandingContractViolationException`.
+  - O status HTTP de resposta desse cenário deve ser **460** (código interno do domínio para violação de contrato), via handler dedicado `GeraLandingContractViolationExceptionHandler`.
+  - O `toString()` da exception deve sempre explicitar de forma literal:
+    1. o que era esperado pelo contrato (`expectedContract`),
+    2. o que foi enviado (`receivedPayload`),
+    3. endpoint/operação,
+    4. erro retornado a montante (`upstreamError`).
+  - É proibido responder **esse cenário específico (GeraLanding -> Lead Portal)** com erro HTTP padrão genérico (400/500/502) sem o envelope de contrato acima.
+
+- 🚨 **ORIENTAÇÃO CRÍTICA — PLAYBOOK RÁPIDO PARA ERRO DE CONTRATO (400/422) [OBRIGATÓRIO]**:
+  - **Objetivo**: identificar causa-raiz em até 15 minutos e evitar horas de tentativa e erro.
+  - **Passo 1 (2 min)**: capturar e salvar a requisição literal que saiu do sistema (URL, método, headers e body completo).
+  - **Passo 2 (3 min)**: comparar o body enviado com o DTO/contrato atual do endpoint campo a campo (nome, tipo, obrigatoriedade, formato).
+  - **Passo 3 (3 min)**: validar se há campo legado/misto sendo enviado (ex.: campo antigo + campo novo no mesmo payload).
+  - **Passo 4 (3 min)**: montar `curl` mínimo reproduzindo o erro com o mesmo payload para confirmar o diagnóstico sem ruído de fluxo completo.
+  - **Passo 5 (4 min)**: corrigir o payload na origem (builder/mapper/DTO), adicionar teste de regressão do contrato e registrar no documento de registros do tema.
+  - **Regra de bloqueio**: é proibido encerrar a análise sem informar literalmente:
+    1. o payload enviado,
+    2. o payload esperado pelo contrato,
+    3. a diferença exata,
+    4. a correção objetiva aplicada.
+
 - **Erro 422 (Procedimento Obrigatório / SOP)**: Trate toda ocorrência de `422 Unprocessable Entity` como divergência entre payload gerado pelo modelo e contrato/validação do backend até prova em contrário.
   - **Fluxo obrigatório (sempre nesta ordem):**
     1. Acessar logs do backend via MCP Server (`https://mcpserverdigi.shop/mcp`, JSON-RPC).

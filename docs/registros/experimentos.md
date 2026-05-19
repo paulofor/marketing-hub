@@ -399,3 +399,50 @@
 - arquivos alterados:
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
   - docs/registros/experimentos.md
+
+## 2026-05-19 00:10:16 UTC-3
+- ajuste solicitado para corrigir falha 400 na publicação de landing do GeraLanding no Lead Portal.
+- causa-raiz aplicada: payload enviado como formato misto/legado (`legacyPreviewHtml` + `renderMode`) enquanto o endpoint passou a aceitar apenas `customFormHtml` em HTML puro.
+- foi feito: simplificação do contrato `GeraLandingLeadPortalPublishRequest` para enviar apenas `slug`, `name`, `description` e `customFormHtml`, e atualização da montagem do payload no serviço de publicação.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingLeadPortalPublishRequest.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+
+## 2026-05-19 00:37:35 UTC-3
+- solicitação para incluir orientação em destaque no AGENTS.md para prevenir e acelerar diagnóstico de erros de contrato 400/422.
+- raciocínio aplicado: transformar lição operacional em SOP curto, objetivo e obrigatório, com foco em causa-raiz e comparação literal de payload.
+- foi feito: adicionado no AGENTS.md um playbook crítico (5 passos, timebox de 15 minutos, regra de bloqueio e formato mínimo de diagnóstico).
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+
+## 2026-05-19 00:41:42 UTC-3
+- solicitação para criar exceção específica e código HTTP próprio para erro de contrato na publicação da landing.
+- raciocínio aplicado: padronizar diagnóstico com erro explícito de contrato, deixando claro o esperado x recebido e evitando uso de erro HTTP padrão nessa falha.
+- foi feito:
+  - criada `GeraLandingContractViolationException` com código HTTP próprio `460` e `toString()` detalhando operação, endpoint, esperado, recebido e erro upstream.
+  - criada `GeraLandingContractViolationExceptionHandler` (`@RestControllerAdvice`) para responder com status 460 e corpo estruturado do erro.
+  - fluxo `publishToLeadPortal` atualizado para lançar a exceção específica quando ocorrer falha de contrato/integracao no envio.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+
+## 2026-05-19 00:45:43 UTC-3
+- solicitação para explicitar no AGENTS.md a definição da exception de contrato e do código HTTP 460.
+- raciocínio aplicado: consolidar regra operacional no contrato do time para evitar regressão e ambiguidade no tratamento de erro de integração do GeraLanding.
+- foi feito: adição de seção em destaque no AGENTS.md formalizando uso obrigatório de `GeraLandingContractViolationException`, handler dedicado e status HTTP 460, incluindo conteúdo mínimo obrigatório no `toString()`.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+
+## 2026-05-19 00:49:03 UTC-3
+- solicitação para revisar consistência do AGENTS.md após múltiplas adições sobre erro de contrato.
+- raciocínio aplicado: manter as regras sem conflito entre orientação geral de 400/422 e regra específica de exceção 460 no fluxo GeraLanding -> Lead Portal.
+- foi feito: ajuste textual para deixar explícito que a proibição de usar erro HTTP padrão genérico vale para o cenário específico GeraLanding -> Lead Portal.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md

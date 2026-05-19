@@ -82,9 +82,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: production
     env:
-      DEPLOY_HOST: 177.153.62.107
+      DEPLOY_HOST: 191.252.120.96
       DEPLOY_USER: root
-      REMOTE_PATH: /opt/marketinghub/mois-sales-library-worker
+      REMOTE_PATH: /root/mois-sales-library-worker
 
     steps:
       - name: Checkout

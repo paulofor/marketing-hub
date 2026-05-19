@@ -8,3 +8,11 @@ worker:
   sources: ${MOIS_SOURCES:}
   poll-interval-ms: ${MOIS_POLL_INTERVAL_MS:15000}
   request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:30000}
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  api-key-file: ${OPENAI_API_KEY_FILE:/run/secrets/openai_api_key}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+  model: ${OPENAI_MODEL:gpt-5.2}
+  batch-poll-interval-ms: ${OPENAI_BATCH_POLL_INTERVAL_MS:2000}
+  batch-timeout-ms: ${OPENAI_BATCH_TIMEOUT_MS:300000}

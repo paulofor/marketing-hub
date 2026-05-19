@@ -2354,125 +2354,6 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">
-                      5 - Gera Entregáveis
-                    </h5>
-                    <span className="badge text-bg-light border fs-6 fw-semibold">
-                      Total execuções:{" "}
-                      {formatCurrencyUsd(
-                        historyGeraLandingDeliverablesExecutions.reduce(
-                          (sum, execution) =>
-                            sum + (resolveExecutionCostUsd(execution) ?? 0),
-                          0,
-                        ),
-                      )}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={handleStartDeliverables}
-                    disabled={
-                      isStartingDeliverables ||
-                      hasRunningGeraLandingDeliverablesExecution
-                    }
-                  >
-                    {isStartingDeliverables ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
-                  </button>
-                  {isLoadingPendingGeraLandingDeliverablesExecutions ? (
-                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
-                  ) : runningGeraLandingDeliverablesExecutions.length === 0 ? (
-                    <p className="text-muted mb-0">
-                      Nenhum job pendente ou em execução.
-                    </p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-sm align-middle mb-0">
-                        <thead>
-                          <tr>
-                            <th scope="col">Job ID</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Data-hora</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {runningGeraLandingDeliverablesExecutions.map((execution) => (
-                            <tr key={execution.idJob}>
-                              <td>
-                                <Link
-                                  to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
-                                  className="fw-semibold text-decoration-none"
-                                >
-                                  {execution.idJob}
-                                </Link>
-                              </td>
-                              <td>{execution.status}</td>
-                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                    <h6 className="mb-0">Histórico de execuções</h6>
-                    {isLoadingCompletedGeraLandingDeliverablesExecutions ? (
-                      <p className="text-muted mb-0">Carregando execuções...</p>
-                    ) : historyGeraLandingDeliverablesExecutions.length === 0 ? (
-                      <p className="text-muted mb-0">
-                        Nenhuma execução registrada para esta etapa.
-                      </p>
-                    ) : (
-                      <div className="table-responsive">
-                        <table className="table table-sm align-middle mb-0">
-                          <thead>
-                            <tr>
-                              <th scope="col">Job ID</th>
-                              <th scope="col">Status</th>
-                              <th scope="col">Data-hora</th>
-                              <th scope="col" className="text-end">Custo</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {historyGeraLandingDeliverablesExecutions.map((execution) => (
-                              <tr key={execution.idJob}>
-                                <td>
-                                  <Link
-                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
-                                    className="fw-semibold text-decoration-none"
-                                  >
-                                    {execution.idJob}
-                                  </Link>
-                                </td>
-                                <td>{execution.status}</td>
-                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
-                                <td className="text-end">
-                                  {formatCurrencyUsd(resolveExecutionCostUsd(execution))}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="card">
-                <div className="card-body d-flex flex-column gap-3">
-                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
                     <h5 className="card-title mb-0">3 - Gera Imagem</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Pendentes: {frameworkImagePendingCount}
@@ -2669,6 +2550,125 @@ export default function ExperimentDetailPage() {
                   ) : null}
                 </div>
               </div>
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">
+                      5 - Gera Entregáveis
+                    </h5>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Total execuções:{" "}
+                      {formatCurrencyUsd(
+                        historyGeraLandingDeliverablesExecutions.reduce(
+                          (sum, execution) =>
+                            sum + (resolveExecutionCostUsd(execution) ?? 0),
+                          0,
+                        ),
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary align-self-start"
+                    onClick={handleStartDeliverables}
+                    disabled={
+                      isStartingDeliverables ||
+                      hasRunningGeraLandingDeliverablesExecution
+                    }
+                  >
+                    {isStartingDeliverables ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Iniciar"
+                    )}
+                  </button>
+                  {isLoadingPendingGeraLandingDeliverablesExecutions ? (
+                    <p className="text-muted mb-0">Carregando jobs da etapa...</p>
+                  ) : runningGeraLandingDeliverablesExecutions.length === 0 ? (
+                    <p className="text-muted mb-0">
+                      Nenhum job pendente ou em execução.
+                    </p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Job ID</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Data-hora</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {runningGeraLandingDeliverablesExecutions.map((execution) => (
+                            <tr key={execution.idJob}>
+                              <td>
+                                <Link
+                                  to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                  className="fw-semibold text-decoration-none"
+                                >
+                                  {execution.idJob}
+                                </Link>
+                              </td>
+                              <td>{execution.status}</td>
+                              <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções</h6>
+                    {isLoadingCompletedGeraLandingDeliverablesExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : historyGeraLandingDeliverablesExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhuma execução registrada para esta etapa.
+                      </p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                              <th scope="col" className="text-end">Custo</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historyGeraLandingDeliverablesExecutions.map((execution) => (
+                              <tr key={execution.idJob}>
+                                <td>
+                                  <Link
+                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                    className="fw-semibold text-decoration-none"
+                                  >
+                                    {execution.idJob}
+                                  </Link>
+                                </td>
+                                <td>{execution.status}</td>
+                                <td>{formatDateTimeValue(execution.executionRequestedAt)}</td>
+                                <td className="text-end">
+                                  {formatCurrencyUsd(resolveExecutionCostUsd(execution))}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
             </div>
           </Tabs.Content>
           <Tabs.Content value="content-structure" asChild>

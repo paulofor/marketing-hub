@@ -109,7 +109,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
     2. o que foi enviado (`receivedPayload`),
     3. endpoint/operação,
     4. erro retornado a montante (`upstreamError`).
-  - É proibido responder esse cenário com erro HTTP padrão genérico (400/500/502) sem o envelope de contrato acima.
+  - É proibido responder **esse cenário específico (GeraLanding -> Lead Portal)** com erro HTTP padrão genérico (400/500/502) sem o envelope de contrato acima.
 
 - 🚨 **ORIENTAÇÃO CRÍTICA — PLAYBOOK RÁPIDO PARA ERRO DE CONTRATO (400/422) [OBRIGATÓRIO]**:
   - **Objetivo**: identificar causa-raiz em até 15 minutos e evitar horas de tentativa e erro.

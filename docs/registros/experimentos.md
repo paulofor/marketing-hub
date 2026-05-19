@@ -438,3 +438,11 @@
 - documentos lidos para tratar a situação:
   - AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-19 00:49:03 UTC-3
+- solicitação para revisar consistência do AGENTS.md após múltiplas adições sobre erro de contrato.
+- raciocínio aplicado: manter as regras sem conflito entre orientação geral de 400/422 e regra específica de exceção 460 no fluxo GeraLanding -> Lead Portal.
+- foi feito: ajuste textual para deixar explícito que a proibição de usar erro HTTP padrão genérico vale para o cenário específico GeraLanding -> Lead Portal.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md

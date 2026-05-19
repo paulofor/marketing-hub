@@ -85,3 +85,5 @@
 - 2026-05-19 00:20:00 (UTC-3): ajuste solicitado para remover índice 0 na semente de arquivos da importação CNPJ/CNAE no `oprm-coletor-mei`: `buildFiles` passou a gerar `Estabelecimentos1.zip..Estabelecimentos9.zip` e `Socios1.zip..Socios9.zip` (além de `Empresas1.zip..Empresas9.zip` já vigente), eliminando referências `*0.zip` que vinham provocando falha/`PARTIAL` quando inexistentes na fonte.
 
 - 2026-05-19 09:55:00 (UTC-3): ajuste solicitado para reagendar a próxima execução da importação OPRM CNPJ/CNAE para **10:00 de hoje (19/05)** no fuso `America/Sao_Paulo`, com cron hardcoded `0 0 10 19 5 *` na anotação `@Scheduled` de `runScheduledImport`.
+
+- 2026-05-19 01:40:00 (UTC-3): ajuste solicitado no `oprm-coletor-mei` para reagendar o coletor CNPJ/CNAE para **04:40** no fuso `America/Sao_Paulo`, atualizando o cron hardcoded de `runScheduledImport` para `0 40 4 * * *` e sincronizando o cron padrão em `application.yml` para o mesmo horário.

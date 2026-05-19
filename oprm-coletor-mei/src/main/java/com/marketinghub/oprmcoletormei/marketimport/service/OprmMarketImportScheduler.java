@@ -44,7 +44,7 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "0 0 10 19 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 40 4 * * *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -139,7 +139,7 @@ public class OprmMarketImportScheduler {
             publishRunComplete(runResponse.runId(), filesProcessed, totalRowsRead, totalRowsValid, totalRowsRejected, hasFailure);
         }
 
-        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 22:00 ({}) com {} arquivos.",
+        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 04:40 ({}) com {} arquivos.",
                 snapshotDate,
                 scheduleProperties.timezone(),
                 files.size());

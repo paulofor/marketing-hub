@@ -131,6 +131,8 @@ public class GeraLandingStageExecutionService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         GeraLandingLeadPortalPublishRequest payload = new GeraLandingLeadPortalPublishRequest(
                 slug, name, "Fluxo publicado pelo módulo GeraLanding", html, html, "custom_html");
+        log.info("GeraLanding Lead Portal publication request parameters (slug={}, uri={}, headers={}, payload={})",
+                slug, uri, headers, payload);
         try {
             restTemplate.put(uri, new HttpEntity<>(payload, headers));
             log.info("GeraLanding Lead Portal publication request completed (slug={}, uri={})", slug, uri);

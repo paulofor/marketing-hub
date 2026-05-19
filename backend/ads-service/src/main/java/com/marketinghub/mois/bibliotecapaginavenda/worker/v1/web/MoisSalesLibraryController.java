@@ -1,8 +1,8 @@
-package com.marketinghub.mois.biblioteca.web;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web;
 
-import com.marketinghub.mois.biblioteca.dto.MoisSalesLibraryDtos;
-import com.marketinghub.mois.biblioteca.service.MoisSalesLibraryService;
-import com.marketinghub.mois.biblioteca.service.MoisSalesLibrarySnapshotService;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryService;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

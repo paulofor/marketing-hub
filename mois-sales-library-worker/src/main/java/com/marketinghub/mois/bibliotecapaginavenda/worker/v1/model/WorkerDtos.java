@@ -1,4 +1,4 @@
-package com.marketinghub.mois.libraryworker.model;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model;
 
 import java.math.BigDecimal;
 import java.time.Instant;

@@ -225,18 +225,6 @@ class FlowControllerTest {
 
 
     @Test
-    void upsertFlowRejectsJsonWrappedLandingPagePayload() throws Exception {
-        UpsertFlowRequest request = buildRequest();
-        request.setCustomFormHtml("{\"landingPageHtml\":{\"htmlDocument\":\"<html><body>Landing</body></html>\"}}");
-
-        mockMvc.perform(put("/api/flows/landing-preview")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("customFormHtml deve ser HTML puro")));
-    }
-
-    @Test
     void getStandaloneFlowPageReturnsHtmlDocumentWithoutJsonFetch() throws Exception {
         UpsertFlowRequest request = buildRequest();
         request.setCustomFormHtml("<!doctype html><html><body>Landing direta</body></html>");

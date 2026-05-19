@@ -479,3 +479,13 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/GeraLandingStageExecutionServiceTest.java
+
+## 2026-05-19 19:20:00 UTC
+- solicitação para corrigir a ordenação visual dos cards de etapas na tela de experimento.
+- causa-raiz: o card `5 - Gera Entregáveis` estava renderizado antes do card `3 - Gera Imagem` no JSX de `ExperimentDetailPage`, causando sequência inconsistente para o usuário.
+- foi feito: reordenação dos blocos JSX para exibir `3 - Gera Imagem` antes de `5 - Gera Entregáveis`.
+- impacto esperado: fluxo visual da página segue a ordem lógica das etapas, reduzindo ambiguidade operacional.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md

@@ -30,13 +30,13 @@ public class OpenAiSalesPageAnalyzer {
     public OpenAiSalesPageAnalyzer(RestClient.Builder builder, OpenAiProperties properties) {
         this.properties = properties;
         this.restClient = builder.baseUrl(properties.normalizedBaseUrl())
-                .defaultHeader("Authorization", "Bearer " + properties.apiKey())
+                .defaultHeader("Authorization", "Bearer " + properties.resolvedApiKey())
                 .defaultHeader("OpenAI-Beta", "reasoning=1")
                 .build();
     }
 
     public SalesPageAnalysisResult analyze(long pageId, String canonicalUrl, String htmlBodyText) {
-        if (!StringUtils.hasText(properties.apiKey())) {
+        if (!StringUtils.hasText(properties.resolvedApiKey())) {
             throw new IllegalStateException("OpenAI api key não configurada para análise de sales page");
         }
         String payloadLine = buildBatchLine(pageId, canonicalUrl, htmlBodyText);

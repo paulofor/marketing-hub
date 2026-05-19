@@ -9,3 +9,9 @@ services:
       MOIS_SOURCE: CLICKBANK
       MOIS_SOURCES: CLICKBANK,HOTMART
       MOIS_POLL_INTERVAL_MS: 15000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.2}
+    volumes:
+      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro

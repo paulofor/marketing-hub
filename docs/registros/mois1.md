@@ -203,3 +203,5 @@
 - Criado subpacote `openai` em `v1` com cliente dedicado de upload de arquivo JSONL, criação de batch, polling de status e parsing do output.
 - `PipelineRunner` agora faz fetch da página com Jsoup e envia o texto para análise OpenAI, persistindo resultado via endpoint `:complete`.
 - Adicionadas propriedades `openai.*` no `application.yml` para chave, base URL, modelo e timeouts de batch.
+
+- Ajustado deploy do `mois-sales-library-worker` para o mesmo host do `ai-worker` (`191.252.120.96`) e com montagem do mesmo arquivo de token OpenAI em volume (`/run/secrets/openai_api_key`).

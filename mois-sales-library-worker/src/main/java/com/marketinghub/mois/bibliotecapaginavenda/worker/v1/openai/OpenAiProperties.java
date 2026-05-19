@@ -8,8 +8,24 @@ public record OpenAiProperties(
         String baseUrl,
         String model,
         long batchPollIntervalMs,
-        long batchTimeoutMs
+        long batchTimeoutMs,
+        String apiKeyFile
 ) {
+
+    public String resolvedApiKey() {
+        if (apiKey != null && !apiKey.isBlank()) {
+            return apiKey.trim();
+        }
+        if (apiKeyFile == null || apiKeyFile.isBlank()) {
+            return "";
+        }
+        try {
+            return java.nio.file.Files.readString(java.nio.file.Path.of(apiKeyFile)).trim();
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
     public String normalizedBaseUrl() {
         if (baseUrl == null || baseUrl.isBlank()) {
             return "https://api.openai.com/v1";

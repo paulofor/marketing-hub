@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -13,6 +15,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 public class CustomFormHtmlResolver {
+    private static final Logger log = LoggerFactory.getLogger(CustomFormHtmlResolver.class);
 
     private static final Pattern HTML_HINT = Pattern.compile("(?is)^\\s*(?:<!doctype|<html|<body|<main|<section|<div|<header|<footer)");
     private static final Pattern WRAPPED_JSON_IN_BODY = Pattern.compile("(?is)<body[^>]*>\\s*(\\{[\\s\\S]*?})\\s*</body>");
@@ -25,14 +28,32 @@ public class CustomFormHtmlResolver {
      */
     public String normalize(String rawValue) {
         if (!StringUtils.hasText(rawValue)) {
+            log.info("customFormHtml recebido vazio. rawValue={}", formatForLog(rawValue));
             return null;
         }
         String trimmed = rawValue.trim();
+        log.info(
+                "Validando customFormHtml. rawValueOriginal={} rawValueTrimmed={}",
+                formatForLog(rawValue),
+                formatForLog(trimmed));
         if (looksLikeHtml(trimmed)) {
             return rescueLegacyWrappedPayload(trimmed).orElse(trimmed);
         }
+        log.info("customFormHtml rejeitado por não parecer HTML. rawValue={}", formatForLog(rawValue));
         throw new IllegalArgumentException(
                 "customFormHtml deve ser HTML puro. Payload JSON/misto não é mais aceito.");
+    }
+
+    private String formatForLog(String value) {
+        if (value == null) {
+            return "<null>";
+        }
+        String escaped = value
+                .replace("\\", "\\\\")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+        return "[len=" + value.length() + "] <<<" + escaped + ">>>";
     }
 
     private boolean looksLikeHtml(String value) {

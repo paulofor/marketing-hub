@@ -1,4 +1,4 @@
-package com.marketinghub.mois.libraryworker;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,6 +1,6 @@
-package com.marketinghub.mois.biblioteca.service;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
-import com.marketinghub.mois.biblioteca.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;

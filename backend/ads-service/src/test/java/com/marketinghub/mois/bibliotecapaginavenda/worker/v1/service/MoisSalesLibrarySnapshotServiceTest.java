@@ -1,8 +1,8 @@
-package com.marketinghub.mois.biblioteca.service;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.marketinghub.mois.biblioteca.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -29,7 +29,7 @@ public class MoisSalesLibrarySnapshotServiceTest {
                 ""
         );
         jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.execute("CREATE ALIAS IF NOT EXISTS UTC_TIMESTAMP FOR \"com.marketinghub.mois.biblioteca.service.MoisSalesLibrarySnapshotServiceTest.utcTimestamp\"");
+        jdbcTemplate.execute("CREATE ALIAS IF NOT EXISTS UTC_TIMESTAMP FOR \"com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotServiceTest.utcTimestamp\"");
         createSchema();
         service = new MoisSalesLibrarySnapshotService(jdbcTemplate);
         server = HttpServer.create(new InetSocketAddress(0), 0);

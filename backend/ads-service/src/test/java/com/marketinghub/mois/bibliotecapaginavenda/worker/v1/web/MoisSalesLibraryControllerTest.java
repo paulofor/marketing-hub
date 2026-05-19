@@ -1,4 +1,4 @@
-package com.marketinghub.mois.biblioteca.web;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -7,9 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.marketinghub.mois.biblioteca.dto.MoisSalesLibraryDtos;
-import com.marketinghub.mois.biblioteca.service.MoisSalesLibraryService;
-import com.marketinghub.mois.biblioteca.service.MoisSalesLibrarySnapshotService;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryService;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotService;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;

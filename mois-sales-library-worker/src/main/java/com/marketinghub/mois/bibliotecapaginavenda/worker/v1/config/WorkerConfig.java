@@ -1,4 +1,4 @@
-package com.marketinghub.mois.libraryworker.config;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

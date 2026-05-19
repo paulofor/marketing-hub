@@ -1,6 +1,6 @@
-package com.marketinghub.mois.libraryworker.client;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.client;
 
-import com.marketinghub.mois.libraryworker.model.WorkerDtos.*;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;

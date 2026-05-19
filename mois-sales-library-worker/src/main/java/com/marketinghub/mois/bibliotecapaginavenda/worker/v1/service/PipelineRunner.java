@@ -1,9 +1,9 @@
-package com.marketinghub.mois.libraryworker.service;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.mois.libraryworker.client.BackendClient;
-import com.marketinghub.mois.libraryworker.config.WorkerProperties;
-import com.marketinghub.mois.libraryworker.model.WorkerDtos.*;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.client.BackendClient;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.config.WorkerProperties;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;

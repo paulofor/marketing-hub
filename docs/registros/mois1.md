@@ -160,3 +160,16 @@
   - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/libraryworker/service/PipelineRunner.java
   - mois-sales-library-worker/src/main/resources/application.yml
+
+## 2026-05-19 00:00:00 UTC
+- implementado/alinhado o worker da biblioteca de páginas de vendas conforme especificação, mantendo ciclo de polling, claim de 1 job por ciclo, processamento da URL, complete/fail e logs operacionais.
+- padronizado o namespace do módulo para `com.marketinghub.mois.bibliotecapaginavenda.worker.v1` no worker e no backend do módulo de biblioteca de páginas de vendas.
+- documentos/códigos consultados:
+  - docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-worker-biblioteca-sales-pages.md
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/libraryworker/service/PipelineRunner.java
+  - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java
+
+## 2026-05-19 00:00:00 UTC
+- ajustado o worker da biblioteca de páginas de vendas para que **todo o código** fique fisicamente e logicamente no pacote `com.marketinghub.mois.bibliotecapaginavenda.worker.v1`.
+- movidos os arquivos Java do caminho legado `.../mois/libraryworker/...` para `.../mois/bibliotecapaginavenda/worker/v1/...`, mantendo os imports internos exclusivamente dentro do namespace do módulo.
+- validação realizada para garantir ausência de referências ao pacote legado no worker.

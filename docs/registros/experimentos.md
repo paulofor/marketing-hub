@@ -496,3 +496,15 @@
   - AGENTS.md
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-19 19:25:28 UTC-3
+- solicitação para aumentar o tempo de espera da geração OpenAI para 60 minutos e avisar no navegador quando a etapa WireFrame finalizar com aba em segundo plano.
+- raciocínio aplicado: reduzir falhas por timeout prematuro no worker e melhorar a percepção operacional com notificação de término mesmo quando o usuário estiver em outra tela.
+- foi feito: ajuste do timeout padrão `openai.batch-timeout` no ai-worker de PT30M para PT60M; no frontend da tela de Experimento foi adicionada notificação via Browser Notification API (com fallback em toast) quando a execução do Gera WireFrame termina em aba oculta.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/resources/application.properties
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx

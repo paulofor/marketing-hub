@@ -145,6 +145,7 @@ export default function ExperimentDetailPage() {
   const [optimisticDeliverablesExecution, setOptimisticDeliverablesExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const hadRunningGeraLandingExecutionRef = useRef(false);
+  const hasSentGeraLandingBackgroundNotificationRef = useRef(false);
   const {
     data: pendingGeraLandingExecutions,
     isLoading: isLoadingPendingGeraLandingExecutions,
@@ -1054,6 +1055,7 @@ export default function ExperimentDetailPage() {
   useEffect(() => {
     if (hasRunningGeraLandingExecution) {
       hadRunningGeraLandingExecutionRef.current = true;
+      hasSentGeraLandingBackgroundNotificationRef.current = false;
       return;
     }
 
@@ -1061,6 +1063,31 @@ export default function ExperimentDetailPage() {
 
     hadRunningGeraLandingExecutionRef.current = false;
     void refetchCompletedGeraLandingExecutions();
+
+    const backgroundTab = document.hidden || document.visibilityState !== "visible";
+    if (!backgroundTab || hasSentGeraLandingBackgroundNotificationRef.current) {
+      return;
+    }
+
+    hasSentGeraLandingBackgroundNotificationRef.current = true;
+    const title = "Gera WireFrame finalizado";
+    const body = "A geração da etapa 1 terminou. Volte para revisar o resultado.";
+
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+        return;
+      }
+      if (Notification.permission === "default") {
+        void Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            new Notification(title, { body });
+          }
+        });
+      }
+    }
+
+    toast.info(`${title}: ${body}`);
   }, [hasRunningGeraLandingExecution, refetchCompletedGeraLandingExecutions]);
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;

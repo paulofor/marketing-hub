@@ -173,3 +173,13 @@
 - ajustado o worker da biblioteca de páginas de vendas para que **todo o código** fique fisicamente e logicamente no pacote `com.marketinghub.mois.bibliotecapaginavenda.worker.v1`.
 - movidos os arquivos Java do caminho legado `.../mois/libraryworker/...` para `.../mois/bibliotecapaginavenda/worker/v1/...`, mantendo os imports internos exclusivamente dentro do namespace do módulo.
 - validação realizada para garantir ausência de referências ao pacote legado no worker.
+
+## 2026-05-19 04:40:00 UTC
+- implementado revezamento de fontes no `mois-sales-library-worker` via nova configuração `MOIS_SOURCES` (CSV), permitindo alternar entre `CLICKBANK` e `HOTMART` a cada ciclo de polling.
+- mantida retrocompatibilidade: se `MOIS_SOURCES` estiver vazio, o worker continua usando `MOIS_SOURCE` (comportamento anterior).
+- atualizado `docker-compose.yml` do worker com exemplo padrão `MOIS_SOURCES=CLICKBANK,HOTMART`.
+- arquivos alterados:
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/PipelineRunner.java
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/config/WorkerProperties.java
+  - mois-sales-library-worker/src/main/resources/application.yml
+  - mois-sales-library-worker/docker-compose.yml

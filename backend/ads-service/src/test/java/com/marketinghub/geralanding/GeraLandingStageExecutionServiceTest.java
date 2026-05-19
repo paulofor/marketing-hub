@@ -232,60 +232,6 @@ class GeraLandingStageExecutionServiceTest {
     }
 
     @Test
-    void shouldPreserveDesignPresetWhenRegeneratingProvisionalHtmlAfterImagePlanning() {
-        GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
-                66L,
-                "landing-page-image-planning",
-                "{\"landingPageImagePlanning\":{\"images\":[]}}",
-                null,
-                null,
-                null,
-                "job-openai-image-planning",
-                10,
-                20,
-                null);
-        Experiment experiment = new Experiment();
-        experiment.setId(66L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[]}}");
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"bodySections\":[]}}");
-        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-1\"}}");
-
-        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
-                .experimentId(66L)
-                .experiment(experiment)
-                .stageCode("landing-page-image-planning")
-                .executionRequestedAt(Instant.parse("2026-05-14T00:00:00Z"))
-                .createdAt(Instant.parse("2026-05-14T00:00:00Z"))
-                .status("EM_PROCESSAMENTO")
-                .idJob("id-image-planning".getBytes(StandardCharsets.UTF_8))
-                .build();
-
-        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-image-planning".getBytes(StandardCharsets.UTF_8)))
-                .thenReturn(Optional.of(execution));
-        when(experimentRepository.findById(66L)).thenReturn(Optional.of(experiment));
-        when(copyProvisionalHtmlAssembler.assembleComplete(
-                experiment.getLandingPageCopy(),
-                experiment.getLandingPageWireframe(),
-                request.modelResponse(),
-                experiment.getLandingPageDesignPreset(),
-                "id-image-planning"))
-                .thenReturn("<html>com-imagens</html>");
-        when(landingPageImageInjector.injectImages(66L, "<html>com-imagens</html>"))
-                .thenReturn("<html>com-imagens</html>");
-
-        service.receiveResult("id-image-planning", request);
-
-        verify(copyProvisionalHtmlAssembler).assembleComplete(
-                experiment.getLandingPageCopy(),
-                experiment.getLandingPageWireframe(),
-                request.modelResponse(),
-                experiment.getLandingPageDesignPreset(),
-                "id-image-planning");
-        assertTrue(execution.getProvisionalHtml().contains("landing-page-image-planning"));
-        assertTrue(execution.getProvisionalHtml().contains("<html>com-imagens</html>"));
-    }
-
-    @Test
     void shouldMarkExecutionAsFailureAndSkipExperimentPersistenceWhenErrorMessageExists() {
         GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
                 31L,

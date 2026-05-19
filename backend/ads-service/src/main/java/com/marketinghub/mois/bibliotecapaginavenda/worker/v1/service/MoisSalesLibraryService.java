@@ -72,7 +72,7 @@ public class MoisSalesLibraryService {
             }
             Instant capturedAt = item.capturedAt() == null ? Instant.now() : item.capturedAt();
             LocalDateTime capturedAtUtc = LocalDateTime.ofInstant(capturedAt, ZoneOffset.UTC);
-            jdbcTemplate.update(
+            int ingestUpsertResult = jdbcTemplate.update(
                     """
                             INSERT INTO mois_sales_library_url_ingest
                             (workspace_id, source, url_original, url_canonical, title, first_captured_at, last_captured_at, ingest_count, created_at, updated_at)
@@ -94,18 +94,20 @@ public class MoisSalesLibraryService {
                     capturedAtUtc
             );
 
-            Long urlIngestId = jdbcTemplate.queryForObject(
-                    """
-                            SELECT id
-                            FROM mois_sales_library_url_ingest
-                            WHERE url_canonical = ?
-                            LIMIT 1
-                            """,
-                    Long.class,
-                    canonical
-            );
-            if (urlIngestId != null) {
-                createPendingJob(urlIngestId);
+            if (ingestUpsertResult == 1) {
+                Long urlIngestId = jdbcTemplate.queryForObject(
+                        """
+                                SELECT id
+                                FROM mois_sales_library_url_ingest
+                                WHERE url_canonical = ?
+                                LIMIT 1
+                                """,
+                        Long.class,
+                        canonical
+                );
+                if (urlIngestId != null) {
+                    createPendingJob(urlIngestId);
+                }
             }
             persisted++;
         }

@@ -174,6 +174,14 @@
 - movidos os arquivos Java do caminho legado `.../mois/libraryworker/...` para `.../mois/bibliotecapaginavenda/worker/v1/...`, mantendo os imports internos exclusivamente dentro do namespace do módulo.
 - validação realizada para garantir ausência de referências ao pacote legado no worker.
 
+## 2026-05-19 04:40:37 UTC-3
+- diagnóstico do erro de inicialização do container `mois-sales-library-worker` repetindo `no main manifest attribute, in /app/app.jar`.
+- identificada causa-raiz no empacotamento Maven: o JAR estava sendo gerado sem etapa explícita de `repackage`, resultando em artefato não executável via `java -jar`.
+- ajustado `mois-sales-library-worker/pom.xml` para executar o goal `repackage` do `spring-boot-maven-plugin`, garantindo geração de JAR Spring Boot executável com manifesto correto.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/mois1.md
+  - mois-sales-library-worker/pom.xml
 ## 2026-05-19 04:40:00 UTC
 - implementado revezamento de fontes no `mois-sales-library-worker` via nova configuração `MOIS_SOURCES` (CSV), permitindo alternar entre `CLICKBANK` e `HOTMART` a cada ciclo de polling.
 - mantida retrocompatibilidade: se `MOIS_SOURCES` estiver vazio, o worker continua usando `MOIS_SOURCE` (comportamento anterior).

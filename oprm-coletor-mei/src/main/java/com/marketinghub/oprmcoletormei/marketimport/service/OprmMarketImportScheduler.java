@@ -44,7 +44,7 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "0 30 0 19 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 0 10 19 5 *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -197,9 +197,9 @@ public class OprmMarketImportScheduler {
         List<OprmImportFileSeedDto> files = new ArrayList<>();
         files.add(file("Cnaes.zip", sourceUrl, "CNAE"));
         for (int i = 1; i < 10; i++) files.add(file("Empresas" + i + ".zip", sourceUrl, "EMPRESAS"));
-        for (int i = 0; i < 10; i++) files.add(file("Estabelecimentos" + i + ".zip", sourceUrl, "ESTABELECIMENTOS"));
+        for (int i = 1; i < 10; i++) files.add(file("Estabelecimentos" + i + ".zip", sourceUrl, "ESTABELECIMENTOS"));
         files.add(file("Simples.zip", sourceUrl, "SIMPLES"));
-        for (int i = 0; i < 10; i++) files.add(file("Socios" + i + ".zip", sourceUrl, "SOCIOS"));
+        for (int i = 1; i < 10; i++) files.add(file("Socios" + i + ".zip", sourceUrl, "SOCIOS"));
         return files;
     }
 

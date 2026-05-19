@@ -508,3 +508,13 @@
   - docs/registros/experimentos.md
   - ai-worker/src/main/resources/application.properties
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-05-19 19:45:00 UTC
+- solicitação para corrigir novamente a sequência visual de etapas na tela de experimento.
+- causa-raiz: o card `4 - Gera Preset Design` estava renderizado antes do card `3 - Gera Imagem` no JSX, mantendo ordem invertida.
+- foi feito: reordenação dos blocos JSX em `ExperimentDetailPage` para exibir `3 - Gera Imagem` antes de `4 - Gera Preset Design`.
+- impacto esperado: sequência de etapas consistente com a numeração e com o fluxo operacional esperado.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md

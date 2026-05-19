@@ -205,3 +205,11 @@
 - Adicionadas propriedades `openai.*` no `application.yml` para chave, base URL, modelo e timeouts de batch.
 
 - Ajustado deploy do `mois-sales-library-worker` para o mesmo host do `ai-worker` (`191.252.120.96`) e com montagem do mesmo arquivo de token OpenAI em volume (`/run/secrets/openai_api_key`).
+
+## 2026-05-19 — Evitar job duplicado no worker da Biblioteca de Páginas de Vendas
+- Ajustado o `ingestUrls` no backend MOIS para criar job `PENDING` **somente quando a URL for nova** na tabela de ingestão (`INSERT` real).
+- Quando a URL já existe (upsert via `ON DUPLICATE KEY UPDATE`), a entrada continua atualizando metadados/counters, mas não cria novo job para o worker processar novamente a mesma página.
+- Adicionados testes unitários cobrindo os dois cenários: URL nova cria job; URL já existente não cria job.
+- Arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`

@@ -1083,8 +1083,6 @@ export default function ExperimentDetailPage() {
     !hasItemsToReset ||
     Boolean(previewErrorMessage) ||
     resetCampaigns.isPending;
-  const readinessIssues = readinessSummary?.issues ?? [];
-  const hasReadinessIssues = readinessIssues.length > 0;
   const formatCurrency = (n?: number | null) =>
     n != null
       ? new Intl.NumberFormat("pt-BR", {
@@ -1613,24 +1611,6 @@ export default function ExperimentDetailPage() {
                 aria-hidden="true"
               />
               <span>Carregando pendências básicas...</span>
-            </div>
-          ) : hasReadinessIssues ? (
-            <div className="alert alert-warning mt-3" role="alert">
-              <h6 className="alert-heading mb-2">
-                Pendências antes da publicação
-              </h6>
-              <ul className="mb-0 ps-3">
-                {readinessIssues.map((issue, index) => (
-                  <li key={`${issue.type}-${index}`} className="mb-2">
-                    <strong>{issue.title}</strong>: {issue.description}
-                    {issue.recommendation ? (
-                      <div className="small text-body-secondary">
-                        {issue.recommendation}
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
             </div>
           ) : null}
           <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">

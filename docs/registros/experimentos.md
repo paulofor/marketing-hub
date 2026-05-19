@@ -480,6 +480,13 @@
   - docs/registros/experimentos.md
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/GeraLandingStageExecutionServiceTest.java
 
+## 2026-05-19 16:20:00 UTC
+- solicitação para remover o quadro amarelo de "Pendências antes da publicação" na aba de campanha de Facebook Ads do experimento.
+- causa-raiz: duplicidade visual das mesmas pendências, já tratadas e listadas na seção de bloqueios logo abaixo, gerando excesso de informação.
+- foi feito:
+  - remoção do alerta amarelo (`alert alert-warning`) condicionado por `hasReadinessIssues` em `ExperimentDetailPage`.
+  - manutenção do estado de carregamento de pendências básicas e da seção de bloqueios detalhada.
+- impacto esperado: interface mais limpa, sem redundância, preservando os bloqueios realmente acionáveis no checklist principal.
 ## 2026-05-19 19:20:00 UTC
 - solicitação para corrigir a ordenação visual dos cards de etapas na tela de experimento.
 - causa-raiz: o card `5 - Gera Entregáveis` estava renderizado antes do card `3 - Gera Imagem` no JSX de `ExperimentDetailPage`, causando sequência inconsistente para o usuário.

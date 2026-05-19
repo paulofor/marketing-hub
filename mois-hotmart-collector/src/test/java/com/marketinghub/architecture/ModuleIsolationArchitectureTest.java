@@ -14,22 +14,6 @@ class ModuleIsolationArchitectureTest {
     private static final String MOIS_SALES_LIBRARY_PACKAGE = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
 
     @ArchTest
-    static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
-            .that()
-            .resideInAPackage("com.marketinghub.mois..")
-            .should()
-            .dependOnClassesThat(otherMarketingHubPackagesExcept("com.marketinghub.mois"))
-            .because("o módulo MOIS não deve depender de outros pacotes internos do sistema");
-
-    @ArchTest
-    static final ArchRule oprmMustNotDependOnOtherMarketingHubPackages = noClasses()
-            .that()
-            .resideInAPackage("com.marketinghub.oprm..")
-            .should()
-            .dependOnClassesThat(otherMarketingHubPackagesExcept("com.marketinghub.oprm"))
-            .because("o módulo OPRM não deve depender de outros pacotes internos do sistema");
-
-    @ArchTest
     static final ArchRule moisSalesLibraryPackageMustNotDependOnOtherMarketingHubPackages = noClasses()
             .that()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")

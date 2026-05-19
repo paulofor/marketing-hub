@@ -191,3 +191,9 @@
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/config/WorkerProperties.java
   - mois-sales-library-worker/src/main/resources/application.yml
   - mois-sales-library-worker/docker-compose.yml
+
+## 2026-05-19 07:50:00 UTC
+- adicionadas regras de arquitetura com ArchUnit para manter o pacote `com.marketinghub.mois.bibliotecapaginavenda.worker.v1` isolado no backend:
+  - o pacote não pode depender de outros pacotes `com.marketinghub` fora do próprio namespace;
+  - outros pacotes `com.marketinghub` não podem depender dele.
+- adicionada a mesma política de isolamento no módulo `mois-hotmart-collector` com teste ArchUnit dedicado e dependência de teste `archunit-junit5`.

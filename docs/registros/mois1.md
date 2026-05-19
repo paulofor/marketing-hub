@@ -197,3 +197,9 @@
   - o pacote não pode depender de outros pacotes `com.marketinghub` fora do próprio namespace;
   - outros pacotes `com.marketinghub` não podem depender dele.
 - adicionada a mesma política de isolamento no módulo `mois-hotmart-collector` com teste ArchUnit dedicado e dependência de teste `archunit-junit5`.
+
+## 2026-05-19 — Integração OpenAI batch no mois-sales-library-worker (v1)
+- Pipeline do worker passou a analisar página de vendas via OpenAI Batch API no modelo padrão `gpt-5.2`.
+- Criado subpacote `openai` em `v1` com cliente dedicado de upload de arquivo JSONL, criação de batch, polling de status e parsing do output.
+- `PipelineRunner` agora faz fetch da página com Jsoup e envia o texto para análise OpenAI, persistindo resultado via endpoint `:complete`.
+- Adicionadas propriedades `openai.*` no `application.yml` para chave, base URL, modelo e timeouts de batch.

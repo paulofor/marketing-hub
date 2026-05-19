@@ -518,3 +518,13 @@
   - AGENTS.md
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-19 20:38:34 UTC-3
+- solicitação para remover da tela de Conteúdo os cards que já migraram para o fluxo Gera Landing.
+- raciocínio aplicado: manter a tela focada apenas nas etapas que continuam sendo gerenciadas no pipeline local, evitando duplicidade operacional e ruído visual.
+- foi feito no frontend: remoção das seções/cards `Gere Wireframe`, `Gera Copy`, `Gera Preset Design` e `Gera Html` da lista renderizada na aba de geração de conteúdo.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx

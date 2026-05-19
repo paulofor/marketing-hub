@@ -469,3 +469,13 @@
   - AGENTS.md
   - backend/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-19 13:39:41 UTC-3
+- solicitação para remover um teste unitário específico que estava falhando no módulo de GeraLanding.
+- raciocínio aplicado: o cenário testado validava um marcador textual no `provisionalHtml` que não é contrato explícito do fluxo `landing-page-image-planning`, gerando falha por expectativa frágil.
+- foi feito: remoção do teste `shouldPreserveDesignPresetWhenRegeneratingProvisionalHtmlAfterImagePlanning` em `GeraLandingStageExecutionServiceTest`.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/GeraLandingStageExecutionServiceTest.java

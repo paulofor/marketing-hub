@@ -90,12 +90,17 @@ public class DesignPresetProvisionalHtmlAssembler {
                 (function(){
                   if (window.__mhFunnelTrackingInstalled) return;
                   window.__mhFunnelTrackingInstalled = true;
+                  var debugPrefix = '[MH funnel tracking]';
                   window.dataLayer = window.dataLayer || [];
                   function emit(name, payload){
-                    window.dataLayer.push(Object.assign({event:name, source:'landing-page-design-preset'}, payload||{}));
+                    var eventPayload = Object.assign({event:name, source:'landing-page-design-preset'}, payload||{});
+                    console.debug(debugPrefix, 'emit', eventPayload);
+                    window.dataLayer.push(eventPayload);
                   }
+                  console.debug(debugPrefix, 'bootstrap');
                   emit('page_view', {ts: Date.now()});
                   var sections = Array.prototype.slice.call(document.querySelectorAll('[data-track-section]'));
+                  console.debug(debugPrefix, 'sections-found', {count: sections.length});
                   var stats = {};
                   sections.forEach(function(node){
                     var id = node.getAttribute('data-track-section');
@@ -106,6 +111,7 @@ public class DesignPresetProvisionalHtmlAssembler {
                     if (!s || s.visibleSince === null) return;
                     s.elapsedMs += Date.now() - s.visibleSince;
                     s.visibleSince = null;
+                    console.debug(debugPrefix, 'section-flush', {sectionId:id, elapsedMs:s.elapsedMs, reason: reason || 'hidden'});
                     emit('section_view_time', {sectionId:id, elapsedMs:s.elapsedMs, reason: reason || 'hidden'});
                   }
                   var observer = new IntersectionObserver(function(entries){
@@ -115,6 +121,7 @@ public class DesignPresetProvisionalHtmlAssembler {
                       if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
                         if (stats[id].visibleSince === null) {
                           stats[id].visibleSince = Date.now();
+                          console.debug(debugPrefix, 'section-visible', {sectionId:id, ts:stats[id].visibleSince});
                           emit('section_view_start', {sectionId:id});
                         }
                       } else {
@@ -124,9 +131,13 @@ public class DesignPresetProvisionalHtmlAssembler {
                   }, {threshold:[0,0.5,1]});
                   sections.forEach(function(node){ observer.observe(node); });
                   document.addEventListener('visibilitychange', function(){
-                    if (document.hidden) Object.keys(stats).forEach(function(id){ flushSection(id, 'tab-hidden'); });
+                    if (document.hidden) {
+                      console.debug(debugPrefix, 'visibility-hidden');
+                      Object.keys(stats).forEach(function(id){ flushSection(id, 'tab-hidden'); });
+                    }
                   });
                   window.addEventListener('beforeunload', function(){
+                    console.debug(debugPrefix, 'beforeunload-flush');
                     Object.keys(stats).forEach(function(id){ flushSection(id, 'before-unload'); });
                   });
                 })();

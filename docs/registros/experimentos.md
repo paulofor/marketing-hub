@@ -646,3 +646,46 @@
   - atualizado prompt `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md` com regras explícitas: mínimo de 4 seções e mínimo de 4 imagens.
   - atualizado schema `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json` com `pagina.corpo.secoes.minItems = 4` e exigência de ao menos um elemento `img` em `elementosSeccao` por seção (via `contains` + `minContains`).
 - impacto esperado: reduzir respostas abaixo do mínimo visual/comercial e evitar reprovação contratual por wireframes com densidade visual insuficiente.
+
+## 2026-05-20 17:36:00 UTC
+- solicitação para habilitar debug no navegador porque os eventos de analytics da landing não estavam aparecendo no Network.
+- causa-raiz provável: falta de visibilidade no script injetado da landing pública para confirmar bootstrap, descoberta de seções e envio (sendBeacon/fetch).
+- foi feito:
+  - adicionado `console.debug` no script de analytics injetado em `LeadPortalPublicFlowController` para registrar:
+    - bootstrap (slug, endpoint, sessionId),
+    - quantidade de seções encontradas,
+    - transições de visibilidade por seção,
+    - payload enviado por evento,
+    - resultado de `sendBeacon` e resposta/erro de `fetch`,
+    - flush no `beforeunload`.
+- validação executada: teste unitário `LeadPortalPublicFlowControllerTest` no módulo `ads-service` com build verde.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalPublicFlowController.java
+
+## 2026-05-20 17:48:00 UTC
+- revisão solicitada: mover a lógica de debug para o local correto (`DesignPresetProvisionalHtmlAssembler`) em vez de manter no script público do `LeadPortalPublicFlowController`.
+- causa-raiz: o debug foi inserido inicialmente no ponto de injeção do Lead Portal, mas a regra operacional pediu centralização da telemetria de debug no assembler do design preset.
+- foi feito:
+  - removidos `console.debug` adicionados no script de analytics de `LeadPortalPublicFlowController` para voltar ao comportamento enxuto de produção nesse ponto.
+  - adicionados `console.debug` no script `data-mh-funnel-tracking` do `DesignPresetProvisionalHtmlAssembler` cobrindo bootstrap, quantidade de seções, emissão de eventos, transições de visibilidade e flush por aba oculta/beforeunload.
+- validação executada: teste unitário `DesignPresetProvisionalHtmlAssemblerTest` + `LeadPortalPublicFlowControllerTest` no módulo `ads-service`.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssembler.java
+  - backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalPublicFlowController.java
+
+## 2026-05-20 18:02:00 UTC
+- solicitação: garantir que o script e o backend tenham o necessário para atender o cânone de telemetria da landing.
+- ajuste aplicado no script público da landing:
+  - padronizado envio de evento `section_view_time` (em vez de `section_view`) para alinhar com o cânone;
+  - payload passou a enviar `elapsedMs` (mantendo também `visibleMs` por compatibilidade).
+- ajuste aplicado no backend:
+  - `RegisterLandingPageAnalyticsEventRequest` passou a aceitar `elapsedMs`;
+  - `registerLandingPageAnalyticsEvent` agora persiste evento no `experiment_funnel_event` (source `landing-page-analytics`) para `page_view` e `section_view_time`, além do log operacional;
+  - payload persistido inclui `eventId`, `eventType`, `sessionId`, `sectionId`, `elapsedMs` e `pageUrl`.
+- impacto esperado: manter aderência ao documento canônico e garantir rastreabilidade operacional no backend para eventos mínimos de visualização de landing.

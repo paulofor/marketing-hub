@@ -276,10 +276,7 @@ public class GeraLandingStageExecutionService {
         String enrichedImagePlanning = landingPageImageInjector.injectImageUrlsIntoPlanning(
                 experimentId,
                 experiment.getLandingPageImagePlanning());
-        String provisionalHtml = """
-                <!-- AUTO: provisional html generated manually by /geralanding/html/provisional/generate -->
-                %s
-                """.formatted(htmlWithGeneratedImages);
+        String provisionalHtml = htmlWithGeneratedImages;
 
         if (StringUtils.hasText(enrichedImagePlanning)) {
             experiment.setLandingPageImagePlanning(enrichedImagePlanning);

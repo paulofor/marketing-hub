@@ -771,6 +771,8 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-05-17-mois-sales-library-analysis.yaml
+  - include:
+      file: changesets/2026-05-20-openai-model-catalog-v1.yaml
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-05-18-mois-sales-library-page-snapshot.yaml

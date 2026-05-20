@@ -7,7 +7,7 @@ export function useOpenAiModel(id?: string) {
     queryKey: ["openAiModels", id],
     enabled: Boolean(id),
     queryFn: async () => {
-      const { data } = await axios.get<OpenAiModel>(`/api/openai-models/${id}`);
+      const { data } = await axios.get<OpenAiModel>(`/api/modelos/openai/catalogo/v1/modelos/${id}`);
       return data;
     },
   });

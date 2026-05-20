@@ -698,3 +698,12 @@
   - AGENTS.md
   - docs/novos-modulos/score-psi/plano_market_psychological_fit_score.md
   - docs/registros/experimentos.md
+
+## 2026-05-20 18:25:00 UTC
+- solicitação: migrar a integração OpenAI do Gera Landing no Worker AI de modo batch para modo flex, com atualização canônica.
+- causa-raiz tratada: o fluxo de Gera Landing estava acoplado ao pipeline de Batch API (upload JSONL + criação de batch + polling), quando a nova decisão operacional exige Flex processing para reduzir custo por requisição no processamento síncrono.
+- foi feito:
+  - `GeraLandingOpenAiBatchClient` foi refatorado para enviar requisição direta em `/responses` com `service_tier=flex`, removendo upload de arquivo, criação de batch e polling para esse fluxo;
+  - logs e mensagens de erro foram atualizados para explicitar “modo flex” no Gera Landing;
+  - atualização do documento canônico `procedimento-experimento-canon.v1.md` com a nova regra de processamento OpenAI para Gera Landing.
+- validação executada: suíte de testes do módulo `geralanding` no ai-worker e compilação do `ai-worker`.

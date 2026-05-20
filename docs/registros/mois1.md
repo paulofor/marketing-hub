@@ -350,3 +350,8 @@
 - correção de causa-raiz para `ValidationFailedException` do Liquibase por `duplicate identifiers`: o mesmo changelog `changesets/2026-05-17-mois-sales-library-analysis.yaml` estava incluído duas vezes no `db.changelog-master.yaml` do `backend/ads-service`.
 - removido o include duplicado no topo do master, mantendo apenas a inclusão única já existente na seção cronológica de changesets.
 - impacto: elimina duplicidade de changeset id (`2026-05-17-mois-sales-library-analysis-01::codex`) durante `liquibase validate/update`.
+
+## 2026-05-20 21:20:00 UTC
+- frontend MOIS (`/mois/sales-pages-library`): os blocos de JSON em "Detalhes da análise da página" foram migrados para visualização colapsável usando `CollapsibleJsonViewer`, substituindo `<pre>` estático para facilitar leitura e navegação de payloads longos.
+- seções afetadas: `Seções (JSON)`, `Copy (JSON)`, `Visual (JSON)` e `Imagem (JSON)`.
+- arquivo alterado: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`.

@@ -340,3 +340,8 @@
   - docs/canonical/mois-worker-canon.v1.md
   - mois-sales-library-worker/src/main/resources/application.yml
   - docs/registros/mois1.md
+
+## 2026-05-20 20:49:01 UTC
+- correção no `backend/ads-service` para validação do Liquibase: o `include` do changelog master apontava para `db/changelog/changesets/...` sem `relativeToChangelogFile`, causando erro de arquivo não encontrado no classpath.
+- ajuste aplicado em `src/main/resources/db/changelog/db.changelog-master.yaml` para usar `changesets/2026-05-17-mois-sales-library-analysis.yaml` com `relativeToChangelogFile: true`, alinhando com o padrão dos demais includes.
+- validação executada: `mvn -q liquibase:validate` (neste ambiente falhou por ausência de `database URL`, sem novo erro de arquivo ausente).

@@ -230,11 +230,13 @@ public class LeadPortalPublicFlowController {
         String analyticsScript = """
                 <script data-mh-landing-analytics="true">
                 (function(){
+                  const debugPrefix = '[MH landing analytics]';
                   const slugValue = %s;
                   const endpoint = '/api/public/lead-portal/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
                   const sessionKey = 'mh_lp_session_' + slugValue;
                   const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   sessionStorage.setItem(sessionKey, sessionId);
+                  console.debug(debugPrefix, 'bootstrap', {slug: slugValue, endpoint: endpoint, sessionId: sessionId});
                   const sendEvent = function(eventType, sectionId, visibleMs){
                     const payload = {
                       eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
@@ -246,11 +248,19 @@ public class LeadPortalPublicFlowController {
                       occurredAt: new Date().toISOString(),
                       userAgent: navigator.userAgent
                     };
+                    console.debug(debugPrefix, 'sending-event', payload);
                     if (navigator.sendBeacon) {
-                      navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                      const beaconSent = navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                      console.debug(debugPrefix, 'sendBeacon-result', {eventType: eventType, sectionId: sectionId || null, beaconSent: beaconSent});
                       return;
                     }
-                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true}).catch(function(){});
+                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true})
+                      .then(function(response){
+                        console.debug(debugPrefix, 'fetch-response', {eventType: eventType, sectionId: sectionId || null, status: response.status, ok: response.ok});
+                      })
+                      .catch(function(error){
+                        console.debug(debugPrefix, 'fetch-error', {eventType: eventType, sectionId: sectionId || null, message: error && error.message ? error.message : String(error)});
+                      });
                   };
                   sendEvent('page_view', null, null);
                   const visibleSince = new Map();
@@ -260,17 +270,24 @@ public class LeadPortalPublicFlowController {
                       const sectionId = entry.target.id || entry.target.getAttribute('data-section-id') || entry.target.getAttribute('data-track-section');
                       if (!sectionId) return;
                       if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-                        if (!visibleSince.has(sectionId)) visibleSince.set(sectionId, now);
+                        if (!visibleSince.has(sectionId)) {
+                          visibleSince.set(sectionId, now);
+                          console.debug(debugPrefix, 'section-visible', {sectionId: sectionId, now: now});
+                        }
                       } else if (visibleSince.has(sectionId)) {
                         const startedAt = visibleSince.get(sectionId);
                         visibleSince.delete(sectionId);
+                        console.debug(debugPrefix, 'section-hidden', {sectionId: sectionId, visibleMs: now - startedAt});
                         sendEvent('section_view', sectionId, now - startedAt);
                       }
                     });
                   }, {threshold:[0.5]});
-                  document.querySelectorAll('section[id], [data-section-id], [data-track-section]').forEach(function(el){ observer.observe(el); });
+                  const trackedSections = document.querySelectorAll('section[id], [data-section-id], [data-track-section]');
+                  console.debug(debugPrefix, 'sections-found', {count: trackedSections.length});
+                  trackedSections.forEach(function(el){ observer.observe(el); });
                   window.addEventListener('beforeunload', function(){
                     const now = performance.now();
+                    console.debug(debugPrefix, 'beforeunload-flush', {tracked: visibleSince.size});
                     visibleSince.forEach(function(startedAt, sectionId){ sendEvent('section_view', sectionId, now - startedAt); });
                   });
                 })();

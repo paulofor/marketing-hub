@@ -157,26 +157,3 @@ docs/canonical/
 ```
 
 > Cada novo documento deve declarar propósito, limites, contratos oficiais e tabela de estados, referenciando explicitamente os módulos que implementam as regras descritas.
-
-## 14) Regra canônica de finalização de importação OPRM CNPJ/CNAE (market size)
-
-### Objetivo
-Evitar fechamento prematuro de `import run` que destrói a totalização de market size por CNAE.
-
-### Regra obrigatória
-- É proibido finalizar (`completeRun`/`finalize-latest-started`) uma run OPRM CNPJ/CNAE quando existir ao menos um arquivo de dataset `ESTABELECIMENTOS` em `STARTED`.
-- Nessa condição, o backend deve bloquear a finalização com erro de conflito (`HTTP 409`) e mensagem explícita de causa-raiz operacional.
-- A run deve permanecer aberta para permitir conclusão correta da consolidação de `marketSizes`.
-
-### Critério de efetividade
-- Só é permitido fechamento quando não houver `ESTABELECIMENTOS` em `STARTED`.
-- Se houver falha real em arquivos de estabelecimentos, ela deve estar explícita como `FAILED` por evento de arquivo, com erro rastreável, e não por fechamento automático sem execução.
-
-### Regra obrigatória de identificação de CNAE em `ESTABELECIMENTOS`
-- A identificação do CNAE para totalização de market size deve usar o campo de **CNAE principal** da linha de `Estabelecimentos*.zip` (posição `11`, índice zero-based no split por `;`).
-- O valor do CNAE deve ser normalizado antes da consolidação (remoção de caracteres não numéricos), preservando somente dígitos para chave de agregação.
-- Linhas sem colunas mínimas esperadas ou com CNAE principal vazio devem ser contabilizadas como ignoradas e registradas em logs de observabilidade.
-
-### Critério de efetividade (identificação de CNAE)
-- Cada arquivo `ESTABELECIMENTOS` deve gerar log de início, progresso periódico e resumo final com: `linhasLidas`, `linhasValidas`, `linhasIgnoradas` e quantidade de CNAEs consolidados.
-- A ausência desses logs invalida a rastreabilidade operacional da totalização e deve ser tratada como não conformidade canônica.

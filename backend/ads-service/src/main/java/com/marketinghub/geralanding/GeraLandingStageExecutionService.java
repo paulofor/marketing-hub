@@ -464,7 +464,6 @@ public class GeraLandingStageExecutionService {
         }
         String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experiment.getId(), completeHtml);
         return """
-                <!-- AUTO: provisional html regenerated after landing-page-design-preset completion -->
                 %s
                 """.formatted(htmlWithGeneratedImages);
     }

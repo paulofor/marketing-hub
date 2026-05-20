@@ -578,3 +578,15 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+
+## 2026-05-20 22:30:00 UTC
+- solicitação para retirar o comentário HTML automático `<!-- AUTO: provisional html regenerated after landing-page-design-preset completion -->` do retorno de `resolveDesignPresetProvisionalHtml`.
+- causa-raiz identificada: o método seguia inserindo metadado técnico no HTML final da etapa, gerando ruído no artefato exibido/armazenado.
+- foi feito no backend:
+  - remoção do comentário `AUTO` da string retornada, mantendo apenas o conteúdo HTML processado em `%s`.
+- impacto esperado: artefato de HTML provisório mais limpo e sem marcador operacional embutido no conteúdo.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java

@@ -552,3 +552,17 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-05-20 01:15:00 UTC
+- solicitação para retirar o comentário HTML automático `<!-- AUTO: provisional html generated manually by /geralanding/html/provisional/generate -->` do fluxo Gera Landing e ajustar testes unitários relacionados.
+- causa-raiz identificada: o serviço de geração de HTML provisório adicionava um comentário técnico no conteúdo persistido (`landingPageHtml`/`provisionalHtml`), criando acoplamento desnecessário do artefato final com metadado operacional.
+- foi feito no backend:
+  - remoção da concatenação do comentário AUTO na montagem do `provisionalHtml`, mantendo apenas o HTML efetivamente gerado/injetado.
+- testes executados:
+  - execução dos testes unitários de controller e service do Gera Landing para validar que a remoção não quebrou contratos existentes.
+- impacto esperado: HTML provisório persistido limpo (sem comentário de controle), reduzindo ruído no artefato e evitando validações dependentes desse marcador.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java

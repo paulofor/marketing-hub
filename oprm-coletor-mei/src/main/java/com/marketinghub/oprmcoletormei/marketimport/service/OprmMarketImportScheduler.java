@@ -8,6 +8,7 @@ import com.marketinghub.oprmcoletormei.marketimport.dto.OprmCnaeUpsertDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportFileEventRequestDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportFileSeedDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportRunCreatedResponseDto;
+import com.marketinghub.oprmcoletormei.marketimport.dto.OprmMarketSizeUpsertDto;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +21,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -95,6 +98,7 @@ public class OprmMarketImportScheduler {
         long totalRowsRejected = 0L;
         int filesProcessed = 0;
         boolean hasFailure = false;
+        Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae = new LinkedHashMap<>();
         try {
             Files.createDirectories(runTempDir);
             log.info("[run={}] Diretório temporário criado: {}", runResponse.runId(), runTempDir);
@@ -112,18 +116,22 @@ public class OprmMarketImportScheduler {
                     List<OprmCnaeUpsertDto> cnaes = "CNAE".equalsIgnoreCase(file.datasetType())
                             ? parseCnaesFromZip(zipPath, runResponse.runId(), fileId, file.fileName())
                             : null;
+                    List<OprmMarketSizeUpsertDto> marketSizes = "ESTABELECIMENTOS".equalsIgnoreCase(file.datasetType())
+                            ? parseAndAccumulateMarketSizesFromEstablishmentsZip(
+                            zipPath, runResponse.runId(), fileId, file.fileName(), accumulatedMarketSizesByCnae)
+                            : null;
                     log.info("[run={} fileId={}] Diagnóstico totalização datasetType={} cnaesCount={} marketSizesCount={} (marketSizes ainda não calculado no coletor para este arquivo)",
                             runResponse.runId(),
                             fileId,
                             file.datasetType(),
                             cnaes != null ? cnaes.size() : 0,
-                            0);
+                            marketSizes != null ? marketSizes.size() : 0);
                     totalRowsRead += rowsRead;
                     totalRowsValid += rowsValid;
                     totalRowsRejected += rowsRejected;
                     filesProcessed++;
                     publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
-                            "COMPLETED", rowsRead, rowsValid, rowsRejected, null, Instant.now(), cnaes, null));
+                            "COMPLETED", rowsRead, rowsValid, rowsRejected, null, Instant.now(), cnaes, marketSizes));
                     log.info("[run={} fileId={}] Persistência status COMPLETED enviada. rowsRead={}", runResponse.runId(), fileId, rowsRead);
                 } catch (Exception e) {
                     hasFailure = true;
@@ -191,6 +199,64 @@ public class OprmMarketImportScheduler {
             return trimmed.substring(1, trimmed.length() - 1).trim();
         }
         return trimmed;
+    }
+
+    private List<OprmMarketSizeUpsertDto> parseAndAccumulateMarketSizesFromEstablishmentsZip(
+            Path zipPath,
+            Long runId,
+            Long fileId,
+            String fileName,
+            Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae) throws IOException {
+        log.info("[run={} fileId={}] Início parse marketSizes (ESTABELECIMENTOS) de {}", runId, fileId, fileName);
+        try (InputStream in = Files.newInputStream(zipPath);
+             java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) continue;
+                String content = new String(zipInputStream.readAllBytes(), StandardCharsets.ISO_8859_1);
+                String[] lines = content.split("\\R");
+                for (String rawLine : lines) {
+                    if (rawLine == null || rawLine.isBlank()) continue;
+                    String[] cols = rawLine.split(";", -1);
+                    if (cols.length < 12) continue;
+                    String situacaoCadastral = normalizeField(cols[5]);
+                    String cnaePrincipal = normalizeField(cols[11]).replaceAll("\\D", "");
+                    if (cnaePrincipal.isBlank()) continue;
+                    MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaePrincipal, key -> new MarketSizeAccumulator());
+                    acc.totalEstabelecimentos++;
+                    if ("02".equals(situacaoCadastral)) {
+                        acc.totalEstabelecimentosAtivos++;
+                    }
+                }
+                zipInputStream.closeEntry();
+            }
+        }
+        List<OprmMarketSizeUpsertDto> marketSizes = toMarketSizesPayload(accumulatedMarketSizesByCnae);
+        log.info("[run={} fileId={}] Parse marketSizes (ESTABELECIMENTOS) concluído. totalCnaesConsolidados={}",
+                runId, fileId, marketSizes.size());
+        return marketSizes;
+    }
+
+    private List<OprmMarketSizeUpsertDto> toMarketSizesPayload(Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae) {
+        List<OprmMarketSizeUpsertDto> payload = new ArrayList<>();
+        for (Map.Entry<String, MarketSizeAccumulator> entry : accumulatedMarketSizesByCnae.entrySet()) {
+            MarketSizeAccumulator acc = entry.getValue();
+            payload.add(new OprmMarketSizeUpsertDto(
+                    entry.getKey(),
+                    acc.totalEstabelecimentos,
+                    acc.totalEstabelecimentosAtivos,
+                    0L,
+                    0L,
+                    0L,
+                    0.0
+            ));
+        }
+        return payload;
+    }
+
+    private static final class MarketSizeAccumulator {
+        private long totalEstabelecimentos;
+        private long totalEstabelecimentosAtivos;
     }
 
     private List<OprmImportFileSeedDto> buildFiles(String sourceUrl) {

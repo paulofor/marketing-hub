@@ -87,3 +87,5 @@
 - 2026-05-19 09:55:00 (UTC-3): ajuste solicitado para reagendar a próxima execução da importação OPRM CNPJ/CNAE para **10:00 de hoje (19/05)** no fuso `America/Sao_Paulo`, com cron hardcoded `0 0 10 19 5 *` na anotação `@Scheduled` de `runScheduledImport`.
 
 - 2026-05-19 01:40:00 (UTC-3): ajuste solicitado no `oprm-coletor-mei` para reagendar o coletor CNPJ/CNAE para **04:40** no fuso `America/Sao_Paulo`, atualizando o cron hardcoded de `runScheduledImport` para `0 40 4 * * *` e sincronizando o cron padrão em `application.yml` para o mesmo horário.
+
+- 2026-05-20 00:00:00 (UTC): revisão do `runScheduledImport` no `oprm-coletor-mei` confirmou ausência de totalização por CNAE no payload `marketSizes` (sempre `null`). Implementada totalização incremental por CNAE a partir dos arquivos `Estabelecimentos*.zip` no próprio coletor (contagem de `totalEstabelecimentos` e `totalEstabelecimentosAtivos` por `cnae_principal`), com acúmulo em memória durante a run e publicação do snapshot acumulado em `marketSizes` nos eventos `COMPLETED` de cada arquivo de estabelecimentos para persistência em `oprm_market_size_by_cnae` no backend.

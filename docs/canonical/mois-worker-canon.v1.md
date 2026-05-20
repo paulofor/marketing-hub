@@ -104,9 +104,10 @@ Para acompanhamento operacional na tela de Biblioteca de Páginas de Vendas, o s
 - Transições de estado devem ocorrer exclusivamente pelos endpoints do backend MOIS.
 - Falhas devem ser registradas com contexto e stack trace para diagnóstico de causa-raiz.
 - Erros de contrato/integração OpenAI retornados no output do batch (ex.: `response.status_code >= 400` com `response.body.error`) são falhas terminais e devem:
-  1. ser convertidos em mensagem legível com `status`, `requestId`, `type`, `code` e `message`;
-  2. ser enviados ao endpoint `jobs/{jobId}:fail` para persistência;
-  3. ficar disponíveis para exibição ao usuário na tela de jobs (`errorMessage`).
+  1. obter e processar também o arquivo `error_file_id` (JSONL) do batch para diagnóstico completo da causa-raiz;
+  2. converter os detalhes relevantes do erro em mensagem legível com `status`, `requestId`, `type`, `code` e `message`;
+  3. enviar a falha ao endpoint `jobs/{jobId}:fail` para persistência;
+  4. manter os detalhes disponíveis para exibição ao usuário na tela de jobs (`errorMessage`).
 
 ## 10. Substituição documental
 Este documento é o único cânone ativo para o worker do MOIS.

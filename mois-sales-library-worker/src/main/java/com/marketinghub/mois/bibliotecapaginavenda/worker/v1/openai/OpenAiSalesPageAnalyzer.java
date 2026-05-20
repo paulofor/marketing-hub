@@ -43,8 +43,11 @@ public class OpenAiSalesPageAnalyzer {
         String inputFileId = uploadInputFile(payloadLine);
         BatchInfo batch = createBatch(inputFileId);
         BatchInfo completed = awaitBatch(batch);
-        if (!"completed".equalsIgnoreCase(completed.status()) || !StringUtils.hasText(completed.outputFileId())) {
-            throw new IllegalStateException("Batch da OpenAI não completou com output_file_id. status=" + completed.status());
+        if (!"completed".equalsIgnoreCase(completed.status())) {
+            throw new IllegalStateException(buildBatchTerminalErrorMessage(completed));
+        }
+        if (!StringUtils.hasText(completed.outputFileId())) {
+            throw new IllegalStateException(buildBatchMissingOutputMessage(completed));
         }
         String output = downloadOutput(completed.outputFileId());
         return parseBatchOutput(output);
@@ -113,6 +116,19 @@ public class OpenAiSalesPageAnalyzer {
         return restClient.get().uri("/files/{id}/content", outputFileId).retrieve().body(String.class);
     }
 
+    private String downloadErrorJsonl(BatchInfo batch) {
+        if (batch == null || !StringUtils.hasText(batch.errorFileId())) {
+            return "";
+        }
+        try {
+            String content = restClient.get().uri("/files/{id}/content", batch.errorFileId()).retrieve().body(String.class);
+            return content == null ? "" : content;
+        } catch (Exception ex) {
+            log.error("Falha ao baixar error_file_id da OpenAI. batchId={}, errorFileId={}", batch.id(), batch.errorFileId(), ex);
+            return "";
+        }
+    }
+
     private SalesPageAnalysisResult parseBatchOutput(String outputJsonl) {
         try {
             String line = outputJsonl.lines().filter(StringUtils::hasText).findFirst().orElseThrow();
@@ -159,6 +175,32 @@ public class OpenAiSalesPageAnalyzer {
                 + upstreamMessage;
     }
 
+    private String buildBatchTerminalErrorMessage(BatchInfo completed) {
+        String errorJsonl = downloadErrorJsonl(completed);
+        String trimmedJsonl = errorJsonl.isBlank() ? "" : "\nerror_jsonl=" + errorJsonl.trim();
+        return "Batch da OpenAI finalizou sem sucesso"
+                + " (batchId=" + completed.id()
+                + ", status=" + completed.status()
+                + ", outputFileId=" + completed.outputFileId()
+                + ", errorFileId=" + completed.errorFileId()
+                + ")"
+                + trimmedJsonl;
+    }
+
+    private String buildBatchMissingOutputMessage(BatchInfo completed) {
+        String errorJsonl = downloadErrorJsonl(completed);
+        String trimmedJsonl = errorJsonl.isBlank() ? "" : "\nerror_jsonl=" + errorJsonl.trim();
+        return "Batch da OpenAI completou sem output_file_id"
+                + " (batchId=" + completed.id()
+                + ", status=" + completed.status()
+                + ", errorFileId=" + completed.errorFileId()
+                + ")"
+                + trimmedJsonl;
+    }
+
     private record FileUploadResponse(String id) {}
-    private record BatchInfo(String id, String status, @JsonProperty("output_file_id") String outputFileId) {}
+    private record BatchInfo(String id,
+                             String status,
+                             @JsonProperty("output_file_id") String outputFileId,
+                             @JsonProperty("error_file_id") String errorFileId) {}
 }

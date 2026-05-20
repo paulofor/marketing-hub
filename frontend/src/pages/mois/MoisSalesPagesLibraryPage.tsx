@@ -36,6 +36,31 @@ function formatDateTimeInGmt(value?: string | null) {
   }).format(parsedDate) + " GMT";
 }
 
+function formatOpenAiErrorMessage(value?: string | null) {
+  if (!value) {
+    return "—";
+  }
+
+  const trimmedValue = value.trim();
+  const jsonStartCandidates = [trimmedValue.indexOf("{"), trimmedValue.indexOf("[")].filter((index) => index >= 0);
+  if (jsonStartCandidates.length === 0) {
+    return value;
+  }
+
+  const jsonStartIndex = Math.min(...jsonStartCandidates);
+  const jsonCandidate = trimmedValue.slice(jsonStartIndex);
+
+  try {
+    const parsed = JSON.parse(jsonCandidate);
+    const pretty = JSON.stringify(parsed, null, 2);
+    const prefix = trimmedValue.slice(0, jsonStartIndex).trim();
+
+    return prefix ? `${prefix}\nOpenAI JSON:\n${pretty}` : `OpenAI JSON:\n${pretty}`;
+  } catch {
+    return value;
+  }
+}
+
 
 function SimplePaginator({
   page,
@@ -180,7 +205,11 @@ export default function MoisSalesPagesLibraryPage() {
                         </td>
                         <td>{job.attempts}</td>
                         <td>{formatDateTimeInGmt(job.updatedAt)}</td>
-                        <td>{job.errorMessage || "—"}</td>
+                        <td>
+                          <pre className="mb-0 text-wrap" style={{ whiteSpace: "pre-wrap" }}>
+                            {formatOpenAiErrorMessage(job.errorMessage)}
+                          </pre>
+                        </td>
                       </tr>
                     ))
                   )}

@@ -185,17 +185,58 @@ public class ExperimentFunnelService {
         Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
                 .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
 
-        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} eventType={} sectionId={} visibleMs={} sessionId={} pageUrl={} occurredAt={} userAgent={}",
+        Long elapsedMs = request.elapsedMs() != null ? request.elapsedMs() : request.visibleMs();
+        String eventType = request.eventType().trim();
+        Instant occurredAt = Optional.ofNullable(request.occurredAt()).orElse(Instant.now());
+        String payload = buildLandingAnalyticsPayload(request, elapsedMs);
+
+        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={}",
                 experiment.getId(),
                 flowSlug.trim(),
                 request.eventId().trim(),
-                request.eventType().trim(),
+                eventType,
                 request.sectionId(),
-                request.visibleMs(),
+                elapsedMs,
                 request.sessionId(),
                 request.pageUrl(),
-                Optional.ofNullable(request.occurredAt()).orElse(Instant.now()),
+                occurredAt,
                 request.userAgent());
+
+        ExperimentFunnelStage stage = resolveStageForLandingAnalyticsEvent(eventType);
+        if (stage != null) {
+            ExperimentFunnelEvent event = ExperimentFunnelEvent.builder()
+                    .experiment(experiment)
+                    .stage(stage)
+                    .source("landing-page-analytics")
+                    .campaignCode(null)
+                    .payload(payload)
+                    .occurredAt(occurredAt)
+                    .build();
+            eventRepository.save(event);
+        }
+    }
+
+    private ExperimentFunnelStage resolveStageForLandingAnalyticsEvent(String eventType) {
+        if ("page_view".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.VISUALIZACAO_FORM;
+        }
+        if ("section_view_time".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.VISUALIZACAO_FORM;
+        }
+        return null;
+    }
+
+    private String buildLandingAnalyticsPayload(RegisterLandingPageAnalyticsEventRequest request, Long elapsedMs) {
+        String sectionId = request.sectionId() == null ? "" : request.sectionId().trim();
+        String sessionId = request.sessionId() == null ? "" : request.sessionId().trim();
+        String url = request.pageUrl() == null ? "" : request.pageUrl().trim();
+        String duration = elapsedMs == null ? "" : elapsedMs.toString();
+        return "eventId=" + request.eventId().trim()
+                + ";eventType=" + request.eventType().trim()
+                + ";sessionId=" + sessionId
+                + ";sectionId=" + sectionId
+                + ";elapsedMs=" + duration
+                + ";pageUrl=" + url;
     }
 
     private Lead resolveLead(UUID leadId) {

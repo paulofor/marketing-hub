@@ -235,13 +235,14 @@ public class LeadPortalPublicFlowController {
                   const sessionKey = 'mh_lp_session_' + slugValue;
                   const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   sessionStorage.setItem(sessionKey, sessionId);
-                  const sendEvent = function(eventType, sectionId, visibleMs){
+                  const sendEvent = function(eventType, sectionId, elapsedMs){
                     const payload = {
                       eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
                       eventType: eventType,
                       sessionId: sessionId,
                       sectionId: sectionId || null,
-                      visibleMs: typeof visibleMs === 'number' ? Math.round(visibleMs) : null,
+                      elapsedMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
+                      visibleMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
                       userAgent: navigator.userAgent
@@ -264,14 +265,14 @@ public class LeadPortalPublicFlowController {
                       } else if (visibleSince.has(sectionId)) {
                         const startedAt = visibleSince.get(sectionId);
                         visibleSince.delete(sectionId);
-                        sendEvent('section_view', sectionId, now - startedAt);
+                        sendEvent('section_view_time', sectionId, now - startedAt);
                       }
                     });
                   }, {threshold:[0.5]});
                   document.querySelectorAll('section[id], [data-section-id], [data-track-section]').forEach(function(el){ observer.observe(el); });
                   window.addEventListener('beforeunload', function(){
                     const now = performance.now();
-                    visibleSince.forEach(function(startedAt, sectionId){ sendEvent('section_view', sectionId, now - startedAt); });
+                    visibleSince.forEach(function(startedAt, sectionId){ sendEvent('section_view_time', sectionId, now - startedAt); });
                   });
                 })();
                 </script>

@@ -678,3 +678,14 @@
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssembler.java
   - backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalPublicFlowController.java
+
+## 2026-05-20 18:02:00 UTC
+- solicitação: garantir que o script e o backend tenham o necessário para atender o cânone de telemetria da landing.
+- ajuste aplicado no script público da landing:
+  - padronizado envio de evento `section_view_time` (em vez de `section_view`) para alinhar com o cânone;
+  - payload passou a enviar `elapsedMs` (mantendo também `visibleMs` por compatibilidade).
+- ajuste aplicado no backend:
+  - `RegisterLandingPageAnalyticsEventRequest` passou a aceitar `elapsedMs`;
+  - `registerLandingPageAnalyticsEvent` agora persiste evento no `experiment_funnel_event` (source `landing-page-analytics`) para `page_view` e `section_view_time`, além do log operacional;
+  - payload persistido inclui `eventId`, `eventType`, `sessionId`, `sectionId`, `elapsedMs` e `pageUrl`.
+- impacto esperado: manter aderência ao documento canônico e garantir rastreabilidade operacional no backend para eventos mínimos de visualização de landing.

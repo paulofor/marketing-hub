@@ -208,32 +208,49 @@ public class OprmMarketImportScheduler {
             String fileName,
             Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae) throws IOException {
         log.info("[run={} fileId={}] Início parse marketSizes (ESTABELECIMENTOS) de {}", runId, fileId, fileName);
+        long linhasLidas = 0L;
+        long linhasValidas = 0L;
+        long linhasIgnoradas = 0L;
         try (InputStream in = Files.newInputStream(zipPath);
              java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
             java.util.zip.ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
+                log.info("[run={} fileId={}] Lendo entry de ESTABELECIMENTOS: name={} size={}",
+                        runId, fileId, entry.getName(), entry.getSize());
                 String content = new String(zipInputStream.readAllBytes(), StandardCharsets.ISO_8859_1);
                 String[] lines = content.split("\\R");
                 for (String rawLine : lines) {
+                    linhasLidas++;
                     if (rawLine == null || rawLine.isBlank()) continue;
                     String[] cols = rawLine.split(";", -1);
-                    if (cols.length < 12) continue;
+                    if (cols.length < 12) {
+                        linhasIgnoradas++;
+                        continue;
+                    }
                     String situacaoCadastral = normalizeField(cols[5]);
                     String cnaePrincipal = normalizeField(cols[11]).replaceAll("\\D", "");
-                    if (cnaePrincipal.isBlank()) continue;
+                    if (cnaePrincipal.isBlank()) {
+                        linhasIgnoradas++;
+                        continue;
+                    }
                     MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaePrincipal, key -> new MarketSizeAccumulator());
                     acc.totalEstabelecimentos++;
                     if ("02".equals(situacaoCadastral)) {
                         acc.totalEstabelecimentosAtivos++;
+                    }
+                    linhasValidas++;
+                    if (linhasLidas % 500000 == 0) {
+                        log.info("[run={} fileId={}] Progresso leitura ESTABELECIMENTOS: linhasLidas={} linhasValidas={} linhasIgnoradas={} cnaesConsolidados={}",
+                                runId, fileId, linhasLidas, linhasValidas, linhasIgnoradas, accumulatedMarketSizesByCnae.size());
                     }
                 }
                 zipInputStream.closeEntry();
             }
         }
         List<OprmMarketSizeUpsertDto> marketSizes = toMarketSizesPayload(accumulatedMarketSizesByCnae);
-        log.info("[run={} fileId={}] Parse marketSizes (ESTABELECIMENTOS) concluído. totalCnaesConsolidados={}",
-                runId, fileId, marketSizes.size());
+        log.info("[run={} fileId={}] Parse marketSizes (ESTABELECIMENTOS) concluído. linhasLidas={} linhasValidas={} linhasIgnoradas={} totalCnaesConsolidados={}",
+                runId, fileId, linhasLidas, linhasValidas, linhasIgnoradas, marketSizes.size());
         return marketSizes;
     }
 

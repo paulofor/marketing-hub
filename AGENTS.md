@@ -177,3 +177,22 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 
 - Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.
+
+- 🚨 **CONTAMINAÇÃO DE ARTEFATO FINAL COM METADADO TÉCNICO (OBRIGATÓRIO)**:
+  - **Definição**: é proibido inserir no artefato final publicado qualquer marcador técnico/operacional que não faça parte do contrato funcional do cliente (ex.: comentários `<!-- AUTO: ... -->`, flags internas de pipeline, observações de debug, metadados de regeneração).
+  - **Risco**: esses marcadores causam divergência de contrato, falhas de renderização/validação em integrações e retrabalho por ciclos repetidos de correção.
+  - **Exemplos proibidos no payload final**:
+    1. prefixar HTML final com comentário técnico de execução (`<!-- AUTO: provisional html generated ... -->`);
+    2. enviar campos legados/temporários no contrato final (`legacyPreviewHtml`, `renderMode`, `debugInfo`);
+    3. serializar JSON técnico dentro de campo textual funcional sem estar previsto em contrato.
+  - **Padrão obrigatório de prevenção**:
+    1. separar explicitamente no código o que é **metadado técnico interno** vs **artefato final publicável**;
+    2. no mapper/builder final, permitir apenas campos do DTO de contrato oficial (whitelist explícita);
+    3. antes do envio, validar literal do payload final com checklist de contrato (campos, tipo e formato);
+    4. adicionar teste de regressão garantindo ausência de marcadores técnicos no artefato final;
+    5. ao detectar violação, bloquear publicação e registrar causa-raiz (origem da contaminação + correção objetiva).
+  - **Checklist obrigatório em revisão de PR (quando houver artefato HTML/JSON final)**:
+    - o payload final contém somente campos contratuais?
+    - existe comentário técnico, flag interna, rótulo de debug ou metadado operacional no conteúdo publicado?
+    - os testes cobrem explicitamente a ausência desses marcadores?
+

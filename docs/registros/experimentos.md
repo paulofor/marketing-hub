@@ -590,3 +590,12 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+
+## 2026-05-19 23:01:45 UTC-3
+- solicitação para explicar e formalizar no AGENTS.md o risco de contaminação de artefato final com metadado técnico, incluindo exemplos preventivos.
+- raciocínio aplicado: transformar a lição recorrente dos ciclos de aprovação/publicação de landing em regra operacional explícita para bloquear regressões por comentários técnicos e campos legados no payload final.
+- foi feito: adicionada seção obrigatória no AGENTS.md com definição, risco, exemplos proibidos, padrão de prevenção (separação metadado vs artefato publicável, whitelist de DTO, validação literal pré-envio, teste de regressão) e checklist de revisão de PR.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+

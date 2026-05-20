@@ -664,3 +664,17 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalPublicFlowController.java
+
+## 2026-05-20 17:48:00 UTC
+- revisão solicitada: mover a lógica de debug para o local correto (`DesignPresetProvisionalHtmlAssembler`) em vez de manter no script público do `LeadPortalPublicFlowController`.
+- causa-raiz: o debug foi inserido inicialmente no ponto de injeção do Lead Portal, mas a regra operacional pediu centralização da telemetria de debug no assembler do design preset.
+- foi feito:
+  - removidos `console.debug` adicionados no script de analytics de `LeadPortalPublicFlowController` para voltar ao comportamento enxuto de produção nesse ponto.
+  - adicionados `console.debug` no script `data-mh-funnel-tracking` do `DesignPresetProvisionalHtmlAssembler` cobrindo bootstrap, quantidade de seções, emissão de eventos, transições de visibilidade e flush por aba oculta/beforeunload.
+- validação executada: teste unitário `DesignPresetProvisionalHtmlAssemblerTest` + `LeadPortalPublicFlowControllerTest` no módulo `ads-service`.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssembler.java
+  - backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalPublicFlowController.java

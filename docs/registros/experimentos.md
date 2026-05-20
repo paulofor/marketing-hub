@@ -539,3 +539,16 @@
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
   - ai-worker/src/main/resources/application.properties
+
+## 2026-05-20 21:55:00 UTC
+- solicitação para alinhar o card `3 - Gera Imagem` com os demais cards da página, exibindo o status do job imediatamente após clicar em iniciar.
+- causa-raiz identificada: o bloco `Gera Prompt Imagem` não renderizava a seção de jobs pendentes/em execução, diferente dos cards anteriores (`Gera Wireframe` e `Gera Copy`).
+- foi feito no frontend:
+  - inclusão da listagem de jobs pendentes/em execução no bloco `Gera Prompt Imagem` (Job ID, Status e Data-hora);
+  - inclusão de spinner no botão `Iniciar` durante requisição assíncrona para manter padrão visual/operacional dos demais cards.
+- impacto esperado: ao iniciar a etapa, o usuário passa a visualizar imediatamente o status do job ativo, reduzindo percepção de falha e mantendo consistência de UX entre etapas.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx

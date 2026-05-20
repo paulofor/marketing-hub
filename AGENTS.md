@@ -50,6 +50,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host.
 - **Frontend → Backend (validação de endpoint)**: sempre que criar no frontend uma chamada para o backend, verifique primeiro se o endpoint já existe. Se não existir, crie o endpoint no pacote/backend referente ao assunto da tela (ex.: MOIS, OPRM, etc.), respeitando o escopo do módulo.
 - **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
+- **Documentação em código Java (obrigatório)**: toda classe Java deve conter comentário descrevendo sua responsabilidade básica, e todo método deve conter um comentário breve explicando o que ele faz.
 - **Logs**: os logs dos modulos Java Spring Boot podem ser acessados pelo MCP Server.  Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC.
 - **Logs de exceção capturada (obrigatório)**: todo bloco `catch` que captura `Exception`, `RuntimeException` ou exceção de integração deve registrar log antes de relançar, converter ou responder erro. O log deve incluir contexto operacional suficiente para localizar o ponto da falha (módulo, operação, identificadores relevantes como `experimentId`, `landingId`, URL/endpoint quando aplicável) e a exceção completa (`ex`) para preservar stack trace; não basta usar apenas `NestedExceptionUtils.getMostSpecificCause(ex).getMessage()` ou somente a mensagem da causa raiz.
 - **Agendamentos Spring Boot**: quando criar rotinas agendadas com `@Scheduled`, não usar variáveis para o cron; definir diretamente a string no formato cron na anotação.
@@ -195,4 +196,3 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
     - o payload final contém somente campos contratuais?
     - existe comentário técnico, flag interna, rótulo de debug ou metadado operacional no conteúdo publicado?
     - os testes cobrem explicitamente a ausência desses marcadores?
-

@@ -62,6 +62,7 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 - `openai.model` → `${OPENAI_MODEL:gpt-5.2}`
 - `openai.batch-poll-interval-ms` → `${OPENAI_BATCH_POLL_INTERVAL_MS:2000}`
 - `openai.batch-timeout-ms` → `${OPENAI_BATCH_TIMEOUT_MS:300000}`
+- Para payload de `/v1/responses`, o formato estruturado deve usar `text.format` (não usar `response_format`).
 
 ## 8. Regra canônica de timeout OpenAI Batch (MOIS Worker)
 Para integrações batch com OpenAI no contexto do MOIS Worker, o timeout canônico é de **30 minutos** (`300000 ms` / `PT30M`), e não deve ser reduzido sem versionamento explícito deste cânone.
@@ -102,6 +103,10 @@ Para acompanhamento operacional na tela de Biblioteca de Páginas de Vendas, o s
 - O worker **não acessa banco diretamente**; todo tráfego de dados passa pelo backend principal.
 - Transições de estado devem ocorrer exclusivamente pelos endpoints do backend MOIS.
 - Falhas devem ser registradas com contexto e stack trace para diagnóstico de causa-raiz.
+- Erros de contrato/integração OpenAI retornados no output do batch (ex.: `response.status_code >= 400` com `response.body.error`) são falhas terminais e devem:
+  1. ser convertidos em mensagem legível com `status`, `requestId`, `type`, `code` e `message`;
+  2. ser enviados ao endpoint `jobs/{jobId}:fail` para persistência;
+  3. ficar disponíveis para exibição ao usuário na tela de jobs (`errorMessage`).
 
 ## 10. Substituição documental
 Este documento é o único cânone ativo para o worker do MOIS.

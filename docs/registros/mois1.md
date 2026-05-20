@@ -268,3 +268,16 @@
   - docs/canonical/system-governance-canon.v2.md
   - docs/canonical/mois-worker-canon.v1.md
   - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+
+## 2026-05-20 00:00:00 UTC-3
+- correção de vulnerabilidade operacional no worker da biblioteca de páginas de vendas (MOIS): erro OpenAI de contrato não estava sendo propagado para a tela de jobs.
+- ajuste no cliente OpenAI batch (`OpenAiSalesPageAnalyzer`) para usar o contrato atual da Responses API (`text.format`) no lugar de `response_format`, removendo a causa-raiz do erro `unsupported_parameter`.
+- implementado tratamento explícito de erro no output do batch quando `response.status_code >= 400` e/ou `error` de linha, com construção de mensagem detalhada (`status`, `requestId`, `type`, `code`, `message`) para persistência no backend via `jobs/{jobId}:fail`.
+- atualização do cânone `docs/canonical/mois-worker-canon.v1.md` para formalizar:
+  - uso obrigatório de `text.format` na integração `/v1/responses`;
+  - obrigatoriedade de persistir e expor ao usuário os erros de contrato OpenAI no `errorMessage` do job.
+- documentos lidos para tratar a situação:
+  - docs/canonical/system-governance-canon.v2.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/PipelineRunner.java

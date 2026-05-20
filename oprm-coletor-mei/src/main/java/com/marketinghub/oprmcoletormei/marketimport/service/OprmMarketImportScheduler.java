@@ -47,7 +47,7 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "0 30 12 20 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 0 16 * * *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -225,15 +225,30 @@ public class OprmMarketImportScheduler {
         long linhasLidas = 0L;
         long linhasValidas = 0L;
         long linhasIgnoradas = 0L;
+        long parseStartMillis = System.currentTimeMillis();
         try (InputStream in = Files.newInputStream(zipPath);
              java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
             java.util.zip.ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
+                long entryReadStartMillis = System.currentTimeMillis();
                 log.info("[run={} fileId={}] Lendo entry de ESTABELECIMENTOS: name={} size={}",
                         runId, fileId, entry.getName(), entry.getSize());
-                String content = new String(zipInputStream.readAllBytes(), StandardCharsets.ISO_8859_1);
+                byte[] entryBytes = zipInputStream.readAllBytes();
+                long entryReadDurationMillis = System.currentTimeMillis() - entryReadStartMillis;
+                log.info("[run={} fileId={}] Entry carregada em memória: name={} bytes={} duracaoMs={} memoriaLivreMb={} memoriaTotalMb={}",
+                        runId,
+                        fileId,
+                        entry.getName(),
+                        entryBytes.length,
+                        entryReadDurationMillis,
+                        Runtime.getRuntime().freeMemory() / (1024 * 1024),
+                        Runtime.getRuntime().totalMemory() / (1024 * 1024));
+                String content = new String(entryBytes, StandardCharsets.ISO_8859_1);
                 String[] lines = content.split("\\R");
+                log.info("[run={} fileId={}] Entry segmentada em linhas: name={} totalLinhas={}",
+                        runId, fileId, entry.getName(), lines.length);
+                long entryProcessStartMillis = System.currentTimeMillis();
                 for (String rawLine : lines) {
                     linhasLidas++;
                     if (rawLine == null || rawLine.isBlank()) continue;
@@ -259,12 +274,29 @@ public class OprmMarketImportScheduler {
                                 runId, fileId, linhasLidas, linhasValidas, linhasIgnoradas, accumulatedMarketSizesByCnae.size());
                     }
                 }
+                log.info("[run={} fileId={}] Entry processada: name={} duracaoMs={} linhasLidasAcumuladas={} linhasValidasAcumuladas={} linhasIgnoradasAcumuladas={} cnaesConsolidados={}",
+                        runId,
+                        fileId,
+                        entry.getName(),
+                        System.currentTimeMillis() - entryProcessStartMillis,
+                        linhasLidas,
+                        linhasValidas,
+                        linhasIgnoradas,
+                        accumulatedMarketSizesByCnae.size());
                 zipInputStream.closeEntry();
             }
         }
         List<OprmMarketSizeUpsertDto> marketSizes = toMarketSizesPayload(accumulatedMarketSizesByCnae);
-        log.info("[run={} fileId={}] Parse marketSizes (ESTABELECIMENTOS) concluído. linhasLidas={} linhasValidas={} linhasIgnoradas={} totalCnaesConsolidados={}",
-                runId, fileId, linhasLidas, linhasValidas, linhasIgnoradas, marketSizes.size());
+        log.info("[run={} fileId={}] Parse marketSizes (ESTABELECIMENTOS) concluído. linhasLidas={} linhasValidas={} linhasIgnoradas={} totalCnaesConsolidados={} duracaoTotalMs={} memoriaLivreMb={} memoriaTotalMb={}",
+                runId,
+                fileId,
+                linhasLidas,
+                linhasValidas,
+                linhasIgnoradas,
+                marketSizes.size(),
+                System.currentTimeMillis() - parseStartMillis,
+                Runtime.getRuntime().freeMemory() / (1024 * 1024),
+                Runtime.getRuntime().totalMemory() / (1024 * 1024));
         return marketSizes;
     }
 

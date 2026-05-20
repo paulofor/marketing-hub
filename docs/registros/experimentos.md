@@ -528,3 +528,14 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx
+
+## 2026-05-20 00:00:00 UTC
+- solicitação para alterar o timeout das solicitações do Gera Landing para 30 minutos.
+- causa-raiz identificada: configuração padrão do ai-worker estava em `PT60M`, divergindo do tempo operacional desejado.
+- foi feito: ajuste da propriedade `openai.batch-timeout` de `PT60M` para `PT30M` no `application.properties` do ai-worker.
+- impacto esperado: solicitações batch do Gera Landing passam a expirar em 30 minutos quando não houver override por variável de ambiente.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/resources/application.properties

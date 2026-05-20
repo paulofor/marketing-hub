@@ -707,3 +707,17 @@
   - logs e mensagens de erro foram atualizados para explicitar “modo flex” no Gera Landing;
   - atualização do documento canônico `procedimento-experimento-canon.v1.md` com a nova regra de processamento OpenAI para Gera Landing.
 - validação executada: suíte de testes do módulo `geralanding` no ai-worker e compilação do `ai-worker`.
+
+## 2026-05-20 18:45:00 UTC
+- solicitação: ampliar logs no trecho de geração OpenAI do Worker AI (Gera Landing), incluindo contexto no catch final.
+- causa-raiz tratada: dificuldade de diagnóstico da resposta real do modelo na etapa `landing-page-design-preset` (erro de parse com `Unexpected character '#'`) por ausência de telemetria suficiente do retorno e do contexto operacional no ponto de falha.
+- foi feito:
+  - adicionado log de início da geração flex com `jobId`, `stage`, `model` e tamanho do request;
+  - adicionado log após resposta da OpenAI com `responseId`, tamanho do `rawOutput`, tamanho do `modelResponse` e preview sanitizado/truncado do conteúdo retornado;
+  - adicionado log de finalização com tokens de entrada/saída;
+  - adicionado log no `catch (Exception ex)` com contexto completo (`jobId`, `stage`, `model`, preview do request) e stack trace (`ex`);
+  - incluídos helpers de segurança para preview e cálculo de tamanho, evitando logar payloads ilimitados em uma única linha.
+- impacto esperado: acelerar análise de causa-raiz em falhas de contrato/formato de resposta do modelo, com evidência literal do início da saída retornada.
+- ajuste complementar: adicionado log explícito do conteúdo de `job.requestBodyJson()` (preview sanitizado/truncado) no início do `generate`, para facilitar correlação direta entre payload enviado e falhas subsequentes.
+- ajuste complementar 2: adicionados logs dentro de `createFlexResponse` para mostrar o `requestBody` parseado (chaves + preview) e o payload final após injeção de `service_tier=flex` antes do POST em `/responses`.
+- ajuste complementar 3: reposicionado/adicionado log **antes** do `readValue(job.requestBodyJson(), Map.class)` em `createFlexResponse`, para garantir visibilidade do payload bruto mesmo quando ocorrer erro de parse JSON nesse ponto.

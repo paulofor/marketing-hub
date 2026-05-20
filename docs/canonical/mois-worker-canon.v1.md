@@ -61,11 +61,11 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 ### 7.2 OpenAI
 - `openai.model` → `${OPENAI_MODEL:gpt-5.2}`
 - `openai.batch-poll-interval-ms` → `${OPENAI_BATCH_POLL_INTERVAL_MS:2000}`
-- `openai.batch-timeout-ms` → `${OPENAI_BATCH_TIMEOUT_MS:300000}`
+- `openai.batch-timeout-ms` → `${OPENAI_BATCH_TIMEOUT_MS:1800000}`
 - Para payload de `/v1/responses`, o formato estruturado deve usar `text.format` (não usar `response_format`).
 
 ## 8. Regra canônica de timeout OpenAI Batch (MOIS Worker)
-Para integrações batch com OpenAI no contexto do MOIS Worker, o timeout canônico é de **30 minutos** (`300000 ms` / `PT30M`), e não deve ser reduzido sem versionamento explícito deste cânone.
+Para integrações batch com OpenAI no contexto do MOIS Worker, o timeout canônico é de **30 minutos** (`1800000 ms` / `PT30M`), e não deve ser reduzido sem versionamento explícito deste cânone.
 
 
 ## 8.1 Taxonomia canônica de status (monitoramento de fetching)

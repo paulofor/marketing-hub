@@ -15,4 +15,4 @@ openai:
   base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
   model: ${OPENAI_MODEL:gpt-5.2}
   batch-poll-interval-ms: ${OPENAI_BATCH_POLL_INTERVAL_MS:2000}
-  batch-timeout-ms: ${OPENAI_BATCH_TIMEOUT_MS:300000}
+  batch-timeout-ms: ${OPENAI_BATCH_TIMEOUT_MS:1800000}

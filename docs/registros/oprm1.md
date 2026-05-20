@@ -101,3 +101,5 @@
 - 2026-05-20 14:35:00 (UTC): criado documento canônico específico do OPRM em `docs/canonical/oprm-canon.v1.md`, formalizando regra de chamar `completeRun` apenas após leitura total da run, bloqueio `HTTP 409` com `ESTABELECIMENTOS` em `STARTED`, regra de identificação de CNAE e requisitos mínimos de observabilidade.
 - 2026-05-20 14:50:00 (UTC): ajuste canônico solicitado: removido integralmente o item 14 de `system-governance-canon.v2.md` e migrado para `docs/canonical/oprm-canon.v1.md`, com título explícito sobre ingestão de CNAE e totalização de market size.
 - 2026-05-20 15:05:00 (UTC): ajuste de implementação no `oprm-coletor-mei` para garantir que `completeRun` seja chamado somente após concluir a leitura de todos os arquivos da run. Adicionada guarda `readAllFilesInRun` no `OprmMarketImportScheduler` e proteção para falha de publicação de evento `FAILED` sem abortar o loop de leitura.
+
+- 2026-05-20 15:30:00 (UTC): ajuste solicitado para agendar nova ingestão de CNAEs para **12:30 de hoje (20/05)** no fuso `America/Sao_Paulo`, com cron hardcoded de `runScheduledImport` alterado para `0 30 12 20 5 *` no `oprm-coletor-mei`.

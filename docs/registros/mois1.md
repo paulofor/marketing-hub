@@ -298,3 +298,36 @@
 - documentos lidos para tratar a situação:
   - docs/registros/mois1.md
   - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+
+## 2026-05-20 11:14:37 UTC-3
+- ajuste na tela de Biblioteca de Páginas de Vendas (MOIS) para exibir o JSON de retorno da OpenAI dentro da coluna de erro da fila de jobs.
+- foi criada formatação defensiva para detectar trecho JSON no erro bruto e renderizar com indentação, preservando o prefixo textual quando existir.
+- a coluna Erro agora usa bloco com quebra de linha para tornar legível o payload de erro retornado pelo backend/OpenAI.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/mois1.md
+
+## 2026-05-20 11:17:54 UTC-3
+- refinamento da exibição de erro OpenAI na tela de jobs MOIS para ficar aderente ao cânone operacional: destaque explícito do bloco `OpenAI JSON` quando o payload JSON estiver presente.
+- corrigida a detecção de início de JSON para evitar comportamento implícito com listas vazias e manter fallback do erro bruto quando não houver JSON válido.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+  - docs/registros/mois1.md
+
+## 2026-05-20 11:21:48 UTC-3
+- atualização de regra canônica do MOIS Worker para erros de integração OpenAI: passou a ser obrigatório obter/processar também o `error_file_id` (JSONL) em caso de falha batch.
+- refinada a seção de conformidade para explicitar que o JSONL de erro é parte do diagnóstico de causa-raiz e da composição da mensagem persistida/exibida no job.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md
+
+## 2026-05-20 11:26:28 UTC-3
+- implementação no worker da biblioteca de páginas MOIS para tratamento de erro OpenAI batch com captura de `error_file_id` (JSONL) quando status terminal não for `completed` ou quando faltar `output_file_id`.
+- mensagens de falha agora carregam contexto operacional (`batchId`, `status`, `outputFileId`, `errorFileId`) e incluem o conteúdo `error_jsonl` quando disponível.
+- adicionada leitura defensiva de `error_file_id` com log explícito em caso de falha de download do JSONL.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
+  - docs/registros/mois1.md

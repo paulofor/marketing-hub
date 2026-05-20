@@ -599,3 +599,5 @@
   - AGENTS.md
   - docs/registros/experimentos.md
 
+
+- 2026-05-20: Movidos para docs/canonical/obsoletos os cânones de experimentos/pipeline/gera landing/aprovação para posterior recriação.

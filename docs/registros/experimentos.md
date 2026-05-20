@@ -552,3 +552,16 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-05-20 22:20:00 UTC
+- solicitação para limpar a aba `Overview` do experimento removendo informações obsoletas.
+- causa-raiz identificada: a aba continha componentes/linhas legadas que adicionavam ruído e não agregavam mais ao fluxo atual.
+- foi feito no frontend:
+  - remoção do item `E-mail de amostra` com valor `Obsoleto` da listagem principal da `Overview`;
+  - remoção dos painéis `ExperimentLearningPanel` e `ExperimentReportPanel` da aba `Overview`, mantendo foco na ficha resumida do experimento.
+- impacto esperado: visão geral mais objetiva, com menos informações obsoletas e melhor legibilidade para operação diária.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx

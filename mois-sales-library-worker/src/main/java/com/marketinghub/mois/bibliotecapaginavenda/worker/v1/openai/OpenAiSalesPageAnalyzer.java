@@ -64,7 +64,9 @@ public class OpenAiSalesPageAnalyzer {
                                     Map.of("role", "system", "content", "Você analisa páginas de venda e responde exclusivamente em JSON válido sem markdown."),
                                     Map.of("role", "user", "content", prompt)
                             ),
-                            "response_format", Map.of("type", "json_object")
+                            "text", Map.of(
+                                    "format", Map.of("type", "json_object")
+                            )
                     )
             ));
         } catch (JsonProcessingException e) {
@@ -115,6 +117,14 @@ public class OpenAiSalesPageAnalyzer {
         try {
             String line = outputJsonl.lines().filter(StringUtils::hasText).findFirst().orElseThrow();
             JsonNode root = objectMapper.readTree(line);
+            JsonNode statusCodeNode = root.path("response").path("status_code");
+            if (statusCodeNode.isInt() && statusCodeNode.asInt() >= 400) {
+                throw new IllegalStateException(buildBatchErrorMessage(root));
+            }
+            JsonNode lineError = root.path("error");
+            if (!lineError.isMissingNode() && !lineError.isNull()) {
+                throw new IllegalStateException("OpenAI batch retornou erro de linha: " + lineError.toString());
+            }
             JsonNode outputText = root.path("response").path("body").path("output").get(0).path("content").get(0).path("text");
             if (outputText.isMissingNode() || outputText.isNull()) {
                 outputText = root.path("response").path("body").path("output_text");
@@ -135,6 +145,18 @@ public class OpenAiSalesPageAnalyzer {
             log.error("Falha parse output batch OpenAI. output={}", outputJsonl, e);
             throw new IllegalStateException("Falha ao interpretar output do batch OpenAI", e);
         }
+    }
+
+    private String buildBatchErrorMessage(JsonNode root) {
+        int status = root.path("response").path("status_code").asInt(0);
+        String requestId = root.path("response").path("request_id").asText("");
+        JsonNode error = root.path("response").path("body").path("error");
+        String upstreamMessage = error.path("message").asText("");
+        String upstreamType = error.path("type").asText("");
+        String upstreamCode = error.path("code").asText("");
+        return "OpenAI batch retornou erro HTTP " + status
+                + " (requestId=" + requestId + ", type=" + upstreamType + ", code=" + upstreamCode + "): "
+                + upstreamMessage;
     }
 
     private record FileUploadResponse(String id) {}

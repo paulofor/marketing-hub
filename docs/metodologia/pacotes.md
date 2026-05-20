@@ -7,4 +7,9 @@
 ## Biblioteca de Paginas de Vendas
 
 ### Worker 
-* mois.bibliotecapaginavendas.worker.v1 
+* mois.bibliotecapaginavendas.worker.v1
+
+# Backend
+
+## Modelos OpenAI
+* modelos.openai.catalogo.v1

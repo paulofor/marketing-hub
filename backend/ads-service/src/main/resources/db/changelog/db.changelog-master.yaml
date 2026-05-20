@@ -1,7 +1,7 @@
 databaseChangeLog:
   - include:
-      file: changesets/2026-05-17-mois-sales-library-analysis.yaml
-      relativeToChangelogFile: true
+      file: db/changelog/changesets/2026-05-17-mois-sales-library-analysis.yaml
+
 
   - include:
       file: changesets/2026-05-16-mois-sales-library-processing-job.yaml

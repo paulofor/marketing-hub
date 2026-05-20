@@ -331,3 +331,12 @@
   - docs/canonical/mois-worker-canon.v1.md
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
   - docs/registros/mois1.md
+
+## 2026-05-20 14:47:23 UTC-3
+- aumento do timeout do modo batch OpenAI no worker da biblioteca de páginas de vendas (MOIS) para 30 minutos efetivos, ajustando o default de `OPENAI_BATCH_TIMEOUT_MS` para `1800000` no `application.yml`.
+- atualização do cânone `docs/canonical/mois-worker-canon.v1.md` para manter consistência documental com o novo valor default de timeout (`1800000 ms` / `PT30M`).
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - mois-sales-library-worker/src/main/resources/application.yml
+  - docs/registros/mois1.md

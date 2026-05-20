@@ -345,3 +345,8 @@
 - correção no `backend/ads-service` para validação do Liquibase: o `include` do changelog master apontava para `db/changelog/changesets/...` sem `relativeToChangelogFile`, causando erro de arquivo não encontrado no classpath.
 - ajuste aplicado em `src/main/resources/db/changelog/db.changelog-master.yaml` para usar `changesets/2026-05-17-mois-sales-library-analysis.yaml` com `relativeToChangelogFile: true`, alinhando com o padrão dos demais includes.
 - validação executada: `mvn -q liquibase:validate` (neste ambiente falhou por ausência de `database URL`, sem novo erro de arquivo ausente).
+
+## 2026-05-20 21:05:00 UTC
+- correção de causa-raiz para `ValidationFailedException` do Liquibase por `duplicate identifiers`: o mesmo changelog `changesets/2026-05-17-mois-sales-library-analysis.yaml` estava incluído duas vezes no `db.changelog-master.yaml` do `backend/ads-service`.
+- removido o include duplicado no topo do master, mantendo apenas a inclusão única já existente na seção cronológica de changesets.
+- impacto: elimina duplicidade de changeset id (`2026-05-17-mois-sales-library-analysis-01::codex`) durante `liquibase validate/update`.

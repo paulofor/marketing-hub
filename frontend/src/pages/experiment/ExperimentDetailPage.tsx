@@ -2254,37 +2254,6 @@ export default function ExperimentDetailPage() {
                       Pendentes: {frameworkImagePendingCount}
                     </span>
                   </div>
-                  <p className="text-muted mb-0">
-                    Esta etapa executa a geração real das imagens em lote na
-                    OpenAI usando os prompts produzidos no Gera Prompt Imagem.
-                  </p>
-                  <div className="d-flex flex-wrap align-items-center gap-2">
-                    <Link
-                      to={`/experiments/${expId}/framework-images`}
-                      className="btn btn-outline-primary btn-sm"
-                    >
-                      Ver detalhes das imagens
-                    </Link>
-                    <button
-                      type="button"
-                      className="btn btn-success align-self-start"
-                      onClick={handleStartImageGeneration}
-                      disabled={
-                        isStartingImageGeneration ||
-                        generateFrameworkImages.isPending
-                      }
-                    >
-                      {isStartingImageGeneration ||
-                      generateFrameworkImages.isPending
-                        ? "Iniciando..."
-                        : "Iniciar"}
-                    </button>
-                    <span className="small text-muted">
-                      Acompanhe a timeline detalhada na aba{" "}
-                      <strong>Conteúdo</strong>, bloco{" "}
-                      <strong>Gerar imagens em lote (AI Worker)</strong>.
-                    </span>
-                  </div>
                   <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
                     <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
                       <h6 className="mb-0">Gera Prompt Imagem</h6>
@@ -2397,6 +2366,39 @@ export default function ExperimentDetailPage() {
                         </table>
                       </div>
                     )}
+                  </div>
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-2">
+                    <p className="text-muted mb-0">
+                      Esta etapa executa a geração real das imagens em lote na
+                      OpenAI usando os prompts produzidos no Gera Prompt Imagem.
+                    </p>
+                    <div className="d-flex flex-wrap align-items-center gap-2">
+                      <Link
+                        to={`/experiments/${expId}/framework-images`}
+                        className="btn btn-outline-primary btn-sm"
+                      >
+                        Ver detalhes das imagens
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn btn-success align-self-start"
+                        onClick={handleStartImageGeneration}
+                        disabled={
+                          isStartingImageGeneration ||
+                          generateFrameworkImages.isPending
+                        }
+                      >
+                        {isStartingImageGeneration ||
+                        generateFrameworkImages.isPending
+                          ? "Iniciando..."
+                          : "Iniciar"}
+                      </button>
+                      <span className="small text-muted">
+                        Acompanhe a timeline detalhada na aba{" "}
+                        <strong>Conteúdo</strong>, bloco{" "}
+                        <strong>Gerar imagens em lote (AI Worker)</strong>.
+                      </span>
+                    </div>
                   </div>
                   {frameworkImageSummary ? (
                     <div className="row g-2">

@@ -2,8 +2,11 @@ package com.marketinghub.worker.geralanding;
 
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,9 +100,9 @@ public class GeraLandingOpenAiBatchClient {
     }
 
     private OpenAiResponse createFlexResponse(GeraLandingJobDto job) throws Exception {
-        log.info("Iniciando parse do requestBodyJson para flex [jobId={}, stage={}, requestBodyJsonPreview={}]",
+        log.info("Iniciando preparação do request para flex [jobId={}, stage={}, requestBodyJsonPreview={}]",
                 job.id(), job.section(), preview(job.requestBodyJson()));
-        Map<String, Object> requestBody = objectMapper.readValue(job.requestBodyJson(), Map.class);
+        Map<String, Object> requestBody = prepareRequestBodyForFlex(job);
         log.info("RequestBody parseado para flex [jobId={}, stage={}, keys={}, requestBodyMapPreview={}]",
                 job.id(), job.section(), requestBody.keySet(), preview(objectMapper.writeValueAsString(requestBody)));
         requestBody.put("service_tier", "flex");
@@ -120,6 +123,32 @@ public class GeraLandingOpenAiBatchClient {
             throw new IllegalStateException("OpenAI flex retornou erro para gera-landing: " + response.errorMessage());
         }
         return response;
+    }
+
+    Map<String, Object> prepareRequestBodyForFlex(GeraLandingJobDto job) throws Exception {
+        String requestBodyJson = job.requestBodyJson();
+        if (StringUtils.hasText(requestBodyJson)) {
+            String trimmed = requestBodyJson.trim();
+            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                return objectMapper.readValue(trimmed, new TypeReference<>() {});
+            }
+            log.warn("requestBodyJson não está em JSON; aplicando fallback para payload estruturado [jobId={}, stage={}, startsWith={}]",
+                    job.id(), job.section(), trimmed.substring(0, Math.min(40, trimmed.length())).replace("\n", "\\n"));
+            return buildRequestBodyFromPrompt(job, trimmed);
+        }
+        return buildRequestBodyFromPrompt(job, job.prompt());
+    }
+
+    private Map<String, Object> buildRequestBodyFromPrompt(GeraLandingJobDto job, String promptText) {
+        if (!StringUtils.hasText(promptText)) {
+            throw new IllegalStateException("Payload da OpenAI ausente: requestBodyJson e prompt vazios para gera-landing");
+        }
+        Map<String, Object> requestBody = new LinkedHashMap<>();
+        requestBody.put("model", StringUtils.hasText(job.model()) ? job.model() : "gpt-5.2");
+        requestBody.put("input", List.of(
+                Map.of("role", "system", "content", "[gera-landing-pipeline] Você é especialista em execução de pipeline de experimento."),
+                Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", promptText)))));
+        return requestBody;
     }
 
     private int safeLength(String value) {

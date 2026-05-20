@@ -233,3 +233,13 @@
   - docs/canonical/mois-worker-canon.v1.md
   - docs/canonical/system-governance-canon.v2.md
   - docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-worker-biblioteca-sales-pages.md
+
+## 2026-05-19 21:29:49 UTC-3
+- diagnóstico de falha operacional no worker da biblioteca de sales pages: jobs em FAILED por ausência de chave OpenAI no runtime do deploy.
+- análise de causa-raiz comparando composição do `mois-sales-library-worker` com o padrão já funcional do `ai-worker` no mesmo host.
+- ajuste aplicado no `docker-compose.deploy.yml` do módulo para incluir variáveis de ambiente de runtime (backend/base URL, polling e OpenAI) e bind mount do arquivo de segredo `OPENAI_API_KEY_HOST_FILE -> /run/secrets/openai_api_key`, alinhando o padrão de injeção de secret usado no ai-worker.
+- documentos lidos para tratar a situação:
+  - ai-worker/docker-compose.yml
+  - mois-sales-library-worker/docker-compose.yml
+  - mois-sales-library-worker/docker-compose.deploy.yml
+  - docs/registros/mois1.md

@@ -97,8 +97,14 @@ public class GeraLandingOpenAiBatchClient {
     }
 
     private OpenAiResponse createFlexResponse(GeraLandingJobDto job) throws Exception {
+        log.info("Iniciando parse do requestBodyJson para flex [jobId={}, stage={}, requestBodyJsonPreview={}]",
+                job.id(), job.section(), preview(job.requestBodyJson()));
         Map<String, Object> requestBody = objectMapper.readValue(job.requestBodyJson(), Map.class);
+        log.info("RequestBody parseado para flex [jobId={}, stage={}, keys={}, requestBodyMapPreview={}]",
+                job.id(), job.section(), requestBody.keySet(), preview(objectMapper.writeValueAsString(requestBody)));
         requestBody.put("service_tier", "flex");
+        log.info("RequestBody final para /responses [jobId={}, stage={}, requestBodyWithFlexPreview={}]",
+                job.id(), job.section(), preview(objectMapper.writeValueAsString(requestBody)));
 
         OpenAiResponse response = webClient.post().uri("/responses")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -719,3 +719,5 @@
   - incluídos helpers de segurança para preview e cálculo de tamanho, evitando logar payloads ilimitados em uma única linha.
 - impacto esperado: acelerar análise de causa-raiz em falhas de contrato/formato de resposta do modelo, com evidência literal do início da saída retornada.
 - ajuste complementar: adicionado log explícito do conteúdo de `job.requestBodyJson()` (preview sanitizado/truncado) no início do `generate`, para facilitar correlação direta entre payload enviado e falhas subsequentes.
+- ajuste complementar 2: adicionados logs dentro de `createFlexResponse` para mostrar o `requestBody` parseado (chaves + preview) e o payload final após injeção de `service_tier=flex` antes do POST em `/responses`.
+- ajuste complementar 3: reposicionado/adicionado log **antes** do `readValue(job.requestBodyJson(), Map.class)` em `createFlexResponse`, para garantir visibilidade do payload bruto mesmo quando ocorrer erro de parse JSON nesse ponto.

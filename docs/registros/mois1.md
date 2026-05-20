@@ -259,3 +259,12 @@
 - documentos lidos para tratar a situação:
   - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
   - docs/registros/mois1.md
+
+## 2026-05-19 23:51:38 UTC-3
+- solicitado planejar melhor acompanhamento de casos em `FETCHING` na tela da biblioteca MOIS, com base em documento canônico.
+- revisado o cânone do worker MOIS e proposta taxonomia explícita de estados operacionais para reduzir ambiguidade no diagnóstico.
+- atualizada a UI de fila de jobs para incluir filtros `ANALYZING` e `RETRY_WAIT` e legenda operacional dos status na própria tela.
+- documentos lidos para tratar a situação:
+  - docs/canonical/system-governance-canon.v2.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx

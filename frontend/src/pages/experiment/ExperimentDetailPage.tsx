@@ -25,8 +25,6 @@ import {
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
-import ExperimentReportPanel from "./ExperimentReportPanel";
-import ExperimentLearningPanel from "./ExperimentLearningPanel";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
 import LandingTab from "./LandingTab";
@@ -1450,10 +1448,6 @@ export default function ExperimentDetailPage() {
       value: data.sampleEmailsToGenerate ?? "—",
     },
     {
-      label: "E-mail de amostra",
-      value: "Obsoleto",
-    },
-    {
       label: "Fluxo de portal do lead",
       value: data.leadPortalFlowName ? (
         <div className="d-flex flex-column">
@@ -1955,8 +1949,6 @@ export default function ExperimentDetailPage() {
                   </dl>
                 </div>
               </div>
-              <ExperimentLearningPanel experimentId={expId} />
-              <ExperimentReportPanel experimentId={expId} />
             </div>
           </Tabs.Content>
           <Tabs.Content value="funnel" asChild>

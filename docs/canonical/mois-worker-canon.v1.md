@@ -66,6 +66,38 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 ## 8. Regra canônica de timeout OpenAI Batch (MOIS Worker)
 Para integrações batch com OpenAI no contexto do MOIS Worker, o timeout canônico é de **30 minutos** (`300000 ms` / `PT30M`), e não deve ser reduzido sem versionamento explícito deste cânone.
 
+
+## 8.1 Taxonomia canônica de status (monitoramento de fetching)
+Para acompanhamento operacional na tela de Biblioteca de Páginas de Vendas, o status de job deve refletir a etapa real do pipeline e permitir diagnóstico de causa-raiz sem depender apenas de `errorMessage`.
+
+### 8.1.1 Estados canônicos (v1.1 planejado)
+1. `PENDING`
+   - Job criado e aguardando claim pelo worker.
+2. `FETCHING`
+   - Worker em coleta/parsing da página de origem.
+3. `ANALYZING`
+   - Conteúdo já coletado e enviado para processamento OpenAI (batch em andamento).
+4. `RETRY_WAIT`
+   - Falha transitória detectada; job aguardando nova tentativa automática.
+5. `DONE`
+   - Análise concluída e persistida com sucesso.
+6. `FAILED`
+   - Falha terminal após esgotar tentativas ou erro não recuperável de contrato/integração.
+
+### 8.1.2 Regras mínimas de exibição na UI
+- Exibir badge por status e tooltip com definição operacional curta.
+- Exibir coluna `Último evento` com motivo objetivo da etapa atual (ex.: `batch.status=running`, `connect timeout`, `output_file_id ausente`).
+- Exibir coluna `Tempo em etapa` (`agora - updatedAt`) para detectar stuck jobs em `FETCHING`/`ANALYZING`.
+- Exibir `Tentativas` + `Próxima tentativa em` quando status for `RETRY_WAIT`.
+- Exibir CTA de diagnóstico (link para detalhe do job) quando status for `FAILED`.
+
+### 8.1.3 Critérios de transição
+- `PENDING -> FETCHING`: claim confirmado pelo backend.
+- `FETCHING -> ANALYZING`: coleta concluída e requisição batch enviada com sucesso.
+- `ANALYZING -> DONE`: output válido persistido em `:complete`.
+- `ANALYZING -> RETRY_WAIT`: timeout/intermitência recuperável com orçamento de retry restante.
+- `FETCHING|ANALYZING|RETRY_WAIT -> FAILED`: erro terminal de contrato, parsing irrecuperável ou retries esgotados.
+
 ## 9. Restrições e conformidade
 - O worker **não acessa banco diretamente**; todo tráfego de dados passa pelo backend principal.
 - Transições de estado devem ocorrer exclusivamente pelos endpoints do backend MOIS.

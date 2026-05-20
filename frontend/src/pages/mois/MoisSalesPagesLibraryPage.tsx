@@ -144,6 +144,8 @@ export default function MoisSalesPagesLibraryPage() {
               <option value="">Todos os status</option>
               <option value="PENDING">PENDING</option>
               <option value="FETCHING">FETCHING</option>
+              <option value="ANALYZING">ANALYZING</option>
+              <option value="RETRY_WAIT">RETRY_WAIT</option>
               <option value="DONE">DONE</option>
               <option value="FAILED">FAILED</option>
             </select>
@@ -185,6 +187,9 @@ export default function MoisSalesPagesLibraryPage() {
                 </tbody>
               </table>
               <SimplePaginator page={jobsQuery.data.page} pageSize={jobsQuery.data.pageSize} total={jobsQuery.data.total} onChange={setJobsPage} />
+              <div className="alert alert-light border mt-3 mb-0 small">
+                <strong>Status operacionais:</strong> PENDING (na fila), FETCHING (coletando página), ANALYZING (processando OpenAI), RETRY_WAIT (aguardando nova tentativa), DONE (concluído), FAILED (falha terminal).
+              </div>
             </>
           ) : null}
         </div>

@@ -88,6 +88,12 @@ mínimos de experiência exigidos pelas plataformas de mídia paga.
     `mobilePriorityScore` (1–10), `dropOffRisk` (`baixo/medio/alto`) e
     `ctaSlot` (objeto com `hasCta`, `ctaLabel`, `ctaVariant`, `matchAdCta`,
     `notes`).
+  - Requisito visual mínimo obrigatório no wireframe: `>= 4` imagens planejadas
+    no total (somando a página inteira), distribuídas nas seções para manter
+    escaneabilidade e prova visual.
+  - Regra operacional para garantir o mínimo de imagens: cada seção em
+    `sectionOrder[]` deve conter ao menos um elemento visual (`img`) no
+    wireframe simplificado desta etapa.
   - `consistencyChecks[]` (≥2) no mesmo formato da copy.
 - **Validações adicionais**
   - Sempre incluir checks `CTA_MATCH` e `EXPERIENCE_CONTINUITY`.

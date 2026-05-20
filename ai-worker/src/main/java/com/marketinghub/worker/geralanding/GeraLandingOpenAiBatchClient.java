@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @Component
 public class GeraLandingOpenAiBatchClient {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingOpenAiBatchClient.class);
+    private static final int LOG_PREVIEW_LIMIT = 1200;
 
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
@@ -54,14 +55,27 @@ public class GeraLandingOpenAiBatchClient {
             throw new IllegalStateException("OpenAI API key não configurada");
         }
         try {
+            log.info("Iniciando geração gera-landing via OpenAI flex [jobId={}, stage={}, model={}, requestBodyLength={}]",
+                    job.id(), job.section(), job.model(), safeLength(job.requestBodyJson()));
+            log.info("Payload requestBodyJson do gera-landing [jobId={}, stage={}, requestBodyPreview={}]",
+                    job.id(), job.section(), preview(job.requestBodyJson()));
             OpenAiResponse response = createFlexResponse(job);
             String rawOutput = objectMapper.writeValueAsString(response);
             String modelResponse = response.firstText();
+            log.info("Resposta OpenAI recebida para gera-landing [jobId={}, stage={}, responseId={}, rawOutputLength={}, modelResponseLength={}, modelResponsePreview={}]",
+                    job.id(),
+                    job.section(),
+                    response.id(),
+                    safeLength(rawOutput),
+                    safeLength(modelResponse),
+                    preview(modelResponse));
             if (!StringUtils.hasText(modelResponse)) {
                 throw new IllegalStateException("Modelo não retornou conteúdo para gera-landing");
             }
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
+            log.info("Finalizando geração gera-landing [jobId={}, stage={}, responseId={}, inputTokens={}, outputTokens={}]",
+                    job.id(), job.section(), response.id(), inputTokens, outputTokens);
             return new GeraLandingJobCompletionPayload(
                     modelResponse,
                     rawOutput,
@@ -76,6 +90,8 @@ public class GeraLandingOpenAiBatchClient {
                     job.id(), job.section(), statusCode.value(), ex.getResponseBodyAsString());
             throw new IllegalStateException("Falha HTTP ao gerar conteúdo de gera-landing em modo flex", ex);
         } catch (Exception ex) {
+            log.error("Falha inesperada no gera-landing em modo flex [jobId={}, stage={}, model={}, requestBodyPreview={}]",
+                    job.id(), job.section(), job.model(), preview(job.requestBodyJson()), ex);
             throw new IllegalStateException("Falha ao gerar conteúdo de gera-landing em modo flex", ex);
         }
     }
@@ -98,5 +114,20 @@ public class GeraLandingOpenAiBatchClient {
             throw new IllegalStateException("OpenAI flex retornou erro para gera-landing: " + response.errorMessage());
         }
         return response;
+    }
+
+    private int safeLength(String value) {
+        return value != null ? value.length() : 0;
+    }
+
+    private String preview(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "<empty>";
+        }
+        String normalized = value.replace("\n", "\\n").replace("\r", "\\r");
+        if (normalized.length() <= LOG_PREVIEW_LIMIT) {
+            return normalized;
+        }
+        return normalized.substring(0, LOG_PREVIEW_LIMIT) + "...(truncated)";
     }
 }

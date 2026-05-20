@@ -8,7 +8,7 @@ export function useCreateOpenAiModel() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: OpenAiModelPayload) => {
-      const { data } = await axios.post<OpenAiModel>("/api/openai-models", payload);
+      const { data } = await axios.post<OpenAiModel>("/api/modelos/openai/catalogo/v1/modelos", payload);
       return data;
     },
     onSuccess: () => {

@@ -17,7 +17,7 @@ export function useOpenAiModels() {
   return useQuery({
     queryKey: ["openAiModels"],
     queryFn: async () => {
-      const { data } = await axios.get<OpenAiModel[]>("/api/openai-models");
+      const { data } = await axios.get<OpenAiModel[]>("/api/modelos/openai/catalogo/v1/modelos");
       return data;
     },
   });

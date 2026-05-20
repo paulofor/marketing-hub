@@ -612,3 +612,17 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-05-20 00:10:02 UTC-3
+- solicitação para criar novo documento canônico explicando detalhadamente o funcionamento do experimento com base no código e em rascunho operacional.
+- raciocínio aplicado: consolidar em um único cânone a sequência operacional (criação → pipeline de experimento → pipeline gera landing → anúncios → aprovação/publicação da landing), além de formalizar regras de batch, publicação no Lead Portal e rastreio de custos.
+- foi feito: criação do arquivo `docs/canonical/procedimento-experimento-canon.v1.md` e registro desta tarefa no documento canônico de registros de experimentos.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/system-governance-canon.v2.md
+  - docs/pipeline-landing-experimento.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/ExperimentPipelineSection.java
+  - ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/GeraLandingOpenAiBatchClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/creative/CreativeChatGptClient.java

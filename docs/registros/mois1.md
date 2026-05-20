@@ -155,7 +155,7 @@
 - solicitada especificação formal do worker da biblioteca de páginas de vendas do MOIS.
 - criado documento `docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-worker-biblioteca-sales-pages.md` contendo objetivo, escopo, fluxo, estados, contratos de API, configuração, observabilidade, critérios de aceite e riscos operacionais.
 - documentos/códigos consultados:
-  - docs/canonical/mois-sales-library-worker-canon.v1.md
+  - docs/canonical/mois-worker-canon.v1.md
   - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/service/MoisSalesLibraryService.java
   - backend/ads-service/src/main/java/com/marketinghub/mois/biblioteca/web/MoisSalesLibraryController.java
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/libraryworker/service/PipelineRunner.java
@@ -213,3 +213,23 @@
 - Arquivos alterados:
   - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
   - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+
+## 2026-05-19 21:07:28 UTC-3
+- solicitada consolidação dos documentos canônicos de worker do MOIS em um único arquivo.
+- foi adotado o código do `mois-sales-library-worker` como fonte de verdade para fluxo, contratos e parâmetros de configuração.
+- criado documento canônico unificado `docs/canonical/mois-worker-canon.v1.md` e os documentos antigos (`mois-sales-library-worker-canon.v1.md` e `ai-workers-canon.v1.md`) passaram a atuar como ponte para o novo cânone.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/PipelineRunner.java
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/config/WorkerProperties.java
+  - mois-sales-library-worker/src/main/resources/application.yml
+
+## 2026-05-19 21:12:17 UTC-3
+- solicitado remover duplicatas de documentos canônicos de worker para manter apenas um arquivo canônico ativo.
+- removidos os arquivos duplicados `docs/canonical/mois-sales-library-worker-canon.v1.md` e `docs/canonical/ai-workers-canon.v1.md`.
+- referências documentais atualizadas para apontar exclusivamente para `docs/canonical/mois-worker-canon.v1.md`.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/canonical/system-governance-canon.v2.md
+  - docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-worker-biblioteca-sales-pages.md

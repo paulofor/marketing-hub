@@ -7,7 +7,7 @@ Data: 2026-05-19
 Processar de forma assíncrona os jobs `PENDING` da biblioteca de páginas de vendas do MOIS, executar análise estruturada inicial de cada URL e persistir os artefatos de análise no backend para uso operacional e comercial.
 
 Referência canônica:
-- `docs/canonical/mois-sales-library-worker-canon.v1.md`
+- `docs/canonical/mois-worker-canon.v1.md`
 
 ## 2. Escopo
 
@@ -158,4 +158,4 @@ Mitigação:
   - `mois-sales-library-worker/src/main/resources/application.yml`
   - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/libraryworker/config/WorkerProperties.java`
 - Cânone:
-  - `docs/canonical/mois-sales-library-worker-canon.v1.md`
+  - `docs/canonical/mois-worker-canon.v1.md`

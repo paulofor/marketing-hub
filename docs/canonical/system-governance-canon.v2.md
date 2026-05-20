@@ -152,7 +152,7 @@ docs/canonical/
 ├─ media-packages-canon.v1.md                 # lifecycle watermark → zip → email → entrega
 ├─ ads-integrations-canon.v1.md               # contratos Meta / canais pagos
 ├─ facebook-campaign-publication-canon.v1.md   # prontidão, liberação e funil do Facebook Ads Worker
-├─ ai-workers-canon.v1.md                     # prompts, modelos e auditoria cross services
+├─ mois-worker-canon.v1.md                    # cânone único do worker MOIS (fluxo, contratos e OpenAI)
 └─ <domínio>-decision-schema.v1.json          # schemas específicos quando necessário
 ```
 

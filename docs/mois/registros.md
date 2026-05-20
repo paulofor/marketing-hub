@@ -272,7 +272,7 @@
 ## 2026-05-17 00:00 UTC
 - Criado módulo `mois-sales-library-worker` (Java 21 + Maven + Spring Boot + Docker) para processar jobs PENDING da biblioteca de sales pages via backend MOIS.
 - Criados endpoints backend para claim/complete/fail do job da pipeline assíncrona.
-- Criado cânone: `docs/canonical/mois-sales-library-worker-canon.v1.md`.
+- Criado cânone: `docs/canonical/mois-worker-canon.v1.md`.
 
 ## 2026-05-17 04:03:18 UTC-3
 - Adicionada observabilidade operacional no `mois-sales-library-worker` para validar execução de agendamento e integração com backend do MOIS.

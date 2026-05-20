@@ -637,3 +637,12 @@
   - docs/canonical/procedimento-experimento-canon.v1.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssembler.java
+
+## 2026-05-20 23:58:00 UTC
+- solicitação para formalizar no cânone e no gera-wireframe os limites mínimos de seções e imagens.
+- causa-raiz: o contrato da etapa wireframe definia mínimo de seções, mas não deixava explícito o mínimo de imagens no mesmo nível de regra operacional.
+- foi feito:
+  - atualizado `docs/experiment-pipeline-validation-spec.md` na seção `LANDING_PAGE_WIREFRAME` para reforçar mínimo de 4 imagens no wireframe e regra operacional de distribuição visual por seção.
+  - atualizado prompt `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md` com regras explícitas: mínimo de 4 seções e mínimo de 4 imagens.
+  - atualizado schema `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json` com `pagina.corpo.secoes.minItems = 4` e exigência de ao menos um elemento `img` em `elementosSeccao` por seção (via `contains` + `minContains`).
+- impacto esperado: reduzir respostas abaixo do mínimo visual/comercial e evitar reprovação contratual por wireframes com densidade visual insuficiente.

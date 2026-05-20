@@ -73,6 +73,9 @@ Regras fixas da etapa (formato simplificado):
 - Hero obrigatório com âncora primária: na primeira dobra (hero), incluir CTA com link âncora direto para a seção do formulário.
 - Âncoras obrigatórias adicionais: incluir mais duas âncoras internas para pontos estratégicos distintos da página (ex.: mecanismo, prova social, oferta), além da âncora do hero para o formulário.
 - Balanceamento visual obrigatório: intercalar blocos de texto e imagem ao longo da página, inserindo elementos `img` em seções relevantes para reduzir paredes de texto e melhorar escaneabilidade.
+- Quantidade mínima de seções obrigatória: gerar no mínimo 4 seções em `pagina.corpo.secoes`.
+- Quantidade mínima de imagens obrigatória: gerar no mínimo 4 elementos `img` no total da página.
+- Regra mandatória para cumprir o mínimo de imagens: cada seção em `pagina.corpo.secoes[]` deve conter pelo menos um elemento `img` em `elementosSeccao` (direto ou em `elementosInternos`).
 - Imagem de produto obrigatória: garantir que pelo menos uma `img` represente visualmente a ideia do produto/entrega que o cliente está comprando (ex.: mockup da solução, amostra do conteúdo, kit/resultado final esperado).
 - Para cada visual (`img`) planejado no wireframe, explicitar no `objetivo`/metadados da seção:
   - onde o visual entra na narrativa da página (posição e contexto comercial);

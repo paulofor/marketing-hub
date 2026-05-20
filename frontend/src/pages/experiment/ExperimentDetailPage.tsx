@@ -2277,8 +2277,60 @@ export default function ExperimentDetailPage() {
                         hasRunningGeraLandingImagePromptsExecution
                       }
                     >
-                      {isStartingImagePrompts ? "Iniciando..." : "Iniciar"}
+                      {isStartingImagePrompts ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
                     </button>
+                    {isLoadingPendingGeraLandingImagePromptsExecutions ? (
+                      <p className="text-muted mb-0">Carregando jobs da etapa...</p>
+                    ) : runningGeraLandingImagePromptsExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhum job pendente ou em execução.
+                      </p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {runningGeraLandingImagePromptsExecutions.map(
+                              (execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                   <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
                     <h6 className="mb-0">Histórico de execuções</h6>

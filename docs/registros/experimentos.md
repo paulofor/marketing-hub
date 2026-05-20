@@ -601,3 +601,14 @@
 
 
 - 2026-05-20: Movidos para docs/canonical/obsoletos os cânones de experimentos/pipeline/gera landing/aprovação para posterior recriação.
+## 2026-05-20 23:40:00 UTC
+- solicitação para remover validação duplicada de landing na tela de detalhes do experimento.
+- causa-raiz identificada: a mesma condição de validação de URL de destino da landing estava aparecendo em dois grupos de checklist diferentes (bloqueios e fluxo operacional), gerando redundância visual.
+- foi feito no frontend:
+  - removido o item duplicado "Landing aprovada como destino da campanha" do `operationalChecklist`, mantendo a validação apenas em "Bloqueios de publicação".
+- impacto esperado: checklist mais claro, sem repetição de informação e com foco nas validações realmente distintas.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx

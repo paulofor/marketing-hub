@@ -26,6 +26,22 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Cada arquivo `ESTABELECIMENTOS` deve gerar log de início, progresso periódico e resumo final com: `linhasLidas`, `linhasValidas`, `linhasIgnoradas` e quantidade de CNAEs consolidados.
 - A ausência desses logs invalida a rastreabilidade operacional da totalização e deve ser tratada como não conformidade canônica.
 
+## 🚨 MUITO IMPORTANTE — processamento de arquivos grandes (`Estabelecimentos*.zip`)
+- É proibido processar `Estabelecimentos*.zip` carregando conteúdo integral em memória com abordagens equivalentes a `readAllBytes()`/`String` única do arquivo inteiro.
+- O processamento de `Estabelecimentos*.zip` deve ser obrigatoriamente em **streaming** (leitura incremental por `ZipEntry` e por linha), mantendo uso de memória previsível.
+- A totalização por CNAE (`marketSizes`) deve ser incremental durante a leitura, com agregação em estrutura compacta (mapa por CNAE + contadores), sem materializar todas as linhas.
+- Deve existir mecanismo de **checkpoint/progresso** por arquivo para permitir retomada segura após falhas, evitando reprocessamento integral silencioso.
+- Em caso de falha por capacidade (ex.: `OutOfMemoryError`), o arquivo deve ser registrado como `FAILED` com causa-raiz explícita no erro operacional e logs com contexto (`runId`, `fileId`, `datasetType`, etapa da leitura).
+- A finalização da run (`completeRun`) permanece bloqueada enquanto houver arquivo não terminal; é proibido mascarar falha de leitura grande com fechamento prematuro.
+
+## Critério de efetividade — arquivos grandes
+- Cada execução de `ESTABELECIMENTOS` deve registrar, no mínimo:
+  - início da leitura da `ZipEntry` com identificador da entry;
+  - progresso periódico por volume (ex.: a cada N linhas);
+  - resumo final com `linhasLidas`, `linhasValidas`, `linhasIgnoradas`, total de CNAEs agregados e duração;
+  - confirmação explícita de publicação/persistência do `marketSizes` do arquivo.
+- Se qualquer item acima estiver ausente, a execução deve ser tratada como observabilidade insuficiente para operação de produção.
+
 ## Referência de governança
 - Este documento é o cânone específico de OPRM para ingestão de CNAE e totalização de market size.
 - As diretrizes gerais do sistema permanecem em `docs/canonical/system-governance-canon.v2.md`.

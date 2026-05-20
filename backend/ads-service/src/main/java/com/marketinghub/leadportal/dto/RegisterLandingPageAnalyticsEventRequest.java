@@ -10,6 +10,7 @@ public record RegisterLandingPageAnalyticsEventRequest(
         String sessionId,
         String sectionId,
         Long visibleMs,
+        Long elapsedMs,
         String pageUrl,
         Instant occurredAt,
         String userAgent) {

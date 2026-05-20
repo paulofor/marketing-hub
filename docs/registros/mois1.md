@@ -281,3 +281,20 @@
   - docs/canonical/mois-worker-canon.v1.md
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/PipelineRunner.java
+
+## 2026-05-20 00:27:24 UTC-3
+- ajuste na tela MOIS Biblioteca de Páginas de Vendas para padronizar o campo "Atualizado em" no fuso GMT, eliminando ambiguidade de horário local.
+- identificado que a formatação estava fixa em America/Sao_Paulo, o que causava divergência com a expectativa operacional de leitura em GMT.
+- alterada a função de formatação para usar timezone  e sufixo literal  no valor exibido em cada linha da fila de jobs.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/mois1.md
+
+## 2026-05-20 00:27:36 UTC-3
+- correção de registro anterior: a linha de detalhe técnico perdeu os literais por expansão indevida de shell durante escrita do markdown.
+- valor correto aplicado no frontend: timezone `Etc/GMT` e sufixo literal `GMT` na coluna "Atualizado em" da fila de jobs MOIS.
+- mantido o registro anterior por política append-only, com este complemento de correção.
+- documentos lidos para tratar a situação:
+  - docs/registros/mois1.md
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx

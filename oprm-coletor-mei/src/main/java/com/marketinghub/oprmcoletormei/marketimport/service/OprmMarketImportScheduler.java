@@ -47,7 +47,7 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "0 30 23 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 0 9 20 5 *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");

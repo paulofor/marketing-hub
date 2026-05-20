@@ -137,7 +137,7 @@ public class GeraLandingExecutionService {
                     openAiRequestBody,
                     prompt,
                     null);
-            log.info("Enviando gera-landing executionId={} para OpenAI em modo batch lógico", execution.idJob());
+            log.info("Enviando gera-landing executionId={} para OpenAI em modo flex", execution.idJob());
             GeraLandingJobCompletionPayload payload = openAiClient.generate(openAiJob);
             validateCopyPayloadText(normalizedStage, payload);
             log.info(

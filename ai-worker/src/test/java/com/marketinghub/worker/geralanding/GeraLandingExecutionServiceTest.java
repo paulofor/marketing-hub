@@ -60,7 +60,7 @@ class GeraLandingExecutionServiceTest {
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
                 new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-wireframe")));
         when(geraLandingService.montarERegistrarPromptEtapa(any(), any())).thenReturn("prompt-content");
-        when(openAiClient.generate(any())).thenThrow(new IllegalStateException("OpenAI erro de batch"));
+        when(openAiClient.generate(any())).thenThrow(new IllegalStateException("OpenAI erro de flex"));
 
         GeraLandingExecutionService service =
                 new GeraLandingExecutionService(

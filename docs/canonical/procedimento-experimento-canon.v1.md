@@ -82,8 +82,15 @@ Com a landing gerada:
 ### 8.1 Worker AI como camada obrigatória
 Toda chamada para OpenAI no contexto deste fluxo é mediada pelo Worker AI. O frontend e demais módulos não devem chamar OpenAI diretamente para essas etapas.
 
-### 8.2 Modo batch
-As integrações de geração no pipeline/geralanding utilizam modo batch. Para criativos, o código atual também executa via batch, com upload de arquivo JSONL, criação de batch e polling até status terminal.
+### 8.2 Modo de processamento OpenAI
+No fluxo de **Gera Landing**, a integração canônica com OpenAI deve usar **Flex processing** na API de `responses`, definindo `service_tier=flex` em cada requisição do Worker AI.
+
+Para outros fluxos que ainda usam lote assíncrono (ex.: alguns jobs de criativos/imagem), o modo batch continua permitido quando o contrato operacional exigir processamento em arquivo JSONL com polling.
+
+Regras obrigatórias do modo Flex no Gera Landing:
+- usar endpoint síncrono `/v1/responses` com `service_tier=flex`;
+- configurar timeout de cliente compatível com latência maior do Flex;
+- tratar indisponibilidade de capacidade (`429`) como falha de integração com contexto operacional em log.
 
 ## 9. Publicação da landing
 
@@ -120,6 +127,6 @@ A interface de Experimentos deve manter abas/visões que permitam acompanhar, de
 
 ## 14. Governança de evolução deste cânone
 
-Quando houver alteração de regra operacional (ordem de etapas, critérios de aprovação, publicação, batch, custos ou observabilidade), este documento deve ser atualizado imediatamente junto com:
+Quando houver alteração de regra operacional (ordem de etapas, critérios de aprovação, publicação, modo OpenAI, custos ou observabilidade), este documento deve ser atualizado imediatamente junto com:
 - o documento canônico de artefatos aplicável;
 - testes e contratos do backend/worker afetados.

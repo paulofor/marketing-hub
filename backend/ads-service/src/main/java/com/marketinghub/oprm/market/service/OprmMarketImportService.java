@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
@@ -160,6 +161,10 @@ public class OprmMarketImportService {
         }
 
         long startedCount = files.stream().filter(file -> "STARTED".equalsIgnoreCase(file.getStatus())).count();
+        long startedEstablishmentsCount = files.stream()
+                .filter(file -> "STARTED".equalsIgnoreCase(file.getStatus()))
+                .filter(file -> "ESTABELECIMENTOS".equalsIgnoreCase(file.getDatasetType()))
+                .count();
         long failedCount = files.stream().filter(file -> "FAILED".equalsIgnoreCase(file.getStatus())).count();
         long completedCount = files.stream().filter(file -> "COMPLETED".equalsIgnoreCase(file.getStatus())).count();
         long partialCount = files.stream().filter(file -> "PARTIAL".equalsIgnoreCase(file.getStatus())).count();
@@ -171,6 +176,13 @@ public class OprmMarketImportService {
                 completedCount,
                 partialCount,
                 failedCount);
+
+        if (startedEstablishmentsCount > 0) {
+            String message = "Finalização bloqueada: existem " + startedEstablishmentsCount
+                    + " arquivos ESTABELECIMENTOS em STARTED. O run não pode ser fechado antes da consolidação de market size.";
+            log.error("[OPRM-TOTALIZACAO] {} runId={}", message, runId);
+            throw new ResponseStatusException(CONFLICT, message);
+        }
 
         boolean hasFailure = false;
         for (OprmCnpjImportFile file : files) {

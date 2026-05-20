@@ -9,8 +9,10 @@ import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportFileEventReque
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportFileSeedDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmImportRunCreatedResponseDto;
 import com.marketinghub.oprmcoletormei.marketimport.dto.OprmMarketSizeUpsertDto;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -47,7 +49,7 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "0 0 16 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 30 18 * * *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -161,7 +163,7 @@ public class OprmMarketImportScheduler {
             }
         }
 
-        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 12:30 ({}) com {} arquivos.",
+        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 18:30 ({}) com {} arquivos.",
                 snapshotDate,
                 scheduleProperties.timezone(),
                 files.size());
@@ -187,9 +189,9 @@ public class OprmMarketImportScheduler {
             java.util.zip.ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
-                String content = new String(zipInputStream.readAllBytes(), StandardCharsets.ISO_8859_1);
-                String[] lines = content.split("\\R");
-                for (String rawLine : lines) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(zipInputStream, StandardCharsets.ISO_8859_1));
+                String rawLine;
+                while ((rawLine = reader.readLine()) != null) {
                     if (rawLine == null || rawLine.isBlank()) continue;
                     log.info("[run={} fileId={}] payload_bruto_cnae='{}'", runId, fileId, rawLine);
                     String[] cols = rawLine.split(";", 2);
@@ -234,24 +236,22 @@ public class OprmMarketImportScheduler {
                 long entryReadStartMillis = System.currentTimeMillis();
                 log.info("[run={} fileId={}] Lendo entry de ESTABELECIMENTOS: name={} size={}",
                         runId, fileId, entry.getName(), entry.getSize());
-                byte[] entryBytes = zipInputStream.readAllBytes();
                 long entryReadDurationMillis = System.currentTimeMillis() - entryReadStartMillis;
-                log.info("[run={} fileId={}] Entry carregada em memória: name={} bytes={} duracaoMs={} memoriaLivreMb={} memoriaTotalMb={}",
+                log.info("[run={} fileId={}] Entry aberta para leitura streaming: name={} duracaoMs={} memoriaLivreMb={} memoriaTotalMb={}",
                         runId,
                         fileId,
                         entry.getName(),
-                        entryBytes.length,
                         entryReadDurationMillis,
                         Runtime.getRuntime().freeMemory() / (1024 * 1024),
                         Runtime.getRuntime().totalMemory() / (1024 * 1024));
-                String content = new String(entryBytes, StandardCharsets.ISO_8859_1);
-                String[] lines = content.split("\\R");
-                log.info("[run={} fileId={}] Entry segmentada em linhas: name={} totalLinhas={}",
-                        runId, fileId, entry.getName(), lines.length);
                 long entryProcessStartMillis = System.currentTimeMillis();
-                for (String rawLine : lines) {
+                long entryLines = 0L;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(zipInputStream, StandardCharsets.ISO_8859_1));
+                String rawLine;
+                while ((rawLine = reader.readLine()) != null) {
+                    entryLines++;
                     linhasLidas++;
-                    if (rawLine == null || rawLine.isBlank()) continue;
+                    if (rawLine.isBlank()) continue;
                     String[] cols = rawLine.split(";", -1);
                     if (cols.length < 12) {
                         linhasIgnoradas++;
@@ -283,6 +283,8 @@ public class OprmMarketImportScheduler {
                         linhasValidas,
                         linhasIgnoradas,
                         accumulatedMarketSizesByCnae.size());
+                log.info("[run={} fileId={}] Resumo entry ESTABELECIMENTOS: name={} linhasLidasEntry={}",
+                        runId, fileId, entry.getName(), entryLines);
                 zipInputStream.closeEntry();
             }
         }

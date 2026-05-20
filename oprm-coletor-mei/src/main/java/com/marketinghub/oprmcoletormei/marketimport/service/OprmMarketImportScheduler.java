@@ -99,6 +99,7 @@ public class OprmMarketImportScheduler {
         int filesProcessed = 0;
         boolean hasFailure = false;
         Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae = new LinkedHashMap<>();
+        boolean readAllFilesInRun = false;
         try {
             Files.createDirectories(runTempDir);
             log.info("[run={}] Diretório temporário criado: {}", runResponse.runId(), runTempDir);
@@ -136,15 +137,28 @@ public class OprmMarketImportScheduler {
                 } catch (Exception e) {
                     hasFailure = true;
                     log.error("[run={} fileId={}] Falha no processamento de arquivo {}", runResponse.runId(), fileId, file.fileName(), e);
-                    publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
-                            "FAILED", 0L, 0L, 0L, e.getMessage(), Instant.now(), null, null));
+                    try {
+                        publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
+                                "FAILED", 0L, 0L, 0L, e.getMessage(), Instant.now(), null, null));
+                    } catch (Exception publishFailureException) {
+                        log.error("[run={} fileId={}] Falha ao publicar evento FAILED após erro de processamento.",
+                                runResponse.runId(),
+                                fileId,
+                                publishFailureException);
+                    }
                 }
             }
+            readAllFilesInRun = true;
         } catch (IOException e) {
             throw new IllegalStateException("Não foi possível preparar diretório temporário do run.", e);
         } finally {
             cleanupDirectory(runTempDir, runResponse.runId());
-            publishRunComplete(runResponse.runId(), filesProcessed, totalRowsRead, totalRowsValid, totalRowsRejected, hasFailure);
+            if (readAllFilesInRun) {
+                publishRunComplete(runResponse.runId(), filesProcessed, totalRowsRead, totalRowsValid, totalRowsRejected, hasFailure);
+            } else {
+                log.warn("[run={}] completeRun não será chamado: a leitura de todos os arquivos da run não foi concluída.",
+                        runResponse.runId());
+            }
         }
 
         log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 23:30 ({}) com {} arquivos.",

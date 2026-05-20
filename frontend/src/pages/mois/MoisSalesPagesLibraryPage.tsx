@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import PageTitle from "../../components/PageTitle";
 import {
   getSalesLibraryJobBadgeClass,
@@ -305,19 +306,19 @@ export default function MoisSalesPagesLibraryPage() {
               </div>
               <div>
                 <h3 className="h6">Seções (JSON)</h3>
-                <pre className="bg-light p-3 rounded small mb-0 text-wrap">{analysisQuery.data.sectionsJson || "{}"}</pre>
+                <CollapsibleJsonViewer content={analysisQuery.data.sectionsJson || "{}"} initiallyCollapsed />
               </div>
               <div>
                 <h3 className="h6">Copy (JSON)</h3>
-                <pre className="bg-light p-3 rounded small mb-0 text-wrap">{analysisQuery.data.copyJson || "{}"}</pre>
+                <CollapsibleJsonViewer content={analysisQuery.data.copyJson || "{}"} initiallyCollapsed />
               </div>
               <div>
                 <h3 className="h6">Visual (JSON)</h3>
-                <pre className="bg-light p-3 rounded small mb-0 text-wrap">{analysisQuery.data.visualJson || "{}"}</pre>
+                <CollapsibleJsonViewer content={analysisQuery.data.visualJson || "{}"} initiallyCollapsed />
               </div>
               <div>
                 <h3 className="h6">Imagem (JSON)</h3>
-                <pre className="bg-light p-3 rounded small mb-0 text-wrap">{analysisQuery.data.imageJson || "{}"}</pre>
+                <CollapsibleJsonViewer content={analysisQuery.data.imageJson || "{}"} initiallyCollapsed />
               </div>
             </div>
           ) : null}

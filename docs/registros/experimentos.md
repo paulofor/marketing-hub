@@ -626,3 +626,14 @@
   - ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/GeraLandingOpenAiBatchClient.java
   - ai-worker/src/main/java/com/marketinghub/worker/creative/CreativeChatGptClient.java
+## 2026-05-20 00:24:25 UTC-3
+- solicitada formalização canônica e implementação de monitoramento comportamental no assembler do design preset (page_view + tempo por seção)
+- definido que a etapa `LANDING_PAGE_DESIGN_PRESET` precisa injetar instrumentação mínima idempotente para diagnóstico de avanço de funil
+- implementado no backend (`DesignPresetProvisionalHtmlAssembler`) a marcação `data-track-section` e script com eventos `page_view`, `section_view_start` e `section_view_time`
+- adicionado teste unitário (`DesignPresetProvisionalHtmlAssemblerTest`) validando a presença da instrumentação no HTML provisório
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssembler.java

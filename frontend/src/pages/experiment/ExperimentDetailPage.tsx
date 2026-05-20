@@ -1306,16 +1306,6 @@ export default function ExperimentDetailPage() {
 
   const operationalChecklist: ChecklistItem[] = [
     {
-      id: "landing-destination",
-      title: "Landing aprovada como destino da campanha",
-      isMet: Boolean(data.followUpActionUrl),
-      hint: data.followUpActionUrl
-        ? `URL de destino ativa: ${data.followUpActionUrl}.`
-        : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
-      action: data.followUpActionUrl ? undefined : openLandingActions,
-      actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
-    },
-    {
       id: "platform",
       title: "Plataforma configurada para Facebook Ads",
       isMet: data.platform === "FACEBOOK",

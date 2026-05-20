@@ -600,6 +600,7 @@
   - docs/registros/experimentos.md
 
 
+- 2026-05-20: Movidos para docs/canonical/obsoletos os cânones de experimentos/pipeline/gera landing/aprovação para posterior recriação.
 ## 2026-05-20 23:40:00 UTC
 - solicitação para remover validação duplicada de landing na tela de detalhes do experimento.
 - causa-raiz identificada: a mesma condição de validação de URL de destino da landing estava aparecendo em dois grupos de checklist diferentes (bloqueios e fluxo operacional), gerando redundância visual.

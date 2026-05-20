@@ -689,3 +689,12 @@
   - `registerLandingPageAnalyticsEvent` agora persiste evento no `experiment_funnel_event` (source `landing-page-analytics`) para `page_view` e `section_view_time`, além do log operacional;
   - payload persistido inclui `eventId`, `eventType`, `sessionId`, `sectionId`, `elapsedMs` e `pageUrl`.
 - impacto esperado: manter aderência ao documento canônico e garantir rastreabilidade operacional no backend para eventos mínimos de visualização de landing.
+
+## 2026-05-20 15:22:06 UTC-3
+- solicitação para ler o plano do módulo score-psi e criar um documento separado com a estrutura hierárquica em formato gráfico markdown.
+- raciocínio aplicado: extrair a hierarquia conceitual principal do plano e representar em `mermaid graph TD` para facilitar visualização de módulos e dependências.
+- foi feito: criação do documento `docs/novos-modulos/score-psi/estrutura-hierarquica-modulos-score-psi.md` com grafo hierárquico e resumo de leitura rápida.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/novos-modulos/score-psi/plano_market_psychological_fit_score.md
+  - docs/registros/experimentos.md

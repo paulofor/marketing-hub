@@ -13,6 +13,30 @@ import {
 const WORKSPACE_ID = "workspace-001";
 const PAGE_SIZE = 20;
 
+const SAO_PAULO_TIMEZONE = "America/Sao_Paulo";
+
+function formatDateTimeInSaoPaulo(value?: string | null) {
+  if (!value) {
+    return "—";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: SAO_PAULO_TIMEZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(parsedDate);
+}
+
+
 function SimplePaginator({
   page,
   pageSize,
@@ -153,7 +177,7 @@ export default function MoisSalesPagesLibraryPage() {
                           <span className={`badge ${getSalesLibraryJobBadgeClass(job)}`}>{job.status}</span>
                         </td>
                         <td>{job.attempts}</td>
-                        <td>{job.updatedAt || "—"}</td>
+                        <td>{formatDateTimeInSaoPaulo(job.updatedAt)}</td>
                         <td>{job.errorMessage || "—"}</td>
                       </tr>
                     ))

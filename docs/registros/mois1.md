@@ -243,3 +243,19 @@
   - mois-sales-library-worker/docker-compose.yml
   - mois-sales-library-worker/docker-compose.deploy.yml
   - docs/registros/mois1.md
+
+## 2026-05-19 22:24:46 UTC-3
+- ajuste de usabilidade na tela de Biblioteca de Páginas de Vendas (MOIS) para exibir o campo "Atualizado em" no fuso de São Paulo com formato mais legível para operação diária.
+- foi criada função de formatação no frontend convertendo timestamps ISO para  com timezone .
+- aplicado o novo formato na coluna de jobs de análise para substituir o formato técnico UTC bruto.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+
+## 2026-05-19 22:24:58 UTC-3
+- correção de registro anterior: os literais `pt-BR` e `America/Sao_Paulo` não foram preservados por interpretação de shell no append anterior.
+- o ajuste implementado no frontend usa `Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" })` para exibir data/hora local de São Paulo no campo "Atualizado em" da fila de jobs.
+- mantido formato legível com dia/mês/ano e hora:minuto:segundo para facilitar leitura operacional.
+- documentos lidos para tratar a situação:
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+  - docs/registros/mois1.md

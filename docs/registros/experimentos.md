@@ -845,3 +845,11 @@
   - criação do conjunto `com.marketinghub.geralanding.imageplanning` com `ImagePlanningProvisionalHtmlAssembler`;
   - orquestração do `GeraLandingStageExecutionService` atualizada para usar o assembler exclusivo da etapa `LANDING_PAGE_IMAGE_PLANNING`;
   - atualização do quadro canônico e mapeamento por pacote para incluir explicitamente o conjunto de image planning.
+
+## 2026-05-21 18:55:00 UTC
+- solicitação: replicar no Worker AI a divisão por etapa aplicada no backend (incluindo prompt image).
+- foi feito:
+  - criado `GeraLandingStageDefinition` para centralizar etapas canônicas do worker;
+  - criado `GeraLandingStageSchemaResolver` para resolver schema por etapa de forma isolada;
+  - `GeraLandingExecutionService` atualizado para usar definição de etapa + resolver dedicado, removendo seleção ad-hoc por string;
+  - cânone atualizado com seção específica do Worker AI para divisão obrigatória por etapa.

@@ -3,6 +3,8 @@ package com.marketinghub.worker.geralanding;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition;
+import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -25,11 +27,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
  */
 public class GeraLandingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingExecutionService.class);
-    private static final String STAGE_WIREFRAME = "landing-page-wireframe";
-    private static final String STAGE_COPY = "landing-page-copy";
-    private static final String STAGE_IMAGE_PROMPTS = "landing-page-image-planning";
-    private static final String STAGE_DESIGN_PRESET = "landing-page-design-preset";
-    private static final String STAGE_DELIVERABLES = "landing-page-deliverables";
     private static final Pattern BANNED_COPY_TEXT_PATTERN = Pattern.compile(
             "(?i)(adCopy\\.|campaignAngle\\.|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\bV[1-3]-|lorem ipsum|como funciona \\(passo)");
 
@@ -37,6 +34,7 @@ public class GeraLandingExecutionService {
     private final GeraLandingService geraLandingService;
     private final GeraLandingOpenAiBatchClient openAiClient;
     private final ObjectMapper objectMapper;
+    private final GeraLandingStageSchemaResolver stageSchemaResolver;
     private final int pendingLimit;
     private final Resource wireframeSchemaResource;
     private final Resource copySchemaResource;
@@ -48,6 +46,7 @@ public class GeraLandingExecutionService {
                                        GeraLandingService geraLandingService,
                                        GeraLandingOpenAiBatchClient openAiClient,
                                        ObjectMapper objectMapper,
+                                       GeraLandingStageSchemaResolver stageSchemaResolver,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,
                                        @Value("classpath:prompts/geralanding/landing-page-wireframe-schema.json")
                                        Resource wireframeSchemaResource,
@@ -63,6 +62,7 @@ public class GeraLandingExecutionService {
         this.geraLandingService = geraLandingService;
         this.openAiClient = openAiClient;
         this.objectMapper = objectMapper;
+        this.stageSchemaResolver = stageSchemaResolver;
         this.pendingLimit = Math.max(1, pendingLimit);
         this.wireframeSchemaResource = wireframeSchemaResource;
         this.copySchemaResource = copySchemaResource;
@@ -92,11 +92,8 @@ public class GeraLandingExecutionService {
             return;
         }
         String normalizedStage = execution.stageCode().trim().toLowerCase(Locale.ROOT);
-        if (!STAGE_WIREFRAME.equals(normalizedStage)
-                && !STAGE_COPY.equals(normalizedStage)
-                && !STAGE_IMAGE_PROMPTS.equals(normalizedStage)
-                && !STAGE_DESIGN_PRESET.equals(normalizedStage)
-                && !STAGE_DELIVERABLES.equals(normalizedStage)) {
+        GeraLandingStageDefinition stage = GeraLandingStageDefinition.fromCode(normalizedStage);
+        if (stage == null) {
             log.info("Skipping gera-landing executionId={} because stageCode {} is not supported",
                     execution.idJob(), execution.stageCode());
             return;
@@ -121,7 +118,7 @@ public class GeraLandingExecutionService {
                     "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet.");
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
-            String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(normalizedStage));
+            String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(stage));
             backendClient.receivePrompt(
                     execution.idJob(),
                     execution.experimentId(),
@@ -142,7 +139,7 @@ public class GeraLandingExecutionService {
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo flex", execution.idJob());
             GeraLandingJobCompletionPayload payload = openAiClient.generate(openAiJob);
-            validateCopyPayloadText(normalizedStage, payload);
+            validateCopyPayloadText(stage, payload);
             log.info(
                     "Resposta OpenAI recebida para gera-landing executionId={} (experimentId={}, openAiJobId={}, inputTokens={}, outputTokens={}, costUsd={}, responseContentLength={}, rawResponseLength={})",
                     execution.idJob(),
@@ -178,8 +175,8 @@ public class GeraLandingExecutionService {
         }
     }
 
-    private void validateCopyPayloadText(String normalizedStage, GeraLandingJobCompletionPayload payload) {
-        if (!STAGE_COPY.equals(normalizedStage) || payload == null || !StringUtils.hasText(payload.responseContent())) {
+    private void validateCopyPayloadText(GeraLandingStageDefinition stage, GeraLandingJobCompletionPayload payload) {
+        if (stage != GeraLandingStageDefinition.COPY || payload == null || !StringUtils.hasText(payload.responseContent())) {
             return;
         }
         try {
@@ -273,22 +270,13 @@ public class GeraLandingExecutionService {
         return objectMapper.writeValueAsString(body);
     }
 
-    private Map<String, Object> readSchemaByStage(String stageCode) throws JsonProcessingException {
-        Resource schemaResource = wireframeSchemaResource;
-        if (STAGE_COPY.equals(stageCode)) {
-            schemaResource = copySchemaResource;
-        } else if (STAGE_IMAGE_PROMPTS.equals(stageCode)) {
-            schemaResource = imagePlanningSchemaResource;
-        } else if (STAGE_DESIGN_PRESET.equals(stageCode)) {
-            schemaResource = designPresetSchemaResource;
-        } else if (STAGE_DELIVERABLES.equals(stageCode)) {
-            schemaResource = deliverablesSchemaResource;
-        }
-        try {
-            return objectMapper.readValue(schemaResource.getInputStream(), Map.class);
-        } catch (IOException ex) {
-            throw new JsonProcessingException("Falha ao carregar schema da etapa " + stageCode) {
-            };
-        }
+    private Map<String, Object> readSchemaByStage(GeraLandingStageDefinition stage) throws JsonProcessingException {
+        return stageSchemaResolver.resolveSchema(
+                stage,
+                wireframeSchemaResource,
+                copySchemaResource,
+                imagePlanningSchemaResource,
+                designPresetSchemaResource,
+                deliverablesSchemaResource);
     }
 }

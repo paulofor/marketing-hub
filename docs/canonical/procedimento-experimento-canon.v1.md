@@ -95,6 +95,15 @@ Regras:
 1. Um conjunto de etapa não pode consolidar regras de outra etapa.
 2. Enriquecimentos transversais (ex.: injeção de URLs finais de imagem) devem ocorrer em serviço auxiliar dedicado e orquestrados pelo serviço da etapa, sem transferir a responsabilidade de etapa entre processadores.
 
+### 5.5 Worker AI — divisão equivalente por etapa (obrigatória)
+
+No `ai-worker`, a mesma divisão por etapa deve ser mantida para evitar acoplamento entre execução, prompt e schema:
+
+- `com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition`
+- `com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver`
+
+Regra operacional: a seleção de schema/prompt por etapa no worker deve ocorrer por definição de etapa explícita, sem ifs ad-hoc espalhados no serviço de execução.
+
 ## 6. Geração e aprovação de anúncios
 
 Após os artefatos de base:

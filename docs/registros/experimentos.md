@@ -1,3 +1,11 @@
+## 2026-05-21 01:05:00 UTC-3
+- solicitação: corrigir ingestão de tracking que iniciava cedo demais na landing do experimento 26.
+- causa-raiz identificada: o script `data-mh-funnel-tracking` era executado imediatamente após injeção no `<head>`, podendo consultar seções antes do DOM estar pronto.
+- foi feito:
+  - refatorado o script injetado em `GeraLandingStageExecutionService` para encapsular a inicialização em `initTracking`;
+  - adicionada guarda de prontidão do DOM (`document.readyState` + `DOMContentLoaded`) antes de buscar `[data-track-section]` e iniciar `IntersectionObserver`.
+- impacto esperado: evitar corrida de inicialização, garantir contagem correta de seções e reduzir perda de eventos de tracking no primeiro carregamento.
+
 # Registros — Experimentos
 
 > 🔴 **Arquivo canônico principal (atual)** para registro operacional do tema Experimentos.

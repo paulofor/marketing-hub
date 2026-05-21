@@ -423,12 +423,11 @@ public class FrameworkImageGenerationService {
     }
 
     private List<PlanningItem> parsePlanningItems(Experiment experiment) {
-        String rawPlanning = experiment.getLandingPageImagePlanning();
-        if (!StringUtils.hasText(rawPlanning)) {
+        JsonNode rootNode = parsePlanningJsonNode(experiment.getLandingPageImagePlanning());
+        if (rootNode == null) {
             return List.of();
         }
         try {
-            JsonNode rootNode = objectMapper.readTree(rawPlanning);
             JsonNode planningNode = resolvePlanningNode(rootNode);
             JsonNode imagesNode = planningNode.path("images");
             if (!imagesNode.isArray()) {
@@ -453,6 +452,157 @@ public class FrameworkImageGenerationService {
         }
     }
 
+    private JsonNode parsePlanningJsonNode(String rawPlanning) {
+        if (!StringUtils.hasText(rawPlanning)) {
+            return null;
+        }
+        JsonNode parsed = readJsonNode(rawPlanning);
+        if (parsed != null) {
+            return parsed;
+        }
+        String normalizedPlanning = sanitizeCodeFence(rawPlanning);
+        if (!Objects.equals(normalizedPlanning, rawPlanning)) {
+            parsed = readJsonNode(normalizedPlanning);
+            if (parsed != null) {
+                return parsed;
+            }
+        }
+        String unescapedPlanning = unescapeJsonLikeContent(normalizedPlanning);
+        if (!Objects.equals(unescapedPlanning, normalizedPlanning)) {
+            parsed = readJsonNode(unescapedPlanning);
+            if (parsed != null) {
+                return parsed;
+            }
+        }
+        String extractedJsonObject = extractFirstJsonObject(unescapedPlanning);
+        if (extractedJsonObject != null) {
+            return readJsonNode(extractedJsonObject);
+        }
+        return null;
+    }
+
+    private JsonNode readJsonNode(String value) {
+        try {
+            return objectMapper.readTree(value);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private String sanitizeCodeFence(String rawPlanning) {
+        String trimmedPlanning = rawPlanning.trim();
+        if (!trimmedPlanning.startsWith("```")) {
+            return rawPlanning;
+        }
+        int firstLineBreak = trimmedPlanning.indexOf('\n');
+        if (firstLineBreak < 0) {
+            return rawPlanning;
+        }
+        String maybeBody = trimmedPlanning.substring(firstLineBreak + 1);
+        int lastFence = maybeBody.lastIndexOf("```");
+        if (lastFence < 0) {
+            return rawPlanning;
+        }
+        return maybeBody.substring(0, lastFence).trim();
+    }
+
+    private String extractFirstJsonObject(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        int firstBrace = value.indexOf('{');
+        if (firstBrace < 0) {
+            return null;
+        }
+
+        boolean inString = false;
+        boolean escaping = false;
+        int depth = 0;
+        for (int index = firstBrace; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (current == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (current == '"') {
+                inString = true;
+                continue;
+            }
+            if (current == '{') {
+                depth++;
+                continue;
+            }
+            if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return value.substring(firstBrace, index + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String unescapeJsonLikeContent(String value) {
+        if (!StringUtils.hasText(value) || value.indexOf('\\') < 0) {
+            return value;
+        }
+        StringBuilder output = new StringBuilder(value.length());
+        boolean escaping = false;
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (!escaping) {
+                if (current == '\\') {
+                    escaping = true;
+                } else {
+                    output.append(current);
+                }
+                continue;
+            }
+
+            escaping = false;
+            switch (current) {
+                case 'n' -> output.append('\n');
+                case 'r' -> output.append('\r');
+                case 't' -> output.append('\t');
+                case 'b' -> output.append('\b');
+                case 'f' -> output.append('\f');
+                case '"' -> output.append('"');
+                case '\\' -> output.append('\\');
+                case '/' -> output.append('/');
+                case 'u' -> {
+                    if (index + 4 < value.length()) {
+                        String hex = value.substring(index + 1, index + 5);
+                        try {
+                            output.append((char) Integer.parseInt(hex, 16));
+                            index += 4;
+                            break;
+                        } catch (NumberFormatException ignored) {
+                            output.append("\\u").append(hex);
+                            index += 4;
+                            break;
+                        }
+                    }
+                    output.append("\\u");
+                }
+                default -> output.append(current);
+            }
+        }
+        if (escaping) {
+            output.append('\\');
+        }
+        return output.toString();
+    }
+
     private JsonNode resolvePlanningNode(JsonNode rootNode) {
         if (rootNode == null || !rootNode.isObject()) {
             return objectMapper.createObjectNode();
@@ -465,6 +615,9 @@ public class FrameworkImageGenerationService {
         JsonNode imagePlan = rootNode.path("imagePlan");
         if (imagePlan.isObject()) {
             return imagePlan;
+        }
+        if (imagePlan.isArray()) {
+            return objectMapper.createObjectNode().set("images", imagePlan);
         }
         JsonNode artifactContent = rootNode.path("artifact").path("content");
         if (artifactContent.isObject()) {

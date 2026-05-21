@@ -51,12 +51,13 @@ export default function MoisSalesPagesLibraryPage() {
                   <th>Origem</th>
                   <th>Status</th>
                   <th>Fase no diagrama</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {pagesQuery.data.items.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="text-secondary">
+                    <td colSpan={5} className="text-secondary">
                       Nenhum produto coletado encontrado.
                     </td>
                   </tr>
@@ -69,6 +70,21 @@ export default function MoisSalesPagesLibraryPage() {
                         <span className={`badge ${getSalesLibraryJobBadgeClass(item)}`}>{item.analysisStatus || "SEM ANÁLISE"}</span>
                       </td>
                       <td>{getPipelinePhase(item.analysisStatus)}</td>
+                      <td>
+                        <div className="d-flex flex-wrap gap-2">
+                          <Link className="btn btn-outline-primary btn-sm" to={`/mois/sales-pages-library/${item.pageId}`}>
+                            Ver detalhe
+                          </Link>
+                          <a
+                            className="btn btn-outline-secondary btn-sm"
+                            href={item.urlCanonical}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Abrir página
+                          </a>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}

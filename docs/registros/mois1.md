@@ -366,3 +366,9 @@
   - persistência final em `mois_sales_library_page_analysis` e transições `DONE`/`FAILED`.
 - sem mudança de código executável; atualização estritamente documental canônica.
 
+
+## 2026-05-21 03:45:00 UTC
+- correção de sintaxe do diagrama Mermaid na seção `12.2 Diagrama (sequência ponta a ponta)` do cânone MOIS para eliminar erro de renderização no GitHub (`Parse error on line 19`).
+- causa-raiz: quebras de linha literais dentro do texto das setas (`API->>DB`, `WK->>OAI`, `WK->>API`) sem escape adequado para Mermaid sequenceDiagram.
+- correção aplicada: substituição das quebras por `<br/>` nas mensagens das setas, mantendo o mesmo conteúdo funcional.
+- arquivo alterado: `docs/canonical/mois-worker-canon.v1.md`.

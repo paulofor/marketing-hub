@@ -19,6 +19,7 @@ Regras obrigatórias:
 12. Gerar variações `desktop` e `mobile` para cada token tipográfico, preservando a mesma hierarquia visual entre breakpoints.
 13. Em `consistencyChecks`, validar explicitamente: presença de todos os atributos tipográficos obrigatórios, legibilidade, contraste e força tipográfica de `display/h1/button`.
 14. Se faltar qualquer atributo obrigatório em qualquer token, registrar `FAIL` em `consistencyChecks` com detalhes objetivos; não omitir erro silenciosamente.
+15. Evitar geração de presets redundantes do LHM: em `elementPresets`, incluir somente elementos que realmente existem no `landingPageWireframe` e que exigem override para conversão/legibilidade; não criar entradas extras apenas para repetir defaults já cobertos por `theme`/`sectionPresets` e não inventar classes/tokens fora do contrato.
 
 Whitelist de atributos CSS permitidos (`attributes[].name`):
 - color

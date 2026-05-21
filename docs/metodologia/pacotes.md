@@ -15,7 +15,7 @@
 * modelos.openai.catalogo.v1
 
 ## Experimentos
-### Gera HTML
+### Gera HTML / AI WORKER
 * geralanding.wirefram
 * geralading.copy
 * geralanding.imageplanning

@@ -933,3 +933,13 @@
   - docs/canonical/procedimento-experimento-canon.v1.md
   - docs/modelo-dados-experimento.md
   - docs/registros/experimentos.md
+
+## 2026-05-21 19:20:11 UTC-3
+- solicitação para reduzir ruído na etapa de preset design, que estava gerando muitos presets LHM sem uso prático.
+- causa-raiz tratada no prompt: ausência de regra explícita para restringir `elementPresets` somente a elementos existentes e com necessidade real de override.
+- foi feito: atualização do prompt `landing-page-design-preset` no AI Worker para descartar geração redundante de presets LHM, proibindo entradas extras que apenas repetem defaults de `theme`/`sectionPresets` e evitando criação de classes/tokens fora do contrato.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md

@@ -23,7 +23,7 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
             from OprmMarketSizeByCnae ms
             left join OprmCnpjCnaeDim c on c.cnaeCode = ms.id.cnaeCode
             where ms.id.snapshotDate = (select max(m2.id.snapshotDate) from OprmMarketSizeByCnae m2)
-            order by ms.totalEmpresas desc
+            order by ms.totalEstabelecimentosAtivos desc
             """)
     List<OprmTopCnaeMarketVolumeDto> findTopByLatestSnapshot(Pageable pageable);
 }

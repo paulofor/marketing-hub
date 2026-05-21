@@ -129,3 +129,5 @@
 - 2026-05-21 19:50:00 (UTC): implementação solicitada do ranking `/oprm/cnaes-volume` com paginação real no backend: endpoint `GET /api/oprm/market/import-runs/cnaes/top-volume` atualizado para receber `page` e `size` (default `0`/`50`), serviço OPRM ajustado para aplicar `PageRequest` e frontend alterado para consumir paginação server-side mantendo ordenação por quantidade no backend.
 
 - 2026-05-21 20:05:00 (UTC): correção na tela OPRM `/oprm/cnaes-volume` para garantir ordenação visual do ranking por **Estab. ativos** (descendente, maior→menor) no frontend, adicionando ordenação defensiva client-side em `OprmCnaeVolumePage` após resposta paginada do backend e ajustando o texto da seção para explicitar o critério de estabelecimentos ativos.
+
+- 2026-05-21 17:20:00 (UTC-3): ajuste solicitado na tela de CNAEs para exibir os 50 registros com maior quantidade de estabelecimentos ativos em ordem decrescente: ordenação backend do endpoint `GET /api/oprm/market/import-runs/cnaes/top-volume` alterada para `totalEstabelecimentosAtivos DESC`, preservando paginação de 50 por página.

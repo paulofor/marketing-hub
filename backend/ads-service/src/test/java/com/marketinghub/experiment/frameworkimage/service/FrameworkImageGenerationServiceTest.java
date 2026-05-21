@@ -215,6 +215,75 @@ class FrameworkImageGenerationServiceTest {
     }
 
     @Test
+    void listJobsByExperimentParsesPlanningWrappedInMarkdownCodeFence() {
+        Experiment experiment = Experiment.builder()
+                .id(31L)
+                .landingPageImagePlanning("""
+                        ```json
+                        {
+                          "images": [
+                            {"sectionId":"hero","sectionName":"Hero","imagePrompt":"Prompt Hero"},
+                            {"sectionId":"faq","sectionName":"FAQ","imagePrompt":"Prompt FAQ"}
+                          ]
+                        }
+                        ```
+                        """)
+                .build();
+        when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(31L)).thenReturn(List.of());
+
+        List<FrameworkImageGenerationItemStatusDto> items = service.listJobsByExperiment(31L);
+
+        assertThat(items).hasSize(2);
+        assertThat(items).extracting(FrameworkImageGenerationItemStatusDto::planningItemKey)
+                .containsExactly("hero", "faq");
+        assertThat(items).extracting(FrameworkImageGenerationItemStatusDto::status)
+                .containsOnly("PLANNED");
+    }
+
+    @Test
+    void listJobsByExperimentParsesFirstJsonObjectWhenPayloadIsDuplicated() {
+        String onePlan = """
+                {
+                  "images": [
+                    {"sectionId":"hero","sectionName":"Hero","imagePrompt":"Prompt Hero"},
+                    {"sectionId":"faq","sectionName":"FAQ","imagePrompt":"Prompt FAQ"}
+                  ]
+                }
+                """;
+        Experiment experiment = Experiment.builder()
+                .id(32L)
+                .landingPageImagePlanning(onePlan + onePlan)
+                .build();
+        when(experimentRepository.findById(32L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(32L)).thenReturn(List.of());
+
+        List<FrameworkImageGenerationItemStatusDto> items = service.listJobsByExperiment(32L);
+
+        assertThat(items).hasSize(2);
+        assertThat(items).extracting(FrameworkImageGenerationItemStatusDto::planningItemKey)
+                .containsExactly("hero", "faq");
+    }
+
+    @Test
+    void listJobsByExperimentParsesEscapedAndDuplicatedImagePlanPayload() {
+        String escapedDuplicatedPlan = "{\\n  \\\"imagePlan\\\": [\\n    {\\\"sectionId\\\":\\\"hero\\\",\\\"sectionName\\\":\\\"Hero\\\",\\\"imagePrompt\\\":\\\"Prompt Hero\\\"},\\n    {\\\"sectionId\\\":\\\"faq\\\",\\\"sectionName\\\":\\\"FAQ\\\",\\\"imagePrompt\\\":\\\"Prompt FAQ\\\"}\\n  ]\\n}"
+                + "{\\n  \\\"imagePlan\\\": [\\n    {\\\"sectionId\\\":\\\"hero\\\",\\\"sectionName\\\":\\\"Hero\\\",\\\"imagePrompt\\\":\\\"Prompt Hero\\\"}\\n  ]\\n}";
+        Experiment experiment = Experiment.builder()
+                .id(33L)
+                .landingPageImagePlanning(escapedDuplicatedPlan)
+                .build();
+        when(experimentRepository.findById(33L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(33L)).thenReturn(List.of());
+
+        List<FrameworkImageGenerationItemStatusDto> items = service.listJobsByExperiment(33L);
+
+        assertThat(items).hasSize(2);
+        assertThat(items).extracting(FrameworkImageGenerationItemStatusDto::planningItemKey)
+                .containsExactly("hero", "faq");
+    }
+
+    @Test
     void listPendingWebnizationAssetsReturnsCompletedAssetsWithoutWebUrl() {
         FrameworkImageGenerationJob pendingWebnization = FrameworkImageGenerationJob.builder()
                 .id(UUID.randomUUID())

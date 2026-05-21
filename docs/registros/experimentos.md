@@ -731,3 +731,29 @@
   - AGENTS.md
   - docs/gera-landing/modelo-canonico-gera-landing.md
   - docs/registros/experimentos.md
+
+## 2026-05-21 00:20:00 UTC
+- solicitação: experimento 23 com prompt de imagens gerado, porém totalizadores da etapa "Gera Imagem" permanecendo zerados.
+- causa-raiz identificada: o parser de `landingPageImagePlanning` no backend aceitava apenas JSON puro; quando o planejamento vinha encapsulado em bloco markdown (```json ... ```), a leitura falhava silenciosamente e o resumo devolvia zero itens.
+- foi feito:
+  - fortalecido o parse em `FrameworkImageGenerationService` com fallback para:
+    1) remoção de code fence markdown;
+    2) extração do primeiro objeto JSON válido do texto;
+    3) parse resiliente por tentativas.
+  - adicionado teste unitário cobrindo explicitamente planejamento encapsulado em markdown code fence, garantindo que os itens planejados voltem a ser contabilizados como `PLANNED`.
+- impacto esperado: os totalizadores de imagens deixam de ficar em zero quando o planejamento vier com envelope textual/markdown, refletindo corretamente os itens do experimento.
+
+## 2026-05-21 03:00:00 UTC
+- ajuste complementar após validação em produção: o payload de planejamento retornado pelo modelo pode vir concatenado (dois objetos JSON completos em sequência), além de conter caracteres escapados.
+- causa-raiz complementar: o fallback anterior extraía do primeiro `{` até o último `}`, formando JSON inválido quando havia múltiplos objetos concatenados.
+- foi feito:
+  - substituída a extração ingênua por extração balanceada do **primeiro objeto JSON completo** (`extractFirstJsonObject`), com tratamento de aspas/escape para não quebrar chaves dentro de strings;
+  - adicionado teste unitário para cenário com payload duplicado concatenado (`onePlan + onePlan`), garantindo que o parser recupere o primeiro objeto válido e os totalizadores sejam calculados.
+
+## 2026-05-21 03:20:00 UTC
+- solicitação complementar: payload retornado com `\\n` e `\\\"` literais (json escapado) concatenado em sequência, mantendo totalizadores zerados mesmo após o ajuste anterior.
+- causa-raiz complementar: o parser ainda tentava extrair objeto JSON sem decodificar escapes textuais; com isso o primeiro caractere real era válido, mas o conteúdo interno permanecia inválido para parse direto.
+- foi feito:
+  - adicionado passo de normalização `unescapeJsonLikeContent` para decodificar sequências `\\n`, `\\r`, `\\t`, `\\\"`, `\\\\` e `\\uXXXX` antes da extração do primeiro objeto;
+  - mantida a extração balanceada do primeiro objeto após normalização;
+  - adicionado teste de regressão com payload `imagePlan` escapado + duplicado em sequência.

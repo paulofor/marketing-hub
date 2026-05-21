@@ -853,3 +853,11 @@
   - criado `GeraLandingStageSchemaResolver` para resolver schema por etapa de forma isolada;
   - `GeraLandingExecutionService` atualizado para usar definição de etapa + resolver dedicado, removendo seleção ad-hoc por string;
   - cânone atualizado com seção específica do Worker AI para divisão obrigatória por etapa.
+
+## 2026-05-21 19:20:00 UTC
+- solicitação: no Gera Landing, remover referência nominal a "Batch" em classes, pois o fluxo atual usa modo flex.
+- causa-raiz: nomes de classes do worker ainda refletiam arquitetura antiga baseada em batch, gerando inconsistência com o comportamento atual (`/responses` com `service_tier=flex`).
+- foi feito:
+  - renomeada classe `GeraLandingOpenAiBatchClient` para `GeraLandingOpenAiFlexClient` e atualização das referências no serviço de execução;
+  - renomeado teste correspondente para `GeraLandingOpenAiFlexClientTest` e ajustes de tipagem/mocks;
+  - atualização do documento canônico de Gera Landing para descrever execução em modo flex ao invés de ciclo batch.

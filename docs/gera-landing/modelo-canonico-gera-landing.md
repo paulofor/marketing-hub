@@ -9,7 +9,7 @@ Ele cobre:
 1. Contratos e endpoints públicos/internos.
 2. Máquina de estados real (incluindo transições intermediárias e falhas).
 3. Montagem de prompt, resolução de placeholders e envelope final.
-4. Montagem de payload OpenAI Responses API + execução batch.
+4. Montagem de payload OpenAI Responses API + execução flex.
 5. Persistência, auditoria e rastreabilidade fim a fim.
 6. Regras de fallback, idempotência operacional e limitações atuais.
 
@@ -30,7 +30,7 @@ Ele cobre:
   - Faz polling de pendências.
   - Monta prompt da etapa com dados do experimento (wireframe, copy, image-planning, design-preset e deliverables).
   - Monta request da Responses API com `json_schema strict`.
-  - Executa ciclo batch (upload JSONL → create batch → polling → download output).
+  - Executa chamada síncrona ao endpoint /responses com service_tier=flex.
   - Devolve status de dispatch e resultado (ou falha) para o backend.
 
 ### 1.2 Etapas suportadas oficialmente no código atual
@@ -81,7 +81,7 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 | `prompt_template_id` | `VARCHAR(191)` | Não | Identificador técnico da origem do prompt inicial. |
 | `prompt_content` | `TINYTEXT` | Sim | Prompt inicial do start/manual ou registro worker. |
 | `prompt` | `LONGTEXT` | Não | Prompt final montado no worker (envelope de tarefa + instruções). |
-| `openai_request_body` | `LONGTEXT` | Não | Request JSON efetivo para Responses API em batch. |
+| `openai_request_body` | `LONGTEXT` | Não | Request JSON efetivo para Responses API em modo flex. |
 | `schema_json` | `LONGTEXT` | Não | Schema serializado usado em `text.format.schema`. |
 | `openai_model` | `VARCHAR(120)` | Não | Modelo OpenAI efetivamente usado na execução (ex.: `gpt-5.2`). |
 | `prompt_markdown_content` | `LONGTEXT` | Não | Conteúdo markdown cru da etapa (`*.md`). |
@@ -270,11 +270,11 @@ Lista mínima de keywords de composição que **não podem** ser usadas no stric
 - `then`
 - `else`
 
-Consequência operacional esperada: evitar erro `400 invalid_json_schema` no Batch/Responses por envio de schema inválido.
+Consequência operacional esperada: evitar erro `400 invalid_json_schema` no flex/Responses por envio de schema inválido.
 
 ## 4.6 Handoff de prompt para backend
 
-Antes de executar batch, worker chama `receive-prompt` com:
+Antes de executar a chamada flex, worker chama `receive-prompt` com:
 
 - `experimentId`
 - `stageCode`
@@ -292,9 +292,9 @@ Backend:
    - `processing_started_at = now`
    - `status = AGUARDANDO_RETORNO_OPENAI`.
 
-## 4.7 Execução OpenAI em batch
+## 4.7 Execução OpenAI em modo flex
 
-Fluxo técnico no client batch:
+Fluxo técnico no client flex:
 
 1. cria JSONL com uma linha (`custom_id = idJob`) para `/v1/responses`;
 2. upload em `/files` com `purpose=batch`;

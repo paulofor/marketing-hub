@@ -12,11 +12,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
-class GeraLandingOpenAiBatchClientTest {
+class GeraLandingOpenAiFlexClientTest {
 
     @Test
     void prepareRequestBodyForFlex_usesJsonRequestBodyWhenAlreadyStructured() throws Exception {
-        GeraLandingOpenAiBatchClient client = new GeraLandingOpenAiBatchClient(
+        GeraLandingOpenAiFlexClient client = new GeraLandingOpenAiFlexClient(
                 WebClient.builder(),
                 new ObjectMapper(),
                 "test-key",
@@ -40,7 +40,7 @@ class GeraLandingOpenAiBatchClientTest {
 
     @Test
     void prepareRequestBodyForFlex_buildsStructuredPayloadWhenBodyIsMarkdownPrompt() throws Exception {
-        GeraLandingOpenAiBatchClient client = new GeraLandingOpenAiBatchClient(
+        GeraLandingOpenAiFlexClient client = new GeraLandingOpenAiFlexClient(
                 WebClient.builder(),
                 new ObjectMapper(),
                 "test-key",

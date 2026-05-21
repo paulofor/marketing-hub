@@ -116,3 +116,88 @@ Este documento é o único cânone ativo para o worker do MOIS.
 - `docs/canonical/system-governance-canon.v2.md`
 - `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
 - `docs/canonical/experiments-automation-flow-canon.v1.md`
+
+## 12. Fluxo canônico de alimentação da biblioteca de páginas de vendas
+
+Esta seção consolida o fluxo ponta a ponta de **alimentação da biblioteca** (coleta de URLs de produtos vencedores, análise com OpenAI e persistência dos resultados) para remover ambiguidades operacionais entre coletores, backend e worker.
+
+### 12.1 Etapas macro (visão executiva)
+1. **Ingestão de produtos de sucesso (fontes de mercado)**
+   - **Hotmart collector** seleciona produtos elegíveis, prioriza `salesPageUrl` com fallback em `detailsUrl` e envia para `POST /api/mois/sales-library/urls:ingest`.
+   - **ClickBank collector** aplica o mesmo padrão: prioriza `salesPageUrl`, usa fallback quando necessário e envia para o mesmo endpoint de ingestão.
+2. **URL fica disponível na biblioteca**
+   - O backend normaliza/canonicaliza URL, faz upsert em `mois_sales_library_url_ingest` e, para entradas novas, cria job `PENDING` em `mois_sales_library_processing_job`.
+3. **Rotina que obtém conteúdo da página e envia para análise**
+   - O worker faz `claim` (`jobs:claim`), muda job para `FETCHING`, baixa HTML da `urlCanonical`, extrai texto (`body.text()`) e inicia análise OpenAI.
+4. **Prompt + schema de saída usados no worker**
+   - O worker envia instrução para análise comercial e exige resposta em JSON via `/v1/responses` com `text.format.type=json_object`.
+   - Campos obrigatórios esperados no JSON de saída: `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`.
+5. **Receber resultado OpenAI e persistir no banco**
+   - Em sucesso: worker chama `jobs/{jobId}:complete`; backend persiste em `mois_sales_library_page_analysis` e marca job como `DONE`.
+   - Em falha: worker chama `jobs/{jobId}:fail`; backend marca job como `FAILED` com categoria/mensagem para diagnóstico.
+
+### 12.2 Diagrama (sequência ponta a ponta)
+```mermaid
+sequenceDiagram
+    autonumber
+    participant HC as Hotmart Collector
+    participant CC as ClickBank Collector
+    participant API as Backend MOIS (/api/mois/sales-library)
+    participant DB as MySQL 5.7
+    participant WK as MOIS Sales Library Worker
+    participant OAI as OpenAI Batch (/v1/responses)
+
+    rect rgb(245,245,245)
+    Note over HC,CC: 1) Ingestão de produtos de sucesso
+    HC->>API: POST /urls:ingest (source=HOTMART, urls[])
+    CC->>API: POST /urls:ingest (source=CLICKBANK, urls[])
+    end
+
+    rect rgb(245,245,245)
+    Note over API,DB: 2) URL disponível na biblioteca
+    API->>DB: UPSERT mois_sales_library_url_ingest
+(url_original, url_canonical, title, capturedAt...)
+    API->>DB: INSERT mois_sales_library_processing_job
+(status=PENDING) para URL nova
+    end
+
+    rect rgb(245,245,245)
+    Note over WK,API: 3) Worker coleta conteúdo
+    WK->>API: POST /jobs:claim (workspaceId, source)
+    API->>DB: UPDATE job PENDING->FETCHING
+    API-->>WK: jobId, pageId, urlCanonical
+    WK->>WK: GET urlCanonical + parse HTML (body.text)
+    end
+
+    rect rgb(245,245,245)
+    Note over WK,OAI: 4) Prompt/schema de análise
+    WK->>OAI: Batch line -> /v1/responses
+text.format.type=json_object
+    OAI-->>WK: output JSON (score_total, sections_json, ...)
+    end
+
+    rect rgb(245,245,245)
+    Note over WK,DB: 5) Persistência dos resultados
+    WK->>API: POST /jobs/{jobId}:complete
+(scoreTotal, sectionsJson, copyJson, visualJson, imageJson...)
+    API->>DB: INSERT mois_sales_library_page_analysis (status=DONE)
+    API->>DB: UPDATE mois_sales_library_processing_job -> DONE
+    alt erro terminal
+      WK->>API: POST /jobs/{jobId}:fail (PIPELINE_ERROR, message)
+      API->>DB: UPDATE mois_sales_library_processing_job -> FAILED
+    end
+    end
+```
+
+### 12.3 Contratos e tabelas de persistência (referência rápida)
+- **Endpoint de ingestão**: `POST /api/mois/sales-library/urls:ingest`.
+- **Endpoint de claim**: `POST /api/mois/sales-library/jobs:claim`.
+- **Endpoint de conclusão**: `POST /api/mois/sales-library/jobs/{jobId}:complete`.
+- **Endpoint de falha**: `POST /api/mois/sales-library/jobs/{jobId}:fail`.
+- **Tabela de URLs**: `mois_sales_library_url_ingest`.
+- **Tabela de jobs**: `mois_sales_library_processing_job`.
+- **Tabela de análise**: `mois_sales_library_page_analysis`.
+
+### 12.4 Regra operacional para evitar divergência de leitura
+Quando houver dúvida sobre “onde o fluxo começa”, considerar canonicamente que a alimentação da biblioteca inicia nos coletores (Hotmart/ClickBank), passa obrigatoriamente pelo endpoint `/urls:ingest` no backend e só então entra no ciclo assíncrono do worker.
+

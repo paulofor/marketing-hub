@@ -384,3 +384,15 @@
 - criada nova rota de detalhe `/mois/sales-pages-library/:pageId` exibindo payloads de resposta do modelo em blocos colapsáveis (`<details>`), além de blocos colapsáveis para request enviado e prompt utilizado.
 - todos os trechos JSON foram apresentados em formato colapsável para reduzir ruído visual e facilitar inspeção.
 - arquivos alterados: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`, `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`, `frontend/src/App.tsx`.
+
+## 2026-05-21 15:34:02 UTC-3
+- solicitado ajuste na tela de detalhe da análise da biblioteca de páginas de vendas (MOIS) para reforçar contexto do produto e rastreabilidade operacional.
+- substituído o título estático pelo nome do produto e adicionado subtítulo com o coletor/origem usado na obtenção.
+- após os cards de JSON, foi adicionado um card "Histórico da página" com linha do tempo de eventos (coleta/ingestão, snapshots brutos e avaliação), sempre com data e hora formatadas.
+- criadas consultas no frontend para endpoint de detalhe da página e snapshots já existentes no backend, sem necessidade de novo contrato.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+  - frontend/src/api/mois/useMoisSalesLibrary.ts
+  - frontend/src/api/mois/types.ts

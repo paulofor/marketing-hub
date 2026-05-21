@@ -293,6 +293,20 @@ export interface MoisSalesLibraryPageAnalysis {
   updatedAt: string;
 }
 
+
+export interface MoisSalesLibraryPageSnapshot {
+  snapshotId: number;
+  pageId: number;
+  snapshotHash?: string;
+  status: string;
+  httpStatus?: number;
+  contentType?: string;
+  rawHtmlBytes: number;
+  screenshotBytes: number;
+  capturedAt?: string;
+  updatedAt?: string;
+}
+
 export interface MoisSalesLibraryReanalyzeResponse {
   pageId: number;
   jobId: number;

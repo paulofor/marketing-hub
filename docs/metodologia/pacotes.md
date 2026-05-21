@@ -16,4 +16,7 @@
 
 ## Experimentos
 ### Gera HTML
-
+* geralanding.wirefram
+* geralading.copy
+* geralanding.imageplanning
+* geralanding.presetdesign

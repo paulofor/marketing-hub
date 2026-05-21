@@ -372,3 +372,9 @@
 - causa-raiz: quebras de linha literais dentro do texto das setas (`API->>DB`, `WK->>OAI`, `WK->>API`) sem escape adequado para Mermaid sequenceDiagram.
 - correção aplicada: substituição das quebras por `<br/>` nas mensagens das setas, mantendo o mesmo conteúdo funcional.
 - arquivo alterado: `docs/canonical/mois-worker-canon.v1.md`.
+
+## 2026-05-21 04:20:00 UTC
+- tela MOIS `Biblioteca de Páginas de Vendas` simplificada para exibir apenas uma tabela consolidada com produto coletado e fase atual, conforme o diagrama canônico `docs/canonical/mois-worker-canon.v1.md#12.2`.
+- removidos da tela os blocos de entradas ingeridas, fila de jobs, paginação e detalhes de análise, mantendo foco na leitura operacional de fase por produto.
+- adicionada função de mapeamento de status (`PENDING`, `FETCHING`, `ANALYZING`, `RETRY_WAIT`, `DONE`, `FAILED`) para fase textual do fluxo canônico.
+- arquivo alterado: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`.

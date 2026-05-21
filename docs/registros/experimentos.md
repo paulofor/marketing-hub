@@ -895,3 +895,10 @@
 - foi feito:
   - atualização do schema `landing-page-image-planning-schema.json` para exigir `landingPageImagePlanning.imagePlan` (substituindo `images` nesta etapa);
   - reforço do prompt da etapa com regra explícita de retorno em objeto único com atributo raiz `imagePlan` e proibição de array na raiz/JSON duplicado.
+
+## 2026-05-21 18:12:00 UTC
+- solicitação: ajustar legibilidade do subtítulo/badge na tela de detalhe de execução do Gera Landing, pois texto azul sobre fundo azul ficou sem contraste.
+- causa-raiz: o badge de `stageCode` na composição do título usava estilo contextual que podia herdar cor de texto do heading em certos contextos, resultando em contraste insuficiente.
+- foi feito:
+  - atualização da classe CSS do badge para aplicar fundo azul fixo (`bg-primary`) com texto explicitamente branco (`text-white`) e peso `fw-semibold`, garantindo leitura consistente.
+- validação: inspeção estática do componente em `frontend/src/pages/experiment/ExperimentGeraLandingExecutionDetailPage.tsx`.

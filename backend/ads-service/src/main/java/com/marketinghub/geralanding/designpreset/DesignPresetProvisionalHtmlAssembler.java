@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.designpreset;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;

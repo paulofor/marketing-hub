@@ -1,10 +1,14 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.copy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+/**
+ * Conjunto exclusivo da etapa LANDING_PAGE_COPY: coordena o payload resolver e o processor
+ * da etapa de copy para gerar HTML provisório sem invadir responsabilidades das demais etapas.
+ */
 public class CopyProvisionalHtmlAssembler {
 
     private final CopyProvisionalHtmlPayloadResolver payloadResolver;
@@ -31,31 +35,6 @@ public class CopyProvisionalHtmlAssembler {
             return appendJobIdCommentBeforeHead(html, jobId);
         } catch (Exception e) {
             throw new IllegalArgumentException("Falha ao montar HTML provisório a partir de wireframe + copy", e);
-        }
-    }
-
-
-
-    public String assembleComplete(String copyModelResponse,
-                                   String wireframeModelResponse,
-                                   String imagePlanningModelResponse,
-                                   String designPresetModelResponse,
-                                   String jobId) {
-        if (!StringUtils.hasText(copyModelResponse) || !StringUtils.hasText(wireframeModelResponse)) {
-            return null;
-        }
-        try {
-            CopyProvisionalHtmlPayloadResolver.CopyProvisionalHtmlPayload payload =
-                    payloadResolver.resolve(copyModelResponse, wireframeModelResponse);
-
-            String html = processor.processComplete(
-                    payloadResolverToJson(payload.wireframe()),
-                    payloadResolverToJson(payload.copy()),
-                    imagePlanningModelResponse,
-                    designPresetModelResponse);
-            return appendJobIdCommentBeforeHead(html, jobId);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Falha ao montar HTML provisório completo", e);
         }
     }
     private String payloadResolverToJson(Object payload) throws Exception {

@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.wireframe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -7,6 +7,10 @@ import org.springframework.util.StringUtils;
 import java.util.Map;
 
 @Component
+/**
+ * Conjunto exclusivo da etapa LANDING_PAGE_WIREFRAME: transforma o JSON do wireframe
+ * em HTML provisório sem aplicar regras de outras etapas do pipeline.
+ */
 public class WireframeProvisionalHtmlAssembler {
 
     private final ObjectMapper objectMapper;

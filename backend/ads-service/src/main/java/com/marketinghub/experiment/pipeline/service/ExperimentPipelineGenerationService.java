@@ -25,7 +25,7 @@ import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerati
 import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.geralanding.CopyProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
 import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;

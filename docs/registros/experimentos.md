@@ -812,3 +812,36 @@
   - adicionado comentário de responsabilidade da classe e comentário do método `buildSystemPrompt` em `ExperimentPipelineGenerationService`;
   - adicionado comentário de responsabilidade da classe e comentário do método `buildOpenAiRequestBody` em `GeraLandingExecutionService`;
   - adicionado comentário de responsabilidade da classe e comentário do método `buildRequestBodyFromPrompt` em `GeraLandingOpenAiBatchClient`.
+
+## 2026-05-21 17:45:00 UTC
+- ajuste solicitado: melhorar erro de contrato do planejamento de imagens da etapa `landing-page-image-planning` e aceitar chave `imagePlan` no payload raiz.
+- causa-raiz: parser da montagem de HTML provisório esperava apenas objeto com chaves legadas (`images`/`landingPageImagePlanning`) e não reportava com clareza quando faltava o elemento contratual esperado.
+- foi feito:
+  - `CopyProvisionalHtmlProcessor` passou a ler `imagePlan` no objeto raiz do JSON de planejamento de imagens;
+  - adicionada validação explícita com mensagem orientativa quando o elemento `imagePlan` não está presente;
+  - melhorada mensagem de erro de parsing para indicar que o payload deve ser JSON objeto (`{...}`) compatível com o contrato;
+  - adicionados comentários de responsabilidade da classe e comentários de métodos principais da classe ajustada.
+
+## 2026-05-21 18:00:00 UTC
+- solicitação: conferir o quadro canônico de etapas/processadores e explicitar responsabilidade nos processadores envolvidos.
+- validação: o quadro operacional de referência está em `docs/canonical/procedimento-experimento-canon.v1.md` seção 5.3.
+- foi feito:
+  - comentário de responsabilidade ajustado em `CopyProvisionalHtmlProcessor` para deixar explícito que ele atende a etapa de copy e também enriquecimentos de image planning/design preset;
+  - comentário de responsabilidade adicionado em `DesignPresetProvisionalHtmlProcessor` para explicitar consolidação final da etapa de design preset.
+
+## 2026-05-21 18:20:00 UTC
+- solicitação: isolar conjuntos de geração de HTML por etapa, documentar no cânone e comentar responsabilidade nas classes.
+- causa-raiz: classes/fluxo de HTML estavam acoplados entre etapas, especialmente copy acumulando comportamento de image planning/design preset.
+- foi feito:
+  - reorganização de pacotes por etapa em `com.marketinghub.geralanding.{wireframe,copy,designpreset}`;
+  - `CopyProvisionalHtmlAssembler/Processor` restritos à etapa `LANDING_PAGE_COPY` (remoção do caminho `assembleComplete/processComplete`);
+  - orquestração de image planning ajustada para usar HTML base da copy + `LandingPageImageInjector` no serviço;
+  - atualização do cânone em `procedimento-experimento-canon.v1.md` com regra obrigatória de isolamento por conjunto e mapeamento por pacote;
+  - comentários de responsabilidade adicionados/ajustados nas classes dos conjuntos.
+
+## 2026-05-21 18:40:00 UTC
+- ajuste complementar solicitado: incluir o conjunto da etapa de prompt/image planning que estava faltando no isolamento por etapa.
+- foi feito:
+  - criação do conjunto `com.marketinghub.geralanding.imageplanning` com `ImagePlanningProvisionalHtmlAssembler`;
+  - orquestração do `GeraLandingStageExecutionService` atualizada para usar o assembler exclusivo da etapa `LANDING_PAGE_IMAGE_PLANNING`;
+  - atualização do quadro canônico e mapeamento por pacote para incluir explicitamente o conjunto de image planning.

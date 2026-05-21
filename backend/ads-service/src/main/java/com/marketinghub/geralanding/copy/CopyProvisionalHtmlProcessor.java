@@ -1,7 +1,8 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.copy;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.geralanding.wireframe.WireframeHtmlGenerator;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 
+/**
+ * Conjunto exclusivo da etapa LANDING_PAGE_COPY: monta o HTML provisório a partir
+ * de wireframe + copy, sem executar responsabilidades de image planning/design preset.
+ */
 @Component
 public class CopyProvisionalHtmlProcessor {
 
@@ -27,17 +32,9 @@ public class CopyProvisionalHtmlProcessor {
 
 
 
-    public String processComplete(String wireframeJson,
-                                  String copyJson,
-                                  String imagePlanningJson,
-                                  String designPresetJson) {
-        String html = process(wireframeJson, copyJson);
-        Document document = Jsoup.parse(html, "", Parser.htmlParser());
-        applyImageUrls(document, imagePlanningJson);
-        applyDesignPreset(document, designPresetJson);
-        return normalizeSerializedHtml(document.outerHtml());
-    }
-
+    /**
+     * Monta o HTML base do wireframe e aplica os textos da etapa de copy.
+     */
     public String process(String wireframeJson, String copyJson) {
         log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada wireframeJson: {}", wireframeJson);
         log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada copyJson: {}", copyJson);
@@ -48,13 +45,16 @@ public class CopyProvisionalHtmlProcessor {
             throw new IllegalArgumentException("JSON de copy ausente");
         }
 
-        Map<String, Object> wireframe = parseJson(wireframeJson);
-        Map<String, Object> copy = parseJson(copyJson);
+        Map<String, Object> wireframe = parseJsonObject(wireframeJson, "wireframeJson");
+        Map<String, Object> copy = parseJsonObject(copyJson, "copyJson");
 
         String baseHtml = buildHtmlFromWireframe(wireframe);
         return process(baseHtml, copy);
     }
 
+    /**
+     * Aplica a copy no HTML já montado usando o mapeamento por id de elemento.
+     */
     public String process(String html, Map<String, Object> copyJson) {
         if (!StringUtils.hasText(html)) {
             throw new IllegalArgumentException("HTML provisório ausente para aplicar a copy");
@@ -137,11 +137,14 @@ public class CopyProvisionalHtmlProcessor {
                 .replace(" />", "/>");
     }
 
-    private Map<String, Object> parseJson(String json) {
+    /**
+     * Interpreta um JSON cujo elemento raiz esperado é um objeto ({...}).
+     */
+    private Map<String, Object> parseJsonObject(String json, String payloadLabel) {
         try {
             return OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
-            throw new IllegalArgumentException("Falha ao interpretar JSON de entrada", e);
+            throw new IllegalArgumentException("Falha ao interpretar " + payloadLabel + ": esperado JSON objeto ({...}) com elementos compatíveis com o contrato.", e);
         }
     }
 
@@ -260,70 +263,6 @@ public class CopyProvisionalHtmlProcessor {
     }
 
 
-    private void applyImageUrls(Document document, String imagePlanningJson) {
-        if (!StringUtils.hasText(imagePlanningJson)) {
-            return;
-        }
-        Map<String, Object> planning = parseJson(imagePlanningJson);
-        Object rawImages = firstNonNull(planning.get("images"), planning.get("landingPageImagePlanning"));
-        List<String> urls = new ArrayList<>();
-        if (rawImages instanceof List<?> list) {
-            for (Object item : list) {
-                if (item instanceof Map<?, ?> imageMap) {
-                    String url = firstNonBlank(asString(imageMap.get("imageUrl")), asString(imageMap.get("url")));
-                    if (StringUtils.hasText(url)) {
-                        urls.add(url.trim());
-                    }
-                }
-            }
-        } else if (rawImages instanceof Map<?, ?> wrapper && wrapper.get("images") instanceof List<?> nested) {
-            for (Object item : nested) {
-                if (item instanceof Map<?, ?> imageMap) {
-                    String url = firstNonBlank(asString(imageMap.get("imageUrl")), asString(imageMap.get("url")));
-                    if (StringUtils.hasText(url)) {
-                        urls.add(url.trim());
-                    }
-                }
-            }
-        }
-        if (urls.isEmpty()) {
-            return;
-        }
-        int i = 0;
-        for (Element img : document.select("img")) {
-            if (i >= urls.size()) {
-                break;
-            }
-            img.attr("src", urls.get(i++));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void applyDesignPreset(Document document, String designPresetJson) {
-        if (!StringUtils.hasText(designPresetJson)) {
-            return;
-        }
-        Map<String, Object> root = parseJson(designPresetJson);
-        Map<String, Object> preset = root;
-        Object nested = root.get("landingPageDesignPreset");
-        if (nested instanceof Map<?, ?> nestedMap) {
-            preset = (Map<String, Object>) nestedMap;
-        }
-        String presetId = asString(preset.get("presetId"));
-        if (StringUtils.hasText(presetId) && document.body() != null) {
-            document.body().attr("data-preset-id", presetId.trim());
-        }
-        Object runtimeObj = preset.get("lhmRuntime");
-        if (runtimeObj instanceof Map<?, ?> runtime) {
-            String baseCss = asString(runtime.get("baseCss"));
-            if (StringUtils.hasText(baseCss)) {
-                Element head = document.head();
-                if (head != null) {
-                    head.appendElement("style").attr("id", "lhm-base-css").text(baseCss.trim());
-                }
-            }
-        }
-    }
 
     private Object firstNonNull(Object... values) {
         for (Object value : values) {

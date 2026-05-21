@@ -1,7 +1,8 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.designpreset;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.geralanding.wireframe.WireframeHtmlGenerator;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,6 +19,10 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 @Component
+/**
+ * Responsável por consolidar o HTML provisório final da etapa de design preset,
+ * aplicando copy, URLs de imagens planejadas e preset visual no wireframe base.
+ */
 public class DesignPresetProvisionalHtmlProcessor {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

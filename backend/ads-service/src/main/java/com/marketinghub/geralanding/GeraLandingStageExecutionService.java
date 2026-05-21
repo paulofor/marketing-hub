@@ -2,6 +2,10 @@ package com.marketinghub.geralanding;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
+import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.imageplanning.ImagePlanningProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.wireframe.WireframeProvisionalHtmlAssembler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -49,6 +53,7 @@ public class GeraLandingStageExecutionService {
     private final GeraLandingStageExecutionRepository executionRepository;
     private final WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler;
     private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
+    private final ImagePlanningProvisionalHtmlAssembler imagePlanningProvisionalHtmlAssembler;
     private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
     private final LandingPageImageInjector landingPageImageInjector;
     private final RestTemplate restTemplate;
@@ -59,6 +64,7 @@ public class GeraLandingStageExecutionService {
             GeraLandingStageExecutionRepository executionRepository,
             WireframeProvisionalHtmlAssembler wireframeProvisionalHtmlAssembler,
             CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler,
+            ImagePlanningProvisionalHtmlAssembler imagePlanningProvisionalHtmlAssembler,
             DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler,
             LandingPageImageInjector landingPageImageInjector,
             RestTemplate restTemplate,
@@ -67,6 +73,7 @@ public class GeraLandingStageExecutionService {
         this.executionRepository = executionRepository;
         this.wireframeProvisionalHtmlAssembler = wireframeProvisionalHtmlAssembler;
         this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
+        this.imagePlanningProvisionalHtmlAssembler = imagePlanningProvisionalHtmlAssembler;
         this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
         this.landingPageImageInjector = landingPageImageInjector;
         this.restTemplate = restTemplate;
@@ -274,13 +281,12 @@ public class GeraLandingStageExecutionService {
             throw new IllegalStateException("Não foi possível montar HTML provisório: experiment.landingPageCopy ausente");
         }
 
-        String completeHtml = copyProvisionalHtmlAssembler.assembleComplete(
+        String copyStageHtml = imagePlanningProvisionalHtmlAssembler.assemble(
+                experimentId,
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
-                experiment.getLandingPageImagePlanning(),
-                experiment.getLandingPageDesignPreset(),
                 jobId);
-        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experimentId, completeHtml);
+        String htmlWithGeneratedImages = copyStageHtml;
         String enrichedImagePlanning = landingPageImageInjector.injectImageUrlsIntoPlanning(
                 experimentId,
                 experiment.getLandingPageImagePlanning());
@@ -440,17 +446,15 @@ public class GeraLandingStageExecutionService {
         if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe()) || !StringUtils.hasText(experiment.getLandingPageCopy())) {
             return null;
         }
-        String baseHtml = copyProvisionalHtmlAssembler.assembleComplete(
+        String baseHtml = imagePlanningProvisionalHtmlAssembler.assemble(
+                experiment.getId(),
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
-                request.modelResponse(),
-                experiment.getLandingPageDesignPreset(),
                 idJob);
         if (!StringUtils.hasText(baseHtml)) {
             return null;
         }
-        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experiment.getId(), baseHtml);
-        return htmlWithGeneratedImages;
+        return baseHtml;
     }
 
     private String resolveDesignPresetProvisionalHtml(String idJob, GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {

@@ -71,8 +71,29 @@ Regras complementares:
 |---|---|---|
 | `LANDING_PAGE_WIREFRAME` | `WireframeProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
 | `LANDING_PAGE_COPY` | `CopyProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
-| `LANDING_PAGE_IMAGE_PLANNING` | Não há assembler exclusivo da etapa; usa `CopyProvisionalHtmlAssembler.assembleComplete(...)` + `LandingPageImageInjector.injectImages(...)`. | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` (quando `provisionalHtml` existe na execução). |
+| `LANDING_PAGE_IMAGE_PLANNING` | `ImagePlanningProvisionalHtmlAssembler` (usa internamente `CopyProvisionalHtmlAssembler` + `LandingPageImageInjector` apenas para esta etapa). | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` (quando `provisionalHtml` existe na execução). |
 | `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (HTML consolidado da etapa) e `experiment.landing_page_html` |
+
+### 5.4 Regra de isolamento por conjunto (obrigatória)
+
+Cada conjunto de montagem de HTML deve atuar **exclusivamente** na sua etapa canônica, com pacote dedicado dentro de `com.marketinghub.geralanding`:
+
+- `com.marketinghub.geralanding.wireframe` → etapa `LANDING_PAGE_WIREFRAME`
+  - `WireframeProvisionalHtmlAssembler`
+  - `WireframeHtmlGenerator`
+- `com.marketinghub.geralanding.copy` → etapa `LANDING_PAGE_COPY`
+  - `CopyProvisionalHtmlPayloadResolver`
+  - `CopyProvisionalHtmlProcessor`
+  - `CopyProvisionalHtmlAssembler`
+- `com.marketinghub.geralanding.designpreset` → etapa `LANDING_PAGE_DESIGN_PRESET`
+  - `DesignPresetProvisionalHtmlProcessor`
+  - `DesignPresetProvisionalHtmlAssembler`
+- `com.marketinghub.geralanding.imageplanning` → etapa `LANDING_PAGE_IMAGE_PLANNING`
+  - `ImagePlanningProvisionalHtmlAssembler`
+
+Regras:
+1. Um conjunto de etapa não pode consolidar regras de outra etapa.
+2. Enriquecimentos transversais (ex.: injeção de URLs finais de imagem) devem ocorrer em serviço auxiliar dedicado e orquestrados pelo serviço da etapa, sem transferir a responsabilidade de etapa entre processadores.
 
 ## 6. Geração e aprovação de anúncios
 

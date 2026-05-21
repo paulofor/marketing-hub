@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.wireframe;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +11,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WireframeHtmlGenerator {
+    /**
+     * Conjunto exclusivo da etapa LANDING_PAGE_WIREFRAME: renderiza HTML base
+     * a partir do artefato JSON de wireframe, sem responsabilidades de copy/imagens/design.
+     */
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

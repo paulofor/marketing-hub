@@ -771,3 +771,7 @@
 - foi feito:
   - atualização do documento canônico `docs/canonical/procedimento-experimento-canon.v1.md`, seção de publicação da landing;
   - detalhado o fluxo pós-aprovação executado por `GeraLandingStageExecutionService.approveAndPublishLanding`, incluindo: resolução do HTML base, injeções (tracking/funnel/pixel), publicação no Lead Portal e persistência da `follow_up_action_url`.
+
+## 2026-05-21 — Ajuste prompt GeraLanding Wireframe (whitelist CSS)
+- Atualizado o prompt `landing-page-wireframe.md` para incluir whitelist explícita de atributos CSS permitidos em `estilos[]`.
+- Regra adicional: proibido usar atributos fora da whitelist para evitar divergência de contrato de estilo no artefato wireframe.

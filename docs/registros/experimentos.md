@@ -896,6 +896,13 @@
   - atualização do schema `landing-page-image-planning-schema.json` para exigir `landingPageImagePlanning.imagePlan` (substituindo `images` nesta etapa);
   - reforço do prompt da etapa com regra explícita de retorno em objeto único com atributo raiz `imagePlan` e proibição de array na raiz/JSON duplicado.
 
+## 2026-05-21 20:20:00 UTC
+- solicitação: exibir o histórico da seção "Gera Imagem" em ordem cronológica com o mais recente primeiro.
+- causa-raiz: a lista `historyGeraLandingImagePromptsExecutions` fazia apenas merge + deduplicação e não aplicava ordenação por `executionRequestedAt`, permitindo ordem inconsistente na UI.
+- foi feito:
+  - ajuste do cálculo de histórico em `ExperimentDetailPage.tsx` para incluir status de falha explicitamente (`hasFailedExecution`);
+  - aplicação de ordenação decrescente por timestamp (`Date.parse(executionRequestedAt)`) antes da deduplicação;
+  - manutenção da deduplicação por `idJob` após ordenação para preservar apenas a ocorrência mais recente por job.
 ## 2026-05-21 18:12:00 UTC
 - solicitação: ajustar legibilidade do subtítulo/badge na tela de detalhe de execução do Gera Landing, pois texto azul sobre fundo azul ficou sem contraste.
 - causa-raiz: o badge de `stageCode` na composição do título usava estilo contextual que podia herdar cor de texto do heading em certos contextos, resultando em contraste insuficiente.

@@ -868,20 +868,40 @@ export default function ExperimentDetailPage() {
   const historyGeraLandingImagePromptsExecutions = useMemo(() => {
     const completedHistory = (
       completedGeraLandingImagePromptsExecutions ?? []
-    ).filter((execution) => isCompletedExecution(execution.status));
-    const failedFromPending = (
-      pendingGeraLandingImagePromptsExecutions ?? []
     ).filter(
       (execution) =>
-        !isRunningExecution(execution.status) &&
-        !isCompletedExecution(execution.status),
+        isCompletedExecution(execution.status) ||
+        hasFailedExecution(execution.status),
     );
-    const merged = [...failedFromPending, ...completedHistory];
-    const dedupMap = new Map<string, GeraLandingStageExecutionItem>();
-    merged.forEach((execution) => {
-      dedupMap.set(execution.idJob, execution);
-    });
-    return Array.from(dedupMap.values());
+    const failedFromPending = (
+      pendingGeraLandingImagePromptsExecutions ?? []
+    ).filter((execution) => hasFailedExecution(execution.status));
+
+    const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
+      (leftExecution, rightExecution) => {
+        const leftTimestamp = Date.parse(
+          leftExecution.executionRequestedAt ?? "",
+        );
+        const rightTimestamp = Date.parse(
+          rightExecution.executionRequestedAt ?? "",
+        );
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp)
+          ? 0
+          : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp)
+          ? 0
+          : rightTimestamp;
+
+        return normalizedRightTimestamp - normalizedLeftTimestamp;
+      },
+    );
+
+    return sortedExecutions.filter(
+      (execution, index, allExecutions) =>
+        allExecutions.findIndex(
+          (candidate) => candidate.idJob === execution.idJob,
+        ) === index,
+    );
   }, [
     completedGeraLandingImagePromptsExecutions,
     pendingGeraLandingImagePromptsExecutions,

@@ -138,7 +138,12 @@ public class McpController {
                                                     "description", "Módulo Java para consultar logs."),
                                             "lines", Map.of("type", "integer", "minimum", 1,
                                                     "maximum", moduleLogService.maxLines(),
-                                                    "description", "Quantidade de linhas do final do arquivo de log. Padrão: 200.")),
+                                                    "description", "Quantidade de linhas retornadas por página. Padrão: 200."),
+                                            "contains", Map.of("type", "string", "description", "Filtra linhas que contenham este texto literal."),
+                                            "from", Map.of("type", "string", "description", "Data/hora inicial ISO-8601 UTC (ex: 2026-05-21T04:35:00Z)."),
+                                            "to", Map.of("type", "string", "description", "Data/hora final ISO-8601 UTC (ex: 2026-05-21T04:40:00Z)."),
+                                            "offset", Map.of("type", "integer", "minimum", 0, "description", "Offset para paginação dentro do conjunto filtrado."),
+                                            "cursor", Map.of("type", "string", "description", "Cursor retornado em nextCursor para próxima página.")),
                                     "required", List.of("module"),
                                     "additionalProperties", false)
                     ),
@@ -324,9 +329,14 @@ public class McpController {
     private Map<String, Object> callJavaModuleLogsTool(Object id, Map<String, Object> arguments) {
         String module = stringArgument(arguments, "module");
         Integer lines = intArgument(arguments, "lines");
+        String contains = stringArgument(arguments, "contains");
+        String from = stringArgument(arguments, "from");
+        String to = stringArgument(arguments, "to");
+        Integer offset = intArgument(arguments, "offset");
+        String cursor = stringArgument(arguments, "cursor");
 
         try {
-            Map<String, Object> result = moduleLogService.readModuleLogs(module, lines);
+            Map<String, Object> result = moduleLogService.readModuleLogs(module, lines, contains, from, to, offset, cursor);
             return successToolResult(id, result, buildJavaModuleLogsText(result));
         } catch (IllegalArgumentException ex) {
             return error(id, -32602, ex.getMessage());

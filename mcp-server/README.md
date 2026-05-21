@@ -17,7 +17,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `db_list_tables`: lista todas as tabelas disponíveis no schema atual.
 - `db_read_table`: lê dados de uma tabela com paginação (`table`, `limit`, `offset`).
 - `db_query`: executa SQL de leitura (`SELECT`/`WITH`) com limite de linhas.
-- `java_module_logs`: retorna tail de logs do Spring Boot dos módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`).
+- `java_module_logs`: retorna logs do Spring Boot com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`) para os módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`).
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
 - `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
 - `meta_graph_debug_token`: executa `debug_token` para validar tokens.

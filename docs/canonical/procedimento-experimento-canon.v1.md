@@ -64,6 +64,16 @@ Regras complementares:
 - a instrumentação deve ser idempotente (não pode ser injetada em duplicidade no mesmo HTML);
 - o payload publicado no artefato final deve manter apenas campos/eventos previstos em contrato canônico, sem metadado técnico fora do escopo funcional.
 
+
+### 5.3 Quadro operacional — etapas, assembler de HTML e persistência de HTML provisório
+
+| Etapa | Classe que faz assembler do HTML da etapa | Campo(s) de tabela onde grava HTML provisório |
+|---|---|---|
+| `LANDING_PAGE_WIREFRAME` | `WireframeProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
+| `LANDING_PAGE_COPY` | `CopyProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
+| `LANDING_PAGE_IMAGE_PLANNING` | Não há assembler exclusivo da etapa; usa `CopyProvisionalHtmlAssembler.assembleComplete(...)` + `LandingPageImageInjector.injectImages(...)`. | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` (quando `provisionalHtml` existe na execução). |
+| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` |
+
 ## 6. Geração e aprovação de anúncios
 
 Após os artefatos de base:

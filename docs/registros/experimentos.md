@@ -775,3 +775,16 @@
 ## 2026-05-21 — Ajuste prompt GeraLanding Wireframe (whitelist CSS)
 - Atualizado o prompt `landing-page-wireframe.md` para incluir whitelist explícita de atributos CSS permitidos em `estilos[]`.
 - Regra adicional: proibido usar atributos fora da whitelist para evitar divergência de contrato de estilo no artefato wireframe.
+
+## 2026-05-21 12:30:38 UTC-3
+- solicitação para verificar e ajustar o assembler da etapa `landing-page-design-preset` do Gera Landing quanto a comentários obrigatórios e aderência canônica.
+- raciocínio aplicado: cumprir o fluxo de documentação Java (comentário de responsabilidade da classe + comentários de métodos) e eliminar contaminação de artefato final com metadado técnico antes do HTML.
+- foi feito:
+  - inclusão de comentário de responsabilidade da classe e comentários breves nos métodos do `DesignPresetProvisionalHtmlAssembler`.
+  - substituição do comportamento que injetava comentário técnico de `jobId` no HTML por retorno neutro (`preserveCanonicalHtml`), preservando o conteúdo gerado sem prefixos técnicos.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/gera-landing/modelo-canonico-gera-landing.md
+  - docs/canonical/system-governance-canon.v2.md
+  - docs/registros/experimentos.md

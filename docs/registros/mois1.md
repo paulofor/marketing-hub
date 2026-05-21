@@ -378,3 +378,9 @@
 - removidos da tela os blocos de entradas ingeridas, fila de jobs, paginação e detalhes de análise, mantendo foco na leitura operacional de fase por produto.
 - adicionada função de mapeamento de status (`PENDING`, `FETCHING`, `ANALYZING`, `RETRY_WAIT`, `DONE`, `FAILED`) para fase textual do fluxo canônico.
 - arquivo alterado: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`.
+
+## 2026-05-21 14:50:00 UTC
+- frontend MOIS (`/mois/sales-pages-library`): adicionadas ações por linha para acessar o detalhe da análise e abrir a página original em nova aba (`target="_blank"`).
+- criada nova rota de detalhe `/mois/sales-pages-library/:pageId` exibindo payloads de resposta do modelo em blocos colapsáveis (`<details>`), além de blocos colapsáveis para request enviado e prompt utilizado.
+- todos os trechos JSON foram apresentados em formato colapsável para reduzir ruído visual e facilitar inspeção.
+- arquivos alterados: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`, `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`, `frontend/src/App.tsx`.

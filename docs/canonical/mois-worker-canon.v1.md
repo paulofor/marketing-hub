@@ -155,10 +155,8 @@ sequenceDiagram
 
     rect rgb(245,245,245)
     Note over API,DB: 2) URL disponível na biblioteca
-    API->>DB: UPSERT mois_sales_library_url_ingest
-(url_original, url_canonical, title, capturedAt...)
-    API->>DB: INSERT mois_sales_library_processing_job
-(status=PENDING) para URL nova
+    API->>DB: UPSERT mois_sales_library_url_ingest<br/>(url_original, url_canonical, title, capturedAt...)
+    API->>DB: INSERT mois_sales_library_processing_job<br/>(status=PENDING) para URL nova
     end
 
     rect rgb(245,245,245)
@@ -171,15 +169,13 @@ sequenceDiagram
 
     rect rgb(245,245,245)
     Note over WK,OAI: 4) Prompt/schema de análise
-    WK->>OAI: Batch line -> /v1/responses
-text.format.type=json_object
+    WK->>OAI: Batch line -> /v1/responses<br/>text.format.type=json_object
     OAI-->>WK: output JSON (score_total, sections_json, ...)
     end
 
     rect rgb(245,245,245)
     Note over WK,DB: 5) Persistência dos resultados
-    WK->>API: POST /jobs/{jobId}:complete
-(scoreTotal, sectionsJson, copyJson, visualJson, imageJson...)
+    WK->>API: POST /jobs/{jobId}:complete<br/>(scoreTotal, sectionsJson, copyJson, visualJson, imageJson...)
     API->>DB: INSERT mois_sales_library_page_analysis (status=DONE)
     API->>DB: UPDATE mois_sales_library_processing_job -> DONE
     alt erro terminal
@@ -200,4 +196,3 @@ text.format.type=json_object
 
 ### 12.4 Regra operacional para evitar divergência de leitura
 Quando houver dúvida sobre “onde o fluxo começa”, considerar canonicamente que a alimentação da biblioteca inicia nos coletores (Hotmart/ClickBank), passa obrigatoriamente pelo endpoint `/urls:ingest` no backend e só então entra no ciclo assíncrono do worker.
-

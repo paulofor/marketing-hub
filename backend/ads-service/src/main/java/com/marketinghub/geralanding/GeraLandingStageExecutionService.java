@@ -2,6 +2,10 @@ package com.marketinghub.geralanding;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -77,7 +81,10 @@ public class GeraLandingStageExecutionService {
         log.info("GeraLanding publish approval loaded experiment (experimentId={}, experimentName={})",
                 experimentId, experiment.getName());
 
-        String landingPageHtml = experiment.getLandingPageHtml();
+        String landingPageHtml = experiment.getLandingPageDesignPreset();
+        if (!StringUtils.hasText(landingPageHtml)) {
+            landingPageHtml = experiment.getLandingPageHtml();
+        }
         if (!StringUtils.hasText(landingPageHtml)) {
             log.warn("GeraLanding publish approval blocked because landing HTML is missing (experimentId={})",
                     experimentId);
@@ -89,7 +96,8 @@ public class GeraLandingStageExecutionService {
         String slug = "exp-" + experimentId + "-landing-geralanding";
         log.info("GeraLanding publish approval resolved slug (experimentId={}, slug={})", experimentId, slug);
 
-        String htmlWithFunnelControls = injectFunnelControls(landingPageHtml);
+        String htmlWithTracking = injectBehaviorTrackingAttributesAndScript(landingPageHtml);
+        String htmlWithFunnelControls = injectFunnelControls(htmlWithTracking);
         log.info("GeraLanding publish approval injected funnel controls (experimentId={}, htmlLengthBefore={}, htmlLengthAfter={})",
                 experimentId, landingPageHtml.length(), htmlWithFunnelControls.length());
 
@@ -496,7 +504,6 @@ public class GeraLandingStageExecutionService {
         } else if (STAGE_DELIVERABLES.equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageDeliverables(request.modelResponse());
         } else {
-            experiment.setLandingPageDesignPreset(request.modelResponse());
             String htmlFromDesignPreset = execution.getProvisionalHtml();
             if (!StringUtils.hasText(htmlFromDesignPreset)) {
                 htmlFromDesignPreset = resolveDesignPresetProvisionalHtml(
@@ -505,10 +512,97 @@ public class GeraLandingStageExecutionService {
                         execution);
             }
             if (StringUtils.hasText(htmlFromDesignPreset)) {
+                experiment.setLandingPageDesignPreset(htmlFromDesignPreset);
+            }
+            else {
+                experiment.setLandingPageDesignPreset(request.modelResponse());
+            }
+            if (StringUtils.hasText(htmlFromDesignPreset)) {
                 experiment.setLandingPageHtml(htmlFromDesignPreset);
             }
         }
         experimentRepository.save(experiment);
+    }
+
+    private String injectBehaviorTrackingAttributesAndScript(String html) {
+        if (!StringUtils.hasText(html) || html.contains("data-mh-funnel-tracking")) {
+            return html;
+        }
+        Document document = Jsoup.parse(html, "", Parser.htmlParser());
+        document.outputSettings().prettyPrint(false);
+
+        for (Element section : document.select("section[data-section-id], section[id], [data-section-id]")) {
+            String sectionId = section.hasAttr("data-section-id") ? section.attr("data-section-id") : section.id();
+            if (!StringUtils.hasText(sectionId)) {
+                continue;
+            }
+            section.attr("data-track-section", sectionId.trim());
+        }
+
+        String script = """
+                <script data-mh-funnel-tracking="true">
+                (function(){
+                  if (window.__mhFunnelTrackingInstalled) return;
+                  window.__mhFunnelTrackingInstalled = true;
+                  var debugPrefix = '[MH funnel tracking]';
+                  window.dataLayer = window.dataLayer || [];
+                  function emit(name, payload){
+                    var eventPayload = Object.assign({event:name, source:'landing-page-design-preset'}, payload||{});
+                    console.debug(debugPrefix, 'emit', eventPayload);
+                    window.dataLayer.push(eventPayload);
+                  }
+                  console.debug(debugPrefix, 'bootstrap');
+                  emit('page_view', {ts: Date.now()});
+                  var sections = Array.prototype.slice.call(document.querySelectorAll('[data-track-section]'));
+                  console.debug(debugPrefix, 'sections-found', {count: sections.length});
+                  var stats = {};
+                  sections.forEach(function(node){
+                    var id = node.getAttribute('data-track-section');
+                    stats[id] = {visibleSince:null, elapsedMs:0};
+                  });
+                  function flushSection(id, reason){
+                    var s = stats[id];
+                    if (!s || s.visibleSince === null) return;
+                    s.elapsedMs += Date.now() - s.visibleSince;
+                    s.visibleSince = null;
+                    console.debug(debugPrefix, 'section-flush', {sectionId:id, elapsedMs:s.elapsedMs, reason: reason || 'hidden'});
+                    emit('section_view_time', {sectionId:id, elapsedMs:s.elapsedMs, reason: reason || 'hidden'});
+                  }
+                  var observer = new IntersectionObserver(function(entries){
+                    entries.forEach(function(entry){
+                      var id = entry.target.getAttribute('data-track-section');
+                      if (!id || !stats[id]) return;
+                      if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                        if (stats[id].visibleSince === null) {
+                          stats[id].visibleSince = Date.now();
+                          console.debug(debugPrefix, 'section-visible', {sectionId:id, ts:stats[id].visibleSince});
+                          emit('section_view_start', {sectionId:id});
+                        }
+                      } else {
+                        flushSection(id, 'intersection-change');
+                      }
+                    });
+                  }, {threshold:[0,0.5,1]});
+                  sections.forEach(function(node){ observer.observe(node); });
+                  document.addEventListener('visibilitychange', function(){
+                    if (document.hidden) {
+                      console.debug(debugPrefix, 'visibility-hidden');
+                      Object.keys(stats).forEach(function(id){ flushSection(id, 'tab-hidden'); });
+                    }
+                  });
+                  window.addEventListener('beforeunload', function(){
+                    console.debug(debugPrefix, 'beforeunload-flush');
+                    Object.keys(stats).forEach(function(id){ flushSection(id, 'before-unload'); });
+                  });
+                })();
+                </script>
+                """;
+        if (document.head() != null) {
+            document.head().append(script);
+        } else {
+            document.prepend(script);
+        }
+        return document.outerHtml();
     }
 
     @Transactional(readOnly = true)

@@ -757,3 +757,11 @@
   - adicionado passo de normalização `unescapeJsonLikeContent` para decodificar sequências `\\n`, `\\r`, `\\t`, `\\\"`, `\\\\` e `\\uXXXX` antes da extração do primeiro objeto;
   - mantida a extração balanceada do primeiro objeto após normalização;
   - adicionado teste de regressão com payload `imagePlan` escapado + duplicado em sequência.
+
+## 2026-05-21 12:10:00 UTC
+- solicitação: remover de `DesignPresetProvisionalHtmlAssembler` a responsabilidade de instrumentação de tracking e manter o assembler apenas como montador do HTML consolidado da etapa `landing-page-design-preset`.
+- causa-raiz identificada: havia acoplamento indevido de responsabilidade (assembler de composição também fazia injeção de tracker), contrariando separação de responsabilidades e dificultando controle de publicação.
+- foi feito:
+  - removida a injeção de tracker (`data-track-section` + script `data-mh-funnel-tracking`) de `DesignPresetProvisionalHtmlAssembler`;
+  - o fluxo `approveAndPublishLanding` passou a ler prioritariamente `experiment.landing_page_design_preset` (com fallback para `landing_page_html` legado), injetar tracker nesse momento e seguir com injeção de controles de funil + Facebook Pixel + publicação no Lead Portal;
+  - no fechamento da etapa `LANDING_PAGE_DESIGN_PRESET`, o backend passou a persistir o HTML consolidado da etapa em `experiment.landing_page_design_preset` (mantendo atualização de `landing_page_html` para compatibilidade).

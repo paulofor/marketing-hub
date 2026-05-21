@@ -861,3 +861,11 @@
   - renomeada classe `GeraLandingOpenAiBatchClient` para `GeraLandingOpenAiFlexClient` e atualização das referências no serviço de execução;
   - renomeado teste correspondente para `GeraLandingOpenAiFlexClientTest` e ajustes de tipagem/mocks;
   - atualização do documento canônico de Gera Landing para descrever execução em modo flex ao invés de ciclo batch.
+## 2026-05-21 19:10:00 UTC
+- solicitação: verificar se as novas estruturas de pacotes do GeraLanding continuam aderentes ao documento canônico.
+- validação executada:
+  - comparação dos pacotes atuais do backend (`geralanding`, `wireframe`, `copy`, `imageplanning`, `designpreset`) com o mapeamento canônico da seção 5.3 em `docs/canonical/procedimento-experimento-canon.v1.md`;
+  - revisão da orquestração em `GeraLandingStageExecutionService` para confirmar uso de assembler/processador por etapa sem acoplamento cruzado indevido;
+  - revisão do worker (`GeraLandingStageDefinition` + `GeraLandingStageSchemaResolver`) para confirmar resolução de schema por etapa.
+- resultado: estrutura de pacotes e fluxo por etapa seguem o isolamento definido no cânone e mantêm aderência com a regra de conjuntos por etapa.
+- ponto de atenção documental: há referências em documentos legados para `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`, porém o arquivo atual está em `docs/canonical/obsoletos/`; manter revisão de links em futuras limpezas documentais.

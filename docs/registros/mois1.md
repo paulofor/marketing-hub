@@ -384,3 +384,9 @@
 - criada nova rota de detalhe `/mois/sales-pages-library/:pageId` exibindo payloads de resposta do modelo em blocos colapsáveis (`<details>`), além de blocos colapsáveis para request enviado e prompt utilizado.
 - todos os trechos JSON foram apresentados em formato colapsável para reduzir ruído visual e facilitar inspeção.
 - arquivos alterados: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`, `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`, `frontend/src/App.tsx`.
+
+## 2026-05-21 15:20:00 UTC
+- tela de detalhe da Biblioteca de Páginas de Vendas (MOIS) ganhou ações manuais de status: **Voltar para pendente** e **Marcar como anulado**.
+- adicionado endpoint backend `POST /api/mois/sales-library/pages/{pageId}:status` para persistir transição manual de status (`PENDING` e `ANULADO`) com registro em `mois_sales_library_page_analysis`.
+- adicionada navegação de produtividade no detalhe com botão **Próximo →** para avançar para o próximo item da lista.
+- arquivos alterados: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`, `frontend/src/api/mois/useMoisSalesLibrary.ts`, `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`, `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`.

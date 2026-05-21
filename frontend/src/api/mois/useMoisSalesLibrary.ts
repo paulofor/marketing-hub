@@ -6,6 +6,7 @@ import type {
   MoisSalesLibraryPageAnalysis,
   MoisSalesLibraryPageListResponse,
   MoisSalesLibraryReanalyzeResponse,
+  MoisSalesLibraryStatusUpdateResponse,
 } from "./types";
 
 export function useMoisSalesLibraryEntries(workspaceId: string, page: number, pageSize: number) {
@@ -65,6 +66,21 @@ export function useReanalyzeMoisSalesLibraryPage(workspaceId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["mois", "sales-library", "pages", workspaceId] });
       void queryClient.invalidateQueries({ queryKey: ["mois", "sales-library", "jobs", workspaceId] });
+    },
+  });
+}
+
+
+export function useUpdateMoisSalesLibraryPageStatus(workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ pageId, status }: { pageId: number; status: "PENDING" | "ANULADO" }) => {
+      const { data } = await axios.post<MoisSalesLibraryStatusUpdateResponse>(`/api/mois/sales-library/pages/${pageId}:status`, { status });
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ["mois", "sales-library", "pages", workspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ["mois", "sales-library", "analysis", variables.pageId] });
     },
   });
 }

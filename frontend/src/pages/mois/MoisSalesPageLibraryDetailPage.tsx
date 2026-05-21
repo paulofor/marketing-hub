@@ -1,6 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
-import { useMoisSalesLibraryPageAnalysis } from "../../api/mois/useMoisSalesLibrary";
+import { useMoisSalesLibraryPageAnalysis, useMoisSalesLibraryPages, useUpdateMoisSalesLibraryPageStatus } from "../../api/mois/useMoisSalesLibrary";
+
+const WORKSPACE_ID = "workspace-001";
+const PAGE_SIZE = 100;
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -22,7 +25,14 @@ function JsonCollapse({ title, content }: { title: string; content?: string }) {
 export default function MoisSalesPageLibraryDetailPage() {
   const params = useParams<{ pageId: string }>();
   const pageId = Number(params.pageId);
-  const analysisQuery = useMoisSalesLibraryPageAnalysis(Number.isFinite(pageId) ? pageId : undefined);
+  const validPageId = Number.isFinite(pageId) ? pageId : undefined;
+  const analysisQuery = useMoisSalesLibraryPageAnalysis(validPageId);
+  const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
+  const updateStatusMutation = useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
+
+  const currentIndex = pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ?? -1;
+  const nextItem = currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
+  const isMutating = updateStatusMutation.isPending;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -31,10 +41,40 @@ export default function MoisSalesPageLibraryDetailPage() {
           <PageTitle>Detalhe da análise da página</PageTitle>
           <p className="text-secondary mb-0">Respostas do modelo, payload enviado e prompt usado na análise.</p>
         </div>
-        <Link className="btn btn-outline-secondary" to="/mois/sales-pages-library">
-          Voltar para biblioteca
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          {nextItem ? (
+            <Link className="btn btn-outline-primary" to={`/mois/sales-pages-library/${nextItem.pageId}`}>
+              Próximo →
+            </Link>
+          ) : null}
+          <Link className="btn btn-outline-secondary" to="/mois/sales-pages-library">
+            Voltar para biblioteca
+          </Link>
+        </div>
       </header>
+
+      <div className="d-flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-outline-warning"
+          disabled={!validPageId || isMutating}
+          onClick={() => validPageId && updateStatusMutation.mutate({ pageId: validPageId, status: "PENDING" })}
+        >
+          {isMutating ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" /> : null}
+          Voltar para pendente
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          disabled={!validPageId || isMutating}
+          onClick={() => validPageId && updateStatusMutation.mutate({ pageId: validPageId, status: "ANULADO" })}
+        >
+          {isMutating ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" /> : null}
+          Marcar como anulado
+        </button>
+      </div>
+
+      {updateStatusMutation.isError ? <div className="alert alert-danger mb-0">Falha ao atualizar status da página.</div> : null}
 
       {analysisQuery.isLoading ? <p className="text-secondary mb-0">Carregando detalhe...</p> : null}
       {analysisQuery.isError ? <div className="alert alert-danger mb-0">Falha ao carregar detalhe da análise.</div> : null}

@@ -888,3 +888,10 @@
   - docs/registros/experimentos.md
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/GeraLandingExecutionService.java
   - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingExecutionServiceTest.java
+
+## 2026-05-21 20:05:00 UTC
+- solicitação: endurecer o schema da etapa de briefing de imagens para obrigar o formato com atributo `imagePlan`.
+- causa-raiz: o modelo estava variando entre payload válido e formatos inválidos (array na raiz e JSON concatenado), quebrando o contrato esperado no consumidor da etapa.
+- foi feito:
+  - atualização do schema `landing-page-image-planning-schema.json` para exigir `landingPageImagePlanning.imagePlan` (substituindo `images` nesta etapa);
+  - reforço do prompt da etapa com regra explícita de retorno em objeto único com atributo raiz `imagePlan` e proibição de array na raiz/JSON duplicado.

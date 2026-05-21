@@ -788,3 +788,27 @@
   - docs/gera-landing/modelo-canonico-gera-landing.md
   - docs/canonical/system-governance-canon.v2.md
   - docs/registros/experimentos.md
+
+## 2026-05-21 13:05:00 UTC
+- solicitação: ajustar o campo `system` enviado para OpenAI na geração dos dados do pipeline de experimentos para orientar o modelo como especialista em marketing focado em vendas de produtos digitais pela internet.
+- causa-raiz: prompt de sistema padrão ainda estava genérico ("especialista em execução de pipeline") sem explicitar foco de marketing orientado a vendas digitais.
+- foi feito:
+  - atualização do `buildSystemPrompt` no backend de experimentos para incluir a instrução explícita de especialista em marketing focado em vendas de produtos digitais pela Internet;
+  - atualização do fallback de `systemMessage` no `GeraLandingExecutionService` com a mesma orientação;
+  - atualização do payload batch (`GeraLandingOpenAiBatchClient`) para manter a mesma diretriz no campo `system`.
+
+## 2026-05-21 15:55:00 UTC
+- ajuste solicitado: remover a expressão "pipeline de experimento" do campo `system` enviado à OpenAI no fluxo de geração.
+- causa-raiz: o prompt ainda continha orientação secundária de "execução de pipeline", divergindo da instrução de manter apenas posicionamento de especialista em marketing/vendas digitais.
+- foi feito:
+  - removida a frase de "execução de pipeline de experimento" do `buildSystemPrompt` no backend;
+  - removida a mesma frase do `systemMessage` explícito e do fallback no `GeraLandingExecutionService`;
+  - removida a mesma frase do payload batch no `GeraLandingOpenAiBatchClient`.
+
+## 2026-05-21 16:10:00 UTC
+- ajuste solicitado: adicionar comentários de responsabilidade/orientação nas classes Java alteradas do fluxo de geração de experimentos.
+- causa-raiz: classes alteradas no PR anterior não continham comentários explícitos em todos os pontos exigidos pelo fluxo operacional do AGENTS.
+- foi feito:
+  - adicionado comentário de responsabilidade da classe e comentário do método `buildSystemPrompt` em `ExperimentPipelineGenerationService`;
+  - adicionado comentário de responsabilidade da classe e comentário do método `buildOpenAiRequestBody` em `GeraLandingExecutionService`;
+  - adicionado comentário de responsabilidade da classe e comentário do método `buildRequestBodyFromPrompt` em `GeraLandingOpenAiBatchClient`.

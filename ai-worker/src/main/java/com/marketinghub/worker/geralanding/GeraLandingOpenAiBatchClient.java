@@ -20,6 +20,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
+/**
+ * Cliente de integração com a OpenAI para execução dos jobs do GeraLanding em modo flex.
+ */
 public class GeraLandingOpenAiBatchClient {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingOpenAiBatchClient.class);
     private static final int LOG_PREVIEW_LIMIT = 1200;
@@ -139,6 +142,9 @@ public class GeraLandingOpenAiBatchClient {
         return buildRequestBodyFromPrompt(job, job.prompt());
     }
 
+    /**
+     * Cria um corpo mínimo de requisição quando apenas o prompt textual está disponível.
+     */
     private Map<String, Object> buildRequestBodyFromPrompt(GeraLandingJobDto job, String promptText) {
         if (!StringUtils.hasText(promptText)) {
             throw new IllegalStateException("Payload da OpenAI ausente: requestBodyJson e prompt vazios para gera-landing");
@@ -146,7 +152,7 @@ public class GeraLandingOpenAiBatchClient {
         Map<String, Object> requestBody = new LinkedHashMap<>();
         requestBody.put("model", StringUtils.hasText(job.model()) ? job.model() : "gpt-5.2");
         requestBody.put("input", List.of(
-                Map.of("role", "system", "content", "[gera-landing-pipeline] Você é especialista em execução de pipeline de experimento."),
+                Map.of("role", "system", "content", "[gera-landing-pipeline] Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."),
                 Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", promptText)))));
         return requestBody;
     }

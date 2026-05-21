@@ -22,6 +22,13 @@ function JsonCollapse({ title, content }: { title: string; content?: string }) {
   );
 }
 
+type HistoryItem = {
+  key: string;
+  stage: string;
+  date?: string;
+  detail: string;
+};
+
 export default function MoisSalesPageLibraryDetailPage() {
   const params = useParams<{ pageId: string }>();
   const pageId = Number(params.pageId);
@@ -38,8 +45,10 @@ export default function MoisSalesPageLibraryDetailPage() {
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-wrap justify-content-between gap-3">
         <div>
-          <PageTitle>Detalhe da análise da página</PageTitle>
-          <p className="text-secondary mb-0">Respostas do modelo, payload enviado e prompt usado na análise.</p>
+          <PageTitle>{pageQuery.data?.title || "Detalhe da análise da página"}</PageTitle>
+          <p className="text-secondary mb-0">
+            Coletor usado: <strong>{pageQuery.data?.source || "—"}</strong>
+          </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
           {nextItem ? (
@@ -99,6 +108,27 @@ export default function MoisSalesPageLibraryDetailPage() {
           </div>
         </section>
       ) : null}
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <h2 className="h5 mb-3">Histórico da página</h2>
+          {history.length === 0 ? (
+            <p className="text-secondary mb-0">Ainda não há eventos registrados para esta página.</p>
+          ) : (
+            <div className="d-flex flex-column gap-3">
+              {history.map((item) => (
+                <div key={item.key} className="border rounded p-3 bg-light-subtle">
+                  <div className="d-flex flex-wrap justify-content-between gap-2">
+                    <strong>{item.stage}</strong>
+                    <span className="text-secondary small">{formatDate(item.date)}</span>
+                  </div>
+                  <p className="mb-0 mt-2 small">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

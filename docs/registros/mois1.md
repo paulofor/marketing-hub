@@ -390,3 +390,14 @@
 - adicionado endpoint backend `POST /api/mois/sales-library/pages/{pageId}:status` para persistir transição manual de status (`PENDING` e `ANULADO`) com registro em `mois_sales_library_page_analysis`.
 - adicionada navegação de produtividade no detalhe com botão **Próximo →** para avançar para o próximo item da lista.
 - arquivos alterados: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`, `frontend/src/api/mois/useMoisSalesLibrary.ts`, `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`, `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`.
+## 2026-05-21 15:34:02 UTC-3
+- solicitado ajuste na tela de detalhe da análise da biblioteca de páginas de vendas (MOIS) para reforçar contexto do produto e rastreabilidade operacional.
+- substituído o título estático pelo nome do produto e adicionado subtítulo com o coletor/origem usado na obtenção.
+- após os cards de JSON, foi adicionado um card "Histórico da página" com linha do tempo de eventos (coleta/ingestão, snapshots brutos e avaliação), sempre com data e hora formatadas.
+- criadas consultas no frontend para endpoint de detalhe da página e snapshots já existentes no backend, sem necessidade de novo contrato.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+  - frontend/src/api/mois/useMoisSalesLibrary.ts
+  - frontend/src/api/mois/types.ts

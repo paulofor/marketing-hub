@@ -50,6 +50,16 @@ Regras fixas da etapa (formato simplificado):
 - Entregar somente JSON válido no formato raiz `pagina`.
 - Estrutura obrigatória: `pagina.head.texto`, `pagina.corpo.estilos[]`, `pagina.corpo.secoes[]`.
 - Cada item de `estilos[]` deve ter apenas `nome` e `valor`.
+- Whitelist de atributos CSS permitidos em qualquer `estilos[]` (usar apenas estes nomes, sem criar outros):
+  - `position`, `top`, `right`, `bottom`, `left`, `z-index`, `display`, `float`, `clear`, `visibility`, `overflow`, `overflow-x`, `overflow-y`
+  - `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`
+  - `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`
+  - `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`
+  - `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`
+  - `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `justify-items`, `place-items`, `place-content`
+  - `transform`, `translate`, `scale`, `rotate`, `transform-origin`, `border`, `opacity`
+- Se um atributo estiver fora dessa whitelist, não usar no wireframe.
+
 - Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto[]`, `id`, `estilos[]`, `elementosSeccao[]`.
 - Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
 - Quando `tag = "img"`, o elemento deve conter também `briefingVisual` com:

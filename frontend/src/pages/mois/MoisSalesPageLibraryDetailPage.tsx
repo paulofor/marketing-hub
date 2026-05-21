@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
-import { useMoisSalesLibraryPageAnalysis, useMoisSalesLibraryPages, useUpdateMoisSalesLibraryPageStatus } from "../../api/mois/useMoisSalesLibrary";
+import { useMoisSalesLibraryPage, useMoisSalesLibraryPageAnalysis, useMoisSalesLibraryPageSnapshots, useMoisSalesLibraryPages, useUpdateMoisSalesLibraryPageStatus } from "../../api/mois/useMoisSalesLibrary";
 
 const WORKSPACE_ID = "workspace-001";
 const PAGE_SIZE = 100;
@@ -33,13 +33,22 @@ export default function MoisSalesPageLibraryDetailPage() {
   const params = useParams<{ pageId: string }>();
   const pageId = Number(params.pageId);
   const validPageId = Number.isFinite(pageId) ? pageId : undefined;
+  const pageQuery = useMoisSalesLibraryPage(validPageId);
   const analysisQuery = useMoisSalesLibraryPageAnalysis(validPageId);
+  const snapshotsQuery = useMoisSalesLibraryPageSnapshots(validPageId);
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation = useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
 
   const currentIndex = pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ?? -1;
   const nextItem = currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
   const isMutating = updateStatusMutation.isPending;
+
+  const history: HistoryItem[] = (snapshotsQuery.data ?? []).map((item) => ({
+    key: String(item.snapshotId),
+    stage: `Snapshot ${item.status}`,
+    date: item.capturedAt ?? item.updatedAt,
+    detail: `HTTP ${item.httpStatus ?? "—"} • content-type: ${item.contentType ?? "—"} • html bytes: ${item.rawHtmlBytes} • screenshot bytes: ${item.screenshotBytes}`,
+  }));
 
   return (
     <div className="d-flex flex-column gap-4">

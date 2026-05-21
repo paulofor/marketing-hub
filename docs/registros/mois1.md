@@ -401,3 +401,9 @@
   - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
   - frontend/src/api/mois/useMoisSalesLibrary.ts
   - frontend/src/api/mois/types.ts
+
+## 2026-05-21 15:55:00 UTC
+- correção de erro de compilação TypeScript na tela `MoisSalesPageLibraryDetailPage`.
+- causa-raiz: uso de variável inexistente (`pageQuery`) e uso de `history` sem definição local, que colidia com o tipo global `History`.
+- correção aplicada: adição das queries `useMoisSalesLibraryPage` e `useMoisSalesLibraryPageSnapshots`, além de construção explícita de `history: HistoryItem[]` a partir dos snapshots.
+- arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.

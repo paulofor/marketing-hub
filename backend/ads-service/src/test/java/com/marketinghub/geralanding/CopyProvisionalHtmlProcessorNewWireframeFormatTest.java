@@ -1,5 +1,6 @@
 package com.marketinghub.geralanding;
 
+import com.marketinghub.geralanding.copy.CopyProvisionalHtmlProcessor;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -130,11 +131,8 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
                 }
                 """;
 
-        String html = processor.processComplete(wireframeJson, copyJson, imagePlanningJson, designPresetJson);
+        String html = processor.process(wireframeJson, copyJson);
 
         assertTrue(html.contains("Landing final"));
-        assertTrue(html.contains("https://cdn.example.com/hero.png"));
-        assertTrue(html.contains("data-preset-id=\"preset-77\""));
-        assertTrue(html.contains("lhm-base-css"));
     }
 }

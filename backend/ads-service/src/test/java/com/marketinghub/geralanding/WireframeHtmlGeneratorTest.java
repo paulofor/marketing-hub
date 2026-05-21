@@ -1,5 +1,6 @@
 package com.marketinghub.geralanding;
 
+import com.marketinghub.geralanding.wireframe.WireframeHtmlGenerator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;

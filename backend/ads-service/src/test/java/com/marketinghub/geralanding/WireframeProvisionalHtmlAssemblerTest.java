@@ -1,6 +1,7 @@
 package com.marketinghub.geralanding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.geralanding.wireframe.WireframeProvisionalHtmlAssembler;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

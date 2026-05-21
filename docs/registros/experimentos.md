@@ -869,3 +869,11 @@
   - revisão do worker (`GeraLandingStageDefinition` + `GeraLandingStageSchemaResolver`) para confirmar resolução de schema por etapa.
 - resultado: estrutura de pacotes e fluxo por etapa seguem o isolamento definido no cânone e mantêm aderência com a regra de conjuntos por etapa.
 - ponto de atenção documental: há referências em documentos legados para `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`, porém o arquivo atual está em `docs/canonical/obsoletos/`; manter revisão de links em futuras limpezas documentais.
+
+## 2026-05-21 18:30:00 UTC
+- correção de quebra de compilação dos testes do `ads-service` após refatoração dos pacotes de GeraLanding.
+- foi feito:
+  - atualização de imports nos testes para os novos pacotes (`copy`, `wireframe`, `designpreset`, `imageplanning`);
+  - ajuste dos testes para APIs atuais dos assemblers/processors (remoção de chamadas legadas `assembleComplete`/`processComplete`);
+  - ajuste de mocks em `GeraLandingStageExecutionServiceTest` para refletir `ImagePlanningProvisionalHtmlAssembler` na etapa de image planning.
+- validação: `mvn -DskipITs test-compile` executado com sucesso no módulo `backend/ads-service`.

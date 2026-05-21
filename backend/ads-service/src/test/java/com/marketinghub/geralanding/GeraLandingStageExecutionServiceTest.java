@@ -3,6 +3,11 @@ package com.marketinghub.geralanding;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
 import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.imageplanning.ImagePlanningProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.wireframe.WireframeProvisionalHtmlAssembler;
+import org.springframework.web.client.RestTemplate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +44,10 @@ class GeraLandingStageExecutionServiceTest {
     private CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
     @Mock
     private DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
+    @Mock
+    private ImagePlanningProvisionalHtmlAssembler imagePlanningProvisionalHtmlAssembler;
+    @Mock
+    private RestTemplate restTemplate;
     @Mock
     private LandingPageImageInjector landingPageImageInjector;
 
@@ -295,14 +304,11 @@ class GeraLandingStageExecutionServiceTest {
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-image".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
         when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
-        when(copyProvisionalHtmlAssembler.assembleComplete(
+        when(imagePlanningProvisionalHtmlAssembler.assemble(
+                77L,
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
-                request.modelResponse(),
-                experiment.getLandingPageDesignPreset(),
                 "id-image"))
-                .thenReturn("<html><img src=\"about:blank\"></html>");
-        when(landingPageImageInjector.injectImages(77L, "<html><img src=\"about:blank\"></html>"))
                 .thenReturn("<html><img src=\"https://cdn/img-1.png\"></html>");
 
         service.receiveResult("id-image", request);
@@ -322,15 +328,12 @@ class GeraLandingStageExecutionServiceTest {
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder().idJob("job-999".getBytes(java.nio.charset.StandardCharsets.UTF_8)).build();
 
         when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
-        when(copyProvisionalHtmlAssembler.assembleComplete(
+        when(imagePlanningProvisionalHtmlAssembler.assemble(
+                88L,
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageWireframe(),
-                experiment.getLandingPageImagePlanning(),
-                experiment.getLandingPageDesignPreset(),
-                "job-999")).thenReturn("<html>base</html>");
-        when(landingPageImageInjector.injectImages(88L, "<html>base</html>"))
-                .thenReturn("<html>with-images</html>");
-        when(landingPageImageInjector.injectImageUrlsIntoPlanning(88L, experiment.getLandingPageImagePlanning()))
+                "job-999")).thenReturn("<html>with-images</html>");
+                when(landingPageImageInjector.injectImageUrlsIntoPlanning(88L, experiment.getLandingPageImagePlanning()))
                 .thenReturn("{\"landingPageImagePlanning\":{\"images\":[{\"sectionId\":\"s0-hero\",\"imageUrl\":\"https://cdn.example.com/hero.jpg\"}]}}");
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(Optional.of(execution));

@@ -853,3 +853,12 @@
   - criado `GeraLandingStageSchemaResolver` para resolver schema por etapa de forma isolada;
   - `GeraLandingExecutionService` atualizado para usar definição de etapa + resolver dedicado, removendo seleção ad-hoc por string;
   - cânone atualizado com seção específica do Worker AI para divisão obrigatória por etapa.
+
+## 2026-05-21 19:10:00 UTC
+- solicitação: verificar se as novas estruturas de pacotes do GeraLanding continuam aderentes ao documento canônico.
+- validação executada:
+  - comparação dos pacotes atuais do backend (`geralanding`, `wireframe`, `copy`, `imageplanning`, `designpreset`) com o mapeamento canônico da seção 5.3 em `docs/canonical/procedimento-experimento-canon.v1.md`;
+  - revisão da orquestração em `GeraLandingStageExecutionService` para confirmar uso de assembler/processador por etapa sem acoplamento cruzado indevido;
+  - revisão do worker (`GeraLandingStageDefinition` + `GeraLandingStageSchemaResolver`) para confirmar resolução de schema por etapa.
+- resultado: estrutura de pacotes e fluxo por etapa seguem o isolamento definido no cânone e mantêm aderência com a regra de conjuntos por etapa.
+- ponto de atenção documental: há referências em documentos legados para `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`, porém o arquivo atual está em `docs/canonical/obsoletos/`; manter revisão de links em futuras limpezas documentais.

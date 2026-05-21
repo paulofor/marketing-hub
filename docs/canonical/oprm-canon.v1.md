@@ -45,3 +45,15 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Referência de governança
 - Este documento é o cânone específico de OPRM para ingestão de CNAE e totalização de market size.
 - As diretrizes gerais do sistema permanecem em `docs/canonical/system-governance-canon.v2.md`.
+
+
+## Regra obrigatória — ranking de CNAEs por quantidade com paginação
+- A listagem de ranking de CNAEs por volume (`/oprm/cnaes-volume`) deve ser sempre ordenada por **Quantidade** em ordem decrescente (maior para menor).
+- O endpoint de leitura do ranking deve suportar paginação explícita (parâmetros de página e tamanho), evitando retorno massivo em uma única resposta.
+- O tamanho padrão por página para essa visão operacional deve ser de **50 registros por página**.
+- A ordenação por quantidade deve ser aplicada no backend (SQL/consulta), não no frontend por pós-processamento em memória.
+
+## Critério de efetividade — ranking paginado
+- A primeira página precisa trazer os CNAEs com maior `Quantidade` no snapshot vigente da ingestão.
+- Ao navegar entre páginas, a ordenação deve permanecer estável por `Quantidade` decrescente.
+- O texto de apoio na tela deve deixar explícito para o usuário que o ranking está ordenado por quantidade e paginado.

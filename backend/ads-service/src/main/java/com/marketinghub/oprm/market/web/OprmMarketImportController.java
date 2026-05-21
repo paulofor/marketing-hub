@@ -65,7 +65,8 @@ public class OprmMarketImportController {
     }
 
     @GetMapping("/cnaes/top-volume")
-    public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByVolume(@RequestParam(defaultValue = "20") int limit) {
-        return service.listTopCnaesByMarketVolume(limit);
+    public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByVolume(@RequestParam(defaultValue = "0") int page,
+                                                             @RequestParam(defaultValue = "50") int size) {
+        return service.listTopCnaesByMarketVolume(page, size);
     }
 }

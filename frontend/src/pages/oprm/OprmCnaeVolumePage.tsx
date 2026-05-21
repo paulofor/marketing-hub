@@ -2,7 +2,7 @@ import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useOprmTopCnaeMarketVolume } from "../../api/oprm/useOprmTopCnaeMarketVolume";
 import { useOprmCnaeCatalog } from "../../api/oprm/useOprmCnaeCatalog";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 function formatNumber(value: number) {
   return value.toLocaleString("pt-BR");
@@ -11,23 +11,12 @@ function formatNumber(value: number) {
 export default function OprmCnaeVolumePage() {
   const pageSize = 50;
   const [currentPage, setCurrentPage] = useState(1);
-  const { data, isLoading, isError, refetch, isFetching } = useOprmTopCnaeMarketVolume(500);
+  const { data, isLoading, isError, refetch, isFetching } = useOprmTopCnaeMarketVolume(currentPage - 1, pageSize);
   const cnaeCatalogQuery = useOprmCnaeCatalog();
   const hasVolumeData = (data ?? []).length > 0;
   const hasCatalogData = (cnaeCatalogQuery.data ?? []).length > 0;
-  const sortedVolumeData = useMemo(
-    () => [...(data ?? [])].sort((a, b) => b.totalEmpresas - a.totalEmpresas),
-    [data],
-  );
-  const paginatedVolumeData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return sortedVolumeData.slice(startIndex, startIndex + pageSize);
-  }, [currentPage, sortedVolumeData]);
-  const totalPages = Math.max(1, Math.ceil(sortedVolumeData.length / pageSize));
-
-  useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, totalPages));
-  }, [totalPages]);
+  const paginatedVolumeData = useMemo(() => data ?? [], [data]);
+  const hasNextPage = paginatedVolumeData.length === pageSize;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -115,7 +104,7 @@ export default function OprmCnaeVolumePage() {
           </div>
           {hasVolumeData ? (
             <div className="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-              <span className="small text-secondary">Página {currentPage} de {totalPages}</span>
+              <span className="small text-secondary">Página {currentPage}</span>
               <div className="btn-group">
                 <button
                   type="button"
@@ -128,8 +117,8 @@ export default function OprmCnaeVolumePage() {
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-secondary"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  disabled={!hasNextPage || isFetching}
                 >
                   Próxima
                 </button>

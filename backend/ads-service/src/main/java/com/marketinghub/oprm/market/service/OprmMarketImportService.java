@@ -346,8 +346,9 @@ public class OprmMarketImportService {
      * Retorna os principais CNAEs por volume de mercado no snapshot mais recente.
      */
     @Transactional(readOnly = true)
-    public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByMarketVolume(int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), 100);
-        return marketSizeRepository.findTopByLatestSnapshot(PageRequest.of(0, safeLimit));
+    public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByMarketVolume(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        return marketSizeRepository.findTopByLatestSnapshot(PageRequest.of(safePage, safeSize));
     }
 }

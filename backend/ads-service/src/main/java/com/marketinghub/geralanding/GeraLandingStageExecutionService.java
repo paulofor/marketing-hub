@@ -88,7 +88,7 @@ public class GeraLandingStageExecutionService {
         log.info("GeraLanding publish approval loaded experiment (experimentId={}, experimentName={})",
                 experimentId, experiment.getName());
 
-        String landingPageHtml = experiment.getLandingPageDesignPreset();
+        String landingPageHtml = experiment.getHtmlGeraLanding();
         if (!StringUtils.hasText(landingPageHtml)) {
             landingPageHtml = experiment.getLandingPageHtml();
         }
@@ -515,13 +515,9 @@ public class GeraLandingStageExecutionService {
                         request,
                         execution);
             }
+            experiment.setLandingPageDesignPreset(request.modelResponse());
             if (StringUtils.hasText(htmlFromDesignPreset)) {
-                experiment.setLandingPageDesignPreset(htmlFromDesignPreset);
-            }
-            else {
-                experiment.setLandingPageDesignPreset(request.modelResponse());
-            }
-            if (StringUtils.hasText(htmlFromDesignPreset)) {
+                experiment.setHtmlGeraLanding(htmlFromDesignPreset);
                 experiment.setLandingPageHtml(htmlFromDesignPreset);
             }
         }

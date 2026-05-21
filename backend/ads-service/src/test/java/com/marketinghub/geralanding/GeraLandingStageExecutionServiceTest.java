@@ -393,7 +393,8 @@ class GeraLandingStageExecutionServiceTest {
 
         assertTrue(execution.getProvisionalHtml().contains("design-1.png"));
         assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageHtml());
-        assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageDesignPreset());
+        assertEquals(execution.getProvisionalHtml(), experiment.getHtmlGeraLanding());
+        assertEquals(request.modelResponse(), experiment.getLandingPageDesignPreset());
         verify(experimentRepository).save(experiment);
     }
 }

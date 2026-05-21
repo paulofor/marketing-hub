@@ -172,6 +172,13 @@ Registrar o ciclo de vida completo de uma execução, incluindo:
 
 ---
 
+
+## 3.3 Regra canônica obrigatória para HTML final
+
+- Todo HTML final do Gera Landing (incluindo entregável final e qualquer publicação de página) **deve começar literalmente com** `<!doctype html>`.
+- É proibido iniciar o documento com comentários técnicos, metadados operacionais, whitespace antes do doctype ou qualquer outro prefixo.
+- Essa regra garante compatibilidade de renderização, aderência de contrato e prevenção de contaminação do artefato final com metadado técnico.
+
 ## 4) Fluxo operacional ponta a ponta
 
 ## 4.1 Start manual da etapa

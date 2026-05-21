@@ -721,3 +721,13 @@
 - ajuste complementar: adicionado log explícito do conteúdo de `job.requestBodyJson()` (preview sanitizado/truncado) no início do `generate`, para facilitar correlação direta entre payload enviado e falhas subsequentes.
 - ajuste complementar 2: adicionados logs dentro de `createFlexResponse` para mostrar o `requestBody` parseado (chaves + preview) e o payload final após injeção de `service_tier=flex` antes do POST em `/responses`.
 - ajuste complementar 3: reposicionado/adicionado log **antes** do `readValue(job.requestBodyJson(), Map.class)` em `createFlexResponse`, para garantir visibilidade do payload bruto mesmo quando ocorrer erro de parse JSON nesse ponto.
+
+
+## 2026-05-20 22:47:01 UTC-3
+- solicitação para atualizar o documento canônico do Gera Landing com regra explícita de abertura obrigatória do HTML final.
+- raciocínio aplicado: reforçar contrato de saída para evitar divergências de renderização e prevenir contaminação do artefato com conteúdo técnico antes do doctype.
+- foi feito: adicionada seção canônica determinando que todo HTML final do Gera Landing deve iniciar literalmente com `<!doctype html>`, sem prefixos.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/gera-landing/modelo-canonico-gera-landing.md
+  - docs/registros/experimentos.md

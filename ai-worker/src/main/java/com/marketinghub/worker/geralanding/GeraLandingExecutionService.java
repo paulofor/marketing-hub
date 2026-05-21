@@ -111,7 +111,7 @@ public class GeraLandingExecutionService {
                     execution.idJob(), execution.experimentId());
 
             String openAiRequestBody = buildOpenAiRequestBody(
-                    normalizedStage,
+                    stage,
                     openAiModel,
                     prompt,
                     "gera-landing-pipeline",
@@ -227,7 +227,7 @@ public class GeraLandingExecutionService {
     /**
      * Monta o corpo da requisição da OpenAI Responses API para uma etapa do GeraLanding.
      */
-    private String buildOpenAiRequestBody(String stageCode,
+    private String buildOpenAiRequestBody(GeraLandingStageDefinition stage,
                                           String model,
                                           String prompt,
                                           String systemName,
@@ -251,7 +251,7 @@ public class GeraLandingExecutionService {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", "experiment_pipeline_landing_page_copy");
-        format.put("schema", readSchemaByStage(stageCode));
+        format.put("schema", readSchemaByStage(stage));
         format.put("strict", true);
 
         String resolvedModel = StringUtils.hasText(model) ? model.trim() : "gpt-5.2";

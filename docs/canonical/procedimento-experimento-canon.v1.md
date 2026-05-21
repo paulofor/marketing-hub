@@ -72,7 +72,7 @@ Regras complementares:
 | `LANDING_PAGE_WIREFRAME` | `WireframeProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
 | `LANDING_PAGE_COPY` | `CopyProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
 | `LANDING_PAGE_IMAGE_PLANNING` | Não há assembler exclusivo da etapa; usa `CopyProvisionalHtmlAssembler.assembleComplete(...)` + `LandingPageImageInjector.injectImages(...)`. | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` (quando `provisionalHtml` existe na execução). |
-| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` |
+| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (HTML consolidado da etapa) e `experiment.landing_page_html` |
 
 ## 6. Geração e aprovação de anúncios
 

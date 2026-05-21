@@ -112,3 +112,5 @@
 - 2026-05-21 00:00:00 (UTC): ajuste solicitado para agendar a próxima execução da importação OPRM CNPJ/CNAE para **00:40** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 40 0 * * *` e sincronização do cron padrão em `application.yml` para o mesmo horário.
 - 2026-05-21 00:00:00 (UTC): ajuste de documentação em código no backend (`OprmMarketImportService`) para conformidade: adicionados comentários de responsabilidade da classe e comentários breves em todos os métodos públicos/privados do serviço OPRM de importação.
 - 2026-05-21 00:00:00 (UTC): ajuste solicitado para alterar o agendamento da importação OPRM CNPJ/CNAE para **01:30** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 30 1 * * *` e sincronização do cron padrão em `application.yml` para o mesmo horário.
+
+- 2026-05-21: Ajustado o agendamento da ingestão OPRM de CNAEs no coletor MEI para 10:00 (America/Sao_Paulo), atualizando o cron de `runScheduledImport` para `0 0 10 * * *`.

@@ -917,3 +917,19 @@
 - foi feito:
   - atualização da classe CSS do badge para aplicar fundo azul fixo (`bg-primary`) com texto explicitamente branco (`text-white`) e peso `fw-semibold`, garantindo leitura consistente.
 - validação: inspeção estática do componente em `frontend/src/pages/experiment/ExperimentGeraLandingExecutionDetailPage.tsx`.
+
+## 2026-05-21 19:08:31 UTC-3
+- solicitação: corrigir inconsistência da tela de etapas, onde o Preset Design mostrava HTML em vez do JSON bruto retornado pela OpenAI.
+- causa-raiz identificada: o backend persistia o HTML provisório da etapa `landing-page-design-preset` na coluna `experiment.landing_page_design_preset`, sobrescrevendo o artefato JSON dessa etapa.
+- foi feito:
+  - criada a nova coluna `experiment.html_geralanding` (Liquibase incremental) para armazenar exclusivamente o HTML gerado pelo `DesignPresetProvisionalHtmlAssembler`;
+  - ajustada a persistência da etapa `LANDING_PAGE_DESIGN_PRESET` para manter `landing_page_design_preset` como JSON bruto (`modelResponse`) e gravar o HTML consolidado em `html_geralanding`;
+  - ajustado o fluxo de publicação (`approveAndPublishLanding`) para ler prioritariamente `html_geralanding` (fallback para `landing_page_html`);
+  - atualizado o DTO do experimento para expor `htmlGeraLanding` e o texto da UI para explicitar que a etapa 6 mostra JSON bruto.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - frontend/AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/modelo-dados-experimento.md
+  - docs/registros/experimentos.md

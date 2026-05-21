@@ -196,6 +196,9 @@ public class Experiment {
     @Column(name = "landing_page_design_preset", columnDefinition = "LONGTEXT")
     private String landingPageDesignPreset;
 
+    @Column(name = "html_geralanding", columnDefinition = "LONGTEXT")
+    private String htmlGeraLanding;
+
     @Column(name = "landing_page_deliverables", columnDefinition = "LONGTEXT")
     private String landingPageDeliverables;
 

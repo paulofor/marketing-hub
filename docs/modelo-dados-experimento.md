@@ -19,8 +19,9 @@ criativos, campanha e objetos de ativação/medição.
 Campo adicionado na entidade/tabela `experiment` para suportar o novo passo canônico de design da landing:
 
 - `landing_page_design_preset` (`LONGTEXT`)
-  - armazena o artefato estruturado `landingPageDesignPreset` produzido no pipeline entre `landingPageImagePlanning` e `landingPageHtml`;
-  - objetivo: separar decisão visual (tema/presets) da composição final do HTML pelo LHM, preservando determinismo e auditabilidade.
+- `html_geralanding` (`LONGTEXT`)
+  - armazena o HTML consolidado produzido no fluxo Gera Landing (a partir do `DesignPresetProvisionalHtmlAssembler`);
+  - objetivo: manter `landing_page_design_preset` como JSON bruto do modelo e separar o HTML operacional para publicação/preview.
 
 Atualização incremental — vínculo do wireframe com execução Gera Landing (07/05/2026):
 

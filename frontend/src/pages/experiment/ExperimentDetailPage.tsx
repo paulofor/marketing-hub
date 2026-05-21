@@ -260,7 +260,7 @@ export default function ExperimentDetailPage() {
         key: "design-preset",
         title: "Etapa 6 · Preset Design",
         description:
-          "Conteúdo bruto salvo na coluna landing_page_design_preset.",
+          "Conteúdo bruto (JSON) salvo na coluna landing_page_design_preset.",
         rawValue: data?.landingPageDesignPreset,
       },
       {

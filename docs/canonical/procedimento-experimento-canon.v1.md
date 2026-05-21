@@ -72,7 +72,7 @@ Regras complementares:
 | `LANDING_PAGE_WIREFRAME` | `WireframeProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
 | `LANDING_PAGE_COPY` | `CopyProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
 | `LANDING_PAGE_IMAGE_PLANNING` | `ImagePlanningProvisionalHtmlAssembler` (usa internamente `CopyProvisionalHtmlAssembler` + `LandingPageImageInjector` apenas para esta etapa). | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` (quando `provisionalHtml` existe na execução). |
-| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (HTML consolidado da etapa) e `experiment.landing_page_html` |
+| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (JSON bruto da resposta do modelo), `experiment.html_geralanding` (HTML consolidado da etapa) e `experiment.landing_page_html` |
 
 ### 5.4 Regra de isolamento por conjunto (obrigatória)
 
@@ -141,7 +141,7 @@ A publicação do HTML final da landing ocorre no Lead Portal, com integração 
 Classe responsável no backend: `GeraLandingStageExecutionService` (método `approveAndPublishLanding`).
 
 Fluxo obrigatório executado após a aprovação:
-1. carregar o experimento e resolver o HTML base para publicação (priorizando `experiment.landing_page_design_preset`; fallback legado para `experiment.landing_page_html`);
+1. carregar o experimento e resolver o HTML base para publicação (priorizando `experiment.html_geralanding`; fallback legado para `experiment.landing_page_html`);
 2. injetar instrumentação de tracking comportamental no HTML publicado (`data-track-section` + script `data-mh-funnel-tracking`);
 3. injetar controles de funil (`data-mh-funnel-controls`);
 4. resolver `facebookPixelId` do nicho do experimento e injetar snippet do Facebook Pixel quando elegível;

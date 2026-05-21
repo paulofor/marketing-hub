@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-21-experiment-html-geralanding-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: "0"
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'experiment'
+                AND COLUMN_NAME = 'html_geralanding'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN html_geralanding LONGTEXT NULL
+                AFTER landing_page_design_preset;

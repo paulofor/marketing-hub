@@ -3,8 +3,10 @@ import axios from "axios";
 import type {
   MoisSalesLibraryEntryPageResponse,
   MoisSalesLibraryJobPageResponse,
+  MoisSalesLibraryPage,
   MoisSalesLibraryPageAnalysis,
   MoisSalesLibraryPageListResponse,
+  MoisSalesLibraryPageSnapshot,
   MoisSalesLibraryReanalyzeResponse,
 } from "./types";
 
@@ -82,4 +84,27 @@ export function getSalesLibraryJobBadgeClass(job: { status?: string; analysisSta
     default:
       return "bg-secondary-subtle text-secondary-emphasis";
   }
+}
+
+
+export function useMoisSalesLibraryPage(pageId?: number) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "page", pageId],
+    enabled: Boolean(pageId),
+    queryFn: async () => {
+      const { data } = await axios.get<MoisSalesLibraryPage>(`/api/mois/sales-library/pages/${pageId}`);
+      return data;
+    },
+  });
+}
+
+export function useMoisSalesLibraryPageSnapshots(pageId?: number) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "page-snapshots", pageId],
+    enabled: Boolean(pageId),
+    queryFn: async () => {
+      const { data } = await axios.get<MoisSalesLibraryPageSnapshot[]>(`/api/mois/sales-library/pages/${pageId}/snapshots`);
+      return data;
+    },
+  });
 }

@@ -20,6 +20,9 @@ import org.springframework.util.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 @Service
+/**
+ * Executa as etapas pendentes do GeraLanding, preparando prompts, schemas e payloads para a OpenAI.
+ */
 public class GeraLandingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingExecutionService.class);
     private static final String STAGE_WIREFRAME = "landing-page-wireframe";
@@ -115,7 +118,7 @@ public class GeraLandingExecutionService {
                     openAiModel,
                     prompt,
                     "gera-landing-pipeline",
-                    "Você é especialista em execução de pipeline de experimento.");
+                    "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet.");
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
             String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(normalizedStage));
@@ -224,6 +227,9 @@ public class GeraLandingExecutionService {
         return value.substring(0, max) + "...";
     }
 
+    /**
+     * Monta o corpo da requisição da OpenAI Responses API para uma etapa do GeraLanding.
+     */
     private String buildOpenAiRequestBody(String stageCode,
                                           String model,
                                           String prompt,
@@ -233,7 +239,7 @@ public class GeraLandingExecutionService {
         // {
         //   "model": "gpt-5.2",
         //   "input": [
-        //     {"role": "system", "content": "Você é especialista em execução de pipeline de experimento."},
+        //     {"role": "system", "content": "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."},
         //     {"role": "user", "content": [{"type": "input_text", "text": "SEU PROMPT AQUI"}]}
         //   ],
         //   "text": {
@@ -255,7 +261,7 @@ public class GeraLandingExecutionService {
         String resolvedSystemName = StringUtils.hasText(systemName) ? systemName.trim() : "system";
         String resolvedSystemMessage = StringUtils.hasText(systemMessage)
                 ? systemMessage.trim()
-                : "Você é especialista em execução de pipeline de experimento.";
+                : "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet.";
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", resolvedModel);

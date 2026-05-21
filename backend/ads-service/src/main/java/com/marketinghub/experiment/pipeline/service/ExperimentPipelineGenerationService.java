@@ -77,6 +77,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
+/**
+ * Orquestra a geração das etapas do pipeline de experimento e a publicação da landing com apoio de IA.
+ */
 public class ExperimentPipelineGenerationService {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineGenerationService.class);
     private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
@@ -1163,8 +1166,11 @@ public class ExperimentPipelineGenerationService {
         );
     }
 
+    /**
+     * Monta o prompt de sistema base para orientar a geração da seção atual do pipeline.
+     */
     private String buildSystemPrompt(ExperimentPipelineSection section) {
-        return "Você é especialista em execução de pipeline de experimento. "
+        return "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet. "
                 + "Siga estritamente o template da etapa fornecido pelo Worker AI. "
                 + "Seção atual: " + section.path() + ".";
     }

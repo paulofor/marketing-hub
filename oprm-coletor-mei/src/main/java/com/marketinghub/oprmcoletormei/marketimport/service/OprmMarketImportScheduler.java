@@ -33,6 +33,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
+/**
+ * Responsável por orquestrar o agendamento e a execução da ingestão de mercado CNPJ/CNAE no OPRM.
+ */
 public class OprmMarketImportScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmMarketImportScheduler.class);
 
@@ -49,7 +52,8 @@ public class OprmMarketImportScheduler {
         this.restClient = restClient;
     }
 
-    @Scheduled(cron = "0 0 10 * * *", zone = "America/Sao_Paulo")
+    /** Executa a ingestão completa de arquivos CNPJ/CNAE no horário configurado para a rotina diária. */
+    @Scheduled(cron = "0 30 14 * * *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -163,7 +167,7 @@ public class OprmMarketImportScheduler {
             }
         }
 
-        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 10:00 ({}) com {} arquivos.",
+        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 14:30 ({}) com {} arquivos.",
                 snapshotDate,
                 scheduleProperties.timezone(),
                 files.size());
@@ -171,6 +175,7 @@ public class OprmMarketImportScheduler {
 
 
 
+    /** Dispara a finalização automática da última run STARTED após a janela de ingestão. */
     @Scheduled(cron = "0 0 11 * * *", zone = "America/Sao_Paulo")
     public void runScheduledFinalization() {
         log.info("[OPRM-TOTALIZACAO] Disparo de finalização automática iniciado via OPRM-MEI.");
@@ -181,6 +186,7 @@ public class OprmMarketImportScheduler {
         log.info("[OPRM-TOTALIZACAO] Disparo de finalização automática concluído via OPRM-MEI.");
     }
 
+    /** Lê o arquivo de CNAEs e transforma cada linha válida em payload de upsert para o backend. */
     private List<OprmCnaeUpsertDto> parseCnaesFromZip(Path zipPath, Long runId, Long fileId, String fileName) throws IOException {
         log.info("[run={} fileId={}] Início parse CNAE de {}", runId, fileId, fileName);
         List<OprmCnaeUpsertDto> cnaes = new ArrayList<>();
@@ -208,6 +214,7 @@ public class OprmMarketImportScheduler {
         return cnaes;
     }
 
+    /** Normaliza campos textuais removendo espaços e aspas de borda quando presentes. */
     private String normalizeField(String value) {
         if (value == null) return "";
         String trimmed = value.trim();
@@ -217,6 +224,7 @@ public class OprmMarketImportScheduler {
         return trimmed;
     }
 
+    /** Processa ESTABELECIMENTOS e acumula totais por CNAE para consolidar market size incremental. */
     private List<OprmMarketSizeUpsertDto> parseAndAccumulateMarketSizesFromEstablishmentsZip(
             Path zipPath,
             Long runId,
@@ -324,6 +332,7 @@ public class OprmMarketImportScheduler {
         private long totalEstabelecimentosAtivos;
     }
 
+    /** Monta a lista padrão de arquivos da base CNPJ a serem processados na execução. */
     private List<OprmImportFileSeedDto> buildFiles(String sourceUrl) {
         List<OprmImportFileSeedDto> files = new ArrayList<>();
         files.add(file("Cnaes.zip", sourceUrl, "CNAE"));
@@ -338,6 +347,7 @@ public class OprmMarketImportScheduler {
         return new OprmImportFileSeedDto(fileName, sourceUrl + "/" + fileName, datasetType, "STARTED");
     }
 
+    /** Faz download HTTP do arquivo de origem e persiste localmente no diretório temporário da run. */
     private void downloadToFile(String fileUrl, Path target) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(fileUrl)).GET().build();
         HttpResponse<Path> response = httpClient.send(request, HttpResponse.BodyHandlers.ofFile(target));
@@ -346,6 +356,7 @@ public class OprmMarketImportScheduler {
         }
     }
 
+    /** Conta linhas brutas do ZIP para telemetria de ingestão antes da transformação de payload. */
     private long countRowsFromZip(Path zipPath, Long runId, Long fileId, String fileName) throws IOException {
         log.info("[run={} fileId={}] Início unzip/leitura: {}", runId, fileId, fileName);
         long rows = 0L;
@@ -370,6 +381,7 @@ public class OprmMarketImportScheduler {
         return rows;
     }
 
+    /** Publica o evento de processamento do arquivo (COMPLETED/FAILED) para persistência no backend. */
     private void publishFileEvent(Long runId, Long fileId, OprmImportFileEventRequestDto event) {
         int cnaesCount = event.cnaes() != null ? event.cnaes().size() : 0;
         int marketSizesCount = event.marketSizes() != null ? event.marketSizes().size() : 0;
@@ -384,6 +396,7 @@ public class OprmMarketImportScheduler {
         log.info("[run={} fileId={}] Evento de arquivo persistido com sucesso.", runId, fileId);
     }
 
+    /** Publica a finalização da run com os contadores consolidados após o processamento dos arquivos. */
     private void publishRunComplete(Long runId, int filesProcessed, long rowsRead, long rowsValid, long rowsRejected, boolean hasFailure) {
         String finalStatus = hasFailure ? "PARTIAL" : "COMPLETED";
         log.info("[run={}] Publicando consolidação final do run status={} filesProcessed={} rowsRead={} rowsValid={} rowsRejected={}",
@@ -394,6 +407,7 @@ public class OprmMarketImportScheduler {
         log.info("[run={}] Consolidação final do run persistida com sucesso.", runId);
     }
 
+    /** Remove o diretório temporário da run para evitar acúmulo de arquivos locais. */
     private void cleanupDirectory(Path runTempDir, Long runId) {
         if (runTempDir == null || !Files.exists(runTempDir)) return;
         try (var walk = Files.walk(runTempDir)) {

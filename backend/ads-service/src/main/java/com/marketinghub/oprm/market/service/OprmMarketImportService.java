@@ -26,12 +26,19 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+/**
+ * Serviço responsável por orquestrar o ciclo de ingestão OPRM CNPJ/CNAE,
+ * incluindo abertura de run, registro de eventos de arquivos, consolidação e finalização.
+ */
 public class OprmMarketImportService {
     private final OprmCnpjImportRunRepository runRepository;
     private final OprmCnpjImportFileRepository fileRepository;
     private final OprmCnpjCnaeDimRepository cnaeDimRepository;
     private final OprmMarketSizeByCnaeRepository marketSizeRepository;
 
+    /**
+     * Inicia uma nova run de importação e persiste os arquivos sementes vinculados.
+     */
     @Transactional
     public OprmImportRunCreatedResponseDto startRun(OprmCreateImportRunRequestDto request) {
         OprmCnpjImportRun run = new OprmCnpjImportRun();
@@ -68,6 +75,9 @@ public class OprmMarketImportService {
         return new OprmImportRunCreatedResponseDto(run.getId(), fileIds);
     }
 
+    /**
+     * Registra evento de processamento de arquivo e aplica upsert dos dados derivados recebidos.
+     */
     @Transactional
     public void registerFileEvent(Long runId, Long fileId, OprmImportFileEventRequestDto request) {
         OprmCnpjImportRun run = runRepository.findById(runId)
@@ -118,9 +128,23 @@ public class OprmMarketImportService {
                 if (row.cnaeCode() == null || row.cnaeCode().isBlank()) {
                     throw new ResponseStatusException(BAD_REQUEST, "cnaeCode is required in marketSizes.");
                 }
+                String cnaeCodeNormalized = row.cnaeCode().trim();
+                log.info("[runId={} fileId={}] Preparando upsert marketSize: snapshotDate={} cnaeCodeRaw='{}' cnaeCodeNormalized='{}' cnaeCodeLength={} totalEstabelecimentos={} totalEstabelecimentosAtivos={} totalEmpresas={} totalEmpresasMei={} totalEmpresasSimples={} avgSociosPorEmpresa={}",
+                        runId,
+                        fileId,
+                        run.getSnapshotDate(),
+                        row.cnaeCode(),
+                        cnaeCodeNormalized,
+                        cnaeCodeNormalized.length(),
+                        row.totalEstabelecimentos(),
+                        row.totalEstabelecimentosAtivos(),
+                        row.totalEmpresas(),
+                        row.totalEmpresasMei(),
+                        row.totalEmpresasSimples(),
+                        row.avgSociosPorEmpresa());
                 OprmMarketSizeByCnaeId id = new OprmMarketSizeByCnaeId();
                 id.setSnapshotDate(run.getSnapshotDate());
-                id.setCnaeCode(row.cnaeCode());
+                id.setCnaeCode(cnaeCodeNormalized);
                 OprmMarketSizeByCnae item = marketSizeRepository.findById(id).orElseGet(OprmMarketSizeByCnae::new);
                 item.setId(id);
                 item.setTotalEstabelecimentos(row.totalEstabelecimentos() != null ? row.totalEstabelecimentos() : 0L);
@@ -130,7 +154,20 @@ public class OprmMarketImportService {
                 item.setTotalEmpresasSimples(row.totalEmpresasSimples() != null ? row.totalEmpresasSimples() : 0L);
                 item.setAvgSociosPorEmpresa(row.avgSociosPorEmpresa());
                 item.setUpdatedAt(Instant.now());
-                marketSizeRepository.save(item);
+                try {
+                    marketSizeRepository.save(item);
+                } catch (RuntimeException ex) {
+                    log.error("[runId={} fileId={}] Falha ao persistir marketSize: snapshotDate={} cnaeCodeRaw='{}' cnaeCodeNormalized='{}' cnaeCodeLength={} payload={}.",
+                            runId,
+                            fileId,
+                            run.getSnapshotDate(),
+                            row.cnaeCode(),
+                            cnaeCodeNormalized,
+                            cnaeCodeNormalized.length(),
+                            row,
+                            ex);
+                    throw ex;
+                }
             }
             log.info("[runId={} fileId={}] Consolidacao marketSizes persistida com sucesso. snapshotDate={} totalRegistros={}",
                     runId,
@@ -140,6 +177,9 @@ public class OprmMarketImportService {
         }
     }
 
+    /**
+     * Finaliza a run informada, consolidando status/contadores e bloqueando fechamento indevido.
+     */
     @Transactional
     public void completeRun(Long runId, OprmCompleteImportRunRequestDto request) {
         log.info("[OPRM-TOTALIZACAO] completeRun recebido. runId={}, requestedStatus={}, requestedFinishedAt={}, requestedFilesProcessed={}, requestedRowsRead={}, requestedRowsValid={}, requestedRowsRejected={}, requestedErrorMessage={}",
@@ -220,7 +260,9 @@ public class OprmMarketImportService {
                 run.getErrorMessage());
     }
 
-
+    /**
+     * Finaliza automaticamente a run mais recente em status STARTED, quando existir.
+     */
     @Transactional
     public void finalizeLatestStartedRun(String triggerLabel) {
         Instant executionAt = Instant.now();
@@ -253,12 +295,18 @@ public class OprmMarketImportService {
                 run.getId());
     }
 
+    /**
+     * Valida se o arquivo informado pertence à run recebida.
+     */
     private void validateFileBelongsToRun(Long runId, OprmCnpjImportFile file) {
         if (file.getRun() == null || file.getRun().getId() == null || !runId.equals(file.getRun().getId())) {
             throw new ResponseStatusException(BAD_REQUEST, "File does not belong to informed run.");
         }
     }
 
+    /**
+     * Resolve o status final da run priorizando o status solicitado e fallback por presença de falhas.
+     */
     private String resolveRunStatus(String requestedStatus, boolean hasFailure) {
         if (requestedStatus != null && !requestedStatus.isBlank()) {
             return requestedStatus;
@@ -266,21 +314,33 @@ public class OprmMarketImportService {
         return hasFailure ? "PARTIAL" : "COMPLETED";
     }
 
+    /**
+     * Lista todas as runs de importação persistidas.
+     */
     @Transactional(readOnly = true)
     public List<OprmCnpjImportRun> listRuns() {
         return runRepository.findAll();
     }
 
+    /**
+     * Lista os arquivos vinculados a uma run específica.
+     */
     @Transactional(readOnly = true)
     public List<OprmCnpjImportFile> listRunFiles(Long runId) {
         return fileRepository.findByRunId(runId);
     }
 
+    /**
+     * Lista a dimensão de CNAEs carregada no backend.
+     */
     @Transactional(readOnly = true)
     public List<OprmCnpjCnaeDim> listCnaes() {
         return cnaeDimRepository.findAll();
     }
 
+    /**
+     * Retorna os principais CNAEs por volume de mercado no snapshot mais recente.
+     */
     @Transactional(readOnly = true)
     public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByMarketVolume(int limit) {
         int safeLimit = Math.min(Math.max(limit, 1), 100);

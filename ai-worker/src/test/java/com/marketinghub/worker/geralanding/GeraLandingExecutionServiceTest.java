@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ class GeraLandingExecutionServiceTest {
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
+        GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -34,6 +36,7 @@ class GeraLandingExecutionServiceTest {
                         geraLandingService,
                         openAiClient,
                         objectMapper,
+                        stageSchemaResolver,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -55,6 +58,7 @@ class GeraLandingExecutionServiceTest {
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
+        GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -68,6 +72,7 @@ class GeraLandingExecutionServiceTest {
                         geraLandingService,
                         openAiClient,
                         objectMapper,
+                        stageSchemaResolver,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),

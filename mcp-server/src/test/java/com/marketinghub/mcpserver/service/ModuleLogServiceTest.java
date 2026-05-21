@@ -47,7 +47,7 @@ class ModuleLogServiceTest {
         String url = "http://localhost:" + server.getAddress().getPort() + "/logs";
         ModuleLogService service = new ModuleLogService(buildProperties(url));
 
-        Map<String, Object> result = service.readModuleLogs("backend", 2);
+        Map<String, Object> result = service.readModuleLogs("backend", 2, null, null, null, null, null);
 
         assertEquals(3, calls.get());
         assertEquals(2, result.get("returnedLines"));

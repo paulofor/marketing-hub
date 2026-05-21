@@ -192,6 +192,19 @@ class McpControllerTest {
                         .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita"));
     }
 
+
+
+    @Test
+    void shouldFilterAndPaginateJavaModuleLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":15,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"backend","lines":1,"contains":"line","offset":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("line-2"));
+    }
     @Test
     void shouldHandleErrorResponseWhenRequestIdIsNull() throws Exception {
         mockMvc.perform(post("/mcp")

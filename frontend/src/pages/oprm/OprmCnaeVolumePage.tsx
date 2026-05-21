@@ -15,7 +15,9 @@ export default function OprmCnaeVolumePage() {
   const cnaeCatalogQuery = useOprmCnaeCatalog();
   const hasVolumeData = (data ?? []).length > 0;
   const hasCatalogData = (cnaeCatalogQuery.data ?? []).length > 0;
-  const paginatedVolumeData = useMemo(() => data ?? [], [data]);
+  const paginatedVolumeData = useMemo(() => {
+    return [...(data ?? [])].sort((a, b) => b.totalEstabelecimentosAtivos - a.totalEstabelecimentosAtivos);
+  }, [data]);
   const hasNextPage = paginatedVolumeData.length === pageSize;
 
   return (
@@ -33,7 +35,7 @@ export default function OprmCnaeVolumePage() {
         <div className="card-body d-flex justify-content-between align-items-center">
           <div>
             <h2 className="h5 mb-1">Top CNAEs por volume</h2>
-            <p className="text-secondary mb-0">Exibindo 50 CNAEs por página, ordenados da maior quantidade para a menor.</p>
+            <p className="text-secondary mb-0">Exibindo 50 CNAEs por página, ordenados da maior quantidade de estabelecimentos ativos para a menor.</p>
           </div>
           <button
             type="button"

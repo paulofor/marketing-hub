@@ -355,3 +355,14 @@
 - frontend MOIS (`/mois/sales-pages-library`): os blocos de JSON em "Detalhes da análise da página" foram migrados para visualização colapsável usando `CollapsibleJsonViewer`, substituindo `<pre>` estático para facilitar leitura e navegação de payloads longos.
 - seções afetadas: `Seções (JSON)`, `Copy (JSON)`, `Visual (JSON)` e `Imagem (JSON)`.
 - arquivo alterado: `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`.
+
+## 2026-05-21 — Diagrama canônico do fluxo de alimentação da biblioteca de páginas de vendas
+- solicitada melhoria do documento canônico existente com explicação textual e diagrama ponta a ponta do fluxo de alimentação da biblioteca de páginas de vendas.
+- atualizado `docs/canonical/mois-worker-canon.v1.md` com seção nova contendo:
+  - ingestão por Hotmart e ClickBank;
+  - disponibilização de URL e criação de job `PENDING`;
+  - rotina de claim/fetch/análise do worker;
+  - prompt/schema (`text.format.type=json_object`) e campos esperados;
+  - persistência final em `mois_sales_library_page_analysis` e transições `DONE`/`FAILED`.
+- sem mudança de código executável; atualização estritamente documental canônica.
+

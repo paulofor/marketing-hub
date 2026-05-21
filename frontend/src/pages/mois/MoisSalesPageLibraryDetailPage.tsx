@@ -11,13 +11,77 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function JsonTreeNode({ label, value, defaultOpen = false }: { label: string; value: unknown; defaultOpen?: boolean }) {
+  if (Array.isArray(value)) {
+    return (
+      <details open={defaultOpen} className="ms-2">
+        <summary className="small" style={{ cursor: "pointer" }}>
+          <strong>{label}</strong>: [{value.length}]
+        </summary>
+        <div className="mt-1 ms-3 d-flex flex-column gap-1">
+          {value.length === 0 ? <span className="text-secondary">[]</span> : null}
+          {value.map((item, index) => (
+            <JsonTreeNode key={`${label}-${index}`} label={`[${index}]`} value={item} />
+          ))}
+        </div>
+      </details>
+    );
+  }
+
+  if (isObjectLike(value)) {
+    const entries = Object.entries(value);
+
+    return (
+      <details open={defaultOpen} className="ms-2">
+        <summary className="small" style={{ cursor: "pointer" }}>
+          <strong>{label}</strong>: {"{"}
+          {entries.length}
+          {"}"}
+        </summary>
+        <div className="mt-1 ms-3 d-flex flex-column gap-1">
+          {entries.length === 0 ? <span className="text-secondary">{"{}"}</span> : null}
+          {entries.map(([entryLabel, entryValue]) => (
+            <JsonTreeNode key={`${label}-${entryLabel}`} label={entryLabel} value={entryValue} />
+          ))}
+        </div>
+      </details>
+    );
+  }
+
+  return (
+    <div className="small ms-2">
+      <strong>{label}</strong>: <span>{JSON.stringify(value)}</span>
+    </div>
+  );
+}
+
 function JsonCollapse({ title, content }: { title: string; content?: string }) {
+  let parsed: unknown;
+  let parseError = false;
+
+  if (!content) {
+    parsed = {};
+  } else {
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parseError = true;
+      parsed = content;
+    }
+  }
+
   return (
     <details className="border rounded p-2 bg-light-subtle">
       <summary className="fw-semibold" style={{ cursor: "pointer" }}>
         {title}
       </summary>
-      <pre className="mt-2 mb-0 small text-break">{content || "{}"}</pre>
+      <div className="mt-2">
+        {parseError ? <pre className="mb-0 small text-break">{String(parsed)}</pre> : <JsonTreeNode label="root" value={parsed} defaultOpen />}
+      </div>
     </details>
   );
 }

@@ -407,3 +407,9 @@
 - causa-raiz: uso de variável inexistente (`pageQuery`) e uso de `history` sem definição local, que colidia com o tipo global `History`.
 - correção aplicada: adição das queries `useMoisSalesLibraryPage` e `useMoisSalesLibraryPageSnapshots`, além de construção explícita de `history: HistoryItem[]` a partir dos snapshots.
 - arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.
+
+## 2026-05-21 20:58:00 UTC
+- melhoria na tela de detalhe da Biblioteca de Páginas de Vendas (MOIS) para exibir JSON no formato de navegação hierárquica expansível (clicar para abrir/fechar nós), em vez de texto cru em `<pre>`.
+- implementado renderizador recursivo de árvore JSON para objetos e arrays, com contagem de itens por nó e expansão inicial da raiz para facilitar inspeção.
+- adicionado fallback seguro: quando o conteúdo não for JSON válido, a UI mantém exibição textual para não bloquear diagnóstico.
+- arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.

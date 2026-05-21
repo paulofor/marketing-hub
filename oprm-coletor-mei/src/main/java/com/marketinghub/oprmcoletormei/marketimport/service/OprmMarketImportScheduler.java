@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,6 +40,7 @@ import org.springframework.web.client.RestClient;
  */
 public class OprmMarketImportScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmMarketImportScheduler.class);
+    private static final Pattern CNAE_7_DIGITS_PATTERN = Pattern.compile("(\\d{7})");
 
     private final OprmMarketImportScheduleProperties scheduleProperties;
     private final OprmMarketImportCollectorProperties collectorProperties;
@@ -224,6 +227,17 @@ public class OprmMarketImportScheduler {
         return trimmed;
     }
 
+
+
+    /** Extrai somente o primeiro CNAE principal válido (7 dígitos), evitando enviar campo composto para persistência. */
+    private String extractPrimaryCnaeCode(String rawCnaeValue) {
+        Matcher matcher = CNAE_7_DIGITS_PATTERN.matcher(rawCnaeValue == null ? "" : rawCnaeValue);
+        if (!matcher.find()) {
+            return "";
+        }
+        return matcher.group(1);
+    }
+
     /** Processa ESTABELECIMENTOS e acumula totais por CNAE para consolidar market size incremental. */
     private List<OprmMarketSizeUpsertDto> parseAndAccumulateMarketSizesFromEstablishmentsZip(
             Path zipPath,
@@ -266,9 +280,11 @@ public class OprmMarketImportScheduler {
                         continue;
                     }
                     String situacaoCadastral = normalizeField(cols[5]);
-                    String cnaePrincipal = normalizeField(cols[11]).replaceAll("\\D", "");
+                    String cnaePrincipal = extractPrimaryCnaeCode(normalizeField(cols[11]));
                     if (cnaePrincipal.isBlank()) {
                         linhasIgnoradas++;
+                        log.warn("[run={} fileId={}] Linha ignorada por CNAE principal inválido. coluna11='{}'",
+                                runId, fileId, normalizeField(cols[11]));
                         continue;
                     }
                     MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaePrincipal, key -> new MarketSizeAccumulator());

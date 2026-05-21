@@ -127,3 +127,5 @@
 - 2026-05-21 19:30:00 (UTC): atualização canônica solicitada para OPRM: formalizada no `docs/canonical/oprm-canon.v1.md` a regra da visão `/oprm/cnaes-volume` com ordenação obrigatória por **Quantidade** (descendente, maior→menor) e paginação obrigatória com tamanho padrão de 50 registros por página, com ordenação aplicada no backend.
 
 - 2026-05-21 19:50:00 (UTC): implementação solicitada do ranking `/oprm/cnaes-volume` com paginação real no backend: endpoint `GET /api/oprm/market/import-runs/cnaes/top-volume` atualizado para receber `page` e `size` (default `0`/`50`), serviço OPRM ajustado para aplicar `PageRequest` e frontend alterado para consumir paginação server-side mantendo ordenação por quantidade no backend.
+
+- 2026-05-21 20:05:00 (UTC): correção na tela OPRM `/oprm/cnaes-volume` para garantir ordenação visual do ranking por **Estab. ativos** (descendente, maior→menor) no frontend, adicionando ordenação defensiva client-side em `OprmCnaeVolumePage` após resposta paginada do backend e ajustando o texto da seção para explicitar o critério de estabelecimentos ativos.

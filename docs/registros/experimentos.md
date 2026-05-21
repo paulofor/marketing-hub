@@ -877,3 +877,14 @@
   - ajuste dos testes para APIs atuais dos assemblers/processors (remoção de chamadas legadas `assembleComplete`/`processComplete`);
   - ajuste de mocks em `GeraLandingStageExecutionServiceTest` para refletir `ImagePlanningProvisionalHtmlAssembler` na etapa de image planning.
 - validação: `mvn -DskipITs test-compile` executado com sucesso no módulo `backend/ads-service`.
+
+## 2026-05-21 15:45:11 UTC-3
+- correção de falha de compilação nos testes do módulo ai-worker após evolução do construtor de `GeraLandingExecutionService`.
+- causa-raiz identificada: os testes continuavam instanciando o serviço sem o novo parâmetro obrigatório `GeraLandingStageSchemaResolver`, gerando incompatibilidade de assinatura.
+- foi feito: atualização de `GeraLandingExecutionServiceTest` para criar mock de `GeraLandingStageSchemaResolver` e passá-lo nas duas instâncias do serviço cobertas pelos testes.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/GeraLandingExecutionService.java
+  - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingExecutionServiceTest.java

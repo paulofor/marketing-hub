@@ -13,6 +13,7 @@ import com.marketinghub.oprm.market.repository.OprmMarketSizeByCnaeRepository;
 import java.time.Instant;
 import java.util.List;
 import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
+import com.marketinghub.oprm.market.exception.SQLException;
 import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * incluindo abertura de run, registro de eventos de arquivos, consolidação e finalização.
  */
 public class OprmMarketImportService {
+
+    private static final String UPSERT_MARKET_SIZE_SQL = "insert into oprm_market_size_by_cnae (avg_socios_por_empresa,total_empresas,total_empresas_mei,total_empresas_simples,total_estabelecimentos,total_estabelecimentos_ativos,updated_at,cnae_code,snapshot_date) values (?,?,?,?,?,?,?,?,?)";
     private final OprmCnpjImportRunRepository runRepository;
     private final OprmCnpjImportFileRepository fileRepository;
     private final OprmCnpjCnaeDimRepository cnaeDimRepository;
@@ -157,7 +160,7 @@ public class OprmMarketImportService {
                 try {
                     marketSizeRepository.save(item);
                 } catch (RuntimeException ex) {
-                    log.error("[runId={} fileId={}] Falha ao persistir marketSize: snapshotDate={} cnaeCodeRaw='{}' cnaeCodeNormalized='{}' cnaeCodeLength={} payload={}.",
+                    log.error("[runId={} fileId={}] Falha ao persistir marketSize: snapshotDate={} cnaeCodeRaw='{}' cnaeCodeNormalized='{}' cnaeCodeLength={} payload={} sqlTentada='{}'.",
                             runId,
                             fileId,
                             run.getSnapshotDate(),
@@ -165,8 +168,9 @@ public class OprmMarketImportService {
                             cnaeCodeNormalized,
                             cnaeCodeNormalized.length(),
                             row,
+                            UPSERT_MARKET_SIZE_SQL,
                             ex);
-                    throw ex;
+                    throw new SQLException(UPSERT_MARKET_SIZE_SQL, ex);
                 }
             }
             log.info("[runId={} fileId={}] Consolidacao marketSizes persistida com sucesso. snapshotDate={} totalRegistros={}",

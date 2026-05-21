@@ -92,6 +92,23 @@ public class MoisSalesLibraryController {
         }
     }
 
+
+    /**
+     * Permite atualizar manualmente o status da análise para pendente ou anulado.
+     */
+    @PostMapping("/pages/{pageId}:status")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse updatePageStatus(
+            @PathVariable long pageId,
+            @Valid @RequestBody MoisSalesLibraryDtos.SalesLibraryStatusUpdateRequest request
+    ) {
+        try {
+            return service.updatePageStatus(pageId, request);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+    }
+
     @PostMapping("/snapshots:capture")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureResponse captureSnapshots(

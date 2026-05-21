@@ -313,3 +313,11 @@ export interface MoisSalesLibraryReanalyzeResponse {
   status: string;
   createdAt: string;
 }
+
+export interface MoisSalesLibraryStatusUpdateResponse {
+  pageId: number;
+  jobId?: number;
+  status: string;
+  reason?: string;
+  createdAt: string;
+}

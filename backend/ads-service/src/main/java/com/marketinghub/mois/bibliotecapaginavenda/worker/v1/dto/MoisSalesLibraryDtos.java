@@ -169,6 +169,22 @@ public final class MoisSalesLibraryDtos {
     ) {
     }
 
+
+    public record SalesLibraryStatusUpdateRequest(
+            @NotBlank String status,
+            String reason
+    ) {
+    }
+
+    public record SalesLibraryStatusUpdateResponse(
+            long pageId,
+            Long jobId,
+            String status,
+            String reason,
+            Instant createdAt
+    ) {
+    }
+
     public record SalesLibrarySnapshotCaptureRequest(
             @NotBlank String workspaceId,
             Integer limit,

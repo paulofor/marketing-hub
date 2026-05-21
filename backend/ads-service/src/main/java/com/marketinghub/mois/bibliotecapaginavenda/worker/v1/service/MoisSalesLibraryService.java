@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MoisSalesLibraryService {
 
     private static final String JOB_STATUS_PENDING = "PENDING";
+    private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -236,6 +237,37 @@ public class MoisSalesLibraryService {
                 rs.getString("analysis_notes"), toInstant(rs.getTimestamp("analyzed_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Analysis not found for page: " + pageId);
         return rows.get(0);
+    }
+
+    /**
+     * Atualiza manualmente o status da análise de uma página da biblioteca.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse updatePageStatus(
+            long pageId,
+            MoisSalesLibraryDtos.SalesLibraryStatusUpdateRequest request
+    ) {
+        Long exists = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE id = ?", Long.class, pageId);
+        if (exists == null || exists == 0) throw new IllegalArgumentException("Page not found: " + pageId);
+
+        String normalizedStatus = request.status().trim().toUpperCase(Locale.ROOT);
+        if (!JOB_STATUS_PENDING.equals(normalizedStatus) && !ANALYSIS_STATUS_CANCELED.equals(normalizedStatus)) {
+            throw new IllegalArgumentException("Unsupported status: " + request.status());
+        }
+
+        Long jobId = null;
+        String notes = request.reason() == null || request.reason().isBlank() ? "Status atualizado manualmente via API" : request.reason().trim();
+        if (JOB_STATUS_PENDING.equals(normalizedStatus)) {
+            jobId = createPendingJob(pageId);
+        }
+
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_page_analysis
+                (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, pageId, jobId, normalizedStatus, notes);
+
+        return new MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse(pageId, jobId, normalizedStatus, notes, Instant.now());
     }
 
     @Transactional

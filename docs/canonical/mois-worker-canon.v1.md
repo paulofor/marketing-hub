@@ -196,3 +196,10 @@ sequenceDiagram
 
 ### 12.4 Regra operacional para evitar divergência de leitura
 Quando houver dúvida sobre “onde o fluxo começa”, considerar canonicamente que a alimentação da biblioteca inicia nos coletores (Hotmart/ClickBank), passa obrigatoriamente pelo endpoint `/urls:ingest` no backend e só então entra no ciclo assíncrono do worker.
+
+### 12.4 Ações manuais de status no detalhe da análise (2026-05-21)
+- A tela de detalhe (`/mois/sales-pages-library/{pageId}`) passa a expor comandos operacionais manuais para acelerar triagem:
+  - `Voltar para pendente`: cria novo ciclo de processamento para a página, persistindo status `PENDING`.
+  - `Marcar como anulado`: registra status `ANULADO` para itens que não serão mais utilizados no funil.
+- Contrato backend oficial: `POST /api/mois/sales-library/pages/{pageId}:status` com payload `{ "status": "PENDING" | "ANULADO", "reason"?: string }`.
+- A interface de detalhe também deve exibir navegação sequencial com botão `Próximo →` para avançar ao próximo item da lista local.

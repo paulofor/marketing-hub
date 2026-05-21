@@ -1,10 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
-import {
-  useMoisSalesLibraryPage,
-  useMoisSalesLibraryPageAnalysis,
-  useMoisSalesLibraryPageSnapshots,
-} from "../../api/mois/useMoisSalesLibrary";
+import { useMoisSalesLibraryPageAnalysis, useMoisSalesLibraryPages, useUpdateMoisSalesLibraryPageStatus } from "../../api/mois/useMoisSalesLibrary";
+
+const WORKSPACE_ID = "workspace-001";
+const PAGE_SIZE = 100;
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -33,52 +32,14 @@ type HistoryItem = {
 export default function MoisSalesPageLibraryDetailPage() {
   const params = useParams<{ pageId: string }>();
   const pageId = Number(params.pageId);
-  const normalizedPageId = Number.isFinite(pageId) ? pageId : undefined;
+  const validPageId = Number.isFinite(pageId) ? pageId : undefined;
+  const analysisQuery = useMoisSalesLibraryPageAnalysis(validPageId);
+  const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
+  const updateStatusMutation = useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
 
-  const pageQuery = useMoisSalesLibraryPage(normalizedPageId);
-  const analysisQuery = useMoisSalesLibraryPageAnalysis(normalizedPageId);
-  const snapshotsQuery = useMoisSalesLibraryPageSnapshots(normalizedPageId);
-
-  const isLoading = pageQuery.isLoading || analysisQuery.isLoading || snapshotsQuery.isLoading;
-  const isError = pageQuery.isError || analysisQuery.isError || snapshotsQuery.isError;
-
-  const history: HistoryItem[] = [];
-  if (pageQuery.data) {
-    history.push({
-      key: "page-updated",
-      stage: "Coleta / ingestão da URL",
-      date: pageQuery.data.updatedAt,
-      detail: `URL canônica registrada (${pageQuery.data.urlCanonical}).`,
-    });
-    if (pageQuery.data.analyzedAt) {
-      history.push({
-        key: "page-analyzed",
-        stage: "Avaliação concluída",
-        date: pageQuery.data.analyzedAt,
-        detail: `Status final da avaliação: ${pageQuery.data.analysisStatus || "SEM ANÁLISE"}.`,
-      });
-    }
-  }
-
-  (snapshotsQuery.data || []).forEach((snapshot) => {
-    history.push({
-      key: `snapshot-${snapshot.snapshotId}`,
-      stage: "Coleta de snapshot bruto",
-      date: snapshot.capturedAt || snapshot.updatedAt,
-      detail: `Snapshot ${snapshot.snapshotId} com status ${snapshot.status} (HTTP ${snapshot.httpStatus || "—"}).`,
-    });
-  });
-
-  if (analysisQuery.data) {
-    history.push({
-      key: "analysis-updated",
-      stage: "Avaliação do modelo",
-      date: analysisQuery.data.analyzedAt || analysisQuery.data.updatedAt,
-      detail: `Modelo ${analysisQuery.data.modelName || "—"} com status ${analysisQuery.data.status}.`,
-    });
-  }
-
-  history.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+  const currentIndex = pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ?? -1;
+  const nextItem = currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
+  const isMutating = updateStatusMutation.isPending;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -89,13 +50,43 @@ export default function MoisSalesPageLibraryDetailPage() {
             Coletor usado: <strong>{pageQuery.data?.source || "—"}</strong>
           </p>
         </div>
-        <Link className="btn btn-outline-secondary" to="/mois/sales-pages-library">
-          Voltar para biblioteca
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          {nextItem ? (
+            <Link className="btn btn-outline-primary" to={`/mois/sales-pages-library/${nextItem.pageId}`}>
+              Próximo →
+            </Link>
+          ) : null}
+          <Link className="btn btn-outline-secondary" to="/mois/sales-pages-library">
+            Voltar para biblioteca
+          </Link>
+        </div>
       </header>
 
-      {isLoading ? <p className="text-secondary mb-0">Carregando detalhe...</p> : null}
-      {isError ? <div className="alert alert-danger mb-0">Falha ao carregar detalhe da análise.</div> : null}
+      <div className="d-flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-outline-warning"
+          disabled={!validPageId || isMutating}
+          onClick={() => validPageId && updateStatusMutation.mutate({ pageId: validPageId, status: "PENDING" })}
+        >
+          {isMutating ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" /> : null}
+          Voltar para pendente
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          disabled={!validPageId || isMutating}
+          onClick={() => validPageId && updateStatusMutation.mutate({ pageId: validPageId, status: "ANULADO" })}
+        >
+          {isMutating ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" /> : null}
+          Marcar como anulado
+        </button>
+      </div>
+
+      {updateStatusMutation.isError ? <div className="alert alert-danger mb-0">Falha ao atualizar status da página.</div> : null}
+
+      {analysisQuery.isLoading ? <p className="text-secondary mb-0">Carregando detalhe...</p> : null}
+      {analysisQuery.isError ? <div className="alert alert-danger mb-0">Falha ao carregar detalhe da análise.</div> : null}
 
       {analysisQuery.data ? (
         <section className="card border-0 shadow-sm">

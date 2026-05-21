@@ -13,7 +13,7 @@ import com.marketinghub.oprm.market.repository.OprmMarketSizeByCnaeRepository;
 import java.time.Instant;
 import java.util.List;
 import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
-import com.marketinghub.oprm.market.exception.SQLExcpetion;
+import com.marketinghub.oprm.market.exception.SQLException;
 import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -170,7 +170,7 @@ public class OprmMarketImportService {
                             row,
                             UPSERT_MARKET_SIZE_SQL,
                             ex);
-                    throw new SQLExcpetion(UPSERT_MARKET_SIZE_SQL, ex);
+                    throw new SQLException(UPSERT_MARKET_SIZE_SQL, ex);
                 }
             }
             log.info("[runId={} fileId={}] Consolidacao marketSizes persistida com sucesso. snapshotDate={} totalRegistros={}",

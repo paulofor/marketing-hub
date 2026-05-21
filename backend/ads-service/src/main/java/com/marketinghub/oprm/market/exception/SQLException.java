@@ -3,14 +3,14 @@ package com.marketinghub.oprm.market.exception;
 /**
  * Responsável por representar falhas SQL do módulo OPRM preservando a instrução SQL tentada no contexto do erro.
  */
-public class SQLExcpetion extends RuntimeException {
+public class SQLException extends RuntimeException {
 
     private final String attemptedSql;
 
     /**
      * Cria a exception com a SQL tentada e a causa original para diagnóstico operacional.
      */
-    public SQLExcpetion(String attemptedSql, Throwable cause) {
+    public SQLException(String attemptedSql, Throwable cause) {
         super("Falha ao executar SQL no módulo OPRM.", cause);
         this.attemptedSql = attemptedSql;
     }

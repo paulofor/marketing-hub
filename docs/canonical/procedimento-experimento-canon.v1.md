@@ -106,6 +106,22 @@ Regras obrigatórias do modo Flex no Gera Landing:
 
 A publicação do HTML final da landing ocorre no Lead Portal, com integração feita pelo fluxo de backend/worker.
 
+### 9.1 O que acontece depois de clicar em "Aprovar e publicar landing"
+
+Classe responsável no backend: `GeraLandingStageExecutionService` (método `approveAndPublishLanding`).
+
+Fluxo obrigatório executado após a aprovação:
+1. carregar o experimento e resolver o HTML base para publicação (priorizando `experiment.landing_page_design_preset`; fallback legado para `experiment.landing_page_html`);
+2. injetar instrumentação de tracking comportamental no HTML publicado (`data-track-section` + script `data-mh-funnel-tracking`);
+3. injetar controles de funil (`data-mh-funnel-controls`);
+4. resolver `facebookPixelId` do nicho do experimento e injetar snippet do Facebook Pixel quando elegível;
+5. publicar o flow no Lead Portal via `PUT /api/flows/{slug}` com payload contendo `slug`, `name`, `description` e `customFormHtml`;
+6. resolver URLs finais de publicação (`iframe` e `standalone`) e persistir no experimento a `follow_up_action_url`.
+
+Regras adicionais:
+- a injeção de tracking deve ser idempotente (não duplicar quando já existir no HTML);
+- falhas de contrato na publicação para Lead Portal devem ser tratadas pela exception canônica de violação de contrato do GeraLanding.
+
 ## 10. Custos e mensuração por experimento
 
 As solicitações OpenAI do fluxo são mensuradas, registradas e totalizadas no contexto do experimento, permitindo acompanhamento financeiro por geração.

@@ -765,3 +765,9 @@
   - removida a injeção de tracker (`data-track-section` + script `data-mh-funnel-tracking`) de `DesignPresetProvisionalHtmlAssembler`;
   - o fluxo `approveAndPublishLanding` passou a ler prioritariamente `experiment.landing_page_design_preset` (com fallback para `landing_page_html` legado), injetar tracker nesse momento e seguir com injeção de controles de funil + Facebook Pixel + publicação no Lead Portal;
   - no fechamento da etapa `LANDING_PAGE_DESIGN_PRESET`, o backend passou a persistir o HTML consolidado da etapa em `experiment.landing_page_design_preset` (mantendo atualização de `landing_page_html` para compatibilidade).
+
+## 2026-05-21 12:35:00 UTC
+- solicitação complementar: documentar explicitamente o que acontece depois do botão "Aprovar e publicar landing", incluindo a classe responsável e responsabilidades executadas.
+- foi feito:
+  - atualização do documento canônico `docs/canonical/procedimento-experimento-canon.v1.md`, seção de publicação da landing;
+  - detalhado o fluxo pós-aprovação executado por `GeraLandingStageExecutionService.approveAndPublishLanding`, incluindo: resolução do HTML base, injeções (tracking/funnel/pixel), publicação no Lead Portal e persistência da `follow_up_action_url`.

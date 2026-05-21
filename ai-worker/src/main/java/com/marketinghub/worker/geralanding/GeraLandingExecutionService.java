@@ -32,7 +32,7 @@ public class GeraLandingExecutionService {
 
     private final GeraLandingBackendClient backendClient;
     private final GeraLandingService geraLandingService;
-    private final GeraLandingOpenAiBatchClient openAiClient;
+    private final GeraLandingOpenAiFlexClient openAiClient;
     private final ObjectMapper objectMapper;
     private final GeraLandingStageSchemaResolver stageSchemaResolver;
     private final int pendingLimit;
@@ -44,7 +44,7 @@ public class GeraLandingExecutionService {
 
     public GeraLandingExecutionService(GeraLandingBackendClient backendClient,
                                        GeraLandingService geraLandingService,
-                                       GeraLandingOpenAiBatchClient openAiClient,
+                                       GeraLandingOpenAiFlexClient openAiClient,
                                        ObjectMapper objectMapper,
                                        GeraLandingStageSchemaResolver stageSchemaResolver,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,

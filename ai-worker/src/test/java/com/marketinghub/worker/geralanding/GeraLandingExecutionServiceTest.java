@@ -18,7 +18,7 @@ class GeraLandingExecutionServiceTest {
     void processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult() throws Exception {
         GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
-        GeraLandingOpenAiBatchClient openAiClient = Mockito.mock(GeraLandingOpenAiBatchClient.class);
+        GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
 
         when(openAiClient.isEnabled()).thenReturn(true);
@@ -53,7 +53,7 @@ class GeraLandingExecutionServiceTest {
     void processPendingExecutionsShouldRegisterFailureWhenOpenAiFails() throws Exception {
         GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
-        GeraLandingOpenAiBatchClient openAiClient = Mockito.mock(GeraLandingOpenAiBatchClient.class);
+        GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
 
         when(openAiClient.isEnabled()).thenReturn(true);

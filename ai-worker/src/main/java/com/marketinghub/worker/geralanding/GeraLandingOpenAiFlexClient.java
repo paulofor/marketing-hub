@@ -23,8 +23,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 /**
  * Cliente de integração com a OpenAI para execução dos jobs do GeraLanding em modo flex.
  */
-public class GeraLandingOpenAiBatchClient {
-    private static final Logger log = LoggerFactory.getLogger(GeraLandingOpenAiBatchClient.class);
+public class GeraLandingOpenAiFlexClient {
+    private static final Logger log = LoggerFactory.getLogger(GeraLandingOpenAiFlexClient.class);
     private static final int LOG_PREVIEW_LIMIT = 1200;
 
     private final ObjectMapper objectMapper;
@@ -32,7 +32,7 @@ public class GeraLandingOpenAiBatchClient {
     private final boolean enabled;
     private final Duration flexTimeout;
 
-    public GeraLandingOpenAiBatchClient(WebClient.Builder builder,
+    public GeraLandingOpenAiFlexClient(WebClient.Builder builder,
                                         ObjectMapper objectMapper,
                                         @Value("${openai.api-key:}") String apiKey,
                                         @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,

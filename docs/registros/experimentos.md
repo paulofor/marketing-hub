@@ -1074,3 +1074,11 @@
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
   - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingArchitectureTest.java
+
+
+## 2026-05-22 19:10:00 UTC
+- ajuste solicitado: aplicar `allowEmptyShould(true)` na regra ArchUnit de independência dos subpacotes de GeraLanding.
+- causa-raiz: a regra `slices` falhava quando nenhum pacote correspondente era encontrado no recorte avaliado, por comportamento padrão de falha em regra vazia.
+- foi feito:
+  - atualização de `GeraLandingArchitectureTest` para permitir avaliação vazia com `.allowEmptyShould(true)` na regra `geralanding_subpackages_must_be_independent`;
+  - manutenção da validação de não dependência entre subpacotes quando existirem classes compatíveis.

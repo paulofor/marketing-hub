@@ -99,6 +99,42 @@ async function copyToClipboard(content: string) {
   }
 }
 
+function downloadPipelineStage(content: string, filename: string) {
+  const blob = new Blob([content], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function sanitizeFilenamePart(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
+
+function resolveJobNumberFromStageContent(content: string) {
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    const jobValue = parsed?.jobNumber ?? parsed?.jobId ?? parsed?.job_id;
+    if (jobValue === undefined || jobValue === null) {
+      return "sem-job";
+    }
+
+    const valueAsString = String(jobValue).trim();
+    return valueAsString.length > 0 ? sanitizeFilenamePart(valueAsString) : "sem-job";
+  } catch {
+    return "sem-job";
+  }
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -124,6 +160,9 @@ export default function ExperimentDetailPage() {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
+  const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
+    null,
+  );
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const [isStartingCopy, setIsStartingCopy] = useState(false);
   const [isStartingDesignPreset, setIsStartingDesignPreset] = useState(false);
@@ -2800,42 +2839,82 @@ export default function ExperimentDetailPage() {
                       <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
                         <h5 className="card-title mb-1">{card.title}</h5>
                         {formattedValue ? (
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm"
-                            disabled={copyingCardKey === card.key}
-                            onClick={async () => {
-                              try {
-                                setCopyingCardKey(card.key);
-                                await copyToClipboard(formattedValue);
-                                setCopiedCardKey(card.key);
-                                window.setTimeout(() => {
-                                  setCopiedCardKey((current) =>
+                          <div className="d-flex align-items-center gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm"
+                              disabled={copyingCardKey === card.key}
+                              onClick={async () => {
+                                try {
+                                  setCopyingCardKey(card.key);
+                                  await copyToClipboard(formattedValue);
+                                  setCopiedCardKey(card.key);
+                                  window.setTimeout(() => {
+                                    setCopiedCardKey((current) =>
+                                      current === card.key ? null : current,
+                                    );
+                                  }, 1600);
+                                } catch {
+                                  toast.error(
+                                    "Não foi possível copiar esta etapa para a área de transferência.",
+                                  );
+                                } finally {
+                                  setCopyingCardKey((current) =>
                                     current === card.key ? null : current,
                                   );
-                                }, 1600);
-                              } catch {
-                                toast.error(
-                                  "Não foi possível copiar esta etapa para a área de transferência.",
-                                );
-                              } finally {
-                                setCopyingCardKey((current) =>
-                                  current === card.key ? null : current,
-                                );
-                              }
-                            }}
-                          >
-                            {copyingCardKey === card.key ? (
-                              <span
-                                className="spinner-border spinner-border-sm me-1"
-                                role="status"
-                                aria-hidden="true"
-                              />
-                            ) : null}
-                            {copiedCardKey === card.key
-                              ? "Copiado!"
-                              : "Copiar etapa"}
-                          </button>
+                                }
+                              }}
+                            >
+                              {copyingCardKey === card.key ? (
+                                <span
+                                  className="spinner-border spinner-border-sm me-1"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
+                              ) : null}
+                              {copiedCardKey === card.key
+                                ? "Copiado!"
+                                : "Copiar etapa"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              disabled={downloadingCardKey === card.key}
+                              onClick={async () => {
+                                try {
+                                  setDownloadingCardKey(card.key);
+                                  const safeTitle = sanitizeFilenamePart(
+                                    card.title,
+                                  );
+                                  const jobNumber =
+                                    resolveJobNumberFromStageContent(
+                                      formattedValue,
+                                    );
+                                  downloadPipelineStage(
+                                    formattedValue,
+                                    `${safeTitle || card.key}-job-${jobNumber}.json`,
+                                  );
+                                } catch {
+                                  toast.error(
+                                    "Não foi possível baixar esta etapa.",
+                                  );
+                                } finally {
+                                  setDownloadingCardKey((current) =>
+                                    current === card.key ? null : current,
+                                  );
+                                }
+                              }}
+                            >
+                              {downloadingCardKey === card.key ? (
+                                <span
+                                  className="spinner-border spinner-border-sm me-1"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
+                              ) : null}
+                              Baixar etapa
+                            </button>
+                          </div>
                         ) : null}
                       </div>
                       <p className="text-muted small mb-3">

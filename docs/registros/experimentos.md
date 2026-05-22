@@ -1047,3 +1047,11 @@
   - ampliação do teste `ModuleIsolationArchitectureTest` com regras dedicadas de isolamento para cada subpacote de GeraLanding;
   - extração de helper para padronizar as regras de isolamento e reduzir duplicação;
   - inclusão de comentários de responsabilidade na classe e métodos do teste para aderência ao padrão do backend.
+
+## 2026-05-22 23:59:59 UTC
+- ajuste solicitado: corrigir violações do ArchUnit no isolamento dos subpacotes `geralanding.copy`, `geralanding.imageplanning` e `geralanding.designpreset`.
+- causa-raiz: classes desses subpacotes dependiam diretamente de implementações de outros subpacotes internos (`wireframe`, `copy`) e de serviço externo ao subpacote (`LandingPageImageInjector`), quebrando o contrato de independência.
+- foi feito:
+  - `copy` e `designpreset`: introduzidos geradores locais de HTML de wireframe (`CopyWireframeHtmlGenerator` e `DesignPresetWireframeHtmlGenerator`) para remover dependência direta com `geralanding.wireframe`;
+  - `imageplanning`: substituída dependência concreta por contratos internos (`CopyStageHtmlProvider` e `ImageHtmlInjector`) e criada configuração de adaptação (`GeraLandingImagePlanningConfig`) para conectar integrações fora do subpacote;
+  - atualização do assembler de image planning para usar apenas contratos internos do próprio subpacote.

@@ -2,7 +2,6 @@ package com.marketinghub.geralanding.designpreset;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.geralanding.wireframe.WireframeHtmlGenerator;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -27,7 +26,7 @@ public class DesignPresetProvisionalHtmlProcessor {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final WireframeHtmlGenerator wireframeHtmlGenerator = new WireframeHtmlGenerator();
+    private final DesignPresetWireframeHtmlGenerator wireframeHtmlGenerator = new DesignPresetWireframeHtmlGenerator();
 
     public String process(String wireframeJson,
                           String copyJson,

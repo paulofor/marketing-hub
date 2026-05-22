@@ -413,3 +413,8 @@
 - implementado renderizador recursivo de árvore JSON para objetos e arrays, com contagem de itens por nó e expansão inicial da raiz para facilitar inspeção.
 - adicionado fallback seguro: quando o conteúdo não for JSON válido, a UI mantém exibição textual para não bloquear diagnóstico.
 - arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.
+
+## 2026-05-22 23:20:00 UTC
+- ajuste na tela de detalhe da Biblioteca de Páginas de Vendas (MOIS) para mostrar explicitamente a URL da página de venda usada como base da análise do modelo.
+- a URL canônica (`urlCanonical`) agora aparece no cabeçalho e é clicável em nova aba (`target="_blank"`), facilitando auditoria do conteúdo de origem das respostas.
+- arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.

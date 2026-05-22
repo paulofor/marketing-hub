@@ -418,3 +418,5 @@
 - ajuste na tela de detalhe da Biblioteca de Páginas de Vendas (MOIS) para mostrar explicitamente a URL da página de venda usada como base da análise do modelo.
 - a URL canônica (`urlCanonical`) agora aparece no cabeçalho e é clicável em nova aba (`target="_blank"`), facilitando auditoria do conteúdo de origem das respostas.
 - arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.
+
+- 2026-05-22: Incluída regra operacional no AGENTS do módulo `mois-sales-library-worker` exigindo logs de request/resposta OpenAI e payload ao backend com `jobId` do Marketing Hub.

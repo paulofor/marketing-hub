@@ -1062,3 +1062,15 @@
 - foi feito:
   - atualização do log de montagem do prompt para incluir dinamicamente `execution.stageCode()`;
   - atualização do log de falha para incluir dinamicamente `execution.stageCode()` e evitar diagnóstico incorreto da etapa em erro.
+
+## 2026-05-22 15:54:24 UTC-3
+- solicitação para reforçar isolamento arquitetural entre etapas de GeraLanding no ai-worker com ArchUnit.
+- raciocínio aplicado: prevenir acoplamento cruzado entre etapas (wireframe, copy, imageplanning e presetdesign) mantendo fronteiras claras de domínio e reduzindo regressões futuras.
+- foi feito:
+  - atualização do teste `GeraLandingArchitectureTest` para adicionar regra ArchUnit baseada em `slices` que impede dependência entre os subpacotes `geralanding.wireframe`, `geralanding.copy`, `geralanding.imageplanning` e `geralanding.presetdesign`.
+  - preservação da regra existente que bloqueia dependência de `geralanding` para `experimentpipeline`.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingArchitectureTest.java

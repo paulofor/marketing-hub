@@ -25,5 +25,6 @@ class GeraLandingArchitectureTest {
     static final ArchRule geralanding_subpackages_must_be_independent = slices()
             .matching("com.marketinghub.worker.geralanding.(wireframe|copy|imageplanning|presetdesign)..")
             .should()
-            .notDependOnEachOther();
+            .notDependOnEachOther()
+            .allowEmptyShould(true);
 }

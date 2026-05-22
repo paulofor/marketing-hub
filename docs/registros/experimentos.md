@@ -1023,3 +1023,11 @@
   - reescrita do prompt para exigir saída no shape `definicoes` + `pagina` (espelhando wireframe) e aplicação apenas nos elementos existentes do wireframe;
   - substituição dos grupos de `definicoes` para os 12 grupos solicitados (`cores-fundo`, `tipografia`, `texto`, `bordas`, `contorno`, `sombras-transparencia`, `filtro-efeitos`, `cursor`, `listas`, `imagens`, `transições`, `animações`);
   - reescrita do schema para validar o novo contrato com grupos obrigatórios, arrays `desktop/mobile` e itens `{nome, atributoCss, valor}`.
+
+## 2026-05-22 14:10:00 UTC
+- ajuste solicitado: na aba de conteúdo do detalhe de experimento, além do botão "Copiar etapa", disponibilizar também a ação "Baixar etapa" para exportar o JSON da etapa.
+- causa-raiz: a tela permitia apenas copiar para clipboard, sem alternativa direta para download do conteúdo bruto por etapa.
+- foi feito:
+  - inclusão de utilitário frontend para download de conteúdo JSON via `Blob` e link temporário;
+  - adição de botão "Baixar etapa" ao lado de "Copiar etapa" em cada card com conteúdo;
+  - adição de estado de carregamento com botão desabilitado + spinner durante a ação de download, mantendo consistência de UX com a regra assíncrona do frontend.

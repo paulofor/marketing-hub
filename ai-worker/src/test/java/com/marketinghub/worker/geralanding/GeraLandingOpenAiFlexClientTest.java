@@ -66,4 +66,28 @@ class GeraLandingOpenAiFlexClientTest {
         Map<?, ?> textItem = assertInstanceOf(Map.class, content.get(0));
         assertEquals(prompt, textItem.get("text"));
     }
+
+    @Test
+    void sanitizeModelResponse_removesJsonCodeFenceWhenPresent() {
+        GeraLandingOpenAiFlexClient client = new GeraLandingOpenAiFlexClient(
+                WebClient.builder(),
+                new ObjectMapper(),
+                "test-key",
+                "http://localhost",
+                Duration.ofSeconds(30));
+
+        GeraLandingJobDto job = new GeraLandingJobDto(
+                UUID.randomUUID(),
+                24L,
+                "landing-page-copy",
+                "gpt-5.2",
+                "prompt",
+                "prompt",
+                Instant.now());
+
+        String sanitized = client.sanitizeModelResponse("```json\n{\"ok\":true}\n```", job);
+
+        assertEquals("{\"ok\":true}", sanitized);
+    }
+
 }

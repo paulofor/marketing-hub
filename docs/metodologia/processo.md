@@ -24,3 +24,6 @@
 2. Enviar para o chat gpt 5.5 me da dica de que esta acontecendo ( se fosse pelo ai-hub poderia ser programado no proprio sistema )
 3. Depois eu vi que dava pra o codex fazer isso, os dados estão no banco mas ele não foi capaz de ver todos os problemas como viu o 5.5 
 4. Um dos problemas e confusão entre as etapas, vou evitar isso com os pacotes
+5. Colocar o metodo de separar pacotes
+   . vou esperar da erro
+   . consertar o erro de dependencia e depois seguir para os outros

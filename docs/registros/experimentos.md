@@ -1007,3 +1007,19 @@
   - atualização do `WireframeHtmlGenerator` para alternar `background-color` automático em seções sem fundo explícito (`#FFFFFF` e `#F7F9FC`);
   - inclusão de heurística de imagem no `img` para sugerir `width` e `height` por média entre `minWidth/maxWidth` e `minHeight/maxHeight` quando presentes (com fallback 960x540);
   - inclusão de fallback de Lorem Ipsum quando `texto.conteudo` estiver vazio, usando média entre `textMinWords/textMaxWords` quando disponíveis.
+
+## 2026-05-22 23:40:00 UTC
+- ajuste solicitado: alterar prompt e schema da etapa `landing-page-design-preset` para usar grupos de estrutura equivalentes ao acabamento da etapa wireframe e aplicar definições no JSON de elementos recebido do wireframe.
+- causa-raiz: o contrato anterior listava propriedades CSS isoladas, sem agrupamento semântico obrigatório nem validação explícita de vínculo com os elementos reais do wireframe.
+- foi feito:
+  - atualização do prompt para exigir os 12 grupos de estrutura (`cores-fundo`, `tipografia`, `texto`, `bordas`, `contorno`, `sombras-transparencia`, `filtro-efeitos`, `cursor`, `listas`, `imagens`, `transições`, `animações`) com detalhamento literal de cada atributo CSS por grupo;
+  - atualização do formato de saída no prompt para exigir `group` em cada atributo de `sectionAttributes` e `attributes` de `elementPresets`, além de reforçar aplicação somente em `sectionId/elementId` existentes no wireframe;
+  - atualização do schema JSON da etapa para tornar `group` obrigatório em cada atributo, validar os 12 grupos via `enum` e exigir `consistencyChecks` com status `PASS|WARN|FAIL`.
+
+## 2026-05-22 23:58:00 UTC
+- ajuste solicitado: deixar o JSON da etapa `landing-page-design-preset` parecido com o exemplo `/exemplos/model-response-7179cef3-1f8f-4464-a9d5-c43a49a37fff.json`, mantendo `definicoes` + `pagina`, mas trocando as listas de `definicoes` pelos 12 grupos de acabamento.
+- causa-raiz: a mudança anterior manteve um contrato alternativo (`landingPageDesignPreset`) que não seguia o shape operacional esperado pelo fluxo atual baseado em `definicoes/pagina`.
+- foi feito:
+  - reescrita do prompt para exigir saída no shape `definicoes` + `pagina` (espelhando wireframe) e aplicação apenas nos elementos existentes do wireframe;
+  - substituição dos grupos de `definicoes` para os 12 grupos solicitados (`cores-fundo`, `tipografia`, `texto`, `bordas`, `contorno`, `sombras-transparencia`, `filtro-efeitos`, `cursor`, `listas`, `imagens`, `transições`, `animações`);
+  - reescrita do schema para validar o novo contrato com grupos obrigatórios, arrays `desktop/mobile` e itens `{nome, atributoCss, valor}`.

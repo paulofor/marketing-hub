@@ -29,3 +29,4 @@
    . consertar o erro de dependencia e depois seguir para os outros
 6. Refez muita coisa para manter os pacotes independentes vou testar agora, criar experimento 27.
 7. O Codex fez as alterações deu erro na etapa copy e ele esta dizendo que o erro esta na volta do modelo. Não é isso.
+8. Mais logs. Usar o jobid ( referencia para pesquisa ) resposta crua do modelo. Evitar que o modelo siga um caminho errado na investigação.

@@ -56,6 +56,9 @@ public class GeraLandingOpenAiFlexClient {
         return enabled;
     }
 
+    /**
+     * Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa.
+     */
     public GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
@@ -143,6 +146,9 @@ public class GeraLandingOpenAiFlexClient {
     }
 
 
+    /**
+     * Remove cercas markdown de JSON (```json ... ```) para manter o conteúdo parseável no pipeline.
+     */
     String sanitizeModelResponse(String modelResponse, GeraLandingJobDto job) {
         if (!StringUtils.hasText(modelResponse)) {
             return modelResponse;

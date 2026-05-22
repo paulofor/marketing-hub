@@ -27,3 +27,4 @@
 5. Colocar o metodo de separar pacotes
    . vou esperar da erro
    . consertar o erro de dependencia e depois seguir para os outros
+6. Refez muita coisa para manter os pacotes independentes vou testar agora, criar experimento 27.

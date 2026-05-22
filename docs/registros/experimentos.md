@@ -1039,3 +1039,11 @@
   - inclusão de sanitização de partes do nome de arquivo com remoção de acentos/caracteres inválidos;
   - inclusão de extração de número do job a partir do JSON da etapa (`jobNumber`, `jobId` ou `job_id`) com fallback `sem-job`;
   - atualização do padrão final do arquivo para `<nome-da-etapa>-job-<numero>.json`.
+
+## 2026-05-22 17:40:00 UTC
+- ajuste solicitado: usar ArchUnit para bloquear dependências cruzadas entre os subpacotes de GeraLanding (`wireframe`, `copy`, `imageplanning` e `designpreset`).
+- causa-raiz: não existia um teste de arquitetura específico para impedir acoplamento indevido entre esses subpacotes, permitindo regressões silenciosas de dependência interna.
+- foi feito:
+  - ampliação do teste `ModuleIsolationArchitectureTest` com regras dedicadas de isolamento para cada subpacote de GeraLanding;
+  - extração de helper para padronizar as regras de isolamento e reduzir duplicação;
+  - inclusão de comentários de responsabilidade na classe e métodos do teste para aderência ao padrão do backend.

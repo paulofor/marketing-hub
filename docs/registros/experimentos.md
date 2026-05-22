@@ -983,3 +983,11 @@
   - inclusão no prompt da regra de explicitação por visual `img` (narrativa/contexto, tipo visual, função comercial, objeção removida e classificação visual);
   - ajuste da seção "Ajuste de intenção por seção" para o formato solicitado, incluindo exemplos de `fonteContexto[]`;
   - ajuste do schema para `prioridadeConversao` como inteiro de 1 a 10.
+
+## 2026-05-22 01:57:00 UTC
+- ajuste solicitado: suportar novo JSON da etapa Gera Wireframe no fluxo de montagem de HTML provisório (assembler + processor).
+- causa-raiz: o fluxo de copy provisória assumia principalmente estruturas `bodySections/items` e adicionava metadado técnico (`jobId`) no HTML final, o que dificulta compatibilidade com o novo payload e viola a regra de não contaminar artefato final.
+- foi feito:
+  - atualização do `CopyProvisionalHtmlAssembler` para retornar apenas o HTML produzido pelo processor, sem inserir comentário técnico de `jobId`;
+  - atualização do `CopyProvisionalHtmlProcessor` para aceitar payloads envelopados (`landingPageWireframe`/`landingPageCopy`) e também copy no schema `pagina.corpo.secoes[].elementosSeccao[]` com `texto.conteudo`;
+  - adição de teste cobrindo aplicação de copy no formato `pagina` aninhado para garantir regressão positiva no novo contrato.

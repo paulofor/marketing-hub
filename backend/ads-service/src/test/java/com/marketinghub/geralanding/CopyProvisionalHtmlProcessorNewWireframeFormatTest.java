@@ -135,4 +135,47 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
 
         assertTrue(html.contains("Landing final"));
     }
+
+    @Test
+    void shouldApplyCopyWhenBodySectionsAreProvidedInsidePaginaSchema() {
+        String wireframeJson = """
+                {
+                  "pagina": {
+                    "corpo": {
+                      "secoes": [
+                        {
+                          "id": "s1-hero",
+                          "tag": "section",
+                          "elementosSeccao": [
+                            {"id":"headline","tag":"h1","texto":{"conteudo":""}}
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String copyJson = """
+                {
+                  "landingPageCopy": {
+                    "pagina": {
+                      "corpo": {
+                        "secoes": [
+                          {
+                            "elementosSeccao": [
+                              {"id":"headline","texto":{"conteudo":"Título via pagina"}}
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+                """;
+
+        String html = processor.process(wireframeJson, copyJson);
+
+        assertTrue(html.contains("Título via pagina"));
+    }
 }

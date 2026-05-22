@@ -45,8 +45,8 @@ public class CopyProvisionalHtmlProcessor {
             throw new IllegalArgumentException("JSON de copy ausente");
         }
 
-        Map<String, Object> wireframe = parseJsonObject(wireframeJson, "wireframeJson");
-        Map<String, Object> copy = parseJsonObject(copyJson, "copyJson");
+        Map<String, Object> wireframe = unwrapPayload(parseJsonObject(wireframeJson, "wireframeJson"), "landingPageWireframe");
+        Map<String, Object> copy = unwrapPayload(parseJsonObject(copyJson, "copyJson"), "landingPageCopy");
 
         String baseHtml = buildHtmlFromWireframe(wireframe);
         return process(baseHtml, copy);
@@ -227,6 +227,9 @@ public class CopyProvisionalHtmlProcessor {
     private Map<String, String> collectCopyByItemId(Map<String, Object> copyJson) {
         Map<String, String> result = new LinkedHashMap<>();
         Object rawSections = firstNonNull(copyJson.get("bodySections"), copyJson.get("sections"));
+        if (!(rawSections instanceof List<?>)) {
+            rawSections = loadSectionsFromPaginaModel(copyJson);
+        }
         if (!(rawSections instanceof List<?> sections)) {
             return result;
         }
@@ -236,6 +239,9 @@ public class CopyProvisionalHtmlProcessor {
                 continue;
             }
             Object rawItems = firstNonNull(sectionMap.get("items"), sectionMap.get("values"), sectionMap.get("fields"));
+            if (!(rawItems instanceof List<?>)) {
+                rawItems = sectionMap.get("elementosSeccao");
+            }
             if (!(rawItems instanceof List<?> items)) {
                 continue;
             }
@@ -252,7 +258,8 @@ public class CopyProvisionalHtmlProcessor {
                         asString(itemMap.get("copy")),
                         asString(itemMap.get("value")),
                         asString(itemMap.get("text")),
-                        asString(itemMap.get("texto"))
+                        asString(itemMap.get("texto")),
+                        extractNestedText(itemMap.get("texto"))
                 );
                 if (StringUtils.hasText(id) && StringUtils.hasText(copy)) {
                     result.put(normalizeId(id), copy.trim());
@@ -260,6 +267,28 @@ public class CopyProvisionalHtmlProcessor {
             }
         }
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object loadSectionsFromPaginaModel(Map<String, Object> payload) {
+        Object paginaObj = payload.get("pagina");
+        if (!(paginaObj instanceof Map<?, ?> pagina)) {
+            return null;
+        }
+        Object corpoObj = pagina.get("corpo");
+        if (!(corpoObj instanceof Map<?, ?> corpo)) {
+            return null;
+        }
+        return corpo.get("secoes");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> unwrapPayload(Map<String, Object> root, String contractKey) {
+        Object nested = root.get(contractKey);
+        if (nested instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return root;
     }
 
 
@@ -284,5 +313,14 @@ public class CopyProvisionalHtmlProcessor {
             }
         }
         return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractNestedText(Object rawTexto) {
+        if (!(rawTexto instanceof Map<?, ?> textoMap)) {
+            return null;
+        }
+        Object conteudo = textoMap.get("conteudo");
+        return conteudo instanceof String str ? str : null;
     }
 }

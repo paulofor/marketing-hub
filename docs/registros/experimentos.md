@@ -1055,3 +1055,10 @@
   - `copy` e `designpreset`: introduzidos geradores locais de HTML de wireframe (`CopyWireframeHtmlGenerator` e `DesignPresetWireframeHtmlGenerator`) para remover dependência direta com `geralanding.wireframe`;
   - `imageplanning`: substituída dependência concreta por contratos internos (`CopyStageHtmlProvider` e `ImageHtmlInjector`) e criada configuração de adaptação (`GeraLandingImagePlanningConfig`) para conectar integrações fora do subpacote;
   - atualização do assembler de image planning para usar apenas contratos internos do próprio subpacote.
+
+## 2026-05-22 18:45:00 UTC
+- ajuste solicitado: corrigir logs do AI Worker para não indicar incorretamente a etapa `wireframe` durante execuções da etapa `landing-page-copy`.
+- causa-raiz: mensagens de log em `GeraLandingExecutionService` estavam hardcoded com o texto `wireframe`, independentemente do `stageCode` em processamento.
+- foi feito:
+  - atualização do log de montagem do prompt para incluir dinamicamente `execution.stageCode()`;
+  - atualização do log de falha para incluir dinamicamente `execution.stageCode()` e evitar diagnóstico incorreto da etapa em erro.

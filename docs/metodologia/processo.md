@@ -18,3 +18,9 @@
 4. Verificar se deu o resultado esperado
 5. Solictar os ajustes
 6. Muitas vezes eu naõ entendo o resultado e so com o tempo vou entendendo, preciso fazer perguntas.
+
+## A Geração Final de HTML ficou horrivel
+1. Obter todos os insumos no sistema ( json )
+2. Enviar para o chat gpt 5.5 me da dica de que esta acontecendo ( se fosse pelo ai-hub poderia ser programado no proprio sistema )
+3. Depois eu vi que dava pra o codex fazer isso, os dados estão no banco <span color="red>mas ele não foi capaz de ver todos os problemas como viu o 5.5</span>
+4. Um dos problemas e confusão entre as etapas, vou evitar isso com os pacotes

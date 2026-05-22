@@ -139,11 +139,19 @@ public class OprmMarketImportScheduler {
                                 zipPath, runResponse.runId(), fileId, file.fileName(), cnaeByCnpjBase, accumulatedMarketSizesByCnae,
                                 simplesCountedCnpjBases, meiCountedCnpjBases);
                     }
-                    List<OprmMarketSizeUpsertDto> marketSizes = "ESTABELECIMENTOS".equalsIgnoreCase(file.datasetType())
-                            ? parseAndAccumulateMarketSizesFromEstablishmentsZip(
-                            zipPath, runResponse.runId(), fileId, file.fileName(), accumulatedMarketSizesByCnae)
-                            : null;
-                    log.info("[run={} fileId={}] Diagnóstico totalização datasetType={} cnaesCount={} marketSizesCount={} (marketSizes ainda não calculado no coletor para este arquivo)",
+                    List<OprmMarketSizeUpsertDto> marketSizes = null;
+                    if ("ESTABELECIMENTOS".equalsIgnoreCase(file.datasetType())) {
+                        marketSizes = parseAndAccumulateMarketSizesFromEstablishmentsZip(
+                                zipPath, runResponse.runId(), fileId, file.fileName(), accumulatedMarketSizesByCnae);
+                    }
+                    if ("SIMPLES".equalsIgnoreCase(file.datasetType())) {
+                        marketSizes = toMarketSizesPayload(accumulatedMarketSizesByCnae);
+                        log.info("[run={} fileId={}] Snapshot marketSizes recalculado após SIMPLES para persistir total_empresas/mei/simples. totalRegistros={}",
+                                runResponse.runId(),
+                                fileId,
+                                marketSizes.size());
+                    }
+                    log.info("[run={} fileId={}] Diagnóstico totalização datasetType={} cnaesCount={} marketSizesCount={}",
                             runResponse.runId(),
                             fileId,
                             file.datasetType(),

@@ -107,8 +107,8 @@ public class GeraLandingExecutionService {
                     backendClient.loadPromptData(execution.experimentId()));
             String prompt = geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
             String promptMarkdownContent = geraLandingService.carregarPromptMarkdownCru(normalizedStage);
-            log.info("Prompt de gera-landing wireframe montado para executionId={} (experimentId={})",
-                    execution.idJob(), execution.experimentId());
+            log.info("Prompt de gera-landing da etapa {} montado para executionId={} (experimentId={})",
+                    execution.stageCode(), execution.idJob(), execution.experimentId());
 
             String openAiRequestBody = buildOpenAiRequestBody(
                     stage,
@@ -160,8 +160,8 @@ public class GeraLandingExecutionService {
             log.info("Resultado OpenAI registrado para gera-landing executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
         } catch (Exception ex) {
-            log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})",
-                    execution.idJob(), execution.experimentId(), ex);
+            log.error("Falha ao processar etapa {} para executionId={} (experimentId={})",
+                    execution.stageCode(), execution.idJob(), execution.experimentId(), ex);
             try {
                 backendClient.receiveFailure(
                         execution.idJob(),

@@ -133,3 +133,9 @@
 - 2026-05-21 17:20:00 (UTC-3): ajuste solicitado na tela de CNAEs para exibir os 50 registros com maior quantidade de estabelecimentos ativos em ordem decrescente: ordenação backend do endpoint `GET /api/oprm/market/import-runs/cnaes/top-volume` alterada para `totalEstabelecimentosAtivos DESC`, preservando paginação de 50 por página.
 
 - 2026-05-21 17:35:00 (UTC-3): adição de comentários de responsabilidade no `OprmMarketSizeByCnaeRepository` (classe e método) para atender revisão de PR e manter conformidade com a regra de documentação Java do projeto.
+
+- 2026-05-22 00:00:00 (UTC): iniciado novo processo de ingestão no coletor OPRM para preencher métricas por CNAE com dados de EMPRESAS/SIMPLES. No `OprmMarketImportScheduler`, foi adicionada consolidação de `total_empresas` a partir dos arquivos `Empresas*.zip` (mapeando CNPJ base -> CNAE principal) e consolidação de `total_empresas_simples` / `total_empresas_mei` a partir do `Simples.zip`, com deduplicação por CNPJ base para evitar dupla contagem. Também foi atualizado o payload de `marketSizes` para enviar esses campos preenchidos ao backend.
+
+- 2026-05-22 00:00:00 (UTC): reforçada observabilidade do novo processo OPRM (EMPRESAS/SIMPLES) com logs de etapa e payload em exceções. Foram adicionados logs de contexto no catch do loop principal (datasetType, fileUrl, snapshotDate e contadores) e logs com último payload bruto processado (`lastRawPayload`) nos parsers de EMPRESAS e SIMPLES antes de relançar exceções.
+
+- 2026-05-22 00:00:00 (UTC): ajuste solicitado para agendar execução única da ingestão OPRM CNPJ/CNAE para amanhã (23/05/2026) às 10:00 em America/Sao_Paulo, atualizando o cron hardcoded de `runScheduledImport` para `0 0 10 23 5 *` e sincronizando o valor padrão em `application.yml`. Também foi reforçado o comentário de responsabilidade da classe `OprmMarketImportScheduler`.

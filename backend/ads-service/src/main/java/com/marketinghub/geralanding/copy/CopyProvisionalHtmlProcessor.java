@@ -2,7 +2,6 @@ package com.marketinghub.geralanding.copy;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.geralanding.wireframe.WireframeHtmlGenerator;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ public class CopyProvisionalHtmlProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(CopyProvisionalHtmlProcessor.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private final WireframeHtmlGenerator wireframeHtmlGenerator = new WireframeHtmlGenerator();
+    private final CopyWireframeHtmlGenerator wireframeHtmlGenerator = new CopyWireframeHtmlGenerator();
 
 
 

@@ -1,7 +1,5 @@
 package com.marketinghub.geralanding.imageplanning;
 
-import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -12,13 +10,13 @@ import org.springframework.util.StringUtils;
 @Component
 public class ImagePlanningProvisionalHtmlAssembler {
 
-    private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
-    private final LandingPageImageInjector landingPageImageInjector;
+    private final CopyStageHtmlProvider copyStageHtmlProvider;
+    private final ImageHtmlInjector imageHtmlInjector;
 
-    public ImagePlanningProvisionalHtmlAssembler(CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler,
-                                                 LandingPageImageInjector landingPageImageInjector) {
-        this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
-        this.landingPageImageInjector = landingPageImageInjector;
+    public ImagePlanningProvisionalHtmlAssembler(CopyStageHtmlProvider copyStageHtmlProvider,
+                                                 ImageHtmlInjector imageHtmlInjector) {
+        this.copyStageHtmlProvider = copyStageHtmlProvider;
+        this.imageHtmlInjector = imageHtmlInjector;
     }
 
     /**
@@ -28,10 +26,10 @@ public class ImagePlanningProvisionalHtmlAssembler {
                            String copyModelResponse,
                            String wireframeModelResponse,
                            String jobId) {
-        String copyStageHtml = copyProvisionalHtmlAssembler.assemble(copyModelResponse, wireframeModelResponse, jobId);
+        String copyStageHtml = copyStageHtmlProvider.assemble(copyModelResponse, wireframeModelResponse, jobId);
         if (!StringUtils.hasText(copyStageHtml)) {
             return null;
         }
-        return landingPageImageInjector.injectImages(experimentId, copyStageHtml);
+        return imageHtmlInjector.inject(experimentId, copyStageHtml);
     }
 }

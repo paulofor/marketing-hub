@@ -111,6 +111,30 @@ function downloadPipelineStage(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function sanitizeFilenamePart(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
+
+function resolveJobNumberFromStageContent(content: string) {
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    const jobValue = parsed?.jobNumber ?? parsed?.jobId ?? parsed?.job_id;
+    if (jobValue === undefined || jobValue === null) {
+      return "sem-job";
+    }
+
+    const valueAsString = String(jobValue).trim();
+    return valueAsString.length > 0 ? sanitizeFilenamePart(valueAsString) : "sem-job";
+  } catch {
+    return "sem-job";
+  }
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -2859,13 +2883,16 @@ export default function ExperimentDetailPage() {
                               onClick={async () => {
                                 try {
                                   setDownloadingCardKey(card.key);
-                                  const safeTitle = card.title
-                                    .toLowerCase()
-                                    .replace(/\s+/g, "-")
-                                    .replace(/[^a-z0-9-]/g, "");
+                                  const safeTitle = sanitizeFilenamePart(
+                                    card.title,
+                                  );
+                                  const jobNumber =
+                                    resolveJobNumberFromStageContent(
+                                      formattedValue,
+                                    );
                                   downloadPipelineStage(
                                     formattedValue,
-                                    `${safeTitle || card.key}.json`,
+                                    `${safeTitle || card.key}-job-${jobNumber}.json`,
                                   );
                                 } catch {
                                   toast.error(

@@ -1031,3 +1031,11 @@
   - inclusão de utilitário frontend para download de conteúdo JSON via `Blob` e link temporário;
   - adição de botão "Baixar etapa" ao lado de "Copiar etapa" em cada card com conteúdo;
   - adição de estado de carregamento com botão desabilitado + spinner durante a ação de download, mantendo consistência de UX com a regra assíncrona do frontend.
+
+## 2026-05-22 17:20:00 UTC
+- ajuste solicitado: incluir no nome do arquivo baixado o nome da etapa e o número do job.
+- causa-raiz: o nome do arquivo exportado continha apenas o título da etapa, sem identificador do job para rastreabilidade operacional.
+- foi feito:
+  - inclusão de sanitização de partes do nome de arquivo com remoção de acentos/caracteres inválidos;
+  - inclusão de extração de número do job a partir do JSON da etapa (`jobNumber`, `jobId` ou `job_id`) com fallback `sem-job`;
+  - atualização do padrão final do arquivo para `<nome-da-etapa>-job-<numero>.json`.

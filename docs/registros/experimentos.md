@@ -943,3 +943,43 @@
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md
+
+## 2026-05-21 23:58:00 UTC
+- ajuste solicitado: correção de escopo — alteração deve ser aplicada no Gera Landing (AI Worker), não no schema de pipeline do backend.
+- causa-raiz: a mudança anterior foi feita em `backend/ads-service` (pipeline), enquanto a necessidade era no contrato/prompt operacional da etapa `landing-page-wireframe` do módulo `ai-worker` (Gera Landing).
+- foi feito:
+  - atualização do schema `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json` para o formato com raiz `definicoes` + `pagina`;
+  - inclusão das categorias `estrutura`, `posicao`, `layout`, `mistas` em `definicoes`, cada uma com `desktop`/`mobile` e itens `{nome, atributoCss, valor}`;
+  - ajuste de `pagina.corpo.secoes` para usar somente referências por `nome` (separadas em desktop/mobile) nas quatro categorias;
+  - atualização do prompt `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md` para reforçar explicitamente as novas regras do contrato no escopo Gera Landing.
+
+## 2026-05-22 00:25:00 UTC
+- ajuste solicitado: no prompt do gera wireframe, não remover em massa; remover apenas o que conflita claramente com a nova definição `definicoes + pagina`.
+- causa-raiz: a versão anterior do prompt v3 ficou excessivamente enxuta e descartou regras operacionais/comerciais úteis que continuam válidas no novo contrato.
+- foi feito:
+  - reintroduzidas regras de negócio e qualidade (mobile-first, CTA/âncoras, mínimo de seções/imagens, formulário com nome+email, conteúdo vazio no wireframe, heurísticas de escaneabilidade e composição);
+  - mantida apenas a remoção de itens incompatíveis com o novo schema (ex.: instruções de `estilos[]` inline e `briefingVisual` obrigatório em `img`);
+  - preservado o contrato novo com raiz `definicoes` + `pagina` e referências por nome em desktop/mobile.
+
+## 2026-05-22 00:55:00 UTC
+- ajuste solicitado: explicitar no Gera Wireframe os atributos CSS que compõem cada grupo (posicionamento, exibição, tamanho etc.), conforme `/docs/gera-landing/listas-css-estrutura-acabamento.md`.
+- causa-raiz: o contrato v3 já separava `definicoes` em categorias, porém sem lista explícita/validável de atributos por grupo, gerando ambiguidade e maior risco de payload inválido.
+- foi feito:
+  - atualização do prompt `landing-page-wireframe.md` com matriz explícita de grupos e atributos permitidos (`posicionamento`, `exibicaoFluxo`, `tamanho`, `espacamentoExterno`, `espacamentoInterno`, `flexbox`, `grid`, `transformacoes`) e regras de conformidade por categoria (`estrutura`, `posicao`, `layout`, `mistas`);
+  - atualização do schema `landing-page-wireframe-schema.json` para validar `atributoCss` por categoria com `enum` explícito, removendo o tipo genérico anterior e criando definições tipadas por categoria.
+
+## 2026-05-22 01:20:00 UTC
+- ajuste solicitado: manter explicitamente no wireframe o trecho de contrato com campos comerciais da seção, `estilos[]` em seção/elemento e `briefingVisual` obrigatório para `img`.
+- causa-raiz: versão anterior havia simplificado o contrato focando nas `definicoes`, removendo campos ainda necessários para a etapa de estrutura comercial e direção visual dos elementos de imagem.
+- foi feito:
+  - reintroduzido no prompt o trecho obrigatório de contrato exatamente com os campos exigidos para seção/elementos;
+  - expandido o schema com os campos comerciais de seção (`oQueQuerProvocarNoUsuario`, `papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto`), além de `estilos[]` em seção e elemento;
+  - adicionada validação condicional de `briefingVisual`: obrigatório para `tag=img` e `null` para demais tags.
+
+## 2026-05-22 01:40:00 UTC
+- ajuste solicitado: manter também a regra explícita de metadados comerciais por visual `img` e o ajuste de intenção por seção com `prioridadeConversao` numérica.
+- causa-raiz: o contrato/prompt estava parcialmente explícito, mas faltavam instruções literais pedidas para narrativa visual por imagem e restrição de tipo para prioridade de conversão.
+- foi feito:
+  - inclusão no prompt da regra de explicitação por visual `img` (narrativa/contexto, tipo visual, função comercial, objeção removida e classificação visual);
+  - ajuste da seção "Ajuste de intenção por seção" para o formato solicitado, incluindo exemplos de `fonteContexto[]`;
+  - ajuste do schema para `prioridadeConversao` como inteiro de 1 a 10.

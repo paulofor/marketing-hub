@@ -2,6 +2,30 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "definicoes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "estrutura": {
+          "$ref": "#/$defs/categoriaDefinicoesEstrutura"
+        },
+        "posicao": {
+          "$ref": "#/$defs/categoriaDefinicoesPosicao"
+        },
+        "layout": {
+          "$ref": "#/$defs/categoriaDefinicoesLayout"
+        },
+        "mistas": {
+          "$ref": "#/$defs/categoriaDefinicoesMistas"
+        }
+      },
+      "required": [
+        "estrutura",
+        "posicao",
+        "layout",
+        "mistas"
+      ]
+    },
     "pagina": {
       "type": "object",
       "additionalProperties": false,
@@ -22,102 +46,15 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "estilos": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "$ref": "#/$defs/estilo"
-              }
-            },
             "secoes": {
               "type": "array",
               "minItems": 4,
               "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "nome": {
-                    "type": "string"
-                  },
-                  "objetivo": {
-                    "type": "string"
-                  },
-                  "oQueQuerProvocarNoUsuario": {
-                    "type": "string"
-                  },
-                  "papelComercial": {
-                    "type": "string"
-                  },
-                  "fasePersuasao": {
-                    "type": "string"
-                  },
-                  "objeçãoQueRemove": {
-                    "type": "string"
-                  },
-                  "prioridadeConversao": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 10
-                  },
-                  "acaoEsperada": {
-                    "type": "string"
-                  },
-                  "fonteContexto": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "id": {
-                    "type": "string"
-                  },
-                  "estilos": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                      "$ref": "#/$defs/estilo"
-                    }
-                  },
-                  "elementosSeccao": {
-                    "type": "array",
-                    "minItems": 1,
-                    "contains": {
-                      "type": "object",
-                      "properties": {
-                        "tag": {
-                          "const": "img"
-                        }
-                      },
-                      "required": [
-                        "tag"
-                      ]
-                    },
-                    "minContains": 1,
-                    "items": {
-                      "$ref": "#/$defs/elementoSecao"
-                    }
-                  }
-                },
-                "required": [
-                  "nome",
-                  "objetivo",
-                  "oQueQuerProvocarNoUsuario",
-                  "papelComercial",
-                  "fasePersuasao",
-                  "objeçãoQueRemove",
-                  "prioridadeConversao",
-                  "acaoEsperada",
-                  "fonteContexto",
-                  "id",
-                  "estilos",
-                  "elementosSeccao"
-                ]
+                "$ref": "#/$defs/secao"
               }
             }
           },
           "required": [
-            "estilos",
             "secoes"
           ]
         }
@@ -129,29 +66,239 @@
     }
   },
   "required": [
+    "definicoes",
     "pagina"
   ],
   "$defs": {
-    "estilo": {
+    "referenciasCategoria": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "desktop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "mobile": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    "secao": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "nome": {
+          "type": "string"
+        },
+        "objetivo": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "estrutura": {
+          "$ref": "#/$defs/referenciasCategoria"
+        },
+        "posicao": {
+          "$ref": "#/$defs/referenciasCategoria"
+        },
+        "layout": {
+          "$ref": "#/$defs/referenciasCategoria"
+        },
+        "mistas": {
+          "$ref": "#/$defs/referenciasCategoria"
+        },
+        "elementosSeccao": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/elementoSecao"
+          }
+        },
+        "oQueQuerProvocarNoUsuario": {
+          "type": "string"
+        },
+        "papelComercial": {
+          "type": "string"
+        },
+        "fasePersuasao": {
+          "type": "string"
+        },
+        "objeçãoQueRemove": {
+          "type": "string"
+        },
+        "prioridadeConversao": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "acaoEsperada": {
+          "type": "string"
+        },
+        "fonteContexto": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "estilos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "nome",
+        "objetivo",
+        "oQueQuerProvocarNoUsuario",
+        "papelComercial",
+        "fasePersuasao",
+        "objeçãoQueRemove",
+        "prioridadeConversao",
+        "acaoEsperada",
+        "fonteContexto",
+        "id",
+        "estilos",
+        "estrutura",
+        "posicao",
+        "layout",
+        "mistas",
+        "elementosSeccao"
+      ]
+    },
+    "textoElemento": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tamMaximo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tamMinimo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "conteudo": {
+          "type": "string",
+          "maxLength": 0
+        }
+      },
+      "required": [
+        "tamMaximo",
+        "tamMinimo",
+        "conteudo"
+      ]
+    },
+    "elementoSecao": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "texto": {
+          "$ref": "#/$defs/textoElemento"
+        },
+        "elementosInternos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/elementoSecao"
+          }
+        },
+        "estilos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "briefingVisual": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/briefingVisual"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "tag",
+        "texto",
+        "estilos",
+        "briefingVisual",
+        "elementosInternos"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "const": "img"
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "briefingVisual": {
+                "$ref": "#/$defs/briefingVisual"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "not": {
+                  "const": "img"
+                }
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "briefingVisual": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "definicaoEstrutura": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "atributoCss": {
           "type": "string",
           "enum": [
-            "position",
-            "top",
-            "right",
-            "bottom",
-            "left",
-            "z-index",
-            "display",
-            "float",
-            "clear",
-            "visibility",
-            "overflow",
-            "overflow-x",
-            "overflow-y",
             "width",
             "height",
             "min-width",
@@ -168,7 +315,64 @@
             "padding-top",
             "padding-right",
             "padding-bottom",
-            "padding-left",
+            "padding-left"
+          ]
+        },
+        "valor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nome",
+        "atributoCss",
+        "valor"
+      ]
+    },
+    "definicaoPosicao": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "atributoCss": {
+          "type": "string",
+          "enum": [
+            "position",
+            "top",
+            "right",
+            "bottom",
+            "left",
+            "z-index"
+          ]
+        },
+        "valor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nome",
+        "atributoCss",
+        "valor"
+      ]
+    },
+    "definicaoLayout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "atributoCss": {
+          "type": "string",
+          "enum": [
+            "display",
+            "float",
+            "clear",
+            "visibility",
+            "overflow",
+            "overflow-x",
+            "overflow-y",
             "flex",
             "flex-direction",
             "flex-wrap",
@@ -198,7 +402,29 @@
             "grid-area",
             "justify-items",
             "place-items",
-            "place-content",
+            "place-content"
+          ]
+        },
+        "valor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nome",
+        "atributoCss",
+        "valor"
+      ]
+    },
+    "definicaoMista": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "atributoCss": {
+          "type": "string",
+          "enum": [
             "transform",
             "translate",
             "scale",
@@ -212,110 +438,139 @@
       },
       "required": [
         "nome",
+        "atributoCss",
         "valor"
       ]
     },
-    "textoElemento": {
+    "categoriaDefinicoesEstrutura": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "tamMaximo": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "tamMinimo": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "conteudo": {
-          "type": "string",
-          "maxLength": 0,
-          "description": "No wireframe não deve haver copy final; manter string vazia nesta fase."
-        }
-      },
-      "required": [
-        "tamMaximo",
-        "tamMinimo",
-        "conteudo"
-      ]
-    },
-    "elementoSecao": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "tag": {
-          "type": "string",
-          "description": "Tag HTML do elemento. Regra contratual: `briefingVisual` só pode existir quando `tag` for exatamente `img`."
-        },
-        "texto": {
-          "$ref": "#/$defs/textoElemento"
-        },
-        "estilos": {
+        "desktop": {
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "#/$defs/estilo"
+            "$ref": "#/$defs/definicaoEstrutura"
           }
         },
-        "elementosInternos": {
+        "mobile": {
           "type": "array",
-          "description": "Lista recursiva de elementos internos com a mesma estrutura do elemento pai.",
-          "minItems": 0,
+          "minItems": 1,
           "items": {
-            "$ref": "#/$defs/elementoSecao"
+            "$ref": "#/$defs/definicaoEstrutura"
+          }
+        }
+      },
+      "required": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    "categoriaDefinicoesPosicao": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "desktop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/definicaoPosicao"
           }
         },
-        "briefingVisual": {
-          "type": ["object", "null"],
-          "description": "Campo exclusivo para elementos de imagem (`tag = img`). Não usar em outras tags. Se `tag` for diferente de `img`, usar `briefingVisual: null`.",
-          "additionalProperties": false,
-          "properties": {
-            "ondeEntraNoVisual": {
-              "type": "string",
-              "minLength": 1
-            },
-            "tipoVisualEsperado": {
-              "type": "string",
-              "minLength": 1
-            },
-            "funcaoComercial": {
-              "type": "string",
-              "minLength": 1
-            },
-            "objecaoQueRemove": {
-              "type": "string",
-              "minLength": 1
-            },
-            "classificacaoVisual": {
-              "type": "string",
-              "enum": [
-                "mockup",
-                "foto",
-                "ilustração",
-                "diagrama",
-                "print conceitual"
-              ]
-            }
-          },
-          "required": [
-            "ondeEntraNoVisual",
-            "tipoVisualEsperado",
-            "funcaoComercial",
-            "objecaoQueRemove",
-            "classificacaoVisual"
+        "mobile": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/definicaoPosicao"
+          }
+        }
+      },
+      "required": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    "categoriaDefinicoesLayout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "desktop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/definicaoLayout"
+          }
+        },
+        "mobile": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/definicaoLayout"
+          }
+        }
+      },
+      "required": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    "categoriaDefinicoesMistas": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "desktop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/definicaoMista"
+          }
+        },
+        "mobile": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/definicaoMista"
+          }
+        }
+      },
+      "required": [
+        "desktop",
+        "mobile"
+      ]
+    },
+    "briefingVisual": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ondeEntraNoVisual": {
+          "type": "string"
+        },
+        "tipoVisualEsperado": {
+          "type": "string"
+        },
+        "funcaoComercial": {
+          "type": "string"
+        },
+        "objecaoQueRemove": {
+          "type": "string"
+        },
+        "classificacaoVisual": {
+          "type": "string",
+          "enum": [
+            "mockup",
+            "foto",
+            "ilustração",
+            "diagrama",
+            "print conceitual"
           ]
         }
       },
       "required": [
-        "id",
-        "tag",
-        "texto",
-        "estilos",
-        "elementosInternos",
-        "briefingVisual"
+        "ondeEntraNoVisual",
+        "tipoVisualEsperado",
+        "funcaoComercial",
+        "objecaoQueRemove",
+        "classificacaoVisual"
       ]
     }
   }

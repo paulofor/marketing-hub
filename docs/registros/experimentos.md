@@ -1100,3 +1100,11 @@
 
 - 2026-05-22 — AI Worker / GeraLanding: adicionado log com `jobId` no envio para OpenAI, no recebimento da resposta da OpenAI e no envio do retorno ao backend com `url` e `payload` para rastreabilidade ponta a ponta.
 - 2026-05-22 — AI Worker / GeraLanding: ajustado log de retorno da OpenAI para incluir a resposta completa do modelo (`respostaCompleta`) junto com `jobId`.
+
+## 2026-05-22 22:05:00 UTC
+- tema: backend / GeraLanding / etapa `landing-page-copy`.
+- causa-raiz observada: falha 500 no endpoint `receive-result` sem contexto operacional suficiente no log para identificar rapidamente payload/campo de origem durante montagem de HTML provisório.
+- foi feito:
+  - adicionado logging de erro estruturado em `GeraLandingStageExecutionService.receiveResult` com `idJob`, `experimentId`, `stageCode`, `openAiJobId`, tamanho e preview de `modelResponse` e `provisionalHtml` antes de relançar exceção;
+  - adicionado logging de erro estruturado em `CopyProvisionalHtmlAssembler.assemble` com `jobId`, tamanho e preview de `copyModelResponse` e `wireframeModelResponse`, preservando stack trace completo da exceção original.
+- resultado esperado: próxima recorrência desse tipo de erro passa a expor no log o ponto exato do fluxo e o contexto de payload para diagnóstico de causa-raiz em menor tempo.

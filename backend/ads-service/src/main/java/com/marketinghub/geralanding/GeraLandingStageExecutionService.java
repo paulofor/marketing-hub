@@ -393,21 +393,36 @@ public class GeraLandingStageExecutionService {
         GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(request.experimentId(), request.stageCode()))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
-        execution.setModelResponse(request.modelResponse());
-        String provisionalHtml = resolveProvisionalHtml(idJob, request, execution);
-        execution.setProvisionalHtml(provisionalHtml);
-        execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
-        execution.setErrorDetail(StringUtils.hasText(request.errorDetail()) ? request.errorDetail().trim() : null);
-        if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {
-            execution.setOpenAiJobId(request.openAiJobId());
+        try {
+            execution.setModelResponse(request.modelResponse());
+            String provisionalHtml = resolveProvisionalHtml(idJob, request, execution);
+            execution.setProvisionalHtml(provisionalHtml);
+            execution.setErrorMessage(StringUtils.hasText(request.errorMessage()) ? request.errorMessage().trim() : null);
+            execution.setErrorDetail(StringUtils.hasText(request.errorDetail()) ? request.errorDetail().trim() : null);
+            if (request.openAiJobId() != null && !request.openAiJobId().isBlank()) {
+                execution.setOpenAiJobId(request.openAiJobId());
+            }
+            execution.setInputTokens(request.inputTokens());
+            execution.setOutputTokens(request.outputTokens());
+            execution.setCostUsd(request.costUsd());
+            execution.setCompletedAt(Instant.now());
+            execution.setStatus(StringUtils.hasText(request.errorMessage()) ? STATUS_FAILED : STATUS_COMPLETED);
+            executionRepository.save(execution);
+            persistStageArtifactOnExperiment(request, execution);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Erro ao processar receive-result do GeraLanding (idJob={}, experimentId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, modelResponsePreview={}, provisionalHtmlLength={}, provisionalHtmlPreview={})",
+                    idJob,
+                    request.experimentId(),
+                    request.stageCode(),
+                    request.openAiJobId(),
+                    safeLength(request.modelResponse()),
+                    safePreview(request.modelResponse()),
+                    safeLength(request.provisionalHtml()),
+                    safePreview(request.provisionalHtml()),
+                    ex);
+            throw ex;
         }
-        execution.setInputTokens(request.inputTokens());
-        execution.setOutputTokens(request.outputTokens());
-        execution.setCostUsd(request.costUsd());
-        execution.setCompletedAt(Instant.now());
-        execution.setStatus(StringUtils.hasText(request.errorMessage()) ? STATUS_FAILED : STATUS_COMPLETED);
-        executionRepository.save(execution);
-        persistStageArtifactOnExperiment(request, execution);
     }
 
 
@@ -436,6 +451,23 @@ public class GeraLandingStageExecutionService {
             return resolveDesignPresetProvisionalHtml(idJob, request, execution);
         }
         return null;
+    }
+
+    /**
+     * Retorna preview curto para diagnóstico sem poluir logs com payload completo.
+     */
+    private String safePreview(String payload) {
+        if (!StringUtils.hasText(payload)) {
+            return "";
+        }
+        return payload.substring(0, Math.min(payload.length(), 200)).replaceAll("\\s+", " ");
+    }
+
+    /**
+     * Retorna o comprimento do texto para investigação rápida de truncamento/ausência.
+     */
+    private int safeLength(String payload) {
+        return payload == null ? 0 : payload.length();
     }
 
     private String resolveImagePlanningProvisionalHtml(String idJob, GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {

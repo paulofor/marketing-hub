@@ -178,4 +178,43 @@ class CopyProvisionalHtmlProcessorNewWireframeFormatTest {
 
         assertTrue(html.contains("Título via pagina"));
     }
+
+    @Test
+    void shouldRenderResponsiveCssAndClassReferencesFromNewWireframeDefinitions() {
+        String wireframeJson = """
+                {
+                  "definicoes": {
+                    "layout": {
+                      "desktop": [
+                        {"nome":"section-flex-col","atributoCss":"display","valor":"flex"}
+                      ],
+                      "mobile": [
+                        {"nome":"section-flex-col","atributoCss":"display","valor":"block"}
+                      ]
+                    }
+                  },
+                  "pagina": {
+                    "corpo": {
+                      "secoes": [
+                        {
+                          "id": "s1",
+                          "tag": "section",
+                          "estilos": [{"desktop":["section-flex-col"],"mobile":["section-flex-col"]}],
+                          "elementosSeccao": []
+                        }
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String copyJson = "{\"bodySections\":[]}";
+
+        String html = processor.process(wireframeJson, copyJson);
+
+        assertTrue(html.contains(".section-flex-col {display:flex;}"));
+        assertTrue(html.contains("@media (max-width: 768px)"));
+        assertTrue(html.contains(".section-flex-col {display:block;}"));
+        assertTrue(html.contains("class=\"section-flex-col\""));
+    }
 }

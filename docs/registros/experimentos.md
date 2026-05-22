@@ -999,3 +999,11 @@
   - atualização do `WireframeHtmlGenerator` para montar `<style>` responsivo a partir de `definicoes` (desktop + mobile via media query);
   - atualização da renderização de nós para anexar classes derivadas de `estilos.desktop/mobile`;
   - inclusão de teste cobrindo geração de CSS desktop/mobile e aplicação de `class` no HTML final.
+
+## 2026-05-22 03:10:00 UTC
+- ajuste solicitado: no assembler do Gera Wireframe aplicar fundo alternado por seção, padronizar tamanho sugerido de imagens e preencher textos vazios com Lorem Ipsum proporcional.
+- causa-raiz: o HTML provisório do wireframe era renderizado sem padronização visual mínima para alternância de superfície, sem heurística de tamanho para `img` e sem fallback textual quando os blocos vinham sem conteúdo.
+- foi feito:
+  - atualização do `WireframeHtmlGenerator` para alternar `background-color` automático em seções sem fundo explícito (`#FFFFFF` e `#F7F9FC`);
+  - inclusão de heurística de imagem no `img` para sugerir `width` e `height` por média entre `minWidth/maxWidth` e `minHeight/maxHeight` quando presentes (com fallback 960x540);
+  - inclusão de fallback de Lorem Ipsum quando `texto.conteudo` estiver vazio, usando média entre `textMinWords/textMaxWords` quando disponíveis.

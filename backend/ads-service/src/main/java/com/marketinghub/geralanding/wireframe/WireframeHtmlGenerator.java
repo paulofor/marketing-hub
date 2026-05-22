@@ -66,8 +66,10 @@ public class WireframeHtmlGenerator {
 
             html.append(">\n");
 
+            int sectionIndex = 0;
             for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
-                html.append(renderSection(secao));
+                html.append(renderSection(secao, sectionIndex));
+                sectionIndex++;
             }
 
             html.append("</body>\n");
@@ -79,8 +81,14 @@ public class WireframeHtmlGenerator {
         }
     }
 
-    private String renderSection(Map<String, Object> secao) {
-        return renderNode(secao, "section", "elementosSeccao");
+    private String renderSection(Map<String, Object> secao, int sectionIndex) {
+        Map<String, Object> normalizedSection = new LinkedHashMap<>(secao);
+        List<Map<String, Object>> estilos = new ArrayList<>(asList(secao.get("estilos")));
+        if (!containsBackgroundStyle(estilos)) {
+            estilos.add(Map.of("nome", "background-color", "valor", sectionIndex % 2 == 0 ? "#FFFFFF" : "#F7F9FC"));
+        }
+        normalizedSection.put("estilos", estilos);
+        return renderNode(normalizedSection, "section", "elementosSeccao");
     }
 
     private String renderElement(Map<String, Object> node) {
@@ -117,8 +125,11 @@ public class WireframeHtmlGenerator {
         out.append("<").append(tag);
         appendCommonAttributes(out, node);
 
-        if ("img".equals(tag) && !hasAttribute(node, "alt")) {
-            out.append(" alt=\"\"");
+        if ("img".equals(tag)) {
+            if (!hasAttribute(node, "alt")) {
+                out.append(" alt=\"\"");
+            }
+            appendSuggestedImageSize(out, node);
         }
 
         out.append(">\n");
@@ -227,7 +238,8 @@ public class WireframeHtmlGenerator {
         String content = asText(texto.get("conteudo"), "").trim();
 
         if (!StringUtils.hasText(content)) {
-            return "";
+            String lorem = resolveLoremIpsum(node);
+            return StringUtils.hasText(lorem) ? escapeHtmlText(lorem) : "";
         }
 
         return escapeHtmlText(content);
@@ -365,6 +377,76 @@ public class WireframeHtmlGenerator {
             out.append("}\n");
         }
         return out.toString().trim();
+    }
+
+
+    private boolean containsBackgroundStyle(List<Map<String, Object>> estilos) {
+        for (Map<String, Object> estilo : estilos) {
+            String nome = asText(estilo.get("nome"), "").trim().toLowerCase();
+            if ("background".equals(nome) || "background-color".equals(nome)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void appendSuggestedImageSize(StringBuilder out, Map<String, Object> node) {
+        Map<String, Object> attrs = extractAttributes(node);
+        if (hasAttribute(node, "width") || hasAttribute(node, "height")) {
+            return;
+        }
+        int width = averageDimension(attrs.get("minWidth"), attrs.get("maxWidth"), 960);
+        int height = averageDimension(attrs.get("minHeight"), attrs.get("maxHeight"), 540);
+        out.append(" width=\"").append(width).append("\"");
+        out.append(" height=\"").append(height).append("\"");
+    }
+
+    private int averageDimension(Object minValue, Object maxValue, int fallback) {
+        Integer min = parseInteger(minValue);
+        Integer max = parseInteger(maxValue);
+        if (min != null && max != null) {
+            return (min + max) / 2;
+        }
+        if (min != null) {
+            return min;
+        }
+        if (max != null) {
+            return max;
+        }
+        return fallback;
+    }
+
+    private Integer parseInteger(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (!(value instanceof String text) || !StringUtils.hasText(text)) {
+            return null;
+        }
+        String digits = text.replaceAll("[^0-9]", "");
+        if (!StringUtils.hasText(digits)) {
+            return null;
+        }
+        return Integer.parseInt(digits);
+    }
+
+    private String resolveLoremIpsum(Map<String, Object> node) {
+        Integer min = parseInteger(node.get("textMinWords"));
+        Integer max = parseInteger(node.get("textMaxWords"));
+        int words = min != null && max != null ? (min + max) / 2 : 14;
+        if (words <= 0) {
+            return "";
+        }
+        String base = "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt";
+        String[] tokens = base.split(" ");
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < words; i++) {
+            if (i > 0) {
+                out.append(" ");
+            }
+            out.append(tokens[i % tokens.length]);
+        }
+        return out.append(".").toString();
     }
 
     @SuppressWarnings("unchecked")

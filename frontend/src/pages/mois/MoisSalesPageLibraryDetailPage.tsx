@@ -122,6 +122,16 @@ export default function MoisSalesPageLibraryDetailPage() {
           <p className="text-secondary mb-0">
             Coletor usado: <strong>{pageQuery.data?.source || "—"}</strong>
           </p>
+          <p className="text-secondary mb-0">
+            URL da página de venda usada no modelo:{" "}
+            {pageQuery.data?.urlCanonical ? (
+              <a href={pageQuery.data.urlCanonical} target="_blank" rel="noreferrer">
+                {pageQuery.data.urlCanonical}
+              </a>
+            ) : (
+              "—"
+            )}
+          </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
           {nextItem ? (

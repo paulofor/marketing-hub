@@ -218,6 +218,21 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/NewExperimentPage.tsx
 
+## 2026-05-22 17:27:31 UTC-3
+- solicitação para deixar o Worker AI resiliente quando a resposta da etapa `landing-page-copy` vier iniciando com markdown code fence (` ```json `).
+- raciocínio aplicado: o erro ocorria após a resposta do modelo porque o conteúdo chegava válido, porém encapsulado em markdown; ao normalizar na borda do cliente OpenAI, o pipeline passa a consumir JSON parseável sem depender do formato de apresentação.
+- foi feito:
+  - adicionado saneamento da resposta no `GeraLandingOpenAiFlexClient` para remover cerca inicial ` ```json ` e cerca final ` ``` ` quando presentes;
+  - integração do saneamento no fluxo `generate(...)`, antes da validação/log/persistência do payload de conclusão;
+  - inclusão de teste unitário cobrindo resposta encapsulada em code fence;
+  - inclusão de comentários de responsabilidade dos métodos alterados conforme regra operacional de Java.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/GeraLandingOpenAiFlexClient.java
+  - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingOpenAiFlexClientTest.java
+
 ## 2026-05-17 19:31:55 UTC-3
 - investigação do erro ao salvar na tela `/experiments/new` após simplificação recente.
 - causa-raiz identificada: o backend continua exigindo `journeyTemplateId` na criação do experimento, porém a UI simplificada deixou de coletar/enviar esse campo.

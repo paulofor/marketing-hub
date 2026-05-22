@@ -11,3 +11,5 @@
 - JDBC + MySQL: ao ler colunas `UUID`, nunca use `ResultSet#getObject` com `UUID.class`. Faça a conversão explícita de acordo com o tipo da coluna (`CHAR(36)`/`VARCHAR`: `UUID.fromString(rs.getString(...))`; `BINARY(16)`: converta o `byte[]` para `UUID` com utilitário dedicado ou `UUID.nameUUIDFromBytes`).
 - Escopo de controllers por módulo: cada módulo só pode acessar os controllers do próprio módulo/pacote (ex.: MOIS -> controllers de MOIS; OPRM -> controllers de OPRM). É proibido consumir controllers de outro módulo diretamente.
 - Depois de uma alteração execute os testes unitários antes da criação do PR.
+- Tratamento de erros: em métodos com possibilidade de erros críticos e uso de `try/catch`, inclua `catch (RuntimeException ex)` e registre em log os parâmetros de entrada, a linha do erro, a classe do erro e a mensagem recebida; sempre que houver `jobId` disponível, ele também deve ser incluído no log.
+

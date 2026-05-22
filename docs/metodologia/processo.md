@@ -9,3 +9,12 @@
 ### Vem refatoração muitas vezes cortando coisas, muitas coisas
 
 ### Particionamento para evitar os riscos de ajustes errados e ciclos de ajuste
+
+
+## Alteração de Pompt e conceito de json
+1. Escrevendo tentando explicar ao máximo o que eu quero
+2. Ajustando o que ele foi entendendo tentando dar exemplos ( colocando no repo o exemplo )
+3. Se não tiver nada que seja de fato estranho aprovar
+4. Verificar se deu o resultado esperado
+5. Solictar os ajustes
+6. Muitas vezes eu naõ entendo o resultado e so com o tempo vou entendendo, preciso fazer perguntas.

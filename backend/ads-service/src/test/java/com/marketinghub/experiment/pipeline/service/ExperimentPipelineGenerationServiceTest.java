@@ -13,7 +13,6 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
 import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
-import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import com.marketinghub.experiment.repository.ExperimentRepository;
@@ -76,8 +75,6 @@ class ExperimentPipelineGenerationServiceTest {
     @Mock
     private LandingPageImageInjector landingPageImageInjector;
     @Mock
-    private LandingHtmlModule landingHtmlModule;
-    @Mock
     private CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
     @Mock
     private FrameworkImageGenerationService frameworkImageGenerationService;
@@ -101,14 +98,11 @@ class ExperimentPipelineGenerationServiceTest {
                 leadPortalFlowPublisher,
                 new ObjectMapper(),
                 landingPageImageInjector,
-                landingHtmlModule,
                 copyProvisionalHtmlAssembler,
                 frameworkImageGenerationService,
                 openAiPricingService,
                 leadPortalPublicUrlResolver,
                 costAttributionService);
-        lenient().when(landingHtmlModule.buildPromptV2Inputs(any())).thenReturn("");
-        lenient().when(landingHtmlModule.assembleHtmlDocument(any())).thenReturn("<!doctype html><html><body></body></html>");
         lenient().when(openAiPricingService.estimateStandardCost(any(), any())).thenReturn(BigDecimal.ZERO);
     }
 
@@ -155,172 +149,10 @@ class ExperimentPipelineGenerationServiceTest {
         verify(leadPortalFlowPublisher).publish(any(LeadPortalFlow.class));
     }
 
-    @Test
-    void generateLandingHtmlWithLhmUsesModuleAndPersistsLandingHtml() {
-        Experiment experiment = new Experiment();
-        experiment.setId(31L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-31/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
-        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-31\"}}");
-        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
 
-        when(experimentRepository.findById(31L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(landingHtmlModule.assembleHtmlDocument(experiment)).thenReturn("""
-                <!doctype html><html><body>
-                <section data-section-id="hero" data-surface-token="surface-base" data-surface-style="band" data-surface-contrast="normal">
-                  <form id="lead-capture-primary" method="post" action="/api/flows/exp-31/submissions">
-                    <input type="text" name="nome" required />
-                    <button type="submit">Enviar</button>
-                    <p id="success-message">success</p>
-                  </form>
-                </section>
-                <script>
-                form.addEventListener('submit', async (event) => { event.preventDefault(); form.checkValidity(); form.reportValidity(); submitButton.disabled = true; await fetch(form.action, { method: form.method.toUpperCase(), body: new FormData(form) }); submitButton.disabled = false; });
-                </script>
-                </body></html>
-                """);
-        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
 
-        service.generateLandingHtmlWithLhm(31L);
 
-        verify(landingHtmlModule).assembleHtmlDocument(experiment);
-        assertTrue(experiment.getLandingPageHtml().contains("<!doctype html>"));
-        verify(jobRepository).save(any(ExperimentPipelineGenerationJob.class));
-        verify(generationService).recordGeneration(any(AiWorkerGenerationRequest.class));
 
-        ArgumentCaptor<ExperimentPipelineGenerationJob> jobCaptor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
-        verify(jobRepository).save(jobCaptor.capture());
-        ExperimentPipelineGenerationJob job = jobCaptor.getValue();
-        assertEquals(ExperimentPipelineGenerationJobStatus.COMPLETED, job.getStatus());
-        assertEquals(ExperimentPipelineGenerationJobStage.COMPLETED, job.getStage());
-        assertEquals("LHM", job.getModel());
-        assertEquals("lhm-inline", job.getWorkerId());
-        assertNotNull(job.getRequestBodyJson());
-        assertTrue(job.getRequestBodyJson().contains("\"designPresetPresent\":true"));
-        assertNotNull(job.getResponseContent());
-        assertNotNull(job.getFinishedAt());
-    }
-
-    @Test
-    void generateLandingHtmlWithLhmFailsWhenWireframeMissing() {
-        Experiment experiment = new Experiment();
-        experiment.setId(32L);
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"ok\"}}");
-        when(experimentRepository.findById(32L)).thenReturn(Optional.of(experiment));
-
-        ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.generateLandingHtmlWithLhm(32L));
-
-        assertEquals(409, error.getStatusCode().value());
-        assertTrue(error.getReason().contains("Wireframe"));
-    }
-
-    @Test
-    void generateLandingHtmlWithLhmInjectsCanonicalFormWhenHtmlHasNoForm() {
-        Experiment experiment = new Experiment();
-        experiment.setId(35L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-35/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true},{\"name\":\"email\",\"type\":\"email\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
-        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-35\"}}");
-        experiment.setLandingPageImagePlanning("{\"landingPageImagePlanning\":{\"images\":[]}}");
-
-        when(experimentRepository.findById(35L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(landingHtmlModule.assembleHtmlDocument(experiment)).thenReturn("""
-                <!doctype html><html><body>
-                <main>
-                  <section data-section-id="hero" data-surface-token="surface-base" data-surface-style="band" data-surface-contrast="normal">
-                    <h1>Hero</h1>
-                  </section>
-                </main>
-                </body></html>
-                """);
-        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
-
-        service.generateLandingHtmlWithLhm(35L);
-
-        assertTrue(experiment.getLandingPageHtml().contains("form id=\"lead-capture-primary\""));
-        assertTrue(experiment.getLandingPageHtml().contains("name=\"nome\""));
-        assertTrue(experiment.getLandingPageHtml().contains("name=\"email\""));
-        verify(generationService).recordGeneration(any(AiWorkerGenerationRequest.class));
-    }
-
-    @Test
-    void generateLandingHtmlWithLhmTracksFailedAttemptWhenPromptPreparationFails() {
-        Experiment experiment = new Experiment();
-        experiment.setId(34L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\"}}}");
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
-        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-34\"}}");
-
-        when(experimentRepository.findById(34L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(landingHtmlModule.buildPromptV2Inputs(experiment))
-                .thenThrow(new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Validação canônica falhou"));
-
-        ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.generateLandingHtmlWithLhm(34L));
-
-        assertEquals(422, error.getStatusCode().value());
-        verify(jobRepository).save(any(ExperimentPipelineGenerationJob.class));
-        verify(landingHtmlModule, never()).assembleHtmlDocument(experiment);
-
-        ArgumentCaptor<ExperimentPipelineGenerationJob> jobCaptor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
-        verify(jobRepository).save(jobCaptor.capture());
-        ExperimentPipelineGenerationJob job = jobCaptor.getValue();
-        assertEquals(ExperimentPipelineGenerationJobStatus.FAILED, job.getStatus());
-        assertEquals(ExperimentPipelineGenerationJobStage.FAILED, job.getStage());
-        assertEquals("LHM", job.getModel());
-        assertTrue(job.getErrorMessage().contains("Validação canônica falhou"));
-        assertNotNull(job.getFinishedAt());
-    }
-
-    @Test
-    void generateLandingHtmlWithLhmTracksFailedAttemptWhenValidationFails() {
-        Experiment experiment = new Experiment();
-        experiment.setId(33L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-33/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"},\"sectionOrder\":[{\"sectionId\":\"hero\",\"sectionName\":\"Hero\",\"contentType\":\"form\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}]}}");
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
-        experiment.setLandingPageDesignPreset("{\"landingPageDesignPreset\":{\"presetId\":\"preset-33\"}}");
-        when(experimentRepository.findById(33L)).thenReturn(Optional.of(experiment));
-        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(landingHtmlModule.assembleHtmlDocument(experiment))
-                .thenReturn("<!doctype html><html><body><form id=\"lead-capture-primary\" method=\"post\" action=\"/api/flows/exp-33/submissions\"></form></body></html>");
-
-        ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> service.generateLandingHtmlWithLhm(33L));
-
-        assertEquals(422, error.getStatusCode().value());
-        verify(jobRepository).save(any(ExperimentPipelineGenerationJob.class));
-        verify(generationService, never()).recordGeneration(any(AiWorkerGenerationRequest.class));
-
-        ArgumentCaptor<ExperimentPipelineGenerationJob> jobCaptor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
-        verify(jobRepository).save(jobCaptor.capture());
-        ExperimentPipelineGenerationJob job = jobCaptor.getValue();
-        assertEquals(ExperimentPipelineGenerationJobStatus.FAILED, job.getStatus());
-        assertEquals(ExperimentPipelineGenerationJobStage.FAILED, job.getStage());
-        assertTrue(job.getErrorMessage().contains("Divergência"));
-        assertNotNull(job.getFinishedAt());
-    }
-
-    @Test
-    void generateLandingHtmlWithLhmFallsBackToCopyHtmlWhenDesignPresetMissing() {
-        Experiment experiment = new Experiment();
-        experiment.setId(36L);
-        experiment.setLandingPageWireframe("{\"landingPageWireframe\":{\"sectionOrder\":[{\"sectionId\":\"hero\",\"surfaceSpec\":{\"surfaceToken\":\"surface-base\",\"style\":\"band\",\"contrastMode\":\"normal\"}}],\"formSpec\":{\"formId\":\"lead-capture-primary\",\"submitTarget\":\"/api/flows/exp-36/submissions\",\"fields\":[{\"name\":\"nome\",\"type\":\"text\",\"required\":true}],\"submitLabel\":\"Enviar\"}}}");
-        experiment.setLandingPageCopy("{\"landingPageCopy\":{\"headline\":\"Headline\"}}");
-        when(copyProvisionalHtmlAssembler.assemble(experiment.getLandingPageCopy(), experiment.getLandingPageWireframe(), null))
-                .thenReturn("<html><body><section data-section-id=\"hero\" data-surface-token=\"surface-base\" data-surface-style=\"band\" data-surface-contrast=\"normal\"><img src=\"placeholder\"/><form id=\"lead-capture-primary\"><input type=\"text\" name=\"nome\" required/></form></section></body></html>");
-        when(landingPageImageInjector.injectImages(36L, "<html><body><section data-section-id=\"hero\" data-surface-token=\"surface-base\" data-surface-style=\"band\" data-surface-contrast=\"normal\"><img src=\"placeholder\"/><form id=\"lead-capture-primary\"><input type=\"text\" name=\"nome\" required/></form></section></body></html>"))
-                .thenReturn("<html><body><section data-section-id=\"hero\" data-surface-token=\"surface-base\" data-surface-style=\"band\" data-surface-contrast=\"normal\"><img src=\"https://cdn.test/image-1.png\"/><form id=\"lead-capture-primary\"><input type=\"text\" name=\"nome\" required/></form></section></body></html>");
-        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
-        when(experimentRepository.findById(36L)).thenReturn(Optional.of(experiment));
-
-        service.generateLandingHtmlWithLhm(36L);
-
-        assertTrue(experiment.getLandingPageHtml().contains("https://cdn.test/image-1.png"));
-    }
 
     @Test
     void applyLandingHtmlToLeadPortalFormUpdatesExistingFlowWithoutCreatingAnother() {

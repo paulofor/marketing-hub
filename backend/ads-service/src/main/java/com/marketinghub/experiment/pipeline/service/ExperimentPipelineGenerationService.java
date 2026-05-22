@@ -22,7 +22,6 @@ import com.marketinghub.experiment.pipeline.dto.LandingPageVariantLinksDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
-import com.marketinghub.experiment.pipeline.lhm.LandingHtmlModule;
 import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
@@ -94,9 +93,7 @@ public class ExperimentPipelineGenerationService {
     private static final Pattern OPENING_TAG_PATTERN = Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
     private static final String DEFAULT_MODEL = "gpt-5.2";
-    private static final String LHM_MODEL = "LHM";
     private static final String GERAR_COM_IA_MODEL = "GERAR_COM_IA";
-    private static final String LHM_WORKER_ID = "lhm-inline";
     private static final String LANDING_HTML_AUDIT_FEATURE_FLAG = "lhm.audit.gate.enabled";
     private static final String LANDING_HTML_REGISTRY_FEATURE_FLAG = "lhm.registry.enabled";
     private static final Duration STALE_PENDING_TIMEOUT = Duration.ofMinutes(10);
@@ -135,7 +132,6 @@ public class ExperimentPipelineGenerationService {
     private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ObjectMapper objectMapper;
     private final LandingPageImageInjector landingPageImageInjector;
-    private final LandingHtmlModule landingHtmlModule;
     private final CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler;
     private final FrameworkImageGenerationService frameworkImageGenerationService;
     private final OpenAiPricingService openAiPricingService;
@@ -150,7 +146,6 @@ public class ExperimentPipelineGenerationService {
                                                LeadPortalFlowPublisher leadPortalFlowPublisher,
                                                ObjectMapper objectMapper,
                                                LandingPageImageInjector landingPageImageInjector,
-                                               LandingHtmlModule landingHtmlModule,
                                                CopyProvisionalHtmlAssembler copyProvisionalHtmlAssembler,
                                                FrameworkImageGenerationService frameworkImageGenerationService,
                                                OpenAiPricingService openAiPricingService,
@@ -164,7 +159,6 @@ public class ExperimentPipelineGenerationService {
         this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.objectMapper = objectMapper;
         this.landingPageImageInjector = landingPageImageInjector;
-        this.landingHtmlModule = landingHtmlModule;
         this.copyProvisionalHtmlAssembler = copyProvisionalHtmlAssembler;
         this.frameworkImageGenerationService = frameworkImageGenerationService;
         this.openAiPricingService = openAiPricingService;
@@ -331,73 +325,6 @@ public class ExperimentPipelineGenerationService {
         }
         return experimentMapper.toDto(experiment);
     }
-
-    @Transactional
-    public ExperimentDto generateLandingHtmlWithLhm(Long experimentId) {
-        Experiment experiment = experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
-        if (!StringUtils.hasText(experiment.getLandingPageWireframe())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Wireframe da landing ainda não foi gerado para este experimento");
-        }
-        if (!StringUtils.hasText(experiment.getLandingPageCopy())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Copy da landing ainda não foi gerada para este experimento");
-        }
-        if (!StringUtils.hasText(experiment.getLandingPageDesignPreset())) {
-            String provisionalHtml = copyProvisionalHtmlAssembler.assemble(
-                    experiment.getLandingPageCopy(),
-                    experiment.getLandingPageWireframe(),
-                    null);
-            String htmlWithImages = landingPageImageInjector.injectImages(experiment.getId(), provisionalHtml);
-            applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, htmlWithImages);
-            return experimentMapper.toDto(experiment);
-        }
-        Map<String, Object> monitoringPayload = buildLhmMonitoringPayload(experiment, experimentId);
-        ExperimentPipelineGenerationJob monitoringJob = createInlineGenerationJob(
-                experiment,
-                ExperimentPipelineSection.LANDING_PAGE_HTML,
-                LHM_MODEL,
-                LHM_WORKER_ID,
-                "Solicitação LHM recebida. Preparando montagem determinística do HTML.",
-                monitoringPayload);
-
-        try {
-            String promptInputs = landingHtmlModule.buildPromptV2Inputs(experiment);
-            monitoringJob.setPrompt(promptInputs);
-            monitoringPayload.put("promptPrepared", true);
-            monitoringJob.setRequestBodyJson(writeJsonSilently(monitoringPayload));
-            String assembledHtml = landingHtmlModule.assembleHtmlDocument(experiment);
-            if (!StringUtils.hasText(assembledHtml)) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                        "LHM não conseguiu montar HTML válido para este experimento");
-            }
-            Map<String, Object> qualityAuditReport = auditLandingHtmlQuality(experiment, assembledHtml);
-            monitoringPayload.put("qualityAudit", qualityAuditReport);
-            boolean auditGateEnabled = Boolean.parseBoolean(System.getProperty(LANDING_HTML_AUDIT_FEATURE_FLAG, "false"));
-            monitoringPayload.put("qualityAuditGateEnabled", auditGateEnabled);
-            monitoringPayload.put("registryEnabled", Boolean.parseBoolean(System.getProperty(LANDING_HTML_REGISTRY_FEATURE_FLAG, "false")));
-            if (auditGateEnabled) {
-                ensureLandingHtmlQualityGate(qualityAuditReport);
-            }
-            applySectionContent(experiment, ExperimentPipelineSection.LANDING_PAGE_HTML, assembledHtml);
-            completeInlineGenerationJob(monitoringJob, assembledHtml, assembledHtml, BigDecimal.ZERO);
-            return experimentMapper.toDto(experiment);
-        } catch (ResponseStatusException ex) {
-            monitoringPayload.put("errorStatus", ex.getStatusCode().value());
-            monitoringPayload.put("errorReason", ex.getReason());
-            monitoringJob.setRequestBodyJson(writeJsonSilently(monitoringPayload));
-            failInlineGenerationJob(monitoringJob, ex.getReason());
-            throw ex;
-        } catch (RuntimeException ex) {
-            monitoringPayload.put("errorType", ex.getClass().getSimpleName());
-            monitoringPayload.put("errorMessage", ex.getMessage());
-            monitoringJob.setRequestBodyJson(writeJsonSilently(monitoringPayload));
-            failInlineGenerationJob(monitoringJob, ex.getMessage());
-            throw ex;
-        }
-    }
-
     private Map<String, Object> buildLhmMonitoringPayload(Experiment experiment, Long experimentId) {
         Map<String, Object> monitoringPayload = new LinkedHashMap<>();
         monitoringPayload.put("mode", "INLINE");
@@ -1070,7 +997,6 @@ public class ExperimentPipelineGenerationService {
         }
         sb.append("\nTarefa alvo: ").append(section.path()).append("\n");
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
-            sb.append(landingHtmlModule.buildPromptV2Inputs(experiment));
         } else {
             appendPreviousOutputs(sb, experiment, section);
         }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -36,6 +37,7 @@ public class WireframeHtmlGenerator {
             Map<String, Object> pagina = asMap(root.get("pagina"));
             Map<String, Object> head = asMap(pagina.get("head"));
             Map<String, Object> corpo = asMap(pagina.get("corpo"));
+            Map<String, Object> definicoes = asMap(root.get("definicoes"));
 
             StringBuilder html = new StringBuilder();
 
@@ -47,6 +49,12 @@ public class WireframeHtmlGenerator {
             html.append("<title>")
                     .append(escapeHtmlText(asText(head.get("texto"), "Wireframe provisório")))
                     .append("</title>\n");
+            String responsiveCss = renderResponsiveCssDefinitions(definicoes);
+            if (StringUtils.hasText(responsiveCss)) {
+                html.append("<style>\n")
+                        .append(responsiveCss)
+                        .append("\n</style>\n");
+            }
             html.append("</head>\n");
 
             html.append("<body");
@@ -121,6 +129,7 @@ public class WireframeHtmlGenerator {
     private void appendCommonAttributes(StringBuilder out, Map<String, Object> node) {
         String id = asText(node.get("id"), "");
         String style = renderInlineStyle(asList(node.get("estilos")));
+        String className = renderClassNameFromResponsiveStyleRefs(asList(node.get("estilos")));
         Map<String, Object> attrs = extractAttributes(node);
 
         if (StringUtils.hasText(id)) {
@@ -160,6 +169,9 @@ public class WireframeHtmlGenerator {
 
         if (StringUtils.hasText(style)) {
             out.append(" style=\"").append(escapeHtmlAttribute(style)).append("\"");
+        }
+        if (StringUtils.hasText(className)) {
+            out.append(" class=\"").append(escapeHtmlAttribute(className)).append("\"");
         }
     }
 
@@ -272,6 +284,87 @@ public class WireframeHtmlGenerator {
         }
 
         return out.toString();
+    }
+
+    private String renderClassNameFromResponsiveStyleRefs(List<Map<String, Object>> estilos) {
+        List<String> classes = new ArrayList<>();
+        for (Map<String, Object> estilo : estilos) {
+            appendClassRefs(classes, estilo.get("desktop"));
+            appendClassRefs(classes, estilo.get("mobile"));
+        }
+        return String.join(" ", classes);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void appendClassRefs(List<String> classes, Object refs) {
+        if (!(refs instanceof List<?> list)) {
+            return;
+        }
+        for (Object item : list) {
+            if (!(item instanceof String className) || !StringUtils.hasText(className)) {
+                continue;
+            }
+            String normalized = className.trim();
+            if (!classes.contains(normalized)) {
+                classes.add(normalized);
+            }
+        }
+    }
+
+    private String renderResponsiveCssDefinitions(Map<String, Object> definicoes) {
+        if (definicoes.isEmpty()) {
+            return "";
+        }
+        Map<String, Map<String, String>> desktopRules = new LinkedHashMap<>();
+        Map<String, Map<String, String>> mobileRules = new LinkedHashMap<>();
+
+        for (Object groupObj : definicoes.values()) {
+            Map<String, Object> group = asMap(groupObj);
+            collectCssRules(desktopRules, group.get("desktop"));
+            collectCssRules(mobileRules, group.get("mobile"));
+        }
+
+        String desktopCss = renderCssRules(desktopRules);
+        String mobileCss = renderCssRules(mobileRules);
+        if (!StringUtils.hasText(desktopCss) && !StringUtils.hasText(mobileCss)) {
+            return "";
+        }
+        if (!StringUtils.hasText(mobileCss)) {
+            return desktopCss;
+        }
+        return desktopCss + "\n@media (max-width: 768px) {\n" + mobileCss + "\n}";
+    }
+
+    @SuppressWarnings("unchecked")
+    private void collectCssRules(Map<String, Map<String, String>> target, Object entriesObj) {
+        if (!(entriesObj instanceof List<?> entries)) {
+            return;
+        }
+        for (Object entryObj : entries) {
+            if (!(entryObj instanceof Map<?, ?> entry)) {
+                continue;
+            }
+            String className = asText(entry.get("nome"), "");
+            String property = asText(entry.get("atributoCss"), "");
+            String value = asText(entry.get("valor"), "");
+            if (!StringUtils.hasText(className) || !StringUtils.hasText(property) || !StringUtils.hasText(value)) {
+                continue;
+            }
+            target.computeIfAbsent(className.trim(), ignored -> new LinkedHashMap<>())
+                    .put(property.trim(), value.trim());
+        }
+    }
+
+    private String renderCssRules(Map<String, Map<String, String>> rulesByClass) {
+        StringBuilder out = new StringBuilder();
+        for (Map.Entry<String, Map<String, String>> entry : rulesByClass.entrySet()) {
+            out.append(".").append(entry.getKey()).append(" {");
+            for (Map.Entry<String, String> property : entry.getValue().entrySet()) {
+                out.append(property.getKey()).append(":").append(property.getValue()).append(";");
+            }
+            out.append("}\n");
+        }
+        return out.toString().trim();
     }
 
     @SuppressWarnings("unchecked")

@@ -983,3 +983,19 @@
   - inclusão no prompt da regra de explicitação por visual `img` (narrativa/contexto, tipo visual, função comercial, objeção removida e classificação visual);
   - ajuste da seção "Ajuste de intenção por seção" para o formato solicitado, incluindo exemplos de `fonteContexto[]`;
   - ajuste do schema para `prioridadeConversao` como inteiro de 1 a 10.
+
+## 2026-05-22 01:57:00 UTC
+- ajuste solicitado: suportar novo JSON da etapa Gera Wireframe no fluxo de montagem de HTML provisório (assembler + processor).
+- causa-raiz: o fluxo de copy provisória assumia principalmente estruturas `bodySections/items` e adicionava metadado técnico (`jobId`) no HTML final, o que dificulta compatibilidade com o novo payload e viola a regra de não contaminar artefato final.
+- foi feito:
+  - atualização do `CopyProvisionalHtmlAssembler` para retornar apenas o HTML produzido pelo processor, sem inserir comentário técnico de `jobId`;
+  - atualização do `CopyProvisionalHtmlProcessor` para aceitar payloads envelopados (`landingPageWireframe`/`landingPageCopy`) e também copy no schema `pagina.corpo.secoes[].elementosSeccao[]` com `texto.conteudo`;
+  - adição de teste cobrindo aplicação de copy no formato `pagina` aninhado para garantir regressão positiva no novo contrato.
+
+## 2026-05-22 02:10:00 UTC
+- ajuste solicitado: tratar CSS do novo wireframe com definições separadas por desktop/mobile ao gerar HTML provisório.
+- causa-raiz: o gerador do formato `pagina` processava somente `estilos` inline antigos e não convertia referências de classe vindas do novo contrato (`definicoes` + `estilos.desktop/mobile`), causando perda de layout no preview.
+- foi feito:
+  - atualização do `WireframeHtmlGenerator` para montar `<style>` responsivo a partir de `definicoes` (desktop + mobile via media query);
+  - atualização da renderização de nós para anexar classes derivadas de `estilos.desktop/mobile`;
+  - inclusão de teste cobrindo geração de CSS desktop/mobile e aplicação de `class` no HTML final.

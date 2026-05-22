@@ -30,3 +30,6 @@
 6. Refez muita coisa para manter os pacotes independentes vou testar agora, criar experimento 27.
 7. O Codex fez as alterações deu erro na etapa copy e ele esta dizendo que o erro esta na volta do modelo. Não é isso.
 8. Mais logs. Usar o jobid ( referencia para pesquisa ) resposta crua do modelo. Evitar que o modelo siga um caminho errado na investigação.
+9. O codex estava certo parace que o modelo estava gerando coisas que não devia.
+      a. coloquei logs usando jobid para ficar mais facil de pesquisar ( as integrações sempre são sensiveis )
+      b. reseliante para esse tipo de comportamento do modelo.

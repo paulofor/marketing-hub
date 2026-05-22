@@ -56,11 +56,12 @@ public class DesignPresetProvisionalHtmlProcessor {
 
         Map<String, Object> copyRoot = parseJson(copyJson);
         Map<String, Object> designRoot = parseJson(designPresetJson);
+        validateTokenizedPresetContract(designRoot);
 
         applyCopy(document, copyRoot);
         applyCtaUrls(document, copyRoot);
         applyImageUrlsByElementId(document, imagePlanningJson);
-        applyDesignPreset(document, designRoot);
+        applyLegacyPresetStyles(document, designRoot);
 
         return normalizeSerializedHtml(document.outerHtml());
     }
@@ -70,6 +71,15 @@ public class DesignPresetProvisionalHtmlProcessor {
             return OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             throw new IllegalArgumentException("Falha ao interpretar JSON de entrada", e);
+        }
+    }
+
+    /**
+     * Valida o contrato atual da etapa de preset, que agora exige o formato tokenizado `definicoes + pagina`.
+     */
+    private void validateTokenizedPresetContract(Map<String, Object> designRoot) {
+        if (designRoot == null || !designRoot.containsKey("definicoes") || !designRoot.containsKey("pagina")) {
+            throw new IllegalArgumentException("JSON de design preset fora do contrato atual: esperado formato tokenizado com `definicoes` e `pagina`");
         }
     }
 
@@ -533,6 +543,131 @@ public class DesignPresetProvisionalHtmlProcessor {
                         .append(":")
                         .append(entry.getValue())
                         .append(";\n");
+            }
+        }
+    }
+
+    /**
+     * Aplica o formato de preset com `definicoes` + `pagina` (estilos tokenizados por classes CSS).
+     */
+    @SuppressWarnings("unchecked")
+    private void applyLegacyPresetStyles(Document document, Map<String, Object> root) {
+        if (root == null || !root.containsKey("definicoes") || !root.containsKey("pagina")) {
+            return;
+        }
+        Map<String, Object> definitions = asMap(root.get("definicoes"));
+        String css = buildLegacyCss(definitions);
+        if (StringUtils.hasText(css) && document.head() != null) {
+            document.head().appendElement("style")
+                    .attr("id", "lhm-legacy-design-preset-css")
+                    .text(css);
+        }
+
+        Map<String, Object> page = asMap(root.get("pagina"));
+        applyLegacyBodyClasses(document, page);
+        applyLegacySectionClasses(document, page);
+    }
+
+    private String buildLegacyCss(Map<String, Object> definitions) {
+        StringBuilder css = new StringBuilder();
+        for (Map.Entry<String, Object> entry : definitions.entrySet()) {
+            Object block = entry.getValue();
+            if (block instanceof Map<?, ?> mapBlock) {
+                appendLegacyCssByViewport(css, asList(mapBlock.get("desktop")), null);
+                appendLegacyCssByViewport(css, asList(mapBlock.get("mobile")), "@media (max-width: 768px)");
+                continue;
+            }
+            List<Map<String, Object>> attributes = asList(block);
+            for (Map<String, Object> attribute : attributes) {
+                appendLegacyCssByViewport(css, asList(attribute.get("desktop")), null);
+                appendLegacyCssByViewport(css, asList(attribute.get("mobile")), "@media (max-width: 768px)");
+            }
+        }
+        return css.toString();
+    }
+
+    private void appendLegacyCssByViewport(StringBuilder css, List<Map<String, Object>> items, String mediaQuery) {
+        if (items.isEmpty()) {
+            return;
+        }
+        StringBuilder block = new StringBuilder();
+        for (Map<String, Object> item : items) {
+            String className = asString(item.get("nome"));
+            String property = asString(item.get("atributoCss"));
+            String value = asString(item.get("valor"));
+            if (!StringUtils.hasText(className) || !isSafeCssPropertyName(property) || !StringUtils.hasText(value)) {
+                continue;
+            }
+            block.append(".").append(className.trim())
+                    .append("{").append(property.trim()).append(":").append(value.trim()).append(";}\n");
+        }
+        if (!StringUtils.hasText(block.toString())) {
+            return;
+        }
+        if (mediaQuery == null) {
+            css.append(block);
+            return;
+        }
+        css.append(mediaQuery).append("{\n").append(block).append("}\n");
+    }
+
+    private void applyLegacyBodyClasses(Document document, Map<String, Object> page) {
+        Element body = document.body();
+        if (body == null) {
+            return;
+        }
+        Map<String, Object> corpo = asMap(page.get("corpo"));
+        List<Map<String, Object>> styles = asList(corpo.get("estilos"));
+        appendClasses(body, collectViewportClassNames(styles));
+    }
+
+    private void applyLegacySectionClasses(Document document, Map<String, Object> page) {
+        Map<String, Object> corpo = asMap(page.get("corpo"));
+        List<Map<String, Object>> sections = asList(corpo.get("secoes"));
+        for (Map<String, Object> sectionMap : sections) {
+            applyLegacyNodeClasses(document, sectionMap, "id", "elementosSeccao");
+        }
+    }
+
+    private void applyLegacyNodeClasses(Document document, Map<String, Object> node, String idField, String childrenField) {
+        String id = asString(node.get(idField));
+        Element element = resolveElementById(document, id);
+        if (element != null) {
+            appendClasses(element, collectViewportClassNames(asList(node.get("estilos"))));
+        }
+        List<Map<String, Object>> children = asList(node.get(childrenField));
+        for (Map<String, Object> child : children) {
+            applyLegacyNodeClasses(document, child, "id", "elementosInternos");
+        }
+    }
+
+    private List<String> collectViewportClassNames(List<Map<String, Object>> styles) {
+        List<String> classes = new ArrayList<>();
+        for (Map<String, Object> styleEntry : styles) {
+            classes.addAll(readStringList(styleEntry.get("desktop")));
+            classes.addAll(readStringList(styleEntry.get("mobile")));
+        }
+        return classes;
+    }
+
+    private List<String> readStringList(Object value) {
+        List<String> list = new ArrayList<>();
+        if (!(value instanceof List<?> rawList)) {
+            return list;
+        }
+        for (Object item : rawList) {
+            String className = asString(item);
+            if (StringUtils.hasText(className)) {
+                list.add(className.trim());
+            }
+        }
+        return list;
+    }
+
+    private void appendClasses(Element element, List<String> classes) {
+        for (String className : classes) {
+            if (!element.hasClass(className)) {
+                element.addClass(className);
             }
         }
     }

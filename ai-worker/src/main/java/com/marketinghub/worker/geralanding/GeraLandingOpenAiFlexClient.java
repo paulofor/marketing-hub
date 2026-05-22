@@ -56,6 +56,9 @@ public class GeraLandingOpenAiFlexClient {
         return enabled;
     }
 
+    /**
+     * Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa.
+     */
     public GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
@@ -67,7 +70,7 @@ public class GeraLandingOpenAiFlexClient {
                     job.id(), job.section(), preview(job.requestBodyJson()));
             OpenAiResponse response = createFlexResponse(job);
             String rawOutput = objectMapper.writeValueAsString(response);
-            String modelResponse = response.firstText();
+            String modelResponse = sanitizeModelResponse(response.firstText(), job);
             log.info("Resposta OpenAI recebida para gera-landing [jobId={}, stage={}, responseId={}, rawOutputLength={}, modelResponseLength={}, modelResponsePreview={}]",
                     job.id(),
                     job.section(),
@@ -140,6 +143,28 @@ public class GeraLandingOpenAiFlexClient {
             return buildRequestBodyFromPrompt(job, trimmed);
         }
         return buildRequestBodyFromPrompt(job, job.prompt());
+    }
+
+
+    /**
+     * Remove cercas markdown de JSON (```json ... ```) para manter o conteúdo parseável no pipeline.
+     */
+    String sanitizeModelResponse(String modelResponse, GeraLandingJobDto job) {
+        if (!StringUtils.hasText(modelResponse)) {
+            return modelResponse;
+        }
+        String trimmed = modelResponse.trim();
+        if (!trimmed.startsWith("```json")) {
+            return modelResponse;
+        }
+
+        String withoutPrefix = trimmed.substring("```json".length()).trim();
+        if (withoutPrefix.endsWith("```")) {
+            withoutPrefix = withoutPrefix.substring(0, withoutPrefix.length() - 3).trim();
+        }
+        log.warn("Model response veio com code fence JSON; removendo cercas markdown [jobId={}, stage={}]",
+                job.id(), job.section());
+        return withoutPrefix;
     }
 
     /**

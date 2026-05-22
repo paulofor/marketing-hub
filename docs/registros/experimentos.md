@@ -1082,3 +1082,6 @@
 - foi feito:
   - atualização de `GeraLandingArchitectureTest` para permitir avaliação vazia com `.allowEmptyShould(true)` na regra `geralanding_subpackages_must_be_independent`;
   - manutenção da validação de não dependência entre subpacotes quando existirem classes compatíveis.
+
+- 2026-05-22 — AI Worker / GeraLanding: adicionado log com `jobId` no envio para OpenAI, no recebimento da resposta da OpenAI e no envio do retorno ao backend com `url` e `payload` para rastreabilidade ponta a ponta.
+- 2026-05-22 — AI Worker / GeraLanding: ajustado log de retorno da OpenAI para incluir a resposta completa do modelo (`respostaCompleta`) junto com `jobId`.

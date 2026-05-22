@@ -31,6 +31,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
+/**
+ * Cliente responsável por enviar jobs do pipeline de experimento para a OpenAI e validar o contrato de retorno.
+ */
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
     private static final String REQUIRED_TEXT_MODEL = "gpt-5.2";
@@ -257,16 +260,19 @@ public class ExperimentPipelineOpenAiClient {
                     job.id(), job.experimentId(), job.section(), effectiveModel);
             log.info("OpenAI payload completo para job {}: {}", job.id(),
                     objectMapper.writeValueAsString(payload));
+            log.info("Enviando requisição para OpenAI com jobId={} (experimentId={}, section={}, model={})",
+                    job.id(), job.experimentId(), job.section(), effectiveModel);
             OpenAiResponse response = requestWithTransientRetries(payload, job);
             if (response == null || response.hasError()) {
                 throw new IllegalStateException(response != null ? response.errorMessage() : "Resposta vazia da OpenAI");
             }
-            log.info("Received OpenAI response for job {} (responseId={}, status={}, inputTokens={}, outputTokens={})",
+            log.info("Retorno recebido da OpenAI com jobId={} (responseId={}, status={}, inputTokens={}, outputTokens={}, respostaCompleta={})",
                     job.id(),
                     response.id(),
                     response.status(),
                     response.usage() != null ? response.usage().effectiveInputTokens() : null,
-                    response.usage() != null ? response.usage().effectiveOutputTokens() : null);
+                    response.usage() != null ? response.usage().effectiveOutputTokens() : null,
+                    objectMapper.writeValueAsString(response));
             String content = response.firstText();
             if (!StringUtils.hasText(content)) {
                 throw new IllegalStateException("Resposta da OpenAI sem conteúdo JSON");

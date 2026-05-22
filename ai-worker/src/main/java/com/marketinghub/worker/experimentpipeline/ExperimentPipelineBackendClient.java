@@ -20,6 +20,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
+/**
+ * Cliente HTTP responsável por sincronizar o status e os artefatos do pipeline de experimento com o backend.
+ */
 public class ExperimentPipelineBackendClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineBackendClient.class);
     private static final Pattern FORM_CONTROL_TAG_PATTERN = Pattern.compile("(?is)<(input|textarea|select)\\b[^>]*>");
@@ -174,6 +177,9 @@ public class ExperimentPipelineBackendClient {
 
 
 
+    /**
+     * Registra no backend o retorno da OpenAI para uma execução do GeraLanding.
+     */
     public void registerGeraLandingResult(Long experimentId,
                                           String stageCode,
                                           String jobId,
@@ -186,7 +192,16 @@ public class ExperimentPipelineBackendClient {
         body.put("inputTokens", payload.inputTokens());
         body.put("outputTokens", payload.outputTokens());
         body.put("costUsd", payload.costUsd());
-        webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(Void.class).onErrorResume(err -> Mono.empty()).block();
+        log.info("Enviando retorno para backend (jobId={}, url={}, payload={})", jobId, url, body);
+        webClient.post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .doOnSuccess(ignored -> log.info("Retorno do GeraLanding enviado ao backend (jobId={}, url={})", jobId, url))
+                .doOnError(err -> log.error("Falha ao enviar retorno do GeraLanding ao backend (jobId={}, url={}, payload={})", jobId, url, body, err))
+                .onErrorResume(err -> Mono.empty())
+                .block();
     }
 
     private Flux<ExperimentPipelineJobDto> handleListResponse(String uri,

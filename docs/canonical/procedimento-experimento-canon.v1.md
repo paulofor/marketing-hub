@@ -233,19 +233,19 @@ Diagrama canônico de referência para o fluxo Gera Landing, separando explicita
 
 ```mermaid
 flowchart LR
-    subgraph W[Worker AI - ai-worker<br/>Pacote: com.marketinghub.worker.geralanding]
+    subgraph W[Worker AI - ai-worker<br>Pacote: com.marketinghub.worker.geralanding]
       WS[GeraLandingExecutionScheduler] --> WE[GeraLandingExecutionService]
-      WE --> WB[GeraLandingBackendClient<br/>(HTTP backend)]
-      WE --> OA[GeraLandingOpenAiFlexClient<br/>(OpenAI Responses)]
-      WE --> SD[stage/*<br/>Schema + Prompt Resolver]
+      WE --> WB[GeraLandingBackendClient<br>(HTTP backend)]
+      WE --> OA[GeraLandingOpenAiFlexClient<br>(OpenAI Responses)]
+      WE --> SD[stage/*<br>Schema + Prompt Resolver]
     end
 
-    subgraph B[Backend - ads-service<br/>Pacote: com.marketinghub.geralanding]
+    subgraph B[Backend - ads-service<br>Pacote: com.marketinghub.geralanding]
       BC[GeraLandingInternalController / GeraLandingController] --> BS[GeraLandingStageExecutionService]
-      BS --> BH[Html Assemblers/Processors<br/>(copy, wireframe, designpreset, imageplanning)]
+      BS --> BH[Html Assemblers/Processors<br>(copy, wireframe, designpreset, imageplanning)]
       BS --> BR[GeraLandingStageExecutionRepository]
       BR --> DB[(MySQL 5.7)]
-      BS --> LP[Publicação Lead Portal<br/>(endpoint externo)]
+      BS --> LP[Publicação Lead Portal<br>(endpoint externo)]
     end
 
     WB -->|claim/dispatch/receive/complete/fail| BC

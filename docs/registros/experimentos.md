@@ -1306,3 +1306,9 @@
   - atualização do prompt `landing-page-copy.md` com regras obrigatórias para `ctaType`, `targetSectionId`, `formMicrocopy`, `imageAccessibilityPlan` e compliance da promessa de "2 minutos";
   - atualização do schema `landing-page-copy-schema.json` para refletir o novo contrato (campos obrigatórios para tipagem de CTA, microcopy de formulário e acessibilidade de imagens).
 - resultado esperado: reduzir 400/422 por ambiguidade de payload e melhorar aderência de copy/HTML no fluxo de prova, conversão e acessibilidade.
+- solicitação para corrigir lacunas no prompt do Gera Landing (wireframe) em contrato estrutural/semântico para body, interação, imagens, formulário e componentes.
+- causa-raiz identificada: o contrato da etapa wireframe exigia briefing visual e estrutura geral, mas não obrigava metadados funcionais mínimos (âncora/href, contrato de asset, semântica de input e classes raiz de body), permitindo saídas incompletas no HTML derivado.
+- foi feito:
+  - reforço do prompt `landing-page-wireframe.md` com regras explícitas de `pagina.body`, intenção funcional de elementos interativos, contrato de asset em `img`, contrato semântico de `input`, componentes semânticos e validação permanente de `texto.conteudo` vazio;
+  - atualização do schema `landing-page-wireframe-schema.json` para incluir e validar os novos campos contratuais (`pagina.body.classes`, `interacao`, `asset`, `contratoCampo`, `componente`) com regras condicionais por `tag`.
+- impacto esperado: reduzir geração de wireframe ambígua e eliminar casos de HTML sem `src` em imagem, links sem destino claro e inputs sem contrato de campo.

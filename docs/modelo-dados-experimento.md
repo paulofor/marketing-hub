@@ -668,8 +668,9 @@ Para suportar o gerenciamento administrativo de ocupações no módulo OPRM (cad
 - Relacionamentos:
   - `mois_sales_library_page_analysis.url_ingest_id -> mois_sales_library_url_ingest.id`.
   - `mois_sales_library_page_analysis.job_id -> mois_sales_library_processing_job.id` (opcional, `ON DELETE SET NULL`).
-- Colunas operacionais: `status`, `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`, `analyzed_at`, `created_at`, `updated_at`.
+- Colunas operacionais: `status`, `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`, `request_payload_json`, `analyzed_at`, `created_at`, `updated_at`.
 - Índices operacionais: `(url_ingest_id, updated_at)` para recuperar a versão mais recente por página e `(status, updated_at)` para observabilidade de backlog de análise.
+- Rastreabilidade do request: `request_payload_json` armazena o payload literal enviado ao modelo para auditoria na tela de detalhe.
 - Endpoints backend adicionados para consulta e acionamento:
   - `GET /api/mois/sales-library/pages`
   - `GET /api/mois/sales-library/pages/{pageId}`

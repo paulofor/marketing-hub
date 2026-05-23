@@ -32,6 +32,7 @@ O worker processa de forma assíncrona jobs `PENDING` da biblioteca de páginas 
    - `parserVersion`
    - `promptVersion`
    - `modelName`
+   - `requestPayloadJson`
    - `processedAt`
 6. Em falha, worker chama `POST /api/mois/sales-library/jobs/{jobId}:fail` com categoria `PIPELINE_ERROR` e mensagem de erro.
 
@@ -42,6 +43,7 @@ O worker processa de forma assíncrona jobs `PENDING` da biblioteca de páginas 
 - `visual_json`: sinais visuais relevantes;
 - `image_json`: dados de imagem relevantes;
 - `analysis_notes`: observações adicionais;
+- `request_payload_json`: payload literal enviado ao modelo (JSONL da requisição batch) para auditoria;
 - `parser_version`, `prompt_version`, `model_name`: rastreabilidade técnica.
 
 ## 6. Regras de fonte (source)
@@ -268,7 +270,7 @@ erDiagram
 #### 13.3.3 `mois_sales_library_page_analysis`
 - **Papel no fluxo**: armazenar o resultado estruturado da análise comercial executada pelo worker.
 - **Função operacional**: persistir score, seções e sinais semânticos retornados pelo pipeline OpenAI.
-- **Campos de destaque**: `id`, `url_ingest_id`, `job_id`, `status`, `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`, `parser_version`, `prompt_version`, `model_name`, `processed_at`, `created_at`, `updated_at`.
+- **Campos de destaque**: `id`, `url_ingest_id`, `job_id`, `status`, `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`, `request_payload_json`, `parser_version`, `prompt_version`, `model_name`, `analyzed_at`, `created_at`, `updated_at`.
 
 #### 13.3.4 `mois_sales_library_page_snapshot`
 - **Papel no fluxo**: guardar snapshots/versionamento da página capturada para comparação temporal.

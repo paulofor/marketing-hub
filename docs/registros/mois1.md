@@ -467,3 +467,12 @@
   - backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java
   - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
   - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+
+## 2026-05-23 14:20:26 UTC-3
+- revisão solicitada dos documentos canônicos e modelo de dados após inclusão do request literal do modelo na biblioteca MOIS.
+- causa-raiz documental: o código já persistia `request_payload_json`, mas os documentos canônicos ainda não refletiam completamente esse campo e mantinham referência desatualizada (`processed_at`).
+- atualizados `docs/modelo-dados-experimento.md` e `docs/canonical/mois-worker-canon.v1.md` para incluir `request_payload_json` e alinhar o timestamp operacional para `analyzed_at`.
+- documentos lidos para tratar a situação:
+  - docs/modelo-dados-experimento.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md

@@ -155,14 +155,17 @@ sequenceDiagram
 
     rect rgb(245,245,245)
     Note over API,DB: 2) URL disponível na biblioteca
-    API->>DB: UPSERT mois_sales_library_url_ingest<br/>(url_original, url_canonical, title, capturedAt...)
-    API->>DB: INSERT mois_sales_library_processing_job<br/>(status=PENDING) para URL nova
+    API->>DB: WRITE mois_sales_library_url_ingest (UPSERT)\n(url_original, url_canonical, title, capturedAt...)
+    API->>DB: READ mois_sales_library_url_ingest\n(validar deduplicação/canonicalização)
+    API->>DB: WRITE mois_sales_library_processing_job (INSERT)\n(status=PENDING) para URL nova
     end
 
     rect rgb(245,245,245)
     Note over WK,API: 3) Worker coleta conteúdo
     WK->>API: POST /jobs:claim (workspaceId, source)
-    API->>DB: UPDATE job PENDING->FETCHING
+    API->>DB: READ mois_sales_library_processing_job\n(seleciona job PENDING por source/workspace)
+    API->>DB: READ mois_sales_library_url_ingest\n(resolve urlCanonical da página)
+    API->>DB: WRITE mois_sales_library_processing_job (UPDATE)\n(PENDING->FETCHING)
     API-->>WK: jobId, pageId, urlCanonical
     WK->>WK: GET urlCanonical + parse HTML (body.text)
     end
@@ -176,14 +179,25 @@ sequenceDiagram
     rect rgb(245,245,245)
     Note over WK,DB: 5) Persistência dos resultados
     WK->>API: POST /jobs/{jobId}:complete<br/>(scoreTotal, sectionsJson, copyJson, visualJson, imageJson...)
-    API->>DB: INSERT mois_sales_library_page_analysis (status=DONE)
-    API->>DB: UPDATE mois_sales_library_processing_job -> DONE
+    API->>DB: READ mois_sales_library_processing_job (jobId vigente)
+    API->>DB: WRITE mois_sales_library_page_analysis (INSERT, status=DONE)
+    API->>DB: WRITE mois_sales_library_processing_job (UPDATE -> DONE)
     alt erro terminal
       WK->>API: POST /jobs/{jobId}:fail (PIPELINE_ERROR, message)
-      API->>DB: UPDATE mois_sales_library_processing_job -> FAILED
+      API->>DB: READ mois_sales_library_processing_job (jobId vigente)
+      API->>DB: WRITE mois_sales_library_processing_job (UPDATE -> FAILED)
     end
     end
 ```
+
+### 12.2.1 Tabelas lidas e gravadas por etapa do fluxo
+
+| Etapa | Leitura (READ) | Gravação (WRITE) |
+|---|---|---|
+| Ingestão (`/urls:ingest`) | `mois_sales_library_url_ingest` (deduplicação/canonicalização) | `mois_sales_library_url_ingest` (upsert), `mois_sales_library_processing_job` (insert `PENDING`) |
+| Claim (`/jobs:claim`) | `mois_sales_library_processing_job` (seleção de job pendente), `mois_sales_library_url_ingest` (obter `urlCanonical`) | `mois_sales_library_processing_job` (update `FETCHING`) |
+| Complete (`/jobs/{jobId}:complete`) | `mois_sales_library_processing_job` (validar job vigente) | `mois_sales_library_page_analysis` (insert), `mois_sales_library_processing_job` (update `DONE`) |
+| Fail (`/jobs/{jobId}:fail`) | `mois_sales_library_processing_job` (validar job vigente) | `mois_sales_library_processing_job` (update `FAILED`) |
 
 ### 12.3 Contratos e tabelas de persistência (referência rápida)
 - **Endpoint de ingestão**: `POST /api/mois/sales-library/urls:ingest`.
@@ -203,3 +217,113 @@ Quando houver dúvida sobre “onde o fluxo começa”, considerar canonicamente
   - `Marcar como anulado`: registra status `ANULADO` para itens que não serão mais utilizados no funil.
 - Contrato backend oficial: `POST /api/mois/sales-library/pages/{pageId}:status` com payload `{ "status": "PENDING" | "ANULADO", "reason"?: string }`.
 - A interface de detalhe também deve exibir navegação sequencial com botão `Próximo →` para avançar ao próximo item da lista local.
+
+
+## 13. Seção de Dados — Modelo compartilhado (Coletores Hotmart/ClickBank + Biblioteca de Páginas)
+
+Esta seção define o **modelo de dados canônico mínimo** que conecta a coleta de produtos vencedores (Hotmart/ClickBank) com a operação da Biblioteca de Páginas de Vendas.
+
+### 13.1 Visão relacional (macro)
+```mermaid
+erDiagram
+    MOIS_COLLECTED_REFERENCE ||--o{ MOIS_SALES_LIBRARY_URL_INGEST : "origina URLs candidatas"
+    MOIS_SALES_LIBRARY_URL_INGEST ||--o{ MOIS_SALES_LIBRARY_PROCESSING_JOB : "gera jobs"
+    MOIS_SALES_LIBRARY_PROCESSING_JOB ||--o| MOIS_SALES_LIBRARY_PAGE_ANALYSIS : "resultado de análise"
+    MOIS_SALES_LIBRARY_URL_INGEST ||--o{ MOIS_SALES_LIBRARY_PAGE_SNAPSHOT : "versionamento de captura"
+    MOIS_SALES_LIBRARY_PAGE_SNAPSHOT ||--o{ MOIS_SALES_LIBRARY_SNAPSHOT_ARTIFACT : "artefatos por tipo"
+```
+
+### 13.2 Tabelas usadas pelos coletores (Hotmart e ClickBank)
+
+#### 13.2.1 `mois_collected_reference`
+- **Papel no fluxo**: persistir referências coletadas dos marketplaces com sinais de sucesso comercial, servindo de base para seleção de URLs de página de vendas.
+- **Origem principal**: endpoints de persistência do MOIS alimentados pelos coletores Hotmart/ClickBank.
+- **Campos funcionais de destaque**:
+  - identificação e rastreio: `id`, `workspace_id`, `source`, `job_id`, `reference_id`;
+  - dados do produto: `product_name`, `product_url`, `sales_page_url`, `details_url`, `cover_image_url`;
+  - sinais de priorização: `success_score`, `temperature`, `hotmart_price`, `hotmart_currency`, `hotmart_highlights_json`;
+  - auditoria: `collected_at`, `created_at`, `updated_at`.
+- **Índices canônicos de operação**:
+  - unicidade por referência coletada no job (`job_id`, `reference_id`);
+  - busca por workspace/fonte (`workspace_id`, `source`);
+  - ordenação por score (`workspace_id`, `success_score`).
+
+### 13.3 Tabelas usadas no projeto da Biblioteca de Páginas de Vendas
+
+#### 13.3.1 `mois_sales_library_url_ingest`
+- **Papel no fluxo**: tabela de entrada (ingestão) de URLs canônicas provenientes da coleta.
+- **Função operacional**: deduplicar URLs, manter metadados de origem e disparar criação de job para itens novos.
+- **Campos de destaque**: `id`, `workspace_id`, `source`, `url_original`, `url_canonical`, `title`, `captured_at`, `created_at`, `updated_at`.
+
+#### 13.3.2 `mois_sales_library_processing_job`
+- **Papel no fluxo**: orquestrar estado assíncrono do processamento por URL.
+- **Função operacional**: controlar ciclo `PENDING/FETCHING/ANALYZING/RETRY_WAIT/DONE/FAILED`.
+- **Campos de destaque**: `id`, `url_ingest_id`, `status`, `attempt_count`, `error_category`, `error_message`, `next_retry_at`, `created_at`, `updated_at`.
+
+#### 13.3.3 `mois_sales_library_page_analysis`
+- **Papel no fluxo**: armazenar o resultado estruturado da análise comercial executada pelo worker.
+- **Função operacional**: persistir score, seções e sinais semânticos retornados pelo pipeline OpenAI.
+- **Campos de destaque**: `id`, `url_ingest_id`, `job_id`, `status`, `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`, `parser_version`, `prompt_version`, `model_name`, `processed_at`, `created_at`, `updated_at`.
+
+#### 13.3.4 `mois_sales_library_page_snapshot`
+- **Papel no fluxo**: guardar snapshots/versionamento da página capturada para comparação temporal.
+- **Função operacional**: registrar mudanças de conteúdo entre capturas e apoiar trilha de auditoria.
+- **Campos de destaque**: `id`, `url_ingest_id`, `snapshot_hash`, `html_content`, `text_content`, `captured_at`, `status`, `created_at`, `updated_at`.
+
+#### 13.3.5 `mois_sales_library_snapshot_artifact`
+- **Papel no fluxo**: armazenar artefatos derivados por snapshot (ex.: sumários ou classificações por tipo).
+- **Função operacional**: separar artefatos auxiliares por `artifact_type` vinculados ao snapshot.
+- **Campos de destaque**: `id`, `snapshot_id`, `artifact_type`, `artifact_payload`, `created_at`, `updated_at`.
+
+### 13.4 Regras de integração entre coletores e biblioteca
+1. A transição **coletor -> biblioteca** deve ocorrer por endpoint backend (`/api/mois/sales-library/urls:ingest`), nunca por escrita direta no banco.
+2. A URL de priorização para ingestão deve seguir ordem canônica: `salesPageUrl` e fallback para `detailsUrl`.
+3. Toda URL nova ingerida deve potencialmente gerar job em `mois_sales_library_processing_job` com status inicial `PENDING`.
+4. Persistência de análise final deve ficar em `mois_sales_library_page_analysis`, mantendo rastreabilidade por `job_id` e `url_ingest_id`.
+5. Snapshots e artefatos complementares não substituem a análise principal; eles enriquecem histórico e diagnóstico.
+
+
+### 13.5 Diagrama de dados (somente chaves)
+```mermaid
+erDiagram
+    MOIS_COLLECTED_REFERENCE {
+        bigint id PK
+        varchar job_id UK
+        varchar reference_id UK
+    }
+
+    MOIS_SALES_LIBRARY_URL_INGEST {
+        bigint id PK
+        varchar url_canonical UK
+    }
+
+    MOIS_SALES_LIBRARY_PROCESSING_JOB {
+        bigint id PK
+        bigint url_ingest_id FK
+    }
+
+    MOIS_SALES_LIBRARY_PAGE_ANALYSIS {
+        bigint id PK
+        bigint url_ingest_id FK
+        bigint job_id FK
+    }
+
+    MOIS_SALES_LIBRARY_PAGE_SNAPSHOT {
+        bigint id PK
+        bigint url_ingest_id FK
+        varchar snapshot_hash UK
+    }
+
+    MOIS_SALES_LIBRARY_SNAPSHOT_ARTIFACT {
+        bigint id PK
+        bigint snapshot_id FK
+    }
+
+    MOIS_COLLECTED_REFERENCE ||--o{ MOIS_SALES_LIBRARY_URL_INGEST : "fornece URLs"
+    MOIS_SALES_LIBRARY_URL_INGEST ||--o{ MOIS_SALES_LIBRARY_PROCESSING_JOB : "1:N jobs"
+    MOIS_SALES_LIBRARY_URL_INGEST ||--o{ MOIS_SALES_LIBRARY_PAGE_ANALYSIS : "1:N análises"
+    MOIS_SALES_LIBRARY_PROCESSING_JOB ||--o| MOIS_SALES_LIBRARY_PAGE_ANALYSIS : "job resultado"
+    MOIS_SALES_LIBRARY_URL_INGEST ||--o{ MOIS_SALES_LIBRARY_PAGE_SNAPSHOT : "1:N snapshots"
+    MOIS_SALES_LIBRARY_PAGE_SNAPSHOT ||--o{ MOIS_SALES_LIBRARY_SNAPSHOT_ARTIFACT : "1:N artefatos"
+```
+

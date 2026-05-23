@@ -448,7 +448,7 @@ public class GeraLandingStageExecutionService {
             return resolveImagePlanningProvisionalHtml(idJob, request, execution);
         }
         if (STAGE_DESIGN_PRESET.equalsIgnoreCase(request.stageCode())) {
-            return resolveDesignPresetProvisionalHtml(idJob, request, execution);
+            return designPresetProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
         }
         return null;
     }
@@ -489,29 +489,6 @@ public class GeraLandingStageExecutionService {
         return baseHtml;
     }
 
-    private String resolveDesignPresetProvisionalHtml(String idJob, GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
-        Experiment experiment = execution.getExperiment();
-        if (experiment == null && request.experimentId() != null) {
-            experiment = experimentRepository.findById(request.experimentId()).orElse(null);
-        }
-        if (experiment == null || !StringUtils.hasText(experiment.getLandingPageWireframe()) || !StringUtils.hasText(experiment.getLandingPageCopy())) {
-            return null;
-        }
-        String completeHtml = designPresetProvisionalHtmlAssembler.assemble(
-                experiment.getLandingPageWireframe(),
-                experiment.getLandingPageCopy(),
-                experiment.getLandingPageImagePlanning(),
-                request.modelResponse(),
-                idJob);
-        if (!StringUtils.hasText(completeHtml)) {
-            return null;
-        }
-        String htmlWithGeneratedImages = landingPageImageInjector.injectImages(experiment.getId(), completeHtml);
-        return """
-                %s
-                """.formatted(htmlWithGeneratedImages);
-    }
-
     private void persistStageArtifactOnExperiment(GeraLandingResultReceiveRequest request, GeraLandingStageExecution execution) {
         String stageCode = request.stageCode();
         if (!STAGE_WIREFRAME.equalsIgnoreCase(stageCode)
@@ -542,10 +519,9 @@ public class GeraLandingStageExecutionService {
         } else {
             String htmlFromDesignPreset = execution.getProvisionalHtml();
             if (!StringUtils.hasText(htmlFromDesignPreset)) {
-                htmlFromDesignPreset = resolveDesignPresetProvisionalHtml(
-                        fromDatabaseIdJob(execution.getIdJob()),
-                        request,
-                        execution);
+                htmlFromDesignPreset = designPresetProvisionalHtmlAssembler.assemble(
+                        request.modelResponse(),
+                        fromDatabaseIdJob(execution.getIdJob()));
             }
             experiment.setLandingPageDesignPreset(request.modelResponse());
             if (StringUtils.hasText(htmlFromDesignPreset)) {

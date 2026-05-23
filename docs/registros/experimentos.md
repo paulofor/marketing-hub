@@ -1112,3 +1112,12 @@
 - 2026-05-23 01:22:35 UTC — Validação da tela de experimento (Etapas 7 e 8): confirmado que as colunas persistidas no backend para os cards são `landing_page_html` (Etapa 7) e `landing_page_deliverables` (Etapa 8). Ajustada a descrição da Etapa 8 no frontend para explicitar o nome da coluna exibida.
 
 - 2026-05-23 01:26:00 UTC — Ajustada a tela do experimento para exibir os dois HTMLs persistidos no banco nas posições corretas do pipeline: Etapa 7 agora mostra `html_geralanding`, Etapa 8 mostra `landing_page_html` e os deliverables foram reposicionados para Etapa 9 (`landing_page_deliverables`).
+- 2026-05-23 (UTC): padronização do fluxo de provisional HTML no GeraLanding para usar o mesmo formato de chamada dos assemblers por etapa (`assemble(modelResponse, idJob)`), aplicando na etapa `landing-page-design-preset` via `DesignPresetProvisionalHtmlAssembler` e removendo o fallback com composição cruzada no serviço de execução.
+
+- 2026-05-23 (UTC): adicionada regra ArchUnit `GeraLandingAssemblerArchitectureTest` para bloquear uso da assinatura legada `assemble(wireframe, copy, imagePlanning, designPreset, jobId)` dentro de `GeraLandingStageExecutionService`, forçando o padrão `assemble(modelResponse, jobId)` na etapa `landing-page-design-preset`.
+
+- 2026-05-23 (UTC): reforço adicional de ArchUnit para exigir localização dos assemblers canônicos: `WireframeProvisionalHtmlAssembler` em `com.marketinghub.geralanding.wireframe` e `DesignPresetProvisionalHtmlAssembler` em `com.marketinghub.geralanding.designpreset`; mantida também a regra que bloqueia chamada da assinatura legada de 5 parâmetros no service.
+
+- 2026-05-23 (UTC): ampliadas regras ArchUnit do GeraLanding para também bloquear no `GeraLandingStageExecutionService` o uso de assinaturas legadas dos assemblers de wireframe (`assemble(modelResponse)`) e copy (`assemble(copyModelResponse, wireframeModelResponse)`), forçando os contratos com `jobId`.
+
+- 2026-05-23 (UTC): adicionadas regras ArchUnit positivas para exigir que `GeraLandingStageExecutionService` chame explicitamente os assemblers canônicos nas assinaturas padrão: wireframe (`assemble(modelResponse, jobId)`), design preset (`assemble(modelResponse, jobId)`) e copy (`assemble(copyModelResponse, wireframeModelResponse, jobId)`).

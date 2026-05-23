@@ -1167,3 +1167,13 @@
   - ajuste aplicado: etapas `LANDING_PAGE_IMAGE_PLANNING` e `LANDING_PAGE_DESIGN_PRESET` passam a persistir somente em `gera_landing_stage_execution.provisional_html` e `experiment.html_geralanding` (design preset), sem gravar `landing_page_html`.
   - ajuste aplicado: `landing_page_html` agora é persistido apenas no fluxo de aprovação/publicação (`approveAndPublishLanding`) com o HTML final efetivamente publicado.
   - validação: testes unitários de `GeraLandingStageExecutionServiceTest` atualizados para garantir ausência de gravação prematura em `landing_page_html`.
+## 2026-05-23 01:30:00 UTC-3
+- solicitação: corrigir erro de renderização Mermaid na seção 1.4 do documento canônico de Gera Landing exibido no GitHub.
+- causa-raiz: labels do diagrama continham quebra de linha e parênteses em formato que o parser do Mermaid no GitHub interpretou como sintaxe inválida.
+- foi feito:
+  - ajuste dos nós com textos multi-linha para formato string com `<br/>` (entre aspas), evitando ambiguidades de parsing;
+  - manutenção do mesmo conteúdo funcional do diagrama (service, repositories e campos persistidos);
+  - registro desta manutenção no histórico de experimentos.
+- arquivos alterados:
+  - docs/gera-landing/modelo-canonico-gera-landing.md
+  - docs/registros/experimentos.md

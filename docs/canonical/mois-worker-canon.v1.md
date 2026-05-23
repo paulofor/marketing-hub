@@ -392,3 +392,43 @@ graph TD
 - Coletores e worker **não acessam banco diretamente**; todo acesso a dados passa pelo backend MOIS.
 - A integração com OpenAI é realizada pelo `mois-sales-library-worker`, com retorno consolidado ao backend via endpoint de conclusão/falha.
 - A persistência em MySQL 5.7 ocorre apenas nos pacotes de serviço/repositório do backend.
+
+
+### 12.6 Diagrama de arquitetura por módulo/pacote — Gera Landing (Worker AI x Backend)
+
+Diagrama canônico de referência para o fluxo Gera Landing, separando explicitamente o lado do **Worker AI** e o lado do **Backend**, com fronteira de integração via HTTP e persistência exclusiva no backend.
+
+```mermaid
+flowchart LR
+    subgraph W[Worker AI — ai-worker\nPacote: com.marketinghub.worker.geralanding]
+      WS[GeraLandingExecutionScheduler] --> WE[GeraLandingExecutionService]
+      WE --> WB[GeraLandingBackendClient\n(HTTP backend)]
+      WE --> OA[GeraLandingOpenAiFlexClient\n(OpenAI Responses)]
+      WE --> SD[stage/*\nSchema + Prompt Resolver]
+    end
+
+    subgraph B[Backend — ads-service\nPacote: com.marketinghub.geralanding]
+      BC[GeraLandingInternalController / GeraLandingContoller] --> BS[GeraLandingStageExecutionService]
+      BS --> BH[Html Assemblers/Processors\n(copy, wireframe, designpreset, imageplanning)]
+      BS --> BR[GeraLandingStageExecutionRepository]
+      BR --> DB[(MySQL 5.7)]
+      BS --> LP[Publicação Lead Portal\n(endpoint externo)]
+    end
+
+    WB -->|claim/dispath/receive/complete/fail| BC
+    OA -->|resultado estruturado por etapa| WE
+    BS -->|workerPrompt + stage config| BC
+
+    classDef worker fill:#E8F4FF,stroke:#4D90FE,color:#0B3D91;
+    classDef backend fill:#FFF4E5,stroke:#F39C12,color:#8A4B08;
+    classDef db fill:#FDEDEC,stroke:#C0392B,color:#7B241C;
+
+    class WS,WE,WB,OA,SD worker;
+    class BC,BS,BH,BR,LP backend;
+    class DB db;
+```
+
+#### Regras de integração refletidas no diagrama (Gera Landing)
+- O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend Gera Landing.
+- O backend concentra regras de contrato, montagem de HTML provisório/final e publicação para Lead Portal.
+- O Worker AI concentra orquestração por etapa e integração com OpenAI, devolvendo resultados ao backend pelos endpoints do próprio domínio Gera Landing.

@@ -1279,3 +1279,11 @@
   - docs/canonical/procedimento-experimento-canon.v1.md
   - ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java
   - docs/registros/experimentos.md
+## 2026-05-23 19:08:43 UTC-3
+- solicitação para criar um diagrama canônico semelhante ao do MOIS, agora para Gera Landing, destacando os lados Worker AI e Backend.
+- raciocínio aplicado: manter padrão visual/estrutural do documento canônico atual e explicitar fronteiras de responsabilidade e integração para reduzir ambiguidade operacional.
+- foi feito: adicionada a seção `12.6 Diagrama de arquitetura por módulo/pacote — Gera Landing (Worker AI x Backend)` em `docs/canonical/mois-worker-canon.v1.md` com Mermaid separado em subgraphs (Worker AI e Backend), incluindo conexões com OpenAI, backend, MySQL e publicação no Lead Portal.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/experimentos.md

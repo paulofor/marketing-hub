@@ -66,10 +66,8 @@ public class DesignPresetWireframeHtmlGenerator {
 
             html.append(">\n");
 
-            int sectionIndex = 0;
             for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
-                html.append(renderSection(secao, sectionIndex));
-                sectionIndex++;
+                html.append(renderSection(secao));
             }
 
             html.append("</body>\n");
@@ -81,14 +79,8 @@ public class DesignPresetWireframeHtmlGenerator {
         }
     }
 
-    private String renderSection(Map<String, Object> secao, int sectionIndex) {
-        Map<String, Object> normalizedSection = new LinkedHashMap<>(secao);
-        List<Map<String, Object>> estilos = new ArrayList<>(asList(secao.get("estilos")));
-        if (!containsBackgroundStyle(estilos)) {
-            estilos.add(Map.of("nome", "background-color", "valor", sectionIndex % 2 == 0 ? "#FFFFFF" : "#F7F9FC"));
-        }
-        normalizedSection.put("estilos", estilos);
-        return renderNode(normalizedSection, "section", "elementosSeccao");
+    private String renderSection(Map<String, Object> secao) {
+        return renderNode(secao, "section", "elementosSeccao");
     }
 
     private String renderElement(Map<String, Object> node) {

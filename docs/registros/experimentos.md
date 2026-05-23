@@ -1214,3 +1214,11 @@
   - removida a referência ao JSON inexistente da lista `exampleFiles`;
   - mantido o exemplo válido remanescente para continuar validando o processamento tokenizado.
 - validação: execução do teste unitário específico com sucesso.
+
+## 2026-05-23 12:40:00 UTC
+- solicitação: remover definição forçada de cor inline no HTML provisório da etapa de preset design, mantendo estilos via classes/tokens.
+- causa-raiz: `DesignPresetWireframeHtmlGenerator` adicionava automaticamente `background-color` em cada `<section>` quando o estilo não vinha no payload, o que gerava `style="background-color:..."` mesmo sem classe correspondente.
+- correção aplicada:
+  - removida a lógica de fallback que injetava `background-color` automático por seção;
+  - o gerador agora preserva apenas os estilos fornecidos pelo contrato (`estilos`/classes responsivas), sem forçar cor inline.
+- validação: teste unitário direcionado do módulo executado com sucesso.

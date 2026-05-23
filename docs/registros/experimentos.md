@@ -1248,3 +1248,11 @@
   - removidos imports/helpers auxiliares de leitura de arquivo (`Files`, `Path`, `IOException`, `readExample`).
 - validação: suíte direcionada de testes do módulo executada com sucesso.
 - 2026-05-23 (UTC): corrigido gerador de HTML provisório da etapa design preset para não injetar texto placeholder "Lorem ipsum" quando o wireframe não traz conteúdo textual; validação de classes do JSON tokenizado reforçada em teste de processor (`DesignPresetProvisionalHtmlProcessorTest`) para garantir aplicação de classes e CSS do preset.
+
+## 2026-05-23 17:05:00 UTC
+- solicitação: no preset design, campo `pagina` estava vindo `null`; enviar ao modelo os itens da página (JSON de wireframe) e exigir alocação de estilos por seção/item conforme wireframe.
+- causa-raiz: o template `landing-design-preset` não expunha explicitamente o JSON literal do wireframe para a etapa de design preset, permitindo geração de `sectionPresets` incompletos/desalinhados.
+- correção aplicada:
+  - `ExperimentPipelineOpenAiClient` passou a injetar variável de template `WIREFRAME_JSON_BLOCK` extraída de `job.prompt` (`landingPageWireframe`) para etapas que usam templates;
+  - prompt `landing-design-preset.md` atualizado para versão `v2`, com bloco `WIREFRAME_JSON` explícito e regra obrigatória de mapear estilos por seção/item exatamente conforme `sectionOrder` do wireframe.
+- validação: tentativa de compilação do módulo `ai-worker` bloqueada por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages).

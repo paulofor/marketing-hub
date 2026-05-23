@@ -276,7 +276,7 @@ class GeraLandingStageExecutionServiceTest {
     }
 
     @Test
-    void shouldPersistProvisionalHtmlOnImagePlanningAndExperimentLandingPageHtml() {
+    void shouldPersistProvisionalHtmlOnImagePlanningWithoutPersistingExperimentLandingPageHtml() {
         GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
                 77L,
                 "landing-page-image-planning",
@@ -314,7 +314,7 @@ class GeraLandingStageExecutionServiceTest {
         service.receiveResult("id-image", request);
 
         assertTrue(execution.getProvisionalHtml().contains("https://cdn/img-1.png"));
-        assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageHtml());
+        assertEquals(null, experiment.getLandingPageHtml());
         verify(experimentRepository).save(experiment);
     }
 
@@ -341,7 +341,7 @@ class GeraLandingStageExecutionServiceTest {
         String html = service.generateAndPersistProvisionalHtmlFromExperiment(88L, "job-999");
 
         assertTrue(html.contains("with-images"));
-        assertEquals(html, experiment.getLandingPageHtml());
+        assertEquals(null, experiment.getLandingPageHtml());
         assertTrue(experiment.getLandingPageImagePlanning().contains("imageUrl"));
         assertEquals(html, execution.getProvisionalHtml());
         verify(experimentRepository).save(experiment);
@@ -349,7 +349,7 @@ class GeraLandingStageExecutionServiceTest {
     }
 
     @Test
-    void shouldPersistProvisionalHtmlOnDesignPresetAndExperimentLandingPageHtml() {
+    void shouldPersistProvisionalHtmlOnDesignPresetAndHtmlGeraLandingOnly() {
         GeraLandingResultReceiveRequest request = new GeraLandingResultReceiveRequest(
                 79L,
                 "landing-page-design-preset",
@@ -385,7 +385,7 @@ class GeraLandingStageExecutionServiceTest {
         service.receiveResult("id-design", request);
 
         assertTrue(execution.getProvisionalHtml().contains("design-1.png"));
-        assertEquals(execution.getProvisionalHtml(), experiment.getLandingPageHtml());
+        assertEquals(null, experiment.getLandingPageHtml());
         assertEquals(execution.getProvisionalHtml(), experiment.getHtmlGeraLanding());
         assertEquals(request.modelResponse(), experiment.getLandingPageDesignPreset());
         verify(experimentRepository).save(experiment);

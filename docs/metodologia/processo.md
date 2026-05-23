@@ -53,3 +53,5 @@
 . com.marketinghub.mois.bibliotecapaginavenda.x.vN.web
 . com.marketinghub.mois.bibliotecapaginavenda.x.vN.service
 . com.marketinghub.mois.bibliotecapaginavenda.x.N.repository
+
+A ideia veio daqui: /docs/canonical/mois-worker-canon.v1.md#125-diagrama-de-arquitetura-por-módulopacote

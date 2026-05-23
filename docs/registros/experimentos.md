@@ -1133,3 +1133,5 @@
 - 2026-05-23 (UTC): ampliadas regras ArchUnit do GeraLanding para também bloquear no `GeraLandingStageExecutionService` o uso de assinaturas legadas dos assemblers de wireframe (`assemble(modelResponse)`) e copy (`assemble(copyModelResponse, wireframeModelResponse)`), forçando os contratos com `jobId`.
 
 - 2026-05-23 (UTC): adicionadas regras ArchUnit positivas para exigir que `GeraLandingStageExecutionService` chame explicitamente os assemblers canônicos nas assinaturas padrão: wireframe (`assemble(modelResponse, jobId)`), design preset (`assemble(modelResponse, jobId)`) e copy (`assemble(copyModelResponse, wireframeModelResponse, jobId)`).
+
+- 2026-05-23 (UTC): atualização do documento canônico do Gera Landing com diagrama de fluxo mostrando `GeraLandingStageExecutionService` acionando os assemblers de wireframe, copy, design-preset e image-planning, e a persistência dos dados gerados na tabela `gera_landing_stage_execution`.

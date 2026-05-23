@@ -53,6 +53,24 @@ A ordem oficial de execução no fluxo **Total Gera Landing (todas as etapas)** 
 
 Observação operacional: no worker `geralanding`, etapas fora desse conjunto ainda são ignoradas com log informativo.
 
+
+### 1.4 Diagrama canônico — montagem de dados por estágio
+
+```mermaid
+flowchart TD
+    A[GeraLandingStageExecutionService] --> B[WireframeProvisionalHtmlAssembler]
+    A --> C[CopyProvisionalHtmlAssembler]
+    A --> D[DesignPresetProvisionalHtmlAssembler]
+    A --> E[ImagePlanningProvisionalHtmlAssembler]
+
+    B --> F[(gera_landing_stage_execution)]
+    C --> F
+    D --> F
+    E --> F
+```
+
+Leitura operacional: o `GeraLandingStageExecutionService` orquestra a execução por etapa e aciona o assembler correspondente (wireframe, copy, preset/design e image-planning), gerando os dados derivados que são persistidos no registro da tabela `gera_landing_stage_execution`.
+
 ---
 
 ## 2) Modelo de dados canônico (`gera_landing_stage_execution`)

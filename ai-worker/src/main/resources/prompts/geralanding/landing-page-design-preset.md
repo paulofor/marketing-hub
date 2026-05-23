@@ -53,6 +53,10 @@ Objetivo:
 - Usar o JSON de `landingPageWireframe` como base da página (`pagina`) e aplicar somente acabamento visual de preset.
 - Trocar a lista antiga de `definicoes` pelos 12 grupos abaixo.
 
+Landing Wireframe:
+{dados-landingPageWireframe}
+
+
 Regras obrigatórias:
 1. Responda somente JSON válido.
 2. Preserve a estrutura de `pagina` recebida no wireframe (mesmos ids, mesma hierarquia, sem inventar seções/elementos).

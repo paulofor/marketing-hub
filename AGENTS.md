@@ -106,6 +106,23 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
   curl -sS --max-time 90 https://mcpserverdigi.shop/mcp -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | head -c 4000
   ```
 
+- **MCP Server — filtros disponíveis para pesquisa de logs (referência operacional)**:
+  - Tool de logs dos módulos Java: `java_module_logs`.
+  - Módulos aceitos em `module`: `backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`.
+  - Observação importante de nomenclatura: para o coletor OPRM de MEI/CNPJ, a aplicação/serviço no projeto está nomeada como `oprm-coletor-mei`, porém no MCP o identificador aceito em `module` continua sendo `oprm-coletor-receita` (alias legado de integração do módulo de logs).
+  - Filtros/parâmetros disponíveis:
+    1. `module` (**obrigatório**): módulo Java de origem do log.
+    2. `contains`: filtro por texto literal contido na linha (não é regex).
+    3. `from`: data/hora inicial em ISO-8601 UTC (ex.: `2026-05-23T03:00:00Z`).
+    4. `to`: data/hora final em ISO-8601 UTC (ex.: `2026-05-23T03:20:00Z`).
+    5. `lines`: quantidade de linhas por página (mín. 1, máx. 500; padrão 200).
+    6. `offset`: paginação por deslocamento dentro do conjunto filtrado.
+    7. `cursor`: paginação por cursor retornado em `nextCursor`.
+  - Limitações conhecidas:
+    - o filtro `contains` é literal (sem regex/full-text avançado);
+    - a retenção/janela disponível depende do `actuator/logfile` do módulo (logs antigos podem não estar mais disponíveis);
+    - para logs de GitHub Actions, a tool é `github_actions_get_run_logs` e aceita apenas `run_id` (sem `contains`, `from`, `to`).
+
 - **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
 
 - 🚨 **PADRÃO OFICIAL — EXCEPTION DE CONTRATO GERALANDING (OBRIGATÓRIO)**:

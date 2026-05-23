@@ -2,6 +2,7 @@ Você está na etapa `landing-page-design-preset` do pipeline Gera Landing.
 
 Estamos Trabalhando nesse contexto:
 
+´´´xml
 <nicho>
 	<hipotese>
 		<pain/>

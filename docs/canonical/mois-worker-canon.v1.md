@@ -143,9 +143,14 @@ sequenceDiagram
     participant HC as Hotmart Collector
     participant CC as ClickBank Collector
     participant API as Backend MOIS (/api/mois/sales-library)
-    participant DB as MySQL 5.7
     participant WK as MOIS Sales Library Worker
     participant OAI as OpenAI Batch (/v1/responses)
+    participant DB as MySQL 5.7
+
+    %% Banco destacado com cor própria e posicionado na extrema direita
+    box rgb(255, 245, 210) Camada de Persistência (MySQL 5.7)
+      Note over DB: Banco de dados principal
+    end
 
     rect rgb(245,245,245)
     Note over HC,CC: 1) Ingestão de produtos de sucesso
@@ -327,3 +332,33 @@ erDiagram
     MOIS_SALES_LIBRARY_PAGE_SNAPSHOT ||--o{ MOIS_SALES_LIBRARY_SNAPSHOT_ARTIFACT : "1:N artefatos"
 ```
 
+
+
+### 12.5 Diagrama de arquitetura por módulo/pacote
+
+Diagrama canônico da arquitetura lógica usando como unidade os módulos/pacotes, destacando dependências e integrações com banco e OpenAI.
+
+```mermaid
+graph TD
+    HC[mois-hotmart-collector\npackage: com.marketinghub.mois.hotmart.collector] -->|POST /api/mois/sales-library/urls:ingest| BM[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web]
+    CC[mois-clickbank-collector\npackage: com.marketinghub.mois.clickbank.collector] -->|POST /api/mois/sales-library/urls:ingest| BM
+
+    WK[mois-sales-library-worker\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service] -->|jobs:claim, jobs/{id}:complete, jobs/{id}:fail| BM
+    WK -->|/v1/responses (batch)| OAI[OpenAI API]
+
+    BM -->|JPA/SQL via camada backend| DB[(MySQL 5.7)]
+
+    subgraph Backend MOIS
+      BM
+      BS[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service]
+      BR[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.repository]
+      BM --> BS --> BR
+    end
+
+    BR -->|READ/WRITE: ingest, jobs, analyses, snapshots| DB
+```
+
+#### Regras de integração refletidas no diagrama
+- Coletores e worker **não acessam banco diretamente**; todo acesso a dados passa pelo backend MOIS.
+- A integração com OpenAI é realizada pelo `mois-sales-library-worker`, com retorno consolidado ao backend via endpoint de conclusão/falha.
+- A persistência em MySQL 5.7 ocorre apenas nos pacotes de serviço/repositório do backend.

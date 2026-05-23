@@ -155,14 +155,17 @@ sequenceDiagram
 
     rect rgb(245,245,245)
     Note over API,DB: 2) URL disponível na biblioteca
-    API->>DB: UPSERT mois_sales_library_url_ingest<br/>(url_original, url_canonical, title, capturedAt...)
-    API->>DB: INSERT mois_sales_library_processing_job<br/>(status=PENDING) para URL nova
+    API->>DB: WRITE mois_sales_library_url_ingest (UPSERT)\n(url_original, url_canonical, title, capturedAt...)
+    API->>DB: READ mois_sales_library_url_ingest\n(validar deduplicação/canonicalização)
+    API->>DB: WRITE mois_sales_library_processing_job (INSERT)\n(status=PENDING) para URL nova
     end
 
     rect rgb(245,245,245)
     Note over WK,API: 3) Worker coleta conteúdo
     WK->>API: POST /jobs:claim (workspaceId, source)
-    API->>DB: UPDATE job PENDING->FETCHING
+    API->>DB: READ mois_sales_library_processing_job\n(seleciona job PENDING por source/workspace)
+    API->>DB: READ mois_sales_library_url_ingest\n(resolve urlCanonical da página)
+    API->>DB: WRITE mois_sales_library_processing_job (UPDATE)\n(PENDING->FETCHING)
     API-->>WK: jobId, pageId, urlCanonical
     WK->>WK: GET urlCanonical + parse HTML (body.text)
     end
@@ -176,14 +179,25 @@ sequenceDiagram
     rect rgb(245,245,245)
     Note over WK,DB: 5) Persistência dos resultados
     WK->>API: POST /jobs/{jobId}:complete<br/>(scoreTotal, sectionsJson, copyJson, visualJson, imageJson...)
-    API->>DB: INSERT mois_sales_library_page_analysis (status=DONE)
-    API->>DB: UPDATE mois_sales_library_processing_job -> DONE
+    API->>DB: READ mois_sales_library_processing_job (jobId vigente)
+    API->>DB: WRITE mois_sales_library_page_analysis (INSERT, status=DONE)
+    API->>DB: WRITE mois_sales_library_processing_job (UPDATE -> DONE)
     alt erro terminal
       WK->>API: POST /jobs/{jobId}:fail (PIPELINE_ERROR, message)
-      API->>DB: UPDATE mois_sales_library_processing_job -> FAILED
+      API->>DB: READ mois_sales_library_processing_job (jobId vigente)
+      API->>DB: WRITE mois_sales_library_processing_job (UPDATE -> FAILED)
     end
     end
 ```
+
+### 12.2.1 Tabelas lidas e gravadas por etapa do fluxo
+
+| Etapa | Leitura (READ) | Gravação (WRITE) |
+|---|---|---|
+| Ingestão (`/urls:ingest`) | `mois_sales_library_url_ingest` (deduplicação/canonicalização) | `mois_sales_library_url_ingest` (upsert), `mois_sales_library_processing_job` (insert `PENDING`) |
+| Claim (`/jobs:claim`) | `mois_sales_library_processing_job` (seleção de job pendente), `mois_sales_library_url_ingest` (obter `urlCanonical`) | `mois_sales_library_processing_job` (update `FETCHING`) |
+| Complete (`/jobs/{jobId}:complete`) | `mois_sales_library_processing_job` (validar job vigente) | `mois_sales_library_page_analysis` (insert), `mois_sales_library_processing_job` (update `DONE`) |
+| Fail (`/jobs/{jobId}:fail`) | `mois_sales_library_processing_job` (validar job vigente) | `mois_sales_library_processing_job` (update `FAILED`) |
 
 ### 12.3 Contratos e tabelas de persistência (referência rápida)
 - **Endpoint de ingestão**: `POST /api/mois/sales-library/urls:ingest`.

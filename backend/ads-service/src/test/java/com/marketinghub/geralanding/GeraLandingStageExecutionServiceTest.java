@@ -379,7 +379,7 @@ class GeraLandingStageExecutionServiceTest {
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("id-design".getBytes(StandardCharsets.UTF_8)))
                 .thenReturn(Optional.of(execution));
         when(experimentRepository.findById(79L)).thenReturn(Optional.of(experiment), Optional.of(experiment));
-        when(designPresetProvisionalHtmlAssembler.assemble(request.modelResponse(), "id-design"))
+        when(designPresetProvisionalHtmlAssembler.assemble(79L, request.modelResponse(), "id-design"))
                 .thenReturn("<html><img src=\"https://cdn/design-1.png\"></html>");
 
         service.receiveResult("id-design", request);

@@ -448,7 +448,7 @@ public class GeraLandingStageExecutionService {
             return resolveImagePlanningProvisionalHtml(idJob, request, execution);
         }
         if (STAGE_DESIGN_PRESET.equalsIgnoreCase(request.stageCode())) {
-            return designPresetProvisionalHtmlAssembler.assemble(request.modelResponse(), idJob);
+            return designPresetProvisionalHtmlAssembler.assemble(request.experimentId(), request.modelResponse(), idJob);
         }
         return null;
     }
@@ -517,6 +517,7 @@ public class GeraLandingStageExecutionService {
             String htmlFromDesignPreset = execution.getProvisionalHtml();
             if (!StringUtils.hasText(htmlFromDesignPreset)) {
                 htmlFromDesignPreset = designPresetProvisionalHtmlAssembler.assemble(
+                        request.experimentId(),
                         request.modelResponse(),
                         fromDatabaseIdJob(execution.getIdJob()));
             }

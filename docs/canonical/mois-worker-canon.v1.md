@@ -260,12 +260,12 @@ erDiagram
 #### 13.3.1 `mois_sales_library_url_ingest`
 - **Papel no fluxo**: tabela de entrada (ingestão) de URLs canônicas provenientes da coleta.
 - **Função operacional**: deduplicar URLs, manter metadados de origem e disparar criação de job para itens novos.
-- **Campos de destaque**: `id`, `workspace_id`, `source`, `url_original`, `url_canonical`, `title`, `captured_at`, `created_at`, `updated_at`.
+- **Campos de destaque**: `id`, `workspace_id`, `source`, `url_original`, `url_canonical`, `title`, `first_captured_at`, `last_captured_at`, `ingest_count`, `created_at`, `updated_at`.
 
 #### 13.3.2 `mois_sales_library_processing_job`
 - **Papel no fluxo**: orquestrar estado assíncrono do processamento por URL.
 - **Função operacional**: controlar ciclo `PENDING/FETCHING/ANALYZING/RETRY_WAIT/DONE/FAILED`.
-- **Campos de destaque**: `id`, `url_ingest_id`, `status`, `attempt_count`, `error_category`, `error_message`, `next_retry_at`, `created_at`, `updated_at`.
+- **Campos de destaque**: `id`, `url_ingest_id`, `status`, `attempts`, `error_category`, `error_message`, `next_retry_at`, `started_at`, `finished_at`, `created_at`, `updated_at`.
 
 #### 13.3.3 `mois_sales_library_page_analysis`
 - **Papel no fluxo**: armazenar o resultado estruturado da análise comercial executada pelo worker.
@@ -275,12 +275,12 @@ erDiagram
 #### 13.3.4 `mois_sales_library_page_snapshot`
 - **Papel no fluxo**: guardar snapshots/versionamento da página capturada para comparação temporal.
 - **Função operacional**: registrar mudanças de conteúdo entre capturas e apoiar trilha de auditoria.
-- **Campos de destaque**: `id`, `url_ingest_id`, `snapshot_hash`, `html_content`, `text_content`, `captured_at`, `status`, `created_at`, `updated_at`.
+- **Campos de destaque**: `id`, `url_ingest_id`, `snapshot_hash`, `status`, `http_status`, `content_type`, `raw_html_bytes`, `screenshot_bytes`, `captured_at`, `updated_at`.
 
 #### 13.3.5 `mois_sales_library_snapshot_artifact`
 - **Papel no fluxo**: armazenar artefatos derivados por snapshot (ex.: sumários ou classificações por tipo).
 - **Função operacional**: separar artefatos auxiliares por `artifact_type` vinculados ao snapshot.
-- **Campos de destaque**: `id`, `snapshot_id`, `artifact_type`, `artifact_payload`, `created_at`, `updated_at`.
+- **Campos de destaque**: `id`, `snapshot_id`, `artifact_type`, `content_type`, `storage_kind`, `content_text`, `content_blob`, `size_bytes`, `created_at`.
 
 ### 13.4 Regras de integração entre coletores e biblioteca
 1. A transição **coletor -> biblioteca** deve ocorrer por endpoint backend (`/api/mois/sales-library/urls:ingest`), nunca por escrita direta no banco.

@@ -476,3 +476,12 @@
   - docs/modelo-dados-experimento.md
   - docs/canonical/mois-worker-canon.v1.md
   - docs/registros/mois1.md
+
+## 2026-05-23 14:23:19 UTC-3
+- ajuste solicitado no modelo de dados dentro do cânone MOIS para aderência ao schema real em produção.
+- causa-raiz documental: seção 13.3 do cânone ainda listava campos legados/incorretos (`captured_at`, `attempt_count`, `html_content`, `artifact_payload`) divergentes das tabelas atuais.
+- correção aplicada: atualização dos campos de destaque de `mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_snapshot` e `mois_sales_library_snapshot_artifact` para os nomes efetivos usados no backend.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/modelo-dados-experimento.md
+  - docs/registros/mois1.md

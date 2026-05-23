@@ -420,3 +420,11 @@
 - arquivo alterado: `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`.
 
 - 2026-05-22: Incluída regra operacional no AGENTS do módulo `mois-sales-library-worker` exigindo logs de request/resposta OpenAI e payload ao backend com `jobId` do Marketing Hub.
+
+## 2026-05-23 00:00:00 UTC
+- atualização do cânone MOIS (`docs/canonical/mois-worker-canon.v1.md`) com a nova **Seção 13 — Dados**.
+- adicionado modelo de dados relacional compartilhado entre coletores (Hotmart/ClickBank) e projeto da Biblioteca de Páginas de Vendas.
+- documentadas as tabelas centrais e seus papéis no fluxo: `mois_collected_reference`, `mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_analysis`, `mois_sales_library_page_snapshot` e `mois_sales_library_snapshot_artifact`.
+- incluídas regras de integração canônicas entre coleta e biblioteca para preservar rastreabilidade e evitar escrita direta fora do backend.
+- complemento solicitado pelo usuário: adicionado diagrama adicional detalhado de dados (ER com PK/FK/UK e cardinalidades) na seção 13.5 do cânone MOIS.
+- ajuste solicitado: o diagrama da seção 13.5 foi simplificado para exibir **somente chaves** (PK/FK/UK), removendo campos não-chave.

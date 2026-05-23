@@ -1287,3 +1287,15 @@
   - AGENTS.md
   - docs/canonical/mois-worker-canon.v1.md
   - docs/registros/experimentos.md
+## 2026-05-23 20:20:00 UTC
+- solicitação para mover o diagrama de arquitetura do Gera Landing para o documento canônico de experimento e corrigir erro de parse no Mermaid exibido no GitHub.
+- causa-raiz identificada: o diagrama estava no cânone do MOIS (documento fora do escopo principal do fluxo Gera Landing) e utilizava quebras `\n` em labels Mermaid, além de typo em `GeraLandingContoller`, gerando falha de renderização.
+- foi feito:
+  - remoção da seção detalhada do diagrama no `mois-worker-canon.v1.md` e inclusão de apontamento para o novo local canônico;
+  - inclusão da seção `15.4 Diagrama de arquitetura por módulo/pacote — Gera Landing (Worker AI x Backend)` em `procedimento-experimento-canon.v1.md`;
+  - ajuste de sintaxe Mermaid para compatibilidade com renderer do GitHub (`<br/>` em labels e correção `GeraLandingController`), além do ajuste de `dispatch` na seta de integração.
+- documentos/arquivos lidos e atualizados:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md

@@ -1109,6 +1109,9 @@
   - adicionado logging de erro estruturado em `CopyProvisionalHtmlAssembler.assemble` com `jobId`, tamanho e preview de `copyModelResponse` e `wireframeModelResponse`, preservando stack trace completo da exceção original.
 - resultado esperado: próxima recorrência desse tipo de erro passa a expor no log o ponto exato do fluxo e o contexto de payload para diagnóstico de causa-raiz em menor tempo.
 
+- 2026-05-23 01:22:35 UTC — Validação da tela de experimento (Etapas 7 e 8): confirmado que as colunas persistidas no backend para os cards são `landing_page_html` (Etapa 7) e `landing_page_deliverables` (Etapa 8). Ajustada a descrição da Etapa 8 no frontend para explicitar o nome da coluna exibida.
+
+- 2026-05-23 01:26:00 UTC — Ajustada a tela do experimento para exibir os dois HTMLs persistidos no banco nas posições corretas do pipeline: Etapa 7 agora mostra `html_geralanding`, Etapa 8 mostra `landing_page_html` e os deliverables foram reposicionados para Etapa 9 (`landing_page_deliverables`).
 - 2026-05-23 (UTC): padronização do fluxo de provisional HTML no GeraLanding para usar o mesmo formato de chamada dos assemblers por etapa (`assemble(modelResponse, idJob)`), aplicando na etapa `landing-page-design-preset` via `DesignPresetProvisionalHtmlAssembler` e removendo o fallback com composição cruzada no serviço de execução.
 
 - 2026-05-23 (UTC): adicionada regra ArchUnit `GeraLandingAssemblerArchitectureTest` para bloquear uso da assinatura legada `assemble(wireframe, copy, imagePlanning, designPreset, jobId)` dentro de `GeraLandingStageExecutionService`, forçando o padrão `assemble(modelResponse, jobId)` na etapa `landing-page-design-preset`.

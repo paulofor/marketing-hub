@@ -1231,3 +1231,19 @@
   - ajuste de merge para preservar `class` e `style` vindos do JSON e combinar com classes/estilos derivados de `estilos` tokenizados, sem sobrescrever/omitir.
   - adicionados testes unitários direcionados para cobertura dos cenários de preservação/merge e ausência de injeção automática.
 - validação: testes unitários específicos do módulo executados com sucesso.
+
+## 2026-05-23 13:58:00 UTC
+- solicitação: validar o gerador/pipeline com os JSONs reais da pasta `/exemplos` para garantir que o HTML final contempla o contrato recebido.
+- causa-raiz: faltava teste automatizado com amostras reais (`etapa-3`, `etapa-4`, `etapa-6`), o que deixava risco de regressão silenciosa entre contrato esperado e HTML montado.
+- correção aplicada:
+  - adicionado teste `shouldRenderUsingRealExamplesWithoutImplicitStyleOrImageAttributeInjection` em `DesignPresetProvisionalHtmlProcessorTest` lendo diretamente os três JSONs de `/exemplos`;
+  - validação cobre presença de estrutura esperada no HTML e ausência de injeções automáticas já proibidas (fallback de `background-color` e `width/height` default de imagem).
+- validação: suíte direcionada do módulo executada com sucesso.
+
+## 2026-05-23 16:08:00 UTC
+- solicitação: retirar o teste com leitura direta de `/exemplos` e voltar ao estado anterior do teste da etapa preset design.
+- causa-raiz: o teste com arquivos de `/exemplos` foi criado para validação pontual durante implementação e não deveria permanecer na suíte.
+- correção aplicada:
+  - removido `shouldRenderUsingRealExamplesWithoutImplicitStyleOrImageAttributeInjection` de `DesignPresetProvisionalHtmlProcessorTest`;
+  - removidos imports/helpers auxiliares de leitura de arquivo (`Files`, `Path`, `IOException`, `readExample`).
+- validação: suíte direcionada de testes do módulo executada com sucesso.

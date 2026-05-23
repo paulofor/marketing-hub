@@ -42,6 +42,7 @@ import org.springframework.web.client.RestClient;
 public class OprmMarketImportScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmMarketImportScheduler.class);
     private static final Pattern CNAE_7_DIGITS_PATTERN = Pattern.compile("(\\d{7})");
+    private static final int DIAGNOSTIC_SAMPLE_LIMIT = 10;
 
     private final OprmMarketImportScheduleProperties scheduleProperties;
     private final OprmMarketImportCollectorProperties collectorProperties;
@@ -57,7 +58,7 @@ public class OprmMarketImportScheduler {
     }
 
     /** Executa a ingestão completa de arquivos CNPJ/CNAE no horário agendado para a execução operacional. */
-    @Scheduled(cron = "0 0 10 24 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 6 14 24 5 *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
@@ -202,7 +203,7 @@ public class OprmMarketImportScheduler {
             }
         }
 
-        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 10:00 ({}) com {} arquivos.",
+        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 14:06 ({}) com {} arquivos.",
                 snapshotDate,
                 scheduleProperties.timezone(),
                 files.size());
@@ -384,6 +385,7 @@ public class OprmMarketImportScheduler {
                                                                      Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae) throws IOException {
         log.info("[run={} fileId={}] Início parse EMPRESAS para total_empresas por CNAE: {}", runId, fileId, fileName);
         String lastRawLine = null;
+        List<String> empresasMapSamples = new ArrayList<>();
         try (InputStream in = Files.newInputStream(zipPath);
              java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
             java.util.zip.ZipEntry entry;
@@ -402,6 +404,9 @@ public class OprmMarketImportScheduler {
                     if (cnaeByCnpjBase.putIfAbsent(cnpjBase, cnaePrincipal) == null) {
                         MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaePrincipal, key -> new MarketSizeAccumulator());
                         acc.totalEmpresas++;
+                        if (empresasMapSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
+                            empresasMapSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' cnaePrincipal='" + cnaePrincipal + "'");
+                        }
                     }
                 }
                 zipInputStream.closeEntry();
@@ -411,7 +416,11 @@ public class OprmMarketImportScheduler {
                     runId, fileId, fileName, lastRawLine, cnaeByCnpjBase.size(), accumulatedMarketSizesByCnae.size(), ex);
             throw ex;
         }
-        log.info("[run={} fileId={}] Parse EMPRESAS concluído. cnpjBaseMapSize={}", runId, fileId, cnaeByCnpjBase.size());
+        log.info("[run={} fileId={}] Parse EMPRESAS concluído. cnpjBaseMapSize={} sampleMapeamentos={}",
+                runId,
+                fileId,
+                cnaeByCnpjBase.size(),
+                empresasMapSamples);
     }
 
     /** Processa SIMPLES para consolidar total de empresas no Simples e no MEI por CNAE. */
@@ -431,6 +440,9 @@ public class OprmMarketImportScheduler {
         long linhasComMatchCnae = 0L;
         String sampleMissingCnpjBase = null;
         String sampleMissingCnpjBaseOnlyDigits = null;
+        List<String> simplesInputSamples = new ArrayList<>();
+        List<String> simplesMatchSamples = new ArrayList<>();
+        List<String> simplesMissingSamples = new ArrayList<>();
         try (InputStream in = Files.newInputStream(zipPath);
              java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
             java.util.zip.ZipEntry entry;
@@ -450,9 +462,15 @@ public class OprmMarketImportScheduler {
                     }
                     String simplesOptante = normalizeField(cols[1]);
                     String meiOptante = normalizeField(cols[4]);
+                    if (simplesInputSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
+                        simplesInputSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' simplesOptante='" + simplesOptante + "' meiOptante='" + meiOptante + "'");
+                    }
                     String cnaeCode = cnaeByCnpjBase.get(cnpjBase);
                     if (cnaeCode == null || cnaeCode.isBlank()) {
                         linhasSemMatchCnae++;
+                        if (simplesMissingSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
+                            simplesMissingSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' simplesOptante='" + simplesOptante + "' meiOptante='" + meiOptante + "'");
+                        }
                         if (sampleMissingCnpjBase == null && !cnpjBase.isBlank()) {
                             sampleMissingCnpjBase = cnpjBase;
                             sampleMissingCnpjBaseOnlyDigits = digitsOnly(cnpjBase);
@@ -460,6 +478,9 @@ public class OprmMarketImportScheduler {
                         continue;
                     }
                     linhasComMatchCnae++;
+                    if (simplesMatchSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
+                        simplesMatchSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' cnaeCode='" + cnaeCode + "' simplesOptante='" + simplesOptante + "' meiOptante='" + meiOptante + "'");
+                    }
                     MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaeCode, key -> new MarketSizeAccumulator());
                     if ("S".equalsIgnoreCase(simplesOptante) && simplesCountedCnpjBases.add(cnpjBase)) acc.totalEmpresasSimples++;
                     if ("S".equalsIgnoreCase(meiOptante) && meiCountedCnpjBases.add(cnpjBase)) acc.totalEmpresasMei++;
@@ -481,6 +502,12 @@ public class OprmMarketImportScheduler {
                 sampleMissingCnpjBase,
                 sampleMissingCnpjBaseOnlyDigits,
                 cnaeByCnpjBase.size());
+        log.info("[run={} fileId={}] Diagnóstico conteúdo SIMPLES sampleInput={} sampleMatch={} sampleMissing={}",
+                runId,
+                fileId,
+                simplesInputSamples,
+                simplesMatchSamples,
+                simplesMissingSamples);
         log.info("[run={} fileId={}] Parse SIMPLES concluído. simplesEmpresas={} meiEmpresas={}",
                 runId, fileId, simplesCountedCnpjBases.size(), meiCountedCnpjBases.size());
     }

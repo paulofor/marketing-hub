@@ -444,3 +444,13 @@
 ## 2026-05-23 00:00:00 UTC
 - ajuste no diagrama de sequência da seção 12.2 do cânone MOIS para posicionar o elemento MySQL como o mais à direita da arquitetura.
 - aplicado destaque visual do MySQL em cor distinta usando `box rgb(255, 245, 210)` para separar a camada de persistência no Mermaid.
+
+## 2026-05-23 14:13:48 UTC-3
+- solicitada melhoria na tela da Biblioteca Sales Pages do MOIS para exibir totalizações operacionais de produtos.
+- foi aproveitado o contrato já existente do endpoint da biblioteca, calculando os indicadores no frontend sem necessidade de novo endpoint.
+- adicionados cards com: total coletados, total de produtos Hotmart, total de produtos Clickbank e total com análise.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+  - docs/registros/mois1.md

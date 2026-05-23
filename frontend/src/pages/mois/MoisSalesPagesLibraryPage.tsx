@@ -26,6 +26,24 @@ function getPipelinePhase(status?: string | null) {
 
 export default function MoisSalesPagesLibraryPage() {
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
+  const summary = pagesQuery.data?.items.reduce(
+    (acc, item) => {
+      const source = item.source?.toUpperCase();
+      const hasAnalysis = item.analysisStatus && item.analysisStatus !== "PENDING";
+      acc.totalCollected += 1;
+      if (source === "HOTMART") {
+        acc.totalHotmart += 1;
+      }
+      if (source === "CLICKBANK") {
+        acc.totalClickbank += 1;
+      }
+      if (hasAnalysis) {
+        acc.totalWithAnalysis += 1;
+      }
+      return acc;
+    },
+    { totalCollected: 0, totalHotmart: 0, totalClickbank: 0, totalWithAnalysis: 0 },
+  );
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -38,6 +56,43 @@ export default function MoisSalesPagesLibraryPage() {
           Voltar ao workspace
         </Link>
       </header>
+
+      {summary ? (
+        <section className="row g-3">
+          <div className="col-sm-6 col-lg-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <p className="text-secondary mb-1">Total coletados</p>
+                <h3 className="mb-0">{summary.totalCollected}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="col-sm-6 col-lg-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <p className="text-secondary mb-1">Produtos Hotmart</p>
+                <h3 className="mb-0">{summary.totalHotmart}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="col-sm-6 col-lg-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <p className="text-secondary mb-1">Produtos Clickbank</p>
+                <h3 className="mb-0">{summary.totalClickbank}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="col-sm-6 col-lg-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <p className="text-secondary mb-1">Total com análise</p>
+                <h3 className="mb-0">{summary.totalWithAnalysis}</h3>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="card border-0 shadow-sm">
         <div className="card-body table-responsive">

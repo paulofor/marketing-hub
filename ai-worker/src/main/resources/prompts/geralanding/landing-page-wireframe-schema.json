@@ -57,11 +57,36 @@
           "required": [
             "secoes"
           ]
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "classes": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "bgBody",
+                  "fontBase",
+                  "textPrimary",
+                  "marginReset"
+                ]
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "classes"
+          ]
         }
       },
       "required": [
         "head",
-        "corpo"
+        "corpo",
+        "body"
       ]
     }
   },
@@ -236,6 +261,113 @@
               "$ref": "#/$defs/briefingVisual"
             }
           ]
+        },
+        "componente": {
+          "type": "string",
+          "enum": [
+            "none",
+            "buttonPrimary",
+            "buttonSecondary",
+            "formInput",
+            "card"
+          ]
+        },
+        "interacao": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "intencaoAcao": {
+              "type": "string"
+            },
+            "targetSectionId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^#"
+            },
+            "hrefEsperado": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "intencaoAcao",
+            "targetSectionId",
+            "hrefEsperado"
+          ]
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "src": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "alt": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "src",
+                "alt",
+                "width",
+                "height"
+              ]
+            }
+          ]
+        },
+        "contratoCampo": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "autocomplete": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "placeholder": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "name",
+                "autocomplete",
+                "required",
+                "placeholder"
+              ]
+            }
+          ]
         }
       },
       "required": [
@@ -244,7 +376,11 @@
         "texto",
         "estilos",
         "briefingVisual",
-        "elementosInternos"
+        "elementosInternos",
+        "interacao",
+        "asset",
+        "contratoCampo",
+        "componente"
       ],
       "allOf": [
         {
@@ -282,6 +418,206 @@
           "then": {
             "properties": {
               "briefingVisual": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "const": "img"
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "asset": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "src": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "alt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "src",
+                  "alt",
+                  "width",
+                  "height"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "not": {
+                  "const": "img"
+                }
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "asset": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "const": "input"
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "contratoCampo": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "autocomplete": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "name",
+                  "autocomplete",
+                  "required",
+                  "placeholder"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "not": {
+                  "const": "input"
+                }
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "contratoCampo": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "enum": [
+                  "a",
+                  "button"
+                ]
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "interacao": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "intencaoAcao": {
+                    "type": "string"
+                  },
+                  "targetSectionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^#"
+                  },
+                  "hrefEsperado": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "intencaoAcao",
+                  "targetSectionId",
+                  "hrefEsperado"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tag": {
+                "not": {
+                  "enum": [
+                    "a",
+                    "button"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "tag"
+            ]
+          },
+          "then": {
+            "properties": {
+              "interacao": {
                 "type": "null"
               }
             }

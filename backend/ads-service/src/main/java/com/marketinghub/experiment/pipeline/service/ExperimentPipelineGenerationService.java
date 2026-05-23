@@ -925,6 +925,12 @@ public class ExperimentPipelineGenerationService {
             }
             return;
         }
+        if (section == ExperimentPipelineSection.AD_IMAGE_BRIEFING) {
+            log.info("Fila automática finalizada após AD_IMAGE_BRIEFING para experimento {}. "
+                            + "As etapas de Gera Landing devem ser iniciadas manualmente.",
+                    experimentId);
+            return;
+        }
         if (section == ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET) {
             log.info("Fila automática finalizada após LANDING_PAGE_DESIGN_PRESET para experimento {}. "
                             + "A geração do HTML deve ser iniciada manualmente (LHM ou IA).",

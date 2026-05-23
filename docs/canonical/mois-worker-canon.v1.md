@@ -197,7 +197,30 @@ sequenceDiagram
     end
 ```
 
-### 12.2.1 Tabelas lidas e gravadas por etapa do fluxo
+### 12.2.1 Diagrama de sequência focado no coletor Hotmart
+```mermaid
+sequenceDiagram
+    autonumber
+    participant HC as Hotmart Collector
+    participant API as Backend MOIS (/api/mois/sales-library)
+    participant DB as MySQL 5.7
+
+    rect rgb(245,245,245)
+    Note over HC,API: 1) Coleta e envio de URLs vencedoras da Hotmart
+    HC->>API: POST /urls:ingest (source=HOTMART, urls[])
+    end
+
+    rect rgb(245,245,245)
+    Note over API,DB: 2) Normalização, deduplicação e criação de job
+    API->>DB: READ mois_sales_library_url_ingest\n(validar URL já existente por canonicalização)
+    API->>DB: WRITE mois_sales_library_url_ingest (UPSERT)\n(url_original, url_canonical, title, capturedAt...)
+    API->>DB: WRITE mois_sales_library_processing_job (INSERT)\n(status=PENDING) para URL nova
+    end
+
+    API-->>HC: 200 OK (itens processados da ingestão)
+```
+
+### 12.2.2 Tabelas lidas e gravadas por etapa do fluxo
 
 | Etapa | Leitura (READ) | Gravação (WRITE) |
 |---|---|---|
@@ -346,7 +369,7 @@ graph TD
     CC[mois-clickbank-collector\npackage: com.marketinghub.mois.clickbank.collector] -->|POST /api/mois/sales-library/urls:ingest| BM
 
     WK[mois-sales-library-worker\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service] -->|"jobs:claim, jobs/{id}:complete, jobs/{id}:fail"| BM
-    WK -->|/v1/responses (batch)| OAI[OpenAI API]
+    WK -->|"/v1/responses (batch)"| OAI[OpenAI API]
 
     BM -->|JPA/SQL via camada backend| DB[(MySQL 5.7)]
 

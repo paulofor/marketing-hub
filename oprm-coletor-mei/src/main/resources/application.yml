@@ -22,9 +22,9 @@ oprm:
       temp-dir: ${OPRM_MARKET_IMPORT_TEMP_DIR:/tmp/oprm-cnpj-import}
     schedule:
       enabled: ${OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:true}
-      cron: ${OPRM_MARKET_IMPORT_SCHEDULE_CRON:0 6 14 24 5 *}
+      cron: ${OPRM_MARKET_IMPORT_SCHEDULE_CRON:0 20 18 23 5 *}
       timezone: ${OPRM_MARKET_IMPORT_SCHEDULE_TIMEZONE:America/Sao_Paulo}
-      snapshot-date: ${OPRM_MARKET_IMPORT_SNAPSHOT_DATE:2026-05-24}
+      snapshot-date: ${OPRM_MARKET_IMPORT_SNAPSHOT_DATE:2026-05-23}
       source-base-url: ${OPRM_MARKET_IMPORT_SOURCE_BASE_URL:https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos}
 
 logging:

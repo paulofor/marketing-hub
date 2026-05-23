@@ -1299,3 +1299,10 @@
   - docs/canonical/mois-worker-canon.v1.md
   - docs/canonical/procedimento-experimento-canon.v1.md
   - docs/registros/experimentos.md
+## 2026-05-23 21:05:00 UTC
+- solicitação para corrigir o prompt de Gera Copy da landing com foco em causa-raiz de divergência entre intenção do CTA, destino de navegação, compliance temporal, microcopy de formulário e acessibilidade de imagens.
+- causa-raiz identificada: o contrato da etapa `landing-page-copy` não separava semanticamente CTA de conversão vs navegação, não exigia destino explícito de CTA secundário, não obrigava microcopy de privacidade/consentimento no formulário e não exigia plano de alt text por imagem.
+- foi feito:
+  - atualização do prompt `landing-page-copy.md` com regras obrigatórias para `ctaType`, `targetSectionId`, `formMicrocopy`, `imageAccessibilityPlan` e compliance da promessa de "2 minutos";
+  - atualização do schema `landing-page-copy-schema.json` para refletir o novo contrato (campos obrigatórios para tipagem de CTA, microcopy de formulário e acessibilidade de imagens).
+- resultado esperado: reduzir 400/422 por ambiguidade de payload e melhorar aderência de copy/HTML no fluxo de prova, conversão e acessibilidade.

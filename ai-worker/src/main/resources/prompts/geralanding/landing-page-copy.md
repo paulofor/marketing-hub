@@ -58,8 +58,13 @@ Regras obrigatórias:
 5. Manter continuidade com promessa e CTA do anúncio, preservando o direcionamento de `campaignAngle`.
 6. Se houver conflito entre contexto e wireframe, priorize wireframe (`uiTags` + `uiSizeTexts`).
 7. Responder somente com JSON válido aderente ao schema da etapa.
-8. Campos explicativos (`messageMatchNotes`, `ctaMatchNotes`, `matchAdCta`, `consistencyChecks.details`) também são conteúdo de negócio e devem ser escritos em linguagem natural para time de marketing; nunca referencie nomes de campos/paths técnicos (ex.: `campaignAngle.primaryCTA`, `landingMatchLine`, `mechanismSummary`) e nunca escreva instruções como “usa literalmente”, “idêntico ao anúncio” ou “âncora para o formulário”.
-9. Proibido copiar trechos literais do prompt, schema, metadados ou contrato. Se detectar risco de vazamento técnico em qualquer campo textual, reescreva o texto antes de finalizar o JSON.
+8. Em `ctaBlocks`, diferenciar intenção de CTA: use `ctaType = "conversion"` para CTAs de captura/conversão e `ctaType = "navigation"` para CTAs de navegação/prova.
+9. Quando `ctaType = "navigation"`, preencher `targetSectionId` com a seção de destino real (ex.: `sec-prova`) e manter `ctaUrl` coerente com esse destino.
+10. Para formulário completo, sempre incluir `formMicrocopy` com pelo menos: `privacyNotice` e `consentNotice` em linguagem simples e objetiva.
+11. Regras de compliance para promessa temporal: só citar "2 minutos" (ou variações) quando o contexto indicar claramente preenchimento de briefing/cadastro inicial; não usar para prometer geração/entrega completa.
+12. Sempre preencher `imageAccessibilityPlan[]` com `imageId`, `sectionId` e `altText`, produzindo texto alternativo claro, específico e útil para acessibilidade.
+13. Campos explicativos (`messageMatchNotes`, `ctaMatchNotes`, `matchAdCta`, `consistencyChecks.details`) também são conteúdo de negócio e devem ser escritos em linguagem natural para time de marketing; nunca referencie nomes de campos/paths técnicos (ex.: `campaignAngle.primaryCTA`, `landingMatchLine`, `mechanismSummary`) e nunca escreva instruções como “usa literalmente”, “idêntico ao anúncio” ou “âncora para o formulário”.
+14. Proibido copiar trechos literais do prompt, schema, metadados ou contrato. Se detectar risco de vazamento técnico em qualquer campo textual, reescreva o texto antes de finalizar o JSON.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
@@ -73,7 +78,9 @@ Campos obrigatórios:
 - primaryCTA
 - complianceNotes
 - bodySections[] com sectionId e items[] (cada item contendo apenas id e texto)
-- ctaBlocks[] com placement, ctaVariant, ctaLabel, ctaUrl, matchAdCta, ctaSupport, messageMatchNotes
+- ctaBlocks[] com placement, ctaVariant, ctaType, ctaLabel, ctaUrl, targetSectionId, matchAdCta, ctaSupport, messageMatchNotes
+- formMicrocopy com privacyNotice e consentNotice
+- imageAccessibilityPlan[] com imageId, sectionId, altText
 - faq[] com question, answer, objectionTag
 - consistencyChecks[] com check, status (PASS/WARN/FAIL), details
 

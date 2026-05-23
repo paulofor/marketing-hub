@@ -1136,3 +1136,28 @@
 
 - 2026-05-23 (UTC): atualização do documento canônico do Gera Landing com diagrama de fluxo mostrando `GeraLandingStageExecutionService` acionando os assemblers de wireframe, copy, design-preset e image-planning, e a persistência dos dados gerados na tabela `gera_landing_stage_execution`.
 - 2026-05-23 (UTC): pipeline legado de conteúdo ajustado para encerrar a continuação automática após `AD_IMAGE_BRIEFING`, evitando enfileirar `landing-page-wireframe` sem execução manual de Gera Landing; adicionado teste unitário cobrindo que a conclusão de `AD_IMAGE_BRIEFING` não cria job pendente de `LANDING_PAGE_WIREFRAME`.
+
+## 2026-05-23 00:58:21 UTC-3
+- solicitação para continuar o diagrama canônico da seção 1.4 do Gera Landing e explicitar as inserções usadas da tabela `experiments`.
+- raciocínio aplicado: manter o foco na causa-raiz da montagem de contexto por estágio, deixando explícita a origem dos dados antes da persistência em `gera_landing_stage_execution`.
+- foi feito: atualização do diagrama mermaid com o nó `experiments` alimentando os assemblers (wireframe/copy/design-preset/image-planning) e complemento textual listando os principais campos inseridos/consumidos no fluxo.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/gera-landing/modelo-canonico-gera-landing.md
+  - docs/registros/experimentos.md
+
+## 2026-05-23 02:15:00 UTC-3
+- solicitação: pesquisar no código as classes de persistência envolvidas nas tabelas `gera_landing_stage_execution` e `experiments` para as etapas wireframe, copy, preset design e prompt images, e completar o diagrama canônico.
+- causa-raiz tratada: o diagrama anterior mostrava apenas visão de alto nível dos assemblers, sem explicitar os pontos reais de escrita por etapa (service + repositories + campos persistidos).
+- foi feito:
+  - rastreamento no backend (`ads-service`) do fluxo `GeraLandingStageExecutionService.receiveResult(...)` e do método `persistStageArtifactOnExperiment(...)`;
+  - atualização da seção 1.4 com diagrama mermaid completo incluindo `GeraLandingStageExecutionRepository.save(...)`, `ExperimentRepository.save(...)`, assemblers por etapa e colunas gravadas em `experiments`;
+  - complemento textual com mapeamento objetivo de persistência por etapa.
+- classes identificadas no código:
+  - `com.marketinghub.geralanding.GeraLandingStageExecutionService`
+  - `com.marketinghub.geralanding.GeraLandingStageExecutionRepository`
+  - `com.marketinghub.experiment.repository.ExperimentRepository`
+  - `com.marketinghub.geralanding.wireframe.WireframeProvisionalHtmlAssembler`
+  - `com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler`
+  - `com.marketinghub.geralanding.imageplanning.ImagePlanningProvisionalHtmlAssembler`
+  - `com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler`

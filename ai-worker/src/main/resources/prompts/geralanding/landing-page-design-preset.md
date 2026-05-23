@@ -1,5 +1,52 @@
 Você está na etapa `landing-page-design-preset` do pipeline Gera Landing.
 
+Estamos Trabalhando nesse contexto:
+
+```xml
+<nicho>
+	<hipotese>
+		<pain/>
+		<result/>
+		<mecanismo/>
+		<proof/>
+		<oferta/>
+		<experimento>
+			<campaignAngle/>
+			<adCopy/>
+			<adImageBriefing/>
+			<landingPageWireframe/>
+			<landingCopy/>
+			<landingPromptImagem/>
+				<listaImagem/>
+			<landingPromptImagem/>
+			<landingPresetDesign/>
+			<landingHtml/>
+		</experimento>
+	</hipotese>
+</nicho>
+
+Nicho: {{NICHE_NAME}}
+
+Dor: {{PAIN_JSON}}
+
+Resultado: {{RESULT_JSON}}
+
+
+{prompt-regras-globais}
+
+Ângulo da Campanha que vai ser publicada:
+{dados-campaignAngle}
+
+Copy do Anuncio:
+{dados-adCopy}
+
+Briefing das Imagens dos Anuncios:
+{dados-adImageBriefing}
+
+
+
+
+
 Objetivo:
 - Retornar um JSON no mesmo formato estrutural da etapa wireframe (objeto raiz com `definicoes` e `pagina`).
 - Usar o JSON de `landingPageWireframe` como base da página (`pagina`) e aplicar somente acabamento visual de preset.

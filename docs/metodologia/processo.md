@@ -35,3 +35,6 @@
       b. reseliante para esse tipo de comportamento do modelo.
 10. Funcionou do começo ao fim mas o html voltou a ficar horrivel
 11. Tendo duvidas de quem esta gerando esse html passei a colocar mais regras de arquitetura tentando uma etapa não contaminar a outra, acho que isso poderia estar acontecendo. Ter certeza de quem estava realmente gerando o html
+12. Criando novos experimentos 27, 28
+13. Agora os campos que deveriam receber html estao recebendo o json da etapa preset-design
+14. Travei no geralanding como falavam

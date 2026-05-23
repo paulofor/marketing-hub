@@ -493,3 +493,12 @@
   - frontend/AGENTS.md
   - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
   - docs/registros/mois1.md
+
+## 2026-05-23 14:26:00 UTC-3
+- correção de erro de renderização Mermaid na seção 12.2 do cânone MOIS Worker no GitHub Preview.
+- causa-raiz: uso de bloco `box` com `Note` dentro do `sequenceDiagram`, combinação que o parser Mermaid do GitHub rejeitou na linha do `Note over DB`.
+- correção aplicada: substituição por bloco `rect` destacado e `Note over DB` diretamente, preservando a semântica visual do banco sem violar a gramática suportada.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md

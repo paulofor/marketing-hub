@@ -149,9 +149,10 @@ sequenceDiagram
     participant OAI as OpenAI Batch (/v1/responses)
     participant DB as MySQL 5.7
 
-    %% Banco destacado com cor própria e posicionado na extrema direita
-    box rgb(255, 245, 210) Camada de Persistência (MySQL 5.7)
-      Note over DB: Banco de dados principal
+    %% Banco destacado com cor própria
+    rect rgb(255, 245, 210)
+    Note over DB: Camada de Persistência (MySQL 5.7)
+Banco de dados principal
     end
 
     rect rgb(245,245,245)

@@ -51,9 +51,9 @@ public class MoisSalesLibraryService {
         if (pageId == null) throw new IllegalArgumentException("Job not found: " + jobId);
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, analyzed_at, created_at, updated_at)
-                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
+                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, request_payload_json, analyzed_at, created_at, updated_at)
+                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
         jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
     }
 
@@ -226,7 +226,7 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse> rows = jdbcTemplate.query("""
                 SELECT a.id, a.url_ingest_id, a.job_id, a.status, a.score_total, a.parser_version,
                        a.prompt_version, a.model_name, a.sections_json, a.copy_json, a.visual_json,
-                       a.image_json, a.analysis_notes, a.analyzed_at, a.updated_at
+                       a.image_json, a.analysis_notes, a.request_payload_json, a.analyzed_at, a.updated_at
                 FROM mois_sales_library_page_analysis a
                 WHERE a.url_ingest_id = ? ORDER BY a.updated_at DESC LIMIT 1
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse(
@@ -234,7 +234,7 @@ public class MoisSalesLibraryService {
                 rs.getString("status"), rs.getBigDecimal("score_total"), rs.getString("parser_version"),
                 rs.getString("prompt_version"), rs.getString("model_name"), rs.getString("sections_json"),
                 rs.getString("copy_json"), rs.getString("visual_json"), rs.getString("image_json"),
-                rs.getString("analysis_notes"), toInstant(rs.getTimestamp("analyzed_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
+                rs.getString("analysis_notes"), rs.getString("request_payload_json"), toInstant(rs.getTimestamp("analyzed_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Analysis not found for page: " + pageId);
         return rows.get(0);
     }

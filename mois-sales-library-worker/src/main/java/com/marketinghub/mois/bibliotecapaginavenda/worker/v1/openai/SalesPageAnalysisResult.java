@@ -9,6 +9,7 @@ public record SalesPageAnalysisResult(
         String visualJson,
         String imageJson,
         String analysisNotes,
+        String requestPayloadJson,
         String parserVersion,
         String promptVersion,
         String modelName

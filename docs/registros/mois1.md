@@ -445,6 +445,45 @@
 - ajuste no diagrama de sequência da seção 12.2 do cânone MOIS para posicionar o elemento MySQL como o mais à direita da arquitetura.
 - aplicado destaque visual do MySQL em cor distinta usando `box rgb(255, 245, 210)` para separar a camada de persistência no Mermaid.
 
+## 2026-05-23 14:11:34 UTC-3
+- ajuste na tela de detalhe da biblioteca de páginas de vendas do MOIS para eliminar interpretação incorreta do bloco "Request enviado ao modelo".
+- identificado que o campo exibido estava usando `analysisNotes`, que representa observações resumidas da análise, e não o payload completo enviado ao modelo.
+- atualizado o frontend para rotular corretamente esse conteúdo como notas do worker e mostrar "Não disponível neste registro" quando o request literal não existe no contrato retornado pela API.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+  - docs/registros/mois1.md
+
+## 2026-05-23 14:15:16 UTC-3
+- correção solicitada: o usuário precisa visualizar o request literal enviado ao modelo na tela, e não apenas notas resumidas.
+- causa-raiz: o pipeline não persistia o payload de request da OpenAI em `mois_sales_library_page_analysis`, portanto o frontend não tinha como exibir esse dado.
+- aplicado ajuste fim-a-fim: worker agora envia `requestPayloadJson`, backend persiste/retorna esse campo e frontend passa a renderizar o request real quando disponível.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - frontend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java
+  - backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java
+  - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
+  - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+
+## 2026-05-23 14:20:26 UTC-3
+- revisão solicitada dos documentos canônicos e modelo de dados após inclusão do request literal do modelo na biblioteca MOIS.
+- causa-raiz documental: o código já persistia `request_payload_json`, mas os documentos canônicos ainda não refletiam completamente esse campo e mantinham referência desatualizada (`processed_at`).
+- atualizados `docs/modelo-dados-experimento.md` e `docs/canonical/mois-worker-canon.v1.md` para incluir `request_payload_json` e alinhar o timestamp operacional para `analyzed_at`.
+- documentos lidos para tratar a situação:
+  - docs/modelo-dados-experimento.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md
+
+## 2026-05-23 14:23:19 UTC-3
+- ajuste solicitado no modelo de dados dentro do cânone MOIS para aderência ao schema real em produção.
+- causa-raiz documental: seção 13.3 do cânone ainda listava campos legados/incorretos (`captured_at`, `attempt_count`, `html_content`, `artifact_payload`) divergentes das tabelas atuais.
+- correção aplicada: atualização dos campos de destaque de `mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_snapshot` e `mois_sales_library_snapshot_artifact` para os nomes efetivos usados no backend.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/modelo-dados-experimento.md
 ## 2026-05-23 14:13:48 UTC-3
 - solicitada melhoria na tela da Biblioteca Sales Pages do MOIS para exibir totalizações operacionais de produtos.
 - foi aproveitado o contrato já existente do endpoint da biblioteca, calculando os indicadores no frontend sem necessidade de novo endpoint.

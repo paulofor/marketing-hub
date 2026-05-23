@@ -51,6 +51,7 @@ public class PipelineRunner {
                     analysis.visualJson(),
                     analysis.imageJson(),
                     analysis.analysisNotes(),
+                    analysis.requestPayloadJson(),
                     analysis.parserVersion(),
                     analysis.promptVersion(),
                     analysis.modelName(),

@@ -289,6 +289,7 @@ export interface MoisSalesLibraryPageAnalysis {
   visualJson?: string;
   imageJson?: string;
   analysisNotes?: string;
+  requestPayloadJson?: string;
   analyzedAt?: string;
   updatedAt: string;
 }

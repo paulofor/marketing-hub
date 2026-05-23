@@ -1264,3 +1264,18 @@
   - prompt `landing-design-preset.md` atualizado para `template_version: v3` com o bloco de contexto solicitado no início de `SYSTEM_INSTRUCTIONS`;
   - adicionadas variáveis de template `PAIN_JSON` e `RESULT_JSON` no `ExperimentPipelineOpenAiClient` para preencher os placeholders novos quando presentes no `job.prompt`.
 - validação: ajuste textual/templating validado por inspeção estática; compilação completa do módulo segue bloqueada por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages).
+
+
+## 2026-05-23 18:11:44 UTC-3
+- solicitação para alinhar o Worker AI ao local canônico atual dos prompts do Gera Landing e atualizar a documentação canônica com os caminhos corretos.
+- causa-raiz identificada: `ExperimentPipelineOpenAiClient` ainda carregava templates de landing em `prompts/experiment`, enquanto os prompts oficiais já estavam em `prompts/geralanding`, provocando ausência de enriquecimento de prompt e falhas de teste.
+- foi feito:
+  - atualização dos paths de templates de landing no `ExperimentPipelineOpenAiClient` para `prompts/geralanding/*`;
+  - alinhamento da etapa final de landing para aceitar também aliases de seção `landing-page-deliverables` no mesmo cliente;
+  - atualização do documento canônico `procedimento-experimento-canon.v1.md` com o local canônico explícito dos prompts de experimento e Gera Landing.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - ai-worker/src/main/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClient.java
+  - docs/registros/experimentos.md

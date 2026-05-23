@@ -141,10 +141,10 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt da landing");
-        assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
+        assertThat(userPrompt).contains("Regras fixas da etapa (Gera Landing, contrato v3):");
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("- messageMatchSource");
+        assertThat(userPrompt).contains("artifact_target: landingPageCopy");
         assertThat(userPrompt).contains("bodySections[]");
         assertThat(userPrompt).contains("ctaBlocks[]");
         assertThat(userPrompt).contains("consistencyChecks[]");
@@ -191,23 +191,11 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("variantLayoutId");
-        assertThat(userPrompt).contains("form-first");
-        assertThat(userPrompt).contains("proof-first");
-        assertThat(userPrompt).contains("mobilePriorityScore");
-        assertThat(userPrompt).contains("dropOffRisk");
-        assertThat(userPrompt).contains("sectionOrder");
-        assertThat(userPrompt).contains("ctaSlot");
-        assertThat(userPrompt).contains("readingFlowSpec");
-        assertThat(userPrompt).contains("conversionPathSpec");
-        assertThat(userPrompt).contains("proofPlan");
-        assertThat(userPrompt).contains("Para evitar erro 422");
-        assertThat(userPrompt).contains("copie os `sectionId` literalmente de `sectionOrder`");
-        assertThat(userPrompt).contains("match 1:1");
-        assertThat(userPrompt).contains("trustSignalsSpec");
-        assertThat(userPrompt).contains("accessibilitySpec");
-        assertThat(userPrompt).contains("maxParagraphLinesMobile <= 4");
-        assertThat(userPrompt).contains("bulletDensityPerSection >= 3");
+        assertThat(userPrompt).contains("definicoes");
+        assertThat(userPrompt).contains("pagina");
+        assertThat(userPrompt).contains("Formulário obrigatório da landing");
+        assertThat(userPrompt).contains("Quantidade mínima de seções obrigatória");
+        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
     }
 
     @Test
@@ -281,15 +269,15 @@ class ExperimentPipelineOpenAiClientTest {
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
         String userPrompt = String.valueOf(input.get(0).get("content"));
-        assertThat(userPrompt).contains("landingPageDesignPreset");
-        assertThat(userPrompt).contains("lhmRuntime");
-        assertThat(userPrompt).contains("baseCss");
-        assertThat(userPrompt).contains("cssVersion");
-        assertThat(userPrompt).contains("cssNotes");
+        assertThat(userPrompt).contains("Você está na etapa `landing-page-design-preset` do pipeline Gera Landing.");
+        assertThat(userPrompt).contains("landingPageWireframe");
+        assertThat(userPrompt).contains("definicoes");
+        assertThat(userPrompt).contains("cores-fundo");
+        assertThat(userPrompt).contains("tipografia");
     }
 
     @Test
-    void prependsLandingHtmlGuidanceWithExplicitBindingChecklist() {
+    void prependsLandingDeliverablesGuidanceWithCanonicalChecklist() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
                 WebClient.builder().exchangeFunction(capturePayloadExchange(
@@ -309,7 +297,7 @@ class ExperimentPipelineOpenAiClientTest {
         ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
                 UUID.randomUUID(),
                 14L,
-                "landing-page-html",
+                "landing-page-deliverables",
                 "gpt-5.1-codex",
                 "prompt",
                 """
@@ -328,16 +316,11 @@ class ExperimentPipelineOpenAiClientTest {
         @SuppressWarnings("unchecked")
         var input = (java.util.List<Map<String, Object>>) payload.get("input");
         String userPrompt = String.valueOf(input.get(0).get("content"));
-        assertThat(userPrompt).contains("surfaceMatrix[]");
-        assertThat(userPrompt).contains("imageMatrix[]");
-        assertThat(userPrompt).contains("data-image-section-id");
-        assertThat(userPrompt).contains("data-image-binding-key");
-        assertThat(userPrompt).contains("missingSections");
-        assertThat(userPrompt).contains("extraSections");
-        assertThat(userPrompt).contains("missingImageBindings");
-        assertThat(userPrompt).contains("extraImageBindings");
-        assertThat(userPrompt).contains("só finalize quando `missingSections=[]`, `extraSections=[]`, `missingImageBindings=[]` e `extraImageBindings=[]`");
-        assertThat(userPrompt).contains("case-sensitive");
+        assertThat(userPrompt).contains("# Etapa: landing-page-deliverables");
+        assertThat(userPrompt).contains("Responda SOMENTE no JSON do schema");
+        assertThat(userPrompt).contains("amostra gratuita");
+        assertThat(userPrompt).contains("produto final completo");
+        assertThat(userPrompt).contains("Wireframe da Landing: IMPORTANTE !!");
     }
 
     @Test

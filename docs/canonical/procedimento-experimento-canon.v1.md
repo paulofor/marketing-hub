@@ -39,7 +39,11 @@ A sequência canônica de seções do pipeline inclui:
 Essas seções e suas dependências fazem parte do enum oficial do backend.
 
 ### 4.1 Prompts dessas etapas
-Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI (ex.: pasta `prompts/experiment`).
+Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.
+
+Local canônico vigente:
+- pipeline de experimento (núcleo inicial): `ai-worker/src/main/resources/prompts/experiment`;
+- pipeline Gera Landing (núcleo da landing): `ai-worker/src/main/resources/prompts/geralanding`.
 
 ## 5. Pipeline Gera Landing (núcleo da landing)
 

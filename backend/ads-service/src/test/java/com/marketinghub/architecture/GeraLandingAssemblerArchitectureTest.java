@@ -16,7 +16,7 @@ import com.tngtech.archunit.lang.ArchRule;
 class GeraLandingAssemblerArchitectureTest {
 
     @ArchTest
-    static final ArchRule stageExecutionServiceMustNotCallLegacyFiveArgDesignPresetAssembler = noClasses()
+    static final ArchRule stageExecutionServiceMustNotCallLegacyTwoArgDesignPresetAssembler = noClasses()
             .that()
             .haveFullyQualifiedName("com.marketinghub.geralanding.GeraLandingStageExecutionService")
             .should()
@@ -24,11 +24,8 @@ class GeraLandingAssemblerArchitectureTest {
                     DesignPresetProvisionalHtmlAssembler.class,
                     "assemble",
                     String.class,
-                    String.class,
-                    String.class,
-                    String.class,
                     String.class)
-            .because("o serviço deve usar o contrato padronizado assemble(modelResponse, jobId) para design-preset");
+            .because("o serviço deve usar o contrato padronizado com os novos parâmetros do design-preset");
 
 
     @ArchTest
@@ -77,8 +74,11 @@ class GeraLandingAssemblerArchitectureTest {
                     DesignPresetProvisionalHtmlAssembler.class,
                     "assemble",
                     String.class,
+                    String.class,
+                    String.class,
+                    String.class,
                     String.class)
-            .because("quando STAGE_DESIGN_PRESET for processado, o assembler canônico de design preset deve ser usado");
+            .because("quando STAGE_DESIGN_PRESET for processado, o assembler canônico de design preset com novos parâmetros deve ser usado");
 
     @ArchTest
     static final ArchRule stageExecutionServiceMustCallStandardCopyAssembler = classes()

@@ -448,7 +448,16 @@ public class GeraLandingStageExecutionService {
             return resolveImagePlanningProvisionalHtml(idJob, request, execution);
         }
         if (STAGE_DESIGN_PRESET.equalsIgnoreCase(request.stageCode())) {
-            return designPresetProvisionalHtmlAssembler.assemble(request.experimentId(), request.modelResponse(), idJob);
+            Experiment experiment = execution.getExperiment();
+            if (experiment == null && request.experimentId() != null) {
+                experiment = experimentRepository.findById(request.experimentId()).orElse(null);
+            }
+            return designPresetProvisionalHtmlAssembler.assemble(
+                    experiment != null ? experiment.getLandingPageWireframe() : null,
+                    experiment != null ? experiment.getLandingPageCopy() : null,
+                    experiment != null ? experiment.getLandingPageImagePlanning() : null,
+                    request.modelResponse(),
+                    idJob);
         }
         return null;
     }
@@ -517,7 +526,9 @@ public class GeraLandingStageExecutionService {
             String htmlFromDesignPreset = execution.getProvisionalHtml();
             if (!StringUtils.hasText(htmlFromDesignPreset)) {
                 htmlFromDesignPreset = designPresetProvisionalHtmlAssembler.assemble(
-                        request.experimentId(),
+                        experiment.getLandingPageWireframe(),
+                        experiment.getLandingPageCopy(),
+                        experiment.getLandingPageImagePlanning(),
                         request.modelResponse(),
                         fromDatabaseIdJob(execution.getIdJob()));
             }

@@ -1206,3 +1206,11 @@
   - regra de bloqueio atualizada para proibir o overload antigo `assemble(String, String)` em `DesignPresetProvisionalHtmlAssembler`;
   - regra de conformidade atualizada para exigir a chamada `assemble(String, String, String, String, String)` no `GeraLandingStageExecutionService`.
 - validação: teste `GeraLandingAssemblerArchitectureTest` executado com sucesso.
+
+## 2026-05-23 06:25:00 UTC
+- solicitação: remover referência de arquivo JSON inexistente no teste `DesignPresetProvisionalHtmlProcessorTest`.
+- causa-raiz: o teste de exemplos do repositório apontava para `model-response-7179cef3-1f8f-4464-a9d5-c43a49a37fff.json`, arquivo que não existe mais em `../../exemplos`.
+- correção aplicada:
+  - removida a referência ao JSON inexistente da lista `exampleFiles`;
+  - mantido o exemplo válido remanescente para continuar validando o processamento tokenizado.
+- validação: execução do teste unitário específico com sucesso.

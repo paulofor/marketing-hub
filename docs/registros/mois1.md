@@ -520,3 +520,13 @@
   - AGENTS.md
   - docs/canonical/mois-worker-canon.v1.md
   - docs/registros/mois1.md
+
+
+## 2026-05-23 — Diagrama Hotmart com site de origem e URL acessada
+- atualizado o diagrama `12.2.1` em `docs/canonical/mois-worker-canon.v1.md` para incluir explicitamente o participante **Hotmart Site (hotmart.com)** no fluxo.
+- detalhado no diagrama que o coletor acessa `salesPageUrl` com fallback para `detailsUrl`, deixando explícita a URL de origem consultada antes do `POST /urls:ingest`.
+- objetivo: reduzir ambiguidade operacional sobre qual URL está sendo acessada no passo de coleta.
+
+Arquivos alterados:
+- docs/canonical/mois-worker-canon.v1.md
+- docs/registros/mois1.md

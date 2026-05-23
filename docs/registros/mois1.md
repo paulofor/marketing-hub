@@ -433,3 +433,14 @@
 - atualização solicitada no cânone MOIS (`docs/canonical/mois-worker-canon.v1.md`) na seção **12.2 Diagrama (sequência ponta a ponta)** para explicitar quais tabelas são lidas e gravadas em cada etapa do fluxo.
 - diagrama mermaid ajustado com marcações `READ` e `WRITE` por etapa (`/urls:ingest`, `/jobs:claim`, `/jobs/{jobId}:complete`, `/jobs/{jobId}:fail`).
 - adicionada subseção **12.2.1 Tabelas lidas e gravadas por etapa do fluxo** com tabela-resumo operacional por endpoint.
+
+
+## 2026-05-23 00:00:00 UTC
+- atualização solicitada no documento canônico `docs/canonical/mois-worker-canon.v1.md` com inclusão de diagrama de arquitetura por unidade de módulo/pacote.
+- adicionada a seção **12.5 Diagrama de arquitetura por módulo/pacote** com Mermaid destacando dependências entre coletores, worker, backend MOIS, OpenAI API e MySQL 5.7.
+- reforçadas no próprio cânone as regras de integração: sem acesso direto ao banco fora do backend e integração OpenAI concentrada no worker.
+
+
+## 2026-05-23 00:00:00 UTC
+- ajuste no diagrama de sequência da seção 12.2 do cânone MOIS para posicionar o elemento MySQL como o mais à direita da arquitetura.
+- aplicado destaque visual do MySQL em cor distinta usando `box rgb(255, 245, 210)` para separar a camada de persistência no Mermaid.

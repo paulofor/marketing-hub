@@ -18,4 +18,6 @@ Objetivo: ler o wireframe salvo no experimento e gerar um planejamento de prompt
 - Briefing de imagem do anúncio: {dados-adImageBriefing}
 - Wireframe da landing: {dados-landingPageWireframe}
 
+Responda em JSON válido e estritamente aderente ao artefato `landingPageImagePlanning`.
+
 Retorne somente JSON válido conforme schema da etapa.

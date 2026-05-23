@@ -1,3 +1,7 @@
+template_id: landing-page-copy
+template_version: v3
+artifact_target: landingPageCopy
+
 Estamos Trabalhando nesse contexto:
 
 ```xml
@@ -26,10 +30,6 @@ Estamos Trabalhando nesse contexto:
 
 Wireframe da Landing: IMPORTANTE !!
 {dados-landingPageWireframe}
-
-template_id: landing-copy
-template_version: v3
-artifact_target: landingPageCopy
 
 SYSTEM_INSTRUCTIONS
 Objetivo principal desta etapa:

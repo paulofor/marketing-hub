@@ -143,3 +143,5 @@
 - 2026-05-22 00:00:00 (UTC): correção de causa-raiz na persistência de contagem MEI por CNAE no `oprm-coletor-mei`: o scheduler publicava `marketSizes` apenas nos arquivos `ESTABELECIMENTOS`, antes do processamento do `Simples.zip`, fazendo `total_empresas_mei`/`total_empresas_simples` persistirem como zero. Ajustado `runScheduledImport` para recalcular e publicar snapshot consolidado de `marketSizes` também após o dataset `SIMPLES`, garantindo atualização de `total_empresas`, `total_empresas_mei` e `total_empresas_simples` no backend para cada CNAE.
 
 - 2026-05-22 15:50:00 (UTC-3): ajuste solicitado para agendar a próxima ingestão OPRM CNPJ/CNAE para **16:30** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 30 16 * * *` e sincronização do cron padrão em `application.yml`.
+
+- 2026-05-23 00:00:00 (UTC): ajuste solicitado para executar a ingestão OPRM CNPJ/CNAE às **00:01 de 23/05/2026** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 1 0 23 5 *`, sincronização do cron padrão em `application.yml` e correção da mensagem de log final para refletir 00:01.

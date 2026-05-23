@@ -502,3 +502,21 @@
   - AGENTS.md
   - docs/canonical/mois-worker-canon.v1.md
   - docs/registros/mois1.md
+
+## 2026-05-23 17:56:00 UTC
+- correção adicional do diagrama Mermaid na seção 12.5 do cânone MOIS Worker após falha de parse no GitHub Preview.
+- causa-raiz: label de aresta com `/v1/responses (batch)` sem aspas no `graph TD`, gerando token inválido no parser do GitHub.
+- correção aplicada: encapsulada a label da aresta entre aspas (`|"/v1/responses (batch)"|`) para aderência à gramática Mermaid suportada.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md
+
+## 2026-05-23 18:05:00 UTC
+- inclusão de diagrama de sequência focado exclusivamente no coletor Hotmart logo após o diagrama geral do módulo MOIS Worker.
+- causa-raiz: ausência de visão detalhada da etapa de ingestão Hotmart no trecho imediatamente subsequente ao fluxo ponta a ponta, dificultando leitura operacional solicitada.
+- correção aplicada: adicionada nova subseção `12.2.1` com `sequenceDiagram` dedicado ao fluxo Hotmart (`POST /urls:ingest`, normalização/deduplicação e criação de job `PENDING`), e renumerada a seção de tabelas para `12.2.2`.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md

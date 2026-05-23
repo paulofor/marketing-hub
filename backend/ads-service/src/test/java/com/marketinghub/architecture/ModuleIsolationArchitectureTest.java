@@ -1,12 +1,19 @@
 package com.marketinghub.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Garante isolamento arquitetural entre módulos/pacotes internos do backend.
@@ -19,6 +26,8 @@ class ModuleIsolationArchitectureTest {
     private static final String GERALANDING_COPY_PACKAGE = "com.marketinghub.geralanding.copy";
     private static final String GERALANDING_IMAGEPLANNING_PACKAGE = "com.marketinghub.geralanding.imageplanning";
     private static final String GERALANDING_PRESETDESIGN_PACKAGE = "com.marketinghub.geralanding.designpreset";
+    private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
+            "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
 
     @ArchTest
     static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -75,6 +84,14 @@ class ModuleIsolationArchitectureTest {
             GERALANDING_PRESETDESIGN_PACKAGE,
             "o subpacote geralanding.designpreset deve ficar independente dos demais pacotes internos");
 
+    @ArchTest
+    static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
+            classes().that(classesBelongingToLayer("web")).should(onlyDependOnLayer("service"));
+
+    @ArchTest
+    static final ArchRule moisSalesLibraryServiceShouldOnlyDependOnRepositoryLayer =
+            classes().that(classesBelongingToLayer("service")).should(onlyDependOnLayer("repository"));
+
     /**
      * Constrói regra para impedir dependências para outros pacotes internos fora do prefixo permitido.
      */
@@ -97,4 +114,66 @@ class ModuleIsolationArchitectureTest {
             }
         };
     }
+
+    /**
+     * Retorna classes de um layer específico da biblioteca de páginas de venda do MOIS.
+     */
+    private static DescribedPredicate<JavaClass> classesBelongingToLayer(String expectedLayer) {
+        return new DescribedPredicate<>("classes in " + expectedLayer + " layer of mois sales library") {
+            @Override
+            public boolean test(JavaClass input) {
+                return extractSalesLibraryPackageInfo(input.getPackageName())
+                        .map(packageInfo -> packageInfo.layer().equals(expectedLayer) && !input.getSimpleName().endsWith("Test"))
+                        .orElse(false);
+            }
+        };
+    }
+
+    /**
+     * Valida que classes de um layer dependem apenas do layer permitido com mesmo x e vN.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnLayer(String allowedTargetLayer) {
+        return new ArchCondition<>("depend only on " + allowedTargetLayer + " in same x/vN") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                Optional<SalesLibraryPackageInfo> sourceInfo = extractSalesLibraryPackageInfo(item.getPackageName());
+                if (sourceInfo.isEmpty()) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    String targetPackageName = dependency.getTargetClass().getPackageName();
+                    Optional<SalesLibraryPackageInfo> targetInfo = extractSalesLibraryPackageInfo(targetPackageName);
+                    if (targetInfo.isEmpty()) {
+                        return;
+                    }
+                    boolean sameNamespace = sourceInfo.get().namespace().equals(targetInfo.get().namespace())
+                            && sourceInfo.get().version().equals(targetInfo.get().version());
+                    boolean allowedLayer = targetInfo.get().layer().equals(allowedTargetLayer)
+                            || targetInfo.get().layer().equals(sourceInfo.get().layer());
+                    if (!sameNamespace || !allowedLayer) {
+                        String message = item.getName() + " depende de " + dependency.getTargetClass().getName()
+                                + " mas só pode depender de pacote ." + allowedTargetLayer
+                                + " com mesmo x/vN";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Extrai namespace (x), versão (vN) e layer dos pacotes da biblioteca de páginas de venda.
+     */
+    private static Optional<SalesLibraryPackageInfo> extractSalesLibraryPackageInfo(String packageName) {
+        Matcher matcher = SALES_LIBRARY_LAYER_PATTERN.matcher(packageName);
+        if (!matcher.matches()) {
+            return Optional.empty();
+        }
+        return Optional.of(new SalesLibraryPackageInfo(matcher.group(1), matcher.group(2), matcher.group(3)));
+    }
+
+    /**
+     * Representa a estrutura do pacote da biblioteca de páginas de venda do MOIS.
+     */
+    private record SalesLibraryPackageInfo(String namespace, String version, String layer) {}
 }

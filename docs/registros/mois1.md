@@ -484,4 +484,12 @@
 - documentos lidos para tratar a situação:
   - docs/canonical/mois-worker-canon.v1.md
   - docs/modelo-dados-experimento.md
+## 2026-05-23 14:13:48 UTC-3
+- solicitada melhoria na tela da Biblioteca Sales Pages do MOIS para exibir totalizações operacionais de produtos.
+- foi aproveitado o contrato já existente do endpoint da biblioteca, calculando os indicadores no frontend sem necessidade de novo endpoint.
+- adicionados cards com: total coletados, total de produtos Hotmart, total de produtos Clickbank e total com análise.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
   - docs/registros/mois1.md

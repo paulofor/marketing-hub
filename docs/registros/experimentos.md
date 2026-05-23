@@ -1247,3 +1247,4 @@
   - removido `shouldRenderUsingRealExamplesWithoutImplicitStyleOrImageAttributeInjection` de `DesignPresetProvisionalHtmlProcessorTest`;
   - removidos imports/helpers auxiliares de leitura de arquivo (`Files`, `Path`, `IOException`, `readExample`).
 - validação: suíte direcionada de testes do módulo executada com sucesso.
+- 2026-05-23 (UTC): corrigido gerador de HTML provisório da etapa design preset para não injetar texto placeholder "Lorem ipsum" quando o wireframe não traz conteúdo textual; validação de classes do JSON tokenizado reforçada em teste de processor (`DesignPresetProvisionalHtmlProcessorTest`) para garantir aplicação de classes e CSS do preset.

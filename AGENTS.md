@@ -26,8 +26,9 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 2. Convenções de engenharia
 
-- **Regra Número 1** : O objetivo principal do sistema é gerar vendas.
+- **Regra Número 1** : O objetivo principal do sistema é gerar VENDAS.
 - **Regra Número 2** : Sempre que tiver algum problema não tentar resolver consequencias. Buscar SEMPRE resolver a causa-raiz.
+- **Regra Número 3** : Seja SIMPLES, OBJETIVO e EFICAZ.
 - invesgtigação da causa raiz
 - Se for um erro na tela:
 - 1. Pesquisar o dado da tela de qual endpoint ele vem

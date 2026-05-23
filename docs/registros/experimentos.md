@@ -1299,3 +1299,10 @@
   - docs/canonical/mois-worker-canon.v1.md
   - docs/canonical/procedimento-experimento-canon.v1.md
   - docs/registros/experimentos.md
+## 2026-05-23 21:05:00 UTC
+- solicitação para corrigir lacunas no prompt do Gera Landing (wireframe) em contrato estrutural/semântico para body, interação, imagens, formulário e componentes.
+- causa-raiz identificada: o contrato da etapa wireframe exigia briefing visual e estrutura geral, mas não obrigava metadados funcionais mínimos (âncora/href, contrato de asset, semântica de input e classes raiz de body), permitindo saídas incompletas no HTML derivado.
+- foi feito:
+  - reforço do prompt `landing-page-wireframe.md` com regras explícitas de `pagina.body`, intenção funcional de elementos interativos, contrato de asset em `img`, contrato semântico de `input`, componentes semânticos e validação permanente de `texto.conteudo` vazio;
+  - atualização do schema `landing-page-wireframe-schema.json` para incluir e validar os novos campos contratuais (`pagina.body.classes`, `interacao`, `asset`, `contratoCampo`, `componente`) com regras condicionais por `tag`.
+- impacto esperado: reduzir geração de wireframe ambígua e eliminar casos de HTML sem `src` em imagem, links sem destino claro e inputs sem contrato de campo.

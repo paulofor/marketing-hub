@@ -59,6 +59,12 @@ Regras fixas da etapa (Gera Landing, contrato v3):
 - Evite JSON dentro de strings; mantenha cada informação no campo próprio.
 
 
+- `pagina.body` obrigatório: declarar classes base aplicadas ao `<body>` usando apenas `bgBody`, `fontBase`, `textPrimary`, `marginReset`.
+- Em TODO elemento interativo (`a`, `button`), declarar `intencaoAcao` e, quando for navegação interna, `targetSectionId` apontando para `id` real de seção (ex.: `#sec-prova`); quando for link externo, declarar `hrefEsperado`.
+- Em toda `img`, declarar contrato de asset em `asset`: `src`, `alt`, `width`, `height` (wireframe deve especificar esses campos mesmo com `src` provisório).
+- Em todo campo de formulário (`input`), declarar `contratoCampo`: `type`, `name`, `autocomplete`, `required`, `placeholder`.
+- Em elementos de ação/entrada, usar componentes semânticos via `componente`: `buttonPrimary`, `buttonSecondary`, `formInput`, `card` (quando aplicável), evitando depender de combinação manual de tokens.
+- `texto.conteudo: ""` significa literalmente “não renderizar texto”; é proibido substituir por placeholder nesta etapa.
 
 Matriz oficial de grupos e atributos CSS (explícita):
 - Grupo `posicionamento` (categoria `definicoes.posicao`): `position`, `top`, `right`, `bottom`, `left`, `z-index`.

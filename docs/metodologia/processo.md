@@ -33,3 +33,5 @@
 9. O codex estava certo parace que o modelo estava gerando coisas que não devia.
       a. coloquei logs usando jobid para ficar mais facil de pesquisar ( as integrações sempre são sensiveis )
       b. reseliante para esse tipo de comportamento do modelo.
+10. Funcionou do começo ao fim mas o html voltou a ficar horrivel
+11. Tendo duvidas de quem esta gerando esse html passei a colocar mais regras de arquitetura tentando uma etapa não contaminar a outra, acho que isso poderia estar acontecendo. Ter certeza de quem estava realmente gerando o html

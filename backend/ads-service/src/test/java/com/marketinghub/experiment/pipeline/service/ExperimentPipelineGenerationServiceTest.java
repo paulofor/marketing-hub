@@ -1276,6 +1276,38 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void completeJobDoesNotAutomaticallyEnqueueLandingWireframeAfterAdImageBriefing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(315L);
+
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.AD_IMAGE_BRIEFING)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        service.completeJob(jobId, new ExperimentPipelineGenerationJobCompletionRequest(
+                "{\"adImageBriefing\":{\"concept\":\"teste\"}}",
+                "{\"id\":\"resp_briefing\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                40,
+                20,
+                null));
+
+        verify(jobRepository, never()).save(argThat(saved ->
+                saved != null
+                        && saved.getSection() == ExperimentPipelineSection.LANDING_PAGE_WIREFRAME
+                        && saved.getExperiment() == experiment
+                        && saved.getStatus() == ExperimentPipelineGenerationJobStatus.PENDING));
+    }
+
+    @Test
     void completeJobDoesNotAutomaticallyEnqueueLandingHtmlAfterDesignPreset() {
         Experiment experiment = new Experiment();
         experiment.setId(314L);

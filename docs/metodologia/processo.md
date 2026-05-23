@@ -38,3 +38,14 @@
 12. Criando novos experimentos 27, 28
 13. Agora os campos que deveriam receber html estao recebendo o json da etapa preset-design
 14. Travei no geralanding como falavam
+
+>(23-05-2026)
+>Fiz uma avaliação e vejo dois pontos que podem ajudar ao codex não cometer erros:
+>- restrições de arquitetura
+>- trabalho com dados e chaves
+>
+> Dessa forma vou usar o projeto da biblioteca de sales, do projeto mois com os coletores e com o analisador de pagina para fazer um experimento
+> Colocar no documento canonico:
+>- Modelo de dados
+>- Documento de Arquitetura ( moldado por pacotes )
+

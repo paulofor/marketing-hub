@@ -1214,3 +1214,36 @@
   - removida a referência ao JSON inexistente da lista `exampleFiles`;
   - mantido o exemplo válido remanescente para continuar validando o processamento tokenizado.
 - validação: execução do teste unitário específico com sucesso.
+
+## 2026-05-23 12:40:00 UTC
+- solicitação: remover definição forçada de cor inline no HTML provisório da etapa de preset design, mantendo estilos via classes/tokens.
+- causa-raiz: `DesignPresetWireframeHtmlGenerator` adicionava automaticamente `background-color` em cada `<section>` quando o estilo não vinha no payload, o que gerava `style="background-color:..."` mesmo sem classe correspondente.
+- correção aplicada:
+  - removida a lógica de fallback que injetava `background-color` automático por seção;
+  - o gerador agora preserva apenas os estilos fornecidos pelo contrato (`estilos`/classes responsivas), sem forçar cor inline.
+- validação: teste unitário direcionado do módulo executado com sucesso.
+
+## 2026-05-23 13:10:00 UTC
+- solicitação: verificar se o generator de preset design ainda injeta/omite/altera conteúdo além do JSON de entrada.
+- causa-raiz: além da cor de fundo já removida, o gerador ainda alterava contrato em outros pontos (injeção automática de `alt/width/height` em `<img>` e omissão de `class/style` vindos em `props/atributos` quando também havia tokens em `estilos`).
+- correção aplicada:
+  - removida a injeção automática de atributos de imagem (`alt`, `width`, `height`);
+  - ajuste de merge para preservar `class` e `style` vindos do JSON e combinar com classes/estilos derivados de `estilos` tokenizados, sem sobrescrever/omitir.
+  - adicionados testes unitários direcionados para cobertura dos cenários de preservação/merge e ausência de injeção automática.
+- validação: testes unitários específicos do módulo executados com sucesso.
+
+## 2026-05-23 13:58:00 UTC
+- solicitação: validar o gerador/pipeline com os JSONs reais da pasta `/exemplos` para garantir que o HTML final contempla o contrato recebido.
+- causa-raiz: faltava teste automatizado com amostras reais (`etapa-3`, `etapa-4`, `etapa-6`), o que deixava risco de regressão silenciosa entre contrato esperado e HTML montado.
+- correção aplicada:
+  - adicionado teste `shouldRenderUsingRealExamplesWithoutImplicitStyleOrImageAttributeInjection` em `DesignPresetProvisionalHtmlProcessorTest` lendo diretamente os três JSONs de `/exemplos`;
+  - validação cobre presença de estrutura esperada no HTML e ausência de injeções automáticas já proibidas (fallback de `background-color` e `width/height` default de imagem).
+- validação: suíte direcionada do módulo executada com sucesso.
+
+## 2026-05-23 16:08:00 UTC
+- solicitação: retirar o teste com leitura direta de `/exemplos` e voltar ao estado anterior do teste da etapa preset design.
+- causa-raiz: o teste com arquivos de `/exemplos` foi criado para validação pontual durante implementação e não deveria permanecer na suíte.
+- correção aplicada:
+  - removido `shouldRenderUsingRealExamplesWithoutImplicitStyleOrImageAttributeInjection` de `DesignPresetProvisionalHtmlProcessorTest`;
+  - removidos imports/helpers auxiliares de leitura de arquivo (`Files`, `Path`, `IOException`, `readExample`).
+- validação: suíte direcionada de testes do módulo executada com sucesso.

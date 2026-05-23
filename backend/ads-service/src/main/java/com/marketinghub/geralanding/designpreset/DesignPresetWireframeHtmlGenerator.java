@@ -66,10 +66,8 @@ public class DesignPresetWireframeHtmlGenerator {
 
             html.append(">\n");
 
-            int sectionIndex = 0;
             for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
-                html.append(renderSection(secao, sectionIndex));
-                sectionIndex++;
+                html.append(renderSection(secao));
             }
 
             html.append("</body>\n");
@@ -81,14 +79,8 @@ public class DesignPresetWireframeHtmlGenerator {
         }
     }
 
-    private String renderSection(Map<String, Object> secao, int sectionIndex) {
-        Map<String, Object> normalizedSection = new LinkedHashMap<>(secao);
-        List<Map<String, Object>> estilos = new ArrayList<>(asList(secao.get("estilos")));
-        if (!containsBackgroundStyle(estilos)) {
-            estilos.add(Map.of("nome", "background-color", "valor", sectionIndex % 2 == 0 ? "#FFFFFF" : "#F7F9FC"));
-        }
-        normalizedSection.put("estilos", estilos);
-        return renderNode(normalizedSection, "section", "elementosSeccao");
+    private String renderSection(Map<String, Object> secao) {
+        return renderNode(secao, "section", "elementosSeccao");
     }
 
     private String renderElement(Map<String, Object> node) {
@@ -125,13 +117,6 @@ public class DesignPresetWireframeHtmlGenerator {
         out.append("<").append(tag);
         appendCommonAttributes(out, node);
 
-        if ("img".equals(tag)) {
-            if (!hasAttribute(node, "alt")) {
-                out.append(" alt=\"\"");
-            }
-            appendSuggestedImageSize(out, node);
-        }
-
         out.append(">\n");
 
         return out.toString();
@@ -139,9 +124,15 @@ public class DesignPresetWireframeHtmlGenerator {
 
     private void appendCommonAttributes(StringBuilder out, Map<String, Object> node) {
         String id = asText(node.get("id"), "");
-        String style = renderInlineStyle(asList(node.get("estilos")));
-        String className = renderClassNameFromResponsiveStyleRefs(asList(node.get("estilos")));
         Map<String, Object> attrs = extractAttributes(node);
+        String style = mergeCssDeclarations(
+                asText(attrs.get("style"), ""),
+                renderInlineStyle(asList(node.get("estilos")))
+        );
+        String className = mergeClassNames(
+                asText(attrs.get("class"), ""),
+                renderClassNameFromResponsiveStyleRefs(asList(node.get("estilos")))
+        );
 
         if (StringUtils.hasText(id)) {
             out.append(" id=\"").append(escapeHtmlAttribute(id)).append("\"");
@@ -154,7 +145,7 @@ public class DesignPresetWireframeHtmlGenerator {
                 continue;
             }
 
-            if ("id".equalsIgnoreCase(name) || "style".equalsIgnoreCase(name)) {
+            if ("id".equalsIgnoreCase(name) || "style".equalsIgnoreCase(name) || "class".equalsIgnoreCase(name)) {
                 continue;
             }
 
@@ -184,18 +175,6 @@ public class DesignPresetWireframeHtmlGenerator {
         if (StringUtils.hasText(className)) {
             out.append(" class=\"").append(escapeHtmlAttribute(className)).append("\"");
         }
-    }
-
-    private boolean hasAttribute(Map<String, Object> node, String attributeName) {
-        Map<String, Object> attrs = extractAttributes(node);
-
-        for (String key : attrs.keySet()) {
-            if (attributeName.equalsIgnoreCase(key)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private Map<String, Object> extractAttributes(Map<String, Object> node) {
@@ -323,6 +302,38 @@ public class DesignPresetWireframeHtmlGenerator {
         }
     }
 
+    private String mergeClassNames(String existing, String generated) {
+        List<String> merged = new ArrayList<>();
+        appendSpaceSeparatedClasses(merged, existing);
+        appendSpaceSeparatedClasses(merged, generated);
+        return String.join(" ", merged);
+    }
+
+    private void appendSpaceSeparatedClasses(List<String> classes, String classNames) {
+        if (!StringUtils.hasText(classNames)) {
+            return;
+        }
+        for (String className : classNames.trim().split("\\s+")) {
+            if (StringUtils.hasText(className) && !classes.contains(className)) {
+                classes.add(className);
+            }
+        }
+    }
+
+    private String mergeCssDeclarations(String existing, String generated) {
+        if (!StringUtils.hasText(existing)) {
+            return generated;
+        }
+        if (!StringUtils.hasText(generated)) {
+            return existing;
+        }
+        String normalizedExisting = existing.trim();
+        if (!normalizedExisting.endsWith(";")) {
+            normalizedExisting = normalizedExisting + ";";
+        }
+        return normalizedExisting + generated;
+    }
+
     private String renderResponsiveCssDefinitions(Map<String, Object> definicoes) {
         if (definicoes.isEmpty()) {
             return "";
@@ -379,42 +390,6 @@ public class DesignPresetWireframeHtmlGenerator {
         return out.toString().trim();
     }
 
-
-    private boolean containsBackgroundStyle(List<Map<String, Object>> estilos) {
-        for (Map<String, Object> estilo : estilos) {
-            String nome = asText(estilo.get("nome"), "").trim().toLowerCase();
-            if ("background".equals(nome) || "background-color".equals(nome)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void appendSuggestedImageSize(StringBuilder out, Map<String, Object> node) {
-        Map<String, Object> attrs = extractAttributes(node);
-        if (hasAttribute(node, "width") || hasAttribute(node, "height")) {
-            return;
-        }
-        int width = averageDimension(attrs.get("minWidth"), attrs.get("maxWidth"), 960);
-        int height = averageDimension(attrs.get("minHeight"), attrs.get("maxHeight"), 540);
-        out.append(" width=\"").append(width).append("\"");
-        out.append(" height=\"").append(height).append("\"");
-    }
-
-    private int averageDimension(Object minValue, Object maxValue, int fallback) {
-        Integer min = parseInteger(minValue);
-        Integer max = parseInteger(maxValue);
-        if (min != null && max != null) {
-            return (min + max) / 2;
-        }
-        if (min != null) {
-            return min;
-        }
-        if (max != null) {
-            return max;
-        }
-        return fallback;
-    }
 
     private Integer parseInteger(Object value) {
         if (value instanceof Number number) {

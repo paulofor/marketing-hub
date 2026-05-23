@@ -1177,3 +1177,15 @@
 - arquivos alterados:
   - docs/gera-landing/modelo-canonico-gera-landing.md
   - docs/registros/experimentos.md
+## 2026-05-23 01:50:16 UTC-3
+- solicitação para eliminar divergência entre dois documentos de Gera Landing e manter uma única fonte canônica em `/docs/canonical`.
+- causa-raiz identificada: coexistência de definições operacionais em `procedimento-experimento-canon.v1.md` e em `docs/gera-landing/modelo-canonico-gera-landing.md`, criando conflito de interpretação da etapa preset design.
+- correção aplicada: consolidação da regra no documento canônico principal do experimento, com seção explícita de unificação e regra mandatória de geração de HTML provisório pelo `DesignPresetProvisionalHtmlAssembler`; remoção do documento fora da pasta canonical.
+- validação no código realizada por inspeção de referências de etapa/assembler e testes existentes da etapa preset design.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/gera-landing/modelo-canonico-gera-landing.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlAssembler.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/GeraLandingStageExecutionServiceTest.java

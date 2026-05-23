@@ -186,3 +186,38 @@ A interface de Experimentos deve manter abas/visões que permitam acompanhar, de
 Quando houver alteração de regra operacional (ordem de etapas, critérios de aprovação, publicação, modo OpenAI, custos ou observabilidade), este documento deve ser atualizado imediatamente junto com:
 - o documento canônico de artefatos aplicável;
 - testes e contratos do backend/worker afetados.
+
+## 15. Unificação canônica do Gera Landing (vigente em 2026-05-23)
+
+Este documento passa a ser a **única fonte canônica** para definição operacional do Gera Landing e do procedimento de experimento.
+
+- Documento descontinuado: `docs/gera-landing/modelo-canonico-gera-landing.md` (mantido fora de uso e removido da referência ativa).
+- Toda nova regra de etapa, contrato, máquina de estados, publicação e auditoria do Gera Landing deve ser registrada somente em `/docs/canonical`.
+
+### 15.1 Ordem canônica Total Gera Landing
+
+1. `landing-page-wireframe`
+2. `landing-page-copy`
+3. `landing-page-image-planning` (+ geração de imagens)
+4. `landing-page-design-preset`
+5. `landing-page-deliverables`
+
+### 15.2 Regra mandatória para HTML provisório da etapa preset design
+
+Para a etapa `landing-page-design-preset`, o HTML provisório **deve** ser gerado pelo `DesignPresetProvisionalHtmlAssembler` e persistido na execução da etapa.
+
+Persistência esperada na conclusão da etapa:
+- `gera_landing_stage_execution.provisional_html` recebe o HTML provisório da etapa;
+- `experiment.landing_page_design_preset` recebe o JSON de resposta da etapa;
+- `experiment.html_geralanding` recebe o HTML consolidado da etapa (com injeções aplicáveis).
+
+`experiment.landing_page_html` permanece reservado para fluxo de aprovação/publicação final.
+
+### 15.3 Regra de validação de implementação
+
+Qualquer correção de falha onde o preset design não gerar HTML provisório deve validar, no código, estes pontos mínimos:
+1. orquestração da etapa `landing-page-design-preset` no `GeraLandingStageExecutionService`;
+2. uso explícito do `DesignPresetProvisionalHtmlAssembler` na montagem do HTML;
+3. persistência do resultado em `provisional_html` da execução e em `experiment.html_geralanding`;
+4. cobertura por teste unitário da etapa garantindo que o HTML é produzido/persistido.
+

@@ -71,8 +71,8 @@ Regras complementares:
 |---|---|---|
 | `LANDING_PAGE_WIREFRAME` | `WireframeProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
 | `LANDING_PAGE_COPY` | `CopyProvisionalHtmlAssembler` | `gera_landing_stage_execution.provisional_html` |
-| `LANDING_PAGE_IMAGE_PLANNING` | `ImagePlanningProvisionalHtmlAssembler` (usa internamente `CopyProvisionalHtmlAssembler` + `LandingPageImageInjector` apenas para esta etapa). | `gera_landing_stage_execution.provisional_html` e `experiment.landing_page_html` (quando `provisionalHtml` existe na execução). |
-| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (JSON bruto da resposta do modelo), `experiment.html_geralanding` (HTML consolidado da etapa) e `experiment.landing_page_html` |
+| `LANDING_PAGE_IMAGE_PLANNING` | `ImagePlanningProvisionalHtmlAssembler` (usa internamente `CopyProvisionalHtmlAssembler` + `LandingPageImageInjector` apenas para esta etapa). | `gera_landing_stage_execution.provisional_html` (não persiste em `experiment.landing_page_html` nesta etapa). |
+| `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (JSON bruto da resposta do modelo) e `experiment.html_geralanding` (HTML consolidado da etapa). `experiment.landing_page_html` só é persistido na aprovação/publicação. |
 
 ### 5.4 Regra de isolamento por conjunto (obrigatória)
 

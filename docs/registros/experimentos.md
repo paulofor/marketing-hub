@@ -1162,6 +1162,11 @@
   - `com.marketinghub.geralanding.imageplanning.ImagePlanningProvisionalHtmlAssembler`
   - `com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler`
 
+- 2026-05-23 04:34:00 UTC — Correção de persistência do GeraLanding solicitada pelo usuário:
+  - causa-raiz: o backend ainda gravava HTML provisório das etapas internas em `experiment.landing_page_html`, misturando artefato intermediário com artefato de publicação.
+  - ajuste aplicado: etapas `LANDING_PAGE_IMAGE_PLANNING` e `LANDING_PAGE_DESIGN_PRESET` passam a persistir somente em `gera_landing_stage_execution.provisional_html` e `experiment.html_geralanding` (design preset), sem gravar `landing_page_html`.
+  - ajuste aplicado: `landing_page_html` agora é persistido apenas no fluxo de aprovação/publicação (`approveAndPublishLanding`) com o HTML final efetivamente publicado.
+  - validação: testes unitários de `GeraLandingStageExecutionServiceTest` atualizados para garantir ausência de gravação prematura em `landing_page_html`.
 ## 2026-05-23 01:30:00 UTC-3
 - solicitação: corrigir erro de renderização Mermaid na seção 1.4 do documento canônico de Gera Landing exibido no GitHub.
 - causa-raiz: labels do diagrama continham quebra de linha e parênteses em formato que o parser do Mermaid no GitHub interpretou como sintaxe inválida.

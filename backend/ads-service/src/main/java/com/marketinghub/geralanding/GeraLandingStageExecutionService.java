@@ -126,6 +126,7 @@ public class GeraLandingStageExecutionService {
         log.info("GeraLanding publish approval resolved publication URLs (experimentId={}, iframeUrl={}, standaloneUrl={})",
                 experimentId, iframeUrl, standaloneUrl);
 
+        experiment.setLandingPageHtml(htmlWithFacebookPixel.trim());
         experiment.setFollowUpActionUrl(standaloneUrl);
         experimentRepository.save(experiment);
         log.info("GeraLanding publish approval saved follow-up URL (experimentId={}, followUpActionUrl={})",
@@ -295,7 +296,6 @@ public class GeraLandingStageExecutionService {
         if (StringUtils.hasText(enrichedImagePlanning)) {
             experiment.setLandingPageImagePlanning(enrichedImagePlanning);
         }
-        experiment.setLandingPageHtml(provisionalHtml);
         experimentRepository.save(experiment);
         GeraLandingStageExecution execution = executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(jobId))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + jobId));
@@ -511,9 +511,6 @@ public class GeraLandingStageExecutionService {
             experiment.setLandingPageCopyJobId(execution.getIdJob());
         } else if (STAGE_IMAGE_PLANNING.equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageImagePlanning(request.modelResponse());
-            if (StringUtils.hasText(execution.getProvisionalHtml())) {
-                experiment.setLandingPageHtml(execution.getProvisionalHtml());
-            }
         } else if (STAGE_DELIVERABLES.equalsIgnoreCase(stageCode)) {
             experiment.setLandingPageDeliverables(request.modelResponse());
         } else {
@@ -526,7 +523,6 @@ public class GeraLandingStageExecutionService {
             experiment.setLandingPageDesignPreset(request.modelResponse());
             if (StringUtils.hasText(htmlFromDesignPreset)) {
                 experiment.setHtmlGeraLanding(htmlFromDesignPreset);
-                experiment.setLandingPageHtml(htmlFromDesignPreset);
             }
         }
         experimentRepository.save(experiment);

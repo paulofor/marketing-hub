@@ -201,11 +201,16 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
+    participant HS as Hotmart Site (hotmart.com)
     participant HC as Hotmart Collector
     participant API as Backend MOIS (/api/mois/sales-library)
     participant DB as MySQL 5.7
 
     rect rgb(245,245,245)
+    Note over HS,HC: Coleta no site da Hotmart
+    HC->>HS: GET product details (salesPageUrl com fallback em detailsUrl)
+    HS-->>HC: 200 OK (url acessada para captura)
+
     Note over HC,API: 1) Coleta e envio de URLs vencedoras da Hotmart
     HC->>API: POST /urls:ingest (source=HOTMART, urls[])
     end

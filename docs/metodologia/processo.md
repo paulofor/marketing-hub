@@ -49,3 +49,7 @@
 >- Modelo de dados
 >- Documento de Arquitetura ( moldado por pacotes )
 
+#### Archuint 
+. com.marketinghub.mois.bibliotecapaginavenda.x.vN.web
+. com.marketinghub.mois.bibliotecapaginavenda.x.vN.service
+. com.marketinghub.mois.bibliotecapaginavenda.x.N.repository

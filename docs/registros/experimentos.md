@@ -1198,3 +1198,11 @@
   - removido o overload `assemble(Long experimentId, ...)` no assembler;
   - `GeraLandingStageExecutionService` passou a fornecer explicitamente `wireframe/copy/imagePlanning` já carregados do experimento para o assembler.
 - validação: teste `ModuleIsolationArchitectureTest` executado com sucesso após o ajuste.
+
+## 2026-05-23 06:12:00 UTC
+- solicitação: ajustar teste de arquitetura do GeraLanding para refletir a chamada do assembler de design preset com novos parâmetros.
+- causa-raiz: o teste ArchUnit ainda tratava a assinatura com cinco parâmetros como legado proibido, embora o serviço já use essa assinatura no fluxo atual.
+- correção aplicada:
+  - regra de bloqueio atualizada para proibir o overload antigo `assemble(String, String)` em `DesignPresetProvisionalHtmlAssembler`;
+  - regra de conformidade atualizada para exigir a chamada `assemble(String, String, String, String, String)` no `GeraLandingStageExecutionService`.
+- validação: teste `GeraLandingAssemblerArchitectureTest` executado com sucesso.

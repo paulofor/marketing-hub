@@ -81,7 +81,9 @@ public class ExperimentPipelineOpenAiClient {
             "PROOF_SUMMARY",
             "MECHANISM_SUMMARY",
             "RESULT_SUMMARY",
+            "RESULT_JSON",
             "PAIN_SUMMARY",
+            "PAIN_JSON",
             "PRIMARY_PAIN_SUMMARY",
             "PRIMARY_PROMISE_SUMMARY",
             "OFFER_NAME",
@@ -92,6 +94,7 @@ public class ExperimentPipelineOpenAiClient {
             "PROOF_ASSET_JSON",
             "CASE_NOTES");
     private static final String CASE_DATA_BLOCK_KEY = "CASE_DATA_BLOCK";
+    private static final String WIREFRAME_JSON_BLOCK_KEY = "WIREFRAME_JSON_BLOCK";
 
     private static final Pattern FORM_FIELD_BLOCK_PATTERN = Pattern.compile(
             "(?is)<div\\b[^>]*class\\s*=\\s*\"[^\"]*field[^\"]*\"[^>]*>.*?</div>");
@@ -1551,7 +1554,17 @@ public class ExperimentPipelineOpenAiClient {
             variables.put(key, readTemplateVariable(job, key));
         }
         variables.put(CASE_DATA_BLOCK_KEY, buildCaseDataBlock(variables));
+        variables.put(WIREFRAME_JSON_BLOCK_KEY, buildWireframeJsonBlock(job));
         return variables;
+    }
+
+
+    private String buildWireframeJsonBlock(ExperimentPipelineJobDto job) {
+        if (job == null || !StringUtils.hasText(job.prompt())) {
+            return "{}";
+        }
+        String wireframeJson = extractWireframeJsonBlock(job.prompt());
+        return StringUtils.hasText(wireframeJson) ? wireframeJson.trim() : "{}";
     }
 
     private String buildCaseDataBlock(Map<String, String> variables) {

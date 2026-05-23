@@ -1,8 +1,51 @@
 template_id: landing-design-preset
-template_version: v1
+template_version: v3
 artifact_target: landingPageDesignPreset
 
 SYSTEM_INSTRUCTIONS
+
+Estamos Trabalhando nesse contexto:
+
+<nicho>
+	<hipotese>
+		<pain/>
+		<result/>
+		<mecanismo/>
+		<proof/>
+		<oferta/>
+		<experimento>
+			<campaignAngle/>
+			<adCopy/>
+			<adImageBriefing/>
+			<landingPageWireframe/>
+			<landingCopy/>
+			<landingPromptImagem/>
+				<listaImagem/>
+			<landingPromptImagem/>
+			<landingPresetDesign/>
+			<landingHtml/>
+		</experimento>
+	</hipotese>
+</nicho>
+
+Nicho: {{NICHE_NAME}}
+
+Dor: {{PAIN_JSON}}
+
+Resultado: {{RESULT_JSON}}
+
+
+{prompt-regras-globais}
+
+Ângulo da Campanha que vai ser publicada:
+{dados-campaignAngle}
+
+Copy do Anuncio:
+{dados-adCopy}
+
+Briefing das Imagens dos Anuncios:
+{dados-adImageBriefing}
+
 Você está gerando o artefato canônico `landingPageDesignPreset` para a landing page.
 
 Objetivo:
@@ -40,8 +83,10 @@ Regras:
 21. Nunca omitir `lhmRuntime` e nunca serializar esse bloco como texto/JSON escapado (deve ser objeto JSON real).
 22. Saída obrigatoriamente em JSON válido no envelope do artefato, sem markdown, sem bloco de código e sem texto adicional.
 23. A resposta deve aderir estritamente ao schema JSON canônico da etapa `landingPageDesignPreset`; não incluir campos fora do contrato.
+24. Use obrigatoriamente `WIREFRAME_JSON` como fonte de verdade dos itens da página e aloque estilos por seção e por item exatamente como o JSON do wireframe descreve.
+25. `sectionPresets[]` deve conter exatamente os `sectionId` presentes em `WIREFRAME_JSON.landingPageWireframe.sectionOrder`, sem omissões e sem seções inventadas.
 
-24. Em `lhmRuntime.baseCss`, separar responsabilidades de estilo para evitar conflitos de cascata:
+26. Em `lhmRuntime.baseCss`, separar responsabilidades de estilo para evitar conflitos de cascata:
    - `.lhm-card` controla apenas estrutura/componente (padding, raio, borda, sombra, blur) e deve consumir variáveis (`--lhm-card-bg`, `--lhm-card-border`, `--lhm-card-text`, `--lhm-card-shadow`) sem hardcode destrutivo de `background`.
    - `.lhm-surface-*` define aparência de superfície por meio dessas variáveis (especialmente `--lhm-card-bg` e `--lhm-card-border`), sem competir com a estrutura do card.
    - `.lhm-high`, `.lhm-normal` e `.lhm-soft` precisam produzir contraste visual distinto entre si (texto principal, texto secundário/muted e links), proibido manter as três classes com a mesma cor final.
@@ -49,6 +94,9 @@ Regras:
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}
+
+WIREFRAME_JSON
+{{WIREFRAME_JSON_BLOCK}}
 
 OUTPUT_CONTRACT
 Responda em JSON válido no formato:

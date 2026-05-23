@@ -1,6 +1,7 @@
 package com.marketinghub.geralanding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlProcessor;
 import org.junit.jupiter.api.Test;
@@ -21,9 +22,13 @@ class DesignPresetProvisionalHtmlAssemblerTest {
     @Test
     void shouldAssembleHtmlWithoutInjectingBehaviorTrackingScript() {
         DesignPresetProvisionalHtmlProcessor processor = mock(DesignPresetProvisionalHtmlProcessor.class);
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         when(processor.process(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn("<html><head><title>x</title></head><body><section data-section-id='hero'></section></body></html>");
-        DesignPresetProvisionalHtmlAssembler assembler = new DesignPresetProvisionalHtmlAssembler(processor, new ObjectMapper());
+        DesignPresetProvisionalHtmlAssembler assembler = new DesignPresetProvisionalHtmlAssembler(
+                processor,
+                new ObjectMapper(),
+                experimentRepository);
 
         String html = assembler.assemble(
                 "{\"landingPageWireframe\":{\"sectionOrder\":[]}}",

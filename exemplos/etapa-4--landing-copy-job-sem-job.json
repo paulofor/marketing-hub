@@ -1,0 +1,404 @@
+{
+  "pageGoal": "Capturar nome e e-mail para gerar uma amostra personalizada em PDF (com marca d’água) + mini-kit (5 itens) em poucos minutos, provando o formato e ajudando o personal a conduzir conversas sem virar briga de preço e a aumentar engajamento nas primeiras semanas.",
+  "messageMatchSource": "Anúncios focados na dor do “quanto custa?” + falta de progresso nas primeiras semanas, com prova de formato (amostra em PDF) e velocidade (briefing de ~2 min e geração em ~3 min).",
+  "messageMatchNotes": "A página mantém o mesmo enquadramento do anúncio: você não está comprando no escuro — você gera uma prévia real do seu material. A promessa é prática e direta: criar um “caminho claro” para conduzir conversas com próximo passo e organizar o começo do aluno nas primeiras semanas, sem depender de desconto.",
+  "primaryCTA": "Preencher o briefing (2 min) e gerar a amostra",
+  "complianceNotes": [
+    "Evitar promessas absolutas ou garantias de resultado (ex.: “agenda cheia garantida”). Usar linguagem do tipo “ajuda a”, “para”, “comece por”.",
+    "Deixar claro que a entrega imediata é uma amostra/prévia com marca d’água, não o material final completo.",
+    "Não posicionar como consultoria/mentoria/call nem como acompanhamento humano; é um material gerado a partir do briefing.",
+    "Reforçar privacidade e uso responsável do e-mail (sem spam; opção de descadastro)."
+  ],
+  "bodySections": [
+    {
+      "sectionId": "s1-hero-form",
+      "items": [
+        {
+          "id": "s1-credencial-curta",
+          "texto": "Para personal trainers que querem parar de cair no “quanto custa?” e ter mais previsibilidade na agenda."
+        },
+        {
+          "id": "s1-headline",
+          "texto": "Preencha o briefing de 2 minutos e gere agora sua amostra personalizada em PDF"
+        },
+        {
+          "id": "s1-subheadline",
+          "texto": "Em ~3 min, você recebe uma prévia (1 página com marca d’água) + um mini-kit com 5 itens prontos para conduzir conversas com próximo passo claro — sem briga de preço."
+        },
+        {
+          "id": "s1-bullet-1",
+          "texto": "Mostre seu diferencial antes do preço (sem texto genérico)."
+        },
+        {
+          "id": "s1-bullet-2",
+          "texto": "Tenha mensagens curtas para responder “quanto custa?” sem virar desconto."
+        },
+        {
+          "id": "s1-bullet-3",
+          "texto": "Começo guiado nas primeiras semanas para o aluno sentir direção e pequenas vitórias."
+        },
+        {
+          "id": "s1-microproof-time",
+          "texto": "Tempo: briefing ~2 min • geração ~3 min • entrega por e-mail."
+        },
+        {
+          "id": "s1-link-to-form",
+          "texto": "Gerar minha amostra agora"
+        },
+        {
+          "id": "s1-link-to-what-you-get",
+          "texto": "Ver o que eu recebo"
+        },
+        {
+          "id": "s1-link-to-why-works",
+          "texto": "Entender por que funciona"
+        },
+        {
+          "id": "s1-form-title",
+          "texto": "Gerar amostra personalizada (grátis)"
+        },
+        {
+          "id": "s1-label-name",
+          "texto": "Seu nome"
+        },
+        {
+          "id": "s1-input-name",
+          "texto": ""
+        },
+        {
+          "id": "s1-label-email",
+          "texto": "Seu melhor e-mail"
+        },
+        {
+          "id": "s1-input-email",
+          "texto": ""
+        },
+        {
+          "id": "s1-consent-label",
+          "texto": "Quero receber a amostra e comunicações relacionadas (posso cancelar quando quiser)."
+        },
+        {
+          "id": "s1-submit",
+          "texto": "Preencher o briefing (2 min) e gerar a amostra"
+        },
+        {
+          "id": "s1-privacy-note",
+          "texto": "Sem spam. Usamos seu e-mail apenas para enviar a amostra e conteúdos relacionados. Você pode sair quando quiser."
+        },
+        {
+          "id": "s1-sticky-cta-link",
+          "texto": "Gerar amostra (2 min)"
+        }
+      ]
+    },
+    {
+      "sectionId": "s2-o-que-voce-recebe",
+      "items": [
+        {
+          "id": "s2-title",
+          "texto": "O que você recebe (prévia real em minutos)"
+        },
+        {
+          "id": "s2-item-1-title",
+          "texto": "Convite + bio + mensagem"
+        },
+        {
+          "id": "s2-item-1-desc",
+          "texto": "Um texto claro para atrair o aluno certo e abrir conversa sem parecer “mais do mesmo”."
+        },
+        {
+          "id": "s2-item-2-title",
+          "texto": "1 post + 3 stories"
+        },
+        {
+          "id": "s2-item-2-desc",
+          "texto": "Conteúdo pronto para posicionar seu acompanhamento e puxar interessados com contexto (não só curiosos por preço)."
+        },
+        {
+          "id": "s2-item-3-title",
+          "texto": "Resposta curta anti-preço"
+        },
+        {
+          "id": "s2-item-3-desc",
+          "texto": "Mensagem objetiva para tirar a conversa do “quanto custa?” e levar para o próximo passo."
+        },
+        {
+          "id": "s2-item-4-title",
+          "texto": "Mapa visual de 4 semanas"
+        },
+        {
+          "id": "s2-item-4-desc",
+          "texto": "Um “caminho claro” do início, para o aluno entender como a evolução acontece."
+        },
+        {
+          "id": "s2-item-5-title",
+          "texto": "2 check-ins (semana 1 e 2)"
+        },
+        {
+          "id": "s2-item-5-desc",
+          "texto": "Check-ins curtos para aumentar resposta, presença e percepção de cuidado logo no começo."
+        },
+        {
+          "id": "s2-watermark-note",
+          "texto": "Observação: esta é uma amostra com marca d’água (prévia). Ela existe para você ver o formato e a “cara” do material antes de decidir qualquer próximo passo."
+        },
+        {
+          "id": "s2-cta-to-form",
+          "texto": "Preencher o briefing (2 min) e gerar minha amostra"
+        }
+      ]
+    },
+    {
+      "sectionId": "s3-por-que-funciona",
+      "items": [
+        {
+          "id": "s3-title",
+          "texto": "Por que isso ajuda (sem virar briga de preço)"
+        },
+        {
+          "id": "s3-bullet-1",
+          "texto": "Clareza antes do preço: o aluno entende o que vai acontecer e por que vale o investimento."
+        },
+        {
+          "id": "s3-bullet-2",
+          "texto": "Começo guiado: você mostra o próximo passo e dá sensação de direção (não de improviso)."
+        },
+        {
+          "id": "s3-bullet-3",
+          "texto": "Check-ins iniciais: nas semanas 1–2, o aluno percebe cuidado e pequenas vitórias — fase em que mais desanima."
+        },
+        {
+          "id": "s3-caution",
+          "texto": "Não é “script mágico”. É uma estrutura simples para organizar comunicação + início do aluno e reduzir conversas que morrem no preço."
+        },
+        {
+          "id": "s3-cta-to-form",
+          "texto": "Gerar minha amostra em PDF agora"
+        }
+      ]
+    },
+    {
+      "sectionId": "s4-como-usar-2-semanas",
+      "items": [
+        {
+          "id": "s4-title",
+          "texto": "Como usar na prática (primeiras 2 semanas)"
+        },
+        {
+          "id": "s4-timeline-1",
+          "texto": "D0: envie a mensagem de boas-vindas + alinhe o “próximo passo” (o aluno sabe o que fazer hoje)."
+        },
+        {
+          "id": "s4-timeline-2",
+          "texto": "D1–D7: use o mapa de 4 semanas para reforçar o caminho e ajustar expectativa sem enrolação."
+        },
+        {
+          "id": "s4-timeline-3",
+          "texto": "Check-in 1 (semana 1): pergunte 3 coisas simples e registre a primeira pequena vitória."
+        },
+        {
+          "id": "s4-timeline-4",
+          "texto": "Check-in 2 (semana 2): confirme consistência e reforce o plano (antes do aluno “sumir”)."
+        },
+        {
+          "id": "s4-checklist-title",
+          "texto": "3 passos para aplicar amanhã"
+        },
+        {
+          "id": "s4-check-1",
+          "texto": "Poste o conteúdo (1 post + 3 stories) para puxar leads com contexto."
+        },
+        {
+          "id": "s4-check-2",
+          "texto": "Quando vier “quanto custa?”, use a resposta curta e leve para o próximo passo."
+        },
+        {
+          "id": "s4-check-3",
+          "texto": "Use o mapa + check-ins para manter engajamento nas semanas 1–2."
+        },
+        {
+          "id": "s4-cta-to-form",
+          "texto": "Preencher o briefing (2 min) e gerar a amostra"
+        }
+      ]
+    },
+    {
+      "sectionId": "s5-faq-objeções",
+      "items": [
+        {
+          "id": "s5-title",
+          "texto": "FAQ — dúvidas rápidas antes de gerar sua amostra"
+        },
+        {
+          "id": "s5-q1-title",
+          "texto": "Isso é o produto final?"
+        },
+        {
+          "id": "s5-q1-body",
+          "texto": "Não. O que você recebe agora é uma amostra/prévia com marca d’água para você ver o formato e como isso fica “com a sua cara”."
+        },
+        {
+          "id": "s5-q2-title",
+          "texto": "Por que vem com marca d’água?"
+        },
+        {
+          "id": "s5-q2-body",
+          "texto": "Para deixar claro que é uma amostra e permitir que você avalie antes de qualquer decisão. O objetivo aqui é transparência, não promessa vazia."
+        },
+        {
+          "id": "s5-q3-title",
+          "texto": "Isso é consultoria, mentoria ou call?"
+        },
+        {
+          "id": "s5-q3-body",
+          "texto": "Não. É um material gerado a partir do seu briefing, para você usar no seu WhatsApp/Instagram e no começo do aluno."
+        },
+        {
+          "id": "s5-q4-title",
+          "texto": "Meus dados ficam seguros? Vocês vão fazer spam?"
+        },
+        {
+          "id": "s5-q4-body",
+          "texto": "Você informa apenas nome e e-mail. Usamos para enviar a amostra e comunicações relacionadas. Dá para cancelar o recebimento quando quiser."
+        },
+        {
+          "id": "s5-q5-title",
+          "texto": "Serve para qualquer personal?"
+        },
+        {
+          "id": "s5-q5-body",
+          "texto": "Sim — principalmente se você atende por planos e quer conduzir a conversa para o próximo passo e aumentar engajamento nas primeiras semanas."
+        },
+        {
+          "id": "s5-cta-to-form",
+          "texto": "Gerar minha amostra (leva ~3 min)"
+        }
+      ]
+    },
+    {
+      "sectionId": "s6-final-cta-form",
+      "items": [
+        {
+          "id": "s6-title",
+          "texto": "Pronto para ver sua prévia e parar de improvisar no “quanto custa?”"
+        },
+        {
+          "id": "s6-b1",
+          "texto": "Briefing rápido (2 min) com poucas respostas."
+        },
+        {
+          "id": "s6-b2",
+          "texto": "Entrega em PDF (amostra com marca d’água) + mini-kit (5 itens)."
+        },
+        {
+          "id": "s6-b3",
+          "texto": "Ajuda a conduzir conversas com próximo passo claro."
+        },
+        {
+          "id": "s6-b4",
+          "texto": "Começo guiado para as semanas 1–2 (check-ins incluídos)."
+        },
+        {
+          "id": "s6-form-title",
+          "texto": "Gerar minha amostra agora"
+        },
+        {
+          "id": "s6-label-name",
+          "texto": "Seu nome"
+        },
+        {
+          "id": "s6-input-name",
+          "texto": ""
+        },
+        {
+          "id": "s6-label-email",
+          "texto": "Seu melhor e-mail"
+        },
+        {
+          "id": "s6-input-email",
+          "texto": ""
+        },
+        {
+          "id": "s6-consent-label",
+          "texto": "Aceito receber a amostra e comunicações relacionadas (posso cancelar quando quiser)."
+        },
+        {
+          "id": "s6-submit",
+          "texto": "Preencher o briefing (2 min) e gerar a amostra"
+        },
+        {
+          "id": "s6-privacy-note",
+          "texto": "Sem spam. Você pode cancelar o recebimento com 1 clique."
+        }
+      ]
+    }
+  ],
+  "ctaBlocks": [
+    {
+      "placement": "hero_primary",
+      "ctaVariant": "primary",
+      "ctaLabel": "Preencher o briefing (2 min) e gerar a amostra",
+      "ctaUrl": "#briefing-amostra-variant-28",
+      "matchAdCta": true,
+      "ctaSupport": "Amostra em PDF (com marca d’água) + mini-kit (5 itens) em ~3 min.",
+      "messageMatchNotes": "Repete a mesma ação do anúncio e reforça velocidade + prova de formato para reduzir o “comprar no escuro”."
+    },
+    {
+      "placement": "midpage_after_deliverables",
+      "ctaVariant": "secondary",
+      "ctaLabel": "Gerar minha amostra em PDF agora",
+      "ctaUrl": "#briefing-amostra-variant-28",
+      "matchAdCta": true,
+      "ctaSupport": "Você só precisa de nome e e-mail para receber a prévia.",
+      "messageMatchNotes": "Reforça a decisão depois da lista do que a pessoa recebe, no momento em que a objeção de “o que vem?” já foi respondida."
+    },
+    {
+      "placement": "footer_final",
+      "ctaVariant": "primary",
+      "ctaLabel": "Preencher o briefing (2 min) e gerar a amostra",
+      "ctaUrl": "#briefing-amostra-variant-28-final",
+      "matchAdCta": true,
+      "ctaSupport": "Prévia com marca d’água para você avaliar o material antes de qualquer próximo passo.",
+      "messageMatchNotes": "Fecha a página com o mesmo pedido do início, sem exigir que a pessoa volte ao topo."
+    }
+  ],
+  "faq": [
+    {
+      "question": "Isso é o produto final?",
+      "answer": "Não. Você recebe uma amostra/prévia com marca d’água para avaliar o formato e a qualidade antes de qualquer decisão.",
+      "objectionTag": "amostra_vs_final"
+    },
+    {
+      "question": "Por que tem marca d’água?",
+      "answer": "Para deixar claro que é uma amostra e evitar que pareça “promessa no vazio”. O objetivo é você ver a entrega real.",
+      "objectionTag": "marca_dagua"
+    },
+    {
+      "question": "Isso é consultoria, mentoria ou call?",
+      "answer": "Não. É um material gerado a partir do seu briefing, feito para você usar na comunicação e no começo do aluno.",
+      "objectionTag": "nao_e_consultoria"
+    },
+    {
+      "question": "Vão usar meu e-mail para spam?",
+      "answer": "Você informa apenas nome e e-mail para receber a amostra e comunicações relacionadas. Dá para cancelar quando quiser.",
+      "objectionTag": "privacidade_spam"
+    }
+  ],
+  "consistencyChecks": [
+    {
+      "check": "CTA_MATCH",
+      "status": "PASS",
+      "details": "O CTA principal mantém a mesma ação e linguagem do anúncio: briefing rápido e geração da amostra em PDF."
+    },
+    {
+      "check": "PROMISE_MATCH",
+      "status": "PASS",
+      "details": "A narrativa sustenta a promessa central: reduzir briga de preço ao criar clareza do caminho e aumentar engajamento nas primeiras semanas com começo guiado e check-ins."
+    },
+    {
+      "check": "GOOGLE_LANDING_BEST_PRACTICES",
+      "status": "WARN",
+      "details": "O wireframe não define limites de tamanho para os textos; por isso, os textos foram mantidos curtos e escaneáveis, com repetição de CTA e notas de transparência (amostra com marca d’água e privacidade). Recomenda-se incluir links visíveis para Política de Privacidade e Termos no rodapé."
+    }
+  ]
+}

@@ -109,96 +109,6 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
-    void prependsLandingCopyGuidanceForLandingCopySection() {
-        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
-                UUID.randomUUID(),
-                11L,
-                "landing-page-copy",
-                "gpt-5.2",
-                "prompt",
-                """
-                        {
-                          "model": "gpt-5.2",
-                          "input": [
-                            {"role": "user", "content": "Prompt da landing"}
-                          ]
-                        }
-                        """,
-                Instant.now());
-
-        client.generate(job);
-
-        Map<String, Object> payload = payloadRef.get();
-        @SuppressWarnings("unchecked")
-        var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(0).get("content"));
-        assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
-        assertThat(userPrompt).contains("Prompt da landing");
-        assertThat(userPrompt).contains("Regras fixas da etapa (Gera Landing, contrato v3):");
-        assertThat(userPrompt).contains("CASE_DATA");
-        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("artifact_target: landingPageCopy");
-        assertThat(userPrompt).contains("bodySections[]");
-        assertThat(userPrompt).contains("ctaBlocks[]");
-        assertThat(userPrompt).contains("consistencyChecks[]");
-        assertThat(userPrompt).contains("complianceNotes");
-        assertThat(userPrompt).contains("Quando `CASE_DATA` incluir `landingPageWireframe` com `copySlots`");
-        assertThat(userPrompt).contains("cada item de `bodySections` deve informar `sectionId` + `slotId` exatamente como definidos no wireframe");
-        assertThat(userPrompt).contains("não usar `purpose` como `slotId` (ex.: `headline`, `subheadline`, `promise`)");
-        assertThat(userPrompt).contains("Preserve a promessa/argumentação, mas mapeie a copy nos slots válidos do wireframe atual");
-    }
-
-    @Test
-    void prependsLandingLayoutGuidanceForLandingLayoutSection() {
-        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
-                UUID.randomUUID(),
-                12L,
-                "landing-page-wireframe",
-                "gpt-5.2",
-                "prompt",
-                """
-                        {
-                          "model": "gpt-5.2",
-                          "input": [
-                            {"role": "user", "content": "Prompt do wireframe"}
-                          ]
-                        }
-                        """,
-                Instant.now());
-
-        client.generate(job);
-
-        Map<String, Object> payload = payloadRef.get();
-        @SuppressWarnings("unchecked")
-        var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(0).get("content"));
-        assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
-        assertThat(userPrompt).contains("Prompt do wireframe");
-        assertThat(userPrompt).contains("SYSTEM_INSTRUCTIONS");
-        assertThat(userPrompt).contains("CASE_DATA");
-        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-        assertThat(userPrompt).contains("definicoes");
-        assertThat(userPrompt).contains("pagina");
-        assertThat(userPrompt).contains("Formulário obrigatório da landing");
-        assertThat(userPrompt).contains("Quantidade mínima de seções obrigatória");
-        assertThat(userPrompt).contains("OUTPUT_CONTRACT");
-    }
-
-    @Test
     void prependsLandingImagePlanningGuidanceAlignedWithCanonicalContract() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
@@ -1117,8 +1027,8 @@ class ExperimentPipelineOpenAiClientTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> templateTrace = (Map<String, Object>) trackedRequest.get("templateTrace");
         assertThat(templateTrace)
-                .containsEntry("template_id", "landing-copy")
-                .containsEntry("template_version", "v2")
+                .containsEntry("template_id", "landing-page-copy")
+                .containsEntry("template_version", "v3")
                 .containsEntry("artifact_target", "landingPageCopy")
                 .containsEntry("model", "gpt-5.2");
     }

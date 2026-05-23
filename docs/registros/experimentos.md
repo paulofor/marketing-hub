@@ -1,3 +1,15 @@
+
+## 2026-05-23 00:00:00 UTC
+- solicitação para corrigir falha de typecheck no frontend em `ExperimentDetailPage` por ausência do campo `htmlGeraLanding` no tipo `Experiment`.
+- causa-raiz identificada: o componente já consome `experiment.htmlGeraLanding`, porém a interface TypeScript compartilhada em `useExperiments.ts` não declarava esse atributo.
+- correção aplicada: inclusão do campo opcional `htmlGeraLanding?: string | null` na interface `Experiment` para alinhar contrato de tipagem com o consumo da tela de Experimentos/GeraLanding.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/api/experiment/useExperiments.ts
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
 ## 2026-05-21 01:05:00 UTC-3
 - solicitação: corrigir ingestão de tracking que iniciava cedo demais na landing do experimento 26.
 - causa-raiz identificada: o script `data-mh-funnel-tracking` era executado imediatamente após injeção no `<head>`, podendo consultar seções antes do DOM estar pronto.

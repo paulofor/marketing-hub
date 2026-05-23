@@ -217,8 +217,7 @@ public class DesignPresetWireframeHtmlGenerator {
         String content = asText(texto.get("conteudo"), "").trim();
 
         if (!StringUtils.hasText(content)) {
-            String lorem = resolveLoremIpsum(node);
-            return StringUtils.hasText(lorem) ? escapeHtmlText(lorem) : "";
+            return "";
         }
 
         return escapeHtmlText(content);
@@ -390,39 +389,6 @@ public class DesignPresetWireframeHtmlGenerator {
         return out.toString().trim();
     }
 
-
-    private Integer parseInteger(Object value) {
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        if (!(value instanceof String text) || !StringUtils.hasText(text)) {
-            return null;
-        }
-        String digits = text.replaceAll("[^0-9]", "");
-        if (!StringUtils.hasText(digits)) {
-            return null;
-        }
-        return Integer.parseInt(digits);
-    }
-
-    private String resolveLoremIpsum(Map<String, Object> node) {
-        Integer min = parseInteger(node.get("textMinWords"));
-        Integer max = parseInteger(node.get("textMaxWords"));
-        int words = min != null && max != null ? (min + max) / 2 : 14;
-        if (words <= 0) {
-            return "";
-        }
-        String base = "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt";
-        String[] tokens = base.split(" ");
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < words; i++) {
-            if (i > 0) {
-                out.append(" ");
-            }
-            out.append(tokens[i % tokens.length]);
-        }
-        return out.append(".").toString();
-    }
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> asMap(Object value) {

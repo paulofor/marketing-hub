@@ -1108,3 +1108,13 @@
   - adicionado logging de erro estruturado em `GeraLandingStageExecutionService.receiveResult` com `idJob`, `experimentId`, `stageCode`, `openAiJobId`, tamanho e preview de `modelResponse` e `provisionalHtml` antes de relançar exceção;
   - adicionado logging de erro estruturado em `CopyProvisionalHtmlAssembler.assemble` com `jobId`, tamanho e preview de `copyModelResponse` e `wireframeModelResponse`, preservando stack trace completo da exceção original.
 - resultado esperado: próxima recorrência desse tipo de erro passa a expor no log o ponto exato do fluxo e o contexto de payload para diagnóstico de causa-raiz em menor tempo.
+
+- 2026-05-23 (UTC): padronização do fluxo de provisional HTML no GeraLanding para usar o mesmo formato de chamada dos assemblers por etapa (`assemble(modelResponse, idJob)`), aplicando na etapa `landing-page-design-preset` via `DesignPresetProvisionalHtmlAssembler` e removendo o fallback com composição cruzada no serviço de execução.
+
+- 2026-05-23 (UTC): adicionada regra ArchUnit `GeraLandingAssemblerArchitectureTest` para bloquear uso da assinatura legada `assemble(wireframe, copy, imagePlanning, designPreset, jobId)` dentro de `GeraLandingStageExecutionService`, forçando o padrão `assemble(modelResponse, jobId)` na etapa `landing-page-design-preset`.
+
+- 2026-05-23 (UTC): reforço adicional de ArchUnit para exigir localização dos assemblers canônicos: `WireframeProvisionalHtmlAssembler` em `com.marketinghub.geralanding.wireframe` e `DesignPresetProvisionalHtmlAssembler` em `com.marketinghub.geralanding.designpreset`; mantida também a regra que bloqueia chamada da assinatura legada de 5 parâmetros no service.
+
+- 2026-05-23 (UTC): ampliadas regras ArchUnit do GeraLanding para também bloquear no `GeraLandingStageExecutionService` o uso de assinaturas legadas dos assemblers de wireframe (`assemble(modelResponse)`) e copy (`assemble(copyModelResponse, wireframeModelResponse)`), forçando os contratos com `jobId`.
+
+- 2026-05-23 (UTC): adicionadas regras ArchUnit positivas para exigir que `GeraLandingStageExecutionService` chame explicitamente os assemblers canônicos nas assinaturas padrão: wireframe (`assemble(modelResponse, jobId)`), design preset (`assemble(modelResponse, jobId)`) e copy (`assemble(copyModelResponse, wireframeModelResponse, jobId)`).

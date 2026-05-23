@@ -21,6 +21,17 @@ public class DesignPresetProvisionalHtmlAssembler {
         this.objectMapper = objectMapper;
     }
 
+
+    /**
+     * Monta o HTML provisório da etapa a partir do retorno direto do modelo.
+     */
+    public String assemble(String designPresetOutput, String jobId) {
+        if (!StringUtils.hasText(designPresetOutput)) {
+            return null;
+        }
+        return preserveCanonicalHtml(designPresetOutput, jobId);
+    }
+
     /**
      * Consolida wireframe/copy com o resultado do design preset para produzir o HTML provisório da etapa.
      */

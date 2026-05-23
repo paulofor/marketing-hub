@@ -151,8 +151,7 @@ sequenceDiagram
 
     %% Banco destacado com cor própria
     rect rgb(255, 245, 210)
-    Note over DB: Camada de Persistência (MySQL 5.7)
-Banco de dados principal
+    Note over DB: Camada de Persistência (MySQL 5.7)\nBanco de dados principal
     end
 
     rect rgb(245,245,245)
@@ -346,7 +345,7 @@ graph TD
     HC[mois-hotmart-collector\npackage: com.marketinghub.mois.hotmart.collector] -->|POST /api/mois/sales-library/urls:ingest| BM[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web]
     CC[mois-clickbank-collector\npackage: com.marketinghub.mois.clickbank.collector] -->|POST /api/mois/sales-library/urls:ingest| BM
 
-    WK[mois-sales-library-worker\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service] -->|jobs:claim, jobs/{id}:complete, jobs/{id}:fail| BM
+    WK[mois-sales-library-worker\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service] -->|"jobs:claim, jobs/{id}:complete, jobs/{id}:fail"| BM
     WK -->|/v1/responses (batch)| OAI[OpenAI API]
 
     BM -->|JPA/SQL via camada backend| DB[(MySQL 5.7)]

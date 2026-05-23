@@ -1222,3 +1222,12 @@
   - removida a lógica de fallback que injetava `background-color` automático por seção;
   - o gerador agora preserva apenas os estilos fornecidos pelo contrato (`estilos`/classes responsivas), sem forçar cor inline.
 - validação: teste unitário direcionado do módulo executado com sucesso.
+
+## 2026-05-23 13:10:00 UTC
+- solicitação: verificar se o generator de preset design ainda injeta/omite/altera conteúdo além do JSON de entrada.
+- causa-raiz: além da cor de fundo já removida, o gerador ainda alterava contrato em outros pontos (injeção automática de `alt/width/height` em `<img>` e omissão de `class/style` vindos em `props/atributos` quando também havia tokens em `estilos`).
+- correção aplicada:
+  - removida a injeção automática de atributos de imagem (`alt`, `width`, `height`);
+  - ajuste de merge para preservar `class` e `style` vindos do JSON e combinar com classes/estilos derivados de `estilos` tokenizados, sem sobrescrever/omitir.
+  - adicionados testes unitários direcionados para cobertura dos cenários de preservação/merge e ausência de injeção automática.
+- validação: testes unitários específicos do módulo executados com sucesso.

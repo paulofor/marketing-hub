@@ -59,10 +59,8 @@ Observação operacional: no worker `geralanding`, etapas fora desse conjunto ai
 ```mermaid
 flowchart TD
     EXP[(experiments)] --> A[GeraLandingStageExecutionService.receiveResult]
-    A --> EREP[ExperimentRepository.save
-(tabela experiments)]
-    A --> SREP[GeraLandingStageExecutionRepository.save
-(tabela gera_landing_stage_execution)]
+    A --> EREP["ExperimentRepository.save<br/>(tabela experiments)"]
+    A --> SREP["GeraLandingStageExecutionRepository.save<br/>(tabela gera_landing_stage_execution)"]
 
     A -->|landing-page-wireframe| W[WireframeProvisionalHtmlAssembler.assemble(modelResponse, jobId)]
     A -->|landing-page-copy| C[CopyProvisionalHtmlAssembler.assemble(copyModelResponse, wireframeModelResponse, jobId)]
@@ -74,15 +72,10 @@ flowchart TD
     I --> SREP
     D --> SREP
 
-    A -->|wireframe persistido| EF1[experiments.landing_page_wireframe
-+ landing_page_wireframe_job_id]
-    A -->|copy persistida| EF2[experiments.landing_page_copy
-+ landing_page_copy_job_id]
-    A -->|image planning persistido| EF3[experiments.landing_page_image_planning
-+ landing_page_html]
-    A -->|design preset persistido| EF4[experiments.landing_page_design_preset
-+ html_geralanding
-+ landing_page_html]
+    A -->|wireframe persistido| EF1["experiments.landing_page_wireframe<br/>+ landing_page_wireframe_job_id"]
+    A -->|copy persistida| EF2["experiments.landing_page_copy<br/>+ landing_page_copy_job_id"]
+    A -->|image planning persistido| EF3["experiments.landing_page_image_planning<br/>+ landing_page_html"]
+    A -->|design preset persistido| EF4["experiments.landing_page_design_preset<br/>+ html_geralanding<br/>+ landing_page_html"]
 ```
 
 Leitura operacional (mapeamento por causa-raiz de persistência): a orquestração principal acontece em `GeraLandingStageExecutionService.receiveResult(...)`, que primeiro grava `modelResponse/provisionalHtml/status` em `gera_landing_stage_execution` via `GeraLandingStageExecutionRepository.save(...)` e, em seguida, persiste o artefato da etapa em `experiments` pelo método `persistStageArtifactOnExperiment(...)` com `ExperimentRepository.save(...)`. Para as quatro etapas solicitadas:

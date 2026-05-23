@@ -60,11 +60,11 @@ public class ExperimentPipelineOpenAiClient {
 
             """;
     private static final String CAMPAIGN_ANGLE_TEMPLATE_PATH = "prompts/experiment/campaign-angle.md";
-    private static final String LANDING_COPY_TEMPLATE_PATH = "prompts/experiment/landing-copy.md";
-    private static final String LANDING_WIREFRAME_TEMPLATE_PATH = "prompts/experiment/landing-wireframe.md";
-    private static final String LANDING_IMAGE_PLANNING_TEMPLATE_PATH = "prompts/experiment/landing-image-planning.md";
-    private static final String LANDING_DESIGN_PRESET_TEMPLATE_PATH = "prompts/experiment/landing-design-preset.md";
-    private static final String LANDING_HTML_TEMPLATE_PATH = "prompts/experiment/landing-html.md";
+    private static final String LANDING_COPY_TEMPLATE_PATH = "prompts/geralanding/landing-page-copy.md";
+    private static final String LANDING_WIREFRAME_TEMPLATE_PATH = "prompts/geralanding/landing-page-wireframe.md";
+    private static final String LANDING_IMAGE_PLANNING_TEMPLATE_PATH = "prompts/geralanding/landing-page-image-planning.md";
+    private static final String LANDING_DESIGN_PRESET_TEMPLATE_PATH = "prompts/geralanding/landing-page-design-preset.md";
+    private static final String LANDING_HTML_TEMPLATE_PATH = "prompts/geralanding/landing-page-deliverables.md";
 
     private static final String CAMPAIGN_ANGLE_MARKER = "- visualAngle";
     private static final String LANDING_COPY_MARKER = "- messageMatchSource";
@@ -1902,7 +1902,7 @@ public class ExperimentPipelineOpenAiClient {
     }
 
     private boolean isLandingHtmlSection(ExperimentPipelineJobDto job) {
-        return isSection(job, "landing-page-html", "landing-page_html", "landing-html", "landing_html");
+        return isSection(job, "landing-page-html", "landing-page_html", "landing-html", "landing_html", "landing-page-deliverables", "landing-page_deliverables", "landing-deliverables", "landing_deliverables");
     }
 
     private boolean isLandingImagePlanningSection(ExperimentPipelineJobDto job) {

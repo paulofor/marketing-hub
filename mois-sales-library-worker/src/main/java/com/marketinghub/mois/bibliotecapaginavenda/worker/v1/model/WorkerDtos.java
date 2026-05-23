@@ -9,6 +9,6 @@ public final class WorkerDtos {
     public record ClaimRequest(String workspaceId, String source) {}
     public record ClaimedJob(Long jobId, Long pageId, String urlCanonical, String title) {}
     public record ClaimResponse(boolean claimed, ClaimedJob job) {}
-    public record CompleteRequest(BigDecimal scoreTotal, String sectionsJson, String copyJson, String visualJson, String imageJson, String analysisNotes, String parserVersion, String promptVersion, String modelName, Instant analyzedAt) {}
+    public record CompleteRequest(BigDecimal scoreTotal, String sectionsJson, String copyJson, String visualJson, String imageJson, String analysisNotes, String requestPayloadJson, String parserVersion, String promptVersion, String modelName, Instant analyzedAt) {}
     public record FailRequest(String errorCategory, String errorMessage) {}
 }

@@ -37,6 +37,7 @@ public final class MoisSalesLibraryDtos {
             String visualJson,
             String imageJson,
             String analysisNotes,
+            String requestPayloadJson,
             String parserVersion,
             String promptVersion,
             String modelName,
@@ -156,6 +157,7 @@ public final class MoisSalesLibraryDtos {
             String visualJson,
             String imageJson,
             String analysisNotes,
+            String requestPayloadJson,
             Instant analyzedAt,
             Instant updatedAt
     ) {

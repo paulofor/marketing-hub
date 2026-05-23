@@ -50,7 +50,7 @@ public class OpenAiSalesPageAnalyzer {
             throw new IllegalStateException(buildBatchMissingOutputMessage(completed));
         }
         String output = downloadOutput(completed.outputFileId());
-        return parseBatchOutput(output);
+        return parseBatchOutput(output, payloadLine);
     }
 
     private String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
@@ -129,7 +129,10 @@ public class OpenAiSalesPageAnalyzer {
         }
     }
 
-    private SalesPageAnalysisResult parseBatchOutput(String outputJsonl) {
+    /**
+     * Interpreta o JSONL de saída da OpenAI e devolve o resultado estruturado da análise.
+     */
+    private SalesPageAnalysisResult parseBatchOutput(String outputJsonl, String requestPayloadJson) {
         try {
             String line = outputJsonl.lines().filter(StringUtils::hasText).findFirst().orElseThrow();
             JsonNode root = objectMapper.readTree(line);
@@ -153,6 +156,7 @@ public class OpenAiSalesPageAnalyzer {
                     objectMapper.writeValueAsString(parsed.path("visual_json")),
                     objectMapper.writeValueAsString(parsed.path("image_json")),
                     parsed.path("analysis_notes").asText("Análise gerada via OpenAI batch"),
+                    requestPayloadJson,
                     "html-v1",
                     "openai-batch-v1",
                     properties.normalizedModel()

@@ -60,12 +60,21 @@ function JsonTreeNode({ label, value, defaultOpen = false }: { label: string; va
 }
 
 function JsonCollapse({ title, content }: { title: string; content?: string }) {
+  if (!content) {
+    return (
+      <details className="border rounded p-2 bg-light-subtle">
+        <summary className="fw-semibold" style={{ cursor: "pointer" }}>
+          {title}
+        </summary>
+        <div className="mt-2 small text-secondary">Não disponível neste registro.</div>
+      </details>
+    );
+  }
+
   let parsed: unknown;
   let parseError = false;
 
-  if (!content) {
-    parsed = {};
-  } else {
+  {
     try {
       parsed = JSON.parse(content);
     } catch {
@@ -186,7 +195,8 @@ export default function MoisSalesPageLibraryDetailPage() {
             <JsonCollapse title="Resposta do modelo (copyJson)" content={analysisQuery.data.copyJson} />
             <JsonCollapse title="Resposta do modelo (visualJson)" content={analysisQuery.data.visualJson} />
             <JsonCollapse title="Resposta do modelo (imageJson)" content={analysisQuery.data.imageJson} />
-            <JsonCollapse title="Request enviado ao modelo" content={analysisQuery.data.analysisNotes} />
+            <JsonCollapse title="Notas de análise retornadas pelo worker" content={analysisQuery.data.analysisNotes} />
+            <JsonCollapse title="Request enviado ao modelo" content={analysisQuery.data.requestPayloadJson} />
             <JsonCollapse title="Prompt usado no modelo" content={analysisQuery.data.promptVersion} />
           </div>
         </section>

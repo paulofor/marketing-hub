@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-23-mois-sales-library-request-payload-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_library_page_analysis
+        - not:
+            columnExists:
+              tableName: mois_sales_library_page_analysis
+              columnName: request_payload_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_library_page_analysis
+                ADD COLUMN request_payload_json LONGTEXT NULL AFTER analysis_notes;

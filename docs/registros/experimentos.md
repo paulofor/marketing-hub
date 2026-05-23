@@ -1189,3 +1189,12 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlAssembler.java
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/GeraLandingStageExecutionServiceTest.java
+
+## 2026-05-23 05:40:00 UTC
+- solicitação: corrigir violação ArchUnit de isolamento do subpacote `geralanding.designpreset`.
+- causa-raiz: `DesignPresetProvisionalHtmlAssembler` dependia diretamente de `ExperimentRepository` e `Experiment`, quebrando a regra de independência do subpacote.
+- correção aplicada:
+  - removida a dependência de `ExperimentRepository`/`Experiment` do assembler de design preset;
+  - removido o overload `assemble(Long experimentId, ...)` no assembler;
+  - `GeraLandingStageExecutionService` passou a fornecer explicitamente `wireframe/copy/imagePlanning` já carregados do experimento para o assembler.
+- validação: teste `ModuleIsolationArchitectureTest` executado com sucesso após o ajuste.

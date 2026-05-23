@@ -1,9 +1,6 @@
 package com.marketinghub.geralanding.designpreset;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -18,14 +15,11 @@ public class DesignPresetProvisionalHtmlAssembler {
 
     private final DesignPresetProvisionalHtmlProcessor processor;
     private final ObjectMapper objectMapper;
-    private final ExperimentRepository experimentRepository;
 
     public DesignPresetProvisionalHtmlAssembler(DesignPresetProvisionalHtmlProcessor processor,
-                                                ObjectMapper objectMapper,
-                                                ExperimentRepository experimentRepository) {
+                                                ObjectMapper objectMapper) {
         this.processor = processor;
         this.objectMapper = objectMapper;
-        this.experimentRepository = experimentRepository;
     }
 
 
@@ -37,23 +31,6 @@ public class DesignPresetProvisionalHtmlAssembler {
             return null;
         }
         return preserveCanonicalHtml(designPresetOutput, jobId);
-    }
-
-    /**
-     * Recupera os artefatos do experimento e monta o HTML final do preset de design.
-     */
-    public String assemble(Long experimentId, String designPresetOutput, String jobId) {
-        if (experimentId == null || !StringUtils.hasText(designPresetOutput)) {
-            return null;
-        }
-        Experiment experiment = experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
-        return assemble(
-                experiment.getLandingPageWireframe(),
-                experiment.getLandingPageCopy(),
-                experiment.getLandingPageImagePlanning(),
-                designPresetOutput,
-                jobId);
     }
 
     /**

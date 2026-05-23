@@ -303,17 +303,23 @@ export default function ExperimentDetailPage() {
         rawValue: data?.landingPageDesignPreset,
       },
       {
-        key: "landing-page-deliverables",
-        title: "Etapa 8 · Landing Page Deliverables",
-        description:
-          "JSON final dos entregáveis da amostra e do produto final.",
-        rawValue: data?.landingPageDeliverables,
+        key: "geralanding-html",
+        title: "Etapa 7 · GeraLanding HTML",
+        description: "Conteúdo bruto salvo na coluna html_geralanding.",
+        rawValue: data?.htmlGeraLanding,
       },
       {
         key: "landing-html",
-        title: "Etapa 7 · Landing HTML",
+        title: "Etapa 8 · Landing HTML",
         description: "Conteúdo bruto salvo na coluna landing_page_html.",
         rawValue: data?.landingPageHtml,
+      },
+      {
+        key: "landing-page-deliverables",
+        title: "Etapa 9 · Landing Page Deliverables",
+        description:
+          "JSON final dos entregáveis da amostra e do produto final salvo na coluna landing_page_deliverables.",
+        rawValue: data?.landingPageDeliverables,
       },
     ],
     [
@@ -321,6 +327,7 @@ export default function ExperimentDetailPage() {
       data?.campaignAngle,
       data?.landingPageCopy,
       data?.landingPageDesignPreset,
+      data?.htmlGeraLanding,
       data?.landingPageDeliverables,
       data?.landingPageHtml,
       data?.landingPageImagePlanning,

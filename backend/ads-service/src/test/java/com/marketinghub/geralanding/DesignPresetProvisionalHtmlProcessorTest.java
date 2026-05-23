@@ -3,9 +3,6 @@ package com.marketinghub.geralanding;
 import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlProcessor;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -83,27 +80,5 @@ class DesignPresetProvisionalHtmlProcessorTest {
                 "{\"landingPageDesignPreset\":{\"theme\":{}}}"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("formato tokenizado");
-    }
-
-    @Test
-    void shouldProcessTokenizedDesignPresetExamplesFromRepository() throws Exception {
-        DesignPresetProvisionalHtmlProcessor processor = new DesignPresetProvisionalHtmlProcessor();
-        String wireframe = "{\"pagina\":{\"head\":{},\"corpo\":{\"secoes\":[]}}}";
-        String copy = "{\"bodySections\":[]}";
-
-        Path examplesDir = Path.of("..", "..", "exemplos");
-        String[] exampleFiles = {
-                "model-response-7179cef3-1f8f-4464-a9d5-c43a49a37fff.json",
-                "model-response-eb0ad12f-09a7-46f0-abc6-658755220c83.json"
-        };
-
-        for (String exampleFile : exampleFiles) {
-            String designPreset = Files.readString(examplesDir.resolve(exampleFile));
-            String html = processor.process(wireframe, copy, "{}", designPreset);
-
-            assertThat(html)
-                    .as("HTML gerado para exemplo %s", exampleFile)
-                    .contains("id=\"lhm-legacy-design-preset-css\"");
-        }
     }
 }

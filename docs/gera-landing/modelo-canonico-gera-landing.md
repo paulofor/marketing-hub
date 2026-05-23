@@ -58,18 +58,39 @@ Observação operacional: no worker `geralanding`, etapas fora desse conjunto ai
 
 ```mermaid
 flowchart TD
-    A[GeraLandingStageExecutionService] --> B[WireframeProvisionalHtmlAssembler]
-    A --> C[CopyProvisionalHtmlAssembler]
-    A --> D[DesignPresetProvisionalHtmlAssembler]
-    A --> E[ImagePlanningProvisionalHtmlAssembler]
+    EXP[(experiments)] --> A[GeraLandingStageExecutionService.receiveResult]
+    A --> EREP[ExperimentRepository.save
+(tabela experiments)]
+    A --> SREP[GeraLandingStageExecutionRepository.save
+(tabela gera_landing_stage_execution)]
 
-    B --> F[(gera_landing_stage_execution)]
-    C --> F
-    D --> F
-    E --> F
+    A -->|landing-page-wireframe| W[WireframeProvisionalHtmlAssembler.assemble(modelResponse, jobId)]
+    A -->|landing-page-copy| C[CopyProvisionalHtmlAssembler.assemble(copyModelResponse, wireframeModelResponse, jobId)]
+    A -->|landing-page-image-planning| I[ImagePlanningProvisionalHtmlAssembler.assemble(experimentId, copy, wireframe, jobId)]
+    A -->|landing-page-design-preset| D[DesignPresetProvisionalHtmlAssembler.assemble(modelResponse, jobId)]
+
+    W --> SREP
+    C --> SREP
+    I --> SREP
+    D --> SREP
+
+    A -->|wireframe persistido| EF1[experiments.landing_page_wireframe
++ landing_page_wireframe_job_id]
+    A -->|copy persistida| EF2[experiments.landing_page_copy
++ landing_page_copy_job_id]
+    A -->|image planning persistido| EF3[experiments.landing_page_image_planning
++ landing_page_html]
+    A -->|design preset persistido| EF4[experiments.landing_page_design_preset
++ html_geralanding
++ landing_page_html]
 ```
 
-Leitura operacional: o `GeraLandingStageExecutionService` orquestra a execução por etapa e aciona o assembler correspondente (wireframe, copy, preset/design e image-planning), gerando os dados derivados que são persistidos no registro da tabela `gera_landing_stage_execution`.
+Leitura operacional (mapeamento por causa-raiz de persistência): a orquestração principal acontece em `GeraLandingStageExecutionService.receiveResult(...)`, que primeiro grava `modelResponse/provisionalHtml/status` em `gera_landing_stage_execution` via `GeraLandingStageExecutionRepository.save(...)` e, em seguida, persiste o artefato da etapa em `experiments` pelo método `persistStageArtifactOnExperiment(...)` com `ExperimentRepository.save(...)`. Para as quatro etapas solicitadas:
+
+- **Gera Wireframe** (`landing-page-wireframe`): usa `WireframeProvisionalHtmlAssembler` para montar o HTML provisório e persiste `landing_page_wireframe` + `landing_page_wireframe_job_id` na `experiments`.
+- **Gera Copy** (`landing-page-copy`): usa `CopyProvisionalHtmlAssembler` com o wireframe já salvo em `experiments` e persiste `landing_page_copy` + `landing_page_copy_job_id`.
+- **Gera Prompt Images** (`landing-page-image-planning`): usa `ImagePlanningProvisionalHtmlAssembler` com `landing_page_copy` e `landing_page_wireframe`; persiste `landing_page_image_planning` e atualiza `landing_page_html` quando houver HTML provisório.
+- **Gera Preset Design** (`landing-page-design-preset`): usa `DesignPresetProvisionalHtmlAssembler`; persiste `landing_page_design_preset` e atualiza `html_geralanding` + `landing_page_html` quando houver HTML derivado.
 
 ---
 

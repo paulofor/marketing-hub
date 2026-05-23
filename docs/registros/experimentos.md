@@ -1256,3 +1256,11 @@
   - `ExperimentPipelineOpenAiClient` passou a injetar variável de template `WIREFRAME_JSON_BLOCK` extraída de `job.prompt` (`landingPageWireframe`) para etapas que usam templates;
   - prompt `landing-design-preset.md` atualizado para versão `v2`, com bloco `WIREFRAME_JSON` explícito e regra obrigatória de mapear estilos por seção/item exatamente conforme `sectionOrder` do wireframe.
 - validação: tentativa de compilação do módulo `ai-worker` bloqueada por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages).
+
+## 2026-05-23 18:30:00 UTC
+- solicitação: incluir no início do prompt `landing-design-preset` o bloco completo de contexto hierárquico (nicho/hipótese/experimento) com dados de dor, resultado e artefatos de campanha.
+- causa-raiz: faltava contexto estrutural explícito no topo do prompt da etapa design preset, reduzindo aderência semântica entre preset visual e cadeia completa do experimento.
+- correção aplicada:
+  - prompt `landing-design-preset.md` atualizado para `template_version: v3` com o bloco de contexto solicitado no início de `SYSTEM_INSTRUCTIONS`;
+  - adicionadas variáveis de template `PAIN_JSON` e `RESULT_JSON` no `ExperimentPipelineOpenAiClient` para preencher os placeholders novos quando presentes no `job.prompt`.
+- validação: ajuste textual/templating validado por inspeção estática; compilação completa do módulo segue bloqueada por dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (401 no GitHub Packages).

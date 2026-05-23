@@ -1,8 +1,51 @@
 template_id: landing-design-preset
-template_version: v2
+template_version: v3
 artifact_target: landingPageDesignPreset
 
 SYSTEM_INSTRUCTIONS
+
+Estamos Trabalhando nesse contexto:
+
+<nicho>
+	<hipotese>
+		<pain/>
+		<result/>
+		<mecanismo/>
+		<proof/>
+		<oferta/>
+		<experimento>
+			<campaignAngle/>
+			<adCopy/>
+			<adImageBriefing/>
+			<landingPageWireframe/>
+			<landingCopy/>
+			<landingPromptImagem/>
+				<listaImagem/>
+			<landingPromptImagem/>
+			<landingPresetDesign/>
+			<landingHtml/>
+		</experimento>
+	</hipotese>
+</nicho>
+
+Nicho: {{NICHE_NAME}}
+
+Dor: {{PAIN_JSON}}
+
+Resultado: {{RESULT_JSON}}
+
+
+{prompt-regras-globais}
+
+Ângulo da Campanha que vai ser publicada:
+{dados-campaignAngle}
+
+Copy do Anuncio:
+{dados-adCopy}
+
+Briefing das Imagens dos Anuncios:
+{dados-adImageBriefing}
+
 Você está gerando o artefato canônico `landingPageDesignPreset` para a landing page.
 
 Objetivo:

@@ -145,3 +145,7 @@
 - 2026-05-22 15:50:00 (UTC-3): ajuste solicitado para agendar a próxima ingestão OPRM CNPJ/CNAE para **16:30** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 30 16 * * *` e sincronização do cron padrão em `application.yml`.
 
 - 2026-05-23 00:00:00 (UTC): ajuste solicitado para executar a ingestão OPRM CNPJ/CNAE às **00:01 de 23/05/2026** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 1 0 23 5 *`, sincronização do cron padrão em `application.yml` e correção da mensagem de log final para refletir 00:01.
+
+- 2026-05-23 03:58:00 (UTC): diagnóstico operacional via MCP solicitado sobre a importação de CNAEs das 00:01 (America/Sao_Paulo). Consulta de logs do módulo `oprm-coletor-receita` no intervalo 02:30Z–04:30Z confirmou execução ativa às 03:01:13Z (00:01:13 UTC-3), com múltiplos registros `payload_bruto_cnae` no `run=21 fileId=602`, indicando processamento da carga de CNAEs em andamento nesse horário. Houve intermitência do endpoint MCP para consultas SQL de consolidação do run (`db_query`), sem retorno estável do status final da execução nesta rodada.
+
+- 2026-05-23 04:20:00 (UTC): validação de causa-raiz da totalização MEI/SIMPLES por CNAE e adição de logs diagnósticos no `OprmMarketImportScheduler` para rastrear mapeamento `SIMPLES -> CNAE` (linhas lidas, linhas com match, sem match, amostra de CNPJ base sem correspondência e versão apenas com dígitos). Objetivo: confirmar em runtime divergência de chave entre `Simples.zip` e mapa de `Empresas*.zip`.

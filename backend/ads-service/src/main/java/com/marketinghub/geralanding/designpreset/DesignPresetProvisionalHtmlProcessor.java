@@ -18,25 +18,24 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Responsável por consolidar o HTML provisório final da etapa de design preset,
- * aplicando copy, URLs de imagens planejadas e preset visual no wireframe base.
+ * Montador completo do HTML provisório final da etapa de design preset.
  *
- * Correções principais:
- * - aplica `pagina.body` no <body>;
- * - aceita `estilos` como objeto {desktop, mobile} e como lista legada;
- * - normaliza ids HTML removendo # do atributo id;
- * - aplica `targetSectionId` em links;
- * - aplica `asset.src`, `asset.alt`, `width`, `height` em imagens;
- * - aplica `contratoCampo` em inputs/textarea/select;
- * - usa ctaBlocks apenas como fallback, sem sobrescrever href já definido;
- * - mantém compatibilidade com imagePlanningJson externo.
+ * Esta classe NÃO depende mais de DesignPresetWireframeHtmlGenerator.
+ *
+ * Responsabilidades:
+ * 1) gerar HTML base diretamente a partir do wireframe JSON;
+ * 2) aplicar copy por ID;
+ * 3) aplicar href por targetSectionId;
+ * 4) aplicar asset src/alt/width/height em imagens;
+ * 5) aplicar contratoCampo/contratoFormulario;
+ * 6) gerar CSS a partir de definicoes;
+ * 7) aplicar classes vindas de pagina.body e estilos dos nós;
+ * 8) normalizar IDs HTML removendo # do atributo id.
  */
 @Component
 public class DesignPresetProvisionalHtmlProcessor {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    private final DesignPresetWireframeHtmlGenerator wireframeHtmlGenerator = new DesignPresetWireframeHtmlGenerator();
 
     public String process(String wireframeJson,
                           String copyJson,
@@ -58,51 +57,37 @@ public class DesignPresetProvisionalHtmlProcessor {
 
         validateTokenizedPresetContract(designRoot);
 
-        String baseHtml = wireframeHtmlGenerator.generateFromJson(wireframeJson);
-        if (!StringUtils.hasText(baseHtml)) {
-            throw new IllegalArgumentException("Falha ao gerar HTML base a partir do wireframe");
-        }
-
-        Document document = Jsoup.parse(baseHtml, "", Parser.htmlParser());
+        Document document = generateBaseHtmlFromWireframe(wireframeRoot);
         document.outputSettings()
                 .prettyPrint(false)
                 .charset("utf-8")
                 .syntax(Document.OutputSettings.Syntax.html);
 
-        /*
-         * Importante: o gerador pode receber ids de seção como "#sec-hero".
-         * Em HTML, id deve ser "sec-hero"; o # fica apenas no href.
-         */
         normalizeAllHtmlIds(document);
 
         /*
-         * 1) Conteúdo textual.
+         * Conteúdo textual.
          */
         applyCopy(document, copyRoot);
 
         /*
-         * 2) Semântica/atributos que vêm do wireframe/design.
-         * Aplicamos de ambos porque, em alguns fluxos, o designPresetJson contém
-         * uma versão enriquecida da árvore; em outros, o wireframeJson contém.
+         * Atributos e semântica vindos do wireframe e/ou design.
+         * Em alguns fluxos, o wireframe carrega a árvore estrutural.
+         * Em outros, o design preset carrega uma árvore enriquecida.
          */
         applyStructuredPageData(document, wireframeRoot);
         applyStructuredPageData(document, designRoot);
 
         /*
-         * 3) CTAs da copy como fallback apenas.
-         * Não sobrescreve href já vindo de targetSectionId.
+         * Fallbacks externos.
          */
         applyCtaUrls(document, copyRoot);
-
-        /*
-         * 4) Planejamento externo de imagens, se existir, pode complementar/sobrescrever src.
-         */
         applyImageUrlsByElementId(document, imagePlanningJson);
 
         /*
-         * 5) CSS tokenizado e classes vindas do design preset.
+         * CSS e classes do preset tokenizado.
          */
-        applyLegacyPresetStyles(document, designRoot);
+        applyTokenizedPresetStyles(document, designRoot);
 
         return normalizeSerializedHtml(document.outerHtml());
     }
@@ -115,13 +100,140 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
-    /**
-     * Valida o contrato atual da etapa de preset, que exige o formato tokenizado `definicoes + pagina`.
-     */
     private void validateTokenizedPresetContract(Map<String, Object> designRoot) {
         if (designRoot == null || !designRoot.containsKey("definicoes") || !designRoot.containsKey("pagina")) {
             throw new IllegalArgumentException("JSON de design preset fora do contrato atual: esperado formato tokenizado com `definicoes` e `pagina`");
         }
+    }
+
+    /**
+     * Gera o HTML base diretamente do wireframe.
+     */
+    private Document generateBaseHtmlFromWireframe(Map<String, Object> wireframeRoot) {
+        String skeleton = "<!doctype html><html lang=\"pt-BR\"><head>"
+                + "<meta charset=\"UTF-8\">"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                + "<title>Wireframe provisório</title>"
+                + "</head><body></body></html>";
+
+        Document document = Jsoup.parse(skeleton, "", Parser.htmlParser());
+
+        Map<String, Object> page = asMap(wireframeRoot.get("pagina"));
+        Map<String, Object> corpo = asMap(page.get("corpo"));
+        List<Map<String, Object>> sections = asList(corpo.get("secoes"));
+
+        Element body = document.body();
+        if (body == null) {
+            throw new IllegalArgumentException("Falha ao criar body do HTML base");
+        }
+
+        for (Map<String, Object> sectionNode : sections) {
+            Element section = buildElementFromNode(document, sectionNode);
+            if (section != null) {
+                body.appendChild(section);
+            }
+        }
+
+        return document;
+    }
+
+    /**
+     * Constrói um elemento HTML a partir de um nó do wireframe.
+     */
+    private Element buildElementFromNode(Document document, Map<String, Object> node) {
+        String tag = firstNonBlank(asString(node.get("tag")), "section");
+        tag = sanitizeTagName(tag);
+
+        Element element = document.createElement(tag);
+
+        String id = asString(node.get("id"));
+        if (StringUtils.hasText(id)) {
+            element.attr("id", normalizeHtmlId(id));
+        }
+
+        /*
+         * Coloca classes já no HTML base. Depois, applyStructuredPageData e
+         * applyTokenizedPresetStyles podem reforçar/duplicar sem causar problemas,
+         * porque appendClasses evita duplicatas.
+         */
+        appendClasses(element, collectStyleClasses(node.get("estilos")));
+
+        applyInitialTextFromNode(element, node);
+        applyTargetSectionId(element, node);
+        applyAsset(element, node);
+        applyFieldContract(element, node);
+        applyFormContract(element, node);
+
+        for (Map<String, Object> child : asList(node.get("elementosSeccao"))) {
+            Element childElement = buildElementFromNode(document, child);
+            if (childElement != null) {
+                element.appendChild(childElement);
+            }
+        }
+
+        for (Map<String, Object> child : asList(node.get("elementosInternos"))) {
+            Element childElement = buildElementFromNode(document, child);
+            if (childElement != null) {
+                element.appendChild(childElement);
+            }
+        }
+
+        /*
+         * Ajustes mínimos de HTML válido.
+         */
+        applyTagDefaults(element);
+
+        return element;
+    }
+
+    private void applyInitialTextFromNode(Element element, Map<String, Object> node) {
+        Map<String, Object> texto = asMap(node.get("texto"));
+        String conteudo = asString(texto.get("conteudo"));
+
+        if (!StringUtils.hasText(conteudo)) {
+            return;
+        }
+
+        String tag = element.tagName().toLowerCase(Locale.ROOT);
+
+        if ("input".equals(tag) || "textarea".equals(tag)) {
+            element.attr("placeholder", conteudo.trim());
+            return;
+        }
+
+        if ("img".equals(tag)) {
+            if (!StringUtils.hasText(element.attr("alt"))) {
+                element.attr("alt", conteudo.trim());
+            }
+            return;
+        }
+
+        element.text(conteudo.trim());
+    }
+
+    private void applyTagDefaults(Element element) {
+        String tag = element.tagName().toLowerCase(Locale.ROOT);
+
+        if ("button".equals(tag) && !StringUtils.hasText(element.attr("type"))) {
+            element.attr("type", "button");
+        }
+
+        if ("img".equals(tag) && !StringUtils.hasText(element.attr("alt"))) {
+            element.attr("alt", "");
+        }
+    }
+
+    private String sanitizeTagName(String tag) {
+        if (!StringUtils.hasText(tag)) {
+            return "div";
+        }
+
+        String normalized = tag.trim().toLowerCase(Locale.ROOT);
+        if (!Pattern.matches("[a-z][a-z0-9-]*", normalized)) {
+            return "div";
+        }
+
+        return normalized;
     }
 
     private void normalizeAllHtmlIds(Document document) {
@@ -151,6 +263,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         Element element = resolveElementById(document, id);
 
         if (element != null) {
+            appendClasses(element, collectStyleClasses(node.get("estilos")));
             applyTargetSectionId(element, node);
             applyAsset(element, node);
             applyFieldContract(element, node);
@@ -617,49 +730,54 @@ public class DesignPresetProvisionalHtmlProcessor {
     }
 
     /**
-     * Aplica o formato de preset com `definicoes` + `pagina` (estilos tokenizados por classes CSS).
+     * Aplica o formato de preset com `definicoes` + `pagina`.
      */
-    private void applyLegacyPresetStyles(Document document, Map<String, Object> root) {
+    private void applyTokenizedPresetStyles(Document document, Map<String, Object> root) {
         if (root == null || !root.containsKey("definicoes") || !root.containsKey("pagina")) {
             return;
         }
 
         Map<String, Object> definitions = asMap(root.get("definicoes"));
-        String css = buildLegacyCss(definitions);
+        String css = buildTokenizedCss(definitions);
         if (StringUtils.hasText(css) && document.head() != null) {
+            Element existing = document.getElementById("lhm-legacy-design-preset-css");
+            if (existing != null) {
+                existing.remove();
+            }
+
             document.head().appendElement("style")
                     .attr("id", "lhm-legacy-design-preset-css")
                     .text(css);
         }
 
         Map<String, Object> page = asMap(root.get("pagina"));
-        applyLegacyBodyClasses(document, page);
-        applyLegacySectionClasses(document, page);
+        applyPageBodyClasses(document, page);
+        applyTokenizedSectionClasses(document, page);
     }
 
-    private String buildLegacyCss(Map<String, Object> definitions) {
+    private String buildTokenizedCss(Map<String, Object> definitions) {
         StringBuilder css = new StringBuilder();
 
         for (Map.Entry<String, Object> entry : definitions.entrySet()) {
             Object block = entry.getValue();
 
             if (block instanceof Map<?, ?> mapBlock) {
-                appendLegacyCssByViewport(css, asList(mapBlock.get("desktop")), null);
-                appendLegacyCssByViewport(css, asList(mapBlock.get("mobile")), "@media (max-width: 768px)");
+                appendTokenizedCssByViewport(css, asList(mapBlock.get("desktop")), null);
+                appendTokenizedCssByViewport(css, asList(mapBlock.get("mobile")), "@media (max-width: 768px)");
                 continue;
             }
 
             List<Map<String, Object>> attributes = asList(block);
             for (Map<String, Object> attribute : attributes) {
-                appendLegacyCssByViewport(css, asList(attribute.get("desktop")), null);
-                appendLegacyCssByViewport(css, asList(attribute.get("mobile")), "@media (max-width: 768px)");
+                appendTokenizedCssByViewport(css, asList(attribute.get("desktop")), null);
+                appendTokenizedCssByViewport(css, asList(attribute.get("mobile")), "@media (max-width: 768px)");
             }
         }
 
         return css.toString();
     }
 
-    private void appendLegacyCssByViewport(StringBuilder css, List<Map<String, Object>> items, String mediaQuery) {
+    private void appendTokenizedCssByViewport(StringBuilder css, List<Map<String, Object>> items, String mediaQuery) {
         if (items.isEmpty()) {
             return;
         }
@@ -691,61 +809,28 @@ public class DesignPresetProvisionalHtmlProcessor {
         css.append(mediaQuery).append("{\n").append(block).append("}\n");
     }
 
-    private void applyLegacyBodyClasses(Document document, Map<String, Object> page) {
-        applyPageBodyClasses(document, page);
-
-        /*
-         * Compatibilidade com contrato antigo:
-         * pagina.corpo.estilos = [{desktop:[], mobile:[]}]
-         */
-        Element body = document.body();
-        if (body == null) {
-            return;
-        }
-
+    private void applyTokenizedSectionClasses(Document document, Map<String, Object> page) {
         Map<String, Object> corpo = asMap(page.get("corpo"));
-        appendClasses(body, collectStyleClasses(corpo.get("estilos")));
-    }
-
-    private void applyPageBodyClasses(Document document, Map<String, Object> page) {
-        Element body = document.body();
-        if (body == null) {
-            return;
-        }
-
-        Map<String, Object> bodyObj = asMap(page.get("body"));
-        List<String> classes = new ArrayList<>();
-        classes.addAll(readStringList(bodyObj.get("desktop")));
-        classes.addAll(readStringList(bodyObj.get("mobile")));
-
-        appendClasses(body, classes);
-    }
-
-    private void applyLegacySectionClasses(Document document, Map<String, Object> page) {
-        Map<String, Object> corpo = asMap(page.get("corpo"));
-        List<Map<String, Object>> sections = asList(corpo.get("secoes"));
-
-        for (Map<String, Object> sectionMap : sections) {
-            applyLegacyNodeClasses(document, sectionMap, "id", "elementosSeccao");
+        for (Map<String, Object> sectionMap : asList(corpo.get("secoes"))) {
+            applyTokenizedNodeClasses(document, sectionMap, "elementosSeccao");
         }
     }
 
-    private void applyLegacyNodeClasses(Document document, Map<String, Object> node, String idField, String childrenField) {
-        String id = asString(node.get(idField));
+    private void applyTokenizedNodeClasses(Document document, Map<String, Object> node, String childrenField) {
+        String id = asString(node.get("id"));
         Element element = resolveElementById(document, id);
 
         if (element != null) {
             appendClasses(element, collectStyleClasses(node.get("estilos")));
         }
 
-        List<Map<String, Object>> children = asList(node.get(childrenField));
-        for (Map<String, Object> child : children) {
-            applyLegacyNodeClasses(document, child, "id", "elementosInternos");
+        for (Map<String, Object> child : asList(node.get(childrenField))) {
+            applyTokenizedNodeClasses(document, child, "elementosInternos");
         }
     }
 
     /**
-     * Aceita os dois contratos:
+     * Aceita:
      * 1) estilos: { desktop: [...], mobile: [...] }
      * 2) estilos: [ { desktop: [...], mobile: [...] } ]
      */
@@ -826,7 +911,8 @@ public class DesignPresetProvisionalHtmlProcessor {
         return value instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
-    private Map<String, Object> firstNonEmptyMap(Map<String, Object>... maps) {
+    @SafeVarargs
+    private final Map<String, Object> firstNonEmptyMap(Map<String, Object>... maps) {
         for (Map<String, Object> map : maps) {
             if (map != null && !map.isEmpty()) {
                 return map;
@@ -858,8 +944,8 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
 
         String trimmed = value.trim();
-
         String lower = trimmed.toLowerCase(Locale.ROOT);
+
         if (lower.startsWith("http://")
                 || lower.startsWith("https://")
                 || lower.startsWith("mailto:")

@@ -1363,3 +1363,11 @@
 - cobertura de regressão adicionada:
   - novo teste `shouldApplyBodyClassesAndNestedSectionClassesFromTokenizedPreset` validando classe no `<body>`, em seção e em nós aninhados.
 - resultado esperado: classes do preset design passam a ser refletidas corretamente no HTML provisório em toda a árvore.
+
+## 2026-05-24 10:35:00 UTC
+- solicitação para garantir que as classes do preset design exibidas em `pagina.body.desktop/mobile` sejam aplicadas no elemento `<body>` do HTML provisório.
+- causa-raiz identificada: o parser de classes do `<body>` cobria parcialmente formatos alternativos, mas não consolidava todos os formatos aceitos em uma única coleta robusta, causando perda de classes em alguns payloads da etapa 6.
+- correção aplicada:
+  - no `DesignPresetProvisionalHtmlProcessor`, criação do método `collectBodyClasses` para consolidar classes do `<body>` em múltiplos formatos (`desktop/mobile` diretos, `classes`, `classList`, `estilos`), com deduplicação preservada;
+  - atualização do teste `shouldApplyBodyClassesAndNestedSectionClassesFromTokenizedPreset` para validar explicitamente as 7 classes esperadas no `<body>` (`pageRoot`, `bgBody`, `fontBase`, `textPrimary`, `textSizeBase`, `lineHeightBase`, `marginReset`).
+- resultado esperado: o HTML da etapa preset design passa a refletir integralmente as classes globais no `<body>` conforme o JSON gerado.

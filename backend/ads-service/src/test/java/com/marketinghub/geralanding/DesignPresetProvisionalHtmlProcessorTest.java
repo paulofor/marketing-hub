@@ -119,8 +119,8 @@ class DesignPresetProvisionalHtmlProcessorTest {
                   "definicoes": {},
                   "pagina": {
                     "body": {
-                      "desktop": ["pageRoot","bgBody"],
-                      "mobile": ["pageRoot","bgBody"]
+                      "desktop": ["pageRoot","bgBody","fontBase","textPrimary","textSizeBase","lineHeightBase","marginReset"],
+                      "mobile": ["pageRoot","bgBody","fontBase","textPrimary","textSizeBase","lineHeightBase","marginReset"]
                     },
                     "corpo": {
                       "secoes": [
@@ -149,7 +149,7 @@ class DesignPresetProvisionalHtmlProcessorTest {
 
         String html = processor.process(wireframe, copy, "{}", design);
 
-        assertThat(html).contains("<body class=\"pageRoot bgBody\"");
+        assertThat(html).contains("<body class=\"pageRoot bgBody fontBase textPrimary textSizeBase lineHeightBase marginReset\"");
         assertThat(html).contains("id=\"sec-hero\"").contains("class=\"section-desktop\"");
         assertThat(html).contains("id=\"hero-container\"").contains("class=\"container-desktop\"");
         assertThat(html).contains("id=\"hero-title\"").contains("class=\"h1-size\"");

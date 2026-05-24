@@ -277,12 +277,26 @@ public class DesignPresetProvisionalHtmlProcessor {
             return;
         }
 
-        Object bodyClasses = firstNonNull(
-                bodyMap.get("classes"),
-                bodyMap.get("classList"),
-                bodyMap.get("estilos"),
-                bodyMap);
-        appendClasses(body, collectStyleClasses(bodyClasses));
+        appendClasses(body, collectBodyClasses(bodyMap));
+    }
+
+    /**
+     * Coleta classes do body aceitando múltiplos formatos de contrato.
+     */
+    private List<String> collectBodyClasses(Map<String, Object> bodyMap) {
+        List<String> classes = new ArrayList<>();
+
+        classes.addAll(collectStyleClasses(bodyMap));
+
+        Object classesNode = firstNonNull(bodyMap.get("classes"), bodyMap.get("classList"));
+        classes.addAll(collectStyleClasses(classesNode));
+        classes.addAll(readStringList(classesNode));
+
+        Object estilosNode = bodyMap.get("estilos");
+        classes.addAll(collectStyleClasses(estilosNode));
+        classes.addAll(readStringList(estilosNode));
+
+        return classes;
     }
 
     private void applyStructuredNodeDataRecursive(Document document, Map<String, Object> node) {

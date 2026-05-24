@@ -530,3 +530,12 @@
 Arquivos alterados:
 - docs/canonical/mois-worker-canon.v1.md
 - docs/registros/mois1.md
+
+## 2026-05-23 21:20:34 UTC-3
+- solicitado criar diagramas no mesmo padrão da seção 12.5 para separar a arquitetura por coletor Hotmart e por coletor ClickBank.
+- foram adicionados dois diagramas canônicos independentes na documentação do MOIS Worker, mantendo o backend como ponto único de integração e o MySQL como persistência exclusiva do backend.
+- registro realizado para manter rastreabilidade documental do módulo MOIS conforme política de registros.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md

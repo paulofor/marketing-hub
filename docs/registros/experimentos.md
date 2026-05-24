@@ -1329,3 +1329,10 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/experiment/ExperimentGeraLandingExecutionDetailPage.tsx
   - frontend/src/components/CollapsibleJsonViewer.tsx
+## 2026-05-24 00:20:00 UTC
+- solicitação para corrigir erro de renderização Mermaid no diagrama canônico `15.4` de Gera Landing no documento de procedimento de experimento.
+- causa-raiz identificada: labels Mermaid com quebra HTML + parênteses sem aspas em nós específicos, gerando falha de parsing no renderer do GitHub.
+- foi feito:
+  - ajuste dos nós do Mermaid para formato com rótulo entre aspas e `<br/>` compatível com GitHub (`WB`, `OA`, `SD`, `LP`) em `docs/canonical/procedimento-experimento-canon.v1.md`;
+  - manutenção do diagrama no mesmo local canônico, sem mudança de arquitetura/regras de fluxo.
+- resultado esperado: renderização estável do diagrama no GitHub sem erro de parse.

@@ -117,7 +117,10 @@ export default function CollapsibleJsonViewer({
 
   if (!parsed) {
     return (
-      <pre className="bg-body-tertiary p-3 rounded small mb-0 text-wrap">
+      <pre
+        className="bg-body-tertiary p-3 rounded small mb-0"
+        style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}
+      >
         {decodeEscapedText(content)}
       </pre>
     );

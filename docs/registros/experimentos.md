@@ -1319,6 +1319,16 @@
   - atualização de `ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md` com regras obrigatórias e checklist operacional cobrindo `textPrimary/textMuted/textSubtle/textOnButtonPrimary/textOnInput/placeholderText`, preset `pageRoot`, completude de botão/input, regra de hover real, proibição de usar `opacityMuted` como substituto de cor e metas WCAG (4.5:1 e 3:1).
 - impacto esperado: reduzir presets incompletos e aumentar consistência visual/acessibilidade do HTML provisório gerado nas etapas seguintes.
 
+## 2026-05-23 21:52:18 UTC-3
+- solicitação para melhorar legibilidade do quadro de Prompt no detalhe da etapa do experimento (Gera Landing), pois textos longos estavam sem quebras visíveis e difíceis de leitura.
+- causa-raiz identificada: o renderer de conteúdo textual bruto usava classe utilitária de quebra (`text-wrap`) que não garantia preservação consistente de quebras/word-wrap no bloco `<pre>` em todos os casos.
+- correção aplicada: ajuste do `CollapsibleJsonViewer` para forçar estilo explícito no `<pre>` com `whiteSpace: pre-wrap`, `overflowWrap: anywhere` e `wordBreak: break-word`, preservando saltos de linha e quebrando tokens longos sem comprometer cópia/visualização do prompt.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentGeraLandingExecutionDetailPage.tsx
+  - frontend/src/components/CollapsibleJsonViewer.tsx
 ## 2026-05-24 00:20:00 UTC
 - solicitação para corrigir erro de renderização Mermaid no diagrama canônico `15.4` de Gera Landing no documento de procedimento de experimento.
 - causa-raiz identificada: labels Mermaid com quebra HTML + parênteses sem aspas em nós específicos, gerando falha de parsing no renderer do GitHub.

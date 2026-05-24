@@ -1461,4 +1461,43 @@
   - AGENTS.md
   - backend/AGENTS.md
   - backend/ads-service/src/main/java/com/marketinghub/openai/OpenAiException.java
+## 2026-05-24 18:00:00 UTC
+- solicitação para pesquisar nos logs do backend o erro `500 Internal Server Error` da execução `df5cfce5-d343-4ec1-9022-4954d352d2c6` na etapa `landing-page-copy`.
+- investigação executada via MCP (`java_module_logs`) com filtros por `executionId`, endpoint de gera-landing e janela temporal.
+- achados objetivos:
+  - o worker montou prompt e payload OpenAI para a execução, sem falha prévia na fase de montagem/envio inicial;
+  - ocorreu erro em `GeraLandingExecutionService` ao processar a etapa (`Falha ao processar etapa landing-page-copy ... experimentId=31`);
+  - não foram encontrados, na mesma janela, stack trace/cause detalhada com o mesmo `executionId` para apontar campo/payload exato rejeitado no `receive-result`.
+- próximo passo recomendado (causa-raiz): reforçar logging contextual no ponto de POST para `receive-result` (status, response body e exception completa) para expor o motivo real do 500 e eliminar diagnóstico cego.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+
+## 2026-05-24 18:20:00 UTC
+- solicitação para procurar no log do backend problemas no assembler da etapa `copy`, priorizando busca pelo `jobId` `df5cfce5-d343-4ec1-9022-4954d352d2c6`.
+- investigação via MCP `java_module_logs` com filtros por `jobId`, `landing-page-copy`, `Assembler` e `CopyProvisionalHtmlAssembler`.
+- achados objetivos:
+  - com filtro por `jobId`, foi localizado erro com stack trace parcial: `WebClientResponseException$InternalServerError` no POST `.../receive-result`;
+  - não retornaram linhas com `Assembler`/`CopyProvisionalHtmlAssembler` na janela pesquisada no módulo `backend`;
+  - a falha observável permanece no envio do resultado para o endpoint `receive-result` (HTTP 500), sem linha informativa adicional do assembler no recorte de logs atual.
+- próximo passo recomendado (causa-raiz): incluir log estruturado no fluxo de assembler/copy antes do POST final (jobId, tamanho/shape dos artefatos e resumo de validação) e também logar corpo de resposta do `receive-result` para identificar o campo rejeitado no backend receptor.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+
+## 2026-05-24 18:15:00 UTC
+- solicitação para adicionar mais logs no `CopyProvisionalHtmlAssembler` e classes internas para identificar com precisão onde o problema ocorre.
+- causa-raiz operacional: diagnóstico insuficiente no recorte de produção quando a etapa `landing-page-copy` falha no fluxo de montagem/processamento antes do `receive-result`.
+- correção aplicada:
+  - `CopyProvisionalHtmlAssembler`: logs de início/sucesso da montagem, métricas de tamanho, preview de payload, contagem de chaves após resolve e `htmlLength` final;
+  - `CopyProvisionalHtmlPayloadResolver`: logs de entrada e de estrutura resolvida (`rootKeys` e `keys`) para wireframe/copy;
+  - `CopyProvisionalHtmlProcessor`: logs por fase (parse, geração HTML base, total de itens aplicados, conclusão) com tamanhos para rastreabilidade.
+- validação executada:
+  - `../mvnw -Dtest='*CopyProvisionalHtml*' test` em `backend/ads-service` com sucesso (7 testes, 0 falhas, 0 erros).
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlAssembler.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlPayloadResolver.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlProcessor.java
   - docs/registros/experimentos.md

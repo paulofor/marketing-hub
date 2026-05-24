@@ -552,3 +552,7 @@ Arquivos alterados:
   - AGENTS.md
   - docs/canonical/mois-worker-canon.v1.md
   - docs/registros/mois1.md
+
+- 2026-05-24: Adicionada regra ArchUnit no módulo `mois-sales-library-worker` para exigir classe no pacote `bibliotecapaginavenda.worker.vN.service` com método `recordPromptBuilderOpenAiResult` recebendo request bruto, resposta bruta, jobId OpenAI e JSON validado; incluída implementação inicial `OpenAiPromptResultRecorder` no v1.
+
+- 2026-05-24: Regra ArchUnit ampliada no `mois-sales-library-worker` para exigir também método de inserção backend (`insertOpenAiIntegrationRecord`) em `mois.bibliotecapaginavenda.worker.vN.service`, com parâmetros: request cru, resposta crua, jobId OpenAI, JSON validado e jobId Marketing Hub.

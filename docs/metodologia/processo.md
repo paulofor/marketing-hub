@@ -62,6 +62,7 @@
      - jobid openai
      - json validado
      - jobid mkth
+Criei uma excpetion para esse service
 
 #### Archuint 
 . com.marketinghub.mois.bibliotecapaginavenda.x.vN.web

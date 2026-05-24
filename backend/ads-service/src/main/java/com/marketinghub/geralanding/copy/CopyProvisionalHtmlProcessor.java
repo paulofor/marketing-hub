@@ -35,8 +35,10 @@ public class CopyProvisionalHtmlProcessor {
      * Monta o HTML base do wireframe e aplica os textos da etapa de copy.
      */
     public String process(String wireframeJson, String copyJson) {
-        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada wireframeJson: {}", wireframeJson);
-        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada copyJson: {}", copyJson);
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada wireframeLength={}, copyLength={}",
+                lengthOf(wireframeJson), lengthOf(copyJson));
+        log.debug("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada wireframeJson: {}", wireframeJson);
+        log.debug("[GeraLanding][CopyProvisionalHtmlProcessor] Entrada copyJson: {}", copyJson);
         if (!StringUtils.hasText(wireframeJson)) {
             throw new IllegalArgumentException("JSON de wireframe ausente");
         }
@@ -46,8 +48,11 @@ public class CopyProvisionalHtmlProcessor {
 
         Map<String, Object> wireframe = unwrapPayload(parseJsonObject(wireframeJson, "wireframeJson"), "landingPageWireframe");
         Map<String, Object> copy = unwrapPayload(parseJsonObject(copyJson, "copyJson"), "landingPageCopy");
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Payload parseado wireframeKeys={}, copyKeys={}",
+                wireframe.size(), copy.size());
 
         String baseHtml = buildHtmlFromWireframe(wireframe);
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] HTML base gerado com length={}", lengthOf(baseHtml));
         return process(baseHtml, copy);
     }
 
@@ -61,7 +66,9 @@ public class CopyProvisionalHtmlProcessor {
         if (copyJson == null || copyJson.isEmpty()) {
             throw new IllegalArgumentException("Copy da etapa Gera Copy ausente");
         }
-        return applyCopyByItemId(html, collectCopyByItemId(copyJson));
+        Map<String, String> copyByItemId = collectCopyByItemId(copyJson);
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Aplicando copy em {} itens mapeados", copyByItemId.size());
+        return applyCopyByItemId(html, copyByItemId);
     }
 
     private String applyCopyByItemId(String baseHtml, Map<String, String> copyByItemId) {
@@ -82,7 +89,17 @@ public class CopyProvisionalHtmlProcessor {
         if (StringUtils.hasText(title)) {
             document.title(title);
         }
-        return normalizeSerializedHtml(document.outerHtml());
+        String normalizedHtml = normalizeSerializedHtml(document.outerHtml());
+        log.info("[GeraLanding][CopyProvisionalHtmlProcessor] Aplicação de copy concluída. htmlLength={}, titleApplied={}",
+                lengthOf(normalizedHtml), StringUtils.hasText(title));
+        return normalizedHtml;
+    }
+
+    /**
+     * Retorna o tamanho textual do payload para logs de diagnóstico.
+     */
+    private int lengthOf(String payload) {
+        return payload == null ? 0 : payload.length();
     }
 
     private Element resolveElementByItemId(Document document, Map<String, Element> elementByNormalizedId, String itemId) {

@@ -1475,3 +1475,20 @@
 - documentos/arquivos lidos:
   - AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-24 18:15:00 UTC
+- solicitação para adicionar mais logs no `CopyProvisionalHtmlAssembler` e classes internas para identificar com precisão onde o problema ocorre.
+- causa-raiz operacional: diagnóstico insuficiente no recorte de produção quando a etapa `landing-page-copy` falha no fluxo de montagem/processamento antes do `receive-result`.
+- correção aplicada:
+  - `CopyProvisionalHtmlAssembler`: logs de início/sucesso da montagem, métricas de tamanho, preview de payload, contagem de chaves após resolve e `htmlLength` final;
+  - `CopyProvisionalHtmlPayloadResolver`: logs de entrada e de estrutura resolvida (`rootKeys` e `keys`) para wireframe/copy;
+  - `CopyProvisionalHtmlProcessor`: logs por fase (parse, geração HTML base, total de itens aplicados, conclusão) com tamanhos para rastreabilidade.
+- validação executada:
+  - `../mvnw -Dtest='*CopyProvisionalHtml*' test` em `backend/ads-service` com sucesso (7 testes, 0 falhas, 0 erros).
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlAssembler.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlPayloadResolver.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlProcessor.java
+  - docs/registros/experimentos.md

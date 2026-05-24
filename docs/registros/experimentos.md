@@ -1345,3 +1345,9 @@
   - reintroduzido `applyPageBodyClasses(Document, Map<String,Object>)` com fallback para `body/corpo` e `classes/classList/estilos`, reaproveitando `collectStyleClasses` + `appendClasses` para manter deduplicação e contrato atual tokenizado.
 - resultado esperado: restauração da compilação do `ads-service` e reaplicação consistente de classes globais no `<body>`.
 
+
+## 2026-05-24 02:20:00 UTC
+- solicitação para remover o teste `DesignPresetWireframeHtmlGeneratorTest` que quebrou o `testCompile` do módulo `ads-service` após remoção/renomeação da classe `DesignPresetWireframeHtmlGenerator`.
+- causa-raiz identificada: teste órfão em `src/test` referenciando classe inexistente no pacote `com.marketinghub.geralanding.designpreset`.
+- correção aplicada: exclusão do arquivo de teste órfão para restaurar a compilação dos testes do módulo.
+- resultado esperado: etapa Maven `testCompile` do `ads-service` volta a compilar sem erro de símbolo não encontrado.

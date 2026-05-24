@@ -1451,3 +1451,15 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlProcessor.java
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssemblerErrorDetailTest.java
   - docs/registros/experimentos.md
+
+## 2026-05-24 18:00:00 UTC
+- solicitação para pesquisar nos logs do backend o erro `500 Internal Server Error` da execução `df5cfce5-d343-4ec1-9022-4954d352d2c6` na etapa `landing-page-copy`.
+- investigação executada via MCP (`java_module_logs`) com filtros por `executionId`, endpoint de gera-landing e janela temporal.
+- achados objetivos:
+  - o worker montou prompt e payload OpenAI para a execução, sem falha prévia na fase de montagem/envio inicial;
+  - ocorreu erro em `GeraLandingExecutionService` ao processar a etapa (`Falha ao processar etapa landing-page-copy ... experimentId=31`);
+  - não foram encontrados, na mesma janela, stack trace/cause detalhada com o mesmo `executionId` para apontar campo/payload exato rejeitado no `receive-result`.
+- próximo passo recomendado (causa-raiz): reforçar logging contextual no ponto de POST para `receive-result` (status, response body e exception completa) para expor o motivo real do 500 e eliminar diagnóstico cego.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/registros/experimentos.md

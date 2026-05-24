@@ -141,10 +141,16 @@ public class DesignPresetProvisionalHtmlProcessor {
      * Constrói um elemento HTML a partir de um nó do wireframe.
      */
     private Element buildElementFromNode(Document document, Map<String, Object> node) {
-        String tag = firstNonBlank(asString(node.get("tag")), "section");
+        String rawTag = asString(node.get("tag"));
+        String tag = firstNonBlank(rawTag, "section");
         tag = sanitizeTagName(tag);
 
-        Element element = document.createElement(tag);
+        Element element;
+        try {
+            element = document.createElement(tag);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Falha ao criar elemento do wireframe: " + describeNode(node, rawTag), ex);
+        }
 
         String id = asString(node.get("id"));
         if (StringUtils.hasText(id)) {
@@ -156,34 +162,59 @@ public class DesignPresetProvisionalHtmlProcessor {
          * applyTokenizedPresetStyles podem reforçar/duplicar sem causar problemas,
          * porque appendClasses evita duplicatas.
          */
-        appendClasses(element, collectStyleClasses(node.get("estilos")));
+        try {
+            appendClasses(element, collectStyleClasses(node.get("estilos")));
 
-        applyInitialTextFromNode(element, node);
-        applyTargetSectionId(element, node);
-        applyAsset(element, node);
-        applyFieldContract(element, node);
-        applyFormContract(element, node);
+            applyInitialTextFromNode(element, node);
+            applyTargetSectionId(element, node);
+            applyAsset(element, node);
+            applyFieldContract(element, node);
+            applyFormContract(element, node);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Falha ao processar propriedades do elemento: " + describeNode(node, rawTag), ex);
+        }
 
         for (Map<String, Object> child : asList(node.get("elementosSeccao"))) {
-            Element childElement = buildElementFromNode(document, child);
-            if (childElement != null) {
-                element.appendChild(childElement);
+            try {
+                Element childElement = buildElementFromNode(document, child);
+                if (childElement != null) {
+                    element.appendChild(childElement);
+                }
+            } catch (RuntimeException ex) {
+                throw new IllegalArgumentException("Falha ao processar filho de " + describeNode(node, rawTag), ex);
             }
         }
 
         for (Map<String, Object> child : asList(node.get("elementosInternos"))) {
-            Element childElement = buildElementFromNode(document, child);
-            if (childElement != null) {
-                element.appendChild(childElement);
+            try {
+                Element childElement = buildElementFromNode(document, child);
+                if (childElement != null) {
+                    element.appendChild(childElement);
+                }
+            } catch (RuntimeException ex) {
+                throw new IllegalArgumentException("Falha ao processar filho interno de " + describeNode(node, rawTag), ex);
             }
         }
 
         /*
          * Ajustes mínimos de HTML válido.
          */
-        applyTagDefaults(element);
+        try {
+            applyTagDefaults(element);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Falha ao aplicar defaults do elemento: " + describeNode(node, rawTag), ex);
+        }
 
         return element;
+    }
+
+    /**
+     * Descreve o nó atual para mensagens de erro detalhadas durante montagem do HTML.
+     */
+    private String describeNode(Map<String, Object> node, String rawTag) {
+        String nodeId = asString(node.get("id"));
+        String nodeTag = firstNonBlank(rawTag, asString(node.get("tag")), "<tag-ausente>");
+        return "id=" + firstNonBlank(nodeId, "<id-ausente>") + ", tag=" + nodeTag;
     }
 
     private void applyInitialTextFromNode(Element element, Map<String, Object> node) {

@@ -59,7 +59,7 @@ public class CopyWireframeHtmlGenerator {
 
             html.append("<body");
 
-            String bodyStyle = renderInlineStyle(asList(corpo.get("estilos")));
+            String bodyStyle = renderInlineStyle(corpo.get("estilos"));
             if (StringUtils.hasText(bodyStyle)) {
                 html.append(" style=\"").append(escapeHtmlAttribute(bodyStyle)).append("\"");
             }
@@ -67,7 +67,7 @@ public class CopyWireframeHtmlGenerator {
             html.append(">\n");
 
             int sectionIndex = 0;
-            for (Map<String, Object> secao : asList(corpo.get("secoes"))) {
+            for (Map<String, Object> secao : asNodeList(corpo.get("secoes"))) {
                 html.append(renderSection(secao, sectionIndex));
                 sectionIndex++;
             }
@@ -83,7 +83,7 @@ public class CopyWireframeHtmlGenerator {
 
     private String renderSection(Map<String, Object> secao, int sectionIndex) {
         Map<String, Object> normalizedSection = new LinkedHashMap<>(secao);
-        List<Map<String, Object>> estilos = new ArrayList<>(asList(secao.get("estilos")));
+        List<Map<String, Object>> estilos = new ArrayList<>(asStyleMapList(secao.get("estilos")));
         if (!containsBackgroundStyle(estilos)) {
             estilos.add(Map.of("nome", "background-color", "valor", sectionIndex % 2 == 0 ? "#FFFFFF" : "#F7F9FC"));
         }
@@ -110,7 +110,7 @@ public class CopyWireframeHtmlGenerator {
 
         out.append(resolveText(node));
 
-        for (Map<String, Object> child : asList(node.get(childrenKey))) {
+        for (Map<String, Object> child : asNodeList(node.get(childrenKey))) {
             out.append(renderElement(child));
         }
 
@@ -139,8 +139,8 @@ public class CopyWireframeHtmlGenerator {
 
     private void appendCommonAttributes(StringBuilder out, Map<String, Object> node) {
         String id = asText(node.get("id"), "");
-        String style = renderInlineStyle(asList(node.get("estilos")));
-        String className = renderClassNameFromResponsiveStyleRefs(asList(node.get("estilos")));
+        String style = renderInlineStyle(node.get("estilos"));
+        String className = renderClassNames(node.get("estilos"));
         Map<String, Object> attrs = extractAttributes(node);
 
         if (StringUtils.hasText(id)) {
@@ -283,7 +283,8 @@ public class CopyWireframeHtmlGenerator {
         return html.toString();
     }
 
-    private String renderInlineStyle(List<Map<String, Object>> estilos) {
+    private String renderInlineStyle(Object estilosObj) {
+        List<Map<String, Object>> estilos = asStyleMapList(estilosObj);
         StringBuilder out = new StringBuilder();
 
         for (Map<String, Object> estilo : estilos) {
@@ -298,12 +299,26 @@ public class CopyWireframeHtmlGenerator {
         return out.toString();
     }
 
-    private String renderClassNameFromResponsiveStyleRefs(List<Map<String, Object>> estilos) {
+    private String renderClassNames(Object estilosObj) {
         List<String> classes = new ArrayList<>();
-        for (Map<String, Object> estilo : estilos) {
-            appendClassRefs(classes, estilo.get("desktop"));
-            appendClassRefs(classes, estilo.get("mobile"));
+
+        for (Object estilo : asObjectList(estilosObj)) {
+            if (estilo instanceof String className && StringUtils.hasText(className)) {
+                String normalized = className.trim();
+                if (!classes.contains(normalized)) {
+                    classes.add(normalized);
+                }
+                continue;
+            }
+
+            if (estilo instanceof Map<?, ?> styleMap) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> map = (Map<String, Object>) styleMap;
+                appendClassRefs(classes, map.get("desktop"));
+                appendClassRefs(classes, map.get("mobile"));
+            }
         }
+
         return String.join(" ", classes);
     }
 
@@ -449,15 +464,41 @@ public class CopyWireframeHtmlGenerator {
         return out.append(".").toString();
     }
 
+
+
+    private List<Map<String, Object>> asNodeList(Object value) {
+        List<Map<String, Object>> nodes = new ArrayList<>();
+        for (Object item : asObjectList(value)) {
+            if (item instanceof Map<?, ?> map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> node = (Map<String, Object>) map;
+                nodes.add(node);
+            }
+        }
+        return nodes;
+    }
+
+    private List<Map<String, Object>> asStyleMapList(Object value) {
+        List<Map<String, Object>> estilos = new ArrayList<>();
+        for (Object item : asObjectList(value)) {
+            if (item instanceof Map<?, ?> map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> styleMap = (Map<String, Object>) map;
+                estilos.add(styleMap);
+            }
+        }
+        return estilos;
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> asMap(Object value) {
         return value instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> asList(Object value) {
-        return value instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+    private List<Object> asObjectList(Object value) {
+        return value instanceof List<?> list ? new ArrayList<>(list) : List.of();
     }
+
 
     private String asText(Object value, String fallback) {
         return value instanceof String text && StringUtils.hasText(text) ? text : fallback;

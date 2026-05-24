@@ -59,7 +59,7 @@ public class WireframeHtmlGenerator {
 
             html.append("<body");
 
-            String bodyStyle = renderInlineStyle(asList(corpo.get("estilos")));
+            String bodyStyle = renderInlineStyle(corpo.get("estilos"));
             if (StringUtils.hasText(bodyStyle)) {
                 html.append(" style=\"").append(escapeHtmlAttribute(bodyStyle)).append("\"");
             }
@@ -83,7 +83,7 @@ public class WireframeHtmlGenerator {
 
     private String renderSection(Map<String, Object> secao, int sectionIndex) {
         Map<String, Object> normalizedSection = new LinkedHashMap<>(secao);
-        List<Map<String, Object>> estilos = new ArrayList<>(asList(secao.get("estilos")));
+        List<Map<String, Object>> estilos = new ArrayList<>(extractInlineStyles(secao.get("estilos")));
         if (!containsBackgroundStyle(estilos)) {
             estilos.add(Map.of("nome", "background-color", "valor", sectionIndex % 2 == 0 ? "#FFFFFF" : "#F7F9FC"));
         }
@@ -139,8 +139,8 @@ public class WireframeHtmlGenerator {
 
     private void appendCommonAttributes(StringBuilder out, Map<String, Object> node) {
         String id = asText(node.get("id"), "");
-        String style = renderInlineStyle(asList(node.get("estilos")));
-        String className = renderClassNameFromResponsiveStyleRefs(asList(node.get("estilos")));
+        String style = renderInlineStyle(node.get("estilos"));
+        String className = renderClassNameFromResponsiveStyleRefs(node.get("estilos"));
         Map<String, Object> attrs = extractAttributes(node);
 
         if (StringUtils.hasText(id)) {
@@ -283,7 +283,8 @@ public class WireframeHtmlGenerator {
         return html.toString();
     }
 
-    private String renderInlineStyle(List<Map<String, Object>> estilos) {
+    private String renderInlineStyle(Object estilosObj) {
+        List<Map<String, Object>> estilos = extractInlineStyles(estilosObj);
         StringBuilder out = new StringBuilder();
 
         for (Map<String, Object> estilo : estilos) {
@@ -298,13 +299,45 @@ public class WireframeHtmlGenerator {
         return out.toString();
     }
 
-    private String renderClassNameFromResponsiveStyleRefs(List<Map<String, Object>> estilos) {
+    private String renderClassNameFromResponsiveStyleRefs(Object estilosObj) {
         List<String> classes = new ArrayList<>();
-        for (Map<String, Object> estilo : estilos) {
-            appendClassRefs(classes, estilo.get("desktop"));
-            appendClassRefs(classes, estilo.get("mobile"));
+
+        if (estilosObj instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof String className && StringUtils.hasText(className)) {
+                    appendUniqueClass(classes, className);
+                    continue;
+                }
+                if (item instanceof Map<?, ?> estilo) {
+                    appendClassRefs(classes, estilo.get("desktop"));
+                    appendClassRefs(classes, estilo.get("mobile"));
+                }
+            }
         }
+
+        if (estilosObj instanceof Map<?, ?> map) {
+            appendClassRefs(classes, map.get("desktop"));
+            appendClassRefs(classes, map.get("mobile"));
+        }
+
         return String.join(" ", classes);
+    }
+
+
+    private List<Map<String, Object>> extractInlineStyles(Object estilosObj) {
+        List<Map<String, Object>> estilos = new ArrayList<>();
+
+        if (!(estilosObj instanceof List<?> list)) {
+            return estilos;
+        }
+
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> estilo) {
+                estilos.add(asMap(estilo));
+            }
+        }
+
+        return estilos;
     }
 
     @SuppressWarnings("unchecked")
@@ -316,10 +349,19 @@ public class WireframeHtmlGenerator {
             if (!(item instanceof String className) || !StringUtils.hasText(className)) {
                 continue;
             }
-            String normalized = className.trim();
-            if (!classes.contains(normalized)) {
-                classes.add(normalized);
-            }
+            appendUniqueClass(classes, className);
+        }
+    }
+
+
+    private void appendUniqueClass(List<String> classes, String className) {
+        if (!StringUtils.hasText(className)) {
+            return;
+        }
+
+        String normalized = className.trim();
+        if (!classes.contains(normalized)) {
+            classes.add(normalized);
         }
     }
 

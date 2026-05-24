@@ -1409,3 +1409,16 @@
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset-schema.json
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlProcessor.java
   - docs/registros/experimentos.md
+
+## 2026-05-24 13:36:50 UTC-3
+- solicitação para aplicar o mesmo ajuste de compatibilidade no gerador/assembler da etapa gera wireframe.
+- causa-raiz identificada: o `WireframeHtmlGenerator` consumia `estilos` com cast direto para `List<Map<...>>`, o que pode quebrar/ignorar o novo formato com lista simples de classes (`string[]`) em nós da página.
+- correção aplicada:
+  - ajuste da leitura de `estilos` para suportar explicitamente lista de strings em classes CSS e manter mapas legados para estilos inline/responsivos;
+  - inclusão de normalização de classes sem duplicação no HTML gerado.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/WireframeHtmlGenerator.java
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
+  - docs/registros/experimentos.md

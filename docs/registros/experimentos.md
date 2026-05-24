@@ -1397,3 +1397,28 @@
   - atualização do schema `landing-page-design-preset-schema.json` para documentar `pagina.body.estilos` como lista de strings e nós de página com `estilos` em formato direto;
   - atualização do prompt `landing-page-design-preset.md` para instruir explicitamente que `desktop/mobile` existe somente em `definicoes` e que os elementos de `pagina` usam `estilos` como array simples de classes.
 - resultado esperado: payloads de preset design mais consistentes com renderização direta das classes no HTML provisório.
+
+## 2026-05-24 12:58:37 UTC-3
+- solicitação para ajustar o gerador HTML do backend (`geralanding.presetdesign`) após atualização dos schemas de wireframe e design preset no AI Worker.
+- causa-raiz identificada: o processador do preset de design no backend ainda tratava `estilos` principalmente como objeto com `desktop/mobile`, ignorando o novo formato principal em lista simples de classes (`string[]`) previsto no schema novo.
+- correção aplicada: atualização do `DesignPresetProvisionalHtmlProcessor` para aceitar e aplicar classes CSS quando `estilos` vier como lista de strings, mantendo compatibilidade com formato legado.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset-schema.json
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlProcessor.java
+  - docs/registros/experimentos.md
+
+## 2026-05-24 13:36:50 UTC-3
+- solicitação para aplicar o mesmo ajuste de compatibilidade no gerador/assembler da etapa gera wireframe.
+- causa-raiz identificada: o `WireframeHtmlGenerator` consumia `estilos` com cast direto para `List<Map<...>>`, o que pode quebrar/ignorar o novo formato com lista simples de classes (`string[]`) em nós da página.
+- correção aplicada:
+  - ajuste da leitura de `estilos` para suportar explicitamente lista de strings em classes CSS e manter mapas legados para estilos inline/responsivos;
+  - inclusão de normalização de classes sem duplicação no HTML gerado.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/WireframeHtmlGenerator.java
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
+  - docs/registros/experimentos.md

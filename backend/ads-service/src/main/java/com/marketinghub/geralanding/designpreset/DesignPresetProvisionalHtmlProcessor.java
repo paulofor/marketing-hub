@@ -892,6 +892,12 @@ public class DesignPresetProvisionalHtmlProcessor {
                 if (item instanceof Map<?, ?> map) {
                     classes.addAll(readStringList(map.get("desktop")));
                     classes.addAll(readStringList(map.get("mobile")));
+                    continue;
+                }
+
+                String className = asString(item);
+                if (StringUtils.hasText(className)) {
+                    classes.add(className.trim());
                 }
             }
         }

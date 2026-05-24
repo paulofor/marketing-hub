@@ -31,13 +31,40 @@ public class CopyProvisionalHtmlAssembler {
      */
     public String assemble(String copyModelResponse, String wireframeModelResponse, String jobId) {
         if (!StringUtils.hasText(copyModelResponse) || !StringUtils.hasText(wireframeModelResponse)) {
+            log.warn(
+                    "Montagem de HTML provisório ignorada por payload ausente (jobId={}, copyLength={}, wireframeLength={})",
+                    normalizeJobId(jobId),
+                    lengthOf(copyModelResponse),
+                    lengthOf(wireframeModelResponse));
             return null;
         }
+        log.info(
+                "Iniciando montagem de HTML provisório da etapa copy (jobId={}, copyLength={}, wireframeLength={}, copyPreview={}, wireframePreview={})",
+                normalizeJobId(jobId),
+                lengthOf(copyModelResponse),
+                lengthOf(wireframeModelResponse),
+                preview(copyModelResponse),
+                preview(wireframeModelResponse));
         try {
             CopyProvisionalHtmlPayloadResolver.CopyProvisionalHtmlPayload payload =
                     payloadResolver.resolve(copyModelResponse, wireframeModelResponse);
 
-            return processor.process(payloadResolverToJson(payload.wireframe()), payloadResolverToJson(payload.copy()));
+            String wireframeJson = payloadResolverToJson(payload.wireframe());
+            String copyJson = payloadResolverToJson(payload.copy());
+            log.info(
+                    "Payload resolvido para processamento copy (jobId={}, resolvedWireframeLength={}, resolvedCopyLength={}, wireframeKeys={}, copyKeys={})",
+                    normalizeJobId(jobId),
+                    lengthOf(wireframeJson),
+                    lengthOf(copyJson),
+                    payload.wireframe() == null ? 0 : payload.wireframe().size(),
+                    payload.copy() == null ? 0 : payload.copy().size());
+
+            String html = processor.process(wireframeJson, copyJson);
+            log.info(
+                    "HTML provisório da etapa copy montado com sucesso (jobId={}, htmlLength={})",
+                    normalizeJobId(jobId),
+                    lengthOf(html));
+            return html;
         } catch (Exception e) {
             String errorDetails = buildErrorDetails(e);
             log.error(

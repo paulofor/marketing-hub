@@ -1337,3 +1337,11 @@
   - ajuste dos nós do Mermaid para formato com rótulo entre aspas e `<br/>` compatível com GitHub (`WB`, `OA`, `SD`, `LP`) em `docs/canonical/procedimento-experimento-canon.v1.md`;
   - manutenção do diagrama no mesmo local canônico, sem mudança de arquitetura/regras de fluxo.
 - resultado esperado: renderização estável do diagrama no GitHub sem erro de parse.
+
+## 2026-05-24 01:55:00 UTC
+- solicitação para corrigir falha de compilação no módulo `backend/ads-service` por símbolo ausente em `DesignPresetProvisionalHtmlProcessor` (`applyPageBodyClasses`).
+- causa-raiz identificada: chamadas para aplicação de classes de `pagina.body` permaneceram no fluxo de montagem do HTML, porém o método auxiliar havia sido removido/omitido na classe.
+- correção aplicada:
+  - reintroduzido `applyPageBodyClasses(Document, Map<String,Object>)` com fallback para `body/corpo` e `classes/classList/estilos`, reaproveitando `collectStyleClasses` + `appendClasses` para manter deduplicação e contrato atual tokenizado.
+- resultado esperado: restauração da compilação do `ads-service` e reaplicação consistente de classes globais no `<body>`.
+

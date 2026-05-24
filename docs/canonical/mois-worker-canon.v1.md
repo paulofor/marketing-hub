@@ -389,7 +389,7 @@ graph TD
     WK --> PB[Prompt Builder\nopenai.OpenAiSalesPageAnalyzer]
     PB -->|"Monta prompt (URL + texto da página)\nDefine promptVersion/parserVersion"| OAI[OpenAI API /v1/responses]
     OAI -->|Retorna JSON estruturado da análise| PB
-    PB -->|Resultado validado (score, sections, copy, visual, image, notes)| WK
+    PB -->|"Resultado validado: score; sections; copy; visual; image; notes"| WK
 
     BM -->|JPA/SQL via camada backend| DB[(MySQL 5.7)]
 

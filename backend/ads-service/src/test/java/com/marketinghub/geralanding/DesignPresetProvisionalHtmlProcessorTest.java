@@ -160,4 +160,41 @@ class DesignPresetProvisionalHtmlProcessorTest {
         assertThat(html).contains("id=\"hero-container\"").contains("class=\"container-desktop\"");
         assertThat(html).contains("id=\"hero-title\"").contains("class=\"h1-size\"");
     }
+
+    @Test
+    void shouldApplyWireframeDefinitionCssAndClassesInDesignPresetAssembly() {
+        DesignPresetProvisionalHtmlProcessor processor = new DesignPresetProvisionalHtmlProcessor();
+
+        String wireframe = """
+                {
+                  "definicoes": {
+                    "layout": {
+                      "desktop": [{"nome":"wireframe-layout","atributoCss":"display","valor":"grid"}],
+                      "mobile": [{"nome":"wireframe-layout","atributoCss":"display","valor":"block"}]
+                    }
+                  },
+                  "pagina": {
+                    "corpo": {
+                      "secoes": [
+                        {"id":"sec-hero","tag":"section","estilos":{"desktop":["wireframe-layout"],"mobile":[]}}
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String design = """
+                {
+                  "definicoes": {},
+                  "pagina": { "corpo": { "secoes": [] } }
+                }
+                """;
+
+        String html = processor.process(wireframe, "{\"bodySections\":[]}", "{}", design);
+
+        assertThat(html).contains(".wireframe-layout{display:grid;}");
+        assertThat(html).contains("@media (max-width: 768px)");
+        assertThat(html).contains(".wireframe-layout{display:block;}");
+        assertThat(html).contains("id=\"sec-hero\"").contains("class=\"wireframe-layout\"");
+    }
 }

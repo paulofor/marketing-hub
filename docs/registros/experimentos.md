@@ -1377,3 +1377,15 @@
 - causa-raiz identificada: o teste anterior validava uma string fixa de `<body class="...">`, acoplando o cenário exatamente a 7 classes e à ordem literal.
 - correção aplicada: teste atualizado para parsear o HTML com Jsoup e validar que o `<body>` contém pelo menos as classes esperadas do payload, sem assumir quantidade total fixa.
 - resultado esperado: regressão cobre o comportamento funcional correto mesmo quando o preset gerar mais ou menos classes globais.
+## 2026-05-24 11:14:04 UTC-3
+- solicitação para ajustar os schemas das etapas “gera wireframe” e “gera preset design” para manter separação `desktop/mobile` apenas em `definicoes` e simplificar os elementos de `pagina` para usar classes sem segmentação por device.
+- raciocínio aplicado: manter responsividade onde ela pertence (catálogo de tokens em `definicoes`) e reduzir complexidade/ambiguidade nas referências em `pagina.secoes`.
+- foi feito:
+  - atualização do schema de wireframe para que `pagina.secoes[].estrutura|posicao|layout|mistas` aceitem apenas lista simples de nomes de classe.
+  - atualização da instrução textual do prompt de wireframe para refletir a nova regra de referências simples em `pagina/secoes`.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset-schema.json

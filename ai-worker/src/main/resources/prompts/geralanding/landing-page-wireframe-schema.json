@@ -95,29 +95,12 @@
     "pagina"
   ],
   "$defs": {
-    "referenciasCategoria": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "desktop": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string"
-          }
-        },
-        "mobile": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "desktop",
-        "mobile"
-      ]
+    "referenciasCategoriaPagina": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
     },
     "secao": {
       "type": "object",
@@ -133,16 +116,16 @@
           "type": "string"
         },
         "estrutura": {
-          "$ref": "#/$defs/referenciasCategoria"
+          "$ref": "#/$defs/referenciasCategoriaPagina"
         },
         "posicao": {
-          "$ref": "#/$defs/referenciasCategoria"
+          "$ref": "#/$defs/referenciasCategoriaPagina"
         },
         "layout": {
-          "$ref": "#/$defs/referenciasCategoria"
+          "$ref": "#/$defs/referenciasCategoriaPagina"
         },
         "mistas": {
-          "$ref": "#/$defs/referenciasCategoria"
+          "$ref": "#/$defs/referenciasCategoriaPagina"
         },
         "elementosSeccao": {
           "type": "array",

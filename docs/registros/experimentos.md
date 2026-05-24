@@ -1452,6 +1452,15 @@
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssemblerErrorDetailTest.java
   - docs/registros/experimentos.md
 
+## 2026-05-24 18:05:00 UTC
+- solicitação para criar exception dedicada de integração OpenAI no backend com construtor único contendo request cru, response cru, json validado, job id do Marketing Hub e job id da OpenAI.
+- correção aplicada:
+  - criada a classe `OpenAiException` em `com.marketinghub.openai` com um único construtor contendo os cinco campos solicitados;
+  - implementado `toString()` para expor literalmente todos os campos, garantindo diagnóstico completo em logs quando a exception for registrada.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/openai/OpenAiException.java
 ## 2026-05-24 18:00:00 UTC
 - solicitação para pesquisar nos logs do backend o erro `500 Internal Server Error` da execução `df5cfce5-d343-4ec1-9022-4954d352d2c6` na etapa `landing-page-copy`.
 - investigação executada via MCP (`java_module_logs`) com filtros por `executionId`, endpoint de gera-landing e janela temporal.

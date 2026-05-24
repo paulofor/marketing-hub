@@ -1312,3 +1312,9 @@
   - reforço do prompt `landing-page-wireframe.md` com regras explícitas de `pagina.body`, intenção funcional de elementos interativos, contrato de asset em `img`, contrato semântico de `input`, componentes semânticos e validação permanente de `texto.conteudo` vazio;
   - atualização do schema `landing-page-wireframe-schema.json` para incluir e validar os novos campos contratuais (`pagina.body.classes`, `interacao`, `asset`, `contratoCampo`, `componente`) com regras condicionais por `tag`.
 - impacto esperado: reduzir geração de wireframe ambígua e eliminar casos de HTML sem `src` em imagem, links sem destino claro e inputs sem contrato de campo.
+## 2026-05-24 00:00:00 UTC
+- solicitação para corrigir lacunas de design system no prompt da etapa `landing-page-design-preset` (tokens de texto, preset global de body, completude de botão/input, hover real, contraste e uso indevido de opacidade).
+- causa-raiz identificada: o prompt definia grupos CSS válidos, mas não explicitava checklist mínimo de classes utilitárias para garantir herança tipográfica/cromática, estados interativos reais e contraste acessível em tema escuro.
+- foi feito:
+  - atualização de `ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md` com regras obrigatórias e checklist operacional cobrindo `textPrimary/textMuted/textSubtle/textOnButtonPrimary/textOnInput/placeholderText`, preset `pageRoot`, completude de botão/input, regra de hover real, proibição de usar `opacityMuted` como substituto de cor e metas WCAG (4.5:1 e 3:1).
+- impacto esperado: reduzir presets incompletos e aumentar consistência visual/acessibilidade do HTML provisório gerado nas etapas seguintes.

@@ -35,6 +35,8 @@
 10. **Stack mandatória para módulos de apoio + deploy rastreável.** Módulos de apoio/satélites devem adotar baseline **Spring Boot + Java + Maven** e manter workflow CI/CD dedicado com teste, build e deploy por **disparo manual (`workflow_dispatch`)** além dos gatilhos automáticos necessários.
 11. **Exceções capturadas preservam ponto de falha.** Todo tratamento de exceção que captura, converte ou relança erro deve registrar log com contexto operacional e a exceção completa para manter stack trace e permitir diagnóstico de causa-raiz. Mensagens resumidas de causa raiz podem ser retornadas ao usuário/API, mas não substituem o log completo no ponto da captura.
 
+12. **Sem metainstrução no artefato final.** Qualquer texto técnico/operacional vazado em conteúdo final ao usuário (copy, CTA, FAQ, HTML publicado) deve bloquear publicação com erro explícito de contrato e apontamento do campo literal rejeitado.
+
 ## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
 
 - Todo artefato gerado direta ou indiretamente por fluxos oficiais do sistema é **exclusivo do contexto de origem** (por exemplo `experimentId`, `leadId`, `campaignId` ou equivalente canônico do domínio).

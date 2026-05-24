@@ -265,3 +265,15 @@ flowchart LR
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend Gera Landing.
 - O backend concentra regras de contrato, montagem de HTML provisório/final e publicação para Lead Portal.
 - O Worker AI concentra orquestração por etapa e integração com OpenAI, devolvendo resultados ao backend pelos endpoints do próprio domínio Gera Landing.
+
+### 15.4 Regra mandatória — bloqueio de metainstrução na copy final
+
+É obrigatório bloquear a publicação quando qualquer campo textual final da landing contiver metainstrução ou texto técnico operacional (ex.: instruções de montagem, placeholders, notas para operador/IA como "preciso do targetSectionId real").
+
+Critérios mínimos de bloqueio:
+1. validar campos de texto final (incluindo `bodySections[*].items[*].texto`) antes da persistência/publicação;
+2. lançar erro explícito de contrato com caminho do campo e conteúdo literal rejeitado;
+3. tratar a falha como causa-raiz de geração (prompt/mapper/validador), proibindo correção manual ad hoc no payload publicado.
+
+Mensagem padrão recomendada: `IllegalStateException: Copy inválida: vazamento de metainstrução/texto técnico detectado em <campo>=<valor>`.
+

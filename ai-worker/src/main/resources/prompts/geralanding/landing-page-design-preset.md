@@ -68,6 +68,18 @@ Regras obrigatórias:
 5. Não usar JSON serializado em string.
 6. Usar exclusivamente propriedades CSS permitidas em `docs/gera-landing/listas-css-estrutura-acabamento.md`.
 7. Manter foco de conversão: contraste legível, CTA destacado e consistência entre seção e elementos.
+8. Criar tokens de cor de texto dedicados e não reutilizar `opacity` para simular cor de texto.
+9. Garantir estados interativos reais (ex.: `:hover`) por combinação consistente de tokens base + tokens de hover.
+
+Checklist obrigatório de consistência visual (deve ser atendido no JSON):
+- Cores de texto obrigatórias: criar classes para `textPrimary`, `textMuted`, `textSubtle`, `textOnButtonPrimary`, `textOnInput`, `placeholderText`.
+- Body global obrigatório: criar preset `pageRoot` com `bgBody`, `fontBase`, `textPrimary` para herança consistente.
+- Tipografia não fragmentada: `h1`, `h2`, `h3` devem herdar `font-family` e cor do body, ou receber classes completas equivalentes.
+- Botão primário completo: além de `bgButtonPrimary`, `radiusButton`, `shadowButton`, incluir classes para `padding`, `display:inline-flex`, `align-items:center`, `justify-content:center`, `font-weight`, `color` (`textOnButtonPrimary`).
+- Input completo: além de `bgInput`, `radiusInput`, `borderSoft`, `caretAccent`, incluir classes para `padding`, `color` (`textOnInput`), `::placeholder` (`placeholderText`), `font` e `min-height`.
+- Hover real obrigatório: tokens `bgButtonPrimaryHover` e `bgButtonSecondaryHover` só são válidos quando existirem classes utilitárias preparadas para uso de seletor `:hover` na etapa de HTML/CSS final.
+- Opacidade: não usar `opacityMuted` para resolver cor de texto; preferir `color` com valores RGBA/HEX com contraste controlado.
+- Contraste obrigatório em tema escuro: assegurar WCAG mínimo de 4.5:1 para texto normal e 3:1 para texto grande.
 
 Estrutura obrigatória de `definicoes` (substitui a lista anterior):
 

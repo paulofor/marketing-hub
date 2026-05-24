@@ -1422,3 +1422,32 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/WireframeHtmlGenerator.java
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
   - docs/registros/experimentos.md
+
+## 2026-05-24 17:20:00 UTC
+- solicitação para detalhar erros no assembler de HTML da etapa `landing-page-copy`.
+- causa-raiz identificada: quando o `CopyProvisionalHtmlAssembler` falhava, a exceção retornada para o fluxo superior tinha contexto insuficiente para diagnóstico rápido (sem detalhe da causa-raiz textual no erro propagado).
+- correção aplicada:
+  - enriquecimento do tratamento de erro no `CopyProvisionalHtmlAssembler` com `errorDetails` contendo classe e mensagem da causa-raiz;
+  - inclusão de `jobId`, `copyLength` e `wireframeLength` na mensagem da `IllegalArgumentException` propagada;
+  - adição de teste unitário cobrindo a presença dos detalhes na mensagem de erro quando o JSON de copy é inválido.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlAssembler.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/CopyProvisionalHtmlAssemblerErrorDetailTest.java
+  - docs/registros/experimentos.md
+
+## 2026-05-24 17:45:00 UTC
+- solicitação para aplicar no assembler da etapa `landing-page-design-preset` o mesmo padrão de diagnóstico detalhado, incluindo indicação exata do elemento com falha de processamento.
+- causa-raiz identificada: falhas do fluxo de design preset eram propagadas com contexto genérico no assembler, sem detalhar payloads e sem destacar elemento (`id/tag`) que quebrou no processor.
+- correção aplicada:
+  - enriquecimento do `DesignPresetProvisionalHtmlAssembler` com log/erro propagado contendo `jobId`, tamanhos dos payloads e `errorDetails` da causa-raiz;
+  - reforço no `DesignPresetProvisionalHtmlProcessor` para lançar erro contextual com `id/tag` do elemento ao falhar na criação/processamento do nó e de seus filhos;
+  - adição de teste unitário validando que o assembler propaga mensagem com detalhe de elemento quando ocorre erro no processor.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlAssembler.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlProcessor.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssemblerErrorDetailTest.java
+  - docs/registros/experimentos.md

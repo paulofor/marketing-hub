@@ -1,6 +1,8 @@
 package com.marketinghub.geralanding.designpreset;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -12,6 +14,8 @@ import java.util.Map;
  * Monta o HTML provisório da etapa de preset de design a partir dos artefatos canônicos anteriores.
  */
 public class DesignPresetProvisionalHtmlAssembler {
+
+    private static final Logger log = LoggerFactory.getLogger(DesignPresetProvisionalHtmlAssembler.class);
 
     private final DesignPresetProvisionalHtmlProcessor processor;
     private final ObjectMapper objectMapper;
@@ -58,8 +62,52 @@ public class DesignPresetProvisionalHtmlAssembler {
                     designPresetOutputJson);
             return preserveCanonicalHtml(html, jobId);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Falha ao montar HTML provisório da fase landing-page-design-preset", e);
+            String errorDetails = buildErrorDetails(e);
+            log.error("Falha ao montar HTML provisório da fase landing-page-design-preset "
+                            + "(jobId={}, wireframeLength={}, copyLength={}, imagePlanningLength={}, designPresetLength={}, errorDetails={})",
+                    normalizeJobId(jobId),
+                    lengthOf(wireframeJson),
+                    lengthOf(copyJson),
+                    lengthOf(imagePlanningJson),
+                    lengthOf(designPresetOutputJson),
+                    errorDetails,
+                    e);
+            throw new IllegalArgumentException(
+                    "Falha ao montar HTML provisório da fase landing-page-design-preset. "
+                            + "jobId=" + normalizeJobId(jobId)
+                            + ", wireframeLength=" + lengthOf(wireframeJson)
+                            + ", copyLength=" + lengthOf(copyJson)
+                            + ", imagePlanningLength=" + lengthOf(imagePlanningJson)
+                            + ", designPresetLength=" + lengthOf(designPresetOutputJson)
+                            + ", errorDetails=" + errorDetails,
+                    e);
         }
+    }
+
+    /**
+     * Monta detalhes compactos da causa-raiz para facilitar diagnóstico operacional.
+     */
+    private String buildErrorDetails(Exception ex) {
+        Throwable rootCause = ex;
+        while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+        }
+        String rootMessage = StringUtils.hasText(rootCause.getMessage()) ? rootCause.getMessage() : "<sem-mensagem>";
+        return rootCause.getClass().getSimpleName() + ": " + rootMessage.replaceAll("\\s+", " ").trim();
+    }
+
+    /**
+     * Normaliza identificador de job para mensagens e logs.
+     */
+    private String normalizeJobId(String jobId) {
+        return StringUtils.hasText(jobId) ? jobId : "<sem-jobId>";
+    }
+
+    /**
+     * Retorna o tamanho do payload para ampliar contexto de falhas.
+     */
+    private int lengthOf(String payload) {
+        return payload == null ? 0 : payload.length();
     }
 
     /**

@@ -26,6 +26,9 @@ public class CopyProvisionalHtmlAssembler {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Orquestra o resolver+processor para montar HTML provisório da etapa copy.
+     */
     public String assemble(String copyModelResponse, String wireframeModelResponse, String jobId) {
         if (!StringUtils.hasText(copyModelResponse) || !StringUtils.hasText(wireframeModelResponse)) {
             return null;
@@ -36,16 +39,43 @@ public class CopyProvisionalHtmlAssembler {
 
             return processor.process(payloadResolverToJson(payload.wireframe()), payloadResolverToJson(payload.copy()));
         } catch (Exception e) {
+            String errorDetails = buildErrorDetails(e);
             log.error(
-                    "Falha ao montar HTML provisório (jobId={}, copyLength={}, wireframeLength={}, copyPreview={}, wireframePreview={})",
+                    "Falha ao montar HTML provisório (jobId={}, copyLength={}, wireframeLength={}, copyPreview={}, wireframePreview={}, errorDetails={})",
                     jobId,
                     lengthOf(copyModelResponse),
                     lengthOf(wireframeModelResponse),
                     preview(copyModelResponse),
                     preview(wireframeModelResponse),
+                    errorDetails,
                     e);
-            throw new IllegalArgumentException("Falha ao montar HTML provisório a partir de wireframe + copy", e);
+            throw new IllegalArgumentException(
+                    "Falha ao montar HTML provisório a partir de wireframe + copy. "
+                            + "jobId=" + normalizeJobId(jobId)
+                            + ", copyLength=" + lengthOf(copyModelResponse)
+                            + ", wireframeLength=" + lengthOf(wireframeModelResponse)
+                            + ", errorDetails=" + errorDetails,
+                    e);
         }
+    }
+
+    /**
+     * Monta detalhes da exceção com causa-raiz para acelerar o diagnóstico de erros.
+     */
+    private String buildErrorDetails(Exception ex) {
+        Throwable rootCause = ex;
+        while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+        }
+        String rootMessage = StringUtils.hasText(rootCause.getMessage()) ? rootCause.getMessage() : "<sem-mensagem>";
+        return rootCause.getClass().getSimpleName() + ": " + rootMessage.replaceAll("\\s+", " ").trim();
+    }
+
+    /**
+     * Normaliza o jobId para logs e mensagens de erro.
+     */
+    private String normalizeJobId(String jobId) {
+        return StringUtils.hasText(jobId) ? jobId : "<sem-jobId>";
     }
 
     /**

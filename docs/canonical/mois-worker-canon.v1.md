@@ -388,6 +388,41 @@ graph TD
     BR -->|READ/WRITE: ingest, jobs, analyses, snapshots| DB
 ```
 
+
+#### 12.5.1 Hotmart Collector — arquitetura por módulo/pacote
+
+```mermaid
+graph TD
+    HS[hotmart.com
+Fonte externa] -->|Coleta de produtos/URLs| HC[mois-hotmart-collector\npackage: com.marketinghub.mois.hotmart.collector]
+
+    HC -->|POST /api/mois/sales-library/urls:ingest\nsource=HOTMART| BM[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web]
+
+    subgraph Backend MOIS
+      BM --> BS[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service]
+      BS --> BR[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.repository]
+    end
+
+    BR -->|UPSERT ingest + criação job PENDING| DB[(MySQL 5.7)]
+```
+
+#### 12.5.2 ClickBank Collector — arquitetura por módulo/pacote
+
+```mermaid
+graph TD
+    CB[api.clickbank.com / marketplace
+Fonte externa] -->|Coleta de produtos/URLs| CC[mois-clickbank-collector\npackage: com.marketinghub.mois.clickbank.collector]
+
+    CC -->|POST /api/mois/sales-library/urls:ingest\nsource=CLICKBANK| BM[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web]
+
+    subgraph Backend MOIS
+      BM --> BS[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service]
+      BS --> BR[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.repository]
+    end
+
+    BR -->|UPSERT ingest + criação job PENDING| DB[(MySQL 5.7)]
+```
+
 #### Regras de integração refletidas no diagrama
 - Coletores e worker **não acessam banco diretamente**; todo acesso a dados passa pelo backend MOIS.
 - A integração com OpenAI é realizada pelo `mois-sales-library-worker`, com retorno consolidado ao backend via endpoint de conclusão/falha.

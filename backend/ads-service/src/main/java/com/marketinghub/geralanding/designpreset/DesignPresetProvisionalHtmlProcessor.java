@@ -88,6 +88,7 @@ public class DesignPresetProvisionalHtmlProcessor {
          * CSS e classes do preset tokenizado.
          */
         applyTokenizedPresetStyles(document, designRoot);
+        applyTokenizedPresetStyles(document, wireframeRoot);
 
         return normalizeSerializedHtml(document.outerHtml());
     }

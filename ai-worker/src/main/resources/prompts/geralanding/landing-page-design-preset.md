@@ -72,6 +72,7 @@ Regras obrigatórias:
 9. Manter foco de conversão: contraste legível, CTA destacado e consistência entre seção e elementos.
 10. Criar tokens de cor de texto dedicados e não reutilizar `opacity` para simular cor de texto.
 11. Garantir estados interativos reais (ex.: `:hover`) por combinação consistente de tokens base + tokens de hover.
+12. É proibido criar em `definicoes` qualquer classe (`nome`) que já exista no `landingPageWireframe.definicoes`; os nomes do preset de design devem ser sempre inéditos em relação ao wireframe.
 
 Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Cores de texto obrigatórias: criar classes para `textPrimary`, `textMuted`, `textSubtle`, `textOnButtonPrimary`, `textOnInput`, `placeholderText`.

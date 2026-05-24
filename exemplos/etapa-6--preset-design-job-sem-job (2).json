@@ -1,0 +1,2779 @@
+{
+  "definicoes": {
+    "cores-fundo": {
+      "desktop": [
+        {
+          "nome": "bgBody",
+          "atributoCss": "background-color",
+          "valor": "#0B1220"
+        },
+        {
+          "nome": "bgHero",
+          "atributoCss": "background-image",
+          "valor": "radial-gradient(900px 420px at 18% 22%, rgba(34,211,238,0.18) 0%, rgba(34,211,238,0.00) 58%), radial-gradient(820px 380px at 78% 18%, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.00) 60%), linear-gradient(180deg, #0B1220 0%, #0A1020 100%)"
+        },
+        {
+          "nome": "bgSection",
+          "atributoCss": "background-color",
+          "valor": "#0B1220"
+        },
+        {
+          "nome": "bgSurface",
+          "atributoCss": "background-color",
+          "valor": "#0F1B2D"
+        },
+        {
+          "nome": "bgSurfaceAlt",
+          "atributoCss": "background-color",
+          "valor": "#0D1728"
+        },
+        {
+          "nome": "bgButtonPrimary",
+          "atributoCss": "background-color",
+          "valor": "#22D3EE"
+        },
+        {
+          "nome": "bgButtonPrimaryHover",
+          "atributoCss": "background-color",
+          "valor": "#06B6D4"
+        },
+        {
+          "nome": "bgButtonSecondary",
+          "atributoCss": "background-color",
+          "valor": "rgba(255,255,255,0.06)"
+        },
+        {
+          "nome": "bgButtonSecondaryHover",
+          "atributoCss": "background-color",
+          "valor": "rgba(255,255,255,0.10)"
+        },
+        {
+          "nome": "bgInput",
+          "atributoCss": "background-color",
+          "valor": "#0B1424"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "bgBody",
+          "atributoCss": "background-color",
+          "valor": "#0B1220"
+        },
+        {
+          "nome": "bgHero",
+          "atributoCss": "background-image",
+          "valor": "radial-gradient(700px 360px at 18% 18%, rgba(34,211,238,0.18) 0%, rgba(34,211,238,0.00) 58%), radial-gradient(640px 320px at 78% 12%, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.00) 60%), linear-gradient(180deg, #0B1220 0%, #0A1020 100%)"
+        },
+        {
+          "nome": "bgSection",
+          "atributoCss": "background-color",
+          "valor": "#0B1220"
+        },
+        {
+          "nome": "bgSurface",
+          "atributoCss": "background-color",
+          "valor": "#0F1B2D"
+        },
+        {
+          "nome": "bgSurfaceAlt",
+          "atributoCss": "background-color",
+          "valor": "#0D1728"
+        },
+        {
+          "nome": "bgButtonPrimary",
+          "atributoCss": "background-color",
+          "valor": "#22D3EE"
+        },
+        {
+          "nome": "bgButtonPrimaryHover",
+          "atributoCss": "background-color",
+          "valor": "#06B6D4"
+        },
+        {
+          "nome": "bgButtonSecondary",
+          "atributoCss": "background-color",
+          "valor": "rgba(255,255,255,0.06)"
+        },
+        {
+          "nome": "bgButtonSecondaryHover",
+          "atributoCss": "background-color",
+          "valor": "rgba(255,255,255,0.10)"
+        },
+        {
+          "nome": "bgInput",
+          "atributoCss": "background-color",
+          "valor": "#0B1424"
+        }
+      ]
+    },
+    "tipografia": {
+      "desktop": [
+        {
+          "nome": "fontBase",
+          "atributoCss": "font-family",
+          "valor": "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\""
+        },
+        {
+          "nome": "textSizeBase",
+          "atributoCss": "font-size",
+          "valor": "16px"
+        },
+        {
+          "nome": "lineHeightBase",
+          "atributoCss": "line-height",
+          "valor": "1.6"
+        },
+        {
+          "nome": "h1Size",
+          "atributoCss": "font-size",
+          "valor": "44px"
+        },
+        {
+          "nome": "h1Weight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "h1Line",
+          "atributoCss": "line-height",
+          "valor": "1.08"
+        },
+        {
+          "nome": "h1Letter",
+          "atributoCss": "letter-spacing",
+          "valor": "-0.02em"
+        },
+        {
+          "nome": "h2Size",
+          "atributoCss": "font-size",
+          "valor": "32px"
+        },
+        {
+          "nome": "h2Weight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "h2Line",
+          "atributoCss": "line-height",
+          "valor": "1.15"
+        },
+        {
+          "nome": "h3Size",
+          "atributoCss": "font-size",
+          "valor": "20px"
+        },
+        {
+          "nome": "h3Weight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "pLeadSize",
+          "atributoCss": "font-size",
+          "valor": "18px"
+        },
+        {
+          "nome": "pLeadLine",
+          "atributoCss": "line-height",
+          "valor": "1.7"
+        },
+        {
+          "nome": "smallSize",
+          "atributoCss": "font-size",
+          "valor": "13px"
+        },
+        {
+          "nome": "smallLine",
+          "atributoCss": "line-height",
+          "valor": "1.45"
+        },
+        {
+          "nome": "buttonTextWeight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "buttonTextSize",
+          "atributoCss": "font-size",
+          "valor": "16px"
+        },
+        {
+          "nome": "inputTextSize",
+          "atributoCss": "font-size",
+          "valor": "16px"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "fontBase",
+          "atributoCss": "font-family",
+          "valor": "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\""
+        },
+        {
+          "nome": "textSizeBase",
+          "atributoCss": "font-size",
+          "valor": "16px"
+        },
+        {
+          "nome": "lineHeightBase",
+          "atributoCss": "line-height",
+          "valor": "1.6"
+        },
+        {
+          "nome": "h1Size",
+          "atributoCss": "font-size",
+          "valor": "34px"
+        },
+        {
+          "nome": "h1Weight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "h1Line",
+          "atributoCss": "line-height",
+          "valor": "1.12"
+        },
+        {
+          "nome": "h1Letter",
+          "atributoCss": "letter-spacing",
+          "valor": "-0.02em"
+        },
+        {
+          "nome": "h2Size",
+          "atributoCss": "font-size",
+          "valor": "26px"
+        },
+        {
+          "nome": "h2Weight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "h2Line",
+          "atributoCss": "line-height",
+          "valor": "1.18"
+        },
+        {
+          "nome": "h3Size",
+          "atributoCss": "font-size",
+          "valor": "18px"
+        },
+        {
+          "nome": "h3Weight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "pLeadSize",
+          "atributoCss": "font-size",
+          "valor": "17px"
+        },
+        {
+          "nome": "pLeadLine",
+          "atributoCss": "line-height",
+          "valor": "1.7"
+        },
+        {
+          "nome": "smallSize",
+          "atributoCss": "font-size",
+          "valor": "13px"
+        },
+        {
+          "nome": "smallLine",
+          "atributoCss": "line-height",
+          "valor": "1.45"
+        },
+        {
+          "nome": "buttonTextWeight",
+          "atributoCss": "font-weight",
+          "valor": "800"
+        },
+        {
+          "nome": "buttonTextSize",
+          "atributoCss": "font-size",
+          "valor": "16px"
+        },
+        {
+          "nome": "inputTextSize",
+          "atributoCss": "font-size",
+          "valor": "16px"
+        }
+      ]
+    },
+    "texto": {
+      "desktop": [
+        {
+          "nome": "textPrimary",
+          "atributoCss": "color",
+          "valor": "#EAF2FF"
+        },
+        {
+          "nome": "textMuted",
+          "atributoCss": "color",
+          "valor": "#B8C6DB"
+        },
+        {
+          "nome": "textSubtle",
+          "atributoCss": "color",
+          "valor": "#8EA2BD"
+        },
+        {
+          "nome": "textOnButtonPrimary",
+          "atributoCss": "color",
+          "valor": "#041018"
+        },
+        {
+          "nome": "textOnInput",
+          "atributoCss": "color",
+          "valor": "#EAF2FF"
+        },
+        {
+          "nome": "placeholderText",
+          "atributoCss": "color",
+          "valor": "#8EA2BD"
+        },
+        {
+          "nome": "linkText",
+          "atributoCss": "color",
+          "valor": "#79E8F7"
+        },
+        {
+          "nome": "linkNoUnderline",
+          "atributoCss": "text-decoration-line",
+          "valor": "none"
+        },
+        {
+          "nome": "linkUnderline",
+          "atributoCss": "text-decoration-line",
+          "valor": "underline"
+        },
+        {
+          "nome": "textLeft",
+          "atributoCss": "text-align",
+          "valor": "left"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "textPrimary",
+          "atributoCss": "color",
+          "valor": "#EAF2FF"
+        },
+        {
+          "nome": "textMuted",
+          "atributoCss": "color",
+          "valor": "#B8C6DB"
+        },
+        {
+          "nome": "textSubtle",
+          "atributoCss": "color",
+          "valor": "#8EA2BD"
+        },
+        {
+          "nome": "textOnButtonPrimary",
+          "atributoCss": "color",
+          "valor": "#041018"
+        },
+        {
+          "nome": "textOnInput",
+          "atributoCss": "color",
+          "valor": "#EAF2FF"
+        },
+        {
+          "nome": "placeholderText",
+          "atributoCss": "color",
+          "valor": "#8EA2BD"
+        },
+        {
+          "nome": "linkText",
+          "atributoCss": "color",
+          "valor": "#79E8F7"
+        },
+        {
+          "nome": "linkNoUnderline",
+          "atributoCss": "text-decoration-line",
+          "valor": "none"
+        },
+        {
+          "nome": "linkUnderline",
+          "atributoCss": "text-decoration-line",
+          "valor": "underline"
+        },
+        {
+          "nome": "textLeft",
+          "atributoCss": "text-align",
+          "valor": "left"
+        }
+      ]
+    },
+    "bordas": {
+      "desktop": [
+        {
+          "nome": "borderSoft",
+          "atributoCss": "border",
+          "valor": "1px solid rgba(255,255,255,0.10)"
+        },
+        {
+          "nome": "borderStrong",
+          "atributoCss": "border",
+          "valor": "1px solid rgba(34,211,238,0.35)"
+        },
+        {
+          "nome": "radiusCard",
+          "atributoCss": "border-radius",
+          "valor": "16px"
+        },
+        {
+          "nome": "radiusButton",
+          "atributoCss": "border-radius",
+          "valor": "14px"
+        },
+        {
+          "nome": "radiusInput",
+          "atributoCss": "border-radius",
+          "valor": "12px"
+        },
+        {
+          "nome": "radiusPill",
+          "atributoCss": "border-radius",
+          "valor": "999px"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "borderSoft",
+          "atributoCss": "border",
+          "valor": "1px solid rgba(255,255,255,0.10)"
+        },
+        {
+          "nome": "borderStrong",
+          "atributoCss": "border",
+          "valor": "1px solid rgba(34,211,238,0.35)"
+        },
+        {
+          "nome": "radiusCard",
+          "atributoCss": "border-radius",
+          "valor": "16px"
+        },
+        {
+          "nome": "radiusButton",
+          "atributoCss": "border-radius",
+          "valor": "14px"
+        },
+        {
+          "nome": "radiusInput",
+          "atributoCss": "border-radius",
+          "valor": "12px"
+        },
+        {
+          "nome": "radiusPill",
+          "atributoCss": "border-radius",
+          "valor": "999px"
+        }
+      ]
+    },
+    "contorno": {
+      "desktop": [
+        {
+          "nome": "outlineNone",
+          "atributoCss": "outline",
+          "valor": "none"
+        },
+        {
+          "nome": "outlineFocusAccent",
+          "atributoCss": "outline",
+          "valor": "2px solid rgba(34,211,238,0.70)"
+        },
+        {
+          "nome": "outlineOffset2",
+          "atributoCss": "outline-offset",
+          "valor": "2px"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "outlineNone",
+          "atributoCss": "outline",
+          "valor": "none"
+        },
+        {
+          "nome": "outlineFocusAccent",
+          "atributoCss": "outline",
+          "valor": "2px solid rgba(34,211,238,0.70)"
+        },
+        {
+          "nome": "outlineOffset2",
+          "atributoCss": "outline-offset",
+          "valor": "2px"
+        }
+      ]
+    },
+    "sombras-transparencia": {
+      "desktop": [
+        {
+          "nome": "shadowSoft",
+          "atributoCss": "box-shadow",
+          "valor": "0 10px 30px rgba(0,0,0,0.35)"
+        },
+        {
+          "nome": "shadowCard",
+          "atributoCss": "box-shadow",
+          "valor": "0 10px 26px rgba(0,0,0,0.28)"
+        },
+        {
+          "nome": "shadowButton",
+          "atributoCss": "box-shadow",
+          "valor": "0 10px 22px rgba(34,211,238,0.18), 0 8px 18px rgba(0,0,0,0.28)"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "shadowSoft",
+          "atributoCss": "box-shadow",
+          "valor": "0 10px 30px rgba(0,0,0,0.35)"
+        },
+        {
+          "nome": "shadowCard",
+          "atributoCss": "box-shadow",
+          "valor": "0 10px 26px rgba(0,0,0,0.28)"
+        },
+        {
+          "nome": "shadowButton",
+          "atributoCss": "box-shadow",
+          "valor": "0 10px 22px rgba(34,211,238,0.18), 0 8px 18px rgba(0,0,0,0.28)"
+        }
+      ]
+    },
+    "filtro-efeitos": {
+      "desktop": [
+        {
+          "nome": "backdropBlurSm",
+          "atributoCss": "backdrop-filter",
+          "valor": "blur(10px)"
+        },
+        {
+          "nome": "isolationIsolate",
+          "atributoCss": "isolation",
+          "valor": "isolate"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "backdropBlurSm",
+          "atributoCss": "backdrop-filter",
+          "valor": "blur(10px)"
+        },
+        {
+          "nome": "isolationIsolate",
+          "atributoCss": "isolation",
+          "valor": "isolate"
+        }
+      ]
+    },
+    "cursor": {
+      "desktop": [
+        {
+          "nome": "cursorPointer",
+          "atributoCss": "cursor",
+          "valor": "pointer"
+        },
+        {
+          "nome": "appearanceNone",
+          "atributoCss": "appearance",
+          "valor": "none"
+        },
+        {
+          "nome": "caretAccent",
+          "atributoCss": "caret-color",
+          "valor": "#22D3EE"
+        },
+        {
+          "nome": "accentAccent",
+          "atributoCss": "accent-color",
+          "valor": "#22D3EE"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "cursorPointer",
+          "atributoCss": "cursor",
+          "valor": "pointer"
+        },
+        {
+          "nome": "appearanceNone",
+          "atributoCss": "appearance",
+          "valor": "none"
+        },
+        {
+          "nome": "caretAccent",
+          "atributoCss": "caret-color",
+          "valor": "#22D3EE"
+        },
+        {
+          "nome": "accentAccent",
+          "atributoCss": "accent-color",
+          "valor": "#22D3EE"
+        }
+      ]
+    },
+    "listas": {
+      "desktop": [
+        {
+          "nome": "listDiscInside",
+          "atributoCss": "list-style",
+          "valor": "disc inside"
+        },
+        {
+          "nome": "listDecimalInside",
+          "atributoCss": "list-style",
+          "valor": "decimal inside"
+        },
+        {
+          "nome": "listNone",
+          "atributoCss": "list-style",
+          "valor": "none"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "listDiscInside",
+          "atributoCss": "list-style",
+          "valor": "disc inside"
+        },
+        {
+          "nome": "listDecimalInside",
+          "atributoCss": "list-style",
+          "valor": "decimal inside"
+        },
+        {
+          "nome": "listNone",
+          "atributoCss": "list-style",
+          "valor": "none"
+        }
+      ]
+    },
+    "imagens": {
+      "desktop": [
+        {
+          "nome": "imgContain",
+          "atributoCss": "object-fit",
+          "valor": "contain"
+        },
+        {
+          "nome": "imgCenter",
+          "atributoCss": "object-position",
+          "valor": "center"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "imgContain",
+          "atributoCss": "object-fit",
+          "valor": "contain"
+        },
+        {
+          "nome": "imgCenter",
+          "atributoCss": "object-position",
+          "valor": "center"
+        }
+      ]
+    },
+    "transições": {
+      "desktop": [
+        {
+          "nome": "transitionFast",
+          "atributoCss": "transition",
+          "valor": "background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "transitionFast",
+          "atributoCss": "transition",
+          "valor": "background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease"
+        }
+      ]
+    },
+    "animações": {
+      "desktop": [],
+      "mobile": []
+    }
+  },
+  "pagina": {
+    "body": {
+      "desktop": [
+        "pageRoot",
+        "bgBody",
+        "fontBase",
+        "textPrimary",
+        "textSizeBase",
+        "lineHeightBase",
+        "marginReset"
+      ],
+      "mobile": [
+        "pageRoot",
+        "bgBody",
+        "fontBase",
+        "textPrimary",
+        "textSizeBase",
+        "lineHeightBase",
+        "marginReset"
+      ]
+    },
+    "corpo": {
+      "secoes": [
+        {
+          "nome": "Hero + navegação por âncoras",
+          "objetivo": "Entregar a promessa central com clareza e levar o usuário ao formulário (briefing rápido para gerar a amostra em PDF). Nesta seção entra o visual principal do entregável (mockup do PDF com marca d’água) para reduzir ceticismo imediatamente.",
+          "oQueQuerProvocarNoUsuario": "Entender em poucos segundos que existe um preview real (amostra) e que a próxima ação é simples (ir ao formulário).",
+          "papelComercial": "Primeira dobra de conversão (AD→Landing): alinhar promessa e direcionar para captura.",
+          "fasePersuasao": "dor → promessa → ação",
+          "objeçãoQueRemove": "“Isso é só teoria/mais um post de marketing” e “vai dar trabalho/é demorado”.",
+          "prioridadeConversao": 10,
+          "acaoEsperada": "Clicar no CTA primário para ir ao formulário (#sec-form). Opcionalmente navegar para mecanismo (#sec-como-funciona) e prova/preview (#sec-preview).",
+          "fonteContexto": [
+            "campaignAngle.campaignAngle.singleMindedPromise",
+            "campaignAngle.campaignAngle.primaryCTA",
+            "campaignAngle.campaignAngle.landingMatchLine",
+            "PAIN_JSON.surface"
+          ],
+          "id": "#sec-hero",
+          "estilos": {
+            "desktop": [
+              "bgHero",
+              "isolationIsolate",
+              "padHeroDesktop"
+            ],
+            "mobile": [
+              "bgHero",
+              "isolationIsolate",
+              "padHeroMobile"
+            ]
+          },
+          "elementosSeccao": [
+            {
+              "id": "hero-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 0,
+                "tamMinimo": 0,
+                "conteudo": ""
+              },
+              "estilos": {
+                "desktop": [
+                  "containerDesktop",
+                  "containerCenter",
+                  "displayGrid",
+                  "grid2Cols",
+                  "gap24"
+                ],
+                "mobile": [
+                  "containerMobile",
+                  "displayFlex",
+                  "flexCol",
+                  "gap16"
+                ]
+              },
+              "briefingVisual": null,
+              "elementosInternos": [
+                {
+                  "id": "hero-copy",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap16",
+                      "textLeft"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "textLeft"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "hero-headline",
+                      "tag": "h1",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 35,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "h1Size",
+                          "h1Weight",
+                          "h1Line",
+                          "h1Letter",
+                          "textPrimary"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "h1Size",
+                          "h1Weight",
+                          "h1Line",
+                          "h1Letter",
+                          "textPrimary"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "hero-subheadline",
+                      "tag": "p",
+                      "texto": {
+                        "tamMaximo": 180,
+                        "tamMinimo": 90,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "pLeadSize",
+                          "pLeadLine",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "pLeadSize",
+                          "pLeadLine",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "hero-bullets",
+                      "tag": "ul",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "listDiscInside",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "listDiscInside",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "hero-bullet-1",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 80,
+                            "tamMinimo": 30,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "hero-bullet-2",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 80,
+                            "tamMinimo": 30,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "hero-bullet-3",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 80,
+                            "tamMinimo": 30,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "hero-cta-row",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayFlex",
+                          "flexRow",
+                          "gap12",
+                          "alignCenter"
+                        ],
+                        "mobile": [
+                          "displayFlex",
+                          "flexCol",
+                          "gap12"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "hero-cta-primary",
+                          "tag": "a",
+                          "texto": {
+                            "tamMaximo": 40,
+                            "tamMinimo": 18,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "bgButtonPrimary",
+                              "textOnButtonPrimary",
+                              "radiusButton",
+                              "shadowButton",
+                              "buttonTextWeight",
+                              "buttonTextSize",
+                              "cursorPointer",
+                              "transitionFast"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "bgButtonPrimary",
+                              "textOnButtonPrimary",
+                              "radiusButton",
+                              "shadowButton",
+                              "buttonTextWeight",
+                              "buttonTextSize",
+                              "cursorPointer",
+                              "transitionFast"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "intencaoAcao": "navegacao_interna",
+                          "targetSectionId": "#sec-form",
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "hero-cta-secondary",
+                          "tag": "a",
+                          "texto": {
+                            "tamMaximo": 40,
+                            "tamMinimo": 12,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "bgButtonSecondary",
+                              "textPrimary",
+                              "radiusButton",
+                              "borderSoft",
+                              "cursorPointer",
+                              "transitionFast",
+                              "linkNoUnderline"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "bgButtonSecondary",
+                              "textPrimary",
+                              "radiusButton",
+                              "borderSoft",
+                              "cursorPointer",
+                              "transitionFast",
+                              "linkNoUnderline"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "intencaoAcao": "navegacao_interna",
+                          "targetSectionId": "#sec-preview",
+                          "elementosInternos": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "hero-anchor-nav",
+                      "tag": "nav",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayFlex",
+                          "flexRow",
+                          "gap16"
+                        ],
+                        "mobile": [
+                          "displayFlex",
+                          "flexRow",
+                          "gap12"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "hero-nav-como-funciona",
+                          "tag": "a",
+                          "texto": {
+                            "tamMaximo": 28,
+                            "tamMinimo": 10,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "textSubtle",
+                              "linkUnderline",
+                              "linkText",
+                              "transitionFast",
+                              "cursorPointer"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "textSubtle",
+                              "linkUnderline",
+                              "linkText",
+                              "transitionFast",
+                              "cursorPointer"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "intencaoAcao": "navegacao_interna",
+                          "targetSectionId": "#sec-como-funciona",
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "hero-nav-preview",
+                          "tag": "a",
+                          "texto": {
+                            "tamMaximo": 22,
+                            "tamMinimo": 8,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "textSubtle",
+                              "linkUnderline",
+                              "linkText",
+                              "transitionFast",
+                              "cursorPointer"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "textSubtle",
+                              "linkUnderline",
+                              "linkText",
+                              "transitionFast",
+                              "cursorPointer"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "intencaoAcao": "navegacao_interna",
+                          "targetSectionId": "#sec-preview",
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "hero-nav-form",
+                          "tag": "a",
+                          "texto": {
+                            "tamMaximo": 24,
+                            "tamMinimo": 8,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "textSubtle",
+                              "linkUnderline",
+                              "linkText",
+                              "transitionFast",
+                              "cursorPointer"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "textSubtle",
+                              "linkUnderline",
+                              "linkText",
+                              "transitionFast",
+                              "cursorPointer"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "intencaoAcao": "navegacao_interna",
+                          "targetSectionId": "#sec-form",
+                          "elementosInternos": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "hero-visual",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "alignCenter",
+                      "bgSurface",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardDesktop"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "alignCenter",
+                      "bgSurface",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardMobile"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "img-hero-mockup-pdf",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/mockup-pdf-hero.png",
+                        "alt": "Mockup de amostra personalizada em PDF com marca d’água e timeline do Ciclo de Evolução (8 semanas).",
+                        "width": 960,
+                        "height": 720
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Hero, à direita no desktop e abaixo do texto no mobile, como prova visual imediata do preview.",
+                        "tipoVisualEsperado": "Mockup de 1 página de PDF com marca d’água visível e uma timeline simples de 8 semanas (sem detalhes técnicos).",
+                        "funcaoComercial": "Mostrar tangibilidade do entregável e reforçar ‘você vê antes’ + ‘amostra em PDF’.",
+                        "objecaoQueRemove": "“Não sei o que vou receber” / “isso é só promessa”.",
+                        "classificacaoVisual": "mockup"
+                      },
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "img-hero-selo-rapidez",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/selo-briefing-2min.png",
+                        "alt": "Selo visual indicando briefing de 2 minutos e geração em poucos minutos.",
+                        "width": 520,
+                        "height": 220
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Abaixo do mockup do PDF no hero, como microprova de rapidez (briefing curto).",
+                        "tipoVisualEsperado": "Selo/etiqueta minimalista com ‘Briefing 2 min’ e ‘Gerado em ~3 min’ sem promessas absolutas.",
+                        "funcaoComercial": "Reduzir fricção e estimular clique no CTA.",
+                        "objecaoQueRemove": "“Vai dar trabalho / vai demorar”.",
+                        "classificacaoVisual": "ilustração"
+                      },
+                      "elementosInternos": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nome": "Como funciona (3 passos) + mecanismo resumido",
+          "objetivo": "Explicar o mecanismo de forma simples (sem jargão) para dar plausibilidade: briefing curto → geração de amostra em PDF → mini-kit para pré-venda/início guiado (D0–D7 e check-ins). O visual aqui entra como diagrama de 3 passos.",
+          "oQueQuerProvocarNoUsuario": "Pensar “faz sentido” e “consigo usar hoje sem depender de ninguém”.",
+          "papelComercial": "Ponte de entendimento (mecanismo) para sustentar a promessa e preparar o usuário para preencher o formulário.",
+          "fasePersuasao": "mecanismo → plausibilidade",
+          "objeçãoQueRemove": "“Como isso resolve a conversa do preço?” / “não entendi o que vem”.",
+          "prioridadeConversao": 8,
+          "acaoEsperada": "Rolar até o preview e/ou ir direto ao formulário.",
+          "fonteContexto": [
+            "campaignAngle.campaignAngle.mechanismSummary",
+            "campaignAngle.campaignAngle.primaryPain",
+            "PAIN_JSON.root"
+          ],
+          "id": "#sec-como-funciona",
+          "estilos": {
+            "desktop": [
+              "bgSection",
+              "padSectionDesktop"
+            ],
+            "mobile": [
+              "bgSection",
+              "padSectionMobile"
+            ]
+          },
+          "elementosSeccao": [
+            {
+              "id": "como-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 0,
+                "tamMinimo": 0,
+                "conteudo": ""
+              },
+              "estilos": {
+                "desktop": [
+                  "containerDesktop",
+                  "containerCenter",
+                  "displayGrid",
+                  "grid2ColsEqual",
+                  "gap24"
+                ],
+                "mobile": [
+                  "containerMobile",
+                  "displayFlex",
+                  "flexCol",
+                  "gap16"
+                ]
+              },
+              "briefingVisual": null,
+              "elementosInternos": [
+                {
+                  "id": "como-texto",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap16"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "como-titulo",
+                      "tag": "h2",
+                      "texto": {
+                        "tamMaximo": 60,
+                        "tamMinimo": 25,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "h2Size",
+                          "h2Weight",
+                          "h2Line",
+                          "textPrimary"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "h2Size",
+                          "h2Weight",
+                          "h2Line",
+                          "textPrimary"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "como-paragrafo",
+                      "tag": "p",
+                      "texto": {
+                        "tamMaximo": 220,
+                        "tamMinimo": 90,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "como-passos",
+                      "tag": "ol",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "listDecimalInside",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "listDecimalInside",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "como-passo-1",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 90,
+                            "tamMinimo": 35,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "como-passo-2",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 90,
+                            "tamMinimo": 35,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "como-passo-3",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 90,
+                            "tamMinimo": 35,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "como-cta",
+                      "tag": "a",
+                      "texto": {
+                        "tamMaximo": 44,
+                        "tamMinimo": 14,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "bgButtonPrimary",
+                          "textOnButtonPrimary",
+                          "radiusButton",
+                          "shadowButton",
+                          "buttonTextWeight",
+                          "buttonTextSize",
+                          "cursorPointer",
+                          "transitionFast"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "bgButtonPrimary",
+                          "textOnButtonPrimary",
+                          "radiusButton",
+                          "shadowButton",
+                          "buttonTextWeight",
+                          "buttonTextSize",
+                          "cursorPointer",
+                          "transitionFast"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "intencaoAcao": "navegacao_interna",
+                      "targetSectionId": "#sec-form",
+                      "elementosInternos": []
+                    }
+                  ]
+                },
+                {
+                  "id": "como-visual",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "alignCenter",
+                      "bgSurfaceAlt",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardDesktop"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "alignCenter",
+                      "bgSurfaceAlt",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardMobile"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "img-como-diagrama-3passos",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/diagrama-3-passos.png",
+                        "alt": "Diagrama simples de 3 passos: briefing curto, geração de amostra em PDF e mini-kit pronto para usar.",
+                        "width": 900,
+                        "height": 700
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Coluna direita (desktop) / abaixo do texto (mobile) como explicação visual rápida do funcionamento.",
+                        "tipoVisualEsperado": "Diagrama em 3 blocos com setas: Briefing (2 min) → Amostra em PDF (1 página com marca d’água) → Mini-kit (roteiro WhatsApp + D0–D7 + check-ins).",
+                        "funcaoComercial": "Dar clareza operacional e aumentar confiança na simplicidade do processo.",
+                        "objecaoQueRemove": "“Não entendi como funciona” / “parece complicado”.",
+                        "classificacaoVisual": "diagrama"
+                      },
+                      "elementosInternos": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nome": "Preview do que você recebe (amostra + mini-kit)",
+          "objetivo": "Materializar a prova/preview do entregável: mostrar que existe uma amostra real em PDF (com marca d’água) e que vem acompanhada do mini-kit (itens citados no ângulo). Visual estilo vitrine com mockups e cartões.",
+          "oQueQuerProvocarNoUsuario": "Sentir que é tangível, rápido e aplicável hoje na pré-venda; reduzir medo de comprar ‘no escuro’.",
+          "papelComercial": "Prova/preview para reduzir ceticismo e aumentar intenção de preencher o formulário.",
+          "fasePersuasao": "prova → desejo",
+          "objeçãoQueRemove": "“Não sei se isso vai me ajudar” / “não sei o que vem”.",
+          "prioridadeConversao": 9,
+          "acaoEsperada": "Clicar no CTA para ir ao formulário e solicitar a amostra.",
+          "fonteContexto": [
+            "campaignAngle.campaignAngle.proofSummary",
+            "adCopy.adCopy.primaryTextVariants[2].label",
+            "adImageBriefing.adImageBriefing.briefings[2].visualBriefing"
+          ],
+          "id": "#sec-preview",
+          "estilos": {
+            "desktop": [
+              "bgSection",
+              "padSectionDesktop"
+            ],
+            "mobile": [
+              "bgSection",
+              "padSectionMobile"
+            ]
+          },
+          "elementosSeccao": [
+            {
+              "id": "preview-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 0,
+                "tamMinimo": 0,
+                "conteudo": ""
+              },
+              "estilos": {
+                "desktop": [
+                  "containerDesktop",
+                  "containerCenter",
+                  "displayFlex",
+                  "flexCol",
+                  "gap24"
+                ],
+                "mobile": [
+                  "containerMobile",
+                  "displayFlex",
+                  "flexCol",
+                  "gap16"
+                ]
+              },
+              "briefingVisual": null,
+              "elementosInternos": [
+                {
+                  "id": "preview-titulo",
+                  "tag": "h2",
+                  "texto": {
+                    "tamMaximo": 60,
+                    "tamMinimo": 22,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayBlock",
+                      "h2Size",
+                      "h2Weight",
+                      "h2Line",
+                      "textPrimary"
+                    ],
+                    "mobile": [
+                      "displayBlock",
+                      "h2Size",
+                      "h2Weight",
+                      "h2Line",
+                      "textPrimary"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": []
+                },
+                {
+                  "id": "preview-grid",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayGrid",
+                      "grid2ColsEqual",
+                      "gap24"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap16"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "preview-mockup-pdf",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "shadowCard",
+                          "padCardDesktop"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "shadowCard",
+                          "padCardMobile"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/mockup-pdf-preview.png",
+                        "alt": "Mockup do PDF de amostra (1 página) com marca d’água e visual de timeline do Ciclo de Evolução (8 semanas).",
+                        "width": 960,
+                        "height": 780
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Primeiro item do grid de preview, com destaque (maior) para o PDF amostra.",
+                        "tipoVisualEsperado": "Mockup de PDF em 1 página com marca d’água visível e seções simples (timeline/itens).",
+                        "funcaoComercial": "Provar o formato e o nível de clareza do material entregue.",
+                        "objecaoQueRemove": "“A amostra não existe/é vaga” / “não sei como fica no meu estilo”.",
+                        "classificacaoVisual": "mockup"
+                      },
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "preview-minikit-mockup",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "bgSurfaceAlt",
+                          "borderSoft",
+                          "radiusCard",
+                          "shadowCard",
+                          "padCardDesktop"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "bgSurfaceAlt",
+                          "borderSoft",
+                          "radiusCard",
+                          "shadowCard",
+                          "padCardMobile"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/mockup-minikit-cards.png",
+                        "alt": "Mockup em cartões do mini-kit: roteiro de WhatsApp, boas-vindas D0–D7 e check-ins.",
+                        "width": 960,
+                        "height": 780
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Segundo item do grid de preview, como vitrine dos itens do mini-kit.",
+                        "tipoVisualEsperado": "Cartões/miniaturas com rótulos: ‘Roteiro WhatsApp’, ‘Boas-vindas D0–D7’, ‘Check-ins’ (sem textos longos).",
+                        "funcaoComercial": "Aumentar percepção de valor e aplicabilidade imediata.",
+                        "objecaoQueRemove": "“Isso não é prático” / “não vem nada pronto”.",
+                        "classificacaoVisual": "mockup"
+                      },
+                      "elementosInternos": []
+                    }
+                  ]
+                },
+                {
+                  "id": "preview-lista-itens",
+                  "tag": "ul",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayGrid",
+                      "grid3Cols",
+                      "gap16",
+                      "listNone"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "listNone"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "preview-item-1",
+                      "tag": "li",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 25,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "padCardDesktop",
+                          "textMuted",
+                          "shadowSoft"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "padCardMobile",
+                          "textMuted",
+                          "shadowSoft"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "preview-item-2",
+                      "tag": "li",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 25,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "padCardDesktop",
+                          "textMuted",
+                          "shadowSoft"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "padCardMobile",
+                          "textMuted",
+                          "shadowSoft"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "preview-item-3",
+                      "tag": "li",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 25,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "padCardDesktop",
+                          "textMuted",
+                          "shadowSoft"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "bgSurface",
+                          "borderSoft",
+                          "radiusCard",
+                          "padCardMobile",
+                          "textMuted",
+                          "shadowSoft"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    }
+                  ]
+                },
+                {
+                  "id": "preview-cta",
+                  "tag": "a",
+                  "texto": {
+                    "tamMaximo": 44,
+                    "tamMinimo": 14,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayBlock",
+                      "bgButtonPrimary",
+                      "textOnButtonPrimary",
+                      "radiusButton",
+                      "shadowButton",
+                      "buttonTextWeight",
+                      "buttonTextSize",
+                      "cursorPointer",
+                      "transitionFast"
+                    ],
+                    "mobile": [
+                      "displayBlock",
+                      "bgButtonPrimary",
+                      "textOnButtonPrimary",
+                      "radiusButton",
+                      "shadowButton",
+                      "buttonTextWeight",
+                      "buttonTextSize",
+                      "cursorPointer",
+                      "transitionFast"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "intencaoAcao": "navegacao_interna",
+                  "targetSectionId": "#sec-form",
+                  "elementosInternos": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "nome": "Antes vs Depois (sem desconto, sem briga de preço)",
+          "objetivo": "Conectar a dor (conversa vira preço e aluno desengaja cedo) com o resultado desejado (lead entende valor antes do preço e aluno tem começo guiado), sem prometer garantias. Visual entra como uma comparação simples em duas colunas.",
+          "oQueQuerProvocarNoUsuario": "Reconhecimento imediato da situação atual e desejo de mudar com algo simples e repetível.",
+          "papelComercial": "Amplificar dor e fazer o resultado parecer alcançável com o mecanismo apresentado.",
+          "fasePersuasao": "dor → resultado",
+          "objeçãoQueRemove": "“Meu problema é diferente” / “isso não se aplica ao meu dia a dia”.",
+          "prioridadeConversao": 7,
+          "acaoEsperada": "Voltar ao CTA e ir ao formulário.",
+          "fonteContexto": [
+            "PAIN_JSON.surface",
+            "PAIN_JSON.summary",
+            "RESULT_JSON.summary",
+            "campaignAngle.campaignAngle.primaryPromise"
+          ],
+          "id": "#sec-antes-depois",
+          "estilos": {
+            "desktop": [
+              "bgSection",
+              "padSectionDesktop"
+            ],
+            "mobile": [
+              "bgSection",
+              "padSectionMobile"
+            ]
+          },
+          "elementosSeccao": [
+            {
+              "id": "antesdepois-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 0,
+                "tamMinimo": 0,
+                "conteudo": ""
+              },
+              "estilos": {
+                "desktop": [
+                  "containerDesktop",
+                  "containerCenter",
+                  "displayGrid",
+                  "grid2ColsEqual",
+                  "gap24"
+                ],
+                "mobile": [
+                  "containerMobile",
+                  "displayFlex",
+                  "flexCol",
+                  "gap16"
+                ]
+              },
+              "briefingVisual": null,
+              "elementosInternos": [
+                {
+                  "id": "antesdepois-col-antes",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap16",
+                      "bgSurfaceAlt",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardDesktop"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "bgSurfaceAlt",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardMobile"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "antesdepois-titulo-antes",
+                      "tag": "h3",
+                      "texto": {
+                        "tamMaximo": 30,
+                        "tamMinimo": 10,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "h3Size",
+                          "h3Weight",
+                          "textPrimary"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "h3Size",
+                          "h3Weight",
+                          "textPrimary"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "antesdepois-lista-antes",
+                      "tag": "ul",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "listDiscInside",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "listDiscInside",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "antes-item-1",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 70,
+                            "tamMinimo": 25,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "antes-item-2",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 70,
+                            "tamMinimo": 25,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "antes-item-3",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 70,
+                            "tamMinimo": 25,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "img-antes-icone-preco",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/icone-quanto-custa.png",
+                        "alt": "Ícone/ilustração representando a conversa virando 'quanto custa?'.",
+                        "width": 640,
+                        "height": 420
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Dentro da coluna 'Antes', abaixo da lista, como reforço visual da dor (preço como primeira pergunta).",
+                        "tipoVisualEsperado": "Ilustração simples (balão de fala com 'R$?' ou 'quanto custa?') sem marcas de app.",
+                        "funcaoComercial": "Ancorar a dor principal de forma rápida e escaneável.",
+                        "objecaoQueRemove": "“Não é tão sério assim” (aumenta identificação).",
+                        "classificacaoVisual": "ilustração"
+                      },
+                      "elementosInternos": []
+                    }
+                  ]
+                },
+                {
+                  "id": "antesdepois-col-depois",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap16",
+                      "bgSurface",
+                      "borderStrong",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardDesktop"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "bgSurface",
+                      "borderStrong",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardMobile"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "antesdepois-titulo-depois",
+                      "tag": "h3",
+                      "texto": {
+                        "tamMaximo": 30,
+                        "tamMinimo": 10,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "h3Size",
+                          "h3Weight",
+                          "textPrimary"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "h3Size",
+                          "h3Weight",
+                          "textPrimary"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "antesdepois-lista-depois",
+                      "tag": "ul",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "listDiscInside",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "listDiscInside",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "depois-item-1",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 70,
+                            "tamMinimo": 25,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "depois-item-2",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 70,
+                            "tamMinimo": 25,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "depois-item-3",
+                          "tag": "li",
+                          "texto": {
+                            "tamMaximo": 70,
+                            "tamMinimo": 25,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock"
+                            ],
+                            "mobile": [
+                              "displayBlock"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "img-depois-icone-caminho",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/icone-caminho-progresso.png",
+                        "alt": "Ícone/ilustração representando um caminho de progresso com marcos (primeiras semanas).",
+                        "width": 640,
+                        "height": 420
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Dentro da coluna 'Depois', abaixo da lista, reforçando a ideia de caminho claro e início guiado.",
+                        "tipoVisualEsperado": "Ilustração de marcos em sequência (D0–D7 e check-ins) sem números de promessa.",
+                        "funcaoComercial": "Tornar visual o benefício de clareza/progresso no início.",
+                        "objecaoQueRemove": "“Isso não muda a percepção de valor” (mostra estrutura).",
+                        "classificacaoVisual": "ilustração"
+                      },
+                      "elementosInternos": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "antesdepois-cta",
+              "tag": "a",
+              "texto": {
+                "tamMaximo": 44,
+                "tamMinimo": 14,
+                "conteudo": ""
+              },
+              "estilos": {
+                "desktop": [
+                  "containerDesktop",
+                  "containerCenter",
+                  "displayBlock",
+                  "gapBlockDesktop",
+                  "bgButtonPrimary",
+                  "textOnButtonPrimary",
+                  "radiusButton",
+                  "shadowButton",
+                  "buttonTextWeight",
+                  "buttonTextSize",
+                  "cursorPointer",
+                  "transitionFast"
+                ],
+                "mobile": [
+                  "containerMobile",
+                  "displayBlock",
+                  "gapBlockMobile",
+                  "bgButtonPrimary",
+                  "textOnButtonPrimary",
+                  "radiusButton",
+                  "shadowButton",
+                  "buttonTextWeight",
+                  "buttonTextSize",
+                  "cursorPointer",
+                  "transitionFast"
+                ]
+              },
+              "briefingVisual": null,
+              "intencaoAcao": "navegacao_interna",
+              "targetSectionId": "#sec-form",
+              "elementosInternos": []
+            }
+          ]
+        },
+        {
+          "nome": "Formulário (captura) — gerar amostra",
+          "objetivo": "Capturar somente nome e email para entregar a amostra personalizada em PDF (com marca d’água) conforme prometido. O visual aqui reforça ‘amostra + mini-kit’ e baixa risco.",
+          "oQueQuerProvocarNoUsuario": "Confiança para preencher rapidamente e concluir a ação.",
+          "papelComercial": "Conversão principal (captura).",
+          "fasePersuasao": "ação",
+          "objeçãoQueRemove": "“Vão pedir WhatsApp/é demorado” e “não quero preencher um formulário enorme”.",
+          "prioridadeConversao": 10,
+          "acaoEsperada": "Preencher nome e email e enviar o formulário.",
+          "fonteContexto": [
+            "campaignAngle.campaignAngle.primaryCTA",
+            "campaignAngle.campaignAngle.landingMatchLine",
+            "adCopy.adCopy.primaryTextVariants[0].ctaText"
+          ],
+          "id": "#sec-form",
+          "estilos": {
+            "desktop": [
+              "bgSection",
+              "padSectionDesktop"
+            ],
+            "mobile": [
+              "bgSection",
+              "padSectionMobile"
+            ]
+          },
+          "elementosSeccao": [
+            {
+              "id": "form-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 0,
+                "tamMinimo": 0,
+                "conteudo": ""
+              },
+              "estilos": {
+                "desktop": [
+                  "containerDesktop",
+                  "containerCenter",
+                  "displayGrid",
+                  "grid2ColsEqual",
+                  "gap24"
+                ],
+                "mobile": [
+                  "containerMobile",
+                  "displayFlex",
+                  "flexCol",
+                  "gap16"
+                ]
+              },
+              "briefingVisual": null,
+              "elementosInternos": [
+                {
+                  "id": "form-bloco",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap16",
+                      "bgSurface",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardDesktop"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "bgSurface",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardMobile"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "form-titulo",
+                      "tag": "h2",
+                      "texto": {
+                        "tamMaximo": 60,
+                        "tamMinimo": 22,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "h2Size",
+                          "h2Weight",
+                          "h2Line",
+                          "textPrimary"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "h2Size",
+                          "h2Weight",
+                          "h2Line",
+                          "textPrimary"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "form-descricao",
+                      "tag": "p",
+                      "texto": {
+                        "tamMaximo": 200,
+                        "tamMinimo": 90,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayBlock",
+                          "textMuted"
+                        ],
+                        "mobile": [
+                          "displayBlock",
+                          "textMuted"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": []
+                    },
+                    {
+                      "id": "form-elemento",
+                      "tag": "form",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "displayFlex",
+                          "flexCol",
+                          "gap12",
+                          "formWidthDesktop"
+                        ],
+                        "mobile": [
+                          "displayFlex",
+                          "flexCol",
+                          "gap12",
+                          "formWidthMobile"
+                        ]
+                      },
+                      "briefingVisual": null,
+                      "elementosInternos": [
+                        {
+                          "id": "input-nome",
+                          "tag": "input",
+                          "texto": {
+                            "tamMaximo": 0,
+                            "tamMinimo": 0,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "bgInput",
+                              "borderSoft",
+                              "radiusInput",
+                              "textOnInput",
+                              "inputTextSize",
+                              "caretAccent",
+                              "appearanceNone",
+                              "transitionFast",
+                              "outlineNone"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "bgInput",
+                              "borderSoft",
+                              "radiusInput",
+                              "textOnInput",
+                              "inputTextSize",
+                              "caretAccent",
+                              "appearanceNone",
+                              "transitionFast",
+                              "outlineNone"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "componente": "formInput",
+                          "contratoCampo": {
+                            "type": "text",
+                            "name": "nome",
+                            "autocomplete": "name",
+                            "required": true,
+                            "placeholder": ""
+                          },
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "input-email",
+                          "tag": "input",
+                          "texto": {
+                            "tamMaximo": 0,
+                            "tamMinimo": 0,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "bgInput",
+                              "borderSoft",
+                              "radiusInput",
+                              "textOnInput",
+                              "inputTextSize",
+                              "caretAccent",
+                              "appearanceNone",
+                              "transitionFast",
+                              "outlineNone"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "bgInput",
+                              "borderSoft",
+                              "radiusInput",
+                              "textOnInput",
+                              "inputTextSize",
+                              "caretAccent",
+                              "appearanceNone",
+                              "transitionFast",
+                              "outlineNone"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "componente": "formInput",
+                          "contratoCampo": {
+                            "type": "email",
+                            "name": "email",
+                            "autocomplete": "email",
+                            "required": true,
+                            "placeholder": ""
+                          },
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "form-submit",
+                          "tag": "button",
+                          "texto": {
+                            "tamMaximo": 40,
+                            "tamMinimo": 14,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "bgButtonPrimary",
+                              "textOnButtonPrimary",
+                              "radiusButton",
+                              "shadowButton",
+                              "buttonTextWeight",
+                              "buttonTextSize",
+                              "cursorPointer",
+                              "transitionFast"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "bgButtonPrimary",
+                              "textOnButtonPrimary",
+                              "radiusButton",
+                              "shadowButton",
+                              "buttonTextWeight",
+                              "buttonTextSize",
+                              "cursorPointer",
+                              "transitionFast"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "componente": "buttonPrimary",
+                          "intencaoAcao": "enviar_formulario",
+                          "elementosInternos": []
+                        },
+                        {
+                          "id": "form-nota-privacidade",
+                          "tag": "small",
+                          "texto": {
+                            "tamMaximo": 120,
+                            "tamMinimo": 50,
+                            "conteudo": ""
+                          },
+                          "estilos": {
+                            "desktop": [
+                              "displayBlock",
+                              "smallSize",
+                              "smallLine",
+                              "textSubtle"
+                            ],
+                            "mobile": [
+                              "displayBlock",
+                              "smallSize",
+                              "smallLine",
+                              "textSubtle"
+                            ]
+                          },
+                          "briefingVisual": null,
+                          "elementosInternos": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "form-visual",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 0,
+                    "tamMinimo": 0,
+                    "conteudo": ""
+                  },
+                  "estilos": {
+                    "desktop": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "alignCenter",
+                      "bgSurfaceAlt",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardDesktop"
+                    ],
+                    "mobile": [
+                      "displayFlex",
+                      "flexCol",
+                      "gap12",
+                      "alignCenter",
+                      "bgSurfaceAlt",
+                      "borderSoft",
+                      "radiusCard",
+                      "shadowCard",
+                      "padCardMobile"
+                    ]
+                  },
+                  "briefingVisual": null,
+                  "elementosInternos": [
+                    {
+                      "id": "img-form-vitrine",
+                      "tag": "img",
+                      "texto": {
+                        "tamMaximo": 0,
+                        "tamMinimo": 0,
+                        "conteudo": ""
+                      },
+                      "estilos": {
+                        "desktop": [
+                          "imgMaxDesktop",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ],
+                        "mobile": [
+                          "imgMaxMobile",
+                          "imgAutoHeight",
+                          "imgContain",
+                          "imgCenter"
+                        ]
+                      },
+                      "asset": {
+                        "src": "assets/provisorio/vitrine-pdf-minikit.png",
+                        "alt": "Vitrine visual do entregável: amostra em PDF com marca d’água e mini-kit em cartões.",
+                        "width": 960,
+                        "height": 720
+                      },
+                      "briefingVisual": {
+                        "ondeEntraNoVisual": "Ao lado do formulário (desktop) / abaixo do formulário (mobile) como reforço de entrega e redução de risco.",
+                        "tipoVisualEsperado": "Mockup combinado: PDF + 2–3 cartões do mini-kit, com selo 'amostra' e indicação de marca d’água.",
+                        "funcaoComercial": "Reforçar que o usuário receberá um preview real ao enviar o formulário.",
+                        "objecaoQueRemove": "“Vou colocar email e não vou receber nada útil”.",
+                        "classificacaoVisual": "mockup"
+                      },
+                      "elementosInternos": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

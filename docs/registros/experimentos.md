@@ -1371,3 +1371,9 @@
   - no `DesignPresetProvisionalHtmlProcessor`, criação do método `collectBodyClasses` para consolidar classes do `<body>` em múltiplos formatos (`desktop/mobile` diretos, `classes`, `classList`, `estilos`), com deduplicação preservada;
   - atualização do teste `shouldApplyBodyClassesAndNestedSectionClassesFromTokenizedPreset` para validar explicitamente as 7 classes esperadas no `<body>` (`pageRoot`, `bgBody`, `fontBase`, `textPrimary`, `textSizeBase`, `lineHeightBase`, `marginReset`).
 - resultado esperado: o HTML da etapa preset design passa a refletir integralmente as classes globais no `<body>` conforme o JSON gerado.
+
+## 2026-05-24 10:55:00 UTC
+- ajuste complementar solicitado: remover rigidez da validação de classes do `<body>` na regressão do preset design, pois a quantidade de classes pode variar por experimento/prompt.
+- causa-raiz identificada: o teste anterior validava uma string fixa de `<body class="...">`, acoplando o cenário exatamente a 7 classes e à ordem literal.
+- correção aplicada: teste atualizado para parsear o HTML com Jsoup e validar que o `<body>` contém pelo menos as classes esperadas do payload, sem assumir quantidade total fixa.
+- resultado esperado: regressão cobre o comportamento funcional correto mesmo quando o preset gerar mais ou menos classes globais.

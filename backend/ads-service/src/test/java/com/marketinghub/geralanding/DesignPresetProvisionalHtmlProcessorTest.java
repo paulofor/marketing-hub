@@ -1,7 +1,10 @@
 package com.marketinghub.geralanding;
 
 import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlProcessor;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -149,7 +152,10 @@ class DesignPresetProvisionalHtmlProcessorTest {
 
         String html = processor.process(wireframe, copy, "{}", design);
 
-        assertThat(html).contains("<body class=\"pageRoot bgBody fontBase textPrimary textSizeBase lineHeightBase marginReset\"");
+        List<String> expectedBodyClasses = List.of(
+                "pageRoot", "bgBody", "fontBase", "textPrimary", "textSizeBase", "lineHeightBase", "marginReset");
+        List<String> bodyClasses = Jsoup.parse(html).body().classNames().stream().toList();
+        assertThat(bodyClasses).containsAll(expectedBodyClasses);
         assertThat(html).contains("id=\"sec-hero\"").contains("class=\"section-desktop\"");
         assertThat(html).contains("id=\"hero-container\"").contains("class=\"container-desktop\"");
         assertThat(html).contains("id=\"hero-title\"").contains("class=\"h1-size\"");

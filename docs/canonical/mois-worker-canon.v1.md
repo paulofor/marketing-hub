@@ -207,9 +207,16 @@ sequenceDiagram
     participant DB as MySQL 5.7
 
     rect rgb(245,245,245)
-    Note over HS,HC: Coleta no site da Hotmart
-    HC->>HS: GET product details (salesPageUrl com fallback em detailsUrl)
-    HS-->>HC: 200 OK (url acessada para captura)
+    Note over HS,HC: Coleta no site da Hotmart (URLs acessadas)
+    HC->>HS: GET https://www.hotmart.com/pt-br/marketplace/produtos/{slug-ou-id}
+    HS-->>HC: 200 OK (detailsUrl com salesPageUrl quando disponível)
+    alt salesPageUrl disponível no detailsUrl
+      HC->>HS: GET {salesPageUrl} (landing oficial do produtor)
+      HS-->>HC: 200 OK (HTML da página de vendas)
+    else salesPageUrl ausente
+      HC->>HS: GET {detailsUrl} (fallback de captura)
+      HS-->>HC: 200 OK (HTML da página de detalhes)
+    end
 
     Note over HC,API: 1) Coleta e envio de URLs vencedoras da Hotmart
     HC->>API: POST /urls:ingest (source=HOTMART, urls[])

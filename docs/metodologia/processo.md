@@ -48,6 +48,20 @@
 > Colocar no documento canonico:
 >- Modelo de dados
 >- Documento de Arquitetura ( moldado por pacotes )
+>
+>
+#### Regras Para I Integração com OpenAI
+* no worker: parametros:
+*    - request cru
+     - response cru
+     - jobid openai
+     - json validado
+* no backend parametros ( camada service )
+*    - request cru
+     - response cru
+     - jobid openai
+     - json validado
+     - jobid mkth
 
 #### Archuint 
 . com.marketinghub.mois.bibliotecapaginavenda.x.vN.web

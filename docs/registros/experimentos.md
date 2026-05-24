@@ -1451,3 +1451,14 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlProcessor.java
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlAssemblerErrorDetailTest.java
   - docs/registros/experimentos.md
+
+## 2026-05-24 18:05:00 UTC
+- solicitação para criar exception dedicada de integração OpenAI no backend com construtor único contendo request cru, response cru, json validado, job id do Marketing Hub e job id da OpenAI.
+- correção aplicada:
+  - criada a classe `OpenAiException` em `com.marketinghub.openai` com um único construtor contendo os cinco campos solicitados;
+  - implementado `toString()` para expor literalmente todos os campos, garantindo diagnóstico completo em logs quando a exception for registrada.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - backend/ads-service/src/main/java/com/marketinghub/openai/OpenAiException.java
+  - docs/registros/experimentos.md

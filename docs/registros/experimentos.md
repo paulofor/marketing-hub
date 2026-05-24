@@ -1463,3 +1463,15 @@
 - documentos/arquivos lidos:
   - AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-24 18:20:00 UTC
+- solicitação para procurar no log do backend problemas no assembler da etapa `copy`, priorizando busca pelo `jobId` `df5cfce5-d343-4ec1-9022-4954d352d2c6`.
+- investigação via MCP `java_module_logs` com filtros por `jobId`, `landing-page-copy`, `Assembler` e `CopyProvisionalHtmlAssembler`.
+- achados objetivos:
+  - com filtro por `jobId`, foi localizado erro com stack trace parcial: `WebClientResponseException$InternalServerError` no POST `.../receive-result`;
+  - não retornaram linhas com `Assembler`/`CopyProvisionalHtmlAssembler` na janela pesquisada no módulo `backend`;
+  - a falha observável permanece no envio do resultado para o endpoint `receive-result` (HTTP 500), sem linha informativa adicional do assembler no recorte de logs atual.
+- próximo passo recomendado (causa-raiz): incluir log estruturado no fluxo de assembler/copy antes do POST final (jobId, tamanho/shape dos artefatos e resumo de validação) e também logar corpo de resposta do `receive-result` para identificar o campo rejeitado no backend receptor.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - docs/registros/experimentos.md

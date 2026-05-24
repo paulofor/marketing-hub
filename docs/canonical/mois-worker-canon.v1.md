@@ -132,6 +132,7 @@ Esta seção consolida o fluxo ponta a ponta de **alimentação da biblioteca** 
 3. **Rotina que obtém conteúdo da página e envia para análise**
    - O worker faz `claim` (`jobs:claim`), muda job para `FETCHING`, baixa HTML da `urlCanonical`, extrai texto (`body.text()`) e inicia análise OpenAI.
 4. **Prompt + schema de saída usados no worker**
+   - O worker monta o prompt com `urlCanonical` + texto extraído (`body.text()`) e versão de parser/prompt para rastreabilidade da análise.
    - O worker envia instrução para análise comercial e exige resposta em JSON via `/v1/responses` com `text.format.type=json_object`.
    - Campos obrigatórios esperados no JSON de saída: `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`.
 5. **Receber resultado OpenAI e persistir no banco**
@@ -146,6 +147,7 @@ sequenceDiagram
     participant CC as ClickBank Collector
     participant API as Backend MOIS (/api/mois/sales-library)
     participant WK as MOIS Sales Library Worker
+    participant PR as Prompt Builder (Worker)
     participant OAI as OpenAI Batch (/v1/responses)
     participant DB as MySQL 5.7
 
@@ -179,8 +181,11 @@ sequenceDiagram
 
     rect rgb(245,245,245)
     Note over WK,OAI: 4) Prompt/schema de análise
-    WK->>OAI: Batch line -> /v1/responses<br/>text.format.type=json_object
+    WK->>PR: Monta prompt com urlCanonical + body.text()
+    PR-->>WK: prompt final + promptVersion + parserVersion
+    WK->>OAI: Batch line -> /v1/responses<br/>model + input + text.format.type=json_object
     OAI-->>WK: output JSON (score_total, sections_json, ...)
+    WK->>WK: Parse do output e validação dos campos obrigatórios
     end
 
     rect rgb(245,245,245)
@@ -381,7 +386,10 @@ graph TD
     CC[mois-clickbank-collector\npackage: com.marketinghub.mois.clickbank.collector] -->|POST /api/mois/sales-library/urls:ingest| BM
 
     WK[mois-sales-library-worker\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service] -->|"jobs:claim, jobs/{id}:complete, jobs/{id}:fail"| BM
-    WK -->|"/v1/responses (batch)"| OAI[OpenAI API]
+    WK --> PB[Prompt Builder\nopenai.OpenAiSalesPageAnalyzer]
+    PB -->|Monta prompt (URL + texto da página)\nDefine promptVersion/parserVersion| OAI[OpenAI API /v1/responses]
+    OAI -->|Retorna JSON estruturado da análise| PB
+    PB -->|Resultado validado (score, sections, copy, visual, image, notes)| WK
 
     BM -->|JPA/SQL via camada backend| DB[(MySQL 5.7)]
 
@@ -433,6 +441,7 @@ Fonte externa] -->|Coleta de produtos/URLs| CC[mois-clickbank-collector\npackage
 #### Regras de integração refletidas no diagrama
 - Coletores e worker **não acessam banco diretamente**; todo acesso a dados passa pelo backend MOIS.
 - A integração com OpenAI é realizada pelo `mois-sales-library-worker`, com retorno consolidado ao backend via endpoint de conclusão/falha.
+- A obtenção/montagem de prompt acontece no próprio worker (`OpenAiSalesPageAnalyzer`), combinando URL canônica, texto extraído da página e versão de prompt para rastreabilidade.
 - A persistência em MySQL 5.7 ocorre apenas nos pacotes de serviço/repositório do backend.
 
 

@@ -539,3 +539,16 @@ Arquivos alterados:
   - AGENTS.md
   - docs/canonical/mois-worker-canon.v1.md
   - docs/registros/mois1.md
+
+## 2026-05-24 00:00:00 UTC
+- melhoria dos diagramas canônicos da biblioteca de páginas de vendas do MOIS para explicitar integração com OpenAI e o fluxo de obtenção/montagem de prompt.
+- causa-raiz: os diagramas existentes mostravam chamada para OpenAI, mas não deixavam visível a etapa de construção do prompt (URL canônica + conteúdo extraído) e metadados de rastreabilidade (`promptVersion`/`parserVersion`).
+- correção aplicada:
+  - seção 12.1 atualizada para detalhar a montagem do prompt antes do envio ao `/v1/responses`;
+  - seção 12.2 (sequência ponta a ponta) atualizada com participante `Prompt Builder (Worker)` e passos explícitos de montagem/retorno de prompt e validação do output;
+  - seção 12.5 (arquitetura por módulo/pacote) atualizada para destacar o componente `openai.OpenAiSalesPageAnalyzer` entre worker e OpenAI;
+  - regras de integração atualizadas com nota explícita sobre origem do prompt no worker.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/registros/mois1.md

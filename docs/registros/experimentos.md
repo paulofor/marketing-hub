@@ -1318,3 +1318,5 @@
 - foi feito:
   - atualização de `ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md` com regras obrigatórias e checklist operacional cobrindo `textPrimary/textMuted/textSubtle/textOnButtonPrimary/textOnInput/placeholderText`, preset `pageRoot`, completude de botão/input, regra de hover real, proibição de usar `opacityMuted` como substituto de cor e metas WCAG (4.5:1 e 3:1).
 - impacto esperado: reduzir presets incompletos e aumentar consistência visual/acessibilidade do HTML provisório gerado nas etapas seguintes.
+
+- 2026-05-24 — Governança de copy final: formalizado bloqueio canônico para vazamento de metainstrução/texto técnico no Gera Landing (incluindo padrão de erro `IllegalStateException` com caminho do campo rejeitado), com atualização em `procedimento-experimento-canon.v1.md` e reforço em `system-governance-canon.v2.md`.

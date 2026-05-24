@@ -387,7 +387,7 @@ graph TD
 
     WK[mois-sales-library-worker\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service] -->|"jobs:claim, jobs/{id}:complete, jobs/{id}:fail"| BM
     WK --> PB[Prompt Builder\nopenai.OpenAiSalesPageAnalyzer]
-    PB -->|Monta prompt (URL + texto da página)\nDefine promptVersion/parserVersion| OAI[OpenAI API /v1/responses]
+    PB -->|"Monta prompt (URL + texto da página)\nDefine promptVersion/parserVersion"| OAI[OpenAI API /v1/responses]
     OAI -->|Retorna JSON estruturado da análise| PB
     PB -->|Resultado validado (score, sections, copy, visual, image, notes)| WK
 

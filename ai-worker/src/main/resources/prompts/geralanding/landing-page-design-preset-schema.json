@@ -25,22 +25,81 @@
         "animações"
       ],
       "properties": {
-        "cores-fundo": { "$ref": "#/$defs/grupo" },
-        "tipografia": { "$ref": "#/$defs/grupo" },
-        "texto": { "$ref": "#/$defs/grupo" },
-        "bordas": { "$ref": "#/$defs/grupo" },
-        "contorno": { "$ref": "#/$defs/grupo" },
-        "sombras-transparencia": { "$ref": "#/$defs/grupo" },
-        "filtro-efeitos": { "$ref": "#/$defs/grupo" },
-        "cursor": { "$ref": "#/$defs/grupo" },
-        "listas": { "$ref": "#/$defs/grupo" },
-        "imagens": { "$ref": "#/$defs/grupo" },
-        "transições": { "$ref": "#/$defs/grupo" },
-        "animações": { "$ref": "#/$defs/grupo" }
+        "cores-fundo": {
+          "$ref": "#/$defs/grupo"
+        },
+        "tipografia": {
+          "$ref": "#/$defs/grupo"
+        },
+        "texto": {
+          "$ref": "#/$defs/grupo"
+        },
+        "bordas": {
+          "$ref": "#/$defs/grupo"
+        },
+        "contorno": {
+          "$ref": "#/$defs/grupo"
+        },
+        "sombras-transparencia": {
+          "$ref": "#/$defs/grupo"
+        },
+        "filtro-efeitos": {
+          "$ref": "#/$defs/grupo"
+        },
+        "cursor": {
+          "$ref": "#/$defs/grupo"
+        },
+        "listas": {
+          "$ref": "#/$defs/grupo"
+        },
+        "imagens": {
+          "$ref": "#/$defs/grupo"
+        },
+        "transições": {
+          "$ref": "#/$defs/grupo"
+        },
+        "animações": {
+          "$ref": "#/$defs/grupo"
+        }
       }
     },
     "pagina": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "body": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "estilos": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "corpo": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "estilos": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "secoes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/paginaNode"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {
@@ -54,11 +113,15 @@
       "properties": {
         "desktop": {
           "type": "array",
-          "items": { "$ref": "#/$defs/definicaoCss" }
+          "items": {
+            "$ref": "#/$defs/definicaoCss"
+          }
         },
         "mobile": {
           "type": "array",
-          "items": { "$ref": "#/$defs/definicaoCss" }
+          "items": {
+            "$ref": "#/$defs/definicaoCss"
+          }
         }
       }
     },
@@ -154,6 +217,31 @@
         "valor": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "paginaNode": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "estilos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "elementosSeccao": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/paginaNode"
+          }
+        },
+        "elementosInternos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/paginaNode"
+          }
         }
       }
     }

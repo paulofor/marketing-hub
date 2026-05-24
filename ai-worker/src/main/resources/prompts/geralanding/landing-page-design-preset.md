@@ -60,16 +60,18 @@ landingPageWireframe:
 Regras obrigatórias:
 1. Responda somente JSON válido.
 2. Preserve a estrutura de `pagina` recebida no wireframe (mesmos ids, mesma hierarquia, sem inventar seções/elementos).
-3. Aplique definições visuais pelos grupos em `definicoes`, com variações `desktop` e `mobile`.
-4. Cada item de `desktop/mobile` deve seguir exatamente:
+3. Aplique variação `desktop/mobile` somente em `definicoes`; em `pagina` use classes diretas sem separar por device.
+4. Em `pagina.body`, incluir obrigatoriamente a lista `estilos` com classes globais do body.
+5. Em cada elemento de `pagina` (`secoes`, `elementosSeccao`, `elementosInternos`), usar `estilos` como lista simples de classes (array de string), sem objetos `desktop/mobile`.
+6. Cada item de `definicoes.desktop/mobile` deve seguir exatamente:
    - `nome`: nome da classe utilitária
    - `atributoCss`: propriedade CSS
    - `valor`: valor CSS válido
-5. Não usar JSON serializado em string.
-6. Usar exclusivamente propriedades CSS permitidas em `docs/gera-landing/listas-css-estrutura-acabamento.md`.
-7. Manter foco de conversão: contraste legível, CTA destacado e consistência entre seção e elementos.
-8. Criar tokens de cor de texto dedicados e não reutilizar `opacity` para simular cor de texto.
-9. Garantir estados interativos reais (ex.: `:hover`) por combinação consistente de tokens base + tokens de hover.
+7. Não usar JSON serializado em string.
+8. Usar exclusivamente propriedades CSS permitidas em `docs/gera-landing/listas-css-estrutura-acabamento.md`.
+9. Manter foco de conversão: contraste legível, CTA destacado e consistência entre seção e elementos.
+10. Criar tokens de cor de texto dedicados e não reutilizar `opacity` para simular cor de texto.
+11. Garantir estados interativos reais (ex.: `:hover`) por combinação consistente de tokens base + tokens de hover.
 
 Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Cores de texto obrigatórias: criar classes para `textPrimary`, `textMuted`, `textSubtle`, `textOnButtonPrimary`, `textOnInput`, `placeholderText`.
@@ -194,5 +196,8 @@ Formato esperado de saída:
     "transições": { "desktop": [], "mobile": [] },
     "animações": { "desktop": [], "mobile": [] }
   },
-  "pagina": { "...": "estrutura do wireframe aplicada" }
+  "pagina": {
+    "body": { "estilos": ["pageRoot", "bgBody", "fontBase", "textPrimary"] },
+    "corpo": { "secoes": [ { "id": "sec-hero", "estilos": ["sectionHero", "surfaceBand"], "elementosSeccao": [] } ] }
+  }
 }

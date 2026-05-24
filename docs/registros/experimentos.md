@@ -1389,3 +1389,11 @@
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset-schema.json
+
+## 2026-05-24 12:20:00 UTC
+- solicitação para ajustar a etapa `landing-page-design-preset`: separar `desktop/mobile` apenas em `definicoes`, aplicar classes diretamente nos elementos de `pagina` e incluir lista `estilos` também em `pagina.body`.
+- causa-raiz identificada: o contrato do prompt/schema ainda permitia ambiguidade no `pagina`, incentivando formatos mistos (`desktop/mobile` dentro de elementos) e sem obrigatoriedade explícita de `body.estilos`.
+- correção aplicada:
+  - atualização do schema `landing-page-design-preset-schema.json` para documentar `pagina.body.estilos` como lista de strings e nós de página com `estilos` em formato direto;
+  - atualização do prompt `landing-page-design-preset.md` para instruir explicitamente que `desktop/mobile` existe somente em `definicoes` e que os elementos de `pagina` usam `estilos` como array simples de classes.
+- resultado esperado: payloads de preset design mais consistentes com renderização direta das classes no HTML provisório.

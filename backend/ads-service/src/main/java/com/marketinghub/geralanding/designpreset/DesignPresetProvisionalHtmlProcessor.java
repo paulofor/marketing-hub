@@ -258,6 +258,29 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+
+    /**
+     * Aplica classes declaradas em `pagina.body.classes` ao elemento `<body>`.
+     */
+    private void applyPageBodyClasses(Document document, Map<String, Object> page) {
+        if (document == null || page == null) {
+            return;
+        }
+
+        Element body = document.body();
+        if (body == null) {
+            return;
+        }
+
+        Map<String, Object> bodyMap = asMap(firstNonNull(page.get("body"), page.get("corpo")));
+        if (bodyMap.isEmpty()) {
+            return;
+        }
+
+        Object bodyClasses = firstNonNull(bodyMap.get("classes"), bodyMap.get("classList"), bodyMap.get("estilos"));
+        appendClasses(body, collectStyleClasses(bodyClasses));
+    }
+
     private void applyStructuredNodeDataRecursive(Document document, Map<String, Object> node) {
         String id = asString(node.get("id"));
         Element element = resolveElementById(document, id);

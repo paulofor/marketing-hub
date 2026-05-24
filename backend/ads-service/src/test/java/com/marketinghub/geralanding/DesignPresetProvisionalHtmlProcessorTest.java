@@ -81,4 +81,77 @@ class DesignPresetProvisionalHtmlProcessorTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("formato tokenizado");
     }
+
+    @Test
+    void shouldApplyBodyClassesAndNestedSectionClassesFromTokenizedPreset() {
+        DesignPresetProvisionalHtmlProcessor processor = new DesignPresetProvisionalHtmlProcessor();
+
+        String wireframe = """
+                {
+                  "pagina": {
+                    "head": {},
+                    "corpo": {
+                      "secoes": [
+                        {
+                          "id":"sec-hero",
+                          "elementosSeccao":[
+                            {
+                              "id":"hero-container",
+                              "tag":"div",
+                              "elementosInternos":[
+                                {"id":"hero-title","tag":"h1","texto":{"conteudo":""},"elementosInternos":[]}
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String copy = "{" +
+                "\"bodySections\":[{\"items\":[{\"id\":\"hero-title\",\"texto\":\"Titulo\"}]}]" +
+                "}";
+
+        String design = """
+                {
+                  "definicoes": {},
+                  "pagina": {
+                    "body": {
+                      "desktop": ["pageRoot","bgBody"],
+                      "mobile": ["pageRoot","bgBody"]
+                    },
+                    "corpo": {
+                      "secoes": [
+                        {
+                          "id": "sec-hero",
+                          "estilos": {"desktop": ["section-desktop"], "mobile": []},
+                          "elementosSeccao": [
+                            {
+                              "id": "hero-container",
+                              "estilos": {"desktop": ["container-desktop"], "mobile": []},
+                              "elementosInternos": [
+                                {
+                                  "id": "hero-title",
+                                  "estilos": {"desktop": ["h1-size"], "mobile": []},
+                                  "elementosInternos": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String html = processor.process(wireframe, copy, "{}", design);
+
+        assertThat(html).contains("<body class=\"pageRoot bgBody\"");
+        assertThat(html).contains("id=\"sec-hero\"").contains("class=\"section-desktop\"");
+        assertThat(html).contains("id=\"hero-container\"").contains("class=\"container-desktop\"");
+        assertThat(html).contains("id=\"hero-title\"").contains("class=\"h1-size\"");
+    }
 }

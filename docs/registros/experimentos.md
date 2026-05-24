@@ -1351,3 +1351,15 @@
 - causa-raiz identificada: teste órfão em `src/test` referenciando classe inexistente no pacote `com.marketinghub.geralanding.designpreset`.
 - correção aplicada: exclusão do arquivo de teste órfão para restaurar a compilação dos testes do módulo.
 - resultado esperado: etapa Maven `testCompile` do `ads-service` volta a compilar sem erro de símbolo não encontrado.
+
+## 2026-05-24 03:05:00 UTC
+- solicitação para corrigir o HTML do gerador preset design, pois as classes CSS do JSON de preset não estavam sendo inseridas no HTML final.
+- causa-raiz identificada:
+  - `pagina.body` no preset tokenizado usa estrutura direta `desktop/mobile`, mas o processor só lia `classes/classList/estilos`, descartando as classes globais de `<body>`;
+  - a recursão de classes tokenizadas percorria apenas `elementosSeccao` na raiz e apenas `elementosInternos` nos níveis seguintes, deixando nós em estruturas mistas sem aplicação de classes.
+- correção aplicada:
+  - no `DesignPresetProvisionalHtmlProcessor`, `applyPageBodyClasses` passou a aceitar fallback para o próprio mapa `body` quando ele já está no formato `desktop/mobile`;
+  - a recursão de `applyTokenizedNodeClasses` foi normalizada para sempre percorrer os dois filhos (`elementosSeccao` e `elementosInternos`) em todos os níveis.
+- cobertura de regressão adicionada:
+  - novo teste `shouldApplyBodyClassesAndNestedSectionClassesFromTokenizedPreset` validando classe no `<body>`, em seção e em nós aninhados.
+- resultado esperado: classes do preset design passam a ser refletidas corretamente no HTML provisório em toda a árvore.

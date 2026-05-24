@@ -277,7 +277,11 @@ public class DesignPresetProvisionalHtmlProcessor {
             return;
         }
 
-        Object bodyClasses = firstNonNull(bodyMap.get("classes"), bodyMap.get("classList"), bodyMap.get("estilos"));
+        Object bodyClasses = firstNonNull(
+                bodyMap.get("classes"),
+                bodyMap.get("classList"),
+                bodyMap.get("estilos"),
+                bodyMap);
         appendClasses(body, collectStyleClasses(bodyClasses));
     }
 
@@ -835,11 +839,11 @@ public class DesignPresetProvisionalHtmlProcessor {
     private void applyTokenizedSectionClasses(Document document, Map<String, Object> page) {
         Map<String, Object> corpo = asMap(page.get("corpo"));
         for (Map<String, Object> sectionMap : asList(corpo.get("secoes"))) {
-            applyTokenizedNodeClasses(document, sectionMap, "elementosSeccao");
+            applyTokenizedNodeClasses(document, sectionMap);
         }
     }
 
-    private void applyTokenizedNodeClasses(Document document, Map<String, Object> node, String childrenField) {
+    private void applyTokenizedNodeClasses(Document document, Map<String, Object> node) {
         String id = asString(node.get("id"));
         Element element = resolveElementById(document, id);
 
@@ -847,8 +851,11 @@ public class DesignPresetProvisionalHtmlProcessor {
             appendClasses(element, collectStyleClasses(node.get("estilos")));
         }
 
-        for (Map<String, Object> child : asList(node.get(childrenField))) {
-            applyTokenizedNodeClasses(document, child, "elementosInternos");
+        for (Map<String, Object> child : asList(node.get("elementosSeccao"))) {
+            applyTokenizedNodeClasses(document, child);
+        }
+        for (Map<String, Object> child : asList(node.get("elementosInternos"))) {
+            applyTokenizedNodeClasses(document, child);
         }
     }
 

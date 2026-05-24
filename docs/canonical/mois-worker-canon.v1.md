@@ -207,9 +207,16 @@ sequenceDiagram
     participant DB as MySQL 5.7
 
     rect rgb(245,245,245)
-    Note over HS,HC: Coleta no site da Hotmart
-    HC->>HS: GET product details (salesPageUrl com fallback em detailsUrl)
-    HS-->>HC: 200 OK (url acessada para captura)
+    Note over HS,HC: Coleta no site da Hotmart (URLs acessadas)
+    HC->>HS: GET https://www.hotmart.com/pt-br/marketplace/produtos/{slug-ou-id}
+    HS-->>HC: 200 OK (detailsUrl com salesPageUrl quando disponível)
+    alt salesPageUrl disponível no detailsUrl
+      HC->>HS: GET {salesPageUrl} (landing oficial do produtor)
+      HS-->>HC: 200 OK (HTML da página de vendas)
+    else salesPageUrl ausente
+      HC->>HS: GET {detailsUrl} (fallback de captura)
+      HS-->>HC: 200 OK (HTML da página de detalhes)
+    end
 
     Note over HC,API: 1) Coleta e envio de URLs vencedoras da Hotmart
     HC->>API: POST /urls:ingest (source=HOTMART, urls[])
@@ -386,6 +393,41 @@ graph TD
     end
 
     BR -->|READ/WRITE: ingest, jobs, analyses, snapshots| DB
+```
+
+
+#### 12.5.1 Hotmart Collector — arquitetura por módulo/pacote
+
+```mermaid
+graph TD
+    HS[hotmart.com
+Fonte externa] -->|Coleta de produtos/URLs| HC[mois-hotmart-collector\npackage: com.marketinghub.mois.hotmart.collector]
+
+    HC -->|POST /api/mois/sales-library/urls:ingest\nsource=HOTMART| BM[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web]
+
+    subgraph Backend MOIS
+      BM --> BS[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service]
+      BS --> BR[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.repository]
+    end
+
+    BR -->|UPSERT ingest + criação job PENDING| DB[(MySQL 5.7)]
+```
+
+#### 12.5.2 ClickBank Collector — arquitetura por módulo/pacote
+
+```mermaid
+graph TD
+    CB[api.clickbank.com / marketplace
+Fonte externa] -->|Coleta de produtos/URLs| CC[mois-clickbank-collector\npackage: com.marketinghub.mois.clickbank.collector]
+
+    CC -->|POST /api/mois/sales-library/urls:ingest\nsource=CLICKBANK| BM[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web]
+
+    subgraph Backend MOIS
+      BM --> BS[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service]
+      BS --> BR[backend/ads-service\npackage: com.marketinghub.mois.bibliotecapaginavenda.worker.v1.repository]
+    end
+
+    BR -->|UPSERT ingest + criação job PENDING| DB[(MySQL 5.7)]
 ```
 
 #### Regras de integração refletidas no diagrama

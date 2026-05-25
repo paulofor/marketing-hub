@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
+import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,15 @@ class GeraLandingExecutionServiceTest {
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
         GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
+        MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
+        com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
+        com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -37,6 +47,11 @@ class GeraLandingExecutionServiceTest {
                         openAiClient,
                         objectMapper,
                         stageSchemaResolver,
+                        wireframeMontaRequest,
+                        copyMontaRequest,
+                        imagePlanningMontaRequest,
+                        presetDesignMontaRequest,
+                        deliverablesMontaRequest,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -59,6 +74,15 @@ class GeraLandingExecutionServiceTest {
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
         GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
+        MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
+        com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
+        com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -73,6 +97,11 @@ class GeraLandingExecutionServiceTest {
                         openAiClient,
                         objectMapper,
                         stageSchemaResolver,
+                        wireframeMontaRequest,
+                        copyMontaRequest,
+                        imagePlanningMontaRequest,
+                        presetDesignMontaRequest,
+                        deliverablesMontaRequest,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),

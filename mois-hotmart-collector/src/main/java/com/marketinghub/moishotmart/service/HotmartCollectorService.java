@@ -36,6 +36,9 @@ public class HotmartCollectorService {
     private static final double PLAYWRIGHT_TIMEOUT_MS = 180_000;
     private static final int LOGIN_SUBMIT_RETRIES = 3;
     private static final int COOKIE_RETRY_ATTEMPTS = 3;
+    private static final int HOTMART_MAX_PAGES_PER_RUN = 100;
+    private static final int HOTMART_MAX_PRODUCTS_PER_RUN = 100;
+    private static final int HOTMART_ROWS_PER_PAGE = 20;
     private static final String HOTMART_MARKET_API_URL = "https://api-affiliation-market.hotmart.com/v2/market/search";
     private static final String HOTMART_PRODUCT_DETAILS_API_URL = "https://api-affiliation-market.hotmart.com/v1/market/product/%s/details?userSessionId=%s";
 
@@ -88,7 +91,7 @@ public class HotmartCollectorService {
     }
 
     public HotmartCollectionResponse collectFirstCycle(HotmartCollectionRequest request) {
-        int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), 50);
+        int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), HOTMART_MAX_PRODUCTS_PER_RUN);
 
         List<HotmartProductSnapshot> products = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
@@ -375,39 +378,48 @@ public class HotmartCollectorService {
 
     private int collectProductsViaMarketApi(String accessToken, int boundedMax, List<HotmartProductSnapshot> products) {
         try {
-            String payload = objectMapper.writeValueAsString(java.util.Map.of(
-                    "page", 1,
-                    "rows", boundedMax,
-                    "userLocale", "PT_BR",
-                    "name", "hottest"
-            ));
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(HOTMART_MARKET_API_URL))
-                    .header("accept", "application/json, text/plain, */*")
-                    .header("content-type", "application/json")
-                    .header("authorization", "Bearer " + accessToken)
-                    .POST(HttpRequest.BodyPublishers.ofString(payload))
-                    .build();
-            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-            String body = response.body();
-            log.info("Resposta API Hotmart recebida. status={}, bodyPreview='{}'", response.statusCode(), truncateForLog(body, 1200));
-            log.info("HOTMART_FETCH_RESPOSTA_CRUA status={} bodyRaw='{}'",
-                    response.statusCode(),
-                    truncateForLog(body, 10_000));
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                return 0;
-            }
-            JsonNode data = objectMapper.readTree(body);
-            JsonNode productsNode = firstArray(data, "products", "items", "content", "results");
-            if (productsNode == null || !productsNode.isArray()) {
-                log.warn("Resposta API Hotmart sem array de produtos. keysRaiz={}", previewFieldNames(data));
-                return 0;
-            }
-            log.info("Resposta API Hotmart: totalItensArray={}, chavesPrimeiroItem={}",
-                    productsNode.size(),
-                    productsNode.size() > 0 ? previewFieldNames(productsNode.get(0)) : "[]");
-            for (JsonNode item : productsNode) {
-                if (products.size() >= boundedMax) break;
+            int targetProducts = Math.min(boundedMax, HOTMART_MAX_PRODUCTS_PER_RUN);
+            int page = 1;
+            while (products.size() < targetProducts && page <= HOTMART_MAX_PAGES_PER_RUN) {
+                int rows = Math.min(HOTMART_ROWS_PER_PAGE, targetProducts - products.size());
+                String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                        "page", page,
+                        "rows", rows,
+                        "userLocale", "PT_BR",
+                        "name", "hottest"
+                ));
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(HOTMART_MARKET_API_URL))
+                        .header("accept", "application/json, text/plain, */*")
+                        .header("content-type", "application/json")
+                        .header("authorization", "Bearer " + accessToken)
+                        .POST(HttpRequest.BodyPublishers.ofString(payload))
+                        .build();
+                HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                String body = response.body();
+                log.info("Resposta API Hotmart recebida. page={}, status={}, bodyPreview='{}'", page, response.statusCode(), truncateForLog(body, 1200));
+                log.info("HOTMART_FETCH_RESPOSTA_CRUA page={} status={} bodyRaw='{}'",
+                        page,
+                        response.statusCode(),
+                        truncateForLog(body, 10_000));
+                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                    break;
+                }
+                JsonNode data = objectMapper.readTree(body);
+                JsonNode productsNode = firstArray(data, "products", "items", "content", "results");
+                if (productsNode == null || !productsNode.isArray()) {
+                    log.warn("Resposta API Hotmart sem array de produtos. page={}, keysRaiz={}", page, previewFieldNames(data));
+                    break;
+                }
+                if (productsNode.isEmpty()) {
+                    break;
+                }
+                log.info("Resposta API Hotmart: page={}, totalItensArray={}, chavesPrimeiroItem={}",
+                        page,
+                        productsNode.size(),
+                        productsNode.size() > 0 ? previewFieldNames(productsNode.get(0)) : "[]");
+                for (JsonNode item : productsNode) {
+                    if (products.size() >= targetProducts) break;
                 String title = extractProductText(item, "name", "productName", "title");
                 String url = extractProductText(item, "checkoutUrl", "productUrl", "url", "link");
                 if (url == null || url.isBlank()) {
@@ -436,6 +448,15 @@ public class HotmartCollectorService {
                         null,
                         Instant.now());
                 products.add(enrichProductWithDetails(accessToken, item, baseSnapshot));
+            }
+                if (productsNode.size() < rows) {
+                    break;
+                }
+                page++;
+            }
+            if (page > HOTMART_MAX_PAGES_PER_RUN && products.size() < targetProducts) {
+                log.info("Limite de paginação atingido no ciclo 1 da Hotmart. maxPages={}, produtosColetados={}, alvo={}",
+                        HOTMART_MAX_PAGES_PER_RUN, products.size(), targetProducts);
             }
             return products.size();
         } catch (Exception ex) {

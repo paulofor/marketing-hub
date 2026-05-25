@@ -66,7 +66,7 @@ class DesignPresetProvisionalHtmlProcessorTest {
 
         String html = processor.process(wireframe, copy, "{}", design);
 
-        assertThat(html).contains("id=\"lhm-legacy-design-preset-css\"");
+        assertThat(html).doesNotContain("id=\"lhm-legacy-design-preset-css\"");
         assertThat(html).contains(".h1-size{font-size:44px;}");
         assertThat(html).contains("id=\"sec-hero\"").contains("class=\"section-desktop\"");
         assertThat(html).contains("id=\"hero-title\"").contains("class=\"h1-size\"");
@@ -196,5 +196,52 @@ class DesignPresetProvisionalHtmlProcessorTest {
         assertThat(html).contains("@media (max-width: 768px)");
         assertThat(html).contains(".wireframe-layout{display:block;}");
         assertThat(html).contains("id=\"sec-hero\"").contains("class=\"wireframe-layout\"");
+    }
+
+    @Test
+    void shouldKeepWireframeAndDesignCssDefinitionsTogether() {
+        DesignPresetProvisionalHtmlProcessor processor = new DesignPresetProvisionalHtmlProcessor();
+
+        String wireframe = """
+                {
+                  "definicoes": {
+                    "layout": {
+                      "desktop": [{"nome":"wireframe-layout","atributoCss":"display","valor":"grid"}],
+                      "mobile": []
+                    }
+                  },
+                  "pagina": {
+                    "corpo": {
+                      "secoes": [
+                        {"id":"sec-hero","tag":"section","estilos":{"desktop":["wireframe-layout"],"mobile":[]}}
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String design = """
+                {
+                  "definicoes": {
+                    "tipografia": {
+                      "desktop": [{"nome":"design-title","atributoCss":"font-size","valor":"48px"}],
+                      "mobile": []
+                    }
+                  },
+                  "pagina": {
+                    "corpo": {
+                      "secoes": [
+                        {"id":"sec-hero","estilos":{"desktop":["design-title"],"mobile":[]}}
+                      ]
+                    }
+                  }
+                }
+                """;
+
+        String html = processor.process(wireframe, "{\"bodySections\":[]}", "{}", design);
+
+        assertThat(html).contains(".wireframe-layout{display:grid;}");
+        assertThat(html).contains(".design-title{font-size:48px;}");
+        assertThat(html).contains("id=\"sec-hero\"").contains("wireframe-layout").contains("design-title");
     }
 }

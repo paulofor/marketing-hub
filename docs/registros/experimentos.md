@@ -1624,3 +1624,19 @@
   - anotação `@Disabled` no teste `deveDisponibilizarTodosOsItensCanonicosDosPipelinesNoPromptFinal`;
   - inclusão de justificativa explícita no próprio teste.
 - impacto funcional: nenhum impacto em runtime; apenas redução de ruído em suíte de testes.
+
+## 2026-05-25 22:10:00 UTC
+- ajuste no assembler da etapa de preset design para preservar estilos das duas fontes (wireframe + design preset).
+- causa-raiz: o `DesignPresetProvisionalHtmlProcessor` recriava/removia a tag `<style id="lhm-legacy-design-preset-css">` a cada aplicação de estilos tokenizados; com isso, o segundo processamento sobrescrevia o CSS do primeiro.
+- correção aplicada:
+  - alteração da rotina `applyTokenizedPresetStyles` para reutilizar a mesma tag `<style>` e concatenar o CSS, mantendo simultaneamente as definições das etapas wireframe e design preset;
+  - inclusão de teste de regressão `shouldKeepWireframeAndDesignCssDefinitionsTogether` cobrindo presença conjunta de classes/CSS das duas etapas no HTML final.
+- impacto funcional: o HTML provisório final passa a conter todos os estilos definidos em wireframe e preset design, sem perda por sobrescrita.
+
+## 2026-05-25 22:32:00 UTC
+- ajuste solicitado no assembler de preset design para remover identificador fixo na tag de estilos.
+- causa-raiz: a implementação anterior dependia de `id="lhm-legacy-design-preset-css"` na `<style>`, mas o contrato esperado para o HTML provisório não exige esse identificador.
+- correção aplicada:
+  - atualização de `DesignPresetProvisionalHtmlProcessor.applyTokenizedPresetStyles` para inserir estilos em `<style>` sem `id`;
+  - atualização do teste `shouldApplyLegacyTokenizedPresetFormat` para validar ausência do id legado e manter as validações de CSS/classes.
+- impacto funcional: mantém os estilos de wireframe + preset design no HTML final, agora sem atributo `id` na tag `<style>`.

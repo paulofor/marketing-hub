@@ -1554,3 +1554,10 @@
     - montagem do prompt final e payload OpenAI;
   - `GeraLandingExecutionService` foi ajustado para delegar a montagem do prompt e do markdown bruto diretamente aos `MontaRequest` por etapa.
 - impacto funcional: mantém o contrato final de request OpenAI, reduz acoplamento e centraliza a lógica de montagem por etapa.
+
+## 2026-05-25 20:20:00 UTC
+- ajuste solicitado em revisão: criação do pacote `geralanding.comum` e realocação do utilitário compartilhado de montagem.
+- correção aplicada:
+  - `MontaRequestSupport` movido para `com.marketinghub.worker.geralanding.comum`;
+  - atualização dos imports nas classes `MontaRequest` das etapas (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
+- impacto funcional: sem alteração de comportamento, apenas organização de pacote para melhor separação de responsabilidades.

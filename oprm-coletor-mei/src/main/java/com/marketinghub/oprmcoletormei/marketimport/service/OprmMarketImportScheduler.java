@@ -58,8 +58,9 @@ public class OprmMarketImportScheduler {
     }
 
     /** Executa a ingestão completa de arquivos CNPJ/CNAE no horário agendado para a execução operacional. */
-    @Scheduled(cron = "0 20 18 23 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 45 16 * * *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
+        log.info("Iniciando runScheduledImport do OPRM CNPJ/CNAE.");
         if (!scheduleProperties.enabled()) {
             log.info("Scheduler OPRM market import desabilitado.");
             return;
@@ -102,6 +103,16 @@ public class OprmMarketImportScheduler {
         if (runResponse == null || runResponse.runId() == null || runResponse.fileIds() == null || runResponse.fileIds().size() != files.size()) {
             throw new IllegalStateException("Resposta inválida ao criar import run OPRM.");
         }
+        log.info("[run={}] Run OPRM criada e pronta para processamento de arquivos. snapshotDate={} sourceUrl={} filesTotal={}",
+                runResponse.runId(),
+                snapshotDate,
+                sourceUrl,
+                files.size());
+        log.info("runScheduledImport criado com sucesso: runId={} snapshotDate={} sourceUrl={} filesTotal={}",
+                runResponse.runId(),
+                snapshotDate,
+                sourceUrl,
+                files.size());
 
         Path runTempDir = Paths.get(collectorProperties.tempDir(), "run-" + runResponse.runId());
         long totalRowsRead = 0L;
@@ -203,7 +214,7 @@ public class OprmMarketImportScheduler {
             }
         }
 
-        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 14:06 ({}) com {} arquivos.",
+        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 16:45 ({}) com {} arquivos.",
                 snapshotDate,
                 scheduleProperties.timezone(),
                 files.size());

@@ -156,3 +156,9 @@
 
 - 2026-05-23 05:20:00 (UTC): ajuste solicitado para o próximo agendamento da ingestão OPRM CNPJ/CNAE para **14:06 de 24/05/2026** (America/Sao_Paulo), com atualização do cron hardcoded de `runScheduledImport` para `0 6 14 24 5 *`, sincronização do cron padrão em `application.yml` e ajuste da mensagem de log para refletir 14:06.
 - 2026-05-23 00:00:00 (UTC): validação solicitada do módulo de logs no MCP confirmando nomenclatura operacional `module=oprm-coletor-receita` para consultar o serviço `oprm-coletor-mei`; em seguida, reagendado o coletor OPRM CNPJ/CNAE para **18:20 de hoje (23/05/2026)** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 20 18 23 5 *`, sincronização do cron padrão em `application.yml` e ajuste do `snapshot-date` padrão para `2026-05-23`.
+
+- 2026-05-25 00:00:00 (UTC): ajuste solicitado para adicionar log imediatamente após criação da run no `runScheduledImport`, registrando `runId`, `snapshotDate`, `sourceUrl` e `filesTotal`; e alteração do agendamento hardcoded da ingestão OPRM CNPJ/CNAE para **16:45** (America/Sao_Paulo) com cron `0 45 16 * * *`, incluindo atualização da mensagem final de sucesso para refletir 16:45.
+
+- 2026-05-25 00:00:00 (UTC): ajuste complementar solicitado por revisão: adicionado log textual explícito com `runId` logo após a criação da run no `runScheduledImport` para facilitar buscas operacionais por `contains=runId=` nos logs do MCP.
+
+- 2026-05-25 00:00:00 (UTC): ajuste solicitado em revisão para inserir log no início do método `runScheduledImport` (primeira instrução), registrando disparo da rotina antes de qualquer validação de `enabled`.

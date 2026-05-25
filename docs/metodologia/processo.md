@@ -39,6 +39,16 @@
 13. Agora os campos que deveriam receber html estao recebendo o json da etapa preset-design
 14. Travei no geralanding como falavam
 
+#### Archuint 
+. com.marketinghub.mois.bibliotecapaginavenda.x.vN.web
+. com.marketinghub.mois.bibliotecapaginavenda.x.vN.service
+. com.marketinghub.mois.bibliotecapaginavenda.x.N.repository
+
+A ideia veio daqui: /docs/canonical/mois-worker-canon.v1.md#125-diagrama-de-arquitetura-por-módulopacote
+
+
+
+
 >(23-05-2026)
 >Fiz uma avaliação e vejo dois pontos que podem ajudar ao codex não cometer erros:
 >- restrições de arquitetura
@@ -74,9 +84,3 @@ Criei uma excpetion para esse service
 * endpoints do backend que são chamados ( pacotes )
 * dados que são enviados ( onde são persisitidos )
 
-#### Archuint 
-. com.marketinghub.mois.bibliotecapaginavenda.x.vN.web
-. com.marketinghub.mois.bibliotecapaginavenda.x.vN.service
-. com.marketinghub.mois.bibliotecapaginavenda.x.N.repository
-
-A ideia veio daqui: /docs/canonical/mois-worker-canon.v1.md#125-diagrama-de-arquitetura-por-módulopacote

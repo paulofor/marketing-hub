@@ -566,3 +566,15 @@ Arquivos alterados:
   - AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-05-25 — Correção de renderização Mermaid (MOIS Hotmart ciclos 1 e 2)
+- Corrigidos os dois diagramas Mermaid em `docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md` para eliminar erro de parser no GitHub.
+- Causa-raiz: rótulos com caracteres especiais não escapados no conteúdo dos nós (`{}` em URLs com placeholders e quebra de linha literal dentro do nó), que quebravam o parser Mermaid.
+- Correção aplicada:
+  - padronização dos rótulos com aspas (`["..."]`) para texto rico com `<br/>`;
+  - remoção de placeholders com chaves nas labels dos nós (`{n}`, `{id}`, `{session}`), substituindo por texto equivalente sem chaves;
+  - normalização de quebras de linha para `<br/>` no nó de persistência do ciclo 1.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - docs/registros/mois1.md

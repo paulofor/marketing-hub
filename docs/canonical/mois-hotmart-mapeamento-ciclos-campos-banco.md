@@ -210,30 +210,28 @@ Sequência operacional consolidada:
 
 ```mermaid
 flowchart TD
-    A[Scheduler<br/>com.marketinghub.moishotmart.service.HotmartCollectorScheduler] --> B[Service<br/>com.marketinghub.moishotmart.service.HotmartCollectorService.collectFirstCycle]
-    B --> C[Hotmart API<br/>POST https://api-affiliation-market.hotmart.com/v2/market/search]
-    C --> D[Dados recebidos da Hotmart (listagem)<br/>ucode/productUcode, title/name/productName, image/productImage,<br/>reviewRating/rating, totalAnswers, blueprint, priceValue/value,<br/>category, format, producerName, detailsUrl/productUrl/url,<br/>temperature/hotmartTemperature, salesPageUrl/pageUrl]
-    D --> E[Montagem do snapshot base<br/>HotmartProductSnapshot]
-    E --> F[POST backend<br/>/api/v1/mois/collect/references<br/>Controller: com.marketinghub.mois.web.MoisController<br/>Pacote: backend/ads-service/.../com/marketinghub/mois/web]
-    F --> G[Persistência
-MoisCollectionPersistenceService
-com.marketinghub.mois.service]
-    G --> H[Tabela mois_collected_reference]
+    A["Scheduler<br/>com.marketinghub.moishotmart.service.HotmartCollectorScheduler"] --> B["Service<br/>com.marketinghub.moishotmart.service.HotmartCollectorService.collectFirstCycle"]
+    B --> C["Hotmart API<br/>POST https://api-affiliation-market.hotmart.com/v2/market/search"]
+    C --> D["Dados recebidos da Hotmart - listagem<br/>ucode/productUcode, title/name/productName, image/productImage,<br/>reviewRating/rating, totalAnswers, blueprint, priceValue/value,<br/>category, format, producerName, detailsUrl/productUrl/url,<br/>temperature/hotmartTemperature, salesPageUrl/pageUrl"]
+    D --> E["Montagem do snapshot base<br/>HotmartProductSnapshot"]
+    E --> F["POST backend<br/>/api/v1/mois/collect/references<br/>Controller: com.marketinghub.mois.web.MoisController<br/>Pacote: backend/ads-service/.../com/marketinghub/mois/web"]
+    F --> G["Persistência<br/>MoisCollectionPersistenceService<br/>com.marketinghub.mois.service"]
+    G --> H["Tabela mois_collected_reference"]
 ```
 
 ### 11.2 Diagrama — Ciclo 2 (detalhes por produto)
 
 ```mermaid
 flowchart TD
-    A2[Scheduler<br/>com.marketinghub.moishotmart.service.HotmartCollectorScheduler] --> B2[Service<br/>com.marketinghub.moishotmart.service.HotmartCollectorService.collectSecondCycleFromBackend]
-    B2 --> C2[GET backend<br/>/api/v1/mois/hotmart/products?limit={n}<br/>Controller: com.marketinghub.mois.web.MoisController<br/>Pacote: backend/ads-service/.../com/marketinghub/mois/web]
-    C2 --> D2[Lista de produtos já persistidos]
-    D2 --> E2[Hotmart API<br/>GET https://api-affiliation-market.hotmart.com/v1/market/product/{id}/details?userSessionId={session}]
-    E2 --> F2[Dados recebidos da Hotmart (detalhes)<br/>salesPageUrl, pageSalesLink, salesPage, pageUrl, url,<br/>detailsUrl, productUrl, checkoutUrl, name/title, image, producer.name]
-    F2 --> G2[Regra de enriquecimento<br/>salesPageUrl_final = salesPageFromDetails || salesPageUrl_base || detailPageUrl]
-    G2 --> H2[POST backend<br/>/api/v1/mois/collect/references<br/>Controller: com.marketinghub.mois.web.MoisController]
-    H2 --> I2[Persistência com fallback em sales_page_url<br/>rawMetadata.salesPageUrl -> pageSalesLink -> checkoutUrl -> reference.url]
-    I2 --> J2[Tabela mois_collected_reference]
+    A2["Scheduler<br/>com.marketinghub.moishotmart.service.HotmartCollectorScheduler"] --> B2["Service<br/>com.marketinghub.moishotmart.service.HotmartCollectorService.collectSecondCycleFromBackend"]
+    B2 --> C2["GET backend<br/>/api/v1/mois/hotmart/products?limit=numero<br/>Controller: com.marketinghub.mois.web.MoisController<br/>Pacote: backend/ads-service/.../com/marketinghub/mois/web"]
+    C2 --> D2["Lista de produtos já persistidos"]
+    D2 --> E2["Hotmart API<br/>GET https://api-affiliation-market.hotmart.com/v1/market/product/id/details?userSessionId=session"]
+    E2 --> F2["Dados recebidos da Hotmart - detalhes<br/>salesPageUrl, pageSalesLink, salesPage, pageUrl, url,<br/>detailsUrl, productUrl, checkoutUrl, name/title, image, producer.name"]
+    F2 --> G2["Regra de enriquecimento<br/>salesPageUrl_final = salesPageFromDetails || salesPageUrl_base || detailPageUrl"]
+    G2 --> H2["POST backend<br/>/api/v1/mois/collect/references<br/>Controller: com.marketinghub.mois.web.MoisController"]
+    H2 --> I2["Persistência com fallback em sales_page_url<br/>rawMetadata.salesPageUrl -> pageSalesLink -> checkoutUrl -> reference.url"]
+    I2 --> J2["Tabela mois_collected_reference"]
 ```
 
 ### 11.3 Pacotes Java envolvidos (visão rápida)

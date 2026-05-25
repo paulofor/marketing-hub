@@ -27,4 +27,103 @@ class GeraLandingArchitectureTest {
             .should()
             .notDependOnEachOther()
             .allowEmptyShould(true);
+
+    /** Garante que o módulo copy só acesse o próprio pacote e geralanding.comum dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_copy_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.copy..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.presetdesign..",
+                    "..geralanding.stage..",
+                    "..geralanding.wireframe..",
+                    "..geralanding.deliverables..",
+                    "..geralanding.imageplanning..");
+
+    /** Garante que o módulo presetdesign só acesse o próprio pacote e geralanding.comum dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_presetdesign_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.presetdesign..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.copy..",
+                    "..geralanding.stage..",
+                    "..geralanding.wireframe..",
+                    "..geralanding.deliverables..",
+                    "..geralanding.imageplanning..");
+
+    /** Garante que o módulo stage só acesse o próprio pacote e geralanding.comum dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_stage_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.stage..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.copy..",
+                    "..geralanding.presetdesign..",
+                    "..geralanding.wireframe..",
+                    "..geralanding.deliverables..",
+                    "..geralanding.imageplanning..");
+
+    /** Garante que o módulo wireframe só acesse o próprio pacote e geralanding.comum dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_wireframe_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.wireframe..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.copy..",
+                    "..geralanding.presetdesign..",
+                    "..geralanding.stage..",
+                    "..geralanding.deliverables..",
+                    "..geralanding.imageplanning..");
+
+    /** Garante que o módulo deliverables só acesse o próprio pacote e geralanding.comum dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_deliverables_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.deliverables..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.copy..",
+                    "..geralanding.presetdesign..",
+                    "..geralanding.stage..",
+                    "..geralanding.wireframe..",
+                    "..geralanding.imageplanning..");
+
+    /** Garante que o módulo imageplanning só acesse o próprio pacote e geralanding.comum dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_imageplanning_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.imageplanning..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.copy..",
+                    "..geralanding.presetdesign..",
+                    "..geralanding.stage..",
+                    "..geralanding.wireframe..",
+                    "..geralanding.deliverables..");
+
+    /** Garante que geralanding.comum só acesse classes do próprio pacote dentro do domínio geralanding. */
+    @ArchTest
+    static final ArchRule geralanding_comum_must_not_depend_on_other_modules = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.comum..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                    "..geralanding.copy..",
+                    "..geralanding.presetdesign..",
+                    "..geralanding.stage..",
+                    "..geralanding.wireframe..",
+                    "..geralanding.deliverables..",
+                    "..geralanding.imageplanning..");
 }

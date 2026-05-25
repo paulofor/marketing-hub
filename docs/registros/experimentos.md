@@ -1561,3 +1561,11 @@
   - `MontaRequestSupport` movido para `com.marketinghub.worker.geralanding.comum`;
   - atualização dos imports nas classes `MontaRequest` das etapas (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
 - impacto funcional: sem alteração de comportamento, apenas organização de pacote para melhor separação de responsabilidades.
+
+## 2026-05-25 20:30:00 UTC
+- ajuste solicitado: criação de regras de arquitetura com ArchUnit para isolamento dos módulos `geralanding.*` no AI Worker.
+- causa-raiz: ausência de validação automatizada explícita para impedir acoplamento entre módulos irmãos e para restringir dependências do pacote `geralanding.comum`.
+- correção aplicada:
+  - inclusão de regras ArchUnit para bloquear dependências cruzadas entre módulos `copy`, `presetdesign`, `stage`, `wireframe`, `deliverables` e `imageplanning`;
+  - inclusão de regra ArchUnit para garantir que `geralanding.comum` não acesse módulos funcionais `geralanding.*`.
+- impacto funcional: reforço de fronteiras arquiteturais do domínio GeraLanding com validação automatizada em testes.

@@ -26,7 +26,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 2. Convenções de engenharia
 
-- **Regra Número 1** : O objetivo principal do sistema é gerar VENDAS.
+- **Regra Número 1** : O objetivo principal do sistema é gerar VENDAS de produtos que ofereçam valor através do uso da Inteligencia Artificial.
 - **Regra Número 2** : Sempre que tiver algum problema não tentar resolver consequencias. Buscar SEMPRE resolver a causa-raiz.
 - **Regra Número 3** : Seja SIMPLES, OBJETIVO e EFICAZ.
 - invesgtigação da causa raiz

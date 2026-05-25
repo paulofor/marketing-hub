@@ -84,3 +84,5 @@ Criei uma excpetion para esse service
 * endpoints do backend que são chamados ( pacotes )
 * dados que são enviados ( onde são persisitidos )
 
+
+##### Precisamos controlar os montadores de prompt/request senão vamos ter muitos problemas.

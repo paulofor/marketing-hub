@@ -115,11 +115,6 @@ public class GeraLandingExecutionService {
         }
         try {
             final String openAiModel = "gpt-5.2";
-            GeraLandingPromptContext context = new GeraLandingPromptContext(
-                    execution.experimentId(),
-                    execution.idJob(),
-                    execution.stageCode(),
-                    dadosPrompt);
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());
             GeraLandingExperimentRequest requestData = new GeraLandingExperimentRequest(execution.experimentId(), dadosPrompt);
             String prompt = montarPromptPorEtapa(stage, requestData);

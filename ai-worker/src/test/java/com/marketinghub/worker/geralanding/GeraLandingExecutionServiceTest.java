@@ -10,6 +10,7 @@ import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.core.io.ClassPathResource;
@@ -36,7 +37,10 @@ class GeraLandingExecutionServiceTest {
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
                 new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-wireframe")));
-        when(geraLandingService.montarERegistrarPromptEtapa(any(), any())).thenReturn("prompt-content");
+        when(backendClient.loadPromptData(19L)).thenReturn(Map.of());
+        when(wireframeMontaRequest.montarPrompt(any())).thenReturn("prompt-content");
+        when(wireframeMontaRequest.carregarPromptMarkdownCru()).thenReturn("prompt-markdown");
+        when(wireframeMontaRequest.montar(any())).thenReturn("{\"model\":\"gpt-5.2\"}");
         when(openAiClient.generate(any())).thenReturn(new GeraLandingJobCompletionPayload(
                 "{\"ok\":true}", "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
 
@@ -87,7 +91,10 @@ class GeraLandingExecutionServiceTest {
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
                 new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-wireframe")));
-        when(geraLandingService.montarERegistrarPromptEtapa(any(), any())).thenReturn("prompt-content");
+        when(backendClient.loadPromptData(19L)).thenReturn(Map.of());
+        when(wireframeMontaRequest.montarPrompt(any())).thenReturn("prompt-content");
+        when(wireframeMontaRequest.carregarPromptMarkdownCru()).thenReturn("prompt-markdown");
+        when(wireframeMontaRequest.montar(any())).thenReturn("{\"model\":\"gpt-5.2\"}");
         when(openAiClient.generate(any())).thenThrow(new IllegalStateException("OpenAI erro de flex"));
 
         GeraLandingExecutionService service =

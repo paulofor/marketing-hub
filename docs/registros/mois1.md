@@ -556,3 +556,13 @@ Arquivos alterados:
 - 2026-05-24: Adicionada regra ArchUnit no módulo `mois-sales-library-worker` para exigir classe no pacote `bibliotecapaginavenda.worker.vN.service` com método `recordPromptBuilderOpenAiResult` recebendo request bruto, resposta bruta, jobId OpenAI e JSON validado; incluída implementação inicial `OpenAiPromptResultRecorder` no v1.
 
 - 2026-05-24: Regra ArchUnit ampliada no `mois-sales-library-worker` para exigir também método de inserção backend (`insertOpenAiIntegrationRecord`) em `mois.bibliotecapaginavenda.worker.vN.service`, com parâmetros: request cru, resposta crua, jobId OpenAI, JSON validado e jobId Marketing Hub.
+
+## 2026-05-25 — Diagramas canônicos dos ciclos de acesso Hotmart (Ciclo 1 e Ciclo 2)
+- Atualizado `docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md` com seção nova de diagramas para os dois fluxos operacionais.
+- Incluído diagrama do **Ciclo 1 (listagem)** com módulos/pacotes Java envolvidos, URL Hotmart de busca, endpoint backend de persistência e dados recebidos da Hotmart.
+- Incluído diagrama do **Ciclo 2 (detalhes)** com módulos/pacotes Java envolvidos, endpoint backend de leitura de produtos, URL Hotmart de detalhes e fallback de `salesPageUrl` na persistência.
+- Documentada uma visão consolidada de pacotes Java por módulo e lista objetiva de URLs/endpoints usados no fluxo.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - docs/registros/mois1.md

@@ -1534,3 +1534,11 @@
   - AGENTS.md
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-25 19:10:00 UTC
+- ajuste corretivo após revisão: classes `MontaRequest` do GeraLanding agora recebem somente o objeto de experimento e assumem internamente a responsabilidade de resolver schema e configuração padrão do request.
+- causa-raiz: implementação anterior ainda exigia resolução de schema no `GeraLandingExecutionService`, mantendo parte da responsabilidade fora das classes de montagem.
+- correção aplicada:
+  - simplificação de `GeraLandingExperimentRequest` para conter apenas dados do experimento (`experimentId`, `prompt`);
+  - cada `MontaRequest` passou a carregar o schema da própria etapa via resource classpath e montar o payload completo internamente;
+  - `GeraLandingExecutionService` agora apenas repassa o objeto de experimento para o montador da etapa.

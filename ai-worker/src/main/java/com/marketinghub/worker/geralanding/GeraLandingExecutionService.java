@@ -129,11 +129,7 @@ public class GeraLandingExecutionService {
                     stage,
                     new GeraLandingExperimentRequest(
                             execution.experimentId(),
-                            prompt,
-                            null,
-                            openAiModel,
-                            "gera-landing-pipeline",
-                            "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."));
+                            prompt));
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
             String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(stage));
@@ -247,20 +243,12 @@ public class GeraLandingExecutionService {
      */
     private String montarRequestPorEtapa(GeraLandingStageDefinition stage,
                                          GeraLandingExperimentRequest experiment) throws JsonProcessingException {
-        Map<String, Object> schema = readSchemaByStage(stage);
-        GeraLandingExperimentRequest experimentComSchema = new GeraLandingExperimentRequest(
-                experiment.experimentId(),
-                experiment.prompt(),
-                schema,
-                experiment.model(),
-                experiment.systemName(),
-                experiment.systemMessage());
         return switch (stage) {
-            case WIREFRAME -> wireframeMontaRequest.montar(experimentComSchema);
-            case COPY -> copyMontaRequest.montar(experimentComSchema);
-            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(experimentComSchema);
-            case DESIGN_PRESET -> presetDesignMontaRequest.montar(experimentComSchema);
-            case DELIVERABLES -> deliverablesMontaRequest.montar(experimentComSchema);
+            case WIREFRAME -> wireframeMontaRequest.montar(experiment);
+            case COPY -> copyMontaRequest.montar(experiment);
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(experiment);
+            case DESIGN_PRESET -> presetDesignMontaRequest.montar(experiment);
+            case DELIVERABLES -> deliverablesMontaRequest.montar(experiment);
         };
     }
 

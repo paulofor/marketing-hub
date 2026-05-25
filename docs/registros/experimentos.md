@@ -1521,3 +1521,24 @@
   - AGENTS.md
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-25 16:20:00 UTC
+- ajuste solicitado: classes `MontaRequest` do GeraLanding passam a receber apenas um objeto de experimento preenchido e devolver o payload pronto, sem parâmetros soltos.
+- causa-raiz: assinatura com muitos parâmetros (`model`, `prompt`, `systemName`, `systemMessage`, `schema`) aumentava acoplamento e risco de montagem inconsistente entre etapas.
+- correção aplicada:
+  - criação do record `GeraLandingExperimentRequest` para centralizar dados necessários da montagem;
+  - classes `MontaRequest` de `wireframe`, `copy`, `imageplanning`, `presetdesign` e `deliverables` agora recebem somente `GeraLandingExperimentRequest`;
+  - `GeraLandingExecutionService` foi ajustado para construir o objeto de experimento e repassar ao montador da etapa, mantendo o schema resolvido por etapa internamente no fluxo.
+- impacto funcional: mantém o contrato final de request OpenAI, com interface de montagem mais coesa e orientada a objeto de experimento.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+
+## 2026-05-25 19:10:00 UTC
+- ajuste corretivo após revisão: classes `MontaRequest` do GeraLanding agora recebem somente o objeto de experimento e assumem internamente a responsabilidade de resolver schema e configuração padrão do request.
+- causa-raiz: implementação anterior ainda exigia resolução de schema no `GeraLandingExecutionService`, mantendo parte da responsabilidade fora das classes de montagem.
+- correção aplicada:
+  - simplificação de `GeraLandingExperimentRequest` para conter apenas dados do experimento (`experimentId`, `prompt`);
+  - cada `MontaRequest` passou a carregar o schema da própria etapa via resource classpath e montar o payload completo internamente;
+  - `GeraLandingExecutionService` agora apenas repassa o objeto de experimento para o montador da etapa.

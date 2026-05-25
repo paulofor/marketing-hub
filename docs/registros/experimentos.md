@@ -1521,3 +1521,16 @@
   - AGENTS.md
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-25 16:20:00 UTC
+- ajuste solicitado: classes `MontaRequest` do GeraLanding passam a receber apenas um objeto de experimento preenchido e devolver o payload pronto, sem parâmetros soltos.
+- causa-raiz: assinatura com muitos parâmetros (`model`, `prompt`, `systemName`, `systemMessage`, `schema`) aumentava acoplamento e risco de montagem inconsistente entre etapas.
+- correção aplicada:
+  - criação do record `GeraLandingExperimentRequest` para centralizar dados necessários da montagem;
+  - classes `MontaRequest` de `wireframe`, `copy`, `imageplanning`, `presetdesign` e `deliverables` agora recebem somente `GeraLandingExperimentRequest`;
+  - `GeraLandingExecutionService` foi ajustado para construir o objeto de experimento e repassar ao montador da etapa, mantendo o schema resolvido por etapa internamente no fluxo.
+- impacto funcional: mantém o contrato final de request OpenAI, com interface de montagem mais coesa e orientada a objeto de experimento.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md

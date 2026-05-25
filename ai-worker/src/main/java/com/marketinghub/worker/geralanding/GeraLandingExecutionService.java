@@ -127,10 +127,13 @@ public class GeraLandingExecutionService {
 
             String openAiRequestBody = montarRequestPorEtapa(
                     stage,
-                    openAiModel,
-                    prompt,
-                    "gera-landing-pipeline",
-                    "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet.");
+                    new GeraLandingExperimentRequest(
+                            execution.experimentId(),
+                            prompt,
+                            null,
+                            openAiModel,
+                            "gera-landing-pipeline",
+                            "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."));
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
             String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(stage));
@@ -243,17 +246,21 @@ public class GeraLandingExecutionService {
      * Direciona a montagem do request da OpenAI para o montador específico de cada etapa.
      */
     private String montarRequestPorEtapa(GeraLandingStageDefinition stage,
-                                         String model,
-                                         String prompt,
-                                         String systemName,
-                                         String systemMessage) throws JsonProcessingException {
+                                         GeraLandingExperimentRequest experiment) throws JsonProcessingException {
         Map<String, Object> schema = readSchemaByStage(stage);
+        GeraLandingExperimentRequest experimentComSchema = new GeraLandingExperimentRequest(
+                experiment.experimentId(),
+                experiment.prompt(),
+                schema,
+                experiment.model(),
+                experiment.systemName(),
+                experiment.systemMessage());
         return switch (stage) {
-            case WIREFRAME -> wireframeMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
-            case COPY -> copyMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
-            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
-            case DESIGN_PRESET -> presetDesignMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
-            case DELIVERABLES -> deliverablesMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
+            case WIREFRAME -> wireframeMontaRequest.montar(experimentComSchema);
+            case COPY -> copyMontaRequest.montar(experimentComSchema);
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(experimentComSchema);
+            case DESIGN_PRESET -> presetDesignMontaRequest.montar(experimentComSchema);
+            case DELIVERABLES -> deliverablesMontaRequest.montar(experimentComSchema);
         };
     }
 

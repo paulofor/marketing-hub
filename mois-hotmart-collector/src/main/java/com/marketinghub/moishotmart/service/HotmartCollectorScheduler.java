@@ -2,7 +2,6 @@ package com.marketinghub.moishotmart.service;
 
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionResponse;
-import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,21 +30,31 @@ public class HotmartCollectorScheduler {
         this.maxProducts = maxProducts;
     }
 
-    @Scheduled(cron = "${collector.scheduler.cron:0 0 * * * *}")
-    public void collectHourly() {
+    @Scheduled(cron = "0 0 10 * * *")
+    public void collectFirstCycleAtTen() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
-        int currentHour = LocalDateTime.now().getHour();
-        boolean isOddHour = currentHour % 2 != 0;
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
-        HotmartCollectionResponse response = isOddHour
-                ? collectorService.collectFirstCycle(request)
-                : collectorService.collectSecondCycleFromBackend(request);
-        log.info("Hotmart scheduler executado hora={} ciclo={} status={} produtos={} mensagem={}",
-                currentHour,
-                isOddHour ? "CICLO_1_LISTAGEM" : "CICLO_2_DETALHES",
+        HotmartCollectionResponse response = collectorService.collectFirstCycle(request);
+        log.info("Hotmart scheduler executado hora=10 ciclo={} status={} produtos={} mensagem={}",
+                "CICLO_1_LISTAGEM",
+                response.status(),
+                response.products().size(),
+                response.message());
+    }
+
+    @Scheduled(cron = "0 0 17 * * *")
+    public void collectSecondCycleAtSeventeen() {
+        if (!enabled) {
+            log.info("Hotmart scheduler desabilitado por configuração.");
+            return;
+        }
+        HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
+        HotmartCollectionResponse response = collectorService.collectSecondCycleFromBackend(request);
+        log.info("Hotmart scheduler executado hora=17 ciclo={} status={} produtos={} mensagem={}",
+                "CICLO_2_DETALHES",
                 response.status(),
                 response.products().size(),
                 response.message());

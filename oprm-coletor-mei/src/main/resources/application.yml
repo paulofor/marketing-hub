@@ -24,7 +24,7 @@ oprm:
       enabled: ${OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:true}
       cron: ${OPRM_MARKET_IMPORT_SCHEDULE_CRON:0 45 17 * * *}
       timezone: ${OPRM_MARKET_IMPORT_SCHEDULE_TIMEZONE:America/Sao_Paulo}
-      snapshot-date: ${OPRM_MARKET_IMPORT_SNAPSHOT_DATE:2026-05-23}
+      snapshot-date: ${OPRM_MARKET_IMPORT_SNAPSHOT_DATE:2026-05-10}
       source-base-url: ${OPRM_MARKET_IMPORT_SOURCE_BASE_URL:https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos}
 
 logging:

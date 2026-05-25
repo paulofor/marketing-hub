@@ -3,12 +3,11 @@ package com.marketinghub.worker.geralanding.copy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.GeraLandingExperimentRequest;
+import com.marketinghub.worker.geralanding.MontaRequestSupport;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,41 +20,51 @@ public class MontaRequest {
     private static final String DEFAULT_SYSTEM_NAME = "gera-landing-pipeline";
     private static final String DEFAULT_SYSTEM_MESSAGE =
             "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet.";
+    private static final String SCHEMA_RESOURCE_PATH = "prompts/geralanding/landing-page-copy-schema.json";
+    private static final String SCHEMA_NAME = "experiment_pipeline_landing_page_copy";
+    private static final String PROMPT_MARKDOWN_FILE = "landing-page-copy.md";
 
     private final ObjectMapper objectMapper;
-    private final Resource schemaResource;
 
-    public MontaRequest(ObjectMapper objectMapper,
-                        @Value("classpath:prompts/geralanding/landing-page-copy-schema.json") Resource schemaResource) {
+    public MontaRequest(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.schemaResource = schemaResource;
     }
 
-    /** Monta o payload da Responses API para a etapa, resolvendo internamente schema e parâmetros padrão. */
+    /** Monta o payload da Responses API para a etapa, resolvendo internamente schema, markdown e placeholders. */
     public String montar(GeraLandingExperimentRequest experiment) throws JsonProcessingException {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
-        format.put("name", "experiment_pipeline_landing_page_copy");
-        format.put("schema", carregarSchema());
+        format.put("name", SCHEMA_NAME);
+        format.put("schema", MontaRequestSupport.carregarSchema(objectMapper, SCHEMA_RESOURCE_PATH));
         format.put("strict", true);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", experiment.resolveText(null, DEFAULT_MODEL));
         body.put("input", List.of(
                 Map.of("role", "system", "content", "[" + DEFAULT_SYSTEM_NAME + "] " + DEFAULT_SYSTEM_MESSAGE),
-                Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", experiment.prompt())))
+                Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", montarPrompt(experiment))))
         ));
         body.put("text", Map.of("format", format));
         return objectMapper.writeValueAsString(body);
     }
 
-    /** Carrega e converte para mapa o schema JSON da etapa. */
-    private Map<String, Object> carregarSchema() throws JsonProcessingException {
-        try {
-            return objectMapper.readValue(schemaResource.getInputStream(), Map.class);
-        } catch (IOException ex) {
-            throw new JsonProcessingException("Falha ao carregar schema da etapa copy") {
-            };
-        }
+    /** Retorna o nome do arquivo markdown da etapa. */
+    public String nomePromptMarkdown() {
+        return PROMPT_MARKDOWN_FILE;
+    }
+
+    /** Retorna o nome do arquivo schema json da etapa. */
+    public String nomeSchemaJson() {
+        return SCHEMA_RESOURCE_PATH.substring(SCHEMA_RESOURCE_PATH.lastIndexOf('/') + 1);
+    }
+
+    /** Carrega o markdown bruto da etapa usando o arquivo padrão declarado no montador. */
+    public String carregarPromptMarkdownCru() throws IOException {
+        return MontaRequestSupport.carregarPromptMarkdownCru(PROMPT_MARKDOWN_FILE);
+    }
+
+    /** Monta o prompt final da etapa resolvendo placeholders de dados e prompts auxiliares. */
+    public String montarPrompt(GeraLandingExperimentRequest experiment) throws IOException {
+        return MontaRequestSupport.montarPrompt(nomePromptMarkdown().replace(".md", ""), PROMPT_MARKDOWN_FILE, experiment.dados(), objectMapper);
     }
 }

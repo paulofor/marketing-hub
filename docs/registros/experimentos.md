@@ -1640,3 +1640,29 @@
   - atualização de `DesignPresetProvisionalHtmlProcessor.applyTokenizedPresetStyles` para inserir estilos em `<style>` sem `id`;
   - atualização do teste `shouldApplyLegacyTokenizedPresetFormat` para validar ausência do id legado e manter as validações de CSS/classes.
 - impacto funcional: mantém os estilos de wireframe + preset design no HTML final, agora sem atributo `id` na tag `<style>`.
+
+## 2026-05-25 22:55:00 UTC
+- ajuste solicitado: aplicar a regra de estilos canônicos no fluxo real (código), e não apenas no documento.
+- causa-raiz: o worker aceitava wireframe com referências em `estilos[]` que não existiam em `definicoes`, permitindo drift de contrato mesmo com schema sintático válido.
+- correção aplicada:
+  - adição de validação pós-resposta da OpenAI na etapa `landing-page-wireframe` para garantir que cada item de `pagina.corpo.secoes[*].estilos` e `elementosSeccao[*].estilos` exista no conjunto `definicoes.*.(desktop|mobile)[].nome`;
+  - rejeição explícita com caminho literal do campo inválido quando houver estilo inexistente;
+  - inclusão de teste unitário cobrindo falha e callback `receiveFailure` quando o wireframe retorna estilo não definido.
+- impacto funcional: bloqueia na origem a publicação de wireframe com estilos fora das definições canônicas, reduzindo retrabalho nas etapas seguintes.
+
+## 2026-05-25 23:10:00 UTC
+- ajuste solicitado: reforçar a mesma regra também no prompt da etapa wireframe.
+- causa-raiz: somente validar no pós-resposta reduz risco técnico, mas não orienta preventivamente o modelo durante geração.
+- correção aplicada:
+  - atualização de `landing-page-wireframe.md` com regra explícita proibindo nomes em `estilos[]` fora de `definicoes.*.(desktop|mobile)[].nome`;
+  - atualização de teste do `GeraLandingServiceTest` para garantir presença literal da nova instrução no prompt montado.
+- impacto funcional: aumenta aderência já na geração do JSON e reduz incidência de retorno inválido antes da validação de runtime.
+
+## 2026-05-25 23:30:00 UTC
+- ajuste solicitado: aplicar a mesma proteção de estilos canônicos também na etapa `landing-page-design-preset`.
+- causa-raiz: o preset design ainda podia referenciar classes em `pagina.estilos[]` sem correspondência no bloco `definicoes`, gerando deriva de contrato visual.
+- correção aplicada:
+  - validação de runtime no `GeraLandingExecutionService` para `DESIGN_PRESET`, cobrindo `pagina.body.estilos`, `pagina.corpo.estilos`, `secoes[]`, `elementosSeccao[]` e `elementosInternos[]`;
+  - atualização do prompt `landing-page-design-preset.md` com regra explícita de referência exclusiva a `definicoes.*.(desktop|mobile)[].nome`;
+  - novos testes unitários para falha da execução quando houver estilo indefinido no preset e para presença da regra no prompt de design preset.
+- impacto funcional: bloqueia preset inválido antes de persistência e orienta o modelo a produzir saída aderente já na geração.

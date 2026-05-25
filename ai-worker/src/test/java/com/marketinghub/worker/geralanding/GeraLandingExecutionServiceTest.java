@@ -120,4 +120,138 @@ class GeraLandingExecutionServiceTest {
         verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
         verify(backendClient, never()).receiveResult(any(), any(), any(), any());
     }
+
+    @Test
+    void processPendingExecutionsShouldRegisterFailureWhenWireframeUsesUndefinedStyle() throws Exception {
+        GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+        GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
+        GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
+        MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
+        com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
+        com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
+
+        when(openAiClient.isEnabled()).thenReturn(true);
+        when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
+                new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-wireframe")));
+        when(backendClient.loadPromptData(19L)).thenReturn(Map.of());
+        when(wireframeMontaRequest.montarPrompt(any())).thenReturn("prompt-content");
+        when(wireframeMontaRequest.carregarPromptMarkdownCru()).thenReturn("prompt-markdown");
+        when(wireframeMontaRequest.montar(any())).thenReturn("{\"model\":\"gpt-5.2\"}");
+        when(openAiClient.generate(any())).thenReturn(new GeraLandingJobCompletionPayload(
+                """
+                {
+                  "definicoes": {
+                    "estrutura": {"desktop":[{"nome":"wFull","atributoCss":"width","valor":"100%"}],"mobile":[{"nome":"wFull","atributoCss":"width","valor":"100%"}]},
+                    "posicao": {"desktop":[{"nome":"posRelative","atributoCss":"position","valor":"relative"}],"mobile":[{"nome":"posRelative","atributoCss":"position","valor":"relative"}]},
+                    "layout": {"desktop":[{"nome":"displayFlex","atributoCss":"display","valor":"flex"}],"mobile":[{"nome":"displayFlex","atributoCss":"display","valor":"flex"}]},
+                    "mistas": {"desktop":[{"nome":"noneTransform","atributoCss":"transform","valor":"none"}],"mobile":[{"nome":"noneTransform","atributoCss":"transform","valor":"none"}]}
+                  },
+                  "pagina": {
+                    "head":{"texto":""},
+                    "body":{"classes":["bgBody","fontBase","textPrimary","marginReset"]},
+                    "corpo":{
+                      "secoes":[
+                        {"nome":"hero","objetivo":"x","id":"s1","estrutura":["wFull"],"posicao":["posRelative"],"layout":["displayFlex"],"mistas":["noneTransform"],"estilos":["naoExiste"],"oQueQuerProvocarNoUsuario":"x","papelComercial":"x","fasePersuasao":"x","objeçãoQueRemove":"x","prioridadeConversao":1,"acaoEsperada":"x","fonteContexto":["x"],"elementosSeccao":[]},
+                        {"nome":"proof","objetivo":"x","id":"s2","estrutura":["wFull"],"posicao":["posRelative"],"layout":["displayFlex"],"mistas":["noneTransform"],"estilos":["wFull"],"oQueQuerProvocarNoUsuario":"x","papelComercial":"x","fasePersuasao":"x","objeçãoQueRemove":"x","prioridadeConversao":2,"acaoEsperada":"x","fonteContexto":["x"],"elementosSeccao":[]},
+                        {"nome":"faq","objetivo":"x","id":"s3","estrutura":["wFull"],"posicao":["posRelative"],"layout":["displayFlex"],"mistas":["noneTransform"],"estilos":["wFull"],"oQueQuerProvocarNoUsuario":"x","papelComercial":"x","fasePersuasao":"x","objeçãoQueRemove":"x","prioridadeConversao":3,"acaoEsperada":"x","fonteContexto":["x"],"elementosSeccao":[]},
+                        {"nome":"cta","objetivo":"x","id":"s4","estrutura":["wFull"],"posicao":["posRelative"],"layout":["displayFlex"],"mistas":["noneTransform"],"estilos":["wFull"],"oQueQuerProvocarNoUsuario":"x","papelComercial":"x","fasePersuasao":"x","objeçãoQueRemove":"x","prioridadeConversao":4,"acaoEsperada":"x","fonteContexto":["x"],"elementosSeccao":[]}
+                      ]
+                    }
+                  }
+                }
+                """, "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
+
+        GeraLandingExecutionService service =
+                new GeraLandingExecutionService(
+                        backendClient,
+                        geraLandingService,
+                        openAiClient,
+                        objectMapper,
+                        stageSchemaResolver,
+                        wireframeMontaRequest,
+                        copyMontaRequest,
+                        imagePlanningMontaRequest,
+                        presetDesignMontaRequest,
+                        deliverablesMontaRequest,
+                        20,
+                        new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
+                        new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
+                        new ClassPathResource("prompts/geralanding/landing-page-image-planning-schema.json"),
+                        new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json"),
+                        new ClassPathResource("prompts/geralanding/landing-page-deliverables-schema.json"));
+        service.processPendingExecutions();
+
+        verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
+        verify(backendClient, never()).receiveResult(any(), any(), any(), any());
+    }
+
+    @Test
+    void processPendingExecutionsShouldRegisterFailureWhenDesignPresetUsesUndefinedStyle() throws Exception {
+        GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+        GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
+        GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
+        MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
+        com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
+        com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
+
+        when(openAiClient.isEnabled()).thenReturn(true);
+        when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
+                new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-design-preset")));
+        when(backendClient.loadPromptData(19L)).thenReturn(Map.of());
+        when(presetDesignMontaRequest.montarPrompt(any())).thenReturn("prompt-content");
+        when(presetDesignMontaRequest.carregarPromptMarkdownCru()).thenReturn("prompt-markdown");
+        when(presetDesignMontaRequest.montar(any())).thenReturn("{\"model\":\"gpt-5.2\"}");
+        when(openAiClient.generate(any())).thenReturn(new GeraLandingJobCompletionPayload(
+                """
+                {
+                  "definicoes": {
+                    "cores-fundo": {"desktop":[{"nome":"bgBody","atributoCss":"background-color","valor":"#fff"}],"mobile":[]},
+                    "tipografia": {"desktop":[{"nome":"fontBase","atributoCss":"font-family","valor":"Inter"}],"mobile":[]},
+                    "texto": {"desktop":[{"nome":"textPrimary","atributoCss":"color","valor":"#111"}],"mobile":[]},
+                    "bordas": {"desktop":[],"mobile":[]},
+                    "contorno": {"desktop":[],"mobile":[]},
+                    "sombras-transparencia": {"desktop":[],"mobile":[]},
+                    "filtro-efeitos": {"desktop":[],"mobile":[]},
+                    "cursor": {"desktop":[],"mobile":[]},
+                    "listas": {"desktop":[],"mobile":[]},
+                    "imagens": {"desktop":[],"mobile":[]},
+                    "transições": {"desktop":[],"mobile":[]},
+                    "animações": {"desktop":[],"mobile":[]}
+                  },
+                  "pagina": {
+                    "body": {"estilos": ["bgBody", "naoExistePreset"]},
+                    "corpo": {"estilos": ["fontBase"], "secoes": []}
+                  }
+                }
+                """, "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
+
+        GeraLandingExecutionService service = new GeraLandingExecutionService(
+                backendClient, geraLandingService, openAiClient, objectMapper, stageSchemaResolver, wireframeMontaRequest,
+                copyMontaRequest, imagePlanningMontaRequest, presetDesignMontaRequest, deliverablesMontaRequest, 20,
+                new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
+                new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
+                new ClassPathResource("prompts/geralanding/landing-page-image-planning-schema.json"),
+                new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json"),
+                new ClassPathResource("prompts/geralanding/landing-page-deliverables-schema.json"));
+        service.processPendingExecutions();
+
+        verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
+        verify(backendClient, never()).receiveResult(any(), any(), any(), any());
+    }
 }

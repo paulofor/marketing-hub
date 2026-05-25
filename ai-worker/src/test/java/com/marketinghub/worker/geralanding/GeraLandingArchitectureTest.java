@@ -27,4 +27,81 @@ class GeraLandingArchitectureTest {
             .should()
             .notDependOnEachOther()
             .allowEmptyShould(true);
+
+    /** Garante que copy só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_copy_must_only_access_own_or_comum = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.copy..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.copy..", "..geralanding.comum..");
+
+    /** Garante que presetdesign só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_presetdesign_must_only_access_own_or_comum = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.presetdesign..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.presetdesign..", "..geralanding.comum..");
+
+    /** Garante que stage só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_stage_must_only_access_own_or_comum = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.stage..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.stage..", "..geralanding.comum..");
+
+    /** Garante que wireframe só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_wireframe_must_only_access_own_or_comum = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.wireframe..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.wireframe..", "..geralanding.comum..");
+
+    /** Garante que deliverables só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_deliverables_must_only_access_own_or_comum = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.deliverables..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.deliverables..", "..geralanding.comum..");
+
+    /** Garante que imageplanning só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_imageplanning_must_only_access_own_or_comum = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.imageplanning..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.imageplanning..", "..geralanding.comum..");
+
+    /** Garante que geralanding.comum só acesse classes do próprio pacote dentro da aplicação. */
+    @ArchTest
+    static final ArchRule geralanding_comum_must_only_access_its_own_package = noClasses()
+            .that()
+            .resideInAPackage("..geralanding.comum..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..")
+            .andShould()
+            .resideOutsideOfPackages("..geralanding.comum..");
 }

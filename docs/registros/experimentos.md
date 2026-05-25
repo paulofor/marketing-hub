@@ -1561,3 +1561,27 @@
   - `MontaRequestSupport` movido para `com.marketinghub.worker.geralanding.comum`;
   - atualização dos imports nas classes `MontaRequest` das etapas (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
 - impacto funcional: sem alteração de comportamento, apenas organização de pacote para melhor separação de responsabilidades.
+
+## 2026-05-25 20:30:00 UTC
+- ajuste solicitado: criação de regras de arquitetura com ArchUnit para isolamento dos módulos `geralanding.*` no AI Worker.
+- causa-raiz: ausência de validação automatizada explícita para impedir acoplamento entre módulos irmãos e para restringir dependências do pacote `geralanding.comum`.
+- correção aplicada:
+  - inclusão de regras ArchUnit para bloquear dependências cruzadas entre módulos `copy`, `presetdesign`, `stage`, `wireframe`, `deliverables` e `imageplanning`;
+  - inclusão de regra ArchUnit para garantir que `geralanding.comum` não acesse módulos funcionais `geralanding.*`.
+- impacto funcional: reforço de fronteiras arquiteturais do domínio GeraLanding com validação automatizada em testes.
+
+## 2026-05-25 20:50:00 UTC
+- ajuste de refinamento: endurecimento das regras ArchUnit do GeraLanding para restringir dependências também contra outros pacotes da aplicação (`com.marketinghub.worker..`).
+- causa-raiz: versão anterior bloqueava módulos irmãos, mas ainda permitia dependências para outros pacotes da aplicação fora de `geralanding`.
+- correção aplicada:
+  - regras por módulo alteradas para proibir dependências em `com.marketinghub.worker..` fora do próprio pacote e de `geralanding.comum`;
+  - regra de `geralanding.comum` ajustada para permitir apenas dependências no próprio pacote dentro da aplicação.
+- impacto funcional: validação arquitetural agora confirma que `geralanding.*` só acessa próprio pacote/comum e nenhum outro ponto da aplicação.
+
+## 2026-05-25 21:10:00 UTC
+- ajuste solicitado em revisão: ampliar o escopo das restrições ArchUnit de `com.marketinghub.worker..` para `com.marketinghub..`.
+- causa-raiz: regra anterior cobria apenas dependências internas do worker e não todo o namespace da aplicação.
+- correção aplicada:
+  - atualização das regras por módulo para filtrar dependências em `com.marketinghub..`;
+  - manutenção das mesmas exceções permitidas (próprio pacote e `geralanding.comum`).
+- impacto funcional: o isolamento de `geralanding.*` passa a considerar todo o domínio `com.marketinghub`.

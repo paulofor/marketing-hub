@@ -1569,3 +1569,10 @@
   - inclusão de regras ArchUnit para bloquear dependências cruzadas entre módulos `copy`, `presetdesign`, `stage`, `wireframe`, `deliverables` e `imageplanning`;
   - inclusão de regra ArchUnit para garantir que `geralanding.comum` não acesse módulos funcionais `geralanding.*`.
 - impacto funcional: reforço de fronteiras arquiteturais do domínio GeraLanding com validação automatizada em testes.
+
+## 2026-05-25 21:05:00 UTC
+- correção de compilação no `GeraLandingExecutionService` para alinhamento de assinatura com exceções reais dos montadores por etapa.
+- causa-raiz: o método `montarRequestPorEtapa` declarava apenas `JsonProcessingException`, mas os montadores (`montar`) podem propagar `IOException`.
+- correção aplicada:
+  - atualização da assinatura de `montarRequestPorEtapa` para `throws IOException`, eliminando erro de compilação de exceção checada não declarada.
+- impacto funcional: sem mudança de comportamento de negócio; apenas correção de contrato de exceções para compilar com segurança.

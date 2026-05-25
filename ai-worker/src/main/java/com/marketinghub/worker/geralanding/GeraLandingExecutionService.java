@@ -237,7 +237,7 @@ public class GeraLandingExecutionService {
      * Direciona a montagem do request da OpenAI para o montador específico de cada etapa.
      */
     private String montarRequestPorEtapa(GeraLandingStageDefinition stage,
-                                         GeraLandingExperimentRequest experiment) throws JsonProcessingException {
+                                         GeraLandingExperimentRequest experiment) throws IOException {
         return switch (stage) {
             case WIREFRAME -> wireframeMontaRequest.montar(experiment);
             case COPY -> copyMontaRequest.montar(experiment);

@@ -64,6 +64,16 @@
      - jobid mkth
 Criei uma excpetion para esse service
 
+(25-05-2026) 
+#### O que vejo como importante pesquisar em modulos de obtençaõ de dados externos
+- Para cada ciclo:
+* Pacotes ( hierarquia )
+* existe leitura de dados para o acesso ? De onde vem ? ( endpoints e pacotes )
+* urls que são chamadas na fonte de dados
+* dados que são obtidos
+* endpoints do backend que são chamados ( pacotes )
+* dados que são enviados ( onde são persisitidos )
+
 #### Archuint 
 . com.marketinghub.mois.bibliotecapaginavenda.x.vN.web
 . com.marketinghub.mois.bibliotecapaginavenda.x.vN.service

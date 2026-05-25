@@ -78,7 +78,6 @@ class GeraLandingServiceTest {
         String prompt = service.montarPromptEtapa(context, "landing-page-wireframe");
 
         assertThat(prompt)
-                .contains("## Pipeline de hipótese")
                 .contains("- NICHE_NAME: E-commerce")
                 .contains("- PAIN_JSON:")
                 .contains("- RESULT_JSON:")

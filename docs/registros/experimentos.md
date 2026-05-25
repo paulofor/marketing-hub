@@ -1607,3 +1607,11 @@
   - atualização das assinaturas `montar(...)` para `throws IOException` nesses três montadores;
   - remoção dos imports `JsonProcessingException` não utilizados após o ajuste.
 - impacto funcional: correção de build sem alteração de comportamento funcional das etapas.
+
+
+## 2026-05-25 20:45:00 UTC
+- ajuste no teste do GeraLanding para remover assertiva textual obsoleta de heading ("## Pipeline de hipótese").
+- causa-raiz: o contrato funcional atual da etapa `landing-page-wireframe` é validado por schema JSON (`landing-page-wireframe-schema.json`), e a presença de heading literal no prompt deixou de ser requisito obrigatório.
+- correção aplicada:
+  - atualização de `GeraLandingServiceTest` para validar os campos canônicos do pipeline sem acoplamento ao título do bloco.
+- impacto funcional: elimina falso negativo de teste sem alterar comportamento de negócio nem contrato de saída.

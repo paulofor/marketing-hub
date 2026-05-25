@@ -154,7 +154,7 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
           <PageTitle icon={experimentIcon}>
             Detalhe da execução Gera Landing
             {detailQuery.data?.stageCode ? (
-              <span className="badge bg-primary text-white ms-3 align-middle fw-semibold">
+              <span className="badge text-bg-light border border-secondary-subtle text-dark ms-3 align-middle fw-semibold">
                 {detailQuery.data.stageCode}
               </span>
             ) : null}

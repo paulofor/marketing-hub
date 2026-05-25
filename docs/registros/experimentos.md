@@ -1501,3 +1501,11 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlPayloadResolver.java
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/CopyProvisionalHtmlProcessor.java
   - docs/registros/experimentos.md
+
+## 2026-05-25 14:55:00 UTC
+- ajuste visual na tela de detalhe da execução Gera Landing para corrigir legibilidade do nome da etapa (`stageCode`) no cabeçalho.
+- causa-raiz identificada: badge da etapa estava com esquema `bg-primary`, gerando contraste inadequado (texto azul sobre fundo azul) no contexto atual da UI.
+- correção aplicada: troca para badge neutra (`text-bg-light` + `text-dark` + borda suave), mantendo destaque sem comprometer leitura.
+- arquivos alterados:
+  - `frontend/src/pages/experiment/ExperimentGeraLandingExecutionDetailPage.tsx`
+  - `docs/registros/experimentos.md`

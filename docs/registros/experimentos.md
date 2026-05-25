@@ -1542,3 +1542,22 @@
   - simplificação de `GeraLandingExperimentRequest` para conter apenas dados do experimento (`experimentId`, `prompt`);
   - cada `MontaRequest` passou a carregar o schema da própria etapa via resource classpath e montar o payload completo internamente;
   - `GeraLandingExecutionService` agora apenas repassa o objeto de experimento para o montador da etapa.
+
+## 2026-05-25 20:05:00 UTC
+- ajuste solicitado nos `MontaRequest` do GeraLanding para centralizar definição de nomes de schema/prompt e a montagem completa do prompt por etapa.
+- causa-raiz: parte da montagem do prompt (carregamento de markdown + ingestão de placeholders `dados-*` e `prompt-*`) permanecia fora dos montadores, no `GeraLandingService`/`GeraLandingExecutionService`.
+- correção aplicada:
+  - criação de `MontaRequestSupport` com utilitários de resolução de placeholders de prompt (`{prompt-*}`, `{dados-*}` e `{{mustache}}`) e carregamento de schema;
+  - `MontaRequest` de `wireframe`, `copy`, `imageplanning`, `presetdesign` e `deliverables` passaram a declarar internamente:
+    - nome do schema JSON da etapa;
+    - nome do markdown de prompt da etapa;
+    - montagem do prompt final e payload OpenAI;
+  - `GeraLandingExecutionService` foi ajustado para delegar a montagem do prompt e do markdown bruto diretamente aos `MontaRequest` por etapa.
+- impacto funcional: mantém o contrato final de request OpenAI, reduz acoplamento e centraliza a lógica de montagem por etapa.
+
+## 2026-05-25 20:20:00 UTC
+- ajuste solicitado em revisão: criação do pacote `geralanding.comum` e realocação do utilitário compartilhado de montagem.
+- correção aplicada:
+  - `MontaRequestSupport` movido para `com.marketinghub.worker.geralanding.comum`;
+  - atualização dos imports nas classes `MontaRequest` das etapas (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
+- impacto funcional: sem alteração de comportamento, apenas organização de pacote para melhor separação de responsabilidades.

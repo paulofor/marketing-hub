@@ -119,17 +119,17 @@ public class GeraLandingExecutionService {
                     execution.experimentId(),
                     execution.idJob(),
                     execution.stageCode(),
-                    backendClient.loadPromptData(execution.experimentId()));
-            String prompt = geraLandingService.montarERegistrarPromptEtapa(context, normalizedStage);
-            String promptMarkdownContent = geraLandingService.carregarPromptMarkdownCru(normalizedStage);
+                    dadosPrompt);
+            Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());
+            GeraLandingExperimentRequest requestData = new GeraLandingExperimentRequest(execution.experimentId(), dadosPrompt);
+            String prompt = montarPromptPorEtapa(stage, requestData);
+            String promptMarkdownContent = carregarPromptMarkdownPorEtapa(stage);
             log.info("Prompt de gera-landing da etapa {} montado para executionId={} (experimentId={})",
                     execution.stageCode(), execution.idJob(), execution.experimentId());
 
             String openAiRequestBody = montarRequestPorEtapa(
                     stage,
-                    new GeraLandingExperimentRequest(
-                            execution.experimentId(),
-                            prompt));
+                    requestData);
             log.info("OpenAI payload built for gera-landing executionId={} (length={})", execution.idJob(), openAiRequestBody.length());
             log.info("Payload OpenAI do gera-landing executionId={}: {}", execution.idJob(), openAiRequestBody);
             String schemaJson = objectMapper.writeValueAsString(readSchemaByStage(stage));
@@ -252,6 +252,29 @@ public class GeraLandingExecutionService {
         };
     }
 
+
+    /** Direciona a montagem do prompt para o montador específico de cada etapa. */
+    private String montarPromptPorEtapa(GeraLandingStageDefinition stage,
+                                        GeraLandingExperimentRequest experiment) throws IOException {
+        return switch (stage) {
+            case WIREFRAME -> wireframeMontaRequest.montarPrompt(experiment);
+            case COPY -> copyMontaRequest.montarPrompt(experiment);
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.montarPrompt(experiment);
+            case DESIGN_PRESET -> presetDesignMontaRequest.montarPrompt(experiment);
+            case DELIVERABLES -> deliverablesMontaRequest.montarPrompt(experiment);
+        };
+    }
+
+    /** Direciona o carregamento do markdown bruto para o montador específico de cada etapa. */
+    private String carregarPromptMarkdownPorEtapa(GeraLandingStageDefinition stage) throws IOException {
+        return switch (stage) {
+            case WIREFRAME -> wireframeMontaRequest.carregarPromptMarkdownCru();
+            case COPY -> copyMontaRequest.carregarPromptMarkdownCru();
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.carregarPromptMarkdownCru();
+            case DESIGN_PRESET -> presetDesignMontaRequest.carregarPromptMarkdownCru();
+            case DELIVERABLES -> deliverablesMontaRequest.carregarPromptMarkdownCru();
+        };
+    }
     private Map<String, Object> readSchemaByStage(GeraLandingStageDefinition stage) throws JsonProcessingException {
         return stageSchemaResolver.resolveSchema(
                 stage,

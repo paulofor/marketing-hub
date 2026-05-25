@@ -115,11 +115,6 @@ public class GeraLandingExecutionService {
         }
         try {
             final String openAiModel = "gpt-5.2";
-            GeraLandingPromptContext context = new GeraLandingPromptContext(
-                    execution.experimentId(),
-                    execution.idJob(),
-                    execution.stageCode(),
-                    dadosPrompt);
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());
             GeraLandingExperimentRequest requestData = new GeraLandingExperimentRequest(execution.experimentId(), dadosPrompt);
             String prompt = montarPromptPorEtapa(stage, requestData);
@@ -242,7 +237,7 @@ public class GeraLandingExecutionService {
      * Direciona a montagem do request da OpenAI para o montador específico de cada etapa.
      */
     private String montarRequestPorEtapa(GeraLandingStageDefinition stage,
-                                         GeraLandingExperimentRequest experiment) throws JsonProcessingException {
+                                         GeraLandingExperimentRequest experiment) throws IOException {
         return switch (stage) {
             case WIREFRAME -> wireframeMontaRequest.montar(experiment);
             case COPY -> copyMontaRequest.montar(experiment);

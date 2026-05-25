@@ -1615,3 +1615,12 @@
 - correção aplicada:
   - atualização de `GeraLandingServiceTest` para validar os campos canônicos do pipeline sem acoplamento ao título do bloco.
 - impacto funcional: elimina falso negativo de teste sem alterar comportamento de negócio nem contrato de saída.
+
+
+## 2026-05-25 21:05:00 UTC
+- ajuste solicitado: desligamento do teste textual amplo do pipeline no `GeraLandingServiceTest`.
+- causa-raiz: a validação linha a linha do bloco canônico no prompt ficou desnecessária para o fluxo atual e gerava manutenção sem ganho de contrato funcional.
+- correção aplicada:
+  - anotação `@Disabled` no teste `deveDisponibilizarTodosOsItensCanonicosDosPipelinesNoPromptFinal`;
+  - inclusão de justificativa explícita no próprio teste.
+- impacto funcional: nenhum impacto em runtime; apenas redução de ruído em suíte de testes.

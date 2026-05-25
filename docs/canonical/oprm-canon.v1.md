@@ -47,6 +47,17 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - As diretrizes gerais do sistema permanecem em `docs/canonical/system-governance-canon.v2.md`.
 
 
+
+## Regra obrigatória — snapshot canônico fixo para operação
+- Para operação atual da ingestão OPRM CNPJ/CNAE, o `snapshotDate` canônico deve permanecer **fixo em `2026-05-10`**.
+- É proibido alterar automaticamente a data do snapshot para diretórios mais novos durante execução agendada ou manual sem decisão explícita do usuário.
+- Qualquer tentativa de execução com `snapshotDate` diferente de `2026-05-10` deve ser tratada como não conformidade operacional e registrada em log com causa-raiz.
+
+## Critério de efetividade — snapshot fixo
+- Logs de criação de run devem mostrar explicitamente `snapshotDate=2026-05-10`.
+- A base de download deve ser explicitamente `https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-05-10/` enquanto essa regra estiver vigente.
+- Antes de iniciar a execução agendada/manual, deve haver validação de acesso HTTP (ex.: `HEAD`) para os arquivos de referência do snapshot (mínimo: `Cnaes.zip`, `Empresas1.zip`, `Estabelecimentos1.zip`) com retorno `200`.
+
 ## Regra obrigatória — ranking de CNAEs por quantidade com paginação
 - A listagem de ranking de CNAEs por volume (`/oprm/cnaes-volume`) deve ser sempre ordenada por **Quantidade** em ordem decrescente (maior para menor).
 - O endpoint de leitura do ranking deve suportar paginação explícita (parâmetros de página e tamanho), evitando retorno massivo em uma única resposta.

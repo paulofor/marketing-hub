@@ -1509,3 +1509,15 @@
 - arquivos alterados:
   - `frontend/src/pages/experiment/ExperimentGeraLandingExecutionDetailPage.tsx`
   - `docs/registros/experimentos.md`
+
+## 2026-05-25 15:30:00 UTC
+- refatoração de arquitetura no AI Worker para separar os montadores de request por etapa do GeraLanding em classes `MontaRequest` por domínio (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
+- causa-raiz: responsabilidade de montagem de payload OpenAI concentrada em `GeraLandingExecutionService`, dificultando evolução por etapa.
+- correção aplicada:
+  - criação de classes dedicadas `MontaRequest` em cada pacote de etapa;
+  - `GeraLandingExecutionService` passou a apenas rotear por etapa com `montarRequestPorEtapa(...)`.
+- impacto funcional: sem mudança de contrato; apenas reorganização de responsabilidades mantendo o formato de request por etapa.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md

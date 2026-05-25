@@ -129,7 +129,9 @@ function resolveJobNumberFromStageContent(content: string) {
     }
 
     const valueAsString = String(jobValue).trim();
-    return valueAsString.length > 0 ? sanitizeFilenamePart(valueAsString) : "sem-job";
+    return valueAsString.length > 0
+      ? sanitizeFilenamePart(valueAsString)
+      : "sem-job";
   } catch {
     return "sem-job";
   }
@@ -169,6 +171,8 @@ export default function ExperimentDetailPage() {
   const [isStartingImagePrompts, setIsStartingImagePrompts] = useState(false);
   const [isStartingDeliverables, setIsStartingDeliverables] = useState(false);
   const [isStartingImageGeneration, setIsStartingImageGeneration] =
+    useState(false);
+  const [resetFrameworkImageCounters, setResetFrameworkImageCounters] =
     useState(false);
   const [isGeneratingLandingHtml, setIsGeneratingLandingHtml] = useState(false);
   const [optimisticWireframeExecution, setOptimisticWireframeExecution] =
@@ -508,6 +512,7 @@ export default function ExperimentDetailPage() {
       toast.success(
         `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
       );
+      setResetFrameworkImageCounters(true);
       await Promise.all([
         refetchPendingGeraLandingImagePromptsExecutions(),
         refetchCompletedGeraLandingImagePromptsExecutions(),
@@ -560,6 +565,7 @@ export default function ExperimentDetailPage() {
     setIsStartingImageGeneration(true);
     try {
       await generateFrameworkImages.mutateAsync();
+      setResetFrameworkImageCounters(false);
       toast.success("Gera Imagem iniciado com sucesso.");
     } catch (error) {
       const message = axios.isAxiosError(error)
@@ -2339,8 +2345,11 @@ export default function ExperimentDetailPage() {
                       )}
                     </button>
                     {isLoadingPendingGeraLandingImagePromptsExecutions ? (
-                      <p className="text-muted mb-0">Carregando jobs da etapa...</p>
-                    ) : runningGeraLandingImagePromptsExecutions.length === 0 ? (
+                      <p className="text-muted mb-0">
+                        Carregando jobs da etapa...
+                      </p>
+                    ) : runningGeraLandingImagePromptsExecutions.length ===
+                      0 ? (
                       <p className="text-muted mb-0">
                         Nenhum job pendente ou em execução.
                       </p>
@@ -2500,13 +2509,15 @@ export default function ExperimentDetailPage() {
                       </span>
                     </div>
                   </div>
-                  {frameworkImageSummary ? (
+                  {frameworkImageSummary || resetFrameworkImageCounters ? (
                     <div className="row g-2">
                       <div className="col-6 col-md-4">
                         <div className="small border rounded p-2 bg-light">
                           Em processamento:{" "}
                           <strong>
-                            {frameworkImageSummary.processingCount}
+                            {resetFrameworkImageCounters
+                              ? 0
+                              : (frameworkImageSummary?.processingCount ?? 0)}
                           </strong>
                         </div>
                       </div>
@@ -2514,7 +2525,10 @@ export default function ExperimentDetailPage() {
                         <div className="small border rounded p-2 bg-light">
                           Aguardando OpenAI batch:{" "}
                           <strong>
-                            {frameworkImageSummary.waitingOpenAiBatchCount}
+                            {resetFrameworkImageCounters
+                              ? 0
+                              : (frameworkImageSummary?.waitingOpenAiBatchCount ??
+                                0)}
                           </strong>
                         </div>
                       </div>
@@ -2522,20 +2536,30 @@ export default function ExperimentDetailPage() {
                         <div className="small border rounded p-2 bg-light">
                           Concluídas:{" "}
                           <strong>
-                            {frameworkImageSummary.completedCount}
+                            {resetFrameworkImageCounters
+                              ? 0
+                              : (frameworkImageSummary?.completedCount ?? 0)}
                           </strong>
                         </div>
                       </div>
                       <div className="col-6 col-md-4">
                         <div className="small border rounded p-2 bg-light">
                           Falhas:{" "}
-                          <strong>{frameworkImageSummary.failedCount}</strong>
+                          <strong>
+                            {resetFrameworkImageCounters
+                              ? 0
+                              : (frameworkImageSummary?.failedCount ?? 0)}
+                          </strong>
                         </div>
                       </div>
                       <div className="col-6 col-md-4">
                         <div className="small border rounded p-2 bg-light">
                           Total de itens:{" "}
-                          <strong>{frameworkImageSummary.totalItems}</strong>
+                          <strong>
+                            {resetFrameworkImageCounters
+                              ? 0
+                              : (frameworkImageSummary?.totalItems ?? 0)}
+                          </strong>
                         </div>
                       </div>
                     </div>

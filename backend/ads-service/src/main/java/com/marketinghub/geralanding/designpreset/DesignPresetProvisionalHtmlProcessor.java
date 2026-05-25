@@ -813,14 +813,8 @@ public class DesignPresetProvisionalHtmlProcessor {
         Map<String, Object> definitions = asMap(root.get("definicoes"));
         String css = buildTokenizedCss(definitions);
         if (StringUtils.hasText(css) && document.head() != null) {
-            Element existing = document.getElementById("lhm-legacy-design-preset-css");
-            if (existing != null) {
-                existing.remove();
-            }
-
-            document.head().appendElement("style")
-                    .attr("id", "lhm-legacy-design-preset-css")
-                    .text(css);
+            Element style = document.head().appendElement("style");
+            style.appendText(css);
         }
 
         Map<String, Object> page = asMap(root.get("pagina"));

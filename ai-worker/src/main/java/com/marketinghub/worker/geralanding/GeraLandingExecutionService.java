@@ -8,9 +8,11 @@ import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -148,6 +150,8 @@ public class GeraLandingExecutionService {
                     null);
             log.info("Enviando gera-landing executionId={} para OpenAI em modo flex", execution.idJob());
             GeraLandingJobCompletionPayload payload = openAiClient.generate(openAiJob);
+            validateWireframeStyleReferences(stage, payload);
+            validateDesignPresetStyleReferences(stage, payload);
             validateCopyPayloadText(stage, payload);
             log.info(
                     "Resposta OpenAI recebida para gera-landing executionId={} (experimentId={}, openAiJobId={}, inputTokens={}, outputTokens={}, costUsd={}, responseContentLength={}, rawResponseLength={})",
@@ -201,6 +205,166 @@ public class GeraLandingExecutionService {
             }
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Copy inválida: resposta não é JSON parseável para validação textual", ex);
+        }
+    }
+
+    /**
+     * Valida se o preset design referencia em pagina.estilos somente classes definidas em definicoes.
+     */
+    private void validateDesignPresetStyleReferences(GeraLandingStageDefinition stage, GeraLandingJobCompletionPayload payload) {
+        if (stage != GeraLandingStageDefinition.DESIGN_PRESET || payload == null || !StringUtils.hasText(payload.responseContent())) {
+            return;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(payload.responseContent());
+            Set<String> allowedStyleNames = collectAllowedStyleNamesFromDesignPreset(root.path("definicoes"));
+            if (allowedStyleNames.isEmpty()) {
+                throw new IllegalStateException("Preset design inválido: bloco 'definicoes' sem estilos válidos para referência.");
+            }
+            List<String> violations = new ArrayList<>();
+            collectInvalidStyleReferenceList(root.path("pagina").path("body").path("estilos"), "pagina.body.estilos", allowedStyleNames, violations);
+            collectInvalidStyleReferenceList(root.path("pagina").path("corpo").path("estilos"), "pagina.corpo.estilos", allowedStyleNames, violations);
+            collectInvalidDesignPresetNodeStyles(root.path("pagina").path("corpo").path("secoes"), "pagina.corpo.secoes", allowedStyleNames, violations);
+            if (!violations.isEmpty()) {
+                throw new IllegalStateException("Preset design inválido: estilos inexistentes nas definições canônicas. " + String.join("; ", violations));
+            }
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Preset design inválido: resposta não é JSON parseável para validação de estilos", ex);
+        }
+    }
+
+    /**
+     * Coleta nomes de estilos permitidos de todos os grupos de definicoes da etapa preset design.
+     */
+    private Set<String> collectAllowedStyleNamesFromDesignPreset(JsonNode definicoesNode) {
+        Set<String> names = new HashSet<>();
+        if (!definicoesNode.isObject()) {
+            return names;
+        }
+        definicoesNode.fieldNames().forEachRemaining(groupName ->
+                collectStyleNamesFromDeviceBucket(definicoesNode.path(groupName), names));
+        return names;
+    }
+
+    /**
+     * Valida estilos em secoes e elementos do preset design recursivamente.
+     */
+    private void collectInvalidDesignPresetNodeStyles(JsonNode nodes, String path, Set<String> allowedStyleNames, List<String> violations) {
+        if (!nodes.isArray()) {
+            return;
+        }
+        for (int i = 0; i < nodes.size(); i++) {
+            JsonNode node = nodes.get(i);
+            String nodePath = path + "[" + i + "]";
+            collectInvalidStyleReferenceList(node.path("estilos"), nodePath + ".estilos", allowedStyleNames, violations);
+            collectInvalidDesignPresetNodeStyles(node.path("elementosSeccao"), nodePath + ".elementosSeccao", allowedStyleNames, violations);
+            collectInvalidDesignPresetNodeStyles(node.path("elementosInternos"), nodePath + ".elementosInternos", allowedStyleNames, violations);
+        }
+    }
+
+    /**
+     * Valida se os estilos referenciados no wireframe existem no bloco de definições do próprio artefato.
+     */
+    private void validateWireframeStyleReferences(GeraLandingStageDefinition stage, GeraLandingJobCompletionPayload payload) {
+        if (stage != GeraLandingStageDefinition.WIREFRAME || payload == null || !StringUtils.hasText(payload.responseContent())) {
+            return;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(payload.responseContent());
+            Set<String> allowedStyleNames = collectAllowedStyleNames(root.path("definicoes"));
+            if (allowedStyleNames.isEmpty()) {
+                throw new IllegalStateException("Wireframe inválido: bloco 'definicoes' sem estilos válidos para referência.");
+            }
+            List<String> violations = new ArrayList<>();
+            collectInvalidStyleReferences(root.path("pagina").path("corpo").path("secoes"), allowedStyleNames, violations);
+            if (!violations.isEmpty()) {
+                throw new IllegalStateException("Wireframe inválido: estilos inexistentes nas definições canônicas. " + String.join("; ", violations));
+            }
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Wireframe inválido: resposta não é JSON parseável para validação de estilos", ex);
+        }
+    }
+
+    /**
+     * Coleta todos os nomes de estilos permitidos por categoria e dispositivo.
+     */
+    private Set<String> collectAllowedStyleNames(JsonNode definicoesNode) {
+        Set<String> names = new HashSet<>();
+        collectStyleNamesFromDeviceBucket(definicoesNode.path("estrutura"), names);
+        collectStyleNamesFromDeviceBucket(definicoesNode.path("posicao"), names);
+        collectStyleNamesFromDeviceBucket(definicoesNode.path("layout"), names);
+        collectStyleNamesFromDeviceBucket(definicoesNode.path("mistas"), names);
+        return names;
+    }
+
+    /**
+     * Extrai nomes de estilos para desktop e mobile de uma categoria de definições.
+     */
+    private void collectStyleNamesFromDeviceBucket(JsonNode categoryNode, Set<String> collector) {
+        collectStyleNames(categoryNode.path("desktop"), collector);
+        collectStyleNames(categoryNode.path("mobile"), collector);
+    }
+
+    /**
+     * Adiciona ao coletor os nomes válidos encontrados na lista de definições.
+     */
+    private void collectStyleNames(JsonNode definitionsNode, Set<String> collector) {
+        if (!definitionsNode.isArray()) {
+            return;
+        }
+        for (JsonNode definition : definitionsNode) {
+            JsonNode nameNode = definition.path("nome");
+            if (nameNode.isTextual() && StringUtils.hasText(nameNode.asText())) {
+                collector.add(nameNode.asText());
+            }
+        }
+    }
+
+    /**
+     * Verifica estilos inválidos no nível das seções e delega a validação recursiva dos elementos.
+     */
+    private void collectInvalidStyleReferences(JsonNode secoesNode, Set<String> allowedStyleNames, List<String> violations) {
+        if (!secoesNode.isArray()) {
+            return;
+        }
+        for (int i = 0; i < secoesNode.size(); i++) {
+            JsonNode secaoNode = secoesNode.get(i);
+            collectInvalidStyleReferenceList(secaoNode.path("estilos"), "pagina.corpo.secoes[" + i + "].estilos", allowedStyleNames, violations);
+            collectInvalidElementStyles(secaoNode.path("elementosSeccao"), "pagina.corpo.secoes[" + i + "].elementosSeccao", allowedStyleNames, violations);
+        }
+    }
+
+    /**
+     * Valida de forma recursiva estilos inválidos em elementos e elementos internos.
+     */
+    private void collectInvalidElementStyles(JsonNode elementsNode, String path, Set<String> allowedStyleNames, List<String> violations) {
+        if (!elementsNode.isArray()) {
+            return;
+        }
+        for (int i = 0; i < elementsNode.size(); i++) {
+            JsonNode elementNode = elementsNode.get(i);
+            String elementPath = path + "[" + i + "]";
+            collectInvalidStyleReferenceList(elementNode.path("estilos"), elementPath + ".estilos", allowedStyleNames, violations);
+            collectInvalidElementStyles(elementNode.path("elementosInternos"), elementPath + ".elementosInternos", allowedStyleNames, violations);
+        }
+    }
+
+    /**
+     * Registra violações para cada referência de estilo ausente no conjunto permitido.
+     */
+    private void collectInvalidStyleReferenceList(JsonNode styleRefsNode, String path, Set<String> allowedStyleNames, List<String> violations) {
+        if (!styleRefsNode.isArray()) {
+            return;
+        }
+        for (int i = 0; i < styleRefsNode.size(); i++) {
+            JsonNode refNode = styleRefsNode.get(i);
+            if (!refNode.isTextual()) {
+                continue;
+            }
+            String styleRef = refNode.asText();
+            if (!allowedStyleNames.contains(styleRef)) {
+                violations.add(path + "[" + i + "]='" + styleRef + "'");
+            }
         }
     }
 

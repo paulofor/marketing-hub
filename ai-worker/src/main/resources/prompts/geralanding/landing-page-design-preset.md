@@ -63,6 +63,7 @@ Regras obrigatórias:
 3. Aplique variação `desktop/mobile` somente em `definicoes`; em `pagina` use classes diretas sem separar por device.
 4. Em `pagina.body`, incluir obrigatoriamente a lista `estilos` com classes globais do body.
 5. Em cada elemento de `pagina` (`secoes`, `elementosSeccao`, `elementosInternos`), usar `estilos` como lista simples de classes (array de string), sem objetos `desktop/mobile`.
+5.1. Em qualquer `estilos[]` de `pagina` (`body`, `corpo`, `secoes`, `elementosSeccao`, `elementosInternos`), usar exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`.
 6. Cada item de `definicoes.desktop/mobile` deve seguir exatamente:
    - `nome`: nome da classe utilitária
    - `atributoCss`: propriedade CSS

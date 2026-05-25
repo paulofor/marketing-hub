@@ -53,6 +53,7 @@ Regras fixas da etapa (Gera Landing, contrato v3):
 - Cada item de definição deve conter somente: `nome`, `atributoCss`, `valor`.
 - Em `pagina`/`secoes`, usar somente referências por `nome` já definido em `definicoes`.
 - Em `pagina`/`secoes`, usar referências simples por nome de classe (sem separar por `desktop` e `mobile`).
+- Em `estilos[]` (seção e elementos internos), use exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`; qualquer nome fora disso viola contrato.
 - É proibido repetir `atributoCss`/`valor` fora de `definicoes`.
 - Não invente campos fora do schema.
 - Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.

@@ -45,9 +45,26 @@ class GeraLandingServiceTest {
         assertThat(prompt).contains("Nicho: E-commerce");
         assertThat(prompt).contains("Baixa conversão");
         assertThat(prompt).contains("Mais vendas");
+        assertThat(prompt).contains("Em `estilos[]` (seção e elementos internos), use exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`");
         assertThat(prompt).doesNotContain("{{NICHE_NAME}}");
         assertThat(prompt).doesNotContain("{{PAIN_JSON}}");
         assertThat(prompt).doesNotContain("{{RESULT_JSON}}");
+    }
+
+    @Test
+    void deveConterRegraDeEstilosCanonicosNoPromptDeDesignPreset() throws Exception {
+        GeraLandingPromptContext context = new GeraLandingPromptContext(
+                10L,
+                "id-job-original",
+                "landing-page-design-preset",
+                Map.of(
+                        "NICHE_NAME", "E-commerce",
+                        "PAIN_JSON", Map.of("title", "Baixa conversão"),
+                        "RESULT_JSON", Map.of("title", "Mais vendas")));
+
+        String prompt = service.montarPromptEtapa(context, "landing-page-design-preset");
+
+        assertThat(prompt).contains("Em qualquer `estilos[]` de `pagina` (`body`, `corpo`, `secoes`, `elementosSeccao`, `elementosInternos`), usar exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`");
     }
 
     @Disabled("Teste desligado: validação textual extensa de pipeline não é mais necessária para o fluxo atual")

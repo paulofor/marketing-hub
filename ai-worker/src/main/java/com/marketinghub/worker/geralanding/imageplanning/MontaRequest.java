@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * Responsabilidade: montar o request da OpenAI para a etapa de imageplanning do GeraLanding.
  */
-@Component
+@Component("geraLandingImageplanningMontaRequest")
 public class MontaRequest {
 
     private static final String DEFAULT_MODEL = "gpt-5.2";

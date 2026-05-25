@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
+import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +35,11 @@ public class GeraLandingExecutionService {
     private final GeraLandingOpenAiFlexClient openAiClient;
     private final ObjectMapper objectMapper;
     private final GeraLandingStageSchemaResolver stageSchemaResolver;
+    private final MontaRequest wireframeMontaRequest;
+    private final com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest;
+    private final com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest;
+    private final com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest;
+    private final com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest;
     private final int pendingLimit;
     private final Resource wireframeSchemaResource;
     private final Resource copySchemaResource;
@@ -47,6 +52,11 @@ public class GeraLandingExecutionService {
                                        GeraLandingOpenAiFlexClient openAiClient,
                                        ObjectMapper objectMapper,
                                        GeraLandingStageSchemaResolver stageSchemaResolver,
+                                       MontaRequest wireframeMontaRequest,
+                                       com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest,
+                                       com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest,
+                                       com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest,
+                                       com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,
                                        @Value("classpath:prompts/geralanding/landing-page-wireframe-schema.json")
                                        Resource wireframeSchemaResource,
@@ -63,6 +73,11 @@ public class GeraLandingExecutionService {
         this.openAiClient = openAiClient;
         this.objectMapper = objectMapper;
         this.stageSchemaResolver = stageSchemaResolver;
+        this.wireframeMontaRequest = wireframeMontaRequest;
+        this.copyMontaRequest = copyMontaRequest;
+        this.imagePlanningMontaRequest = imagePlanningMontaRequest;
+        this.presetDesignMontaRequest = presetDesignMontaRequest;
+        this.deliverablesMontaRequest = deliverablesMontaRequest;
         this.pendingLimit = Math.max(1, pendingLimit);
         this.wireframeSchemaResource = wireframeSchemaResource;
         this.copySchemaResource = copySchemaResource;
@@ -110,7 +125,7 @@ public class GeraLandingExecutionService {
             log.info("Prompt de gera-landing da etapa {} montado para executionId={} (experimentId={})",
                     execution.stageCode(), execution.idJob(), execution.experimentId());
 
-            String openAiRequestBody = buildOpenAiRequestBody(
+            String openAiRequestBody = montarRequestPorEtapa(
                     stage,
                     openAiModel,
                     prompt,
@@ -225,49 +240,21 @@ public class GeraLandingExecutionService {
     }
 
     /**
-     * Monta o corpo da requisição da OpenAI Responses API para uma etapa do GeraLanding.
+     * Direciona a montagem do request da OpenAI para o montador específico de cada etapa.
      */
-    private String buildOpenAiRequestBody(GeraLandingStageDefinition stage,
-                                          String model,
-                                          String prompt,
-                                          String systemName,
-                                          String systemMessage) throws JsonProcessingException {
-        // Exemplo oficial (OpenAI Responses API) para referência do formato esperado:
-        // {
-        //   "model": "gpt-5.2",
-        //   "input": [
-        //     {"role": "system", "content": "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."},
-        //     {"role": "user", "content": [{"type": "input_text", "text": "SEU PROMPT AQUI"}]}
-        //   ],
-        //   "text": {
-        //     "format": {
-        //       "type": "json_schema",
-        //       "name": "experiment_pipeline_landing_page_copy",
-        //       "schema": {"type": "object", "additionalProperties": true},
-        //       "strict": true
-        //     }
-        //   }
-        // }
-        Map<String, Object> format = new LinkedHashMap<>();
-        format.put("type", "json_schema");
-        format.put("name", "experiment_pipeline_landing_page_copy");
-        format.put("schema", readSchemaByStage(stage));
-        format.put("strict", true);
-
-        String resolvedModel = StringUtils.hasText(model) ? model.trim() : "gpt-5.2";
-        String resolvedSystemName = StringUtils.hasText(systemName) ? systemName.trim() : "system";
-        String resolvedSystemMessage = StringUtils.hasText(systemMessage)
-                ? systemMessage.trim()
-                : "Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet.";
-
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", resolvedModel);
-        body.put("input", List.of(
-                Map.of("role", "system", "content", "[" + resolvedSystemName + "] " + resolvedSystemMessage),
-                Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", prompt)))
-        ));
-        body.put("text", Map.of("format", format));
-        return objectMapper.writeValueAsString(body);
+    private String montarRequestPorEtapa(GeraLandingStageDefinition stage,
+                                         String model,
+                                         String prompt,
+                                         String systemName,
+                                         String systemMessage) throws JsonProcessingException {
+        Map<String, Object> schema = readSchemaByStage(stage);
+        return switch (stage) {
+            case WIREFRAME -> wireframeMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
+            case COPY -> copyMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
+            case DESIGN_PRESET -> presetDesignMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
+            case DELIVERABLES -> deliverablesMontaRequest.montar(model, prompt, systemName, systemMessage, schema);
+        };
     }
 
     private Map<String, Object> readSchemaByStage(GeraLandingStageDefinition stage) throws JsonProcessingException {

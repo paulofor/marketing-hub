@@ -65,6 +65,6 @@ public class MontaRequest {
 
     /** Monta o prompt final da etapa resolvendo placeholders de dados e prompts auxiliares. */
     public String montarPrompt(GeraLandingExperimentRequest experiment) throws IOException {
-        return MontaRequestSupport.montarPrompt(nomePromptMarkdown().replace(".md", ""), PROMPT_MARKDOWN_FILE, experiment.dados(), objectMapper);
+        return MontaRequestSupport.montarPrompt("prompts/geralanding/" + PROMPT_MARKDOWN_FILE, PROMPT_MARKDOWN_FILE, experiment.dados(), objectMapper);
     }
 }

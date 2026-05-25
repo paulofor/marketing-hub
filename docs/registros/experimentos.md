@@ -1591,3 +1591,19 @@
 - correção aplicada:
   - atualização da assinatura de `montarRequestPorEtapa` para `throws IOException`, eliminando erro de compilação de exceção checada não declarada.
 - impacto funcional: sem mudança de comportamento de negócio; apenas correção de contrato de exceções para compilar com segurança.
+
+## 2026-05-25 21:20:00 UTC
+- correção de compilação na etapa de copy do GeraLanding.
+- causa-raiz: a classe `copy/MontaRequest` chamava `montarPrompt(...)` (que lança `IOException`) dentro de `montar(...)`, mas a assinatura de `montar` declarava apenas `JsonProcessingException`.
+- correção aplicada:
+  - remoção do import não utilizado `JsonProcessingException`;
+  - atualização da assinatura de `montar(...)` para `throws IOException`, alinhando com as exceções reais propagadas pelo fluxo.
+- impacto funcional: sem alteração de regra de negócio; apenas correção de contrato de exceção para eliminar o erro de compilação no CI.
+
+## 2026-05-25 21:24:00 UTC
+- correção complementar de compilação nos montadores de etapas adicionais do GeraLanding.
+- causa-raiz: o mesmo desalinhamento de exceção checada (`IOException`) também existia em `imageplanning`, `presetdesign` e `deliverables`.
+- correção aplicada:
+  - atualização das assinaturas `montar(...)` para `throws IOException` nesses três montadores;
+  - remoção dos imports `JsonProcessingException` não utilizados após o ajuste.
+- impacto funcional: correção de build sem alteração de comportamento funcional das etapas.

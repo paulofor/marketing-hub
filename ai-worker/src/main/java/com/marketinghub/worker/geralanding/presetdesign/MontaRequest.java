@@ -1,6 +1,5 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.GeraLandingExperimentRequest;
 import com.marketinghub.worker.geralanding.comum.MontaRequestSupport;
@@ -31,7 +30,7 @@ public class MontaRequest {
     }
 
     /** Monta o payload da Responses API para a etapa, resolvendo internamente schema, markdown e placeholders. */
-    public String montar(GeraLandingExperimentRequest experiment) throws JsonProcessingException {
+    public String montar(GeraLandingExperimentRequest experiment) throws IOException {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", SCHEMA_NAME);

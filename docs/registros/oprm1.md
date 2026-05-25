@@ -162,3 +162,11 @@
 - 2026-05-25 00:00:00 (UTC): ajuste complementar solicitado por revisão: adicionado log textual explícito com `runId` logo após a criação da run no `runScheduledImport` para facilitar buscas operacionais por `contains=runId=` nos logs do MCP.
 
 - 2026-05-25 00:00:00 (UTC): ajuste solicitado em revisão para inserir log no início do método `runScheduledImport` (primeira instrução), registrando disparo da rotina antes de qualquer validação de `enabled`.
+
+- 2026-05-25 17:20:00 (UTC-3): atualização canônica solicitada no OPRM para deixar explícito que o `snapshotDate` da ingestão CNPJ/CNAE deve permanecer fixo em `2026-05-10`, proibindo troca automática para datas mais novas sem decisão explícita do usuário; documento atualizado em `docs/canonical/oprm-canon.v1.md`.
+
+- 2026-05-25 17:25:00 (UTC-3): ajuste solicitado no cânone OPRM para explicitar a URL completa de download do snapshot fixo (`https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-05-10/`) e tornar obrigatória a validação prévia de acesso HTTP 200 (HEAD) dos arquivos de referência (`Cnaes.zip`, `Empresas1.zip`, `Estabelecimentos1.zip`) antes da execução.
+
+- 2026-05-25 17:35:00 (UTC-3): ajuste solicitado no `oprm-coletor-mei` para reagendar a execução da ingestão OPRM CNPJ/CNAE para **17:45** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 45 17 * * *`, sincronização do cron padrão em `application.yml` e ajuste da mensagem de log final para refletir 17:45.
+
+- 2026-05-25 17:45:00 (UTC-3): correção solicitada no `oprm-coletor-mei` para remover dependência de data atual no diretório da fonte e fixar o `snapshot-date` padrão em `2026-05-10` no `application.yml`, mantendo o diretório de ingestão alinhado ao cânone OPRM.

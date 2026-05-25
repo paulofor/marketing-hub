@@ -578,3 +578,39 @@ Arquivos alterados:
   - AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-05-25 — Paginação no ciclo 1 do coletor Hotmart (até 100 produtos)
+- Ajustado `mois-hotmart-collector` para o ciclo 1 percorrer páginas da API Hotmart (`page` incremental) até esgotar resultados ou atingir 100 produtos.
+- Causa-raiz: o coletor fazia apenas uma chamada fixa com `page=1`, limitando a coleta à primeira página.
+- Correção aplicada:
+  - limite máximo por execução ampliado para 100 produtos;
+  - paginação com `rows` por página e incremento de `page` a cada requisição;
+  - parada quando a página retorna vazio ou quando vem menos itens que o `rows` solicitado.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md
+
+## 2026-05-25 — Ajuste de limite de paginação do ciclo 1 para 100 páginas
+- Ajustado o loop de paginação do ciclo 1 no coletor Hotmart para respeitar limite explícito de até 100 páginas por execução.
+- Causa-raiz: o ajuste anterior limitava por quantidade de produtos e não deixava explícito o teto de páginas solicitado.
+- Correção aplicada:
+  - adicionada constante `HOTMART_MAX_PAGES_PER_RUN = 100`;
+  - loop agora executa enquanto `page <= HOTMART_MAX_PAGES_PER_RUN`;
+  - log informativo quando o limite de páginas é atingido antes do alvo de produtos.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md
+
+## 2026-05-25 — Agendamento do coletor Hotmart somente 10:00 e 17:00
+- Ajustado o `HotmartCollectorScheduler` para executar apenas duas vezes por dia.
+- Causa-raiz: o scheduler estava horário (de hora em hora), excedendo a janela operacional desejada.
+- Correção aplicada:
+  - `@Scheduled(cron = "0 0 10 * * *")` para o ciclo 1 (listagem);
+  - `@Scheduled(cron = "0 0 17 * * *")` para o ciclo 2 (detalhes);
+  - removida a lógica de alternância por hora ímpar/par.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md

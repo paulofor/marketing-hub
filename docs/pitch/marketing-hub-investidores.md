@@ -84,13 +84,12 @@ Maio de 2026
 
 ---
 
-## Problema de mercado
+## A história que o investidor precisa entender
 
-- Pequenos e médios negócios têm dificuldade para:
-  - identificar dores reais com evidências;
-  - transformar conhecimento em ofertas vendáveis;
-  - escalar aquisição e conversão com eficiência.
-- Resultado: alto custo de teste, baixa previsibilidade e desperdício de orçamento.
+1. O mercado quer usar IA para ganhar velocidade e escala.
+2. Quando a IA é aplicada sem arquitetura, o projeto fica instável, surgem erros e o custo de correção cresce.
+3. Isso trava a operação comercial: mais retrabalho, menos vendas e menor previsibilidade.
+4. A dor real não é “falta de IA”; é **falta de IA com controle arquitetural**.
 
 ---
 
@@ -140,31 +139,27 @@ A plataforma orquestra:
 
 ---
 
-## Por que nossa IA é superior
+## Mecanismo: como evitamos que a IA desestabilize o projeto
 
 Não vendemos “prompt solto”. Vendemos **arquitetura de execução confiável**.
 
-- IA atinge seu potencial máximo quando recebe **tarefas únicas, específicas e bem contextualizadas**.
-- Para isso, operamos com **regras claras, objetivas e verificáveis** em cada etapa.
-- IA guiada por **framework canônico de decisão** (Dor → Resultado → Mecanismo → Prova → Oferta).
-- Fluxos com **contratos explícitos de entrada/saída** para reduzir ambiguidade.
-- Validação contínua de coerência entre hipótese de mercado, oferta e narrativa.
-- IA integrada ao ciclo operacional real (mídia, lead, conversão), não isolada em laboratório.
+- Cada tarefa da IA nasce com **contexto de negócio explícito** (dor, público, resultado esperado e prova).
+- Cada etapa opera com **regras bem definidas e verificáveis** para reduzir ambiguidade.
+- Fluxos usam **contratos de entrada/saída** para impedir deriva de payload e retrabalho técnico.
+- Checkpoints garantem coerência entre hipótese, oferta e execução antes de escalar.
+- A IA fica conectada ao ciclo real de venda (mídia, lead, conversão), não isolada em laboratório.
 
 ---
 
-## Barreira competitiva: 30 anos de experiência em TI aplicada
+## Mecanismo único: por que nosso jeito é melhor
 
-A solução incorpora a experiência prática de 30 anos do empreendedor em:
+Nossa vantagem não é só ferramenta; é **experiência aplicada em arquitetura de sistemas**.
 
-- arquitetura de sistemas críticos e construção orientada por arquitetura;
-- integração entre módulos e contratos robustos;
-- prevenção de falhas por causa-raiz;
-- governança técnica para escala com previsibilidade.
+- 30 anos construindo sistemas de informação com foco em confiabilidade e escala.
+- Experiência prática desde o final dos anos 90, quando arquitetura inteligente e bem definida virou requisito para sustentar crescimento sem colapso técnico.
+- Capacidade de transformar regras de negócio em fluxos de IA estáveis, auditáveis e comercialmente úteis.
 
-Essa base foi construída especialmente a partir da evolução intensa de software no final dos anos 90, quando arquiteturas sólidas se tornaram essenciais para manter a complexidade crescente sob controle.
-
-**Resultado:** menos erro operacional da IA, mais consistência e maior velocidade de aprendizagem comercial.
+**Resultado direto:** menos instabilidade, menos correções complexas no futuro e mais velocidade para converter aprendizagem em vendas.
 
 ---
 

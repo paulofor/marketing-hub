@@ -1847,3 +1847,4 @@
   - docs/registros/experimentos.md
   - frontend/src/api/experiment/useGeraLandingStageExecutions.ts
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+- 2026-05-26 21:12:16 UTC — Simplificado o diagrama do documento `docs/canonical/geralanding-arquitetura-canon.v1.md` para reduzir confusão: os pacotes passaram a ser exibidos como caixas únicas e as dependências aparecem somente com setas quando permitidas (sem seta = acesso não permitido).

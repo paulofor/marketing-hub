@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding;
 
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.imageplanning.CopyStageHtmlProvider;
 import com.marketinghub.geralanding.imageplanning.ImageHtmlInjector;
 import org.springframework.context.annotation.Bean;

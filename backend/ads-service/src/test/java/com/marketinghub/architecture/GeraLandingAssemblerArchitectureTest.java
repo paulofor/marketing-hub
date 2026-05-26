@@ -4,7 +4,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
-import com.marketinghub.geralanding.wireframe.WireframeProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
@@ -45,7 +45,7 @@ class GeraLandingAssemblerArchitectureTest {
             .haveFullyQualifiedName("com.marketinghub.geralanding.GeraLandingStageExecutionService")
             .should()
             .callMethod(
-                    com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler.class,
+                    com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler.class,
                     "assemble",
                     String.class,
                     String.class)
@@ -86,7 +86,7 @@ class GeraLandingAssemblerArchitectureTest {
             .haveFullyQualifiedName("com.marketinghub.geralanding.GeraLandingStageExecutionService")
             .should()
             .callMethod(
-                    com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler.class,
+                    com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler.class,
                     "assemble",
                     String.class,
                     String.class,

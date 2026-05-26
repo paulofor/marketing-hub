@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.copy;
+package com.marketinghub.geralanding.copy.provisorio;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,9 +1,9 @@
 package com.marketinghub.geralanding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlPayloadResolver;
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlProcessor;
+import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlPayloadResolver;
+import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlProcessor;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

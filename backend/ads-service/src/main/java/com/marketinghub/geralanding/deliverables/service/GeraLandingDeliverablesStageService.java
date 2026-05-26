@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.deliverables;
+package com.marketinghub.geralanding.deliverables.service;
 
 import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageExecutionService;
 import java.nio.charset.StandardCharsets;

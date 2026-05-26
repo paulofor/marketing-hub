@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.imageplanning;
+package com.marketinghub.geralanding.imageplanning.service;
 
 /** Representa a resposta de início da etapa de planejamento de imagens do GeraLanding. */
 public record GeraLandingImagePlanningStartResponse(String idJob, String status) {}

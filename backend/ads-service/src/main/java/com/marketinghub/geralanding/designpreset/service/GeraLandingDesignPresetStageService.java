@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.designpreset;
+package com.marketinghub.geralanding.designpreset.service;
 
 import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStageExecutionService;
 import java.nio.charset.StandardCharsets;

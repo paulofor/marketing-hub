@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.wireframe.web;
 
-import com.marketinghub.geralanding.wireframe.GeraLandingWireframeStageService;
-import com.marketinghub.geralanding.wireframe.GeraLandingWireframeStartResponse;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

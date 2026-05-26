@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe;
+package com.marketinghub.geralanding.wireframe.service;
 
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
 import java.nio.charset.StandardCharsets;

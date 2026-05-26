@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.imageplanning.web;
 
-import com.marketinghub.geralanding.imageplanning.GeraLandingImagePlanningStageService;
-import com.marketinghub.geralanding.imageplanning.GeraLandingImagePlanningStartResponse;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageService;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

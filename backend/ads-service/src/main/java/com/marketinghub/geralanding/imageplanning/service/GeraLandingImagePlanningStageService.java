@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.imageplanning;
+package com.marketinghub.geralanding.imageplanning.service;
 
 import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageExecutionService;
 import java.nio.charset.StandardCharsets;

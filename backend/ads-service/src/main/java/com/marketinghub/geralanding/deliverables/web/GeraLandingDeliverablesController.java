@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.deliverables.web;
 
-import com.marketinghub.geralanding.deliverables.GeraLandingDeliverablesStageService;
-import com.marketinghub.geralanding.deliverables.GeraLandingDeliverablesStartResponse;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageService;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

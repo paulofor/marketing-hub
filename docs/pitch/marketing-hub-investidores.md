@@ -5,8 +5,56 @@ paginate: true
 size: 16:9
 title: Marketing Hub — Pitch para Investidores
 description: Apresentação institucional para captação de investimento.
+style: |
+  section {
+    font-family: "Inter", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(34, 211, 238, 0.20) 0, transparent 38%),
+      radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.22) 0, transparent 36%),
+      linear-gradient(135deg, #0f172a 0%, #111827 45%, #1e1b4b 100%);
+    color: #e5e7eb;
+  }
+  section::after {
+    content: "MKTH";
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    color: #0f172a;
+    background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 100%);
+    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.35);
+  }
+  h1, h2, h3 {
+    color: #f8fafc;
+  }
+  strong {
+    color: #67e8f9;
+  }
+  blockquote {
+    border-left: 4px solid #22d3ee;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+  }
+  section.lead {
+    background:
+      radial-gradient(circle at 15% 15%, rgba(34, 211, 238, 0.30) 0, transparent 42%),
+      radial-gradient(circle at 75% 20%, rgba(45, 212, 191, 0.18) 0, transparent 38%),
+      linear-gradient(135deg, #020617 0%, #0f172a 52%, #1d4ed8 100%);
+  }
+  section.lead h1 {
+    font-size: 2.5rem;
+  }
+  section.lead h2 {
+    color: #67e8f9;
+  }
 ---
 
+<!-- _class: lead -->
 # Marketing Hub
 ## IA aplicada para criar produtos digitais que vendem e transformam
 

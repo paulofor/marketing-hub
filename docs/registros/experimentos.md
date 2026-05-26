@@ -1715,3 +1715,11 @@
   - criação de responses por etapa (`GeraLanding*StartResponse`) dentro de `geralanding.<etapa>.service`;
   - atualização dos controllers de etapa para depender apenas das classes do próprio subpacote.
 - impacto funcional: mantém os endpoints e o contrato HTTP de início de etapa, com isolamento arquitetural por submódulo.
+
+## 2026-05-26 02:58:00 UTC
+- ajuste solicitado: corrigir falha de contexto em `GeraLandingContollerTest` durante `@WebMvcTest`.
+- causa-raiz: o controller `geralanding.copy.web.GeraLandingCopyController` passou a depender de `GeraLandingCopyStageService`, mas o teste não declarava `@MockBean` desse serviço, impedindo a criação do ApplicationContext.
+- correção aplicada:
+  - inclusão de `@MockBean GeraLandingCopyStageService` no teste;
+  - ajuste do cenário `shouldCreateCopyExecutionAndReturnCodeAndStatus` para mockar/verificar `copyStageService.start(...)` e `GeraLandingCopyStartResponse`.
+- impacto funcional: restaura a subida do contexto do teste MVC sem alterar contrato HTTP dos endpoints.

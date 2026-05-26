@@ -1,10 +1,17 @@
 package com.marketinghub.geralanding;
 
+import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
+import com.marketinghub.geralanding.copy.service.GeraLandingCopyStartResponse;
 import com.marketinghub.geralanding.copy.web.GeraLandingCopyController;
 import com.marketinghub.geralanding.deliverables.web.GeraLandingDeliverablesController;
+import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStageService;
 import com.marketinghub.geralanding.designpreset.web.GeraLandingDesignPresetController;
 import com.marketinghub.geralanding.execution.web.GeraLandingExecutionController;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageService;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStartResponse;
 import com.marketinghub.geralanding.imageplanning.web.GeraLandingImagePlanningController;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.web.GeraLandingWireframeController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,45 +40,57 @@ class GeraLandingContollerTest {
     @MockBean
     private GeraLandingStageExecutionService executionService;
 
+    @MockBean
+    private GeraLandingCopyStageService copyStageService;
+
+    @MockBean
+    private GeraLandingWireframeStageService wireframeStageService;
+
+    @MockBean
+    private GeraLandingImagePlanningStageService imagePlanningStageService;
+
+    @MockBean
+    private GeraLandingDesignPresetStageService designPresetStageService;
+
     @Test
     void shouldCreateExecutionAndReturnCodeAndStatus() throws Exception {
-        when(executionService.registerInitialExecution(99L, "landing-page-wireframe"))
-                .thenReturn(new GeraLandingStartResponse("job-123", "INICIADO"));
+        when(wireframeStageService.start(99L))
+                .thenReturn(new GeraLandingWireframeStartResponse("job-123", "INICIADO"));
 
         mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/wireframe/start", 99L))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.idJob").value("job-123"))
                 .andExpect(jsonPath("$.status").value("INICIADO"));
 
-        verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-wireframe"));
+        verify(wireframeStageService).start(eq(99L));
     }
 
 
     @Test
     void shouldCreateCopyExecutionAndReturnCodeAndStatus() throws Exception {
-        when(executionService.registerInitialExecution(99L, "landing-page-copy"))
-                .thenReturn(new GeraLandingStartResponse("job-copy-1", "INICIADO"));
+        when(copyStageService.start(99L))
+                .thenReturn(new GeraLandingCopyStartResponse("job-copy-1", "INICIADO"));
 
         mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/copy/start", 99L))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.idJob").value("job-copy-1"))
                 .andExpect(jsonPath("$.status").value("INICIADO"));
 
-        verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-copy"));
+        verify(copyStageService).start(eq(99L));
     }
 
 
     @Test
     void shouldCreateImagePromptsExecutionAndReturnCodeAndStatus() throws Exception {
-        when(executionService.registerInitialExecution(99L, "landing-page-image-planning"))
-                .thenReturn(new GeraLandingStartResponse("job-image-1", "INICIADO"));
+        when(imagePlanningStageService.start(99L))
+                .thenReturn(new GeraLandingImagePlanningStartResponse("job-image-1", "INICIADO"));
 
         mockMvc.perform(post("/api/experiments/{experimentId}/geralanding/image-prompts/start", 99L))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.idJob").value("job-image-1"))
                 .andExpect(jsonPath("$.status").value("INICIADO"));
 
-        verify(executionService).registerInitialExecution(eq(99L), eq("landing-page-image-planning"));
+        verify(imagePlanningStageService).start(eq(99L));
     }
 
     @Test

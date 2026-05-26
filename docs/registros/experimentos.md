@@ -1787,3 +1787,8 @@
   - criada regra para `geralanding.*.provisorio`: permite depender apenas de `geralanding.*.provisorio` da mesma etapa;
   - mantida regra para `geralanding.*.service` com whitelist explícita para `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.
 - impacto funcional: o ArchUnit passa a proteger o encapsulamento por camada/etapa com granularidade mais precisa, reduzindo acoplamentos indevidos entre etapas do GeraLanding.
+
+## 2026-05-26 10:50:00 UTC
+- solicitado descontinuar controllers legados `com.marketinghub.geralanding.execution.web.GeraLandingExecutionController` e `com.marketinghub.geralanding.internal.web.GeraLandingInternalController` e migrar uso para os novos controllers por etapa.
+- causa-raiz: os controllers legados centralizados geravam acoplamento transversal entre etapas e violavam a regra ArchUnit de isolamento `geralanding.*.web` por etapa.
+- correção aplicada: removidos os dois controllers legados do backend para concentrar o fluxo nos endpoints novos organizados por etapa (`wireframe`, `copy`, `imageplanning`, `deliverables`, `designpreset`).

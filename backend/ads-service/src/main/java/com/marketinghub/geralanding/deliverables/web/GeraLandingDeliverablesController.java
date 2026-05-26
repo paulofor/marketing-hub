@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.deliverables.web;
 
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
-import com.marketinghub.geralanding.GeraLandingStartResponse;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageService;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/geralanding")
 public class GeraLandingDeliverablesController {
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingDeliverablesStageService stageService;
 
-  public GeraLandingDeliverablesController(GeraLandingStageExecutionService executionService) {
-    this.executionService = executionService;
+  public GeraLandingDeliverablesController(GeraLandingDeliverablesStageService stageService) {
+    this.stageService = stageService;
   }
 
   /** Registra uma execução inicial da etapa landing-page-deliverables. */
   @PostMapping("/deliverables/start")
-  public ResponseEntity<GeraLandingStartResponse> start(@PathVariable Long experimentId) {
-    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-deliverables");
+  public ResponseEntity<GeraLandingDeliverablesStartResponse> start(@PathVariable Long experimentId) {
+    GeraLandingDeliverablesStartResponse response = stageService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
 }

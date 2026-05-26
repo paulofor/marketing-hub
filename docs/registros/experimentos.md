@@ -1799,4 +1799,11 @@
 
 - 2026-05-26: Ajustado `docs/pitch/marketing-hub-investidores.md` com identidade visual (logo MKTH no canto dos slides, gradientes de fundo e destaque tipográfico) para melhorar apresentação do pitch.
 
+## 2026-05-26 18:15:00 UTC
+- ajuste solicitado: corrigir falha de compilação em `GeraLandingExecutionServiceTest` após mudança de assinatura do construtor de `GeraLandingExecutionService`.
+- causa-raiz: o construtor passou a exigir cinco dependências adicionais de processadores `RecebeResponse` por etapa (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`) e os testes continuavam instanciando o serviço com a assinatura antiga.
+- correção aplicada:
+  - adicionados mocks de `RecebeResponse` para todas as etapas em cada cenário do teste;
+  - atualizado o `new GeraLandingExecutionService(...)` em todos os testes para enviar os novos argumentos na ordem correta.
+- impacto funcional: os testes voltam a compilar com a API atual do serviço, eliminando o erro de lista de argumentos divergente no `testCompile`.
 - 2026-05-26: Atualizados os diagramas canônicos de arquitetura do GeraLanding para refletir as regras ArchUnit vigentes no backend por camada/etapa (`web`, `provisorio` e `service`), incluindo as dependências explicitamente permitidas em `service` para `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.

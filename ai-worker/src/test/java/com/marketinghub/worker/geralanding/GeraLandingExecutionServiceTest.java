@@ -33,6 +33,16 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
         com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
+        com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -56,6 +66,11 @@ class GeraLandingExecutionServiceTest {
                         imagePlanningMontaRequest,
                         presetDesignMontaRequest,
                         deliverablesMontaRequest,
+                        wireframeRecebeResponse,
+                        copyRecebeResponse,
+                        imagePlanningRecebeResponse,
+                        presetDesignRecebeResponse,
+                        deliverablesRecebeResponse,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -87,6 +102,16 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
         com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
+        com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -109,6 +134,11 @@ class GeraLandingExecutionServiceTest {
                         imagePlanningMontaRequest,
                         presetDesignMontaRequest,
                         deliverablesMontaRequest,
+                        wireframeRecebeResponse,
+                        copyRecebeResponse,
+                        imagePlanningRecebeResponse,
+                        presetDesignRecebeResponse,
+                        deliverablesRecebeResponse,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -137,6 +167,16 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
         com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
+        com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -181,6 +221,11 @@ class GeraLandingExecutionServiceTest {
                         imagePlanningMontaRequest,
                         presetDesignMontaRequest,
                         deliverablesMontaRequest,
+                        wireframeRecebeResponse,
+                        copyRecebeResponse,
+                        imagePlanningRecebeResponse,
+                        presetDesignRecebeResponse,
+                        deliverablesRecebeResponse,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -209,6 +254,16 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.MontaRequest.class);
         com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
+        com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -243,7 +298,7 @@ class GeraLandingExecutionServiceTest {
 
         GeraLandingExecutionService service = new GeraLandingExecutionService(
                 backendClient, geraLandingService, openAiClient, objectMapper, stageSchemaResolver, wireframeMontaRequest,
-                copyMontaRequest, imagePlanningMontaRequest, presetDesignMontaRequest, deliverablesMontaRequest, 20,
+                copyMontaRequest, imagePlanningMontaRequest, presetDesignMontaRequest, deliverablesMontaRequest, wireframeRecebeResponse, copyRecebeResponse, imagePlanningRecebeResponse, presetDesignRecebeResponse, deliverablesRecebeResponse, 20,
                 new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                 new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
                 new ClassPathResource("prompts/geralanding/landing-page-image-planning-schema.json"),

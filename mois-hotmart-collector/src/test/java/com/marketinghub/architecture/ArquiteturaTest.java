@@ -9,7 +9,7 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
 @AnalyzeClasses(packages = "com.marketinghub")
-class ModuleIsolationArchitectureTest {
+class ArquiteturaTest {
 
     private static final String MOIS_SALES_LIBRARY_PACKAGE = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
 

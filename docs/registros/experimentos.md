@@ -1806,3 +1806,4 @@
   - adicionados mocks de `RecebeResponse` para todas as etapas em cada cenário do teste;
   - atualizado o `new GeraLandingExecutionService(...)` em todos os testes para enviar os novos argumentos na ordem correta.
 - impacto funcional: os testes voltam a compilar com a API atual do serviço, eliminando o erro de lista de argumentos divergente no `testCompile`.
+- 2026-05-26: Atualizados os diagramas canônicos de arquitetura do GeraLanding para refletir as regras ArchUnit vigentes no backend por camada/etapa (`web`, `provisorio` e `service`), incluindo as dependências explicitamente permitidas em `service` para `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.

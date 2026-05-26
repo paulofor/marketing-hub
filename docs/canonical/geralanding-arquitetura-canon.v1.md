@@ -28,19 +28,20 @@ flowchart TD
     REPO1 --> DB[(MySQL 5.7)]
     REPO2 --> DB
 
-    subgraph ISO[Isolamento obrigatório entre subpacotes]
-      W[geralanding.wireframe]
-      CP[geralanding.copy]
-      IP[geralanding.imageplanning]
-      DP[geralanding.designpreset]
+    subgraph STAGES[Etapas do GeraLanding no backend]
+      WEB[geralanding.<etapa>.web]
+      PROV[geralanding.<etapa>.provisorio]
+      SERV[geralanding.<etapa>.service]
     end
 
-    W -. não depende .- CP
-    W -. não depende .- IP
-    W -. não depende .- DP
-    CP -. não depende .- IP
-    CP -. não depende .- DP
-    IP -. não depende .- DP
+    WEB -->|somente mesma etapa| WEB
+    WEB -->|somente mesma etapa| SERV
+    PROV -->|somente mesma etapa| PROV
+    SERV -->|somente mesmas classes service da etapa| SERV
+    SERV -->|permitido| ENT2
+    SERV -->|permitido| REPO2
+    SERV -->|permitido| ENT1
+    SERV -->|permitido| REPO1
 ```
 
 Regras arquiteturais refletidas (ArchUnit):
@@ -48,7 +49,9 @@ Regras arquiteturais refletidas (ArchUnit):
 - `GeraLandingStageExecutionService` deve chamar explicitamente as assinaturas canônicas dos assemblers.
 - `WireframeProvisionalHtmlAssembler` deve residir em `geralanding.wireframe` e `DesignPresetProvisionalHtmlAssembler` em `geralanding.designpreset`.
 - Serviços em `com.marketinghub.geralanding..service..` podem depender de classes do próprio pacote de serviço (mesma etapa) e de `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository` no domínio `com.marketinghub`.
-- Subpacotes `wireframe`, `copy`, `imageplanning` e `designpreset` permanecem isolados entre si.
+- `geralanding.*.web` só pode acessar `geralanding.*.web` e `geralanding.*.service` da mesma etapa.
+- `geralanding.*.provisorio` só pode acessar `geralanding.*.provisorio` da mesma etapa.
+- `geralanding.*.service` só pode acessar classes `com.marketinghub` permitidas: classes do próprio pacote `service` da etapa, `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.
 
 ## 2) Worker AI (ai-worker / `com.marketinghub.worker.geralanding`)
 

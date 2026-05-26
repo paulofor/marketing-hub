@@ -43,6 +43,7 @@ public class OprmMarketImportScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmMarketImportScheduler.class);
     private static final Pattern CNAE_7_DIGITS_PATTERN = Pattern.compile("(\\d{7})");
     private static final int DIAGNOSTIC_SAMPLE_LIMIT = 10;
+    private static final int SIMPLES_DEBUG_LINE_LIMIT = 20;
 
     private final OprmMarketImportScheduleProperties scheduleProperties;
     private final OprmMarketImportCollectorProperties collectorProperties;
@@ -240,6 +241,7 @@ public class OprmMarketImportScheduler {
             Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae) throws IOException {
         log.info("[run={} fileId={}] Início parse marketSizes (ESTABELECIMENTOS) de {}", runId, fileId, fileName);
         long linhasLidas = 0L;
+        long linhasDetalhadasSemMatch = 0L;
         long linhasValidas = 0L;
         long linhasIgnoradas = 0L;
         long parseStartMillis = System.currentTimeMillis();
@@ -391,6 +393,7 @@ public class OprmMarketImportScheduler {
         log.info("[run={} fileId={}] Início parse SIMPLES para total_empresas_simples/mei por CNAE: {}", runId, fileId, fileName);
         String lastRawLine = null;
         long linhasLidas = 0L;
+        long linhasDetalhadasSemMatch = 0L;
         long linhasComCnpjBase = 0L;
         long linhasSemMatchCnae = 0L;
         long linhasComMatchCnae = 0L;
@@ -423,8 +426,11 @@ public class OprmMarketImportScheduler {
                     }
                     String cnaeCode = cnaeByCnpjBase.get(cnpjBase);
                     if (cnaeCode == null || cnaeCode.isBlank()) {
-                        log.info("[run={} fileId={}] SIMPLES sem match de CNAE para cnpjBase='{}' cnpjBaseDigits='{}' simplesOptante='{}' meiOptante='{}'",
-                                runId, fileId, cnpjBase, digitsOnly(cnpjBase), simplesOptante, meiOptante);
+                        if (linhasDetalhadasSemMatch < SIMPLES_DEBUG_LINE_LIMIT) {
+                            linhasDetalhadasSemMatch++;
+                            log.warn("[run={} fileId={}] [SIMPLES-SEM-MATCH-{}/{}] cnpjBase='{}' cnpjBaseDigits='{}' simplesOptante='{}' meiOptante='{}'",
+                                    runId, fileId, linhasDetalhadasSemMatch, SIMPLES_DEBUG_LINE_LIMIT, cnpjBase, digitsOnly(cnpjBase), simplesOptante, meiOptante);
+                        }
                         linhasSemMatchCnae++;
                         if (simplesMissingSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
                             simplesMissingSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' simplesOptante='" + simplesOptante + "' meiOptante='" + meiOptante + "'");
@@ -432,6 +438,11 @@ public class OprmMarketImportScheduler {
                         if (sampleMissingCnpjBase == null && !cnpjBase.isBlank()) {
                             sampleMissingCnpjBase = cnpjBase;
                             sampleMissingCnpjBaseOnlyDigits = digitsOnly(cnpjBase);
+                        }
+                        if (linhasDetalhadasSemMatch == SIMPLES_DEBUG_LINE_LIMIT) {
+                            log.warn("[run={} fileId={}] Limite de {} linhas sem match atingido no SIMPLES. Interrompendo parse antecipadamente para diagnóstico objetivo.",
+                                    runId, fileId, SIMPLES_DEBUG_LINE_LIMIT);
+                            break;
                         }
                         continue;
                     }
@@ -454,6 +465,9 @@ public class OprmMarketImportScheduler {
                     }
                 }
                 zipInputStream.closeEntry();
+                if (linhasDetalhadasSemMatch >= SIMPLES_DEBUG_LINE_LIMIT) {
+                    break;
+                }
             }
         } catch (Exception ex) {
             log.error("[run={} fileId={}] Falha no parse SIMPLES. fileName={} lastRawPayload={} cnpjMapSize={} simplesCounted={} meiCounted={} cnaesConsolidados={}",
@@ -476,8 +490,8 @@ public class OprmMarketImportScheduler {
                 simplesInputSamples,
                 simplesMatchSamples,
                 simplesMissingSamples);
-        log.info("[run={} fileId={}] Parse SIMPLES concluído. simplesEmpresas={} meiEmpresas={}",
-                runId, fileId, simplesCountedCnpjBases.size(), meiCountedCnpjBases.size());
+        log.info("[run={} fileId={}] Parse SIMPLES concluído. simplesEmpresas={} meiEmpresas={} linhasDetalhadasSemMatch={}",
+                runId, fileId, simplesCountedCnpjBases.size(), meiCountedCnpjBases.size(), linhasDetalhadasSemMatch);
     }
 
     /** Remove caracteres não numéricos para apoiar diagnóstico de chave CNPJ base entre fontes diferentes. */

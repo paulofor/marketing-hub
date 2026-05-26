@@ -14,10 +14,7 @@ flowchart LR
     EXP["Pacote: com.marketinghub.experiment (Experiment + ExperimentRepository)"]
     EXEC["Pacote: com.marketinghub.geralanding.execution (GeraLandingStageExecution + GeraLandingStageExecutionRepository)"]
 
-    WEB -->|pode usar| WEB
     WEB -->|pode usar| SERV
-    PROV -->|pode usar| PROV
-    SERV -->|pode usar| SERV
     SERV -->|pode usar| EXP
     SERV -->|pode usar| EXEC
 ```

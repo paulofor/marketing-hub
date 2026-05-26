@@ -71,6 +71,45 @@ A plataforma orquestra:
 
 ---
 
+## Por que nossa IA é superior
+
+Não vendemos “prompt solto”. Vendemos **arquitetura de execução confiável**.
+
+- IA guiada por **framework canônico de decisão** (Dor → Resultado → Mecanismo → Prova → Oferta).
+- Fluxos com **contratos explícitos de entrada/saída** para reduzir ambiguidade.
+- Validação contínua de coerência entre hipótese de mercado, oferta e narrativa.
+- IA integrada ao ciclo operacional real (mídia, lead, conversão), não isolada em laboratório.
+
+---
+
+## Barreira competitiva: 30 anos de experiência em TI aplicada
+
+A solução incorpora a experiência prática de 30 anos do empreendedor em:
+
+- arquitetura de sistemas críticos;
+- integração entre módulos e contratos robustos;
+- prevenção de falhas por causa-raiz;
+- governança técnica para escala com previsibilidade.
+
+**Resultado:** menos erro operacional da IA, mais consistência e maior velocidade de aprendizagem comercial.
+
+---
+
+## Como evitamos erros comuns de IA
+
+**Mercado (IA genérica):**
+- respostas bonitas, mas inconsistentes;
+- alucinação de contexto de negócio;
+- outputs sem aderência de contrato e execução.
+
+**Marketing Hub (IA com arquitetura):**
+- checkpoints de contrato e qualidade;
+- trilha de decisão orientada a evidência;
+- mecanismos de validação antes de publicar/escala;
+- melhoria contínua via dados de performance real.
+
+---
+
 ## Modelo de negócio
 
 1. **Receita principal:** venda de produtos digitais com alto valor percebido.

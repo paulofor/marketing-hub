@@ -1,5 +1,7 @@
-package com.marketinghub.geralanding.deliverables.service;
+package com.marketinghub.geralanding.deliverables;
 
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageExecutionService;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar execuções da etapa landing-page-deliverables. */
@@ -15,6 +17,13 @@ public class GeraLandingDeliverablesStageService {
 
   /** Registra a execução inicial da etapa e retorna identificadores para acompanhamento. */
   public GeraLandingDeliverablesStartResponse start(Long experimentId) {
-    return executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    var execution = executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    return new GeraLandingDeliverablesStartResponse(fromDatabaseIdJob(execution.getIdJob()), execution.getStatus());
+  }
+
+
+  /** Converte o id do formato persistido para o formato textual da API. */
+  private String fromDatabaseIdJob(byte[] idJob) {
+    return new String(idJob, StandardCharsets.UTF_8);
   }
 }

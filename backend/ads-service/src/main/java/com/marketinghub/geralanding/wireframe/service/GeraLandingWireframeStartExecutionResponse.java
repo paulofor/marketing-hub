@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe.service;
+package com.marketinghub.geralanding.wireframe;
 
 /** Responsável por representar o retorno inicial da execução da etapa de wireframe. */
 public record GeraLandingWireframeStartExecutionResponse(

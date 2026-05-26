@@ -180,7 +180,8 @@ class ModuleIsolationArchitectureTest {
                     if (!targetName.startsWith("com.marketinghub.")) {
                         return;
                     }
-                    if (targetName.equals(EXPERIMENT_CLASS)
+                    if (targetClass.getPackageName().equals(item.getPackageName())
+                            || targetName.equals(EXPERIMENT_CLASS)
                             || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)) {

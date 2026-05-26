@@ -47,7 +47,7 @@ Regras arquiteturais refletidas (ArchUnit):
 - `GeraLandingStageExecutionService` não pode chamar assinaturas legadas dos assemblers de wireframe/copy/design preset.
 - `GeraLandingStageExecutionService` deve chamar explicitamente as assinaturas canônicas dos assemblers.
 - `WireframeProvisionalHtmlAssembler` deve residir em `geralanding.wireframe` e `DesignPresetProvisionalHtmlAssembler` em `geralanding.designpreset`.
-- Serviços em `com.marketinghub.geralanding..service..` só podem depender de `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository` no domínio `com.marketinghub`.
+- Serviços em `com.marketinghub.geralanding..service..` podem depender de classes do próprio pacote de serviço (mesma etapa) e de `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository` no domínio `com.marketinghub`.
 - Subpacotes `wireframe`, `copy`, `imageplanning` e `designpreset` permanecem isolados entre si.
 
 ## 2) Worker AI (ai-worker / `com.marketinghub.worker.geralanding`)

@@ -380,8 +380,18 @@ public class HotmartCollectorService {
         try {
             int targetProducts = Math.min(boundedMax, HOTMART_MAX_PRODUCTS_PER_RUN);
             int page = 1;
+            log.info("Hotmart ciclo 1 iniciado. targetProducts={}, rowsPorPagina={}, maxPages={}",
+                    targetProducts,
+                    HOTMART_ROWS_PER_PAGE,
+                    HOTMART_MAX_PAGES_PER_RUN);
             while (products.size() < targetProducts && page <= HOTMART_MAX_PAGES_PER_RUN) {
                 int rows = Math.min(HOTMART_ROWS_PER_PAGE, targetProducts - products.size());
+                int collectedBeforePage = products.size();
+                log.info("Hotmart ciclo 1 requisitando página. page={}, rowsSolicitadas={}, coletadosAntesPagina={}, alvo={}",
+                        page,
+                        rows,
+                        collectedBeforePage,
+                        targetProducts);
                 String payload = objectMapper.writeValueAsString(java.util.Map.of(
                         "page", page,
                         "rows", rows,
@@ -449,7 +459,19 @@ public class HotmartCollectorService {
                         Instant.now());
                 products.add(enrichProductWithDetails(accessToken, item, baseSnapshot));
             }
+                int collectedAfterPage = products.size();
+                int addedInPage = collectedAfterPage - collectedBeforePage;
+                log.info("Hotmart ciclo 1 página concluída. page={}, itensNoArray={}, adicionadosNaPagina={}, coletadosAposPagina={}, alvo={}",
+                        page,
+                        productsNode.size(),
+                        addedInPage,
+                        collectedAfterPage,
+                        targetProducts);
                 if (productsNode.size() < rows) {
+                    log.info("Hotmart ciclo 1 finalizado por página parcial. page={}, itensNoArray={}, rowsSolicitadas={}",
+                            page,
+                            productsNode.size(),
+                            rows);
                     break;
                 }
                 page++;
@@ -458,6 +480,10 @@ public class HotmartCollectorService {
                 log.info("Limite de paginação atingido no ciclo 1 da Hotmart. maxPages={}, produtosColetados={}, alvo={}",
                         HOTMART_MAX_PAGES_PER_RUN, products.size(), targetProducts);
             }
+            log.info("Hotmart ciclo 1 encerrado. paginasPercorridas={}, produtosColetados={}, alvo={}",
+                    Math.min(page - 1, HOTMART_MAX_PAGES_PER_RUN),
+                    products.size(),
+                    targetProducts);
             return products.size();
         } catch (Exception ex) {
             log.warn("Falha na coleta de produtos via API Hotmart.", ex);

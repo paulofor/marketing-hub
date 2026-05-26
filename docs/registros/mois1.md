@@ -614,3 +614,16 @@ Arquivos alterados:
   - AGENTS.md
   - mois-hotmart-collector/AGENTS.md
   - docs/registros/mois1.md
+
+## 2026-05-26 — Ajuste de horário do ciclo 1 para 18:15 + logs de paginação detalhados
+- Ajustado o agendamento do ciclo 1 do coletor Hotmart para executar diariamente às 18:15.
+- Causa-raiz: necessidade operacional de observar a execução do ciclo 1 em horário específico para análise de paginação.
+- Correção aplicada:
+  - `@Scheduled(cron = "0 15 18 * * *")` no método `collectFirstCycleAtFifteen`;
+  - atualização da mensagem do scheduler para `hora=18:15`;
+  - inclusão de logs expressivos de paginação no ciclo 1: início da coleta com limites, log antes da requisição de cada página, log de fechamento por página (itens retornados/adicionados) e log de encerramento consolidado da execução.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - docs/registros/mois1.md

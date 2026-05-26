@@ -14,22 +14,43 @@ style: |
       linear-gradient(135deg, #0f172a 0%, #111827 45%, #1e1b4b 100%);
     color: #e5e7eb;
   }
+  section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 74px;
+    background: linear-gradient(90deg, rgba(8, 47, 73, 0.78) 0%, rgba(30, 64, 175, 0.42) 55%, rgba(15, 23, 42, 0.2) 100%);
+    border-bottom: 1px solid rgba(103, 232, 249, 0.35);
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.4);
+    z-index: 0;
+  }
   section::after {
     content: "MKTH";
     position: absolute;
-    top: 18px;
+    top: 16px;
     right: 24px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 0.8rem;
-    letter-spacing: 0.14em;
-    color: #0f172a;
-    background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 100%);
-    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.35);
+    padding: 9px 15px;
+    border-radius: 10px;
+    font-weight: 900;
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    color: #ecfeff;
+    border: 1px solid rgba(103, 232, 249, 0.65);
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
+    box-shadow: 0 12px 30px rgba(14, 116, 144, 0.45);
+    z-index: 2;
   }
   h1, h2, h3 {
     color: #f8fafc;
+  }
+  section > * {
+    position: relative;
+    z-index: 1;
+  }
+  h1 {
+    margin-top: 1.4rem;
   }
   strong {
     color: #67e8f9;

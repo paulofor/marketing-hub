@@ -33,27 +33,27 @@ class PromptBuilderResultRecorderArchUnitTest {
             .should(haveRequiredInsertMethod());
 
     private static ArchCondition<com.tngtech.archunit.core.domain.JavaClass> haveRequiredRecordMethod() {
-        return new ArchCondition<>("have method recordPromptBuilderOpenAiResult(String, String, String, String)") {
+        return new ArchCondition<>("[ARQUITETURA] have method recordPromptBuilderOpenAiResult(String, String, String, String)") {
             @Override
             public void check(com.tngtech.archunit.core.domain.JavaClass javaClass, ConditionEvents events) {
                 boolean hasMethod = javaClass.getMethods().stream()
                         .filter(method -> method.getName().equals("recordPromptBuilderOpenAiResult"))
                         .anyMatch(PromptBuilderResultRecorderArchUnitTest::hasFourStringParameters);
                 events.add(new SimpleConditionEvent(javaClass, hasMethod,
-                        javaClass.getName() + " must declare method recordPromptBuilderOpenAiResult(String, String, String, String)"));
+                        "[ARQUITETURA] " + javaClass.getName() + " must declare method recordPromptBuilderOpenAiResult(String, String, String, String)"));
             }
         };
     }
 
     private static ArchCondition<com.tngtech.archunit.core.domain.JavaClass> haveRequiredInsertMethod() {
-        return new ArchCondition<>("have method insertOpenAiIntegrationRecord(String, String, String, String, Long)") {
+        return new ArchCondition<>("[ARQUITETURA] have method insertOpenAiIntegrationRecord(String, String, String, String, Long)") {
             @Override
             public void check(com.tngtech.archunit.core.domain.JavaClass javaClass, ConditionEvents events) {
                 boolean hasMethod = javaClass.getMethods().stream()
                         .filter(method -> method.getName().equals("insertOpenAiIntegrationRecord"))
                         .anyMatch(PromptBuilderResultRecorderArchUnitTest::hasExpectedInsertParameters);
                 events.add(new SimpleConditionEvent(javaClass, hasMethod,
-                        javaClass.getName() + " must declare method insertOpenAiIntegrationRecord(String, String, String, String, Long)"));
+                        "[ARQUITETURA] " + javaClass.getName() + " must declare method insertOpenAiIntegrationRecord(String, String, String, String, Long)"));
             }
         };
     }

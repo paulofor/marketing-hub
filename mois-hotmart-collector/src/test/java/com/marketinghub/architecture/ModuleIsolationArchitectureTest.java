@@ -19,7 +19,7 @@ class ModuleIsolationArchitectureTest {
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
             .should()
             .dependOnClassesThat(otherMarketingHubPackagesExcept(MOIS_SALES_LIBRARY_PACKAGE))
-            .because("o pacote de biblioteca de páginas de vendas do MOIS deve ficar isolado dos demais pacotes internos");
+            .because("[ARQUITETURA] o pacote de biblioteca de páginas de vendas do MOIS deve ficar isolado dos demais pacotes internos");
 
     @ArchTest
     static final ArchRule otherMarketingHubPackagesMustNotDependOnMoisSalesLibraryPackage = noClasses()
@@ -30,7 +30,7 @@ class ModuleIsolationArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
-            .because("nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
+            .because("[ARQUITETURA] nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
 
     private static DescribedPredicate<JavaClass> otherMarketingHubPackagesExcept(String allowedPackagePrefix) {
         return new DescribedPredicate<>("other com.marketinghub packages except " + allowedPackagePrefix) {

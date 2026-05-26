@@ -1739,3 +1739,11 @@
   - substituição da lógica delegada por implementação direta de `registerInitialExecution(...)` em `geralanding.wireframe.service.GeraLandingStageExecutionService`;
   - remoção do uso explícito de `com.marketinghub.geralanding.GeraLandingStartResponse` no fluxo local.
 - impacto funcional: o retorno do start continua no contrato local `GeraLandingStartResponse`, agora com lógica executada localmente no serviço da etapa wireframe.
+
+## 2026-05-26 04:05:00 UTC
+- ajuste solicitado: adicionar regra de arquitetura no ArchUnit para restringir dependências de `geralanding.*.service`.
+- causa-raiz: ausência de guarda arquitetural explícita permitia que serviços do GeraLanding dependessem de classes internas fora da lista permitida.
+- correção aplicada:
+  - inclusão de regra `geralandingServicePackagesShouldOnlyAccessAllowedMarketingHubClasses` em `ModuleIsolationArchitectureTest`;
+  - lista de classes permitidas em `com.marketinghub`: `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository`.
+- impacto funcional: prevenção automatizada de acoplamento indevido entre serviços `geralanding.*.service` e outros pacotes internos.

@@ -75,6 +75,8 @@ A plataforma orquestra:
 
 Não vendemos “prompt solto”. Vendemos **arquitetura de execução confiável**.
 
+- IA atinge seu potencial máximo quando recebe **tarefas únicas, específicas e bem contextualizadas**.
+- Para isso, operamos com **regras claras, objetivas e verificáveis** em cada etapa.
 - IA guiada por **framework canônico de decisão** (Dor → Resultado → Mecanismo → Prova → Oferta).
 - Fluxos com **contratos explícitos de entrada/saída** para reduzir ambiguidade.
 - Validação contínua de coerência entre hipótese de mercado, oferta e narrativa.
@@ -86,10 +88,12 @@ Não vendemos “prompt solto”. Vendemos **arquitetura de execução confiáve
 
 A solução incorpora a experiência prática de 30 anos do empreendedor em:
 
-- arquitetura de sistemas críticos;
+- arquitetura de sistemas críticos e construção orientada por arquitetura;
 - integração entre módulos e contratos robustos;
 - prevenção de falhas por causa-raiz;
 - governança técnica para escala com previsibilidade.
+
+Essa base foi construída especialmente a partir da evolução intensa de software no final dos anos 90, quando arquiteturas sólidas se tornaram essenciais para manter a complexidade crescente sob controle.
 
 **Resultado:** menos erro operacional da IA, mais consistência e maior velocidade de aprendizagem comercial.
 

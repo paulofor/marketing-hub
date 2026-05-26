@@ -227,46 +227,15 @@ Qualquer correção de falha onde o preset design não gerar HTML provisório de
 
 
 
-### 15.4 Diagrama de arquitetura por módulo/pacote — Gera Landing (Worker AI x Backend)
+### 15.4 Diagramas arquiteturais por módulo (base ArchUnit) — Gera Landing
 
-Diagrama canônico de referência para o fluxo Gera Landing, separando explicitamente o lado do **Worker AI** e o lado do **Backend**, com fronteira de integração via HTTP e persistência exclusiva no backend.
+Os diagramas canônicos de arquitetura do GeraLanding (backend e worker ai), derivados das regras ArchUnit, ficam centralizados em:
 
-```mermaid
-flowchart LR
-    subgraph W[Worker AI - ai-worker<br>Pacote: com.marketinghub.worker.geralanding]
-      WS[GeraLandingExecutionScheduler] --> WE[GeraLandingExecutionService]
-      WE --> WB["GeraLandingBackendClient<br/>HTTP backend"]
-      WE --> OA["GeraLandingOpenAiFlexClient<br/>OpenAI Responses"]
-      WE --> SD["stage/*<br/>Schema + Prompt Resolver"]
-    end
+- `docs/canonical/geralanding-arquitetura-canon.v1.md`
 
-    subgraph B[Backend - ads-service<br>Pacote: com.marketinghub.geralanding]
-      BC[GeraLandingInternalController / GeraLandingController] --> BS[GeraLandingStageExecutionService]
-      BS --> BH[Html Assemblers/Processors<br>(copy, wireframe, designpreset, imageplanning)]
-      BS --> BR[GeraLandingStageExecutionRepository]
-      BR --> DB[(MySQL 5.7)]
-      BS --> LP["Publicação Lead Portal<br/>endpoint externo"]
-    end
+> Observação: manter este procedimento como referência de fluxo e o documento acima como referência primária de arquitetura do módulo GeraLanding.
 
-    WB -->|claim/dispatch/receive/complete/fail| BC
-    OA -->|resultado estruturado por etapa| WE
-    BS -->|workerPrompt + stage config| BC
-
-    classDef worker fill:#E8F4FF,stroke:#4D90FE,color:#0B3D91;
-    classDef backend fill:#FFF4E5,stroke:#F39C12,color:#8A4B08;
-    classDef db fill:#FDEDEC,stroke:#C0392B,color:#7B241C;
-
-    class WS,WE,WB,OA,SD worker;
-    class BC,BS,BH,BR,LP backend;
-    class DB db;
-```
-
-#### Regras de integração refletidas no diagrama (Gera Landing)
-- O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend Gera Landing.
-- O backend concentra regras de contrato, montagem de HTML provisório/final e publicação para Lead Portal.
-- O Worker AI concentra orquestração por etapa e integração com OpenAI, devolvendo resultados ao backend pelos endpoints do próprio domínio Gera Landing.
-
-### 15.4 Regra mandatória — bloqueio de metainstrução na copy final
+### 15.5 Regra mandatória — bloqueio de metainstrução na copy final
 
 É obrigatório bloquear a publicação quando qualquer campo textual final da landing contiver metainstrução ou texto técnico operacional (ex.: instruções de montagem, placeholders, notas para operador/IA como "preciso do targetSectionId real").
 

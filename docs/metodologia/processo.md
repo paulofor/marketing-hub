@@ -86,3 +86,7 @@ Criei uma excpetion para esse service
 
 
 ##### Precisamos controlar os montadores de prompt/request senão vamos ter muitos problemas.
+
+> O geralanding esta se tornando uma arquitetura focada em gerar produtos digitais.
+> vai ser usada em outros pontos.
+> tem pipeline, etapas, worker, backend com persistencia, dados dentro de prompt, schema, etc.

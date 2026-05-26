@@ -1747,3 +1747,31 @@
   - inclusão de regra `geralandingServicePackagesShouldOnlyAccessAllowedMarketingHubClasses` em `ModuleIsolationArchitectureTest`;
   - lista de classes permitidas em `com.marketinghub`: `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository`.
 - impacto funcional: prevenção automatizada de acoplamento indevido entre serviços `geralanding.*.service` e outros pacotes internos.
+
+## 2026-05-26 01:07:18 UTC-3
+- solicitação para criar diagramas separados de backend e worker ai usando como base as definições ArchUnit do módulo geralanding no documento canônico.
+- raciocínio aplicado: usar os testes de arquitetura como fonte objetiva das dependências permitidas/proibidas para evitar diagrama genérico e manter aderência de governança.
+- foi feito:
+  - atualização do cânone `procedimento-experimento-canon.v1.md` com seção de diagramas por módulo (backend e worker ai), incluindo regras explícitas derivadas dos testes ArchUnit;
+  - ajuste de numeração da seção subsequente de regra mandatória para manter sequência (`15.5`).
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - backend/ads-service/src/test/java/com/marketinghub/architecture/GeraLandingAssemblerArchitectureTest.java
+  - backend/ads-service/src/test/java/com/marketinghub/architecture/ModuleIsolationArchitectureTest.java
+  - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingArchitectureTest.java
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md
+
+## 2026-05-26 01:11:16 UTC-3
+- ajuste solicitado: mover os diagramas de arquitetura do GeraLanding para um documento próprio do tema GeraLanding.
+- causa-raiz: os diagramas estavam no procedimento geral de experimento, dificultando localizar rapidamente a arquitetura canônica específica do módulo.
+- foi feito:
+  - criado o documento canônico `docs/canonical/geralanding-arquitetura-canon.v1.md` com os dois diagramas (backend e worker ai) baseados nas regras ArchUnit;
+  - seção `15.4` do `docs/canonical/procedimento-experimento-canon.v1.md` foi reduzida para apontamento explícito ao novo documento canônico de arquitetura.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - backend/ads-service/src/test/java/com/marketinghub/architecture/GeraLandingAssemblerArchitectureTest.java
+  - backend/ads-service/src/test/java/com/marketinghub/architecture/ModuleIsolationArchitectureTest.java
+  - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingArchitectureTest.java
+  - docs/registros/experimentos.md

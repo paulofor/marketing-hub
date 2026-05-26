@@ -1666,3 +1666,18 @@
   - atualização do prompt `landing-page-design-preset.md` com regra explícita de referência exclusiva a `definicoes.*.(desktop|mobile)[].nome`;
   - novos testes unitários para falha da execução quando houver estilo indefinido no preset e para presença da regra no prompt de design preset.
 - impacto funcional: bloqueia preset inválido antes de persistência e orienta o modelo a produzir saída aderente já na geração.
+
+## 2026-05-25 23:55:00 UTC
+- ajuste solicitado: criar classe `RecebeResponse` nas etapas do GeraLanding (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`) para centralizar recebimento da resposta crua da OpenAI e envio ao backend.
+- causa-raiz: o envio de dispatch/result estava acoplado no serviço de execução, dificultando evolução por etapa e rastreabilidade do payload por domínio.
+- correção aplicada:
+  - criação de `RecebeResponse` por pacote de etapa para montar o callback e enviar dados ao backend;
+  - atualização do `GeraLandingExecutionService` para delegar o processamento de resposta por etapa via `encaminharRespostaDaEtapa(...)`.
+- impacto funcional: separa responsabilidade por etapa, melhora organização do fluxo e mantém envio padronizado de payload para os endpoints de backend.
+
+## 2026-05-26 00:10:00 UTC
+- ajuste solicitado: definir nomes de bean explícitos e distintos para todas as classes `RecebeResponse` do GeraLanding.
+- causa-raiz: todas as classes compartilhavam o mesmo nome simples e estavam anotadas apenas com `@Component`, aumentando risco de ambiguidade de injeção por nome em evoluções futuras.
+- correção aplicada:
+  - adição de nomes explícitos em `@Component` para cada etapa (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
+- impacto funcional: mantém a injeção estável e elimina ambiguidades de identificação de bean por nome.

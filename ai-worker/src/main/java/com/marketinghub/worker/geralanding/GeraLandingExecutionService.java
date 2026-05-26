@@ -42,6 +42,11 @@ public class GeraLandingExecutionService {
     private final com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest;
     private final com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest;
     private final com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest;
+    private final com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse;
+    private final com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse;
+    private final com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse;
+    private final com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse;
+    private final com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse;
     private final int pendingLimit;
     private final Resource wireframeSchemaResource;
     private final Resource copySchemaResource;
@@ -59,6 +64,11 @@ public class GeraLandingExecutionService {
                                        com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest,
                                        com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest,
                                        com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest,
+                                       com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse,
+                                       com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse,
+                                       com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse,
+                                       com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse,
+                                       com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,
                                        @Value("classpath:prompts/geralanding/landing-page-wireframe-schema.json")
                                        Resource wireframeSchemaResource,
@@ -80,6 +90,11 @@ public class GeraLandingExecutionService {
         this.imagePlanningMontaRequest = imagePlanningMontaRequest;
         this.presetDesignMontaRequest = presetDesignMontaRequest;
         this.deliverablesMontaRequest = deliverablesMontaRequest;
+        this.wireframeRecebeResponse = wireframeRecebeResponse;
+        this.copyRecebeResponse = copyRecebeResponse;
+        this.imagePlanningRecebeResponse = imagePlanningRecebeResponse;
+        this.presetDesignRecebeResponse = presetDesignRecebeResponse;
+        this.deliverablesRecebeResponse = deliverablesRecebeResponse;
         this.pendingLimit = Math.max(1, pendingLimit);
         this.wireframeSchemaResource = wireframeSchemaResource;
         this.copySchemaResource = copySchemaResource;
@@ -166,10 +181,7 @@ public class GeraLandingExecutionService {
             if (payload != null && StringUtils.hasText(payload.responseContent())) {
                 log.info("Resposta OpenAI (responseContent) executionId={}: {}", execution.idJob(), payload.responseContent());
             }
-            if (payload != null && StringUtils.hasText(payload.openAiJobId())) {
-                backendClient.receiveDispatch(execution.idJob(), execution.experimentId(), execution.stageCode(), payload.openAiJobId());
-            }
-            backendClient.receiveResult(execution.idJob(), execution.experimentId(), execution.stageCode(), payload);
+            encaminharRespostaDaEtapa(stage, execution, payload);
             log.info("Resultado OpenAI registrado para gera-landing executionId={} (experimentId={})",
                     execution.idJob(), execution.experimentId());
         } catch (Exception ex) {
@@ -185,6 +197,22 @@ public class GeraLandingExecutionService {
             } catch (Exception callbackEx) {
                 log.error("Falha ao registrar erro de execução no backend para executionId={}", execution.idJob(), callbackEx);
             }
+        }
+    }
+
+    /**
+     * Encaminha a resposta da OpenAI para o processador da etapa, que monta e envia o payload ao backend.
+     */
+    private void encaminharRespostaDaEtapa(GeraLandingStageDefinition stage,
+                                           GeraLandingStageExecutionDto execution,
+                                           GeraLandingJobCompletionPayload payload) {
+        switch (stage) {
+            case WIREFRAME -> wireframeRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case COPY -> copyRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case IMAGE_PLANNING -> imagePlanningRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case DESIGN_PRESET -> presetDesignRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case DELIVERABLES -> deliverablesRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            default -> throw new IllegalStateException("Etapa não suportada para processamento de resposta: " + stage);
         }
     }
 

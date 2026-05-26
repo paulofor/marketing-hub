@@ -7,42 +7,23 @@ Consolidar a arquitetura do GeraLanding com base nas regras automatizadas de Arc
 ## 1) Backend (ads-service / `com.marketinghub.geralanding`)
 
 ```mermaid
-flowchart TD
-    subgraph API[Controllers GeraLanding]
-      C1[GeraLandingController]
-      C2[GeraLandingInternalController]
-    end
+flowchart LR
+    WEB["Pacote: geralanding.<etapa>.web"]
+    SERV["Pacote: geralanding.<etapa>.service"]
+    PROV["Pacote: geralanding.<etapa>.provisorio"]
+    EXP["Pacote: com.marketinghub.experiment (Experiment + ExperimentRepository)"]
+    EXEC["Pacote: com.marketinghub.geralanding.execution (GeraLandingStageExecution + GeraLandingStageExecutionRepository)"]
 
-    C1 --> SVC[GeraLandingStageExecutionService]
-    C2 --> SVC
-
-    SVC --> A1[WireframeProvisionalHtmlAssembler<br/>assemble(modelResponse, jobId)]
-    SVC --> A2[CopyProvisionalHtmlAssembler<br/>assemble(copyResponse, wireframeResponse, jobId)]
-    SVC --> A3[DesignPresetProvisionalHtmlAssembler<br/>assemble(designPreset, copy, imagePlanning, wireframe, jobId)]
-    SVC --> A4[ImagePlanningProvisionalHtmlAssembler]
-
-    SVC --> REPO1[GeraLandingStageExecutionRepository]
-    SVC --> REPO2[ExperimentRepository]
-    SVC --> ENT1[GeraLandingStageExecution]
-    SVC --> ENT2[Experiment]
-    REPO1 --> DB[(MySQL 5.7)]
-    REPO2 --> DB
-
-    subgraph STAGES[Etapas do GeraLanding no backend]
-      WEB[geralanding.<etapa>.web]
-      PROV[geralanding.<etapa>.provisorio]
-      SERV[geralanding.<etapa>.service]
-    end
-
-    WEB -->|somente mesma etapa| WEB
-    WEB -->|somente mesma etapa| SERV
-    PROV -->|somente mesma etapa| PROV
-    SERV -->|somente mesmas classes service da etapa| SERV
-    SERV -->|permitido| ENT2
-    SERV -->|permitido| REPO2
-    SERV -->|permitido| ENT1
-    SERV -->|permitido| REPO1
+    WEB -->|pode usar| WEB
+    WEB -->|pode usar| SERV
+    PROV -->|pode usar| PROV
+    SERV -->|pode usar| SERV
+    SERV -->|pode usar| EXP
+    SERV -->|pode usar| EXEC
 ```
+
+> Leitura do diagrama: cada caixa é um pacote. Só existe seta quando há dependência permitida. Sem seta = não pode usar diretamente.
+
 
 Regras arquiteturais refletidas (ArchUnit):
 - `GeraLandingStageExecutionService` não pode chamar assinaturas legadas dos assemblers de wireframe/copy/design preset.

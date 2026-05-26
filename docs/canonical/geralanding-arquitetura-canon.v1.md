@@ -14,10 +14,7 @@ flowchart LR
     EXP["Pacote: com.marketinghub.experiment (Experiment + ExperimentRepository)"]
     EXEC["Pacote: com.marketinghub.geralanding.execution (GeraLandingStageExecution + GeraLandingStageExecutionRepository)"]
 
-    WEB -->|pode usar| WEB
     WEB -->|pode usar| SERV
-    PROV -->|pode usar| PROV
-    SERV -->|pode usar| SERV
     SERV -->|pode usar| EXP
     SERV -->|pode usar| EXEC
 ```
@@ -58,13 +55,6 @@ flowchart TD
     SC -. notDependOnEachOther .- SP
     SI -. notDependOnEachOther .- SP
 
-    COPY[geralanding.copy] -->|somente| COPYOK[geralanding.copy + geralanding.comum]
-    PRESET[geralanding.presetdesign] -->|somente| PRESETOK[geralanding.presetdesign + geralanding.comum]
-    WIRE[geralanding.wireframe] -->|somente| WIREOK[geralanding.wireframe + geralanding.comum]
-    IMG[geralanding.imageplanning] -->|somente| IMGOK[geralanding.imageplanning + geralanding.comum]
-    DELIV[geralanding.deliverables] -->|somente| DELIVOK[geralanding.deliverables + geralanding.comum]
-    STG[geralanding.stage] -->|somente| STGOK[geralanding.stage + geralanding.comum]
-    COMMON[geralanding.comum] -->|somente| COMMONOK[geralanding.comum]
 ```
 
 Regras arquiteturais refletidas (ArchUnit):

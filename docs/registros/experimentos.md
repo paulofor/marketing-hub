@@ -1798,3 +1798,5 @@
 - 2026-05-26: Atualizada a regra arquitetural de GeraLanding para permitir dependência entre classes do próprio pacote `service` (mesma etapa), mantendo as dependências explícitas já permitidas (`Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository`). Ajustados teste ArchUnit e cânone para aderência.
 
 - 2026-05-26: Ajustado `docs/pitch/marketing-hub-investidores.md` com identidade visual (logo MKTH no canto dos slides, gradientes de fundo e destaque tipográfico) para melhorar apresentação do pitch.
+
+- 2026-05-26: Atualizados os diagramas canônicos de arquitetura do GeraLanding para refletir as regras ArchUnit vigentes no backend por camada/etapa (`web`, `provisorio` e `service`), incluindo as dependências explicitamente permitidas em `service` para `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.

@@ -1775,3 +1775,5 @@
   - backend/ads-service/src/test/java/com/marketinghub/architecture/ModuleIsolationArchitectureTest.java
   - ai-worker/src/test/java/com/marketinghub/worker/geralanding/GeraLandingArchitectureTest.java
   - docs/registros/experimentos.md
+
+- 2026-05-26: Ajustado `GeraLandingWireframeStageService` para usar as cópias locais de service/response no pacote `geralanding.wireframe.service`, removendo dependência direta de `com.marketinghub.geralanding.GeraLandingStageExecutionService` e `GeraLandingStartResponse`.

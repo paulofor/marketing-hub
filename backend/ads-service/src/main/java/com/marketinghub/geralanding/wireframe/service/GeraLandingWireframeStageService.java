@@ -1,7 +1,5 @@
 package com.marketinghub.geralanding.wireframe.service;
 
-import com.marketinghub.geralanding.GeraLandingStartResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de wireframe do GeraLanding. */

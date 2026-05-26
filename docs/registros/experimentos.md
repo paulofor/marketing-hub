@@ -1815,3 +1815,5 @@
   - alterada a asserção principal para validar a delegação ao processador da etapa (`wireframeRecebeResponse.processar(...)`);
   - removida expectativa de `receiveDispatch`/`receiveResult` no `backendClient` nesse cenário, mantendo validação de ausência de falha.
 - impacto funcional: o teste passa a validar o contrato correto do `GeraLandingExecutionService` (delegar o processamento da resposta para a etapa), eliminando falso negativo no surefire.
+
+- 2026-05-26 20:36:00 UTC — Ajustado o teste `GeraLandingExecutionServiceTest.processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult` para refletir o fluxo atual com validação de wireframe: o mock de resposta OpenAI agora retorna JSON válido com `definicoes` e `pagina.corpo.secoes`, permitindo a chamada de `wireframeRecebeResponse.processar(...)` no caminho de sucesso.

@@ -1706,3 +1706,12 @@
 - correção aplicada:
   - adição de nomes explícitos em `@Component` para cada etapa (`wireframe`, `copy`, `imageplanning`, `presetdesign`, `deliverables`).
 - impacto funcional: mantém a injeção estável e elimina ambiguidades de identificação de bean por nome.
+
+## 2026-05-26 02:20:00 UTC
+- ajuste solicitado: criar pacote `service` em cada etapa do GeraLanding e mover o início de execução para classes específicas por etapa.
+- causa-raiz: os controllers de `wireframe`, `copy`, `imageplanning` e `designpreset` dependiam diretamente de classes do pacote raiz `com.marketinghub.geralanding`, violando o teste de isolamento arquitetural por subpacote.
+- correção aplicada:
+  - criação de serviços por etapa (`GeraLanding*StageService`) dentro de `geralanding.<etapa>.service`;
+  - criação de responses por etapa (`GeraLanding*StartResponse`) dentro de `geralanding.<etapa>.service`;
+  - atualização dos controllers de etapa para depender apenas das classes do próprio subpacote.
+- impacto funcional: mantém os endpoints e o contrato HTTP de início de etapa, com isolamento arquitetural por submódulo.

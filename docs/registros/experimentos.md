@@ -1723,3 +1723,19 @@
   - inclusão de `@MockBean GeraLandingCopyStageService` no teste;
   - ajuste do cenário `shouldCreateCopyExecutionAndReturnCodeAndStatus` para mockar/verificar `copyStageService.start(...)` e `GeraLandingCopyStartResponse`.
 - impacto funcional: restaura a subida do contexto do teste MVC sem alterar contrato HTTP dos endpoints.
+
+## 2026-05-26 03:45:00 UTC
+- ajuste solicitado: criar `GeraLandingStartResponse` e `GeraLandingStageExecutionService` dentro do pacote `com.marketinghub.geralanding.wireframe.service`.
+- causa-raiz: necessidade de disponibilizar contrato e serviço locais no subpacote `wireframe.service` para reduzir acoplamento direto no ponto de uso.
+- correção aplicada:
+  - criação de `GeraLandingStartResponse` local em `geralanding.wireframe.service`;
+  - criação de `GeraLandingStageExecutionService` local em `geralanding.wireframe.service`, com adaptação de retorno para o contrato local.
+- impacto funcional: mantém a API interna de início da etapa wireframe com tipos locais no próprio subpacote.
+
+## 2026-05-26 03:50:00 UTC
+- ajuste solicitado: remover o uso de `com.marketinghub.geralanding.GeraLandingStartResponse` no serviço local de wireframe.
+- causa-raiz: implementação anterior fazia adaptação por delegação ao serviço/response do pacote raiz, contrariando a orientação de manter a lógica dentro do pacote local neste momento.
+- correção aplicada:
+  - substituição da lógica delegada por implementação direta de `registerInitialExecution(...)` em `geralanding.wireframe.service.GeraLandingStageExecutionService`;
+  - remoção do uso explícito de `com.marketinghub.geralanding.GeraLandingStartResponse` no fluxo local.
+- impacto funcional: o retorno do start continua no contrato local `GeraLandingStartResponse`, agora com lógica executada localmente no serviço da etapa wireframe.

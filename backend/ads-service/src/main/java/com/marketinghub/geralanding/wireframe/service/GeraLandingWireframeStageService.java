@@ -1,5 +1,7 @@
-package com.marketinghub.geralanding.wireframe.service;
+package com.marketinghub.geralanding.wireframe;
 
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de wireframe do GeraLanding. */
@@ -14,7 +16,13 @@ public class GeraLandingWireframeStageService {
 
   /** Inicia a execução da etapa de wireframe para o experimento informado. */
   public GeraLandingWireframeStartResponse start(Long experimentId) {
-    GeraLandingWireframeStartExecutionResponse response = executionService.registerInitialExecution(experimentId, STAGE_NAME);
-    return new GeraLandingWireframeStartResponse(response.idJob(), response.status());
+    var execution = executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    return new GeraLandingWireframeStartResponse(fromDatabaseIdJob(execution.getIdJob()), execution.getStatus());
+  }
+
+
+  /** Converte o id do formato persistido para o formato textual da API. */
+  private String fromDatabaseIdJob(byte[] idJob) {
+    return new String(idJob, StandardCharsets.UTF_8);
   }
 }

@@ -1,5 +1,7 @@
-package com.marketinghub.geralanding.copy.service;
+package com.marketinghub.geralanding.copy;
 
+import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionService;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de copy do GeraLanding. */
@@ -14,6 +16,13 @@ public class GeraLandingCopyStageService {
 
   /** Inicia a execução da etapa de copy para o experimento informado. */
   public GeraLandingCopyStartResponse start(Long experimentId) {
-    return executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    var execution = executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    return new GeraLandingCopyStartResponse(fromDatabaseIdJob(execution.getIdJob()), execution.getStatus());
+  }
+
+
+  /** Converte o id do formato persistido para o formato textual da API. */
+  private String fromDatabaseIdJob(byte[] idJob) {
+    return new String(idJob, StandardCharsets.UTF_8);
   }
 }

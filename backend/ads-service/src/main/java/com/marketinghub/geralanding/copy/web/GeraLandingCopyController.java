@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.copy.web;
 
-import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
-import com.marketinghub.geralanding.copy.service.GeraLandingCopyStartResponse;
+import com.marketinghub.geralanding.copy.GeraLandingCopyStageService;
+import com.marketinghub.geralanding.copy.GeraLandingCopyStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

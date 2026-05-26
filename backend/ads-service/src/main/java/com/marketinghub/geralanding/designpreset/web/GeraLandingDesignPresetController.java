@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.designpreset.web;
 
-import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStageService;
-import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStartResponse;
+import com.marketinghub.geralanding.designpreset.GeraLandingDesignPresetStageService;
+import com.marketinghub.geralanding.designpreset.GeraLandingDesignPresetStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

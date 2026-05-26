@@ -1,5 +1,7 @@
-package com.marketinghub.geralanding.imageplanning.service;
+package com.marketinghub.geralanding.imageplanning;
 
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageExecutionService;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de planejamento de imagens do GeraLanding. */
@@ -14,6 +16,13 @@ public class GeraLandingImagePlanningStageService {
 
   /** Inicia a execução da etapa de planejamento de imagens para o experimento informado. */
   public GeraLandingImagePlanningStartResponse start(Long experimentId) {
-    return executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    var execution = executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    return new GeraLandingImagePlanningStartResponse(fromDatabaseIdJob(execution.getIdJob()), execution.getStatus());
+  }
+
+
+  /** Converte o id do formato persistido para o formato textual da API. */
+  private String fromDatabaseIdJob(byte[] idJob) {
+    return new String(idJob, StandardCharsets.UTF_8);
   }
 }

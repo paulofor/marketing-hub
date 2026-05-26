@@ -29,28 +29,25 @@ public class GeraLandingWireframeStageExecutionService {
 
   /** Registra a execução inicial da etapa e retorna o contrato local para o módulo wireframe. */
   @Transactional
-  public GeraLandingWireframeStartExecutionResponse registerInitialExecution(Long experimentId, String stageName) {
+  public GeraLandingStageExecution registerInitialExecution(Long experimentId, String stageName) {
     Instant now = Instant.now();
     Experiment experiment =
         experimentRepository
             .findById(experimentId)
             .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
 
-    GeraLandingStageExecution execution =
-        GeraLandingStageExecution.builder()
-            .experimentId(experiment.getId())
-            .experiment(experiment)
-            .stageCode(stageName)
-            .executionRequestedAt(now)
-            .createdAt(now)
-            .promptTemplateId("manual/start")
-            .promptContent("Início manual via interface do experimento.")
-            .status(STATUS_STARTED)
-            .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
-            .build();
+    GeraLandingStageExecution execution = new GeraLandingStageExecution();
+    execution.setExperimentId(experiment.getId());
+    execution.setExperiment(experiment);
+    execution.setStageCode(stageName);
+    execution.setExecutionRequestedAt(now);
+    execution.setCreatedAt(now);
+    execution.setPromptTemplateId("manual/start");
+    execution.setPromptContent("Início manual via interface do experimento.");
+    execution.setStatus(STATUS_STARTED);
+    execution.setIdJob(toDatabaseIdJob(UUID.randomUUID().toString()));
 
-    GeraLandingStageExecution saved = executionRepository.save(execution);
-    return new GeraLandingWireframeStartExecutionResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+    return executionRepository.save(execution);
   }
 
   /** Converte o identificador textual para formato binário persistido no banco. */

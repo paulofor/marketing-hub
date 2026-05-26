@@ -16,9 +16,9 @@ flowchart TD
     C1 --> SVC[GeraLandingStageExecutionService]
     C2 --> SVC
 
-    SVC --> A1[WireframeProvisionalHtmlAssembler\nassemble(modelResponse, jobId)]
-    SVC --> A2[CopyProvisionalHtmlAssembler\nassemble(copyResponse, wireframeResponse, jobId)]
-    SVC --> A3[DesignPresetProvisionalHtmlAssembler\nassemble(designPreset, copy, imagePlanning, wireframe, jobId)]
+    SVC --> A1[WireframeProvisionalHtmlAssembler<br/>assemble(modelResponse, jobId)]
+    SVC --> A2[CopyProvisionalHtmlAssembler<br/>assemble(copyResponse, wireframeResponse, jobId)]
+    SVC --> A3[DesignPresetProvisionalHtmlAssembler<br/>assemble(designPreset, copy, imagePlanning, wireframe, jobId)]
     SVC --> A4[ImagePlanningProvisionalHtmlAssembler]
 
     SVC --> REPO1[GeraLandingStageExecutionRepository]
@@ -55,7 +55,7 @@ Regras arquiteturais refletidas (ArchUnit):
 ```mermaid
 flowchart TD
     SCH[GeraLandingExecutionScheduler] --> EXEC[GeraLandingExecutionService]
-    EXEC --> BACK[GeraLandingBackendClient\nHTTP /internal/geralanding/stage-executions/*]
+    EXEC --> BACK[GeraLandingBackendClient<br/>HTTP /internal/geralanding/stage-executions/*]
     EXEC --> OPENAI[GeraLandingOpenAiFlexClient]
     EXEC --> STAGE[geralanding.stage.*]
     EXEC --> COMUM[geralanding.comum.*]

@@ -1666,3 +1666,29 @@
   - atualização do prompt `landing-page-design-preset.md` com regra explícita de referência exclusiva a `definicoes.*.(desktop|mobile)[].nome`;
   - novos testes unitários para falha da execução quando houver estilo indefinido no preset e para presença da regra no prompt de design preset.
 - impacto funcional: bloqueia preset inválido antes de persistência e orienta o modelo a produzir saída aderente já na geração.
+
+## 2026-05-26 00:00:00 UTC
+- solicitação: criação da estrutura de pacotes para o submódulo `geralanding.x` no backend.
+- ação aplicada:
+  - criação dos pacotes `com.marketinghub.geralanding.x.web`, `com.marketinghub.geralanding.x.service` e `com.marketinghub.geralanding.x.repository`.
+  - inclusão de `package-info.java` em cada pacote para documentar responsabilidade básica por camada.
+- impacto funcional: estrutura base preparada para separar responsabilidades HTTP, serviço e persistência no novo submódulo `x`.
+
+## 2026-05-26 01:40:00 UTC
+- ajuste solicitado: mover os endpoints das etapas do GeraLanding para o pacote web da estrutura `geralanding.x`.
+- causa-raiz: os controllers de etapa ainda estavam no pacote raiz `com.marketinghub.geralanding`, sem aderência à segmentação por camada definida para `geralanding.x`.
+- correção aplicada:
+  - migração de `GeraLandingContoller` e `GeraLandingInternalController` para `com.marketinghub.geralanding.x.web`.
+  - atualização dos imports nos testes `@WebMvcTest` para apontar para os controllers no novo pacote.
+- impacto funcional: endpoints mantidos com os mesmos contratos/rotas HTTP, agora organizados no pacote web do submódulo `geralanding.x`.
+
+## 2026-05-26 02:05:00 UTC
+- ajuste solicitado: tratar `x` como variável por etapa no GeraLanding (e não como pacote literal).
+- causa-raiz: organização anterior fixava controllers em `geralanding.x.web`, contrariando a intenção de segmentar por etapa.
+- correção aplicada:
+  - remoção da estrutura literal `geralanding.x.*`.
+  - criação de controllers por etapa nos pacotes `geralanding.wireframe.web`, `geralanding.copy.web`, `geralanding.designpreset.web`, `geralanding.imageplanning.web` e `geralanding.deliverables.web`.
+  - criação de controller transversal em `geralanding.execution.web` para listagem/detalhe de execuções e publicação.
+  - migração do controller interno para `geralanding.internal.web`.
+  - atualização dos testes WebMvc para os novos pacotes.
+- impacto funcional: endpoints permanecem com os mesmos contratos HTTP, agora organizados por etapa conforme regra de variável por estágio.

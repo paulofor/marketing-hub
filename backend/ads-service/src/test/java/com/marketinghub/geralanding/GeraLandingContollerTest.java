@@ -1,5 +1,11 @@
 package com.marketinghub.geralanding;
 
+import com.marketinghub.geralanding.copy.web.GeraLandingCopyController;
+import com.marketinghub.geralanding.deliverables.web.GeraLandingDeliverablesController;
+import com.marketinghub.geralanding.designpreset.web.GeraLandingDesignPresetController;
+import com.marketinghub.geralanding.execution.web.GeraLandingExecutionController;
+import com.marketinghub.geralanding.imageplanning.web.GeraLandingImagePlanningController;
+import com.marketinghub.geralanding.wireframe.web.GeraLandingWireframeController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -18,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = GeraLandingContoller.class)
+@WebMvcTest(controllers = {GeraLandingExecutionController.class, GeraLandingWireframeController.class, GeraLandingCopyController.class, GeraLandingDesignPresetController.class, GeraLandingImagePlanningController.class, GeraLandingDeliverablesController.class})
 class GeraLandingContollerTest {
 
     @Autowired

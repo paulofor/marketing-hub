@@ -35,7 +35,7 @@ class ModuleIsolationArchitectureTest {
             .resideInAPackage("com.marketinghub.mois..")
             .should()
             .dependOnClassesThat(otherMarketingHubPackagesExcept("com.marketinghub.mois"))
-            .because("o módulo MOIS não deve depender de outros pacotes internos do sistema");
+            .because("[ARQUITETURA] o módulo MOIS não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
     static final ArchRule oprmMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -43,7 +43,7 @@ class ModuleIsolationArchitectureTest {
             .resideInAPackage("com.marketinghub.oprm..")
             .should()
             .dependOnClassesThat(otherMarketingHubPackagesExcept("com.marketinghub.oprm"))
-            .because("o módulo OPRM não deve depender de outros pacotes internos do sistema");
+            .because("[ARQUITETURA] o módulo OPRM não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
     static final ArchRule moisSalesLibraryPackageMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -51,7 +51,7 @@ class ModuleIsolationArchitectureTest {
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
             .should()
             .dependOnClassesThat(otherMarketingHubPackagesExcept(MOIS_SALES_LIBRARY_PACKAGE))
-            .because("o pacote de biblioteca de páginas de vendas do MOIS deve ficar isolado dos demais pacotes internos");
+            .because("[ARQUITETURA] o pacote de biblioteca de páginas de vendas do MOIS deve ficar isolado dos demais pacotes internos");
 
     @ArchTest
     static final ArchRule otherMarketingHubPackagesMustNotDependOnMoisSalesLibraryPackage = noClasses()
@@ -62,27 +62,27 @@ class ModuleIsolationArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
-            .because("nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
+            .because("[ARQUITETURA] nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
 
     @ArchTest
     static final ArchRule geralandingWireframeMustBeIsolated = isolatedFromOtherMarketingHubPackages(
             GERALANDING_WIREFRAME_PACKAGE,
-            "o subpacote geralanding.wireframe deve ficar independente dos demais pacotes internos");
+            "[ARQUITETURA] o subpacote geralanding.wireframe deve ficar independente dos demais pacotes internos");
 
     @ArchTest
     static final ArchRule geralandingCopyMustBeIsolated = isolatedFromOtherMarketingHubPackages(
             GERALANDING_COPY_PACKAGE,
-            "o subpacote geralanding.copy deve ficar independente dos demais pacotes internos");
+            "[ARQUITETURA] o subpacote geralanding.copy deve ficar independente dos demais pacotes internos");
 
     @ArchTest
     static final ArchRule geralandingImagePlanningMustBeIsolated = isolatedFromOtherMarketingHubPackages(
             GERALANDING_IMAGEPLANNING_PACKAGE,
-            "o subpacote geralanding.imageplanning deve ficar independente dos demais pacotes internos");
+            "[ARQUITETURA] o subpacote geralanding.imageplanning deve ficar independente dos demais pacotes internos");
 
     @ArchTest
     static final ArchRule geralandingPresetDesignMustBeIsolated = isolatedFromOtherMarketingHubPackages(
             GERALANDING_PRESETDESIGN_PACKAGE,
-            "o subpacote geralanding.designpreset deve ficar independente dos demais pacotes internos");
+            "[ARQUITETURA] o subpacote geralanding.designpreset deve ficar independente dos demais pacotes internos");
 
     @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
@@ -133,7 +133,7 @@ class ModuleIsolationArchitectureTest {
      * Valida que classes de um layer dependem apenas do layer permitido com mesmo x e vN.
      */
     private static ArchCondition<JavaClass> onlyDependOnLayer(String allowedTargetLayer) {
-        return new ArchCondition<>("depend only on " + allowedTargetLayer + " in same x/vN") {
+        return new ArchCondition<>("[ARQUITETURA] depend only on " + allowedTargetLayer + " in same x/vN") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 Optional<SalesLibraryPackageInfo> sourceInfo = extractSalesLibraryPackageInfo(item.getPackageName());
@@ -151,7 +151,7 @@ class ModuleIsolationArchitectureTest {
                     boolean allowedLayer = targetInfo.get().layer().equals(allowedTargetLayer)
                             || targetInfo.get().layer().equals(sourceInfo.get().layer());
                     if (!sameNamespace || !allowedLayer) {
-                        String message = item.getName() + " depende de " + dependency.getTargetClass().getName()
+                        String message = "[ARQUITETURA] " + item.getName() + " depende de " + dependency.getTargetClass().getName()
                                 + " mas só pode depender de pacote ." + allowedTargetLayer
                                 + " com mesmo x/vN";
                         events.add(SimpleConditionEvent.violated(item, message));

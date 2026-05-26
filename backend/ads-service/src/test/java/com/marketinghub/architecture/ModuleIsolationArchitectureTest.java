@@ -125,10 +125,10 @@ class ModuleIsolationArchitectureTest {
                     boolean valid = sourceStage.equals(targetStage)
                             && ("web".equals(targetLayer) || "service".equals(targetLayer));
                     if (!valid) {
-                        String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe " + item.getName()
-                                + " possui import/dependência violadora: " + dependency.getDescription()
-                                + " (alvo: " + targetName + ")"
-                                + " | regra: geralanding.*.web só pode acessar geralanding.*.web e geralanding.*.service da mesma etapa";
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe-origem=" + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: geralanding.*.web só pode acessar geralanding.*.web e geralanding.*.service da mesma etapa";
                         events.add(SimpleConditionEvent.violated(item, message));
                     }
                 });
@@ -156,10 +156,10 @@ class ModuleIsolationArchitectureTest {
                     }
                     boolean valid = sourceStage.equals(targetStage) && "provisorio".equals(targetLayer);
                     if (!valid) {
-                        String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe " + item.getName()
-                                + " possui import/dependência violadora: " + dependency.getDescription()
-                                + " (alvo: " + targetName + ")"
-                                + " | regra: geralanding.*.provisorio só pode acessar geralanding.*.provisorio da mesma etapa";
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe-origem=" + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: geralanding.*.provisorio só pode acessar geralanding.*.provisorio da mesma etapa";
                         events.add(SimpleConditionEvent.violated(item, message));
                     }
                 });
@@ -186,7 +186,7 @@ class ModuleIsolationArchitectureTest {
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)) {
                         return;
                     }
-                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe " + item.getName()
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe-origem=" + item.getName()
                             + " possui import/dependência violadora: " + dependency.getDescription()
                             + " (alvo: " + targetName + ")"
                             + " | regra: serviços em geralanding.*.service só podem acessar "

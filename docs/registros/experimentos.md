@@ -1861,3 +1861,4 @@
 - 2026-05-26 21:12:16 UTC — Simplificado o diagrama do documento `docs/canonical/geralanding-arquitetura-canon.v1.md` para reduzir confusão: os pacotes passaram a ser exibidos como caixas únicas e as dependências aparecem somente com setas quando permitidas (sem seta = acesso não permitido).
 
 - 2026-05-26 23:45:03 UTC — Ajustado o diagrama canônico do GeraLanding (seção Backend) para remover setas de auto dependência de pacote (`web -> web`, `service -> service`, `provisorio -> provisorio`), mantendo apenas dependências entre pacotes distintos e regras permitidas explícitas.
+- 2026-05-26 23:46:30 UTC — Aplicado o mesmo ajuste de simplificação em outros trechos de dependência entre pacotes no cânone do GeraLanding: removidas setas de auto referência semântica no diagrama do Worker AI (`copy/presetdesign/wireframe/imageplanning/deliverables/stage/comum` para eles mesmos), mantendo as regras explícitas no texto logo abaixo.

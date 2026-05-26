@@ -58,7 +58,7 @@ public class OprmMarketImportScheduler {
     }
 
     /** Executa a ingestão completa de arquivos CNPJ/CNAE no horário agendado para a execução operacional. */
-    @Scheduled(cron = "0 5 0 26 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 5 14 25 5 *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         log.info("Iniciando runScheduledImport do OPRM CNPJ/CNAE.");
         if (!scheduleProperties.enabled()) {
@@ -127,10 +127,6 @@ public class OprmMarketImportScheduler {
                     List<OprmCnaeUpsertDto> cnaes = "CNAE".equalsIgnoreCase(file.datasetType())
                             ? parseCnaesFromZip(zipPath, runResponse.runId(), fileId, file.fileName())
                             : null;
-                    if ("EMPRESAS".equalsIgnoreCase(file.datasetType())) {
-                        parseAndAccumulateCompanyBaseByCnaeFromEmpresasZip(
-                                zipPath, runResponse.runId(), fileId, file.fileName(), cnaeByCnpjBase, accumulatedMarketSizesByCnae);
-                    }
                     if ("SIMPLES".equalsIgnoreCase(file.datasetType())) {
                         parseAndAccumulateSimplesAndMeiByCnaeFromSimplesZip(
                                 zipPath, runResponse.runId(), fileId, file.fileName(), cnaeByCnpjBase, accumulatedMarketSizesByCnae,
@@ -138,6 +134,8 @@ public class OprmMarketImportScheduler {
                     }
                     List<OprmMarketSizeUpsertDto> marketSizes = null;
                     if ("ESTABELECIMENTOS".equalsIgnoreCase(file.datasetType())) {
+                        parseAndAccumulateCompanyBaseByCnaeFromEstablishmentsZip(
+                                zipPath, runResponse.runId(), fileId, file.fileName(), cnaeByCnpjBase);
                         marketSizes = parseAndAccumulateMarketSizesFromEstablishmentsZip(
                                 zipPath, runResponse.runId(), fileId, file.fileName(), accumulatedMarketSizesByCnae);
                     }
@@ -338,16 +336,15 @@ public class OprmMarketImportScheduler {
         return payload;
     }
 
-    /** Processa EMPRESAS para consolidar o CNAE principal por CNPJ base e total de empresas por CNAE. */
-    private void parseAndAccumulateCompanyBaseByCnaeFromEmpresasZip(Path zipPath,
-                                                                     Long runId,
-                                                                     Long fileId,
-                                                                     String fileName,
-                                                                     Map<String, String> cnaeByCnpjBase,
-                                                                     Map<String, MarketSizeAccumulator> accumulatedMarketSizesByCnae) throws IOException {
-        log.info("[run={} fileId={}] Início parse EMPRESAS para total_empresas por CNAE: {}", runId, fileId, fileName);
+    /** Processa ESTABELECIMENTOS para consolidar o CNAE principal por CNPJ base usado no match do SIMPLES. */
+    private void parseAndAccumulateCompanyBaseByCnaeFromEstablishmentsZip(Path zipPath,
+                                                                           Long runId,
+                                                                           Long fileId,
+                                                                           String fileName,
+                                                                           Map<String, String> cnaeByCnpjBase) throws IOException {
+        log.info("[run={} fileId={}] Início parse ESTABELECIMENTOS para mapear cnpjBase->cnaePrincipal: {}", runId, fileId, fileName);
         String lastRawLine = null;
-        List<String> empresasMapSamples = new ArrayList<>();
+        List<String> establishmentsMapSamples = new ArrayList<>();
         try (InputStream in = Files.newInputStream(zipPath);
              java.util.zip.ZipInputStream zipInputStream = new java.util.zip.ZipInputStream(in, StandardCharsets.ISO_8859_1)) {
             java.util.zip.ZipEntry entry;
@@ -359,30 +356,27 @@ public class OprmMarketImportScheduler {
                     lastRawLine = rawLine;
                     if (rawLine.isBlank()) continue;
                     String[] cols = rawLine.split(";", -1);
-                    if (cols.length < 7) continue;
+                    if (cols.length < 12) continue;
                     String cnpjBase = normalizeField(cols[0]);
-                    String cnaePrincipal = extractPrimaryCnaeCode(normalizeField(cols[6]));
+                    String cnaePrincipal = extractPrimaryCnaeCode(normalizeField(cols[11]));
                     if (cnpjBase.isBlank() || cnaePrincipal.isBlank()) continue;
-                    if (cnaeByCnpjBase.putIfAbsent(cnpjBase, cnaePrincipal) == null) {
-                        MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaePrincipal, key -> new MarketSizeAccumulator());
-                        acc.totalEmpresas++;
-                        if (empresasMapSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
-                            empresasMapSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' cnaePrincipal='" + cnaePrincipal + "'");
-                        }
+                    if (cnaeByCnpjBase.putIfAbsent(cnpjBase, cnaePrincipal) == null
+                            && establishmentsMapSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
+                        establishmentsMapSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' cnaePrincipal='" + cnaePrincipal + "'");
                     }
                 }
                 zipInputStream.closeEntry();
             }
         } catch (Exception ex) {
-            log.error("[run={} fileId={}] Falha no parse EMPRESAS. fileName={} lastRawPayload={} mapCnpjBaseSize={} cnaesConsolidados={}",
-                    runId, fileId, fileName, lastRawLine, cnaeByCnpjBase.size(), accumulatedMarketSizesByCnae.size(), ex);
+            log.error("[run={} fileId={}] Falha no parse ESTABELECIMENTOS para map cnpjBase->cnae. fileName={} lastRawPayload={} mapCnpjBaseSize={}",
+                    runId, fileId, fileName, lastRawLine, cnaeByCnpjBase.size(), ex);
             throw ex;
         }
-        log.info("[run={} fileId={}] Parse EMPRESAS concluído. cnpjBaseMapSize={} sampleMapeamentos={}",
+        log.info("[run={} fileId={}] Parse ESTABELECIMENTOS concluído para map cnpjBase->cnae. cnpjBaseMapSize={} sampleMapeamentos={}",
                 runId,
                 fileId,
                 cnaeByCnpjBase.size(),
-                empresasMapSamples);
+                establishmentsMapSamples);
     }
 
     /** Processa SIMPLES para consolidar total de empresas no Simples e no MEI por CNAE. */

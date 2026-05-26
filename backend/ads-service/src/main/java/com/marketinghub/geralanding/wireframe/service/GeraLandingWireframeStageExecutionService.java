@@ -13,13 +13,13 @@ import java.util.UUID;
 
 /** Responsável por registrar execuções iniciais da etapa de wireframe. */
 @Service("geraLandingWireframeStageExecutionService")
-public class GeraLandingStageExecutionService {
+public class GeraLandingWireframeStageExecutionService {
 
   private static final String STATUS_STARTED = "INICIADO";
   private final ExperimentRepository experimentRepository;
   private final GeraLandingStageExecutionRepository executionRepository;
 
-  public GeraLandingStageExecutionService(
+  public GeraLandingWireframeStageExecutionService(
       ExperimentRepository experimentRepository,
       GeraLandingStageExecutionRepository executionRepository) {
     this.experimentRepository = experimentRepository;
@@ -28,7 +28,7 @@ public class GeraLandingStageExecutionService {
 
   /** Registra a execução inicial da etapa e retorna o contrato local para o módulo wireframe. */
   @Transactional
-  public GeraLandingStartResponse registerInitialExecution(Long experimentId, String stageName) {
+  public GeraLandingWireframeStartExecutionResponse registerInitialExecution(Long experimentId, String stageName) {
     Instant now = Instant.now();
     Experiment experiment =
         experimentRepository
@@ -49,7 +49,7 @@ public class GeraLandingStageExecutionService {
             .build();
 
     GeraLandingStageExecution saved = executionRepository.save(execution);
-    return new GeraLandingStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+    return new GeraLandingWireframeStartExecutionResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
   }
 
   /** Converte o identificador textual para formato binário persistido no banco. */

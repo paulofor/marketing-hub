@@ -6,15 +6,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class GeraLandingWireframeStageService {
   private static final String STAGE_NAME = "landing-page-wireframe";
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingWireframeStageExecutionService executionService;
 
-  public GeraLandingWireframeStageService(GeraLandingStageExecutionService executionService) {
+  public GeraLandingWireframeStageService(GeraLandingWireframeStageExecutionService executionService) {
     this.executionService = executionService;
   }
 
   /** Inicia a execução da etapa de wireframe para o experimento informado. */
   public GeraLandingWireframeStartResponse start(Long experimentId) {
-    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, STAGE_NAME);
+    GeraLandingWireframeStartExecutionResponse response = executionService.registerInitialExecution(experimentId, STAGE_NAME);
     return new GeraLandingWireframeStartResponse(response.idJob(), response.status());
   }
 }

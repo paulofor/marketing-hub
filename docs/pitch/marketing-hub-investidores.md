@@ -5,6 +5,7 @@ paginate: true
 size: 16:9
 title: Marketing Hub — Pitch para Investidores
 description: Apresentação institucional para captação de investimento.
+header: <span class="mkth-badge">MKTH</span>
 style: |
   section {
     font-family: "Inter", "Segoe UI", sans-serif;
@@ -26,11 +27,15 @@ style: |
     box-shadow: 0 12px 28px rgba(2, 6, 23, 0.4);
     z-index: 0;
   }
-  section::after {
-    content: "MKTH";
+  header {
     position: absolute;
     top: 16px;
     right: 24px;
+    margin: 0;
+    z-index: 2;
+  }
+  .mkth-badge {
+    display: inline-block;
     padding: 9px 15px;
     border-radius: 10px;
     font-weight: 900;
@@ -40,7 +45,6 @@ style: |
     border: 1px solid rgba(103, 232, 249, 0.65);
     background: linear-gradient(135deg, rgba(8, 145, 178, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
     box-shadow: 0 12px 30px rgba(14, 116, 144, 0.45);
-    z-index: 2;
   }
   h1, h2, h3 {
     color: #f8fafc;

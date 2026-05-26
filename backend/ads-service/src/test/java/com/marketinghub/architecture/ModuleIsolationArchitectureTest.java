@@ -26,6 +26,11 @@ class ModuleIsolationArchitectureTest {
     private static final String GERALANDING_COPY_PACKAGE = "com.marketinghub.geralanding.copy";
     private static final String GERALANDING_IMAGEPLANNING_PACKAGE = "com.marketinghub.geralanding.imageplanning";
     private static final String GERALANDING_PRESETDESIGN_PACKAGE = "com.marketinghub.geralanding.designpreset";
+    private static final String EXPERIMENT_CLASS = "com.marketinghub.experiment.Experiment";
+    private static final String EXPERIMENT_REPOSITORY_CLASS = "com.marketinghub.experiment.repository.ExperimentRepository";
+    private static final String GERALANDING_STAGE_EXECUTION_CLASS = "com.marketinghub.geralanding.GeraLandingStageExecution";
+    private static final String GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS =
+            "com.marketinghub.geralanding.GeraLandingStageExecutionRepository";
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
 
@@ -85,6 +90,12 @@ class ModuleIsolationArchitectureTest {
             "[ARQUITETURA][BACKEND][GeraLandingDesignPresetStageService] o subpacote geralanding.designpreset deve ficar independente dos demais pacotes internos");
 
     @ArchTest
+    static final ArchRule geralandingServicePackagesShouldOnlyAccessAllowedMarketingHubClasses =
+            classes().that().resideInAPackage("com.marketinghub.geralanding..service..")
+                    .should(onlyDependOnAllowedMarketingHubClasses())
+                    .because("[ARQUITETURA][BACKEND][GeraLanding] serviços em geralanding.*.service só podem acessar classes permitidas dentro de com.marketinghub");
+
+    @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
             classes().that(classesBelongingToLayer("web")).should(onlyDependOnLayer("service"));
 
@@ -111,6 +122,38 @@ class ModuleIsolationArchitectureTest {
             public boolean test(JavaClass input) {
                 String packageName = input.getPackageName();
                 return packageName.startsWith("com.marketinghub") && !packageName.startsWith(allowedPackagePrefix);
+            }
+        };
+    }
+
+    /**
+     * Garante que serviços geralanding acessem apenas classes permitidas dentro de com.marketinghub.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedMarketingHubClasses() {
+        return new ArchCondition<>("[ARQUITETURA][BACKEND][GeraLanding] depend only on explicit allowed classes") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (targetName.equals(EXPERIMENT_CLASS)
+                            || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA][BACKEND][GeraLanding] " + item.getName()
+                            + " depende de " + targetName
+                            + " mas serviços em geralanding.*.service só podem acessar "
+                            + EXPERIMENT_CLASS + ", "
+                            + EXPERIMENT_REPOSITORY_CLASS + ", "
+                            + GERALANDING_STAGE_EXECUTION_CLASS + " e "
+                            + GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS;
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
             }
         };
     }

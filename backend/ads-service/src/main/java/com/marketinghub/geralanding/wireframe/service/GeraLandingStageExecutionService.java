@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /** Responsável por registrar execuções iniciais da etapa de wireframe. */
-@Service
+@Service("geraLandingWireframeStageExecutionService")
 public class GeraLandingStageExecutionService {
 
   private static final String STATUS_STARTED = "INICIADO";

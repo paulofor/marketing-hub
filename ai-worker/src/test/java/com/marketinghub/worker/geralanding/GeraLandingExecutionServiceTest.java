@@ -52,7 +52,23 @@ class GeraLandingExecutionServiceTest {
         when(wireframeMontaRequest.carregarPromptMarkdownCru()).thenReturn("prompt-markdown");
         when(wireframeMontaRequest.montar(any())).thenReturn("{\"model\":\"gpt-5.2\"}");
         when(openAiClient.generate(any())).thenReturn(new GeraLandingJobCompletionPayload(
-                "{\"ok\":true}", "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
+                """
+                {
+                  "definicoes": {
+                    "estrutura": {"desktop":[{"nome":"wFull","atributoCss":"width","valor":"100%"}],"mobile":[{"nome":"wFull","atributoCss":"width","valor":"100%"}]},
+                    "posicao": {"desktop":[{"nome":"posRelative","atributoCss":"position","valor":"relative"}],"mobile":[{"nome":"posRelative","atributoCss":"position","valor":"relative"}]},
+                    "layout": {"desktop":[{"nome":"displayFlex","atributoCss":"display","valor":"flex"}],"mobile":[{"nome":"displayFlex","atributoCss":"display","valor":"flex"}]},
+                    "mistas": {"desktop":[{"nome":"noneTransform","atributoCss":"transform","valor":"none"}],"mobile":[{"nome":"noneTransform","atributoCss":"transform","valor":"none"}]}
+                  },
+                  "pagina": {
+                    "corpo": {
+                      "secoes": [
+                        {"estilos":["wFull"],"estrutura":["wFull"],"posicao":["posRelative"],"layout":["displayFlex"],"mistas":["noneTransform"],"elementosSeccao":[]}
+                      ]
+                    }
+                  }
+                }
+                """, "raw", "request", "openai-job", 10, 20, BigDecimal.ONE));
 
         GeraLandingExecutionService service =
                 new GeraLandingExecutionService(

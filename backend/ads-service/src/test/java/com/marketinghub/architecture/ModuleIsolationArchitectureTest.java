@@ -145,9 +145,10 @@ class ModuleIsolationArchitectureTest {
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)) {
                         return;
                     }
-                    String message = "[ARQUITETURA][BACKEND][GeraLanding] " + item.getName()
-                            + " depende de " + targetName
-                            + " mas serviços em geralanding.*.service só podem acessar "
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe " + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: serviços em geralanding.*.service só podem acessar "
                             + EXPERIMENT_CLASS + ", "
                             + EXPERIMENT_REPOSITORY_CLASS + ", "
                             + GERALANDING_STAGE_EXECUTION_CLASS + " e "
@@ -194,8 +195,10 @@ class ModuleIsolationArchitectureTest {
                     boolean allowedLayer = targetInfo.get().layer().equals(allowedTargetLayer)
                             || targetInfo.get().layer().equals(sourceInfo.get().layer());
                     if (!sameNamespace || !allowedLayer) {
-                        String message = "[ARQUITETURA][MOIS] " + item.getName() + " depende de " + dependency.getTargetClass().getName()
-                                + " mas só pode depender de pacote ." + allowedTargetLayer
+                        String message = "[ARQUITETURA] [MOIS] classe " + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + dependency.getTargetClass().getName() + ")"
+                                + " | regra: só pode depender de pacote ." + allowedTargetLayer
                                 + " com mesmo x/vN";
                         events.add(SimpleConditionEvent.violated(item, message));
                     }

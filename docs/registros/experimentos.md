@@ -1817,3 +1817,33 @@
 - impacto funcional: o teste passa a validar o contrato correto do `GeraLandingExecutionService` (delegar o processamento da resposta para a etapa), eliminando falso negativo no surefire.
 
 - 2026-05-26 20:36:00 UTC — Ajustado o teste `GeraLandingExecutionServiceTest.processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult` para refletir o fluxo atual com validação de wireframe: o mock de resposta OpenAI agora retorna JSON válido com `definicoes` e `pagina.corpo.secoes`, permitindo a chamada de `wireframeRecebeResponse.processar(...)` no caminho de sucesso.
+## 2026-05-26 17:57:13 UTC-3
+- solicitação para validar na tela `/experiments/33` se os pontos de frontend do fluxo GeraLanding chamam controllers nos pacotes `geralanding.<etapa>.web`.
+- raciocínio aplicado: mapear todos os endpoints `*/geralanding/*` consumidos pela tela de detalhe do experimento e cruzar com os controllers do backend por pacote.
+- resultado da validação:
+  - conformes nos pacotes `geralanding.<etapa>.web`: `wireframe/start`, `copy/start`, `design-preset/start`, `image-prompts/start`, `deliverables/start`.
+  - pendências fora de `geralanding.<etapa>.web`: `stage-executions`, `stage-executions/{jobId}`, `html/provisional/generate`, `landing/approve-and-publish` (não localizados em controllers `geralanding.<etapa>.web` no backend atual).
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+  - frontend/src/api/experiment/useGeraLandingStageExecutions.ts
+  - frontend/src/api/experiment/useApproveAndPublishLanding.ts
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/GeraLandingWireframeController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/web/GeraLandingCopyController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/web/GeraLandingDesignPresetController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java
+## 2026-05-26 18:01:25 UTC-3
+- solicitação para corrigir as chamadas de listagem de execuções do GeraLanding na tela de experimento, removendo o uso de `stageCode` como query param e passando a usar endpoint específico por etapa.
+- causa-raiz: o frontend consultava endpoint genérico (`/geralanding/stage-executions`) com `stageCode` na query, contrariando o contrato desejado de endpoints segmentados por etapa.
+- correção aplicada no frontend:
+  - criado mapeamento `stageCode -> segmento de endpoint` no hook de execuções do GeraLanding;
+  - atualizado `GET` para usar `.../geralanding/<etapa>/stage-executions` e manter apenas `includeCompleted` como parâmetro de query.
+- documentos/arquivos lidos:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/api/experiment/useGeraLandingStageExecutions.ts
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx

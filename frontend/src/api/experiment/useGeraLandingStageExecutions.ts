@@ -1,6 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+const STAGE_ENDPOINT_SEGMENT: Record<string, string> = {
+  "landing-page-wireframe": "wireframe",
+  "landing-page-copy": "copy",
+  "landing-page-design-preset": "design-preset",
+  "landing-page-image-planning": "image-prompts",
+  "landing-page-deliverables": "deliverables",
+};
+
+function resolveStageExecutionsEndpointSegment(stageCode: string): string {
+  return STAGE_ENDPOINT_SEGMENT[stageCode] ?? "wireframe";
+}
+
+
 export interface GeraLandingStageExecutionItem {
   idJob: string;
   status: string;
@@ -41,8 +54,8 @@ export function useGeraLandingStageExecutions(
     refetchInterval: includeCompleted ? false : 10000,
     queryFn: async () => {
       const { data } = await axios.get<GeraLandingStageExecutionItem[]>(
-        `/api/experiments/${experimentId}/geralanding/stage-executions`,
-        { params: { stageCode, includeCompleted } },
+        `/api/experiments/${experimentId}/geralanding/${resolveStageExecutionsEndpointSegment(stageCode)}/stage-executions`,
+        { params: { includeCompleted } },
       );
       return data;
     },

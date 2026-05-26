@@ -9,6 +9,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+/**
+ * Responsável por agendar e disparar os ciclos automáticos de coleta Hotmart.
+ */
 public class HotmartCollectorScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorScheduler.class);
@@ -30,7 +33,10 @@ public class HotmartCollectorScheduler {
         this.maxProducts = maxProducts;
     }
 
-    @Scheduled(cron = "0 0 10 * * *")
+    /**
+     * Executa o ciclo 1 de listagem de produtos diariamente às 00:15.
+     */
+    @Scheduled(cron = "0 15 0 * * *")
     public void collectFirstCycleAtTen() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
@@ -38,13 +44,16 @@ public class HotmartCollectorScheduler {
         }
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
         HotmartCollectionResponse response = collectorService.collectFirstCycle(request);
-        log.info("Hotmart scheduler executado hora=10 ciclo={} status={} produtos={} mensagem={}",
+        log.info("Hotmart scheduler executado hora=00:15 ciclo={} status={} produtos={} mensagem={}",
                 "CICLO_1_LISTAGEM",
                 response.status(),
                 response.products().size(),
                 response.message());
     }
 
+    /**
+     * Executa o ciclo 2 de enriquecimento de detalhes diariamente às 17:00.
+     */
     @Scheduled(cron = "0 0 17 * * *")
     public void collectSecondCycleAtSeventeen() {
         if (!enabled) {

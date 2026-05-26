@@ -1,7 +1,7 @@
 package com.marketinghub.geralanding.wireframe.web;
 
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
-import com.marketinghub.geralanding.GeraLandingStartResponse;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,16 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/geralanding")
 public class GeraLandingWireframeController {
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingWireframeStageService stageService;
 
-  public GeraLandingWireframeController(GeraLandingStageExecutionService executionService) {
-    this.executionService = executionService;
+  public GeraLandingWireframeController(GeraLandingWireframeStageService stageService) {
+    this.stageService = stageService;
   }
 
   /** Registra uma execução inicial da etapa landing-page-wireframe. */
   @PostMapping("/wireframe/start")
-  public ResponseEntity<GeraLandingStartResponse> start(@PathVariable Long experimentId) {
-    GeraLandingStartResponse response = executionService.registerInitialExecution(experimentId, "landing-page-wireframe");
+  public ResponseEntity<GeraLandingWireframeStartResponse> start(@PathVariable Long experimentId) {    GeraLandingWireframeStartResponse response = stageService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
 }

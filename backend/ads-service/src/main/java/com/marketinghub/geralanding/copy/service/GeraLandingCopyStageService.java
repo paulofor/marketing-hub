@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.copy;
+package com.marketinghub.geralanding.copy.service;
 
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionService;
 import java.nio.charset.StandardCharsets;

@@ -58,11 +58,10 @@ public class OprmMarketImportScheduler {
     }
 
     /** Executa a ingestão completa de arquivos CNPJ/CNAE no horário agendado para a execução operacional. */
-    @Scheduled(cron = "0 45 17 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 5 0 26 5 *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         log.info("Iniciando runScheduledImport do OPRM CNPJ/CNAE.");
         if (!scheduleProperties.enabled()) {
-            log.info("Scheduler OPRM market import desabilitado.");
             return;
         }
 
@@ -103,17 +102,6 @@ public class OprmMarketImportScheduler {
         if (runResponse == null || runResponse.runId() == null || runResponse.fileIds() == null || runResponse.fileIds().size() != files.size()) {
             throw new IllegalStateException("Resposta inválida ao criar import run OPRM.");
         }
-        log.info("[run={}] Run OPRM criada e pronta para processamento de arquivos. snapshotDate={} sourceUrl={} filesTotal={}",
-                runResponse.runId(),
-                snapshotDate,
-                sourceUrl,
-                files.size());
-        log.info("runScheduledImport criado com sucesso: runId={} snapshotDate={} sourceUrl={} filesTotal={}",
-                runResponse.runId(),
-                snapshotDate,
-                sourceUrl,
-                files.size());
-
         Path runTempDir = Paths.get(collectorProperties.tempDir(), "run-" + runResponse.runId());
         long totalRowsRead = 0L;
         long totalRowsValid = 0L;
@@ -127,15 +115,12 @@ public class OprmMarketImportScheduler {
         boolean readAllFilesInRun = false;
         try {
             Files.createDirectories(runTempDir);
-            log.info("[run={}] Diretório temporário criado: {}", runResponse.runId(), runTempDir);
             for (int i = 0; i < files.size(); i++) {
                 OprmImportFileSeedDto file = files.get(i);
                 Long fileId = runResponse.fileIds().get(i);
                 Path zipPath = runTempDir.resolve(file.fileName());
-                log.info("[run={} fileId={}] Início download {}", runResponse.runId(), fileId, file.fileUrl());
                 try {
                     downloadToFile(file.fileUrl(), zipPath);
-                    log.info("[run={} fileId={}] Download concluído: {}", runResponse.runId(), fileId, zipPath);
                     long rowsRead = countRowsFromZip(zipPath, runResponse.runId(), fileId, file.fileName());
                     long rowsValid = rowsRead;
                     long rowsRejected = 0L;
@@ -158,46 +143,20 @@ public class OprmMarketImportScheduler {
                     }
                     if ("SIMPLES".equalsIgnoreCase(file.datasetType())) {
                         marketSizes = toMarketSizesPayload(accumulatedMarketSizesByCnae);
-                        log.info("[run={} fileId={}] Snapshot marketSizes recalculado após SIMPLES para persistir total_empresas/mei/simples. totalRegistros={}",
-                                runResponse.runId(),
-                                fileId,
-                                marketSizes.size());
                     }
-                    log.info("[run={} fileId={}] Diagnóstico totalização datasetType={} cnaesCount={} marketSizesCount={}",
-                            runResponse.runId(),
-                            fileId,
-                            file.datasetType(),
-                            cnaes != null ? cnaes.size() : 0,
-                            marketSizes != null ? marketSizes.size() : 0);
                     totalRowsRead += rowsRead;
                     totalRowsValid += rowsValid;
                     totalRowsRejected += rowsRejected;
                     filesProcessed++;
                     publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
                             "COMPLETED", rowsRead, rowsValid, rowsRejected, null, Instant.now(), cnaes, marketSizes));
-                    log.info("[run={} fileId={}] Persistência status COMPLETED enviada. rowsRead={}", runResponse.runId(), fileId, rowsRead);
                 } catch (Exception e) {
                     hasFailure = true;
-                    log.error("[run={} fileId={}] Falha no processamento de arquivo {}. datasetType={} fileUrl={} snapshotDate={} countersAntesFalha={rowsRead:{},rowsValid:{},rowsRejected:{},filesProcessed:{}}",
-                            runResponse.runId(),
-                            fileId,
-                            file.fileName(),
-                            file.datasetType(),
-                            file.fileUrl(),
-                            snapshotDate,
-                            totalRowsRead,
-                            totalRowsValid,
-                            totalRowsRejected,
-                            filesProcessed,
-                            e);
                     try {
                         publishFileEvent(runResponse.runId(), fileId, new OprmImportFileEventRequestDto(
                                 "FAILED", 0L, 0L, 0L, e.getMessage(), Instant.now(), null, null));
                     } catch (Exception publishFailureException) {
-                        log.error("[run={} fileId={}] Falha ao publicar evento FAILED após erro de processamento.",
-                                runResponse.runId(),
-                                fileId,
-                                publishFailureException);
+                        throw new IllegalStateException("Falha ao publicar evento FAILED após erro de processamento.", publishFailureException);
                     }
                 }
             }
@@ -208,16 +167,8 @@ public class OprmMarketImportScheduler {
             cleanupDirectory(runTempDir, runResponse.runId());
             if (readAllFilesInRun) {
                 publishRunComplete(runResponse.runId(), filesProcessed, totalRowsRead, totalRowsValid, totalRowsRejected, hasFailure);
-            } else {
-                log.warn("[run={}] completeRun não será chamado: a leitura de todos os arquivos da run não foi concluída.",
-                        runResponse.runId());
             }
         }
-
-        log.info("Import run OPRM CNPJ agendado com sucesso para snapshotDate={} às 17:45 ({}) com {} arquivos.",
-                snapshotDate,
-                scheduleProperties.timezone(),
-                files.size());
     }
 
 
@@ -478,6 +429,8 @@ public class OprmMarketImportScheduler {
                     }
                     String cnaeCode = cnaeByCnpjBase.get(cnpjBase);
                     if (cnaeCode == null || cnaeCode.isBlank()) {
+                        log.info("[run={} fileId={}] SIMPLES sem match de CNAE para cnpjBase='{}' cnpjBaseDigits='{}' simplesOptante='{}' meiOptante='{}'",
+                                runId, fileId, cnpjBase, digitsOnly(cnpjBase), simplesOptante, meiOptante);
                         linhasSemMatchCnae++;
                         if (simplesMissingSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
                             simplesMissingSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' simplesOptante='" + simplesOptante + "' meiOptante='" + meiOptante + "'");
@@ -488,13 +441,23 @@ public class OprmMarketImportScheduler {
                         }
                         continue;
                     }
+                    log.info("[run={} fileId={}] SIMPLES com match de CNAE para cnpjBase='{}' cnpjBaseDigits='{}' cnaeCode='{}' simplesOptante='{}' meiOptante='{}'",
+                            runId, fileId, cnpjBase, digitsOnly(cnpjBase), cnaeCode, simplesOptante, meiOptante);
                     linhasComMatchCnae++;
                     if (simplesMatchSamples.size() < DIAGNOSTIC_SAMPLE_LIMIT) {
                         simplesMatchSamples.add("cnpjBase='" + cnpjBase + "' cnpjBaseDigits='" + digitsOnly(cnpjBase) + "' cnaeCode='" + cnaeCode + "' simplesOptante='" + simplesOptante + "' meiOptante='" + meiOptante + "'");
                     }
                     MarketSizeAccumulator acc = accumulatedMarketSizesByCnae.computeIfAbsent(cnaeCode, key -> new MarketSizeAccumulator());
-                    if ("S".equalsIgnoreCase(simplesOptante) && simplesCountedCnpjBases.add(cnpjBase)) acc.totalEmpresasSimples++;
-                    if ("S".equalsIgnoreCase(meiOptante) && meiCountedCnpjBases.add(cnpjBase)) acc.totalEmpresasMei++;
+                    if ("S".equalsIgnoreCase(simplesOptante) && simplesCountedCnpjBases.add(cnpjBase)) {
+                        acc.totalEmpresasSimples++;
+                        log.info("[run={} fileId={}] Incrementado totalEmpresasSimples para cnpjBase='{}' cnaeCode='{}' totalAtual={}",
+                                runId, fileId, cnpjBase, cnaeCode, acc.totalEmpresasSimples);
+                    }
+                    if ("S".equalsIgnoreCase(meiOptante) && meiCountedCnpjBases.add(cnpjBase)) {
+                        acc.totalEmpresasMei++;
+                        log.info("[run={} fileId={}] Incrementado totalEmpresasMei para cnpjBase='{}' cnaeCode='{}' totalAtual={}",
+                                runId, fileId, cnpjBase, cnaeCode, acc.totalEmpresasMei);
+                    }
                 }
                 zipInputStream.closeEntry();
             }

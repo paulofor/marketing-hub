@@ -170,3 +170,9 @@
 - 2026-05-25 17:35:00 (UTC-3): ajuste solicitado no `oprm-coletor-mei` para reagendar a execução da ingestão OPRM CNPJ/CNAE para **17:45** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 45 17 * * *`, sincronização do cron padrão em `application.yml` e ajuste da mensagem de log final para refletir 17:45.
 
 - 2026-05-25 17:45:00 (UTC-3): correção solicitada no `oprm-coletor-mei` para remover dependência de data atual no diretório da fonte e fixar o `snapshot-date` padrão em `2026-05-10` no `application.yml`, mantendo o diretório de ingestão alinhado ao cânone OPRM.
+
+- 2026-05-26 00:00:00 (UTC): ajuste solicitado para reduzir ruído operacional no método `runScheduledImport` do `oprm-coletor-mei`, removendo logs auxiliares de INFO/WARN/ERROR dentro do fluxo e mantendo somente o log inicial `Iniciando runScheduledImport do OPRM CNPJ/CNAE.` para facilitar rastreio no MCP sem poluição de saída.
+
+- 2026-05-26 00:00:00 (UTC): ajuste solicitado para agendar nova execução da ingestão OPRM CNPJ/CNAE para **00:05 de 26/05/2026** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 5 0 26 5 *` e sincronização do cron padrão em `application.yml`.
+
+- 2026-05-26 00:00:00 (UTC): ajuste solicitado para ampliar observabilidade no mapeamento `SIMPLES -> CNAE` em `parseAndAccumulateSimplesAndMeiByCnaeFromSimplesZip`, adicionando logs explícitos para casos com match/sem match de `cnpjBase`, além de logs de incremento dos contadores `totalEmpresasSimples` e `totalEmpresasMei` por `cnaeCode`.

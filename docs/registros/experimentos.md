@@ -1796,3 +1796,5 @@
 - 2026-05-26: Ajuste de abordagem conforme revisão: os `*StageExecutionService` das etapas `copy`, `designpreset`, `imageplanning` e `deliverables` passaram de adaptadores para implementação duplicada local do fluxo `registerInitialExecution`, sem delegação para `GeraLandingStageExecutionService`.
 
 - 2026-05-26: Atualizada a regra arquitetural de GeraLanding para permitir dependência entre classes do próprio pacote `service` (mesma etapa), mantendo as dependências explícitas já permitidas (`Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository`). Ajustados teste ArchUnit e cânone para aderência.
+
+- 2026-05-26: Ajustado `docs/pitch/marketing-hub-investidores.md` com identidade visual (logo MKTH no canto dos slides, gradientes de fundo e destaque tipográfico) para melhorar apresentação do pitch.

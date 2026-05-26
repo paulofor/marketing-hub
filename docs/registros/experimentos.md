@@ -1778,3 +1778,12 @@
 
 - 2026-05-26: Ajustado `GeraLandingWireframeStageService` para usar as cópias locais de service/response no pacote `geralanding.wireframe.service`, removendo dependência direta de `com.marketinghub.geralanding.GeraLandingStageExecutionService` e `GeraLandingStartResponse`.
 - 2026-05-26: Reorganizadas classes provisórias de GeraLanding no backend para subpacotes dedicados `geralanding.wireframe.provisorio` e `geralanding.copy.provisorio`, com atualização dos imports em produção e testes.
+
+## 2026-05-26 12:20:00 UTC
+- ajuste solicitado: remover isolamento amplo em `geralanding.*` no ArchUnit e aplicar regras de isolamento em nível de pacotes mais baixos (`web`, `provisorio`, `service`).
+- causa-raiz: as regras anteriores isolavam submódulos inteiros (`wireframe`, `copy`, `imageplanning`, `designpreset`) e não representavam o contrato de dependência por camada dentro de cada etapa.
+- correção aplicada:
+  - criada regra para `geralanding.*.web`: permite depender apenas de `geralanding.*.web` e `geralanding.*.service` da mesma etapa;
+  - criada regra para `geralanding.*.provisorio`: permite depender apenas de `geralanding.*.provisorio` da mesma etapa;
+  - mantida regra para `geralanding.*.service` com whitelist explícita para `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.
+- impacto funcional: o ArchUnit passa a proteger o encapsulamento por camada/etapa com granularidade mais precisa, reduzindo acoplamentos indevidos entre etapas do GeraLanding.

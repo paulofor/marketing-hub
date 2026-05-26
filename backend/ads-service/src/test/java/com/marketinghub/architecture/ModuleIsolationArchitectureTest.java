@@ -22,10 +22,6 @@ import java.util.regex.Pattern;
 class ModuleIsolationArchitectureTest {
 
     private static final String MOIS_SALES_LIBRARY_PACKAGE = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
-    private static final String GERALANDING_WIREFRAME_PACKAGE = "com.marketinghub.geralanding.wireframe";
-    private static final String GERALANDING_COPY_PACKAGE = "com.marketinghub.geralanding.copy";
-    private static final String GERALANDING_IMAGEPLANNING_PACKAGE = "com.marketinghub.geralanding.imageplanning";
-    private static final String GERALANDING_PRESETDESIGN_PACKAGE = "com.marketinghub.geralanding.designpreset";
     private static final String EXPERIMENT_CLASS = "com.marketinghub.experiment.Experiment";
     private static final String EXPERIMENT_REPOSITORY_CLASS = "com.marketinghub.experiment.repository.ExperimentRepository";
     private static final String GERALANDING_STAGE_EXECUTION_CLASS = "com.marketinghub.geralanding.GeraLandingStageExecution";
@@ -70,24 +66,16 @@ class ModuleIsolationArchitectureTest {
             .because("[ARQUITETURA][MOIS] nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
 
     @ArchTest
-    static final ArchRule geralandingWireframeMustBeIsolated = isolatedFromOtherMarketingHubPackages(
-            GERALANDING_WIREFRAME_PACKAGE,
-            "[ARQUITETURA][BACKEND][GeraLandingWireframeStageService] o subpacote geralanding.wireframe deve ficar independente dos demais pacotes internos");
+    static final ArchRule geralandingWebPackagesShouldOnlyDependOnWebOrServiceInSameStage =
+            classes().that().resideInAPackage("com.marketinghub.geralanding.*.web..")
+                    .should(onlyDependOnWebOrServiceWithinSameStage())
+                    .because("[ARQUITETURA][BACKEND][GeraLanding] web em geralanding.*.web só pode acessar classes de geralanding.*.web e geralanding.*.service da mesma etapa");
 
     @ArchTest
-    static final ArchRule geralandingCopyMustBeIsolated = isolatedFromOtherMarketingHubPackages(
-            GERALANDING_COPY_PACKAGE,
-            "[ARQUITETURA][BACKEND][GeraLandingCopyStageService] o subpacote geralanding.copy deve ficar independente dos demais pacotes internos");
-
-    @ArchTest
-    static final ArchRule geralandingImagePlanningMustBeIsolated = isolatedFromOtherMarketingHubPackages(
-            GERALANDING_IMAGEPLANNING_PACKAGE,
-            "[ARQUITETURA][BACKEND][GeraLandingImagePlanningStageService] o subpacote geralanding.imageplanning deve ficar independente dos demais pacotes internos");
-
-    @ArchTest
-    static final ArchRule geralandingPresetDesignMustBeIsolated = isolatedFromOtherMarketingHubPackages(
-            GERALANDING_PRESETDESIGN_PACKAGE,
-            "[ARQUITETURA][BACKEND][GeraLandingDesignPresetStageService] o subpacote geralanding.designpreset deve ficar independente dos demais pacotes internos");
+    static final ArchRule geralandingProvisorioPackagesShouldOnlyDependOnOwnProvisorioPackage =
+            classes().that().resideInAPackage("com.marketinghub.geralanding.*.provisorio..")
+                    .should(onlyDependOnProvisorioWithinSameStage())
+                    .because("[ARQUITETURA][BACKEND][GeraLanding] provisorio em geralanding.*.provisorio só pode acessar classes do próprio pacote geralanding.*.provisorio");
 
     @ArchTest
     static final ArchRule geralandingServicePackagesShouldOnlyAccessAllowedMarketingHubClasses =
@@ -104,16 +92,6 @@ class ModuleIsolationArchitectureTest {
             classes().that(classesBelongingToLayer("service")).should(onlyDependOnLayer("repository"));
 
     /**
-     * Constrói regra para impedir dependências para outros pacotes internos fora do prefixo permitido.
-     */
-    private static ArchRule isolatedFromOtherMarketingHubPackages(String allowedPackagePrefix, String reason) {
-        return noClasses().that().resideInAPackage(allowedPackagePrefix + "..")
-                .should()
-                .dependOnClassesThat(otherMarketingHubPackagesExcept(allowedPackagePrefix))
-                .because(reason);
-    }
-
-    /**
      * Retorna predicado que identifica classes internas fora do pacote permitido.
      */
     private static DescribedPredicate<JavaClass> otherMarketingHubPackagesExcept(String allowedPackagePrefix) {
@@ -122,6 +100,69 @@ class ModuleIsolationArchitectureTest {
             public boolean test(JavaClass input) {
                 String packageName = input.getPackageName();
                 return packageName.startsWith("com.marketinghub") && !packageName.startsWith(allowedPackagePrefix);
+            }
+        };
+    }
+
+    /**
+     * Garante que classes web dependam apenas de web/service da mesma etapa geralanding.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnWebOrServiceWithinSameStage() {
+        return new ArchCondition<>("[ARQUITETURA][BACKEND][GeraLanding] web only depends on same-stage web/service") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    String targetName = dependency.getTargetClass().getName();
+                    if (!targetName.startsWith("com.marketinghub.geralanding.")) {
+                        return;
+                    }
+                    String sourceStage = extractGeraLandingStage(item.getPackageName());
+                    String targetStage = extractGeraLandingStage(dependency.getTargetClass().getPackageName());
+                    String targetLayer = extractGeraLandingLayer(dependency.getTargetClass().getPackageName());
+                    if (sourceStage == null) {
+                        return;
+                    }
+                    boolean valid = sourceStage.equals(targetStage)
+                            && ("web".equals(targetLayer) || "service".equals(targetLayer));
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe " + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: geralanding.*.web só pode acessar geralanding.*.web e geralanding.*.service da mesma etapa";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que classes provisorio dependam apenas de provisorio da mesma etapa geralanding.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnProvisorioWithinSameStage() {
+        return new ArchCondition<>("[ARQUITETURA][BACKEND][GeraLanding] provisorio only depends on same-stage provisorio") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    String targetName = dependency.getTargetClass().getName();
+                    if (!targetName.startsWith("com.marketinghub.geralanding.")) {
+                        return;
+                    }
+                    String sourceStage = extractGeraLandingStage(item.getPackageName());
+                    String targetStage = extractGeraLandingStage(dependency.getTargetClass().getPackageName());
+                    String targetLayer = extractGeraLandingLayer(dependency.getTargetClass().getPackageName());
+                    if (sourceStage == null) {
+                        return;
+                    }
+                    boolean valid = sourceStage.equals(targetStage) && "provisorio".equals(targetLayer);
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe " + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: geralanding.*.provisorio só pode acessar geralanding.*.provisorio da mesma etapa";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
             }
         };
     }
@@ -205,6 +246,36 @@ class ModuleIsolationArchitectureTest {
                 });
             }
         };
+    }
+
+    /**
+     * Extrai a etapa geralanding (subpacote após geralanding).
+     */
+    private static String extractGeraLandingStage(String packageName) {
+        String marker = "com.marketinghub.geralanding.";
+        if (!packageName.startsWith(marker)) {
+            return null;
+        }
+        String remainder = packageName.substring(marker.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : null;
+    }
+
+    /**
+     * Extrai o layer principal da etapa geralanding (web/service/provisorio).
+     */
+    private static String extractGeraLandingLayer(String packageName) {
+        String stage = extractGeraLandingStage(packageName);
+        if (stage == null) {
+            return null;
+        }
+        String prefix = "com.marketinghub.geralanding." + stage + ".";
+        if (!packageName.startsWith(prefix)) {
+            return null;
+        }
+        String remainder = packageName.substring(prefix.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : remainder;
     }
 
     /**

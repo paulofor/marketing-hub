@@ -1,6 +1,6 @@
 package com.marketinghub.geralanding;
 
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlProcessor;
+import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlProcessor;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;

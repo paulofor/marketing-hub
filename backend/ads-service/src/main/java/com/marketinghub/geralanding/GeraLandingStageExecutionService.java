@@ -2,10 +2,10 @@ package com.marketinghub.geralanding;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
-import com.marketinghub.geralanding.copy.CopyProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.imageplanning.ImagePlanningProvisionalHtmlAssembler;
-import com.marketinghub.geralanding.wireframe.WireframeProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

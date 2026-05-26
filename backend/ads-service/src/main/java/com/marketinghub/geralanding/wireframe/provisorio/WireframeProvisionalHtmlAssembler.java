@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe;
+package com.marketinghub.geralanding.wireframe.provisorio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;

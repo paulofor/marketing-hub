@@ -1777,3 +1777,4 @@
   - docs/registros/experimentos.md
 
 - 2026-05-26: Ajustado `GeraLandingWireframeStageService` para usar as cópias locais de service/response no pacote `geralanding.wireframe.service`, removendo dependência direta de `com.marketinghub.geralanding.GeraLandingStageExecutionService` e `GeraLandingStartResponse`.
+- 2026-05-26: Reorganizadas classes provisórias de GeraLanding no backend para subpacotes dedicados `geralanding.wireframe.provisorio` e `geralanding.copy.provisorio`, com atualização dos imports em produção e testes.

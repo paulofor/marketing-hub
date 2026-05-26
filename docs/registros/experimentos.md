@@ -1807,3 +1807,11 @@
   - atualizado o `new GeraLandingExecutionService(...)` em todos os testes para enviar os novos argumentos na ordem correta.
 - impacto funcional: os testes voltam a compilar com a API atual do serviço, eliminando o erro de lista de argumentos divergente no `testCompile`.
 - 2026-05-26: Atualizados os diagramas canônicos de arquitetura do GeraLanding para refletir as regras ArchUnit vigentes no backend por camada/etapa (`web`, `provisorio` e `service`), incluindo as dependências explicitamente permitidas em `service` para `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.
+
+## 2026-05-26 18:40:00 UTC
+- ajuste solicitado: corrigir falha do teste `GeraLandingExecutionServiceTest.processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult` que ainda esperava callback direto no `backendClient`.
+- causa-raiz: após a refatoração por etapa, `receiveDispatch`/`receiveResult` passaram a ocorrer dentro dos processadores `RecebeResponse`; no teste o `wireframeRecebeResponse` é mock e, portanto, não executa o callback real no backend.
+- correção aplicada:
+  - alterada a asserção principal para validar a delegação ao processador da etapa (`wireframeRecebeResponse.processar(...)`);
+  - removida expectativa de `receiveDispatch`/`receiveResult` no `backendClient` nesse cenário, mantendo validação de ausência de falha.
+- impacto funcional: o teste passa a validar o contrato correto do `GeraLandingExecutionService` (delegar o processamento da resposta para a etapa), eliminando falso negativo no surefire.

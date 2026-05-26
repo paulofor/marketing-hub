@@ -81,8 +81,9 @@ class GeraLandingExecutionServiceTest {
 
         verify(openAiClient).generate(any());
         verify(backendClient).receivePrompt(any(), any(), any(), any(), any(), any(), any(), any());
-        verify(backendClient).receiveDispatch(any(), any(), any(), any());
-        verify(backendClient).receiveResult(any(), any(), any(), any());
+        verify(wireframeRecebeResponse).processar(any(), any(), any(), any());
+        verify(backendClient, never()).receiveDispatch(any(), any(), any(), any());
+        verify(backendClient, never()).receiveResult(any(), any(), any(), any());
         verify(backendClient, never()).receiveFailure(any(), any(), any(), any(), any());
     }
 

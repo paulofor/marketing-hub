@@ -1847,3 +1847,14 @@
   - docs/registros/experimentos.md
   - frontend/src/api/experiment/useGeraLandingStageExecutions.ts
   - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-05-26 21:20:00 UTC
+- solicitação: disponibilizar endpoints de listagem/detalhe de execuções dentro dos pacotes `geralanding.<etapa>.web`, incluindo `GET /api/experiments/{experimentId}/geralanding/deliverables/stage-executions?includeCompleted=false`.
+- causa-raiz: os controllers por etapa possuíam apenas endpoint `start`, sem endpoints HTTP para consultar histórico e detalhe de execuções, apesar do serviço `GeraLandingStageExecutionService` já suportar essas consultas.
+- correção aplicada no backend:
+  - adicionados endpoints por etapa (`wireframe`, `copy`, `image-prompts`, `design-preset`, `deliverables`) para:
+    - `GET /<etapa>/stage-executions`
+    - `GET /<etapa>/stage-executions/{idJob}`
+  - mantido filtro `includeCompleted` com default `true`, delegando ao `GeraLandingStageExecutionService` com `stageCode` fixo por controller.
+- validação executada:
+  - compilação do módulo `ads-service` concluída com sucesso após alterações.

@@ -12,7 +12,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 /** Garante contratos estruturais de rastreabilidade OpenAI consumidos pelo PromptBuilder. */
 @AnalyzeClasses(packages = "com.marketinghub.mois.bibliotecapaginavenda.worker")
-class PromptBuilderResultRecorderArchUnitTest {
+class ArquiteturaTest {
 
     /** Valida assinatura obrigatória com 4 parâmetros para uso direto do PromptBuilder. */
     @ArchTest
@@ -38,7 +38,7 @@ class PromptBuilderResultRecorderArchUnitTest {
             public void check(com.tngtech.archunit.core.domain.JavaClass javaClass, ConditionEvents events) {
                 boolean hasMethod = javaClass.getMethods().stream()
                         .filter(method -> method.getName().equals("recordPromptBuilderOpenAiResult"))
-                        .anyMatch(PromptBuilderResultRecorderArchUnitTest::hasFourStringParameters);
+                        .anyMatch(ArquiteturaTest::hasFourStringParameters);
                 events.add(new SimpleConditionEvent(javaClass, hasMethod,
                         "[ARQUITETURA] " + javaClass.getName() + " must declare method recordPromptBuilderOpenAiResult(String, String, String, String)"));
             }
@@ -51,7 +51,7 @@ class PromptBuilderResultRecorderArchUnitTest {
             public void check(com.tngtech.archunit.core.domain.JavaClass javaClass, ConditionEvents events) {
                 boolean hasMethod = javaClass.getMethods().stream()
                         .filter(method -> method.getName().equals("insertOpenAiIntegrationRecord"))
-                        .anyMatch(PromptBuilderResultRecorderArchUnitTest::hasExpectedInsertParameters);
+                        .anyMatch(ArquiteturaTest::hasExpectedInsertParameters);
                 events.add(new SimpleConditionEvent(javaClass, hasMethod,
                         "[ARQUITETURA] " + javaClass.getName() + " must declare method insertOpenAiIntegrationRecord(String, String, String, String, Long)"));
             }

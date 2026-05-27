@@ -44,6 +44,17 @@ class GeraLandingExecutionServiceTest {
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
+        com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService wireframePendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
                 new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-wireframe")));
@@ -87,6 +98,11 @@ class GeraLandingExecutionServiceTest {
                         imagePlanningRecebeResponse,
                         presetDesignRecebeResponse,
                         deliverablesRecebeResponse,
+                        wireframePendingJobsService,
+                        copyPendingJobsService,
+                        imagePlanningPendingJobsService,
+                        presetDesignPendingJobsService,
+                        deliverablesPendingJobsService,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -130,6 +146,17 @@ class GeraLandingExecutionServiceTest {
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
+        com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService wireframePendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
                 new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-wireframe")));
@@ -156,6 +183,11 @@ class GeraLandingExecutionServiceTest {
                         imagePlanningRecebeResponse,
                         presetDesignRecebeResponse,
                         deliverablesRecebeResponse,
+                        wireframePendingJobsService,
+                        copyPendingJobsService,
+                        imagePlanningPendingJobsService,
+                        presetDesignPendingJobsService,
+                        deliverablesPendingJobsService,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -194,6 +226,17 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
+
+        com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService wireframePendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -243,6 +286,11 @@ class GeraLandingExecutionServiceTest {
                         imagePlanningRecebeResponse,
                         presetDesignRecebeResponse,
                         deliverablesRecebeResponse,
+                        wireframePendingJobsService,
+                        copyPendingJobsService,
+                        imagePlanningPendingJobsService,
+                        presetDesignPendingJobsService,
+                        deliverablesPendingJobsService,
                         20,
                         new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                         new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
@@ -282,6 +330,17 @@ class GeraLandingExecutionServiceTest {
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
+        com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService wireframePendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
                 new GeraLandingStageExecutionDto(19L, "dd8a7dac-ce15-4858-99b4-45a7a18591fa", "landing-page-design-preset")));
@@ -315,7 +374,8 @@ class GeraLandingExecutionServiceTest {
 
         GeraLandingExecutionService service = new GeraLandingExecutionService(
                 backendClient, geraLandingService, openAiClient, objectMapper, stageSchemaResolver, wireframeMontaRequest,
-                copyMontaRequest, imagePlanningMontaRequest, presetDesignMontaRequest, deliverablesMontaRequest, wireframeRecebeResponse, copyRecebeResponse, imagePlanningRecebeResponse, presetDesignRecebeResponse, deliverablesRecebeResponse, 20,
+                copyMontaRequest, imagePlanningMontaRequest, presetDesignMontaRequest, deliverablesMontaRequest, wireframeRecebeResponse, copyRecebeResponse, imagePlanningRecebeResponse, presetDesignRecebeResponse, deliverablesRecebeResponse,
+                wireframePendingJobsService, copyPendingJobsService, imagePlanningPendingJobsService, presetDesignPendingJobsService, deliverablesPendingJobsService, 20,
                 new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json"),
                 new ClassPathResource("prompts/geralanding/landing-page-copy-schema.json"),
                 new ClassPathResource("prompts/geralanding/landing-page-image-planning-schema.json"),

@@ -1965,3 +1965,27 @@
   - AGENTS.md
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-27 00:00:00 UTC
+- solicitação: no `ai-worker`, criar classes específicas de wireframe (`GeraLandingExecutionWireframeService`, `GeraLandingStageExecutionWireframeDto`, `GeraLandingExperimentWireframeRequest`, `GeraLandingWireframeBackendClient`, `GeraLandingJobCompletionWireframePayload`) e replicar o padrão de isolamento por etapa no GeraLanding.
+- causa-raiz identificada: a etapa wireframe ainda dependia diretamente de classes compartilhadas em `com.marketinghub.worker.geralanding`, aumentando acoplamento transversal entre etapas.
+- correção aplicada:
+  - criadas as novas classes específicas de wireframe com mapeamento/delegação para o núcleo compartilhado;
+  - atualizado `WireframePendingJobsService` para consumir DTO e backend client da própria etapa wireframe;
+  - atualizado `WireframeExecutionScheduler` para depender do novo `GeraLandingExecutionWireframeService`;
+  - mantido `GeraLandingWireframeExecutionService` como compatibilidade delegando para o novo serviço.
+- validação executada:
+  - `mvn -q -Dtest=GeraLandingExecutionServiceTest,GeraLandingServiceTest test` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-27 00:00:00 UTC (extensão)
+- solicitação: aplicar o mesmo padrão de isolamento por etapa do wireframe para as demais etapas do GeraLanding no AI Worker.
+- correção aplicada:
+  - criadas classes específicas por etapa para `imageplanning`, `presetdesign` e `deliverables`:
+    - `GeraLandingStageExecution<Etapa>Dto`
+    - `GeraLandingExperiment<Etapa>Request`
+    - `GeraLandingJobCompletion<Etapa>Payload`
+    - `GeraLanding<Etapa>BackendClient`
+  - atualizado `*PendingJobsService` das três etapas para consumir `BackendClient` e `StageExecutionDto` locais da etapa.
+  - atualizado `GeraLandingImagePlanningExecutionService`, `GeraLandingPresetDesignExecutionService` e `GeraLandingDeliverablesExecutionService` para aceitar DTOs locais e converter para DTO base no ponto de delegação.
+- validação executada:
+  - `mvn -q -DskipTests compile` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

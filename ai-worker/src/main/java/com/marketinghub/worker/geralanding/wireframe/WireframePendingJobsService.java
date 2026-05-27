@@ -1,7 +1,5 @@
 package com.marketinghub.worker.geralanding.wireframe;
 
-import com.marketinghub.worker.geralanding.GeraLandingBackendClient;
-import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
 import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -17,18 +15,18 @@ public class WireframePendingJobsService {
     private static final Logger log = LoggerFactory.getLogger(WireframePendingJobsService.class);
     private static final String WIREFRAME_STAGE_CODE = "landing-page-wireframe";
 
-    private final GeraLandingBackendClient backendClient;
+    private final GeraLandingWireframeBackendClient backendClient;
 
-    public WireframePendingJobsService(GeraLandingBackendClient backendClient) {
+    public WireframePendingJobsService(GeraLandingWireframeBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 
     /**
      * Busca execuções pendentes da etapa wireframe e confirma o estado via controller wireframe.web.
      */
-    public List<GeraLandingStageExecutionDto> listPendingWireframeJobs(int limit) {
-        List<GeraLandingStageExecutionDto> pendingExecutions = backendClient.listPendingExecutions(limit);
-        List<GeraLandingStageExecutionDto> wireframeJobs = pendingExecutions.stream()
+    public List<GeraLandingStageExecutionWireframeDto> listPendingWireframeJobs(int limit) {
+        List<GeraLandingStageExecutionWireframeDto> pendingExecutions = backendClient.listPendingExecutions(limit);
+        List<GeraLandingStageExecutionWireframeDto> wireframeJobs = pendingExecutions.stream()
                 .filter(this::isWireframeStage)
                 .filter(this::isPendingOnWireframeController)
                 .toList();
@@ -39,7 +37,7 @@ public class WireframePendingJobsService {
     /**
      * Valida se a execução pertence à etapa canônica de wireframe.
      */
-    private boolean isWireframeStage(GeraLandingStageExecutionDto execution) {
+    private boolean isWireframeStage(GeraLandingStageExecutionWireframeDto execution) {
         return execution != null
                 && StringUtils.hasText(execution.stageCode())
                 && WIREFRAME_STAGE_CODE.equals(execution.stageCode().trim().toLowerCase(Locale.ROOT));
@@ -48,7 +46,7 @@ public class WireframePendingJobsService {
     /**
      * Consulta o endpoint wireframe.web para confirmar que o job segue pendente.
      */
-    private boolean isPendingOnWireframeController(GeraLandingStageExecutionDto execution) {
+    private boolean isPendingOnWireframeController(GeraLandingStageExecutionWireframeDto execution) {
         if (execution == null || execution.experimentId() == null || !StringUtils.hasText(execution.idJob())) {
             return false;
         }

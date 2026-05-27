@@ -1,7 +1,6 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
 import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
-import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +14,7 @@ public class GeraLandingPresetDesignExecutionService {
     }
 
     /** Processa os jobs pendentes da etapa preset design. */
-    public void processExecutions(List<GeraLandingStageExecutionDto> jobs) {
-        executionService.processExecutions(jobs);
+    public void processExecutions(List<GeraLandingStageExecutionPresetDesignDto> jobs) {
+        executionService.processExecutions(jobs.stream().map(GeraLandingStageExecutionPresetDesignDto::toBase).toList());
     }
 }

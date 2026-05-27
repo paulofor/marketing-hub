@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 public class WireframeExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(WireframeExecutionScheduler.class);
 
-    private final GeraLandingWireframeExecutionService executionService;
+    private final GeraLandingExecutionWireframeService executionService;
     private final WireframePendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public WireframeExecutionScheduler(GeraLandingWireframeExecutionService executionService,
+    public WireframeExecutionScheduler(GeraLandingExecutionWireframeService executionService,
                                        WireframePendingJobsService pendingJobsService,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.executionService = executionService;

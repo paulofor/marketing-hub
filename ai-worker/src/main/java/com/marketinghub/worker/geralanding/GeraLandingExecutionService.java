@@ -129,7 +129,9 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
             log.warn("GeraLanding generation skipped: OpenAI client is disabled");
             return;
         }
-        List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit);
+        List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit).stream()
+                .map(item -> new GeraLandingStageExecutionDto(item.experimentId(), item.idJob(), item.stageCode()))
+                .toList();
         List<com.marketinghub.worker.geralanding.wireframe.GeraLandingStageExecutionWireframeDto> wireframePending =
                 wireframePendingJobsService.listPendingWireframeJobs(pendingLimit);
         List<com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto> copyPending = copyPendingJobsService.listPendingCopyJobs(pendingLimit);

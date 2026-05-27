@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
-import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 public class PresetDesignExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(PresetDesignExecutionScheduler.class);
 
-    private final GeraLandingExecutionService executionService;
+    private final GeraLandingPresetDesignExecutionService executionService;
     private final PresetDesignPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public PresetDesignExecutionScheduler(GeraLandingExecutionService executionService,
+    public PresetDesignExecutionScheduler(GeraLandingPresetDesignExecutionService executionService,
                                           PresetDesignPendingJobsService pendingJobsService,
                                           @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.executionService = executionService;

@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 public class CopyExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(CopyExecutionScheduler.class);
 
-    private final GeraLandingExecutionService executionService;
+    private final GeraLandingCopyExecutionService executionService;
     private final CopyPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public CopyExecutionScheduler(GeraLandingExecutionService executionService,
+    public CopyExecutionScheduler(GeraLandingCopyExecutionService executionService,
                                   CopyPendingJobsService pendingJobsService,
                                   @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.executionService = executionService;

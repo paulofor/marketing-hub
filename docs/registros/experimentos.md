@@ -1943,3 +1943,16 @@
   - a confirmação de pendência por etapa continua sendo feita via endpoint exclusivo da etapa em cada `*PendingJobsService` (wireframe/copy/imageplanning/designpreset/deliverables).
 - validação executada:
   - `mvn -f ai-worker/pom.xml -DskipTests compile` (falhou por dependência externa ausente/sem acesso: `com.marketinghub:ads-service:0.0.1-SNAPSHOT`, erro 401 no repositório GitHub Packages).
+
+## 2026-05-27 06:23:00 UTC
+- solicitação: no ai-worker, dentro de `*.geralanding.<etapa>`, criar `GeraLanding<Etapa>ExecutionService` para evitar import direto de `com.marketinghub.worker.geralanding.GeraLandingExecutionService` nos schedulers de etapa.
+- ajustes aplicados no `ai-worker`:
+  - criados serviços por etapa para encapsular a execução compartilhada:
+    - `GeraLandingWireframeExecutionService`;
+    - `GeraLandingCopyExecutionService`;
+    - `GeraLandingImagePlanningExecutionService`;
+    - `GeraLandingPresetDesignExecutionService`;
+    - `GeraLandingDeliverablesExecutionService`.
+  - atualizado cada `*ExecutionScheduler` de etapa para depender do serviço da própria etapa, removendo o import direto do executor compartilhado.
+- validação executada:
+  - `mvn -f ai-worker/pom.xml -Dtest=GeraLandingExecutionServiceTest test` (falhou por dependência externa sem autenticação: `com.marketinghub:ads-service:0.0.1-SNAPSHOT`, erro 401 no GitHub Packages).

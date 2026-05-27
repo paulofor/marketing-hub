@@ -6,11 +6,11 @@ import org.springframework.stereotype.Service;
 /** Centraliza a execução de jobs da etapa wireframe usando o executor base. */
 @Service("geraLandingWireframeExecutionStageService")
 public class GeraLandingExecutionWireframeService {
-    private final com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor executionProcessor;
+    private final com.marketinghub.worker.geralanding.comum.GeraLandingExecutionService executionService;
 
     public GeraLandingExecutionWireframeService(
-            com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor executionProcessor) {
-        this.executionProcessor = executionProcessor;
+            com.marketinghub.worker.geralanding.comum.GeraLandingExecutionService executionService) {
+        this.executionService = executionService;
     }
 
     /** Processa os jobs pendentes já filtrados da etapa wireframe convertendo para o DTO base. */
@@ -18,6 +18,6 @@ public class GeraLandingExecutionWireframeService {
         List<com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionRef> mapped = jobs.stream()
                 .map(item -> new com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionRef(item.experimentId(), item.idJob(), item.stageCode()))
                 .toList();
-        executionProcessor.processExecutions(mapped);
+        executionService.processExecutions(mapped);
     }
 }

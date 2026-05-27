@@ -34,17 +34,17 @@ public class HotmartCollectorScheduler {
     }
 
     /**
-     * Executa o ciclo 1 de listagem de produtos diariamente às 23:20.
+     * Executa o ciclo 1 de listagem de produtos às 00:05 no dia 27 de maio.
      */
-    @Scheduled(cron = "0 20 23 * * *")
-    public void collectFirstCycleAtTwentyThreeTwenty() {
+    @Scheduled(cron = "0 5 0 27 5 *")
+    public void collectFirstCycleAtZeroZeroFiveOnMayTwentySeventh() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
         HotmartCollectionResponse response = collectorService.collectFirstCycle(request);
-        log.info("Hotmart scheduler executado hora=23:20 ciclo={} status={} produtos={} mensagem={}",
+        log.info("Hotmart scheduler executado hora=00:05 dia=27/05 ciclo={} status={} produtos={} mensagem={}",
                 "CICLO_1_LISTAGEM",
                 response.status(),
                 response.products().size(),

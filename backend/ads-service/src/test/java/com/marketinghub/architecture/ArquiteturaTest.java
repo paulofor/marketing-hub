@@ -29,6 +29,8 @@ class ArquiteturaTest {
     private static final String GERALANDING_STAGE_EXECUTION_CLASS = "com.marketinghub.geralanding.GeraLandingStageExecution";
     private static final String GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS =
             "com.marketinghub.geralanding.GeraLandingStageExecutionRepository";
+    private static final String GERALANDING_STAGE_EXECUTION_BUILDER_CLASS =
+            "com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder";
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
 
@@ -287,7 +289,8 @@ class ArquiteturaTest {
                             || targetName.equals(EXPERIMENT_CLASS)
                             || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
-                            || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)) {
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_BUILDER_CLASS)) {
                         return;
                     }
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe-origem=" + item.getName()
@@ -296,8 +299,9 @@ class ArquiteturaTest {
                             + " | regra: serviços em geralanding.*.service só podem acessar "
                             + EXPERIMENT_CLASS + ", "
                             + EXPERIMENT_REPOSITORY_CLASS + ", "
-                            + GERALANDING_STAGE_EXECUTION_CLASS + " e "
-                            + GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS;
+                            + GERALANDING_STAGE_EXECUTION_CLASS + ", "
+                            + GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS + " e "
+                            + GERALANDING_STAGE_EXECUTION_BUILDER_CLASS;
                     events.add(SimpleConditionEvent.violated(item, message));
                 });
             }

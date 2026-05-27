@@ -84,6 +84,13 @@ Criei uma excpetion para esse service
 * endpoints do backend que são chamados ( pacotes )
 * dados que são enviados ( onde são persisitidos )
 
+##### Precisamos controlar os montadores de prompt/request senão vamos ter muitos problemas.
+
+> O geralanding esta se tornando uma arquitetura focada em gerar produtos digitais.
+> vai ser usada em outros pontos.
+> tem pipeline, etapas, worker, backend com persistencia, dados dentro de prompt, schema, etc.
+
+
 # Idéia para o dessenvolvimento do modulo de video e outros que serão produzidos com ia
 
 ## Passo 1
@@ -110,9 +117,9 @@ Criei uma excpetion para esse service
 ## Passo 8
 - Tratamento do Response para a IA ( pode ser o gpt pode ser outro )
 
+> Faltou :
+> front-end
+> provosiorios
 
-##### Precisamos controlar os montadores de prompt/request senão vamos ter muitos problemas.
 
-> O geralanding esta se tornando uma arquitetura focada em gerar produtos digitais.
-> vai ser usada em outros pontos.
-> tem pipeline, etapas, worker, backend com persistencia, dados dentro de prompt, schema, etc.
+

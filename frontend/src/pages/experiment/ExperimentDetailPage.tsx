@@ -1129,10 +1129,15 @@ export default function ExperimentDetailPage() {
       0,
     );
   const { data: runningGeraLandingJobDetail } =
-    useGeraLandingStageExecutionDetail(expId, runningGeraLandingJobId, {
-      enabled: Boolean(runningGeraLandingJobId),
-      refetchInterval: 10000,
-    });
+    useGeraLandingStageExecutionDetail(
+      expId,
+      runningGeraLandingJobId,
+      undefined,
+      {
+        enabled: Boolean(runningGeraLandingJobId),
+        refetchInterval: 10000,
+      },
+    );
 
   useEffect(() => {
     if (!runningGeraLandingJobId || !runningGeraLandingJobDetail) return;

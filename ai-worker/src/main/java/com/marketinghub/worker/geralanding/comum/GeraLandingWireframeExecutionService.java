@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe;
+package com.marketinghub.worker.geralanding.comum;
 
 import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
 import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;

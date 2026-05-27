@@ -1,11 +1,10 @@
-package com.marketinghub.geralanding;
+package com.marketinghub.geralanding.wireframe.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** @deprecated usar versões por etapa em geralanding.<etapa>.service. */
-@Deprecated
-public record GeraLandingStageExecutionDetailResponse(
+/** Responsável por representar os detalhes de uma execução da etapa wireframe. */
+public record GeraLandingWireframeStageExecutionDetailResponse(
         String idJob,
         Long experimentId,
         String stageCode,

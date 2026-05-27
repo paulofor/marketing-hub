@@ -1862,3 +1862,13 @@
 
 - 2026-05-26 23:45:03 UTC — Ajustado o diagrama canônico do GeraLanding (seção Backend) para remover setas de auto dependência de pacote (`web -> web`, `service -> service`, `provisorio -> provisorio`), mantendo apenas dependências entre pacotes distintos e regras permitidas explícitas.
 - 2026-05-26 23:46:30 UTC — Aplicado o mesmo ajuste de simplificação em outros trechos de dependência entre pacotes no cânone do GeraLanding: removidas setas de auto referência semântica no diagrama do Worker AI (`copy/presetdesign/wireframe/imageplanning/deliverables/stage/comum` para eles mesmos), mantendo as regras explícitas no texto logo abaixo.
+
+## 2026-05-26 23:58:00 UTC
+- solicitação: criar versões por etapa de `GeraLandingExecutionSummaryResponse`, `GeraLandingStageExecutionDetailResponse` e `GeraLandingStageExecutionService`, usando apenas as versões da etapa nos controllers.
+- causa-raiz: controllers `geralanding.<etapa>.web` dependiam de classes transversais em `com.marketinghub.geralanding`, violando a regra ArchUnit de isolamento por etapa no pacote web.
+- correção aplicada no backend:
+  - criados DTOs e serviços de execução por etapa em `geralanding.<etapa>.service` para `wireframe`, `copy`, `designpreset`, `imageplanning` e `deliverables`;
+  - atualizados controllers de etapa para depender apenas dos serviços/DTOs locais da etapa;
+  - marcadas como obsoletas (`@Deprecated`) as classes transversais antigas: `GeraLandingExecutionSummaryResponse`, `GeraLandingStageExecutionDetailResponse` e `GeraLandingStageExecutionService`.
+- validação executada:
+  - teste arquitetural `ArquiteturaTest` executado com sucesso após refatoração.

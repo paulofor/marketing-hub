@@ -1,8 +1,8 @@
 package com.marketinghub.geralanding.wireframe.web;
 
-import com.marketinghub.geralanding.GeraLandingExecutionSummaryResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionDetailResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionDetailResponse;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import java.util.List;
@@ -21,9 +21,9 @@ public class GeraLandingWireframeController {
   private static final String STAGE_CODE = "landing-page-wireframe";
 
   private final GeraLandingWireframeStageService stageService;
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingWireframeStageExecutionService executionService;
 
-  public GeraLandingWireframeController(GeraLandingWireframeStageService stageService, GeraLandingStageExecutionService executionService) {
+  public GeraLandingWireframeController(GeraLandingWireframeStageService stageService, GeraLandingWireframeStageExecutionService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }
@@ -37,19 +37,19 @@ public class GeraLandingWireframeController {
 
   /** Lista as execuções da etapa para o experimento. */
   @GetMapping("/wireframe/stage-executions")
-  public ResponseEntity<List<GeraLandingExecutionSummaryResponse>> listStageExecutions(
+  public ResponseEntity<List<GeraLandingWireframeExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
       @RequestParam(defaultValue = "true") boolean includeCompleted) {
-    List<GeraLandingExecutionSummaryResponse> response =
+    List<GeraLandingWireframeExecutionSummaryResponse> response =
         executionService.listExperimentStageExecutions(experimentId, STAGE_CODE, includeCompleted);
     return ResponseEntity.ok(response);
   }
 
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/wireframe/stage-executions/{idJob}")
-  public ResponseEntity<GeraLandingStageExecutionDetailResponse> detailStageExecution(
+  public ResponseEntity<GeraLandingWireframeStageExecutionDetailResponse> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    GeraLandingStageExecutionDetailResponse response =
+    GeraLandingWireframeStageExecutionDetailResponse response =
         executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }

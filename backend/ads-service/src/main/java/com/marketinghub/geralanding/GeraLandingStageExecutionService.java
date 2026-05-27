@@ -36,6 +36,8 @@ import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
 
 @Service
+/** @deprecated usar serviços por etapa em geralanding.<etapa>.service. */
+@Deprecated
 public class GeraLandingStageExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingStageExecutionService.class);
     private static final String STATUS_STARTED = "INICIADO";

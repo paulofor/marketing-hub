@@ -3,12 +3,12 @@ package com.marketinghub.worker.geralanding;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
-import com.tngtech.archunit.core.importer.ImportOption;
+
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
-@AnalyzeClasses(packages = "com.marketinghub.worker", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "com.marketinghub.worker")
 class ArquiteturaTest {
 
     /** Garante que o módulo de geração de landing não dependa do pipeline legado de experimentos. */

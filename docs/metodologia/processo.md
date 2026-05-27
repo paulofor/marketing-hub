@@ -84,6 +84,32 @@ Criei uma excpetion para esse service
 * endpoints do backend que são chamados ( pacotes )
 * dados que são enviados ( onde são persisitidos )
 
+# Idéia para o dessenvolvimento do modulo de video e outros que serão produzidos com ia
+
+## Passo 1
+- Definir fases ( por exemplo : etapa1 , etapa2, etapa 3 )
+
+## Passo 2 
+- Definir modelo de dados
+
+## Passo 3
+- Criar no backend os elementos de Repositorio dentro do pacote especifico
+
+## Passo 4
+- No backend criar o service que vai ler e consulta o repositorio
+
+## Passo 5
+- No backend criar o web que vai ter os endpoints, integração entre o Worker / front-end e backend
+
+## Passo 6 
+- Clientes do Worker AI ( camada web )
+
+## Passo 7 
+- Montagem do Request para a IA ( pode ser o gpt pode ser outro )
+
+## Passo 8
+- Tratamento do Response para a IA ( pode ser o gpt pode ser outro )
+
 
 ##### Precisamos controlar os montadores de prompt/request senão vamos ter muitos problemas.
 

@@ -33,3 +33,9 @@
   - envio para a OpenAI contendo **request cru** + **jobId do Marketing Hub**;
   - resposta da OpenAI contendo **resposta crua** + **jobId do Marketing Hub**;
   - envio para o backend contendo **payload enviado** + **jobId do Marketing Hub**.
+
+## Regra de isolamento do GeraLanding por etapa (obrigatória)
+- Todo código relacionado ao **GeraLanding** deve permanecer dentro do pacote específico da própria etapa/domínio (`geralanding.<etapa>`).
+- Evite mover classes, utilitários, DTOs, mappers, validadores e clientes para pacote comum/compartilhado quando forem usados pela etapa.
+- Se houver necessidade prática entre etapas, **prefira duplicar código** dentro de cada pacote de etapa ao invés de centralizar em pacote comum.
+- Objetivo: preservar isolamento arquitetural por etapa e evitar acoplamento transversal.

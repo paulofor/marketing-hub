@@ -39,7 +39,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 /**
  * Executa as etapas pendentes do GeraLanding, preparando prompts, schemas e payloads para a OpenAI.
  */
-public class GeraLandingExecutionService implements com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor {
+public class GeraLandingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingExecutionService.class);
     private static final Pattern BANNED_COPY_TEXT_PATTERN = Pattern.compile(
             "(?i)(adCopy\\.|campaignAngle\\.|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\bV[1-3]-|lorem ipsum|como funciona \\(passo)");

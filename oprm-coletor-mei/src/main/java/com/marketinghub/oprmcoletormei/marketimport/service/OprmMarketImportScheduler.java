@@ -59,7 +59,7 @@ public class OprmMarketImportScheduler {
     }
 
     /** Executa a ingestão completa de arquivos CNPJ/CNAE no horário agendado para a execução operacional. */
-    @Scheduled(cron = "0 20 18 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 10 23 * * *", zone = "America/Sao_Paulo")
     public void runScheduledImport() {
         log.info("Iniciando runScheduledImport do OPRM CNPJ/CNAE.");
         if (!scheduleProperties.enabled()) {

@@ -9,7 +9,7 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
 @AnalyzeClasses(packages = "com.marketinghub.worker", importOptions = ImportOption.DoNotIncludeTests.class)
-class GeraLandingArchitectureTest {
+class ArquiteturaTest {
 
     /** Garante que o módulo de geração de landing não dependa do pipeline legado de experimentos. */
     @ArchTest

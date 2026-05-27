@@ -1893,3 +1893,26 @@
   - mantidas conversões de `idJob` (`String` <-> `byte[]`) em cada serviço por etapa para aderir ao repositório e ao contrato de resposta da etapa.
 - validação executada:
   - `mvn -Dtest=ArquiteturaTest test -q` (ainda falha por violações arquiteturais remanescentes, inclusive chamadas ao tipo interno `GeraLandingStageExecution$GeraLandingStageExecutionBuilder` e outras classes fora do escopo permitido).
+
+## 2026-05-27 01:40:00 UTC
+- solicitação: "pegue uma situação que tem esse erro" para a violação ArchUnit em `geralanding..service..`.
+- situação capturada (reprodução real):
+  - teste executado: `mvn -Dtest=ArquiteturaTest test -q` no módulo `backend/ads-service`;
+  - falha observada: regra `geralandingServicePackagesShouldOnlyAccessAllowedMarketingHubClasses` com **50 violações**;
+  - exemplo concreto da violação:
+    - classe origem: `com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionService`;
+    - operação: método `registerInitialExecution(Long, String)`;
+    - dependência proibida: chamadas para `com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder` (`experimentId(...)`, `stageCode(...)`, `executionRequestedAt(...)`, `build()`, entre outras).
+- causa-raiz identificada:
+  - a regra arquitetural permite explicitamente `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`, porém as chamadas do builder (`GeraLandingStageExecution$GeraLandingStageExecutionBuilder`) são contabilizadas pelo ArchUnit como dependência para uma classe **não incluída** na allowlist.
+- ação aplicada nesta tarefa:
+  - registrado o cenário com evidência objetiva para orientar o próximo ajuste da regra/implementação e evitar análise por consequência.
+
+## 2026-05-27 01:50:00 UTC
+- solicitação: adicionar como 5ª exceção permitida na regra ArchUnit de `geralanding..service..` a classe interna do builder de `GeraLandingStageExecution`.
+- ajuste aplicado em `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`:
+  - criada constante `GERALANDING_STAGE_EXECUTION_BUILDER_CLASS` com valor `com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder`;
+  - incluída essa constante na allowlist da condição `onlyDependOnAllowedMarketingHubClasses()`;
+  - atualizada mensagem da regra para listar explicitamente as 5 exceções permitidas.
+- validação executada:
+  - `cd backend/ads-service && ../../backend/mvnw -Dtest=ArquiteturaTest test -q` (sucesso).

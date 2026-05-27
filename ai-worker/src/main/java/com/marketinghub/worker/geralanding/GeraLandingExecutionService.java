@@ -5,6 +5,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
+import com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService;
+import com.marketinghub.worker.geralanding.copy.CopyPendingJobsService;
+import com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService;
+import com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService;
+import com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService;
 import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,6 +52,11 @@ public class GeraLandingExecutionService {
     private final com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse;
     private final com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse;
     private final com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse;
+    private final WireframePendingJobsService wireframePendingJobsService;
+    private final CopyPendingJobsService copyPendingJobsService;
+    private final ImagePlanningPendingJobsService imagePlanningPendingJobsService;
+    private final PresetDesignPendingJobsService presetDesignPendingJobsService;
+    private final DeliverablesPendingJobsService deliverablesPendingJobsService;
     private final int pendingLimit;
     private final Resource wireframeSchemaResource;
     private final Resource copySchemaResource;
@@ -69,6 +79,11 @@ public class GeraLandingExecutionService {
                                        com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse,
                                        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse,
                                        com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse,
+                                       WireframePendingJobsService wireframePendingJobsService,
+                                       CopyPendingJobsService copyPendingJobsService,
+                                       ImagePlanningPendingJobsService imagePlanningPendingJobsService,
+                                       PresetDesignPendingJobsService presetDesignPendingJobsService,
+                                       DeliverablesPendingJobsService deliverablesPendingJobsService,
                                        @Value("${geralanding.execution.pending-limit:20}") int pendingLimit,
                                        @Value("classpath:prompts/geralanding/landing-page-wireframe-schema.json")
                                        Resource wireframeSchemaResource,
@@ -95,6 +110,11 @@ public class GeraLandingExecutionService {
         this.imagePlanningRecebeResponse = imagePlanningRecebeResponse;
         this.presetDesignRecebeResponse = presetDesignRecebeResponse;
         this.deliverablesRecebeResponse = deliverablesRecebeResponse;
+        this.wireframePendingJobsService = wireframePendingJobsService;
+        this.copyPendingJobsService = copyPendingJobsService;
+        this.imagePlanningPendingJobsService = imagePlanningPendingJobsService;
+        this.presetDesignPendingJobsService = presetDesignPendingJobsService;
+        this.deliverablesPendingJobsService = deliverablesPendingJobsService;
         this.pendingLimit = Math.max(1, pendingLimit);
         this.wireframeSchemaResource = wireframeSchemaResource;
         this.copySchemaResource = copySchemaResource;
@@ -109,6 +129,13 @@ public class GeraLandingExecutionService {
             return;
         }
         List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit);
+        List<GeraLandingStageExecutionDto> wireframePending = wireframePendingJobsService.listPendingWireframeJobs(pendingLimit);
+        List<GeraLandingStageExecutionDto> copyPending = copyPendingJobsService.listPendingCopyJobs(pendingLimit);
+        List<GeraLandingStageExecutionDto> imagePlanningPending = imagePlanningPendingJobsService.listPendingImagePlanningJobs(pendingLimit);
+        List<GeraLandingStageExecutionDto> presetDesignPending = presetDesignPendingJobsService.listPendingPresetDesignJobs(pendingLimit);
+        List<GeraLandingStageExecutionDto> deliverablesPending = deliverablesPendingJobsService.listPendingDeliverablesJobs(pendingLimit);
+        log.info("Stage pending jobs via stage controllers: wireframe={}, copy={}, imagePlanning={}, designPreset={}, deliverables={}",
+                wireframePending.size(), copyPending.size(), imagePlanningPending.size(), presetDesignPending.size(), deliverablesPending.size());
         log.info("GeraLanding execution worker found {} pending execution(s)", pending.size());
         for (GeraLandingStageExecutionDto execution : pending) {
             processExecution(execution);

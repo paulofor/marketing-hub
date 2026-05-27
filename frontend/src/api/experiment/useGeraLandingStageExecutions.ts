@@ -65,15 +65,17 @@ export function useGeraLandingStageExecutions(
 export function useGeraLandingStageExecutionDetail(
   experimentId?: string,
   jobId?: string,
+  stageCode = "landing-page-wireframe",
   options?: { enabled?: boolean; refetchInterval?: number | false },
 ) {
   return useQuery({
-    queryKey: ["geralanding-stage-execution-detail", experimentId, jobId],
+    queryKey: ["geralanding-stage-execution-detail", experimentId, jobId, stageCode],
     enabled: options?.enabled ?? Boolean(experimentId && jobId),
     refetchInterval: options?.refetchInterval,
     queryFn: async () => {
+      const stageSegment = resolveStageExecutionsEndpointSegment(stageCode);
       const { data } = await axios.get<GeraLandingStageExecutionDetail>(
-        `/api/experiments/${experimentId}/geralanding/stage-executions/${jobId}`,
+        `/api/experiments/${experimentId}/geralanding/${stageSegment}/stage-executions/${jobId}`,
       );
       return data;
     },

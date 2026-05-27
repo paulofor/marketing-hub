@@ -1,15 +1,14 @@
 package com.marketinghub.geralanding.designpreset.service;
 
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de design preset do GeraLanding. */
 @Service
 public class GeraLandingDesignPresetStageService {
   private static final String STAGE_NAME = "landing-page-design-preset";
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingDesignPresetStageExecutionService executionService;
 
-  public GeraLandingDesignPresetStageService(GeraLandingStageExecutionService executionService) {
+  public GeraLandingDesignPresetStageService(GeraLandingDesignPresetStageExecutionService executionService) {
     this.executionService = executionService;
   }
 

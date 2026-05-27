@@ -1,15 +1,14 @@
 package com.marketinghub.geralanding.imageplanning.service;
 
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de planejamento de imagens do GeraLanding. */
 @Service
 public class GeraLandingImagePlanningStageService {
   private static final String STAGE_NAME = "landing-page-image-planning";
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingImagePlanningStageExecutionService executionService;
 
-  public GeraLandingImagePlanningStageService(GeraLandingStageExecutionService executionService) {
+  public GeraLandingImagePlanningStageService(GeraLandingImagePlanningStageExecutionService executionService) {
     this.executionService = executionService;
   }
 

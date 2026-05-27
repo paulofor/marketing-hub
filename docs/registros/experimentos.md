@@ -1872,3 +1872,11 @@
   - marcadas como obsoletas (`@Deprecated`) as classes transversais antigas: `GeraLandingExecutionSummaryResponse`, `GeraLandingStageExecutionDetailResponse` e `GeraLandingStageExecutionService`.
 - validação executada:
   - teste arquitetural `ArquiteturaTest` executado com sucesso após refatoração.
+
+## 2026-05-27 00:38:00 UTC
+- solicitação: nas classes do pacote `service`, usar a versão local do próprio pacote para iniciar execução de etapa.
+- correção aplicada no backend (`ads-service`):
+  - `GeraLanding*StageService` de `copy`, `designpreset`, `imageplanning`, `wireframe` e `deliverables` passaram a depender de `GeraLanding*StageExecutionService` local da etapa (em vez de depender direto do serviço transversal);
+  - adicionado método `registerInitialExecution(...)` em cada `GeraLanding*StageExecutionService` para encapsular a delegação e retornar `GeraLanding*StartResponse` local.
+- validação executada:
+  - `mvn -q -Dtest=ArquiteturaTest test` (ainda falha por dependências remanescentes dos `*StageExecutionService` para classes transversais legadas).

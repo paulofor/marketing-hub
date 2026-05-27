@@ -16,6 +16,13 @@ public class GeraLandingDesignPresetStageExecutionService {
         this.delegate = delegate;
     }
 
+
+    /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
+    public GeraLandingDesignPresetStartResponse registerInitialExecution(Long experimentId, String stageCode) {
+        var response = delegate.registerInitialExecution(experimentId, stageCode);
+        return new GeraLandingDesignPresetStartResponse(response.idJob(), response.status());
+    }
+
     /** Lista execuções da etapa convertendo para o DTO local da etapa. */
     public List<GeraLandingDesignPresetExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode, boolean includeCompleted) {
         return delegate.listExperimentStageExecutions(experimentId, stageCode, includeCompleted).stream()

@@ -26,15 +26,7 @@ public class GeraLandingBackendClient {
 
     /** Envia resultado da etapa copy ao backend principal. */
     public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionPayload payload) {
-        delegate.receiveResult(idJob, experimentId, stageCode,
-                new com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload(
-                        payload.responseContent(),
-                        payload.rawResponse(),
-                        payload.requestBodyJson(),
-                        payload.openAiJobId(),
-                        payload.inputTokens(),
-                        payload.outputTokens(),
-                        payload.costUsd()));
+        delegate.receiveResult(idJob, experimentId, stageCode, payload);
     }
 
     /** Busca detalhes da execução da etapa copy no endpoint dedicado da etapa. */

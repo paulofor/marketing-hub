@@ -184,6 +184,76 @@ public class GeraLandingBackendClient {
                 .block();
     }
 
+
+    
+    /** Recebe resultado da etapa copy usando o payload tipado da etapa. */
+    public void receiveResult(String idJob, Long experimentId, String stageCode,
+                              com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload payload) {
+        receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
+                payload != null ? payload.responseContent() : null,
+                payload != null ? payload.rawResponse() : null,
+                payload != null ? payload.requestBodyJson() : null,
+                payload != null ? payload.openAiJobId() : null,
+                payload != null ? payload.inputTokens() : null,
+                payload != null ? payload.outputTokens() : null,
+                payload != null ? payload.costUsd() : null));
+    }
+
+    /** Recebe resultado da etapa image planning usando o payload tipado da etapa. */
+    public void receiveResult(String idJob, Long experimentId, String stageCode,
+                              com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload payload) {
+        receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
+                payload != null ? payload.responseContent() : null,
+                payload != null ? payload.rawResponse() : null,
+                payload != null ? payload.requestBodyJson() : null,
+                payload != null ? payload.openAiJobId() : null,
+                payload != null ? payload.inputTokens() : null,
+                payload != null ? payload.outputTokens() : null,
+                payload != null ? payload.costUsd() : null));
+    }
+
+    /** Recebe resultado da etapa preset design usando o payload tipado da etapa. */
+    public void receiveResult(String idJob, Long experimentId, String stageCode,
+                              com.marketinghub.worker.geralanding.presetdesign.GeraLandingJobCompletionPresetDesignPayload payload) {
+        receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
+                payload != null ? payload.responseContent() : null,
+                payload != null ? payload.rawResponse() : null,
+                payload != null ? payload.requestBodyJson() : null,
+                payload != null ? payload.openAiJobId() : null,
+                payload != null ? payload.inputTokens() : null,
+                payload != null ? payload.outputTokens() : null,
+                payload != null ? payload.costUsd() : null));
+    }
+
+    /** Recebe resultado da etapa deliverables usando o payload tipado da etapa. */
+    public void receiveResult(String idJob, Long experimentId, String stageCode,
+                              com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload payload) {
+        receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
+                payload != null ? payload.responseContent() : null,
+                payload != null ? payload.rawResponse() : null,
+                payload != null ? payload.requestBodyJson() : null,
+                payload != null ? payload.openAiJobId() : null,
+                payload != null ? payload.inputTokens() : null,
+                payload != null ? payload.outputTokens() : null,
+                payload != null ? payload.costUsd() : null));
+    }
+
+    /** Recebe resultado da etapa wireframe usando o payload tipado da etapa. */
+    public void receiveResult(String idJob, Long experimentId, String stageCode,
+                              com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload payload) {
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
+                "/internal/geralanding/stage-executions");
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("experimentId", experimentId);
+        body.put("stageCode", stageCode);
+        body.put("modelResponse", payload != null ? payload.responseContent() : null);
+        body.put("inputTokens", payload != null ? payload.inputTokens() : null);
+        body.put("outputTokens", payload != null ? payload.outputTokens() : null);
+        body.put("costUsd", payload != null ? payload.costUsd() : null);
+        body.put("openAiJobId", payload != null ? payload.openAiJobId() : null);
+        webClient.post().uri(baseUrl + "/{idJob}/receive-result", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
+    }
+
     public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");

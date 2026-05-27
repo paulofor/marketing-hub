@@ -2013,3 +2013,15 @@
 - validação executada:
   - `mvn -pl ai-worker -DskipTests compile` (falhou: projeto não encontrado no reactor).
   - `mvn -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-27 19:05:00 UTC
+- solicitação: "fazer o mesmo ajuste para os pacotes das outras etapas" após o ajuste anterior de isolamento do wireframe no `ai-worker`.
+- causa-raiz identificada: as etapas `copy`, `imageplanning`, `presetdesign` e `deliverables` ainda mantinham acoplamento de execução ao serviço concreto raiz e mapeamentos redundantes de payload/DTO para tipo base.
+- correção aplicada:
+  - padronizadas as classes de execução de etapa (`copy`, `imageplanning`, `presetdesign`, `deliverables`) para depender de `geralanding.comum.GeraLandingStageExecutionProcessor` e enviar `GeraLandingStageExecutionRef`;
+  - removidos mapeamentos redundantes nos backend clients locais dessas etapas para envio de `receiveResult`, passando a delegar payload tipado da etapa;
+  - adicionados overloads `receiveResult(...)` tipados no `GeraLandingBackendClient` base para `copy`, `imageplanning`, `presetdesign` e `deliverables`;
+  - removidos métodos `toBase()` redundantes dos payloads e DTOs de etapa impactados.
+- validação executada:
+  - inspeção estática via `rg` para confirmar remoção de `toBase()` nas etapas ajustadas;
+  - tentativa de execução de testes/maven permanece bloqueada por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (HTTP 401 no GitHub Packages).

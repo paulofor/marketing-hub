@@ -13,9 +13,9 @@ public class RecebeResponse {
 
     private static final Logger log = LoggerFactory.getLogger(RecebeResponse.class);
 
-    private final GeraLandingBackendClient backendClient;
+    private final GeraLandingWireframeBackendClient backendClient;
 
-    public RecebeResponse(GeraLandingBackendClient backendClient) {
+    public RecebeResponse(GeraLandingWireframeBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 

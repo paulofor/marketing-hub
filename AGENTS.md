@@ -17,9 +17,6 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 ## 1. Fontes de verdade
 
-- **Regras**: docs/canonical/system-governance-canon.v2.md sempre leia e atualize se necessário.
-- **Artefatos**: docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md sempre leia e atualize se necessário.
-- **Modelo de dados**: `docs/modelo-dados-experimento.md`. Alterou entidades ou relacionamentos? Atualize o documento imediatamente.
 - **Liquibase / MySQL 5.7**: `docs/database/liquibase-mysql57.md`. Use sempre `databaseChangeLog` em YAML, `preConditions` com `dbms:mysql`, `splitStatements: true`, `stripComments: true` e valide mentalmente o SQL.
 - **Documentos canônicos básicos**: os documentos canônicos básicos do projeto ficam em `/docs/canonical` e devem ser consultados como referência primária.
 - **Decisão de mudança de regras (obrigatório)**: quando o usuário decidir mudar regras, altere imediatamente o documento correspondente em `/docs/canonical` referente ao tema.
@@ -42,7 +39,7 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Tecnologias padrão**: Java 21 + Spring Boot 3, React 18 + Vite + TypeScript, Zustand para state, TanStack Query para dados. Formatação: Spotless (backend) e Prettier (frontend).
 - **Banco**: MySQL 5.7. Somente o backend acessa o banco; demais módulos conversam via APIs do backend. Prefira filtros no SQL ao invés de pós-processar em memória.
 - **URL do BACKEND** : http://191.252.181.168:8000
-- **URL do BACKEND (Codex)** : para acessos executados pelo Codex, usar preferencialmente `http://191.252.181.168:80` (porta 80); o backend também responde nessa porta.
+- **URL do BACKEND (Codex)** : para acessos executados pelo Codex, usar preferencialmente `http://191.252.181.168` (porta 80); o backend também responde nessa porta.
 - **Modelo único**: entidades residem no backend. Os demais módulos acessam o banco de dados pelo backend.
 - **Fluxo entre containers**: nada de chamadas diretas entre serviços (frontend, workers, lead-portal etc). Todo tráfego passa pelo backend principal; apenas o backend fala com o banco.
 - **Escopo de controllers por módulo**: cada módulo só pode acessar os controllers do próprio módulo (ex.: MOIS usa apenas controllers do pacote MOIS; OPRM usa apenas controllers do pacote OPRM; e assim sucessivamente). É proibido um módulo consumir controllers de outro módulo diretamente.
@@ -61,13 +58,11 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 - **Logs de exceção capturada (obrigatório)**: todo bloco `catch` que captura `Exception`, `RuntimeException` ou exceção de integração deve registrar log antes de relançar, converter ou responder erro. O log deve incluir contexto operacional suficiente para localizar o ponto da falha (módulo, operação, identificadores relevantes como `experimentId`, `landingId`, URL/endpoint quando aplicável) e a exceção completa (`ex`) para preservar stack trace; não basta usar apenas `NestedExceptionUtils.getMostSpecificCause(ex).getMessage()` ou somente a mensagem da causa raiz.
 - **Agendamentos Spring Boot**: quando criar rotinas agendadas com `@Scheduled`, não usar variáveis para o cron; definir diretamente a string no formato cron na anotação.
 - **Logs de ingestão (obrigatório)**: sempre que for construído um fluxo de ingestão de dados, registrar em log o dado bruto recebido da fonte (payload original), antes de qualquer transformação/normalização.
-- **GitHub Actions (logs e execuções)**: também podem ser consultados via MCP Server usando as tools `github_actions_list_workflows`, `github_actions_list_runs`, `github_actions_get_run_summary` e `github_actions_get_run_logs` no endpoint https://mcpserverdigi.shop/mcp (JSON-RPC).
 - **Testes Unitários**: os testes unitários precisam sempre estar em concordancia com as regras dos documentos canonicos.
 - **Regra de mensagens ArchUnit (obrigatório)**: toda mensagem de falha em testes de arquitetura/ArchUnit deve iniciar com o prefixo literal `[ARQUITETURA] ` (incluindo mensagens de `.because(...)`, descrições de `ArchCondition` e mensagens de `SimpleConditionEvent`).
 - **ArquiteturaTest** : Somente faça mudanças no ArquiteturaTest quando for diretamente solicitado.
 - **Regra Geral (cânone x testes)**: sempre que houver alteração de regra em documento canônico, revisar e atualizar os testes unitários relacionados para manter aderência entre documentação, regras de domínio e validações automatizadas.
 - **Telas do Usuario**: as telas de usuario, ou frontend precisam sempre estar dando as informações mais importantes e precisas para  o usuario e ofereçendo so comandos necessários para o direcionamento dos fluxo de processos mantidos pelo sistema. Evite informações contraditórias, em excesso e desorganizadas. Mantenha sempre a conformidade com os documentos canonicos.
-- **Experimentos** : se estiver fazendo trabalho relacionado ao pacote geralanding registre sempre o trabalho em : /docs/registros/experimentos.md
 - **Perguntas sobre assunto** : quando o usuário perguntar sobre um assunto:
   1. Verifique inicialmente do que se trata e qual parte do sistema esta envolvida
   2. Verifique relacionado a esse assunto tabelas e banco de dados usando o MCP Server ( se não conseguir tente com timeout maior e varias vezes )
@@ -127,44 +122,6 @@ Toda decisão de arquitetura, dados, prompts, automações, integrações e arte
 
 - **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
 
-- 🚨 **PADRÃO OFICIAL — EXCEPTION DE CONTRATO GERALANDING (OBRIGATÓRIO)**:
-  - Para falhas de contrato na publicação do GeraLanding para Lead Portal, usar a exception específica `GeraLandingContractViolationException`.
-  - O status HTTP de resposta desse cenário deve ser **460** (código interno do domínio para violação de contrato), via handler dedicado `GeraLandingContractViolationExceptionHandler`.
-  - O `toString()` da exception deve sempre explicitar de forma literal:
-    1. o que era esperado pelo contrato (`expectedContract`),
-    2. o que foi enviado (`receivedPayload`),
-    3. endpoint/operação,
-    4. erro retornado a montante (`upstreamError`).
-  - É proibido responder **esse cenário específico (GeraLanding -> Lead Portal)** com erro HTTP padrão genérico (400/500/502) sem o envelope de contrato acima.
-
-- 🚨 **ORIENTAÇÃO CRÍTICA — PLAYBOOK RÁPIDO PARA ERRO DE CONTRATO (400/422) [OBRIGATÓRIO]**:
-  - **Objetivo**: identificar causa-raiz em até 15 minutos e evitar horas de tentativa e erro.
-  - **Passo 1 (2 min)**: capturar e salvar a requisição literal que saiu do sistema (URL, método, headers e body completo).
-  - **Passo 2 (3 min)**: comparar o body enviado com o DTO/contrato atual do endpoint campo a campo (nome, tipo, obrigatoriedade, formato).
-  - **Passo 3 (3 min)**: validar se há campo legado/misto sendo enviado (ex.: campo antigo + campo novo no mesmo payload).
-  - **Passo 4 (3 min)**: montar `curl` mínimo reproduzindo o erro com o mesmo payload para confirmar o diagnóstico sem ruído de fluxo completo.
-  - **Passo 5 (4 min)**: corrigir o payload na origem (builder/mapper/DTO), adicionar teste de regressão do contrato e registrar no documento de registros do tema.
-  - **Regra de bloqueio**: é proibido encerrar a análise sem informar literalmente:
-    1. o payload enviado,
-    2. o payload esperado pelo contrato,
-    3. a diferença exata,
-    4. a correção objetiva aplicada.
-
-- **Erro 422 (Procedimento Obrigatório / SOP)**: Trate toda ocorrência de `422 Unprocessable Entity` como divergência entre payload gerado pelo modelo e contrato/validação do backend até prova em contrário.
-  - **Fluxo obrigatório (sempre nesta ordem):**
-    1. Acessar logs do backend via MCP Server (`https://mcpserverdigi.shop/mcp`, JSON-RPC).
-    2. Localizar a requisição que falhou e extrair o payload enviado pelo modelo (campos e valores relevantes).
-    3. Comparar o payload com a especificação oficial do artefato em `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`.
-    4. Comparar o payload com as validações ativas no backend (DTOs, validators, regras de domínio e contratos de API).
-    5. Identificar e reportar **exatamente** qual trecho (campo/estrutura/valor) gerado pelo modelo foi rejeitado.
-    6. Informar a causa raiz e a correção proposta (priorizando ajuste de prompt e manutenção das definições canonicas, não fique tentando 'consertar' o que o modelo gerou, faça ele gerar de forma correta).
-
-  - **Formato mínimo obrigatório da resposta de diagnóstico:**
-    - o que o modelo entregou de forma literal
-    - o que a especificação esperava de forma literal
-    - diferença entre a entrega do modelo e o que era esperado
-    - ação corretiva recomendada
-  - Não encerrar análise de 422 sem apontar explicitamente o trecho rejeitado e a validação correspondente.
 - **json** : temos que evitar ao máximo json dentro de json. Ou seja json em campo texto de outro json. 
 
 

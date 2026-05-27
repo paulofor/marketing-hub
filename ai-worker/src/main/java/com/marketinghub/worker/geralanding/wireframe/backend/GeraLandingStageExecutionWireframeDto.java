@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe;
+package com.marketinghub.worker.geralanding.wireframe.backend;
 
 /** Representa uma execução pendente da etapa wireframe. */
 public record GeraLandingStageExecutionWireframeDto(

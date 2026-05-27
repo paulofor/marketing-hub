@@ -2025,3 +2025,15 @@
 - validação executada:
   - inspeção estática via `rg` para confirmar remoção de `toBase()` nas etapas ajustadas;
   - tentativa de execução de testes/maven permanece bloqueada por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` (HTTP 401 no GitHub Packages).
+
+## 2026-05-27 20:10:00 UTC
+- solicitação: subdividir os pacotes da etapa `geralanding.wireframe` no `ai-worker` em `monitor`, `openai`, `callback` e `backend`.
+- causa-raiz identificada: as classes da etapa wireframe estavam concentradas em um único pacote, reduzindo isolamento interno por responsabilidade e dificultando manutenção por contexto da etapa.
+- correção aplicada:
+  - movidas classes de execução/monitoramento para `geralanding.wireframe.monitor`;
+  - movidas classes de request OpenAI para `geralanding.wireframe.openai`;
+  - movidas classes de callback/result payload para `geralanding.wireframe.callback`;
+  - movidas classes de integração backend e DTOs para `geralanding.wireframe.backend`;
+  - atualizadas importações e referências em `GeraLandingExecutionService`, `GeraLandingCopyBackendClient` e `GeraLandingExecutionServiceTest` para os novos pacotes.
+- validação executada:
+  - `mvn -q -Dtest=GeraLandingExecutionServiceTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

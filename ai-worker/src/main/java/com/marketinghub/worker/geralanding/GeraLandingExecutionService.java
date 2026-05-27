@@ -130,7 +130,7 @@ public class GeraLandingExecutionService {
         }
         List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit);
         List<GeraLandingStageExecutionDto> wireframePending = wireframePendingJobsService.listPendingWireframeJobs(pendingLimit);
-        List<GeraLandingStageExecutionDto> copyPending = copyPendingJobsService.listPendingCopyJobs(pendingLimit);
+        List<com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto> copyPending = copyPendingJobsService.listPendingCopyJobs(pendingLimit);
         List<GeraLandingStageExecutionDto> imagePlanningPending = imagePlanningPendingJobsService.listPendingImagePlanningJobs(pendingLimit);
         List<GeraLandingStageExecutionDto> presetDesignPending = presetDesignPendingJobsService.listPendingPresetDesignJobs(pendingLimit);
         List<GeraLandingStageExecutionDto> deliverablesPending = deliverablesPendingJobsService.listPendingDeliverablesJobs(pendingLimit);
@@ -246,7 +246,7 @@ public class GeraLandingExecutionService {
                                            GeraLandingJobCompletionPayload payload) {
         switch (stage) {
             case WIREFRAME -> wireframeRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
-            case COPY -> copyRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case COPY -> copyRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toCopyPayload(payload));
             case IMAGE_PLANNING -> imagePlanningRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
             case DESIGN_PRESET -> presetDesignRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
             case DELIVERABLES -> deliverablesRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
@@ -470,7 +470,7 @@ public class GeraLandingExecutionService {
                                          GeraLandingExperimentRequest experiment) throws IOException {
         return switch (stage) {
             case WIREFRAME -> wireframeMontaRequest.montar(experiment);
-            case COPY -> copyMontaRequest.montar(experiment);
+            case COPY -> copyMontaRequest.montar(toCopyExperiment(experiment));
             case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(experiment);
             case DESIGN_PRESET -> presetDesignMontaRequest.montar(experiment);
             case DELIVERABLES -> deliverablesMontaRequest.montar(experiment);
@@ -483,7 +483,7 @@ public class GeraLandingExecutionService {
                                         GeraLandingExperimentRequest experiment) throws IOException {
         return switch (stage) {
             case WIREFRAME -> wireframeMontaRequest.montarPrompt(experiment);
-            case COPY -> copyMontaRequest.montarPrompt(experiment);
+            case COPY -> copyMontaRequest.montarPrompt(toCopyExperiment(experiment));
             case IMAGE_PLANNING -> imagePlanningMontaRequest.montarPrompt(experiment);
             case DESIGN_PRESET -> presetDesignMontaRequest.montarPrompt(experiment);
             case DELIVERABLES -> deliverablesMontaRequest.montarPrompt(experiment);
@@ -500,6 +500,27 @@ public class GeraLandingExecutionService {
             case DELIVERABLES -> deliverablesMontaRequest.carregarPromptMarkdownCru();
         };
     }
+
+    /** Converte o request comum para o tipo isolado da etapa copy. */
+    private com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest toCopyExperiment(GeraLandingExperimentRequest experiment) {
+        return new com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest(experiment.experimentId(), experiment.dados());
+    }
+
+    /** Converte o payload comum para o tipo isolado da etapa copy. */
+    private com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload toCopyPayload(GeraLandingJobCompletionPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload(
+                payload.responseContent(),
+                payload.rawResponse(),
+                payload.requestBodyJson(),
+                payload.openAiJobId(),
+                payload.inputTokens(),
+                payload.outputTokens(),
+                payload.costUsd());
+    }
+
     private Map<String, Object> readSchemaByStage(GeraLandingStageDefinition stage) throws JsonProcessingException {
         return stageSchemaResolver.resolveSchema(
                 stage,

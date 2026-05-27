@@ -627,3 +627,16 @@ Arquivos alterados:
   - mois-hotmart-collector/AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-05-27 — Agendamento do coletor Hotmart para 00:05 em 27 de maio
+- Ajustado o scheduler do ciclo 1 do coletor Hotmart para executar às 00:05 no dia 27 de maio.
+- Causa-raiz: necessidade operacional de janela pontual para execução do coletor nesse marco específico.
+- Correção aplicada:
+  - `@Scheduled(cron = "0 5 0 27 5 *")` no método do ciclo 1;
+  - renomeado o método para refletir o novo agendamento;
+  - atualizado log operacional para explicitar `hora=00:05` e `dia=27/05`.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - docs/registros/mois1.md

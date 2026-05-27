@@ -1,20 +1,20 @@
-package com.marketinghub.worker.geralanding.comum;
+package com.marketinghub.worker.geralanding.imageplanning;
 
 import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
 import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** Centraliza a execução de jobs da etapa wireframe usando o executor compartilhado. */
+/** Centraliza a execução de jobs da etapa image planning usando o executor compartilhado. */
 @Service
-public class GeraLandingWireframeExecutionService {
+public class GeraLandingImagePlanningExecutionService {
     private final GeraLandingExecutionService executionService;
 
-    public GeraLandingWireframeExecutionService(GeraLandingExecutionService executionService) {
+    public GeraLandingImagePlanningExecutionService(GeraLandingExecutionService executionService) {
         this.executionService = executionService;
     }
 
-    /** Processa os jobs pendentes da etapa wireframe. */
+    /** Processa os jobs pendentes da etapa image planning. */
     public void processExecutions(List<GeraLandingStageExecutionDto> jobs) {
         executionService.processExecutions(jobs);
     }

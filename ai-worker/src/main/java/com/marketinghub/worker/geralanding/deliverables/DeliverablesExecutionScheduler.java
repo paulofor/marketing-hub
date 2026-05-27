@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.deliverables;
 
-import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 public class DeliverablesExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(DeliverablesExecutionScheduler.class);
 
-    private final GeraLandingExecutionService executionService;
+    private final GeraLandingDeliverablesExecutionService executionService;
     private final DeliverablesPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public DeliverablesExecutionScheduler(GeraLandingExecutionService executionService,
+    public DeliverablesExecutionScheduler(GeraLandingDeliverablesExecutionService executionService,
                                           DeliverablesPendingJobsService pendingJobsService,
                                           @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.executionService = executionService;

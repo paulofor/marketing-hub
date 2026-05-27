@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.imageplanning;
 
-import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 public class ImagePlanningExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(ImagePlanningExecutionScheduler.class);
 
-    private final GeraLandingExecutionService executionService;
+    private final GeraLandingImagePlanningExecutionService executionService;
     private final ImagePlanningPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public ImagePlanningExecutionScheduler(GeraLandingExecutionService executionService,
+    public ImagePlanningExecutionScheduler(GeraLandingImagePlanningExecutionService executionService,
                                            ImagePlanningPendingJobsService pendingJobsService,
                                            @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
         this.executionService = executionService;

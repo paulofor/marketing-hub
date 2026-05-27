@@ -15,9 +15,7 @@ public class GeraLandingWireframeBackendClient {
 
     /** Lista execuções pendentes convertendo para o DTO específico da etapa wireframe. */
     public List<GeraLandingStageExecutionWireframeDto> listPendingExecutions(int limit) {
-        return backendClient.listPendingExecutions(limit).stream()
-                .map(GeraLandingStageExecutionWireframeDto::fromBase)
-                .toList();
+        return backendClient.listPendingExecutions(limit);
     }
 
     /** Busca os detalhes de execução da etapa wireframe no backend. */

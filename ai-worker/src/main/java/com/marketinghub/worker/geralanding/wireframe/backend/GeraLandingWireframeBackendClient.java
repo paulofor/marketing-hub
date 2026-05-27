@@ -1,5 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe.backend;
 
+import com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;

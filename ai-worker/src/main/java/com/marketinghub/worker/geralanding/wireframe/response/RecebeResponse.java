@@ -1,5 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe.response;
 
+import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingWireframeBackendClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

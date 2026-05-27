@@ -1989,3 +1989,14 @@
   - atualizado `GeraLandingImagePlanningExecutionService`, `GeraLandingPresetDesignExecutionService` e `GeraLandingDeliverablesExecutionService` para aceitar DTOs locais e converter para DTO base no ponto de delegação.
 - validação executada:
   - `mvn -q -DskipTests compile` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-27 00:00:00 UTC (varredura de isolamento por etapa no ai-worker)
+- solicitação: varrer os pacotes de etapas do GeraLanding no `ai-worker` e substituir usos de classes compartilhadas quando já existirem equivalentes dentro do próprio pacote da etapa.
+- causa-raiz identificada: as etapas `imageplanning`, `presetdesign` e `deliverables` ainda recebiam/enviavam tipos compartilhados (`GeraLandingExperimentRequest`, `GeraLandingJobCompletionPayload` e `GeraLandingBackendClient`) apesar de já existirem DTOs/clients locais por etapa.
+- correção aplicada:
+  - `MontaRequest` de `imageplanning`, `presetdesign` e `deliverables` passou a receber os requests locais de etapa;
+  - `RecebeResponse` dessas três etapas passou a depender do backend client local e dos payloads locais de etapa;
+  - `GeraLandingExecutionService` foi ajustado para converter request/payload comuns nos tipos locais de `imageplanning`, `presetdesign` e `deliverables` antes de chamar `MontaRequest` e `RecebeResponse`.
+- validação executada:
+  - `mvn -Dtest=ArquiteturaTest test -DskipITs` em `backend/ads-service` (sucesso);
+  - `mvn -Dtest=ArquiteturaTest test -DskipITs` em `ai-worker` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

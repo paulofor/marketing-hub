@@ -1,7 +1,5 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
-import com.marketinghub.worker.geralanding.GeraLandingBackendClient;
-import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -15,16 +13,16 @@ public class RecebeResponse {
 
     private static final Logger log = LoggerFactory.getLogger(RecebeResponse.class);
 
-    private final GeraLandingBackendClient backendClient;
+    private final GeraLandingPresetDesignBackendClient backendClient;
 
-    public RecebeResponse(GeraLandingBackendClient backendClient) {
+    public RecebeResponse(GeraLandingPresetDesignBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 
     /**
      * Envia para o backend os dados de despacho e de resultado da etapa, incluindo a resposta crua da OpenAI.
      */
-    public void processar(Long experimentId, String stageCode, String idJob, GeraLandingJobCompletionPayload payload) {
+    public void processar(Long experimentId, String stageCode, String idJob, GeraLandingJobCompletionPresetDesignPayload payload) {
         if (payload != null && payload.openAiJobId() != null && !payload.openAiJobId().isBlank()) {
             backendClient.receiveDispatch(idJob, experimentId, stageCode, payload.openAiJobId());
         }

@@ -251,9 +251,9 @@ public class GeraLandingExecutionService {
         switch (stage) {
             case WIREFRAME -> wireframeRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toWireframePayload(payload));
             case COPY -> copyRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toCopyPayload(payload));
-            case IMAGE_PLANNING -> imagePlanningRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
-            case DESIGN_PRESET -> presetDesignRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
-            case DELIVERABLES -> deliverablesRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case IMAGE_PLANNING -> imagePlanningRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toImagePlanningPayload(payload));
+            case DESIGN_PRESET -> presetDesignRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toPresetDesignPayload(payload));
+            case DELIVERABLES -> deliverablesRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toDeliverablesPayload(payload));
             default -> throw new IllegalStateException("Etapa não suportada para processamento de resposta: " + stage);
         }
     }
@@ -475,9 +475,9 @@ public class GeraLandingExecutionService {
         return switch (stage) {
             case WIREFRAME -> wireframeMontaRequest.montar(toWireframeExperiment(experiment));
             case COPY -> copyMontaRequest.montar(toCopyExperiment(experiment));
-            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(experiment);
-            case DESIGN_PRESET -> presetDesignMontaRequest.montar(experiment);
-            case DELIVERABLES -> deliverablesMontaRequest.montar(experiment);
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(toImagePlanningExperiment(experiment));
+            case DESIGN_PRESET -> presetDesignMontaRequest.montar(toPresetDesignExperiment(experiment));
+            case DELIVERABLES -> deliverablesMontaRequest.montar(toDeliverablesExperiment(experiment));
         };
     }
 
@@ -488,9 +488,9 @@ public class GeraLandingExecutionService {
         return switch (stage) {
             case WIREFRAME -> wireframeMontaRequest.montarPrompt(toWireframeExperiment(experiment));
             case COPY -> copyMontaRequest.montarPrompt(toCopyExperiment(experiment));
-            case IMAGE_PLANNING -> imagePlanningMontaRequest.montarPrompt(experiment);
-            case DESIGN_PRESET -> presetDesignMontaRequest.montarPrompt(experiment);
-            case DELIVERABLES -> deliverablesMontaRequest.montarPrompt(experiment);
+            case IMAGE_PLANNING -> imagePlanningMontaRequest.montarPrompt(toImagePlanningExperiment(experiment));
+            case DESIGN_PRESET -> presetDesignMontaRequest.montarPrompt(toPresetDesignExperiment(experiment));
+            case DELIVERABLES -> deliverablesMontaRequest.montarPrompt(toDeliverablesExperiment(experiment));
         };
     }
 
@@ -515,6 +515,21 @@ public class GeraLandingExecutionService {
         return new com.marketinghub.worker.geralanding.wireframe.GeraLandingExperimentWireframeRequest(experiment.experimentId(), experiment.dados());
     }
 
+    /** Converte o request comum para o tipo isolado da etapa imageplanning. */
+    private com.marketinghub.worker.geralanding.imageplanning.GeraLandingExperimentImagePlanningRequest toImagePlanningExperiment(GeraLandingExperimentRequest experiment) {
+        return new com.marketinghub.worker.geralanding.imageplanning.GeraLandingExperimentImagePlanningRequest(experiment.experimentId(), experiment.dados());
+    }
+
+    /** Converte o request comum para o tipo isolado da etapa presetdesign. */
+    private com.marketinghub.worker.geralanding.presetdesign.GeraLandingExperimentPresetDesignRequest toPresetDesignExperiment(GeraLandingExperimentRequest experiment) {
+        return new com.marketinghub.worker.geralanding.presetdesign.GeraLandingExperimentPresetDesignRequest(experiment.experimentId(), experiment.dados());
+    }
+
+    /** Converte o request comum para o tipo isolado da etapa deliverables. */
+    private com.marketinghub.worker.geralanding.deliverables.GeraLandingExperimentDeliverablesRequest toDeliverablesExperiment(GeraLandingExperimentRequest experiment) {
+        return new com.marketinghub.worker.geralanding.deliverables.GeraLandingExperimentDeliverablesRequest(experiment.experimentId(), experiment.dados());
+    }
+
     /** Converte o payload comum para o tipo isolado da etapa copy. */
     private com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload toCopyPayload(GeraLandingJobCompletionPayload payload) {
         if (payload == null) {
@@ -536,6 +551,51 @@ public class GeraLandingExecutionService {
             return null;
         }
         return new com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload(
+                payload.responseContent(),
+                payload.rawResponse(),
+                payload.requestBodyJson(),
+                payload.openAiJobId(),
+                payload.inputTokens(),
+                payload.outputTokens(),
+                payload.costUsd());
+    }
+
+    /** Converte o payload comum para o tipo isolado da etapa imageplanning. */
+    private com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload toImagePlanningPayload(GeraLandingJobCompletionPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload(
+                payload.responseContent(),
+                payload.rawResponse(),
+                payload.requestBodyJson(),
+                payload.openAiJobId(),
+                payload.inputTokens(),
+                payload.outputTokens(),
+                payload.costUsd());
+    }
+
+    /** Converte o payload comum para o tipo isolado da etapa presetdesign. */
+    private com.marketinghub.worker.geralanding.presetdesign.GeraLandingJobCompletionPresetDesignPayload toPresetDesignPayload(GeraLandingJobCompletionPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new com.marketinghub.worker.geralanding.presetdesign.GeraLandingJobCompletionPresetDesignPayload(
+                payload.responseContent(),
+                payload.rawResponse(),
+                payload.requestBodyJson(),
+                payload.openAiJobId(),
+                payload.inputTokens(),
+                payload.outputTokens(),
+                payload.costUsd());
+    }
+
+    /** Converte o payload comum para o tipo isolado da etapa deliverables. */
+    private com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload toDeliverablesPayload(GeraLandingJobCompletionPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload(
                 payload.responseContent(),
                 payload.rawResponse(),
                 payload.requestBodyJson(),

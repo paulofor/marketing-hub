@@ -7,7 +7,7 @@ public record GeraLandingStageExecutionDeliverablesDto(
         String stageCode) {
 
     /** Cria um DTO da etapa a partir do DTO base do GeraLanding. */
-    public static GeraLandingStageExecutionDeliverablesDto fromBase(com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto base) {
+    public static GeraLandingStageExecutionDeliverablesDto fromBase(com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto base) {
         return new GeraLandingStageExecutionDeliverablesDto(base.experimentId(), base.idJob(), base.stageCode());
     }
 }

@@ -2000,3 +2000,16 @@
 - validação executada:
   - `mvn -Dtest=ArquiteturaTest test -DskipITs` em `backend/ads-service` (sucesso);
   - `mvn -Dtest=ArquiteturaTest test -DskipITs` em `ai-worker` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+
+## 2026-05-27 18:20:00 UTC
+- solicitação: corrigir erro de compilação no `ai-worker` causado por métodos ausentes nos backend clients de etapa do GeraLanding (`imageplanning`, `presetdesign`, `deliverables`).
+- causa-raiz identificada: no refactor de isolamento por etapa, os `RecebeResponse` passaram a chamar `receiveDispatch` e `receiveResult` nos clients locais, mas esses métodos não foram implementados nas classes locais.
+- correção aplicada:
+  - adicionados `receiveDispatch` e `receiveResult` em `GeraLandingImagePlanningBackendClient`;
+  - adicionados `receiveDispatch` e `receiveResult` em `GeraLandingPresetDesignBackendClient`;
+  - adicionados `receiveDispatch` e `receiveResult` em `GeraLandingDeliverablesBackendClient`;
+  - os métodos `receiveResult` fazem mapeamento explícito dos payloads de etapa para `GeraLandingJobCompletionPayload` antes de delegar ao backend client base.
+- validação executada:
+  - `mvn -pl ai-worker -DskipTests compile` (falhou: projeto não encontrado no reactor).
+  - `mvn -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

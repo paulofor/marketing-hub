@@ -53,8 +53,15 @@ jobs:
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
-      - name: Rodar testes
-        run: mvn -B test
+      - name: Rodar testes (ArquiteturaTest: somente erros)
+        run: |
+          set -o pipefail
+          mvn -B -q test | tee /tmp/maven-test.log
+
+          if grep -q "ArquiteturaTest" /tmp/maven-test.log; then
+            echo "Resumo de erros do ArquiteturaTest:"
+            awk '/ArquiteturaTest/,/^$/' /tmp/maven-test.log | grep -E "^\[ERROR\]" || true
+          fi
 
       - name: Validar changelogs Liquibase
         run: |

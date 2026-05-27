@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.copy.GeraLandingBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto;
 import java.util.List;
 import java.util.Locale;
@@ -11,8 +11,8 @@ import org.springframework.util.StringUtils;
 @Service
 public class CopyPendingJobsService {
     private static final String STAGE_CODE = "landing-page-copy";
-    private final GeraLandingBackendClient backendClient;
-    public CopyPendingJobsService(GeraLandingBackendClient backendClient) { this.backendClient = backendClient; }
+    private final GeraLandingCopyBackendClient backendClient;
+    public CopyPendingJobsService(GeraLandingCopyBackendClient backendClient) { this.backendClient = backendClient; }
     /** Lista jobs pendentes de copy validados no endpoint da etapa. */
     public List<GeraLandingStageExecutionDto> listPendingCopyJobs(int limit) {
         return backendClient.listPendingExecutions(limit).stream().filter(this::isCopyStage).filter(this::isPending).toList();

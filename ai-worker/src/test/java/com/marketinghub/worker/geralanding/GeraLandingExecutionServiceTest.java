@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.geralanding.comum.GeraLandingComumBackendClient;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
 import java.math.BigDecimal;
@@ -22,7 +23,7 @@ class GeraLandingExecutionServiceTest {
 
     @Test
     void processPendingExecutionsShouldSendPromptToOpenAiAndRegisterResult() throws Exception {
-        GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+        GeraLandingComumBackendClient backendClient = Mockito.mock(GeraLandingComumBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -127,7 +128,7 @@ class GeraLandingExecutionServiceTest {
 
     @Test
     void processPendingExecutionsShouldRegisterFailureWhenOpenAiFails() throws Exception {
-        GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+        GeraLandingComumBackendClient backendClient = Mockito.mock(GeraLandingComumBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -211,7 +212,7 @@ class GeraLandingExecutionServiceTest {
 
     @Test
     void processPendingExecutionsShouldRegisterFailureWhenWireframeUsesUndefinedStyle() throws Exception {
-        GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+        GeraLandingComumBackendClient backendClient = Mockito.mock(GeraLandingComumBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -317,7 +318,7 @@ class GeraLandingExecutionServiceTest {
 
     @Test
     void processPendingExecutionsShouldRegisterFailureWhenDesignPresetUsesUndefinedStyle() throws Exception {
-        GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+        GeraLandingComumBackendClient backendClient = Mockito.mock(GeraLandingComumBackendClient.class);
         GeraLandingService geraLandingService = Mockito.mock(GeraLandingService.class);
         GeraLandingOpenAiFlexClient openAiClient = Mockito.mock(GeraLandingOpenAiFlexClient.class);
         ObjectMapper objectMapper = new ObjectMapper();

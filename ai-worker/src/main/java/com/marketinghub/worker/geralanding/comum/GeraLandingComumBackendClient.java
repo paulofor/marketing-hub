@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding;
+package com.marketinghub.worker.geralanding.comum;
 
 import com.marketinghub.worker.util.UrlUtils;
 import com.marketinghub.worker.geralanding.wireframe.GeraLandingStageExecutionDetailDto;
@@ -16,14 +16,14 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
-public class GeraLandingBackendClient {
-    private static final Logger log = LoggerFactory.getLogger(GeraLandingBackendClient.class);
+public class GeraLandingComumBackendClient {
+    private static final Logger log = LoggerFactory.getLogger(GeraLandingComumBackendClient.class);
 
     private final WebClient webClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
 
-    public GeraLandingBackendClient(WebClient.Builder builder,
+    public GeraLandingComumBackendClient(WebClient.Builder builder,
                                     @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
                                     @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.webClient = builder.build();

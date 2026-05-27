@@ -53,7 +53,7 @@ jobs:
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
-      - name: Rodar testes (ArquiteturaTest: somente erros)
+      - name: "Rodar testes (ArquiteturaTest: somente erros)"
         run: |
           set -o pipefail
           mvn -B -q test | tee /tmp/maven-test.log

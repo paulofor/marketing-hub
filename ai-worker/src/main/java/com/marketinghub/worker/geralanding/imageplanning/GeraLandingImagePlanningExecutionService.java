@@ -1,7 +1,6 @@
 package com.marketinghub.worker.geralanding.imageplanning;
 
 import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
-import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +14,7 @@ public class GeraLandingImagePlanningExecutionService {
     }
 
     /** Processa os jobs pendentes da etapa image planning. */
-    public void processExecutions(List<GeraLandingStageExecutionDto> jobs) {
-        executionService.processExecutions(jobs);
+    public void processExecutions(List<GeraLandingStageExecutionImagePlanningDto> jobs) {
+        executionService.processExecutions(jobs.stream().map(GeraLandingStageExecutionImagePlanningDto::toBase).toList());
     }
 }

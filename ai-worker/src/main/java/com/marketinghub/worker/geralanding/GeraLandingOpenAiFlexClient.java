@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding;
 
-import com.marketinghub.worker.request.OpenAiCostEstimator;
-import com.marketinghub.worker.request.OpenAiResponse;
+import com.marketinghub.worker.openai.OpenAiCostEstimator;
+import com.marketinghub.worker.openai.OpenAiResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;

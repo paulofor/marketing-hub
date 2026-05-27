@@ -1880,3 +1880,16 @@
   - adicionado método `registerInitialExecution(...)` em cada `GeraLanding*StageExecutionService` para encapsular a delegação e retornar `GeraLanding*StartResponse` local.
 - validação executada:
   - `mvn -q -Dtest=ArquiteturaTest test` (ainda falha por dependências remanescentes dos `*StageExecutionService` para classes transversais legadas).
+
+## 2026-05-27 01:15:00 UTC
+- solicitação: "faça o mesmo nas demais etapas além da copy" para remover dependência dos `*StageExecutionService` por etapa do serviço transversal legado.
+- correção aplicada no backend (`ads-service`):
+  - refatorados `GeraLandingWireframeStageExecutionService`, `GeraLandingImagePlanningStageExecutionService`, `GeraLandingDesignPresetStageExecutionService` e `GeraLandingDeliverablesStageExecutionService`;
+  - removida a dependência de `GeraLandingStageExecutionService`, `GeraLandingExecutionSummaryResponse` e `GeraLandingStageExecutionDetailResponse` nas etapas acima;
+  - implementada lógica local com `ExperimentRepository` + `GeraLandingStageExecutionRepository` para:
+    - `registerInitialExecution(...)`;
+    - `listExperimentStageExecutions(...)`;
+    - `getStageExecutionDetail(...)`;
+  - mantidas conversões de `idJob` (`String` <-> `byte[]`) em cada serviço por etapa para aderir ao repositório e ao contrato de resposta da etapa.
+- validação executada:
+  - `mvn -Dtest=ArquiteturaTest test -q` (ainda falha por violações arquiteturais remanescentes, inclusive chamadas ao tipo interno `GeraLandingStageExecution$GeraLandingStageExecutionBuilder` e outras classes fora do escopo permitido).

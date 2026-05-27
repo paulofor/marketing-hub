@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.copy.GeraLandingBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +15,9 @@ public class RecebeResponse {
 
     private static final Logger log = LoggerFactory.getLogger(RecebeResponse.class);
 
-    private final GeraLandingBackendClient backendClient;
+    private final GeraLandingCopyBackendClient backendClient;
 
-    public RecebeResponse(GeraLandingBackendClient backendClient) {
+    public RecebeResponse(GeraLandingCopyBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 

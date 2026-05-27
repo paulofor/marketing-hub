@@ -6,9 +6,9 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: encapsular o cliente de backend da etapa copy mantendo isolamento por pacote. */
 @Component("geraLandingCopyBackendClient")
 public class GeraLandingCopyBackendClient {
-    private final com.marketinghub.worker.geralanding.comum.GeraLandingComumBackendClient delegate;
+    private final com.marketinghub.worker.geralanding.GeraLandingBackendClient delegate;
 
-    public GeraLandingCopyBackendClient(com.marketinghub.worker.geralanding.comum.GeraLandingComumBackendClient delegate) {
+    public GeraLandingCopyBackendClient(com.marketinghub.worker.geralanding.GeraLandingBackendClient delegate) {
         this.delegate = delegate;
     }
 

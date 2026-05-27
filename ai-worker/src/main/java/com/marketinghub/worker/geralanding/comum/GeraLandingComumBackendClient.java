@@ -1,6 +1,8 @@
 package com.marketinghub.worker.geralanding.comum;
 
 import com.marketinghub.worker.util.UrlUtils;
+import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
+import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
 import com.marketinghub.worker.geralanding.wireframe.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import java.util.Map;

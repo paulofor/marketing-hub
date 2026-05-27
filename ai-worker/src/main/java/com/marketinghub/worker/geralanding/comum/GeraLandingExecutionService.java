@@ -1,9 +1,15 @@
-package com.marketinghub.worker.geralanding;
+package com.marketinghub.worker.geralanding.comum;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
+import com.marketinghub.worker.geralanding.GeraLandingExperimentRequest;
+import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
+import com.marketinghub.worker.geralanding.GeraLandingJobDto;
+import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
+import com.marketinghub.worker.geralanding.GeraLandingService;
+import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService;

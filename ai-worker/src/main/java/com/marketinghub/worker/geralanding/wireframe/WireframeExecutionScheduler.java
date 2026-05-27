@@ -1,5 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe;
 
+import com.marketinghub.worker.geralanding.comum.GeraLandingWireframeExecutionService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

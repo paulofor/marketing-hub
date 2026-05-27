@@ -1,5 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
+import com.marketinghub.worker.geralanding.comum.GeraLandingCopyExecutionService;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

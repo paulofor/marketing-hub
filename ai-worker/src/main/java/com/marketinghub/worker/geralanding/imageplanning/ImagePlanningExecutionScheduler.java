@@ -1,5 +1,7 @@
 package com.marketinghub.worker.geralanding.imageplanning;
 
+import com.marketinghub.worker.geralanding.comum.GeraLandingImagePlanningExecutionService;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

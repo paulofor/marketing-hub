@@ -5,10 +5,11 @@ import org.springframework.stereotype.Component;
 
 /** Encapsula o acesso ao backend para operações da etapa wireframe. */
 @Component
+@Deprecated
 public class GeraLandingWireframeBackendClient {
-    private final com.marketinghub.worker.geralanding.GeraLandingBackendClient backendClient;
+    private final GeraLandingBackendClient backendClient;
 
-    public GeraLandingWireframeBackendClient(com.marketinghub.worker.geralanding.GeraLandingBackendClient backendClient) {
+    public GeraLandingWireframeBackendClient(GeraLandingBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 

@@ -249,7 +249,7 @@ public class GeraLandingExecutionService {
                                            GeraLandingStageExecutionDto execution,
                                            GeraLandingJobCompletionPayload payload) {
         switch (stage) {
-            case WIREFRAME -> wireframeRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            case WIREFRAME -> wireframeRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toWireframePayload(payload));
             case COPY -> copyRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), toCopyPayload(payload));
             case IMAGE_PLANNING -> imagePlanningRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
             case DESIGN_PRESET -> presetDesignRecebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
@@ -473,7 +473,7 @@ public class GeraLandingExecutionService {
     private String montarRequestPorEtapa(GeraLandingStageDefinition stage,
                                          GeraLandingExperimentRequest experiment) throws IOException {
         return switch (stage) {
-            case WIREFRAME -> wireframeMontaRequest.montar(experiment);
+            case WIREFRAME -> wireframeMontaRequest.montar(toWireframeExperiment(experiment));
             case COPY -> copyMontaRequest.montar(toCopyExperiment(experiment));
             case IMAGE_PLANNING -> imagePlanningMontaRequest.montar(experiment);
             case DESIGN_PRESET -> presetDesignMontaRequest.montar(experiment);
@@ -486,7 +486,7 @@ public class GeraLandingExecutionService {
     private String montarPromptPorEtapa(GeraLandingStageDefinition stage,
                                         GeraLandingExperimentRequest experiment) throws IOException {
         return switch (stage) {
-            case WIREFRAME -> wireframeMontaRequest.montarPrompt(experiment);
+            case WIREFRAME -> wireframeMontaRequest.montarPrompt(toWireframeExperiment(experiment));
             case COPY -> copyMontaRequest.montarPrompt(toCopyExperiment(experiment));
             case IMAGE_PLANNING -> imagePlanningMontaRequest.montarPrompt(experiment);
             case DESIGN_PRESET -> presetDesignMontaRequest.montarPrompt(experiment);
@@ -510,12 +510,32 @@ public class GeraLandingExecutionService {
         return new com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest(experiment.experimentId(), experiment.dados());
     }
 
+    /** Converte o request comum para o tipo isolado da etapa wireframe. */
+    private com.marketinghub.worker.geralanding.wireframe.GeraLandingExperimentWireframeRequest toWireframeExperiment(GeraLandingExperimentRequest experiment) {
+        return new com.marketinghub.worker.geralanding.wireframe.GeraLandingExperimentWireframeRequest(experiment.experimentId(), experiment.dados());
+    }
+
     /** Converte o payload comum para o tipo isolado da etapa copy. */
     private com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload toCopyPayload(GeraLandingJobCompletionPayload payload) {
         if (payload == null) {
             return null;
         }
         return new com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload(
+                payload.responseContent(),
+                payload.rawResponse(),
+                payload.requestBodyJson(),
+                payload.openAiJobId(),
+                payload.inputTokens(),
+                payload.outputTokens(),
+                payload.costUsd());
+    }
+
+    /** Converte o payload comum para o tipo isolado da etapa wireframe. */
+    private com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload toWireframePayload(GeraLandingJobCompletionPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload(
                 payload.responseContent(),
                 payload.rawResponse(),
                 payload.requestBodyJson(),

@@ -181,3 +181,4 @@
 - 2026-05-26 17:40:00 (UTC): ajuste solicitado para diagnóstico dirigido do dataset SIMPLES no `oprm-coletor-mei`: o parser foi configurado para interromper o processamento após registrar exatamente 20 ocorrências de `SIMPLES` sem match de CNAE, com logs detalhados por ocorrência (`cnpjBase`, `cnpjBaseDigits`, flags de optante SIMPLES/MEI e índice progressivo do diagnóstico).
 
 - 2026-05-26 18:20:00 (UTC-3): ajuste solicitado para reagendar novamente a ingestão OPRM CNPJ/CNAE para **18:20** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 20 18 * * *` e sincronização do cron padrão em `application.yml`.
+- 2026-05-27 00:07:22 (UTC): ajuste solicitado para agendar nova execução da ingestão OPRM CNPJ/CNAE para **23:10** no fuso `America/Sao_Paulo`, com atualização do cron hardcoded de `runScheduledImport` para `0 10 23 * * *` no `oprm-coletor-mei`.

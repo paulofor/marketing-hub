@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.GeraLandingBackendClient;
-import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
+import com.marketinghub.worker.geralanding.copy.GeraLandingBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;

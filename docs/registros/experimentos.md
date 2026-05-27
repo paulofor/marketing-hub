@@ -1956,3 +1956,12 @@
   - atualizado cada `*ExecutionScheduler` de etapa para depender do serviço da própria etapa, removendo o import direto do executor compartilhado.
 - validação executada:
   - `mvn -f ai-worker/pom.xml -Dtest=GeraLandingExecutionServiceTest test` (falhou por dependência externa sem autenticação: `com.marketinghub:ads-service:0.0.1-SNAPSHOT`, erro 401 no GitHub Packages).
+
+## 2026-05-27 13:37:00 UTC-3
+- solicitação: mover dependências de GeraLanding para pacote de etapa no AI Worker, aceitando duplicação para isolamento arquitetural.
+- causa-raiz identificada: pacote `copy` dependia de classes-base em `com.marketinghub.worker.geralanding`, contrariando a regra de isolamento por etapa do `ai-worker/AGENTS.md`.
+- correção aplicada: criadas seis classes locais no pacote `copy` (`GeraLandingExecutionService`, `GeraLandingStageExecutionDto`, `GeraLandingExperimentRequest`, `GeraLandingBackendClient`, `GeraLandingJobCompletionPayload`) com delegação/mapeamento para as classes base, e atualização dos imports do pacote `copy` para usar apenas as classes locais.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md

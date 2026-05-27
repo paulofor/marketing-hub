@@ -1,6 +1,5 @@
 package com.marketinghub.geralanding.deliverables.service;
 
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar execuções da etapa landing-page-deliverables. */
@@ -8,9 +7,9 @@ import org.springframework.stereotype.Service;
 public class GeraLandingDeliverablesStageService {
   private static final String STAGE_NAME = "landing-page-deliverables";
 
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingDeliverablesStageExecutionService executionService;
 
-  public GeraLandingDeliverablesStageService(GeraLandingStageExecutionService executionService) {
+  public GeraLandingDeliverablesStageService(GeraLandingDeliverablesStageExecutionService executionService) {
     this.executionService = executionService;
   }
 

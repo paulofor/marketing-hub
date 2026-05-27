@@ -2094,7 +2094,7 @@ export default function ExperimentDetailPage() {
                               <tr key={execution.idJob}>
                                 <td>
                                   <Link
-                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-wireframe`}
                                     className="fw-semibold text-decoration-none"
                                   >
                                     {execution.idJob}
@@ -2141,7 +2141,7 @@ export default function ExperimentDetailPage() {
                                 <tr key={execution.idJob}>
                                   <td>
                                     <Link
-                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-wireframe`}
                                       className="fw-semibold text-decoration-none"
                                     >
                                       {execution.idJob}
@@ -2224,7 +2224,7 @@ export default function ExperimentDetailPage() {
                                 <tr key={execution.idJob}>
                                   <td>
                                     <Link
-                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-copy`}
                                       className="fw-semibold text-decoration-none"
                                     >
                                       {execution.idJob}
@@ -2272,7 +2272,7 @@ export default function ExperimentDetailPage() {
                                   <tr key={execution.idJob}>
                                     <td>
                                       <Link
-                                        to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                        to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-copy`}
                                         className="fw-semibold text-decoration-none"
                                       >
                                         {execution.idJob}
@@ -2369,7 +2369,7 @@ export default function ExperimentDetailPage() {
                                 <tr key={execution.idJob}>
                                   <td>
                                     <Link
-                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-image-planning`}
                                       className="fw-semibold text-decoration-none"
                                     >
                                       {execution.idJob}
@@ -2420,7 +2420,7 @@ export default function ExperimentDetailPage() {
                                 <tr key={execution.idJob}>
                                   <td>
                                     <Link
-                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-image-planning`}
                                       className="fw-semibold text-decoration-none"
                                     >
                                       {execution.idJob}
@@ -2630,7 +2630,7 @@ export default function ExperimentDetailPage() {
                                 <tr key={execution.idJob}>
                                   <td>
                                     <Link
-                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-design-preset`}
                                       className="fw-semibold text-decoration-none"
                                     >
                                       {execution.idJob}
@@ -2679,7 +2679,7 @@ export default function ExperimentDetailPage() {
                                   <tr key={execution.idJob}>
                                     <td>
                                       <Link
-                                        to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                        to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-design-preset`}
                                         className="fw-semibold text-decoration-none"
                                       >
                                         {execution.idJob}
@@ -2769,7 +2769,7 @@ export default function ExperimentDetailPage() {
                               <tr key={execution.idJob}>
                                 <td>
                                   <Link
-                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-deliverables`}
                                     className="fw-semibold text-decoration-none"
                                   >
                                     {execution.idJob}
@@ -2816,7 +2816,7 @@ export default function ExperimentDetailPage() {
                                 <tr key={execution.idJob}>
                                   <td>
                                     <Link
-                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}`}
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-deliverables`}
                                       className="fw-semibold text-decoration-none"
                                     >
                                       {execution.idJob}

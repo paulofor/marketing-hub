@@ -1916,3 +1916,13 @@
   - atualizada mensagem da regra para listar explicitamente as 5 exceções permitidas.
 - validação executada:
   - `cd backend/ads-service && ../../backend/mvnw -Dtest=ArquiteturaTest test -q` (sucesso).
+
+## 2026-05-27 02:55:00 UTC
+- solicitação: ajustar frontend para consultar status de job no endpoint segmentado por etapa (GeraLanding stage-executions).
+- ajuste aplicado no frontend:
+  - `useGeraLandingStageExecutionDetail(...)` passou a receber `stageCode` e montar URL por etapa (`/geralanding/{stage}/stage-executions/{jobId}`) reaproveitando o resolvedor já existente;
+  - tela `ExperimentGeraLandingExecutionDetailPage` passou a ler `stageCode` da querystring e repassar para o hook de detalhe;
+  - links de Job ID na página do experimento foram atualizados para incluir `?stageCode=...` correto por etapa (wireframe, copy, image-planning, design-preset, deliverables), garantindo consulta no endpoint certo.
+- validação executada:
+  - `npm run lint` (falhou: script inexistente no `package.json` do frontend);
+  - `npm run build` (falhou: `vite: not found` no ambiente atual).

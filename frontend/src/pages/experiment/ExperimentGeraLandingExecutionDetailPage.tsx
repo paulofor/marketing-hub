@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useGeraLandingStageExecutionDetail } from "../../api/experiment/useGeraLandingStageExecutions";
@@ -81,7 +81,14 @@ function extractErrorFileContent(raw?: string) {
 export default function ExperimentGeraLandingExecutionDetailPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { id: experimentId, jobId } = useParams();
-  const detailQuery = useGeraLandingStageExecutionDetail(experimentId, jobId);
+  const [searchParams] = useSearchParams();
+  const stageCode =
+    searchParams.get("stageCode")?.trim() || "landing-page-wireframe";
+  const detailQuery = useGeraLandingStageExecutionDetail(
+    experimentId,
+    jobId,
+    stageCode,
+  );
   const modelUsed = extractModelFromRequestBody(
     detailQuery.data?.openAiRequestBody,
   );

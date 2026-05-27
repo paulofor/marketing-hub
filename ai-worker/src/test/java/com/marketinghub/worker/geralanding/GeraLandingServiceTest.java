@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.GeraLandingBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Disabled;
@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 
 class GeraLandingServiceTest {
 
-    private final GeraLandingBackendClient backendClient = Mockito.mock(GeraLandingBackendClient.class);
+    private final GeraLandingCopyBackendClient backendClient = Mockito.mock(GeraLandingCopyBackendClient.class);
     private final GeraLandingService service = new GeraLandingService(new ObjectMapper(), backendClient);
 
     @Test

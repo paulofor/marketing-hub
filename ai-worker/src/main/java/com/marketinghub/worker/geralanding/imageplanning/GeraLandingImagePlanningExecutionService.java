@@ -1,20 +1,21 @@
 package com.marketinghub.worker.geralanding.imageplanning;
 
-import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 /** Centraliza a execução de jobs da etapa image planning usando o executor compartilhado. */
 @Service
 public class GeraLandingImagePlanningExecutionService {
-    private final GeraLandingExecutionService executionService;
+    private final com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor executionProcessor;
 
-    public GeraLandingImagePlanningExecutionService(GeraLandingExecutionService executionService) {
-        this.executionService = executionService;
+    public GeraLandingImagePlanningExecutionService(com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor executionProcessor) {
+        this.executionProcessor = executionProcessor;
     }
 
     /** Processa os jobs pendentes da etapa image planning. */
     public void processExecutions(List<GeraLandingStageExecutionImagePlanningDto> jobs) {
-        executionService.processExecutions(jobs.stream().map(GeraLandingStageExecutionImagePlanningDto::toBase).toList());
+        executionProcessor.processExecutions(jobs.stream()
+                .map(item -> new com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionRef(item.experimentId(), item.idJob(), item.stageCode()))
+                .toList());
     }
 }

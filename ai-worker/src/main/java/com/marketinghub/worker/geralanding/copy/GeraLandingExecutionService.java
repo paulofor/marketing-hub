@@ -6,18 +6,16 @@ import org.springframework.stereotype.Service;
 /** Responsabilidade: encapsular execução da etapa copy preservando isolamento de pacote. */
 @Service("geraLandingCopyExecutionStageService")
 public class GeraLandingExecutionService {
-    private final com.marketinghub.worker.geralanding.GeraLandingExecutionService delegate;
+    private final com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor executionProcessor;
 
-    public GeraLandingExecutionService(com.marketinghub.worker.geralanding.GeraLandingExecutionService delegate) {
-        this.delegate = delegate;
+    public GeraLandingExecutionService(com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor executionProcessor) {
+        this.executionProcessor = executionProcessor;
     }
 
     /** Processa as execuções da etapa copy convertendo para DTO base do pipeline. */
     public void processExecutions(List<GeraLandingStageExecutionDto> jobs) {
-        List<com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto> mapped = jobs.stream()
-                .map(item -> new com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto(
-                        item.experimentId(), item.idJob(), item.stageCode()))
-                .toList();
-        delegate.processExecutions(mapped);
+        executionProcessor.processExecutions(jobs.stream()
+                .map(item -> new com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionRef(item.experimentId(), item.idJob(), item.stageCode()))
+                .toList());
     }
 }

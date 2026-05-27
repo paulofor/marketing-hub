@@ -5,17 +5,28 @@ import org.springframework.stereotype.Component;
 
 /** Encapsula o acesso ao backend para operações da etapa wireframe. */
 @Component
-@Deprecated
 public class GeraLandingWireframeBackendClient {
-    private final GeraLandingBackendClient backendClient;
+    private final com.marketinghub.worker.geralanding.GeraLandingBackendClient backendClient;
 
-    public GeraLandingWireframeBackendClient(GeraLandingBackendClient backendClient) {
+    public GeraLandingWireframeBackendClient(com.marketinghub.worker.geralanding.GeraLandingBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 
     /** Lista execuções pendentes convertendo para o DTO específico da etapa wireframe. */
     public List<GeraLandingStageExecutionWireframeDto> listPendingExecutions(int limit) {
-        return backendClient.listPendingExecutions(limit);
+        return backendClient.listPendingExecutions(limit).stream()
+                .map(item -> new GeraLandingStageExecutionWireframeDto(item.experimentId(), item.idJob(), item.stageCode()))
+                .toList();
+    }
+
+    /** Busca os detalhes de execução da etapa wireframe no backend. */
+    public void receiveDispatch(String idJob, Long experimentId, String stageCode, String openAiJobId) {
+        backendClient.receiveDispatch(idJob, experimentId, stageCode, openAiJobId);
+    }
+
+    /** Envia resultado da etapa wireframe ao backend principal. */
+    public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionWireframePayload payload) {
+        backendClient.receiveResult(idJob, experimentId, stageCode, payload);
     }
 
     /** Busca os detalhes de execução da etapa wireframe no backend. */

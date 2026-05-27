@@ -32,7 +32,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 /**
  * Executa as etapas pendentes do GeraLanding, preparando prompts, schemas e payloads para a OpenAI.
  */
-public class GeraLandingExecutionService {
+public class GeraLandingExecutionService implements com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionProcessor {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingExecutionService.class);
     private static final Pattern BANNED_COPY_TEXT_PATTERN = Pattern.compile(
             "(?i)(adCopy\\.|campaignAngle\\.|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\bV[1-3]-|lorem ipsum|como funciona \\(passo)");
@@ -141,13 +141,21 @@ public class GeraLandingExecutionService {
         log.info("Stage pending jobs via stage controllers: wireframe={}, copy={}, imagePlanning={}, designPreset={}, deliverables={}",
                 wireframePending.size(), copyPending.size(), imagePlanningPending.size(), presetDesignPending.size(), deliverablesPending.size());
         log.info("GeraLanding execution worker found {} pending execution(s)", pending.size());
-        processExecutions(pending);
+        processExecutionsInternal(pending);
     }
 
     /**
      * Processa uma lista de execuções já filtradas por uma etapa específica.
      */
-    public void processExecutions(List<GeraLandingStageExecutionDto> executions) {
+    public void processExecutions(List<com.marketinghub.worker.geralanding.comum.GeraLandingStageExecutionRef> executions) {
+        List<GeraLandingStageExecutionDto> mapped = executions.stream()
+                .map(item -> new GeraLandingStageExecutionDto(item.experimentId(), item.idJob(), item.stageCode()))
+                .toList();
+        processExecutionsInternal(mapped);
+    }
+
+    /** Processa internamente uma lista de execuções já tipada no DTO base. */
+    public void processExecutionsInternal(List<GeraLandingStageExecutionDto> executions) {
         if (!openAiClient.isEnabled()) {
             log.warn("GeraLanding generation skipped: OpenAI client is disabled");
             return;

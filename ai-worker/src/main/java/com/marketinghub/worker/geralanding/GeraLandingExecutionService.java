@@ -129,11 +129,15 @@ public class GeraLandingExecutionService {
             return;
         }
         List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit);
-        List<GeraLandingStageExecutionDto> wireframePending = wireframePendingJobsService.listPendingWireframeJobs(pendingLimit);
+        List<com.marketinghub.worker.geralanding.wireframe.GeraLandingStageExecutionWireframeDto> wireframePending =
+                wireframePendingJobsService.listPendingWireframeJobs(pendingLimit);
         List<com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto> copyPending = copyPendingJobsService.listPendingCopyJobs(pendingLimit);
-        List<GeraLandingStageExecutionDto> imagePlanningPending = imagePlanningPendingJobsService.listPendingImagePlanningJobs(pendingLimit);
-        List<GeraLandingStageExecutionDto> presetDesignPending = presetDesignPendingJobsService.listPendingPresetDesignJobs(pendingLimit);
-        List<GeraLandingStageExecutionDto> deliverablesPending = deliverablesPendingJobsService.listPendingDeliverablesJobs(pendingLimit);
+        List<com.marketinghub.worker.geralanding.imageplanning.GeraLandingStageExecutionImagePlanningDto> imagePlanningPending =
+                imagePlanningPendingJobsService.listPendingImagePlanningJobs(pendingLimit);
+        List<com.marketinghub.worker.geralanding.presetdesign.GeraLandingStageExecutionPresetDesignDto> presetDesignPending =
+                presetDesignPendingJobsService.listPendingPresetDesignJobs(pendingLimit);
+        List<com.marketinghub.worker.geralanding.deliverables.GeraLandingStageExecutionDeliverablesDto> deliverablesPending =
+                deliverablesPendingJobsService.listPendingDeliverablesJobs(pendingLimit);
         log.info("Stage pending jobs via stage controllers: wireframe={}, copy={}, imagePlanning={}, designPreset={}, deliverables={}",
                 wireframePending.size(), copyPending.size(), imagePlanningPending.size(), presetDesignPending.size(), deliverablesPending.size());
         log.info("GeraLanding execution worker found {} pending execution(s)", pending.size());

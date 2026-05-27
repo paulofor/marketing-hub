@@ -1,6 +1,7 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
-import com.marketinghub.worker.geralanding.presetdesign.openai.GeraLandingPresetDesignOpenAiExecutionService;
+import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionPresetDesignDto;
+import com.marketinghub.worker.geralanding.presetdesign.request.GeraLandingPresetDesignOpenAiExecutionService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

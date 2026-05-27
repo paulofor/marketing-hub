@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe.openai;
+package com.marketinghub.worker.geralanding.wireframe.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.comum.MontaRequestSupport;

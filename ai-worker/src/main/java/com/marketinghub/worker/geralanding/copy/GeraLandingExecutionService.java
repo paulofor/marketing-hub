@@ -1,6 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.copy.openai.GeraLandingCopyOpenAiExecutionService;
+import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto;
+import com.marketinghub.worker.geralanding.copy.request.GeraLandingCopyOpenAiExecutionService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

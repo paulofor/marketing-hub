@@ -1,11 +1,11 @@
-package com.marketinghub.worker.geralanding.imageplanning.openai;
+package com.marketinghub.worker.geralanding.imageplanning.request;
 
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingImagePlanningBackendClient;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingExperimentImagePlanningRequest;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload;
-import com.marketinghub.worker.geralanding.imageplanning.GeraLandingStageExecutionImagePlanningDto;
+import com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionImagePlanningDto;
 import com.marketinghub.worker.geralanding.imageplanning.RecebeResponse;
 import java.util.List;
 import java.util.Map;

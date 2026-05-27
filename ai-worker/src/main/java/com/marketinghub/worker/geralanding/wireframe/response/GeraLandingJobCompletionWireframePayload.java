@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe.callback;
+package com.marketinghub.worker.geralanding.wireframe.response;
 
 import java.math.BigDecimal;
 

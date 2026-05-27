@@ -1,11 +1,11 @@
-package com.marketinghub.worker.geralanding.wireframe.openai;
+package com.marketinghub.worker.geralanding.wireframe.request;
 
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingWireframeBackendClient;
-import com.marketinghub.worker.geralanding.wireframe.callback.GeraLandingJobCompletionWireframePayload;
-import com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse;
-import com.marketinghub.worker.geralanding.wireframe.monitor.GeraLandingStageExecutionWireframeDto;
+import com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload;
+import com.marketinghub.worker.geralanding.wireframe.response.RecebeResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

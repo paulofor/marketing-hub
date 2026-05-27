@@ -1,8 +1,8 @@
-package com.marketinghub.worker.geralanding.copy;
+package com.marketinghub.worker.geralanding.deliverables.dto;
 
 import java.time.Instant;
 
-/** Responsável por representar o detalhe de uma execução da etapa copy no backend. */
+/** Responsável por representar o detalhe de uma execução da etapa deliverables no backend. */
 public record GeraLandingStageExecutionDetailDto(
         Long experimentId,
         String stageCode,

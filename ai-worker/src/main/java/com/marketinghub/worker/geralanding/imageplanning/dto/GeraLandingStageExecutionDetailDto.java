@@ -1,8 +1,8 @@
-package com.marketinghub.worker.geralanding.deliverables;
+package com.marketinghub.worker.geralanding.imageplanning.dto;
 
 import java.time.Instant;
 
-/** Responsável por representar o detalhe de uma execução da etapa deliverables no backend. */
+/** Responsável por representar o detalhe de uma execução da etapa image-planning no backend. */
 public record GeraLandingStageExecutionDetailDto(
         Long experimentId,
         String stageCode,

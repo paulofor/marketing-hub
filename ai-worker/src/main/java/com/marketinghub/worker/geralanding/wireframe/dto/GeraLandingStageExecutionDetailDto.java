@@ -1,8 +1,10 @@
-package com.marketinghub.worker.geralanding.presetdesign;
+package com.marketinghub.worker.geralanding.wireframe.dto;
 
 import java.time.Instant;
 
-/** Responsável por representar o detalhe de uma execução da etapa preset-design no backend. */
+/**
+ * Responsável por representar os detalhes retornados pelo backend para uma execução de etapa do GeraLanding.
+ */
 public record GeraLandingStageExecutionDetailDto(
         Long experimentId,
         String stageCode,

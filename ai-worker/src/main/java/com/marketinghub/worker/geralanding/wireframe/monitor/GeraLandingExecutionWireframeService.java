@@ -1,6 +1,7 @@
 package com.marketinghub.worker.geralanding.wireframe.monitor;
 
-import com.marketinghub.worker.geralanding.wireframe.openai.GeraLandingWireframeOpenAiExecutionService;
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
+import com.marketinghub.worker.geralanding.wireframe.request.GeraLandingWireframeOpenAiExecutionService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

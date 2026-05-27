@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.presetdesign;
+package com.marketinghub.worker.geralanding.presetdesign.dto;
 
 /** Representa o job pendente da etapa preset design. */
 public record GeraLandingStageExecutionPresetDesignDto(
@@ -7,7 +7,7 @@ public record GeraLandingStageExecutionPresetDesignDto(
         String stageCode) {
 
     /** Cria um DTO da etapa a partir do DTO base do GeraLanding. */
-    public static GeraLandingStageExecutionPresetDesignDto fromBase(com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto base) {
+    public static GeraLandingStageExecutionPresetDesignDto fromBase(com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto base) {
         return new GeraLandingStageExecutionPresetDesignDto(base.experimentId(), base.idJob(), base.stageCode());
     }
 }

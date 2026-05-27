@@ -2,7 +2,7 @@ package com.marketinghub.worker.geralanding.copy;
 
 import com.marketinghub.worker.util.UrlUtils;
 import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
-import com.marketinghub.worker.geralanding.wireframe.GeraLandingStageExecutionDetailDto;
+import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -242,7 +242,7 @@ public class GeraLandingCopyBackendClient {
 
     /** Recebe resultado da etapa wireframe usando o payload tipado da etapa. */
     public void receiveResult(String idJob, Long experimentId, String stageCode,
-                              com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload payload) {
+                              com.marketinghub.worker.geralanding.wireframe.callback.GeraLandingJobCompletionWireframePayload payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();

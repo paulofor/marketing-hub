@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe;
+package com.marketinghub.worker.geralanding.wireframe.openai;
 
 import java.util.Map;
 

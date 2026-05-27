@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe;
+package com.marketinghub.worker.geralanding.wireframe.monitor;
 
 
 import org.slf4j.Logger;

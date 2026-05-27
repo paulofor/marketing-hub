@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
-import com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService;
+import com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService;
 import com.marketinghub.worker.geralanding.copy.CopyPendingJobsService;
 import com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService;
 import com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService;
 import com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService;
-import com.marketinghub.worker.geralanding.wireframe.MontaRequest;
+import com.marketinghub.worker.geralanding.wireframe.openai.MontaRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -48,7 +48,7 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
     private final com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest;
     private final com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest;
     private final com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest;
-    private final com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse;
+    private final com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse wireframeRecebeResponse;
     private final com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse;
     private final com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse;
     private final com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse;
@@ -75,7 +75,7 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
                                        com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest,
                                        com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest,
                                        com.marketinghub.worker.geralanding.deliverables.MontaRequest deliverablesMontaRequest,
-                                       com.marketinghub.worker.geralanding.wireframe.RecebeResponse wireframeRecebeResponse,
+                                       com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse wireframeRecebeResponse,
                                        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse,
                                        com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse,
                                        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse,
@@ -132,7 +132,7 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
         List<GeraLandingStageExecutionDto> pending = backendClient.listPendingExecutions(pendingLimit).stream()
                 .map(item -> new GeraLandingStageExecutionDto(item.experimentId(), item.idJob(), item.stageCode()))
                 .toList();
-        List<com.marketinghub.worker.geralanding.wireframe.GeraLandingStageExecutionWireframeDto> wireframePending =
+        List<com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingStageExecutionWireframeDto> wireframePending =
                 wireframePendingJobsService.listPendingWireframeJobs(pendingLimit);
         List<com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto> copyPending = copyPendingJobsService.listPendingCopyJobs(pendingLimit);
         List<com.marketinghub.worker.geralanding.imageplanning.GeraLandingStageExecutionImagePlanningDto> imagePlanningPending =
@@ -522,8 +522,8 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
     }
 
     /** Converte o request comum para o tipo isolado da etapa wireframe. */
-    private com.marketinghub.worker.geralanding.wireframe.GeraLandingExperimentWireframeRequest toWireframeExperiment(GeraLandingExperimentRequest experiment) {
-        return new com.marketinghub.worker.geralanding.wireframe.GeraLandingExperimentWireframeRequest(experiment.experimentId(), experiment.dados());
+    private com.marketinghub.worker.geralanding.wireframe.openai.GeraLandingExperimentWireframeRequest toWireframeExperiment(GeraLandingExperimentRequest experiment) {
+        return new com.marketinghub.worker.geralanding.wireframe.openai.GeraLandingExperimentWireframeRequest(experiment.experimentId(), experiment.dados());
     }
 
     /** Converte o request comum para o tipo isolado da etapa imageplanning. */
@@ -557,11 +557,11 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
     }
 
     /** Converte o payload comum para o tipo isolado da etapa wireframe. */
-    private com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload toWireframePayload(GeraLandingJobCompletionPayload payload) {
+    private com.marketinghub.worker.geralanding.wireframe.callback.GeraLandingJobCompletionWireframePayload toWireframePayload(GeraLandingJobCompletionPayload payload) {
         if (payload == null) {
             return null;
         }
-        return new com.marketinghub.worker.geralanding.wireframe.GeraLandingJobCompletionWireframePayload(
+        return new com.marketinghub.worker.geralanding.wireframe.callback.GeraLandingJobCompletionWireframePayload(
                 payload.responseContent(),
                 payload.rawResponse(),
                 payload.requestBodyJson(),

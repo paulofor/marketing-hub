@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.wireframe;
+package com.marketinghub.worker.geralanding.wireframe.backend;
 
 import java.util.List;
 import org.springframework.stereotype.Component;

@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-27-oprm-estabelecimento-cnae-raiz-email
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_estabelecimento_cnae_raiz
+        - not:
+            columnExists:
+              tableName: oprm_estabelecimento_cnae_raiz
+              columnName: email
+      changes:
+        - addColumn:
+            tableName: oprm_estabelecimento_cnae_raiz
+            columns:
+              - column:
+                  name: email
+                  type: VARCHAR(254)
+                  remarks: Email de contato do estabelecimento quando disponível na fonte.
+                  constraints:
+                    nullable: true
+        - createIndex:
+            tableName: oprm_estabelecimento_cnae_raiz
+            indexName: idx_oprm_estab_cnae_raiz_email
+            columns:
+              - column:
+                  name: email

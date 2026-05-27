@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-05-27-oprm-estabelecimento-cnae-raiz
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_estabelecimento_cnae_raiz
+      changes:
+        - createTable:
+            tableName: oprm_estabelecimento_cnae_raiz
+            remarks: Relaciona CNPJ raiz ao CNAE principal para consultas operacionais de ingestao OPRM.
+            columns:
+              - column:
+                  name: cnpj_raiz
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_estabelecimento_cnae_raiz
+              - column:
+                  name: cnae_code
+                  type: VARCHAR(7)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_estabelecimento_cnae_raiz
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: oprm_estabelecimento_cnae_raiz
+            indexName: idx_oprm_estab_cnae_raiz_cnae
+            columns:
+              - column:
+                  name: cnae_code

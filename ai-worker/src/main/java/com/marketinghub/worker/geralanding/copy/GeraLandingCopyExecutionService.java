@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.GeraLandingExecutionService;
-import com.marketinghub.worker.geralanding.GeraLandingStageExecutionDto;
+import com.marketinghub.worker.geralanding.copy.GeraLandingExecutionService;
+import com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

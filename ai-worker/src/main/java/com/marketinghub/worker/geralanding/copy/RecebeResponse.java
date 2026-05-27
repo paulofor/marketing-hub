@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.GeraLandingBackendClient;
-import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
+import com.marketinghub.worker.geralanding.copy.GeraLandingBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.GeraLandingExperimentRequest;
+import com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest;
 import com.marketinghub.worker.geralanding.comum.MontaRequestSupport;
 import java.io.IOException;
 import java.util.LinkedHashMap;

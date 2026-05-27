@@ -1926,3 +1926,20 @@
 - validação executada:
   - `npm run lint` (falhou: script inexistente no `package.json` do frontend);
   - `npm run build` (falhou: `vite: not found` no ambiente atual).
+
+## 2026-05-27 06:12:00 UTC
+- solicitação: desligar scheduler global `GeraLandingExecutionScheduler` no ai-worker e criar scheduler por etapa, usando endpoint exclusivo da etapa no backend.
+- ajustes aplicados no `ai-worker`:
+  - removida anotação `@Component` de `GeraLandingExecutionScheduler` para desativar a execução global;
+  - criada a API `processExecutions(List<GeraLandingStageExecutionDto>)` em `GeraLandingExecutionService` para processar listas já filtradas por etapa;
+  - criados schedulers dedicados por etapa, cada um chamando somente seu respectivo `*PendingJobsService`:
+    - `WireframeExecutionScheduler`;
+    - `CopyExecutionScheduler`;
+    - `ImagePlanningExecutionScheduler`;
+    - `PresetDesignExecutionScheduler`;
+    - `DeliverablesExecutionScheduler`.
+  - cada scheduler usa cron literal direto na anotação `@Scheduled`.
+- observação operacional:
+  - a confirmação de pendência por etapa continua sendo feita via endpoint exclusivo da etapa em cada `*PendingJobsService` (wireframe/copy/imageplanning/designpreset/deliverables).
+- validação executada:
+  - `mvn -f ai-worker/pom.xml -DskipTests compile` (falhou por dependência externa ausente/sem acesso: `com.marketinghub:ads-service:0.0.1-SNAPSHOT`, erro 401 no repositório GitHub Packages).

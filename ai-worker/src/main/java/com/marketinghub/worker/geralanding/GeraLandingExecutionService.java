@@ -137,7 +137,18 @@ public class GeraLandingExecutionService {
         log.info("Stage pending jobs via stage controllers: wireframe={}, copy={}, imagePlanning={}, designPreset={}, deliverables={}",
                 wireframePending.size(), copyPending.size(), imagePlanningPending.size(), presetDesignPending.size(), deliverablesPending.size());
         log.info("GeraLanding execution worker found {} pending execution(s)", pending.size());
-        for (GeraLandingStageExecutionDto execution : pending) {
+        processExecutions(pending);
+    }
+
+    /**
+     * Processa uma lista de execuções já filtradas por uma etapa específica.
+     */
+    public void processExecutions(List<GeraLandingStageExecutionDto> executions) {
+        if (!openAiClient.isEnabled()) {
+            log.warn("GeraLanding generation skipped: OpenAI client is disabled");
+            return;
+        }
+        for (GeraLandingStageExecutionDto execution : executions) {
             processExecution(execution);
         }
     }

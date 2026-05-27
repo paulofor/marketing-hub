@@ -1965,3 +1965,14 @@
   - AGENTS.md
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-27 00:00:00 UTC
+- solicitação: no `ai-worker`, criar classes específicas de wireframe (`GeraLandingExecutionWireframeService`, `GeraLandingStageExecutionWireframeDto`, `GeraLandingExperimentWireframeRequest`, `GeraLandingWireframeBackendClient`, `GeraLandingJobCompletionWireframePayload`) e replicar o padrão de isolamento por etapa no GeraLanding.
+- causa-raiz identificada: a etapa wireframe ainda dependia diretamente de classes compartilhadas em `com.marketinghub.worker.geralanding`, aumentando acoplamento transversal entre etapas.
+- correção aplicada:
+  - criadas as novas classes específicas de wireframe com mapeamento/delegação para o núcleo compartilhado;
+  - atualizado `WireframePendingJobsService` para consumir DTO e backend client da própria etapa wireframe;
+  - atualizado `WireframeExecutionScheduler` para depender do novo `GeraLandingExecutionWireframeService`;
+  - mantido `GeraLandingWireframeExecutionService` como compatibilidade delegando para o novo serviço.
+- validação executada:
+  - `mvn -q -Dtest=GeraLandingExecutionServiceTest,GeraLandingServiceTest test` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

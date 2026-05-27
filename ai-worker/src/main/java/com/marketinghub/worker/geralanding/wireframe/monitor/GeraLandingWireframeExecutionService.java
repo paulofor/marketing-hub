@@ -1,5 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe.monitor;
 
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

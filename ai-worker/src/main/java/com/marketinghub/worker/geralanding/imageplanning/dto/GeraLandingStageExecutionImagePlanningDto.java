@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.imageplanning;
+package com.marketinghub.worker.geralanding.imageplanning.dto;
 
 /** Representa o job pendente da etapa image planning. */
 public record GeraLandingStageExecutionImagePlanningDto(
@@ -7,7 +7,7 @@ public record GeraLandingStageExecutionImagePlanningDto(
         String stageCode) {
 
     /** Cria um DTO da etapa a partir do DTO base do GeraLanding. */
-    public static GeraLandingStageExecutionImagePlanningDto fromBase(com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDto base) {
+    public static GeraLandingStageExecutionImagePlanningDto fromBase(com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto base) {
         return new GeraLandingStageExecutionImagePlanningDto(base.experimentId(), base.idJob(), base.stageCode());
     }
 }

@@ -1,8 +1,9 @@
 package com.marketinghub.worker.geralanding.copy;
 
+import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto;
 import com.marketinghub.worker.util.UrlUtils;
 import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
-import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingStageExecutionDetailDto;
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -242,7 +243,7 @@ public class GeraLandingCopyBackendClient {
 
     /** Recebe resultado da etapa wireframe usando o payload tipado da etapa. */
     public void receiveResult(String idJob, Long experimentId, String stageCode,
-                              com.marketinghub.worker.geralanding.wireframe.callback.GeraLandingJobCompletionWireframePayload payload) {
+                              com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
@@ -306,27 +307,27 @@ public class GeraLandingCopyBackendClient {
 
 
     /** Consulta detalhes da execução da etapa copy no controller copy.web. */
-    public com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDetailDto fetchCopyStageExecutionDetail(Long experimentId, String idJob) {
+    public com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto fetchCopyStageExecutionDetail(Long experimentId, String idJob) {
         String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/geralanding/copy/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.copy.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
+        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
     }
 
     /** Consulta detalhes da execução da etapa image-planning no controller imageplanning.web. */
-    public com.marketinghub.worker.geralanding.imageplanning.GeraLandingStageExecutionDetailDto fetchImagePlanningStageExecutionDetail(Long experimentId, String idJob) {
+    public com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionDetailDto fetchImagePlanningStageExecutionDetail(Long experimentId, String idJob) {
         String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/geralanding/image-prompts/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.imageplanning.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
+        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
     }
 
     /** Consulta detalhes da execução da etapa design-preset no controller designpreset.web. */
-    public com.marketinghub.worker.geralanding.presetdesign.GeraLandingStageExecutionDetailDto fetchDesignPresetStageExecutionDetail(Long experimentId, String idJob) {
+    public com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionDetailDto fetchDesignPresetStageExecutionDetail(Long experimentId, String idJob) {
         String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/geralanding/design-preset/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.presetdesign.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
+        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
     }
 
     /** Consulta detalhes da execução da etapa deliverables no controller deliverables.web. */
-    public com.marketinghub.worker.geralanding.deliverables.GeraLandingStageExecutionDetailDto fetchDeliverablesStageExecutionDetail(Long experimentId, String idJob) {
+    public com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto fetchDeliverablesStageExecutionDetail(Long experimentId, String idJob) {
         String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/geralanding/deliverables/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.deliverables.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
+        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
     }
 
     private Flux<GeraLandingStageExecutionDto> handleListResponse(String uri,

@@ -1,6 +1,7 @@
 package com.marketinghub.worker.geralanding.deliverables;
 
-import com.marketinghub.worker.geralanding.deliverables.openai.GeraLandingDeliverablesOpenAiExecutionService;
+import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDeliverablesDto;
+import com.marketinghub.worker.geralanding.deliverables.request.GeraLandingDeliverablesOpenAiExecutionService;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

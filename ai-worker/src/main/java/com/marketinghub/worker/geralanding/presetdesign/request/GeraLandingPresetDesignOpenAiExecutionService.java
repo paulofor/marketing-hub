@@ -1,11 +1,11 @@
-package com.marketinghub.worker.geralanding.presetdesign.openai;
+package com.marketinghub.worker.geralanding.presetdesign.request;
 
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.presetdesign.GeraLandingPresetDesignBackendClient;
 import com.marketinghub.worker.geralanding.presetdesign.GeraLandingExperimentPresetDesignRequest;
 import com.marketinghub.worker.geralanding.presetdesign.GeraLandingJobCompletionPresetDesignPayload;
-import com.marketinghub.worker.geralanding.presetdesign.GeraLandingStageExecutionPresetDesignDto;
+import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionPresetDesignDto;
 import com.marketinghub.worker.geralanding.presetdesign.RecebeResponse;
 import java.util.List;
 import java.util.Map;

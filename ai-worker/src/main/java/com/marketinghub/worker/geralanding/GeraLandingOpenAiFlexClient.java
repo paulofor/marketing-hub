@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding;
 
-import com.marketinghub.worker.openai.OpenAiCostEstimator;
-import com.marketinghub.worker.openai.OpenAiResponse;
+import com.marketinghub.worker.request.OpenAiCostEstimator;
+import com.marketinghub.worker.request.OpenAiResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
@@ -35,7 +35,7 @@ public class GeraLandingOpenAiFlexClient {
     public GeraLandingOpenAiFlexClient(WebClient.Builder builder,
                                         ObjectMapper objectMapper,
                                         @Value("${openai.api-key:}") String apiKey,
-                                        @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
+                                        @Value("${openai.base-url:https://api.request.com/v1}") String baseUrl,
                                         @Value("${openai.flex-timeout:${openai.batch-timeout:PT30M}}") Duration flexTimeout) {
         this.objectMapper = objectMapper;
         this.enabled = StringUtils.hasText(apiKey);

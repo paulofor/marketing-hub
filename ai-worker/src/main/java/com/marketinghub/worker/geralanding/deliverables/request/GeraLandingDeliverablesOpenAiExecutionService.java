@@ -1,11 +1,11 @@
-package com.marketinghub.worker.geralanding.deliverables.openai;
+package com.marketinghub.worker.geralanding.deliverables.request;
 
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingDeliverablesBackendClient;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingExperimentDeliverablesRequest;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload;
-import com.marketinghub.worker.geralanding.deliverables.GeraLandingStageExecutionDeliverablesDto;
+import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDeliverablesDto;
 import com.marketinghub.worker.geralanding.deliverables.RecebeResponse;
 import java.util.List;
 import java.util.Map;

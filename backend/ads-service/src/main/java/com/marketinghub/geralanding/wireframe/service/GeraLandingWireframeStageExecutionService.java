@@ -1,62 +1,67 @@
 package com.marketinghub.geralanding.wireframe.service;
 
-import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.geralanding.GeraLandingStageExecution;
-import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.marketinghub.geralanding.GeraLandingExecutionSummaryResponse;
+import com.marketinghub.geralanding.GeraLandingStageExecutionDetailResponse;
+import com.marketinghub.geralanding.GeraLandingStageExecutionService;
+import java.util.List;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.UUID;
-
-/** Responsável por registrar execuções iniciais da etapa de wireframe. */
-@Service("geraLandingWireframeStageExecutionService")
+/** Responsável por adaptar consultas de execução para o contrato da etapa wireframe. */
+@Service
 public class GeraLandingWireframeStageExecutionService {
 
-  private static final String STATUS_STARTED = "INICIADO";
-  private final ExperimentRepository experimentRepository;
-  private final GeraLandingStageExecutionRepository executionRepository;
+    private final GeraLandingStageExecutionService delegate;
 
-  public GeraLandingWireframeStageExecutionService(
-      ExperimentRepository experimentRepository,
-      GeraLandingStageExecutionRepository executionRepository) {
-    this.experimentRepository = experimentRepository;
-    this.executionRepository = executionRepository;
-  }
+    public GeraLandingWireframeStageExecutionService(GeraLandingStageExecutionService delegate) {
+        this.delegate = delegate;
+    }
 
-  /** Registra a execução inicial da etapa e retorna o contrato local para o módulo wireframe. */
-  @Transactional
-  public GeraLandingStageExecution registerInitialExecution(Long experimentId, String stageName) {
-    Instant now = Instant.now();
-    Experiment experiment =
-        experimentRepository
-            .findById(experimentId)
-            .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+    /** Lista execuções da etapa convertendo para o DTO local da etapa. */
+    public List<GeraLandingWireframeExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode, boolean includeCompleted) {
+        return delegate.listExperimentStageExecutions(experimentId, stageCode, includeCompleted).stream()
+                .map(this::toSummaryResponse)
+                .toList();
+    }
 
-    GeraLandingStageExecution execution = new GeraLandingStageExecution();
-    execution.setExperimentId(experiment.getId());
-    execution.setExperiment(experiment);
-    execution.setStageCode(stageName);
-    execution.setExecutionRequestedAt(now);
-    execution.setCreatedAt(now);
-    execution.setPromptTemplateId("manual/start");
-    execution.setPromptContent("Início manual via interface do experimento.");
-    execution.setStatus(STATUS_STARTED);
-    execution.setIdJob(toDatabaseIdJob(UUID.randomUUID().toString()));
+    /** Retorna o detalhe da execução convertido para o DTO local da etapa. */
+    public GeraLandingWireframeStageExecutionDetailResponse getStageExecutionDetail(Long experimentId, String idJob) {
+        return toDetailResponse(delegate.getStageExecutionDetail(experimentId, idJob));
+    }
 
-    return executionRepository.save(execution);
-  }
+    /** Converte o resumo transversal para o resumo local da etapa. */
+    private GeraLandingWireframeExecutionSummaryResponse toSummaryResponse(GeraLandingExecutionSummaryResponse response) {
+        return new GeraLandingWireframeExecutionSummaryResponse(
+                response.idJob(),
+                response.status(),
+                response.executionRequestedAt(),
+                response.costUsd());
+    }
 
-  /** Converte o identificador textual para formato binário persistido no banco. */
-  private byte[] toDatabaseIdJob(String jobId) {
-    return UUID.fromString(jobId).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-  }
-
-  /** Converte o identificador binário persistido no banco para formato textual. */
-  private String fromDatabaseIdJob(byte[] idJob) {
-    return new String(idJob, java.nio.charset.StandardCharsets.UTF_8);
-  }
+    /** Converte o detalhe transversal para o detalhe local da etapa. */
+    private GeraLandingWireframeStageExecutionDetailResponse toDetailResponse(GeraLandingStageExecutionDetailResponse response) {
+        return new GeraLandingWireframeStageExecutionDetailResponse(
+                response.idJob(),
+                response.experimentId(),
+                response.stageCode(),
+                response.executionRequestedAt(),
+                response.createdAt(),
+                response.processingStartedAt(),
+                response.completedAt(),
+                response.promptTemplateId(),
+                response.promptContent(),
+                response.prompt(),
+                response.openAiRequestBody(),
+                response.openAiModel(),
+                response.schemaJson(),
+                response.promptMarkdownContent(),
+                response.status(),
+                response.openAiJobId(),
+                response.modelResponse(),
+                response.provisionalHtml(),
+                response.errorMessage(),
+                response.errorDetail(),
+                response.inputTokens(),
+                response.outputTokens(),
+                response.costUsd());
+    }
 }

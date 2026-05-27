@@ -1,28 +1,22 @@
 package com.marketinghub.geralanding.designpreset.service;
 
-import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStageExecutionService;
-import java.nio.charset.StandardCharsets;
+import com.marketinghub.geralanding.GeraLandingStageExecutionService;
 import org.springframework.stereotype.Service;
 
 /** Responsável por iniciar a execução da etapa de design preset do GeraLanding. */
 @Service
 public class GeraLandingDesignPresetStageService {
   private static final String STAGE_NAME = "landing-page-design-preset";
-  private final GeraLandingDesignPresetStageExecutionService executionService;
+  private final GeraLandingStageExecutionService executionService;
 
-  public GeraLandingDesignPresetStageService(GeraLandingDesignPresetStageExecutionService executionService) {
+  public GeraLandingDesignPresetStageService(GeraLandingStageExecutionService executionService) {
     this.executionService = executionService;
   }
 
   /** Inicia a execução da etapa de design preset para o experimento informado. */
   public GeraLandingDesignPresetStartResponse start(Long experimentId) {
     var execution = executionService.registerInitialExecution(experimentId, STAGE_NAME);
-    return new GeraLandingDesignPresetStartResponse(fromDatabaseIdJob(execution.getIdJob()), execution.getStatus());
+    return new GeraLandingDesignPresetStartResponse(execution.idJob(), execution.status());
   }
 
-
-  /** Converte o id do formato persistido para o formato textual da API. */
-  private String fromDatabaseIdJob(byte[] idJob) {
-    return new String(idJob, StandardCharsets.UTF_8);
-  }
 }

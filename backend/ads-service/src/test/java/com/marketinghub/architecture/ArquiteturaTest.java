@@ -29,6 +29,14 @@ class ArquiteturaTest {
     private static final String GERALANDING_STAGE_EXECUTION_CLASS = "com.marketinghub.geralanding.GeraLandingStageExecution";
     private static final String GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS =
             "com.marketinghub.geralanding.GeraLandingStageExecutionRepository";
+    private static final String GERALANDING_STAGE_EXECUTION_SERVICE_CLASS =
+            "com.marketinghub.geralanding.GeraLandingStageExecutionService";
+    private static final String GERALANDING_EXECUTION_SUMMARY_RESPONSE_CLASS =
+            "com.marketinghub.geralanding.GeraLandingExecutionSummaryResponse";
+    private static final String GERALANDING_STAGE_EXECUTION_DETAIL_RESPONSE_CLASS =
+            "com.marketinghub.geralanding.GeraLandingStageExecutionDetailResponse";
+    private static final String GERALANDING_START_RESPONSE_CLASS =
+            "com.marketinghub.geralanding.GeraLandingStartResponse";
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
 
@@ -283,11 +291,22 @@ class ArquiteturaTest {
                     if (!targetName.startsWith("com.marketinghub.")) {
                         return;
                     }
+                    String sourceStage = extractGeraLandingStage(item.getPackageName());
+                    String targetStage = extractGeraLandingStage(targetClass.getPackageName());
+                    String targetLayer = extractGeraLandingLayer(targetClass.getPackageName());
+                    boolean sameStageServiceDependency = sourceStage != null
+                            && sourceStage.equals(targetStage)
+                            && "service".equals(targetLayer);
                     if (targetClass.getPackageName().equals(item.getPackageName())
+                            || sameStageServiceDependency
                             || targetName.equals(EXPERIMENT_CLASS)
                             || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
-                            || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)) {
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_SERVICE_CLASS)
+                            || targetName.equals(GERALANDING_EXECUTION_SUMMARY_RESPONSE_CLASS)
+                            || targetName.equals(GERALANDING_STAGE_EXECUTION_DETAIL_RESPONSE_CLASS)
+                            || targetName.equals(GERALANDING_START_RESPONSE_CLASS)) {
                         return;
                     }
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe-origem=" + item.getName()

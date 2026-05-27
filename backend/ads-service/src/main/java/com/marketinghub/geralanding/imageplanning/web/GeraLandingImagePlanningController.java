@@ -1,8 +1,8 @@
 package com.marketinghub.geralanding.imageplanning.web;
 
-import com.marketinghub.geralanding.GeraLandingExecutionSummaryResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionDetailResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningExecutionSummaryResponse;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageExecutionDetailResponse;
+import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageExecutionService;
 import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStageService;
 import com.marketinghub.geralanding.imageplanning.service.GeraLandingImagePlanningStartResponse;
 import java.util.List;
@@ -21,9 +21,9 @@ public class GeraLandingImagePlanningController {
   private static final String STAGE_CODE = "landing-page-image-planning";
 
   private final GeraLandingImagePlanningStageService stageService;
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingImagePlanningStageExecutionService executionService;
 
-  public GeraLandingImagePlanningController(GeraLandingImagePlanningStageService stageService, GeraLandingStageExecutionService executionService) {
+  public GeraLandingImagePlanningController(GeraLandingImagePlanningStageService stageService, GeraLandingImagePlanningStageExecutionService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }
@@ -37,19 +37,19 @@ public class GeraLandingImagePlanningController {
 
   /** Lista as execuções da etapa para o experimento. */
   @GetMapping("/image-prompts/stage-executions")
-  public ResponseEntity<List<GeraLandingExecutionSummaryResponse>> listStageExecutions(
+  public ResponseEntity<List<GeraLandingImagePlanningExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
       @RequestParam(defaultValue = "true") boolean includeCompleted) {
-    List<GeraLandingExecutionSummaryResponse> response =
+    List<GeraLandingImagePlanningExecutionSummaryResponse> response =
         executionService.listExperimentStageExecutions(experimentId, STAGE_CODE, includeCompleted);
     return ResponseEntity.ok(response);
   }
 
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/image-prompts/stage-executions/{idJob}")
-  public ResponseEntity<GeraLandingStageExecutionDetailResponse> detailStageExecution(
+  public ResponseEntity<GeraLandingImagePlanningStageExecutionDetailResponse> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    GeraLandingStageExecutionDetailResponse response =
+    GeraLandingImagePlanningStageExecutionDetailResponse response =
         executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }

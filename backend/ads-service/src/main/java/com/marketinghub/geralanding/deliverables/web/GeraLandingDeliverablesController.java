@@ -1,8 +1,8 @@
 package com.marketinghub.geralanding.deliverables.web;
 
-import com.marketinghub.geralanding.GeraLandingExecutionSummaryResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionDetailResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesExecutionSummaryResponse;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageExecutionDetailResponse;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageExecutionService;
 import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageService;
 import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStartResponse;
 import java.util.List;
@@ -21,9 +21,9 @@ public class GeraLandingDeliverablesController {
   private static final String STAGE_CODE = "landing-page-deliverables";
 
   private final GeraLandingDeliverablesStageService stageService;
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingDeliverablesStageExecutionService executionService;
 
-  public GeraLandingDeliverablesController(GeraLandingDeliverablesStageService stageService, GeraLandingStageExecutionService executionService) {
+  public GeraLandingDeliverablesController(GeraLandingDeliverablesStageService stageService, GeraLandingDeliverablesStageExecutionService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }
@@ -37,19 +37,19 @@ public class GeraLandingDeliverablesController {
 
   /** Lista as execuções da etapa para o experimento. */
   @GetMapping("/deliverables/stage-executions")
-  public ResponseEntity<List<GeraLandingExecutionSummaryResponse>> listStageExecutions(
+  public ResponseEntity<List<GeraLandingDeliverablesExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
       @RequestParam(defaultValue = "true") boolean includeCompleted) {
-    List<GeraLandingExecutionSummaryResponse> response =
+    List<GeraLandingDeliverablesExecutionSummaryResponse> response =
         executionService.listExperimentStageExecutions(experimentId, STAGE_CODE, includeCompleted);
     return ResponseEntity.ok(response);
   }
 
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/deliverables/stage-executions/{idJob}")
-  public ResponseEntity<GeraLandingStageExecutionDetailResponse> detailStageExecution(
+  public ResponseEntity<GeraLandingDeliverablesStageExecutionDetailResponse> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    GeraLandingStageExecutionDetailResponse response =
+    GeraLandingDeliverablesStageExecutionDetailResponse response =
         executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }

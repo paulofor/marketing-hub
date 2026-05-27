@@ -1,8 +1,8 @@
 package com.marketinghub.geralanding.copy.web;
 
-import com.marketinghub.geralanding.GeraLandingExecutionSummaryResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionDetailResponse;
-import com.marketinghub.geralanding.GeraLandingStageExecutionService;
+import com.marketinghub.geralanding.copy.service.GeraLandingCopyExecutionSummaryResponse;
+import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionDetailResponse;
+import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionService;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStartResponse;
 import java.util.List;
@@ -21,9 +21,9 @@ public class GeraLandingCopyController {
   private static final String STAGE_CODE = "landing-page-copy";
 
   private final GeraLandingCopyStageService stageService;
-  private final GeraLandingStageExecutionService executionService;
+  private final GeraLandingCopyStageExecutionService executionService;
 
-  public GeraLandingCopyController(GeraLandingCopyStageService stageService, GeraLandingStageExecutionService executionService) {
+  public GeraLandingCopyController(GeraLandingCopyStageService stageService, GeraLandingCopyStageExecutionService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }
@@ -37,19 +37,19 @@ public class GeraLandingCopyController {
 
   /** Lista as execuções da etapa para o experimento. */
   @GetMapping("/copy/stage-executions")
-  public ResponseEntity<List<GeraLandingExecutionSummaryResponse>> listStageExecutions(
+  public ResponseEntity<List<GeraLandingCopyExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
       @RequestParam(defaultValue = "true") boolean includeCompleted) {
-    List<GeraLandingExecutionSummaryResponse> response =
+    List<GeraLandingCopyExecutionSummaryResponse> response =
         executionService.listExperimentStageExecutions(experimentId, STAGE_CODE, includeCompleted);
     return ResponseEntity.ok(response);
   }
 
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/copy/stage-executions/{idJob}")
-  public ResponseEntity<GeraLandingStageExecutionDetailResponse> detailStageExecution(
+  public ResponseEntity<GeraLandingCopyStageExecutionDetailResponse> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    GeraLandingStageExecutionDetailResponse response =
+    GeraLandingCopyStageExecutionDetailResponse response =
         executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }

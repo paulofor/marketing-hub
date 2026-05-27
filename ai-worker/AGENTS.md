@@ -7,10 +7,6 @@
 - 🚨 **Proibido acesso direto ao banco de dados.** Toda leitura ou escrita deve ser feita **exclusivamente via endpoints do backend**, reutilizando os serviços existentes ou solicitando novos quando necessário.
 - Tipos de dados permitidos (MySql 5): `INT`, `BIGINT`, `DECIMAL`, `DOUBLE`, `FLOAT`, `CHAR`, `VARCHAR`, `TEXT`, `LONGTEXT`, `BINARY(16)` para `UUID`, `DATE`, `DATETIME`, `TIMESTAMP`, `BOOLEAN`.
 
-## Serviços existentes
-- **Nicho** (`niche`): gera hipóteses para nichos com `hypothesesToGenerate > 0` usando o ChatGPT. Implementado por `NicheHypothesisService` e agendado por `NicheHypothesisScheduler`.
-- **Criativos** (`creative`): gera criativos para experimentos com `creativesToGenerate > 0` usando o ChatGPT. Implementado por `ExperimentCreativeService` e agendado por `ExperimentCreativeScheduler`.
-- **Produto de Sucesso** (`successproduct`): gera nicho e hipótese a partir de produtos com `generate_niche_hypothesis=true` usando o ChatGPT. Implementado por `SuccessProductNicheHypothesisService` e agendado por `SuccessProductNicheHypothesisScheduler`.
 
 ## Orientação para novos serviços
 - Siga o mesmo padrão do serviço de **nicho**:
@@ -19,14 +15,6 @@
   - criar um `*Scheduler` com `@Scheduled` para executar o serviço periodicamente;
   - encapsular qualquer cliente do ChatGPT dentro do mesmo pacote.
 
-## Compilação do módulo
-- O `pom.xml` deste módulo fica em `ai-worker/pom.xml` e **não** existe reactor Maven na raiz do repositório.
-- Para compilar corretamente a partir da raiz do projeto, use:
-  - `mvn -f ai-worker/pom.xml -DskipTests compile`
-- Alternativamente:
-  - `cd ai-worker && mvn -DskipTests compile`
-- Se ocorrer erro de dependência `com.marketinghub:ads-service:0.0.1-SNAPSHOT`, publique/instale primeiro a dependência localmente:
-  - `mvn -f backend/ads-service/pom.xml -DskipTests install`
 
 ## Regra obrigatória de logs em integrações OpenAI (semelhante ao Gera Landing)
 - Sempre que o Worker AI executar uma requisição para a OpenAI, registrar log com:

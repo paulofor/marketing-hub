@@ -3,7 +3,7 @@ package com.marketinghub.worker.geralanding;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.comum.GeraLandingComumBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import com.marketinghub.worker.geralanding.wireframe.WireframePendingJobsService;
@@ -38,7 +38,7 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
     private static final Pattern BANNED_COPY_TEXT_PATTERN = Pattern.compile(
             "(?i)(adCopy\\.|campaignAngle\\.|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\bV[1-3]-|lorem ipsum|como funciona \\(passo)");
 
-    private final GeraLandingComumBackendClient backendClient;
+    private final GeraLandingCopyBackendClient backendClient;
     private final GeraLandingService geraLandingService;
     private final GeraLandingOpenAiFlexClient openAiClient;
     private final ObjectMapper objectMapper;
@@ -65,7 +65,7 @@ public class GeraLandingExecutionService implements com.marketinghub.worker.gera
     private final Resource designPresetSchemaResource;
     private final Resource deliverablesSchemaResource;
 
-    public GeraLandingExecutionService(GeraLandingComumBackendClient backendClient,
+    public GeraLandingExecutionService(GeraLandingCopyBackendClient backendClient,
                                        GeraLandingService geraLandingService,
                                        GeraLandingOpenAiFlexClient openAiClient,
                                        ObjectMapper objectMapper,

@@ -2,7 +2,7 @@ package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.comum.GeraLandingComumBackendClient;
+import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdCopy;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdImageBriefing;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.CampaignAngle;
@@ -41,9 +41,9 @@ public class GeraLandingService {
     private static final String EXPERIMENT_METADATA = "experimentMetadata";
 
     private final ObjectMapper objectMapper;
-    private final GeraLandingComumBackendClient backendClient;
+    private final GeraLandingCopyBackendClient backendClient;
 
-    public GeraLandingService(ObjectMapper objectMapper, GeraLandingComumBackendClient backendClient) {
+    public GeraLandingService(ObjectMapper objectMapper, GeraLandingCopyBackendClient backendClient) {
         this.objectMapper = objectMapper;
         this.backendClient = backendClient;
     }

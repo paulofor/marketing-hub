@@ -2,10 +2,10 @@ package com.marketinghub.worker.geralanding.copy.request;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
+import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest;
 import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
-import com.marketinghub.worker.geralanding.copy.RecebeResponse;
+import com.marketinghub.worker.geralanding.copy.response.RecebeResponse;
 import com.marketinghub.worker.geralanding.copy.dto.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
@@ -33,7 +33,7 @@ public class GeraLandingCopyOpenAiExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingCopyOpenAiExecutionService.class);
     private static final int LOG_PREVIEW_LIMIT = 1200;
     private final GeraLandingCopyBackendClient backendClient;
-    private final com.marketinghub.worker.geralanding.copy.MontaRequest montaRequest;
+    private final com.marketinghub.worker.geralanding.copy.request.MontaRequest montaRequest;
     private final RecebeResponse recebeResponse;
     private final ObjectMapper objectMapper;
     private final WebClient webClient;
@@ -44,7 +44,7 @@ public class GeraLandingCopyOpenAiExecutionService {
                                                  @Value("${openai.api-key:}") String apiKey,
                                                  @Value("${openai.base-url:https://api.request.com/v1}") String baseUrl,
                                                  @Value("${openai.flex-timeout:${openai.batch-timeout:PT30M}}") Duration flexTimeout,
-                                                 com.marketinghub.worker.geralanding.copy.MontaRequest montaRequest, RecebeResponse recebeResponse) {
+                                                 com.marketinghub.worker.geralanding.copy.request.MontaRequest montaRequest, RecebeResponse recebeResponse) {
         this.backendClient = backendClient;
         this.montaRequest = montaRequest;
         this.recebeResponse = recebeResponse;

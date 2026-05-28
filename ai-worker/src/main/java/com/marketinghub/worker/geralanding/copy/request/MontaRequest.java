@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.copy;
+package com.marketinghub.worker.geralanding.copy.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest;

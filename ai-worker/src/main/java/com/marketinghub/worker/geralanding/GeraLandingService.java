@@ -2,7 +2,7 @@ package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
+import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdCopy;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdImageBriefing;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.CampaignAngle;

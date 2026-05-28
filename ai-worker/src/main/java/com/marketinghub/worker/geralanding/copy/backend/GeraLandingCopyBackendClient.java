@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.copy;
+package com.marketinghub.worker.geralanding.copy.backend;
 
 import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.util.UrlUtils;

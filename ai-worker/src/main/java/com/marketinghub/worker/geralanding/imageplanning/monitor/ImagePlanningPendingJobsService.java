@@ -1,5 +1,6 @@
-package com.marketinghub.worker.geralanding.imageplanning;
+package com.marketinghub.worker.geralanding.imageplanning.monitor;
 
+import com.marketinghub.worker.geralanding.imageplanning.GeraLandingImagePlanningBackendClient;
 import com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import java.util.Locale;

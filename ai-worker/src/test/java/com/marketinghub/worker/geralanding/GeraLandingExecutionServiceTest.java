@@ -50,14 +50,14 @@ class GeraLandingExecutionServiceTest {
 
         com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService wireframePendingJobsService =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService.class);
-        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
-        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
-        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
-        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -155,14 +155,14 @@ class GeraLandingExecutionServiceTest {
 
         com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService wireframePendingJobsService =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService.class);
-        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
-        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
-        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
-        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -239,14 +239,14 @@ class GeraLandingExecutionServiceTest {
 
         com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService wireframePendingJobsService =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService.class);
-        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
-        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
-        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
-        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(
@@ -345,14 +345,14 @@ class GeraLandingExecutionServiceTest {
 
         com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService wireframePendingJobsService =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.monitor.WireframePendingJobsService.class);
-        com.marketinghub.worker.geralanding.copy.CopyPendingJobsService copyPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.CopyPendingJobsService.class);
-        com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.ImagePlanningPendingJobsService.class);
-        com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService presetDesignPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.PresetDesignPendingJobsService.class);
-        com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService deliverablesPendingJobsService =
-                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.DeliverablesPendingJobsService.class);
+        com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService copyPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.monitor.CopyPendingJobsService.class);
+        com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService imagePlanningPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.monitor.ImagePlanningPendingJobsService.class);
+        com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService presetDesignPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.monitor.PresetDesignPendingJobsService.class);
+        com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService deliverablesPendingJobsService =
+                Mockito.mock(com.marketinghub.worker.geralanding.deliverables.monitor.DeliverablesPendingJobsService.class);
 
         when(openAiClient.isEnabled()).thenReturn(true);
         when(backendClient.listPendingExecutions(20)).thenReturn(List.of(

@@ -56,64 +56,67 @@ public class GeraLandingOpenAiFlexClient {
         return enabled;
     }
 
+
+    /**
+     * Executa a geração no endpoint /responses da OpenAI para DTO da etapa deliverables.
+     */
+    public GeraLandingJobCompletionPayload generate(com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingJobDto job) {
+        return generateFromValues(job.id(), job.section(), job.model(), job.requestBodyJson(), job.prompt());
+    }
+
     /**
      * Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa.
      */
     public GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) {
+        return generateFromValues(job.id(), job.section(), job.model(), job.requestBodyJson(), job.prompt());
+    }
+
+    /**
+     * Executa a geração no endpoint /responses da OpenAI com os valores normalizados do job.
+     */
+    private GeraLandingJobCompletionPayload generateFromValues(java.util.UUID jobId, String section, String model, String requestBodyJson, String prompt) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key não configurada");
         }
         try {
             log.info("Iniciando geração gera-landing via OpenAI flex [jobId={}, stage={}, model={}, requestBodyLength={}]",
-                    job.id(), job.section(), job.model(), safeLength(job.requestBodyJson()));
+                    jobId, section, model, safeLength(requestBodyJson));
             log.info("Payload requestBodyJson do gera-landing [jobId={}, stage={}, requestBodyPreview={}]",
-                    job.id(), job.section(), preview(job.requestBodyJson()));
-            OpenAiResponse response = createFlexResponse(job);
+                    jobId, section, preview(requestBodyJson));
+            OpenAiResponse response = createFlexResponse(jobId, section, model, requestBodyJson, prompt);
             String rawOutput = objectMapper.writeValueAsString(response);
-            String modelResponse = sanitizeModelResponse(response.firstText(), job);
+            String modelResponse = sanitizeModelResponse(response.firstText(), jobId, section);
             log.info("Resposta OpenAI recebida para gera-landing [jobId={}, stage={}, responseId={}, rawOutputLength={}, modelResponseLength={}, modelResponsePreview={}]",
-                    job.id(),
-                    job.section(),
-                    response.id(),
-                    safeLength(rawOutput),
-                    safeLength(modelResponse),
-                    preview(modelResponse));
+                    jobId, section, response.id(), safeLength(rawOutput), safeLength(modelResponse), preview(modelResponse));
             if (!StringUtils.hasText(modelResponse)) {
                 throw new IllegalStateException("Modelo não retornou conteúdo para gera-landing");
             }
             Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
             Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
             log.info("Finalizando geração gera-landing [jobId={}, stage={}, responseId={}, inputTokens={}, outputTokens={}]",
-                    job.id(), job.section(), response.id(), inputTokens, outputTokens);
-            return new GeraLandingJobCompletionPayload(
-                    modelResponse,
-                    rawOutput,
-                    job.requestBodyJson(),
-                    response.id(),
-                    inputTokens,
-                    outputTokens,
-                    OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
+                    jobId, section, response.id(), inputTokens, outputTokens);
+            return new GeraLandingJobCompletionPayload(modelResponse, rawOutput, requestBodyJson, response.id(), inputTokens, outputTokens, OpenAiCostEstimator.estimateUsd(model, response.usage()));
         } catch (WebClientResponseException ex) {
             HttpStatusCode statusCode = ex.getStatusCode();
             log.error("Falha HTTP OpenAI flex no gera-landing [jobId={}, stage={}, status={}, responseBody={}]",
-                    job.id(), job.section(), statusCode.value(), ex.getResponseBodyAsString());
+                    jobId, section, statusCode.value(), ex.getResponseBodyAsString());
             throw new IllegalStateException("Falha HTTP ao gerar conteúdo de gera-landing em modo flex", ex);
         } catch (Exception ex) {
             log.error("Falha inesperada no gera-landing em modo flex [jobId={}, stage={}, model={}, requestBodyPreview={}]",
-                    job.id(), job.section(), job.model(), preview(job.requestBodyJson()), ex);
+                    jobId, section, model, preview(requestBodyJson), ex);
             throw new IllegalStateException("Falha ao gerar conteúdo de gera-landing em modo flex", ex);
         }
     }
 
-    private OpenAiResponse createFlexResponse(GeraLandingJobDto job) throws Exception {
+    private OpenAiResponse createFlexResponse(java.util.UUID jobId, String section, String model, String requestBodyJson, String prompt) throws Exception {
         log.info("Iniciando preparação do request para flex [jobId={}, stage={}, requestBodyJsonPreview={}]",
-                job.id(), job.section(), preview(job.requestBodyJson()));
-        Map<String, Object> requestBody = prepareRequestBodyForFlex(job);
+                jobId, section, preview(requestBodyJson));
+        Map<String, Object> requestBody = prepareRequestBodyForFlex(jobId, section, model, requestBodyJson, prompt);
         log.info("RequestBody parseado para flex [jobId={}, stage={}, keys={}, requestBodyMapPreview={}]",
-                job.id(), job.section(), requestBody.keySet(), preview(objectMapper.writeValueAsString(requestBody)));
+                jobId, section, requestBody.keySet(), preview(objectMapper.writeValueAsString(requestBody)));
         requestBody.put("service_tier", "flex");
         log.info("RequestBody final para /responses [jobId={}, stage={}, requestBodyWithFlexPreview={}]",
-                job.id(), job.section(), preview(objectMapper.writeValueAsString(requestBody)));
+                jobId, section, preview(objectMapper.writeValueAsString(requestBody)));
 
         OpenAiResponse response = webClient.post().uri("/responses")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -131,25 +134,25 @@ public class GeraLandingOpenAiFlexClient {
         return response;
     }
 
-    Map<String, Object> prepareRequestBodyForFlex(GeraLandingJobDto job) throws Exception {
-        String requestBodyJson = job.requestBodyJson();
+    Map<String, Object> prepareRequestBodyForFlex(java.util.UUID jobId, String section, String model, String requestBodyJson, String prompt) throws Exception {
+        
         if (StringUtils.hasText(requestBodyJson)) {
             String trimmed = requestBodyJson.trim();
             if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
                 return objectMapper.readValue(trimmed, new TypeReference<>() {});
             }
             log.warn("requestBodyJson não está em JSON; aplicando fallback para payload estruturado [jobId={}, stage={}, startsWith={}]",
-                    job.id(), job.section(), trimmed.substring(0, Math.min(40, trimmed.length())).replace("\n", "\\n"));
-            return buildRequestBodyFromPrompt(job, trimmed);
+                    jobId, section, trimmed.substring(0, Math.min(40, trimmed.length())).replace("\n", "\\n"));
+            return buildRequestBodyFromPrompt(jobId, section, model, trimmed);
         }
-        return buildRequestBodyFromPrompt(job, job.prompt());
+        return buildRequestBodyFromPrompt(jobId, section, model, prompt);
     }
 
 
     /**
      * Remove cercas markdown de JSON (```json ... ```) para manter o conteúdo parseável no pipeline.
      */
-    String sanitizeModelResponse(String modelResponse, GeraLandingJobDto job) {
+    String sanitizeModelResponse(String modelResponse, java.util.UUID jobId, String section) {
         if (!StringUtils.hasText(modelResponse)) {
             return modelResponse;
         }
@@ -163,19 +166,19 @@ public class GeraLandingOpenAiFlexClient {
             withoutPrefix = withoutPrefix.substring(0, withoutPrefix.length() - 3).trim();
         }
         log.warn("Model response veio com code fence JSON; removendo cercas markdown [jobId={}, stage={}]",
-                job.id(), job.section());
+                jobId, section);
         return withoutPrefix;
     }
 
     /**
      * Cria um corpo mínimo de requisição quando apenas o prompt textual está disponível.
      */
-    private Map<String, Object> buildRequestBodyFromPrompt(GeraLandingJobDto job, String promptText) {
+    private Map<String, Object> buildRequestBodyFromPrompt(java.util.UUID jobId, String section, String model, String promptText) {
         if (!StringUtils.hasText(promptText)) {
             throw new IllegalStateException("Payload da OpenAI ausente: requestBodyJson e prompt vazios para gera-landing");
         }
         Map<String, Object> requestBody = new LinkedHashMap<>();
-        requestBody.put("model", StringUtils.hasText(job.model()) ? job.model() : "gpt-5.2");
+        requestBody.put("model", StringUtils.hasText(model) ? model : "gpt-5.2");
         requestBody.put("input", List.of(
                 Map.of("role", "system", "content", "[gera-landing-pipeline] Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."),
                 Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", promptText)))));

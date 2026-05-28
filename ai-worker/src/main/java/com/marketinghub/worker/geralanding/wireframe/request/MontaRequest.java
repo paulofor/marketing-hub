@@ -29,7 +29,7 @@ public class MontaRequest {
     }
 
     /** Monta o payload da Responses API para a etapa, resolvendo internamente schema, markdown e placeholders. */
-    public String montar(GeraLandingExperimentWireframeRequest experiment) throws IOException {
+    public String montar(RecordWireframeRequest experiment) throws IOException {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", SCHEMA_NAME);
@@ -62,7 +62,7 @@ public class MontaRequest {
     }
 
     /** Monta o prompt final da etapa resolvendo placeholders de dados e prompts auxiliares. */
-    public String montarPrompt(GeraLandingExperimentWireframeRequest experiment) throws IOException {
+    public String montarPrompt(RecordWireframeRequest experiment) throws IOException {
         return MontaRequestSupport.montarPrompt("prompts/geralanding/" + PROMPT_MARKDOWN_FILE, PROMPT_MARKDOWN_FILE, experiment.dados(), objectMapper);
     }
 }

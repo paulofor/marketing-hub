@@ -2078,3 +2078,13 @@
   - atualizadas referências/importações nos fluxos de monitor/request e no backend client compartilhado.
 - validação executada:
   - `mvn -q -Dtest=GeraLandingExecutionServiceTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 17:30:00 UTC
+- solicitação: renomear `GeraLandingExperimentWireframeRequest` para `RecordWireframeRequest` na etapa `geralanding.wireframe` do `ai-worker`.
+- causa-raiz identificada: nome anterior não seguia o padrão curto de records adotado nas classes de request/response do fluxo wireframe.
+- correção aplicada:
+  - arquivo `GeraLandingExperimentWireframeRequest.java` renomeado para `RecordWireframeRequest.java`;
+  - record atualizado para `RecordWireframeRequest`;
+  - referências ajustadas em `GeraLandingWireframeOpenAiExecutionService` e `MontaRequest`.
+- validação executada:
+  - inspeção estática das referências com `rg` para garantir ausência do nome antigo em código Java da etapa wireframe.

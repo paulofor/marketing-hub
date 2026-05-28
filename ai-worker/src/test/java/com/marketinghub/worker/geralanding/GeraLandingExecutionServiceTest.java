@@ -3,7 +3,7 @@ package com.marketinghub.worker.geralanding;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload;
-import com.marketinghub.worker.geralanding.wireframe.callback.GeraLandingJobCompletionWireframePayload;
+import com.marketinghub.worker.geralanding.wireframe.callback.RecordWireframeResponse;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
@@ -120,7 +120,7 @@ class GeraLandingExecutionServiceTest {
         verify(wireframeRecebeResponse).processar(any(), any(), any(), any());
         verify(backendClient, never()).receiveDispatch(any(), any(), any(), any());
         verify(backendClient, never())
-                .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionWireframePayload.class));
+                .receiveResult(any(), any(), any(), any(RecordWireframeResponse.class));
         verify(backendClient, never())
                 .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionDeliverablesPayload.class));
         verify(backendClient, never()).receiveFailure(any(), any(), any(), any(), any());
@@ -205,7 +205,7 @@ class GeraLandingExecutionServiceTest {
 
         verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
         verify(backendClient, never())
-                .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionWireframePayload.class));
+                .receiveResult(any(), any(), any(), any(RecordWireframeResponse.class));
         verify(backendClient, never())
                 .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionDeliverablesPayload.class));
     }
@@ -311,7 +311,7 @@ class GeraLandingExecutionServiceTest {
 
         verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
         verify(backendClient, never())
-                .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionWireframePayload.class));
+                .receiveResult(any(), any(), any(), any(RecordWireframeResponse.class));
         verify(backendClient, never())
                 .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionDeliverablesPayload.class));
     }
@@ -398,7 +398,7 @@ class GeraLandingExecutionServiceTest {
 
         verify(backendClient).receiveFailure(any(), any(), any(), any(), any());
         verify(backendClient, never())
-                .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionWireframePayload.class));
+                .receiveResult(any(), any(), any(), any(RecordWireframeResponse.class));
         verify(backendClient, never())
                 .receiveResult(any(), any(), any(), any(GeraLandingJobCompletionDeliverablesPayload.class));
     }

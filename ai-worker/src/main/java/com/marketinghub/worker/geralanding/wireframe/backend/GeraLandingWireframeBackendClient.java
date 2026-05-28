@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.wireframe.response.RecordWireframeResponse;
 import com.marketinghub.worker.util.UrlUtils;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,12 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /** Responsabilidade: encapsular as integrações HTTP da etapa wireframe com o backend sem dependências cruzadas de outras etapas. */
 @Component
@@ -39,17 +38,71 @@ public class GeraLandingWireframeBackendClient {
         this.objectMapper = objectMapper;
     }
 
-    /** Lista execuções pendentes da etapa wireframe no backend. */
+    /** Lista execuções pendentes da etapa wireframe usando os endpoints de experimento expostos pelo backend. */
     public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions/pending");
-        String uri = url + "?limit=" + Math.max(1, limit);
-        List<GeraLandingStageExecutionDetailDto> payload = webClient.get()
+        int effectiveLimit = Math.max(1, limit);
+        List<Map<String, Object>> experiments = listExperiments();
+        List<GeraLandingStageExecutionDetailDto> pending = new ArrayList<>();
+        for (Map<String, Object> experiment : experiments) {
+            Long experimentId = asLong(experiment.get("id"));
+            if (experimentId == null) {
+                continue;
+            }
+            pending.addAll(listPendingExecutionsForExperiment(experimentId));
+        }
+        return pending.stream()
+                .sorted(Comparator.comparing(
+                        GeraLandingStageExecutionDetailDto::executionRequestedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .limit(effectiveLimit)
+                .toList();
+    }
+
+    /** Lista os experimentos para descobrir os ids necessários ao endpoint de wireframe por experimento. */
+    private List<Map<String, Object>> listExperiments() {
+        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments");
+        List<Map<String, Object>> payload = webClient.get()
                 .uri(uri)
-                .exchangeToFlux(response -> handleListResponse(uri, response.statusCode(), response))
-                .collectList()
-                .doOnError(err -> log.error("Falha ao buscar execuções pendentes wireframe. uri={}", uri, err))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .doOnError(err -> log.error("Falha ao buscar experimentos para pendências wireframe. uri={}", uri, err))
+                .onErrorReturn(List.of())
                 .block();
         return payload != null ? payload : List.of();
+    }
+
+    /** Lista as execuções abertas de wireframe de um experimento usando a URL canônica atual do backend. */
+    private List<GeraLandingStageExecutionDetailDto> listPendingExecutionsForExperiment(Long experimentId) {
+        String uri = UrlUtils.joinPath(
+                backendBaseUrl,
+                apiPrefix,
+                "/experiments/" + experimentId + "/geralanding/wireframe/stage-executions") + "?includeCompleted=false";
+        List<Map<String, Object>> payload = webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .doOnError(err -> log.error("Falha ao buscar execuções pendentes wireframe por experimento. uri={}", uri, err))
+                .onErrorReturn(List.of())
+                .block();
+        if (payload == null || payload.isEmpty()) {
+            return List.of();
+        }
+        return payload.stream()
+                .map(item -> toPendingExecutionDto(experimentId, item))
+                .toList();
+    }
+
+    /** Converte o resumo da listagem pública de wireframe para o DTO consumido pelo scheduler da etapa. */
+    private GeraLandingStageExecutionDetailDto toPendingExecutionDto(Long experimentId, Map<String, Object> item) {
+        return new GeraLandingStageExecutionDetailDto(
+                experimentId,
+                "landing-page-wireframe",
+                asString(item.get("idJob")),
+                asString(item.get("status")),
+                asInstant(item.get("executionRequestedAt")),
+                null,
+                null,
+                asString(item.get("openAiJobId")));
     }
 
     /** Carrega os dados de prompt para a geração wireframe a partir do experimento. */
@@ -175,18 +228,35 @@ public class GeraLandingWireframeBackendClient {
         try {
             return objectMapper.readValue(raw, Map.class);
         } catch (Exception ex) {
+            log.warn("Falha ao converter campo JSON de prompt wireframe; mantendo valor textual bruto (length={})", raw.length(), ex);
             return raw;
         }
     }
 
-    /** Trata resposta de listagem pendente e converte erros HTTP em exceção contextual. */
-    private Flux<GeraLandingStageExecutionDetailDto> handleListResponse(String uri, HttpStatusCode status, ClientResponse response) {
-        if (status.isError()) {
-            return response.bodyToMono(String.class)
-                    .defaultIfEmpty("")
-                    .flatMapMany(body -> Mono.error(new IllegalStateException(
-                            "GET %s failed with status %s: %s".formatted(uri, status, body))));
+    /** Converte valores numéricos vindos de payloads genéricos em Long. */
+    private Long asLong(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
         }
-        return response.bodyToFlux(GeraLandingStageExecutionDetailDto.class);
+        if (value instanceof String text && !text.isBlank()) {
+            return Long.parseLong(text.trim());
+        }
+        return null;
+    }
+
+    /** Converte valores textuais vindos de payloads genéricos em String segura. */
+    private String asString(Object value) {
+        return value != null ? value.toString() : null;
+    }
+
+    /** Converte valores de data/hora vindos de payloads genéricos em Instant. */
+    private Instant asInstant(Object value) {
+        if (value instanceof Instant instant) {
+            return instant;
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            return Instant.parse(text.trim());
+        }
+        return null;
     }
 }

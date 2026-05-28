@@ -34,7 +34,7 @@ public class GeraLandingCopyBackendClient {
     }
 
     public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/pending");
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/copy/stage-executions/pending");
         String uri = url + "?limit=" + Math.max(1, limit);
         log.info("Fetching pending gera-landing stage executions from {}", uri);
         List<GeraLandingStageExecutionDetailDto> payload = webClient.get()
@@ -141,7 +141,7 @@ public class GeraLandingCopyBackendClient {
                               String schemaJson,
                               String promptMarkdownContent) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
-                "/internal/geralanding/stage-executions");
+                "/internal/geralanding/copy/stage-executions");
         log.info(
                 "Sending gera-landing prompt. endpoint={}/{{idJob}}/receive-prompt, idJob={}, experimentId={}, stageCode={}, promptLength={}",
                 baseUrl,
@@ -169,7 +169,7 @@ public class GeraLandingCopyBackendClient {
 
     public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionPayload payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
-                "/internal/geralanding/stage-executions");
+                "/internal/geralanding/copy/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
@@ -216,7 +216,7 @@ public class GeraLandingCopyBackendClient {
 
     public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
-                "/internal/geralanding/stage-executions");
+                "/internal/geralanding/copy/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
@@ -232,7 +232,7 @@ public class GeraLandingCopyBackendClient {
 
     public void receiveDispatch(String idJob, Long experimentId, String stageCode, String openAiJobId) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
-                "/internal/geralanding/stage-executions");
+                "/internal/geralanding/copy/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);

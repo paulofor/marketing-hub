@@ -2119,6 +2119,40 @@
 - validação executada:
   - `mvn -q -Dtest=ArquiteturaTest test` em `ai-worker/` (bloqueado por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
 
+
+## 2026-05-28 16:40:00 UTC
+- solicitação: revisar chamadas do Worker AI ao backend no fluxo GeraLanding após erro 404 em `GET /api/internal/geralanding/stage-executions/pending?limit=20`.
+- causa-raiz identificada: o Worker AI ainda chamava endpoints internos genéricos de execução, mas o contrato operacional atual exige endpoints específicos por etapa para evitar mistura entre wireframe, copy, image-planning, design-preset e deliverables.
+- correção aplicada:
+  - ajustados apenas os clients do Worker AI para usar endpoints específicos já existentes no backend: `wireframe`, `copy`, `image-prompts`, `design-preset` e `deliverables`;
+  - removida a dependência do backend client de deliverables sobre o backend client de copy, mantendo isolamento por etapa.
+- validação executada:
+  - `mvn -q -DskipTests compile` em `backend/ads-service/`;
+  - `mvn -q -DskipTests install` em `backend/ads-service/` para publicar o artefato local exigido pelo Worker AI;
+  - `mvn -q -DskipTests compile` em `ai-worker/`.
+
+
+## 2026-05-28 17:05:00 UTC
+- solicitação: corrigir revisão do PR para remover controller interno genérico no backend; cada etapa do GeraLanding deve ter seu próprio endpoint/controller.
+- causa-raiz identificada: a primeira correção criou um controller único parametrizado por `{stagePath}`, o que preservava endpoint específico na URL mas mantinha um controller genérico para todas as etapas.
+- correção aplicada:
+  - removidas do PR as alterações em classes do backend porque os endpoints do backend já estavam prontos e não deveriam ser modificados nesta tarefa;
+  - mantida somente a adequação do Worker AI para chamar os endpoints específicos por etapa;
+  - atualizado o cânone de arquitetura para registrar que a correção do Worker AI não deve criar controller genérico no backend.
+- validação executada:
+  - `mvn -q -DskipTests compile` em `backend/ads-service/`;
+  - `mvn -q -Dtest=com.marketinghub.architecture.ArquiteturaTest test` em `backend/ads-service/`.
+
+
+## 2026-05-28 17:25:00 UTC
+- solicitação: não alterar classes do backend porque os endpoints do GeraLanding já estão prontos.
+- causa-raiz identificada: a correção anterior tentou resolver o 404 criando/alterando controllers, repositório e serviço no backend, mas a responsabilidade desta tarefa é ajustar apenas o Worker AI para consumir os endpoints específicos existentes.
+- correção aplicada:
+  - revertidas todas as alterações em classes Java do backend feitas para esta revisão;
+  - mantidas as chamadas do Worker AI para endpoints específicos por etapa;
+  - preservada documentação canônica apenas como regra de consumo/isolamento, sem introduzir implementação nova no backend.
+- validação executada:
+  - `mvn -q -DskipTests compile` em `ai-worker/`.
 ## 2026-05-28 20:15:00 UTC
 - solicitação: renomear `GeraLandingJobDto` para `RecordJobDto` em todas as etapas do `geralanding` no `ai-worker`.
 - causa-raiz identificada: o nome anterior mantinha o prefixo legado do módulo e não seguia o padrão curto de records adotado nas etapas do GeraLanding.

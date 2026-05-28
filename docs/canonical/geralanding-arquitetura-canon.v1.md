@@ -36,7 +36,7 @@ Regras arquiteturais refletidas (ArchUnit):
 ```mermaid
 flowchart TD
     SCH[GeraLandingExecutionScheduler] --> EXEC[GeraLandingExecutionService]
-    EXEC --> BACK[GeraLandingBackendClient<br/>HTTP /internal/geralanding/stage-executions/*]
+    EXEC --> BACK[GeraLandingBackendClient<br/>HTTP interno específico por etapa]
     EXEC --> OPENAI[GeraLandingOpenAiFlexClient]
     EXEC --> STAGE[geralanding.stage.*]
     EXEC --> COMUM[geralanding.comum.*]
@@ -66,5 +66,7 @@ Regras arquiteturais refletidas (ArchUnit):
 ## 3) Regras de integração
 
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend GeraLanding.
+- O polling e os callbacks internos do GeraLanding no Worker AI devem consumir endpoints específicos por etapa: `/api/internal/geralanding/wireframe/stage-executions/*`, `/api/internal/geralanding/copy/stage-executions/*`, `/api/internal/geralanding/image-prompts/stage-executions/*`, `/api/internal/geralanding/design-preset/stage-executions/*` e `/api/internal/geralanding/deliverables/stage-executions/*`.
+- Ajustes no Worker AI não devem criar controller interno genérico no backend para atender todas as etapas do GeraLanding.
 - O backend concentra regras de contrato, montagem de HTML provisório/final e publicação.
 - O worker ai concentra orquestração por etapa e integração com OpenAI, devolvendo resultados ao backend pelos endpoints do domínio GeraLanding.

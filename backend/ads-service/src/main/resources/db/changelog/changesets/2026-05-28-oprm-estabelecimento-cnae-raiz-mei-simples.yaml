@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 2026-05-28-oprm-estabelecimento-cnae-raiz-mei-simples
+      id: 2026-05-28-oprm-estabelecimento-cnae-raiz-is-mei
       author: codex
       preConditions:
         - onFail: MARK_RAN
@@ -9,11 +9,36 @@ databaseChangeLog:
             type: mysql
         - tableExists:
             tableName: oprm_estabelecimento_cnae_raiz
+        - not:
+            - columnExists:
+                tableName: oprm_estabelecimento_cnae_raiz
+                columnName: is_mei
       changes:
         - sql:
             splitStatements: true
             stripComments: true
             sql: |
               ALTER TABLE oprm_estabelecimento_cnae_raiz
-                ADD COLUMN IF NOT EXISTS is_mei TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Marca se o estabelecimento consta como MEI na fonte de ingestao.',
-                ADD COLUMN IF NOT EXISTS is_simples TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Marca se o estabelecimento consta como Simples Nacional na fonte de ingestao.';
+                ADD COLUMN is_mei TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Marca se o estabelecimento consta como MEI na fonte de ingestao.';
+
+  - changeSet:
+      id: 2026-05-28-oprm-estabelecimento-cnae-raiz-is-simples
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_estabelecimento_cnae_raiz
+        - not:
+            - columnExists:
+                tableName: oprm_estabelecimento_cnae_raiz
+                columnName: is_simples
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_estabelecimento_cnae_raiz
+                ADD COLUMN is_simples TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Marca se o estabelecimento consta como Simples Nacional na fonte de ingestao.';

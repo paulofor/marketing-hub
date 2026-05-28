@@ -1,7 +1,7 @@
 package com.marketinghub.worker.geralanding.copy;
 
 import com.marketinghub.worker.geralanding.copy.GeraLandingExecutionService;
-import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto;
+import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ public class GeraLandingCopyExecutionService {
     }
 
     /** Processa os jobs pendentes da etapa copy. */
-    public void processExecutions(List<GeraLandingStageExecutionDto> jobs) {
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) {
         executionService.processExecutions(jobs);
     }
 }

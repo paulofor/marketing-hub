@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
-import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionPresetDesignDto;
+import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.presetdesign.request.GeraLandingPresetDesignOpenAiExecutionService;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -11,5 +11,5 @@ public class GeraLandingPresetDesignExecutionService {
     private final GeraLandingPresetDesignOpenAiExecutionService executionService;
     public GeraLandingPresetDesignExecutionService(GeraLandingPresetDesignOpenAiExecutionService executionService) { this.executionService = executionService; }
     /** Processa os jobs pendentes da etapa preset design. */
-    public void processExecutions(List<GeraLandingStageExecutionPresetDesignDto> jobs) { executionService.processExecutions(jobs); }
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) { executionService.processExecutions(jobs); }
 }

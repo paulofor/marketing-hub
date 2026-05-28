@@ -1,7 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe.backend;
 
 import com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload;
-import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -16,9 +15,9 @@ public class GeraLandingWireframeBackendClient {
     }
 
     /** Lista execuções pendentes convertendo para o DTO específico da etapa wireframe. */
-    public List<GeraLandingStageExecutionWireframeDto> listPendingExecutions(int limit) {
+    public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
         return backendClient.listPendingExecutions(limit).stream()
-                .map(item -> new GeraLandingStageExecutionWireframeDto(item.experimentId(), item.idJob(), item.stageCode()))
+                .map(item -> new GeraLandingStageExecutionDetailDto(item.experimentId(), item.stageCode(), item.idJob(), item.status(), item.executionRequestedAt(), item.processingStartedAt(), item.completedAt(), item.openAiJobId()))
                 .toList();
     }
 

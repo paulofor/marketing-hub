@@ -5,7 +5,7 @@ import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingDeliverablesBackendClient;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingExperimentDeliverablesRequest;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload;
-import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDeliverablesDto;
+import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.deliverables.RecebeResponse;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +28,9 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
         this.backendClient = backendClient; this.openAiClient = openAiClient; this.montaRequest = montaRequest; this.recebeResponse = recebeResponse;
     }
     /** Processa os jobs pendentes da etapa deliverables. */
-    public void processExecutions(List<GeraLandingStageExecutionDeliverablesDto> jobs) { if (!openAiClient.isEnabled()) return; for (GeraLandingStageExecutionDeliverablesDto e : jobs) processExecution(e); }
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) { if (!openAiClient.isEnabled()) return; for (GeraLandingStageExecutionDetailDto e : jobs) processExecution(e); }
     /** Processa um job individual da etapa deliverables. */
-    public void processExecution(GeraLandingStageExecutionDeliverablesDto execution) {
+    public void processExecution(GeraLandingStageExecutionDetailDto execution) {
         if (execution == null || !StringUtils.hasText(execution.idJob())) return;
         try {
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());

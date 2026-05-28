@@ -1,6 +1,5 @@
 package com.marketinghub.worker.geralanding.presetdesign;
 
-import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionPresetDesignDto;
 import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import java.util.Locale;
@@ -14,13 +13,13 @@ public class PresetDesignPendingJobsService {
     private final GeraLandingPresetDesignBackendClient backendClient;
     public PresetDesignPendingJobsService(GeraLandingPresetDesignBackendClient backendClient) { this.backendClient = backendClient; }
     /** Lista jobs pendentes de preset-design validados no endpoint da etapa. */
-    public List<GeraLandingStageExecutionPresetDesignDto> listPendingPresetDesignJobs(int limit) {
+    public List<GeraLandingStageExecutionDetailDto> listPendingPresetDesignJobs(int limit) {
         return backendClient.listPendingExecutions(limit).stream().filter(this::isStage).filter(this::isPending).toList();
     }
     /** Valida se a execução pertence à etapa preset-design. */
-    private boolean isStage(GeraLandingStageExecutionPresetDesignDto execution) { return execution != null && StringUtils.hasText(execution.stageCode()) && STAGE_CODE.equals(execution.stageCode().trim().toLowerCase(Locale.ROOT)); }
+    private boolean isStage(GeraLandingStageExecutionDetailDto execution) { return execution != null && StringUtils.hasText(execution.stageCode()) && STAGE_CODE.equals(execution.stageCode().trim().toLowerCase(Locale.ROOT)); }
     /** Confirma via endpoint designpreset.web que o job segue em INICIADO. */
-    private boolean isPending(GeraLandingStageExecutionPresetDesignDto execution) {
+    private boolean isPending(GeraLandingStageExecutionDetailDto execution) {
         if (execution == null || execution.experimentId() == null || !StringUtils.hasText(execution.idJob())) return false;
         GeraLandingStageExecutionDetailDto d = backendClient.fetchStageExecutionDetail(execution.experimentId(), execution.idJob());
         return d != null && "INICIADO".equalsIgnoreCase(d.status());

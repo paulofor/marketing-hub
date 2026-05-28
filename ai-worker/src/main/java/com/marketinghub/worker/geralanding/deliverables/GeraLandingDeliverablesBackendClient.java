@@ -1,7 +1,6 @@
 package com.marketinghub.worker.geralanding.deliverables;
 
 import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto;
-import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDeliverablesDto;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -15,8 +14,8 @@ public class GeraLandingDeliverablesBackendClient {
     }
 
     /** Lista execuções pendentes convertendo para o DTO específico da etapa. */
-    public List<GeraLandingStageExecutionDeliverablesDto> listPendingExecutions(int limit) {
-        return backendClient.listPendingExecutions(limit).stream().map(GeraLandingStageExecutionDeliverablesDto::fromBase).toList();
+    public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
+        return backendClient.listPendingExecutions(limit).stream().map(item -> new GeraLandingStageExecutionDetailDto(item.experimentId(), item.stageCode(), item.idJob(), item.status(), item.executionRequestedAt(), item.processingStartedAt(), item.completedAt(), item.openAiJobId())).toList();
     }
 
     /** Envia resultado da etapa para o backend principal com mapeamento para payload base. */

@@ -1,5 +1,6 @@
 package com.marketinghub.geralanding.wireframe.service;
 
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
@@ -73,8 +74,27 @@ public class GeraLandingWireframeStageExecutionService {
                 .map(execution -> new RecordWireframePending(
                         execution.getExperimentId(),
                         fromDatabaseIdJob(execution.getIdJob()),
-                        execution.getStageCode()))
+                        execution.getStageCode(),
+                        toPendingExperiment(execution.getExperiment())))
                 .toList();
+    }
+
+    /** Converte o experimento da execução para o resumo mínimo exposto na fila pending. */
+    private RecordWireframeExperiment toPendingExperiment(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        return new RecordWireframeExperiment(
+                experiment.getId(),
+                experiment.getName(),
+                experiment.getHypothesis(),
+                enumValueToText(experiment.getStatus()),
+                enumValueToText(experiment.getStage()));
+    }
+
+    /** Converte um enum de experimento para texto sem acoplar o serviço às classes concretas do enum. */
+    private String enumValueToText(Object value) {
+        return value != null ? String.valueOf(value) : null;
     }
 
     @Transactional(readOnly = true)

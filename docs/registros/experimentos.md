@@ -2189,3 +2189,13 @@
   - `find docs/canonical -type f` para confirmar que o único Swagger canônico YAML é `docs/canonical/geralanding-backend-swagger.v1.yaml`;
   - `rg`/script Python sobre `ai-worker/src/main/java/com/marketinghub/worker/geralanding` para enumerar chamadas HTTP montadas com `UrlUtils.joinPath` e `.uri(...)`;
   - `rg` nos controllers do backend em `backend/ads-service/src/main/java/com/marketinghub/geralanding` para comparar os endpoints expostos pelo pacote `com.marketinghub.geralanding` com o Swagger.
+
+## 2026-05-28 19:10:00 UTC
+- solicitação: ajustar o Worker AI para buscar pendências de `landing-page-wireframe` usando a URL realmente exposta pelo backend atual.
+- causa-raiz identificada: `GeraLandingWireframeBackendClient.listPendingExecutions(...)` chamava `/api/internal/geralanding/wireframe/stage-executions/pending`, endpoint inexistente no backend; o controller atual expõe a listagem por experimento em `/api/experiments/{experimentId}/geralanding/wireframe/stage-executions?includeCompleted=false`.
+- correção aplicada:
+  - o client de wireframe passou a listar experimentos via `/api/experiments` e, para cada experimento, consultar a URL correta de execuções abertas de wireframe por experimento;
+  - os resumos retornados pelo backend são convertidos para `GeraLandingStageExecutionDetailDto` com `experimentId` e `stageCode` preenchidos para manter o fluxo do scheduler;
+  - adicionado teste unitário garantindo que o client chama `/api/experiments/{experimentId}/geralanding/wireframe/stage-executions?includeCompleted=false`.
+- validação executada:
+  - `mvn -q -Dtest=GeraLandingWireframeBackendClientTest test` em `ai-worker/` (bloqueado por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

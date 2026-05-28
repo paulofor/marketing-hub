@@ -30,6 +30,16 @@ public class GeraLandingPresetDesignBackendClient {
         backendClient.receiveDispatch(idJob, experimentId, stageCode, openAiJobId);
     }
 
+
+    /** Carrega os dados de prompt necessários para execução da etapa. */
+    public java.util.Map<String, Object> loadPromptData(Long experimentId) {
+        return backendClient.loadPromptData(experimentId);
+    }
+
+    /** Encaminha falha de execução da etapa para o backend principal. */
+    public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
+        backendClient.receiveFailure(idJob, experimentId, stageCode, errorMessage, errorDetail);
+    }
     /** Busca os detalhes de execução da etapa no backend. */
     public GeraLandingStageExecutionDetailDto fetchStageExecutionDetail(Long experimentId, String idJob) {
         return backendClient.fetchDesignPresetStageExecutionDetail(experimentId, idJob);

@@ -22,6 +22,16 @@ public class GeraLandingWireframeBackendClient {
                 .toList();
     }
 
+
+    /** Carrega os dados de prompt necessários para execução da etapa. */
+    public java.util.Map<String, Object> loadPromptData(Long experimentId) {
+        return backendClient.loadPromptData(experimentId);
+    }
+
+    /** Encaminha falha de execução da etapa para o backend principal. */
+    public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
+        backendClient.receiveFailure(idJob, experimentId, stageCode, errorMessage, errorDetail);
+    }
     /** Busca os detalhes de execução da etapa wireframe no backend. */
     public void receiveDispatch(String idJob, Long experimentId, String stageCode, String openAiJobId) {
         backendClient.receiveDispatch(idJob, experimentId, stageCode, openAiJobId);

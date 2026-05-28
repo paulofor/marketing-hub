@@ -1,6 +1,6 @@
-package com.marketinghub.worker.geralanding.copy;
+package com.marketinghub.worker.geralanding.copy.response;
 
-import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
+import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

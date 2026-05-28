@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
+import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Disabled;

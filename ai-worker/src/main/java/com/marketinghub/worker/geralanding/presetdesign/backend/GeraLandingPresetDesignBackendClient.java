@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 /** Encapsula o acesso ao backend para operações da etapa presetdesign. */
 @Component
 public class GeraLandingPresetDesignBackendClient {
-    private final com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient backendClient;
+    private final com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient backendClient;
 
-    public GeraLandingPresetDesignBackendClient(com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient backendClient) {
+    public GeraLandingPresetDesignBackendClient(com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 

@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 /** Encapsula o acesso ao backend para operações da etapa imageplanning. */
 @Component
 public class GeraLandingImagePlanningBackendClient {
-    private final com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient backendClient;
+    private final com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient backendClient;
 
-    public GeraLandingImagePlanningBackendClient(com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient backendClient) {
+    public GeraLandingImagePlanningBackendClient(com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 

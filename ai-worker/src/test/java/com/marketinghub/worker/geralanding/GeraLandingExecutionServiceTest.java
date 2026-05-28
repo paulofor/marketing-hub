@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
+import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver;
 import com.marketinghub.worker.geralanding.wireframe.openai.MontaRequest;
 import java.math.BigDecimal;
@@ -29,8 +29,8 @@ class GeraLandingExecutionServiceTest {
         ObjectMapper objectMapper = new ObjectMapper();
         GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
         MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
-        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.request.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.request.MontaRequest.class);
         com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
         com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
@@ -39,8 +39,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
         com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse wireframeRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.response.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
         com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
@@ -134,8 +134,8 @@ class GeraLandingExecutionServiceTest {
         ObjectMapper objectMapper = new ObjectMapper();
         GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
         MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
-        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.request.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.request.MontaRequest.class);
         com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
         com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
@@ -144,8 +144,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
         com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse wireframeRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.response.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
         com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
@@ -218,8 +218,8 @@ class GeraLandingExecutionServiceTest {
         ObjectMapper objectMapper = new ObjectMapper();
         GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
         MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
-        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.request.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.request.MontaRequest.class);
         com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
         com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
@@ -228,8 +228,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
         com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse wireframeRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.response.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
         com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
@@ -324,8 +324,8 @@ class GeraLandingExecutionServiceTest {
         ObjectMapper objectMapper = new ObjectMapper();
         GeraLandingStageSchemaResolver stageSchemaResolver = Mockito.mock(GeraLandingStageSchemaResolver.class);
         MontaRequest wireframeMontaRequest = Mockito.mock(MontaRequest.class);
-        com.marketinghub.worker.geralanding.copy.MontaRequest copyMontaRequest =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.MontaRequest.class);
+        com.marketinghub.worker.geralanding.copy.request.MontaRequest copyMontaRequest =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.request.MontaRequest.class);
         com.marketinghub.worker.geralanding.imageplanning.MontaRequest imagePlanningMontaRequest =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.MontaRequest.class);
         com.marketinghub.worker.geralanding.presetdesign.MontaRequest presetDesignMontaRequest =
@@ -334,8 +334,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.MontaRequest.class);
         com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse wireframeRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.wireframe.callback.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.copy.RecebeResponse copyRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.copy.response.RecebeResponse copyRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.copy.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
         com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =

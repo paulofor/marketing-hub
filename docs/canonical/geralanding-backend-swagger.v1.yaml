@@ -7,14 +7,15 @@ info:
     `com.marketinghub.geralanding`, organizados por etapa operacional do GeraLanding.
 
     Fonte de verdade revisada em código:
-    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/GeraLandingWireframeController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/web/GeraLandingCopyController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/web/GeraLandingDesignPresetController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java`
 
-    Todos os endpoints listados abaixo ficam sob o escopo de um experimento e usam o prefixo
-    `/api/experiments/{experimentId}/geralanding`.
+    Os endpoints públicos de acompanhamento ficam sob o escopo de um experimento e usam o prefixo
+    `/api/experiments/{experimentId}/geralanding`. Endpoints internos de fila por etapa usam
+    o prefixo `/api/internal/geralanding/<etapa>`.
 servers:
   - url: http://191.252.181.168
     description: Backend principal para acessos executados pelo Codex
@@ -87,6 +88,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StageExecutionDetail'
+  /api/internal/geralanding/wireframe/stage-executions/pending:
+    get:
+      tags:
+        - landing-page-wireframe
+      summary: Lista jobs pendentes internos da etapa landing-page-wireframe.
+      description: Retorna jobs de wireframe com status INICIADO, independente de experimento, para processamento pelo Worker AI.
+      operationId: pendingGeraLandingWireframeExecutions
+      responses:
+        '200':
+          description: Lista de jobs pendentes da etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingStageExecution'
   /api/experiments/{experimentId}/geralanding/copy/start:
     post:
       tags:
@@ -344,6 +361,21 @@ components:
           description: Identificador do job criado para a etapa.
         status:
           $ref: '#/components/schemas/StageStatus'
+    PendingStageExecution:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        idJob:
+          type: string
+        stageCode:
+          type: string
+      required:
+        - experimentId
+        - idJob
+        - stageCode
     StageExecutionSummary:
       type: object
       required:

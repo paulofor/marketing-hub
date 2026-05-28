@@ -2199,3 +2199,14 @@
   - adicionado teste unitário garantindo que o client chama `/api/experiments/{experimentId}/geralanding/wireframe/stage-executions?includeCompleted=false`.
 - validação executada:
   - `mvn -q -Dtest=GeraLandingWireframeBackendClientTest test` em `ai-worker/` (bloqueado por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 21:30:00 UTC
+- solicitação: criar endpoint interno global de pendências para a etapa wireframe do GeraLanding e reforçar a arquitetura por etapa.
+- causa-raiz tratada: a etapa wireframe precisava de uma fila independente de experimento para o Worker AI consultar apenas jobs com status `INICIADO`, evitando varredura por experimento como substituto operacional.
+- correção aplicada:
+  - renomeado o controller Java de wireframe para `BackendWireframeController`;
+  - criado o endpoint `GET /api/internal/geralanding/wireframe/stage-executions/pending` no método `pending`;
+  - adicionada consulta por `stageCode` + status `INICIADO` no repositório e no serviço da etapa wireframe;
+  - registrado o padrão em `docs/canonical/arquitetura-etapas.md` e no Swagger canônico do GeraLanding;
+  - criada regra ArchUnit para exigir método `pending` em classes `Backend<Etapa>Controller` do GeraLanding;
+  - adicionados testes unitários do controller e serviço de wireframe.

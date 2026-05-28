@@ -1,6 +1,7 @@
 package com.marketinghub.geralanding.wireframe.web;
 
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframePendingExecutionResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionDetailResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
@@ -14,29 +15,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por iniciar a etapa landing-page-wireframe no GeraLanding e expor consultas das execuções da etapa. */
+/** Responsável por expor os endpoints de backend da etapa landing-page-wireframe no GeraLanding. */
 @RestController
-@RequestMapping("/api/experiments/{experimentId}/geralanding")
-public class GeraLandingWireframeController {
+@RequestMapping("/api")
+public class BackendWireframeController {
   private static final String STAGE_CODE = "landing-page-wireframe";
 
   private final GeraLandingWireframeStageService stageService;
   private final GeraLandingWireframeStageExecutionService executionService;
 
-  public GeraLandingWireframeController(GeraLandingWireframeStageService stageService, GeraLandingWireframeStageExecutionService executionService) {
+  /** Inicializa o controller com os serviços da etapa wireframe. */
+  public BackendWireframeController(
+      GeraLandingWireframeStageService stageService,
+      GeraLandingWireframeStageExecutionService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }
 
   /** Registra uma execução inicial da etapa landing-page-wireframe. */
-  @PostMapping("/wireframe/start")
+  @PostMapping("/experiments/{experimentId}/geralanding/wireframe/start")
   public ResponseEntity<GeraLandingWireframeStartResponse> start(@PathVariable Long experimentId) {
     GeraLandingWireframeStartResponse response = stageService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
 
   /** Lista as execuções da etapa para o experimento. */
-  @GetMapping("/wireframe/stage-executions")
+  @GetMapping("/experiments/{experimentId}/geralanding/wireframe/stage-executions")
   public ResponseEntity<List<GeraLandingWireframeExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
       @RequestParam(defaultValue = "true") boolean includeCompleted) {
@@ -45,8 +49,16 @@ public class GeraLandingWireframeController {
     return ResponseEntity.ok(response);
   }
 
+  /** Lista os jobs pendentes iniciados da etapa wireframe para processamento pelo Worker AI. */
+  @GetMapping("/internal/geralanding/wireframe/stage-executions/pending")
+  public ResponseEntity<List<GeraLandingWireframePendingExecutionResponse>> pending() {
+    List<GeraLandingWireframePendingExecutionResponse> response =
+        executionService.listPending(STAGE_CODE);
+    return ResponseEntity.ok(response);
+  }
+
   /** Retorna os detalhes de uma execução específica da etapa. */
-  @GetMapping("/wireframe/stage-executions/{idJob}")
+  @GetMapping("/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}")
   public ResponseEntity<GeraLandingWireframeStageExecutionDetailResponse> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
     GeraLandingWireframeStageExecutionDetailResponse response =

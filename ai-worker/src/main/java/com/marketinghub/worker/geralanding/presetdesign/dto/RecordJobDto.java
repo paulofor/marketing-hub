@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /** Responsabilidade: representar os dados do job OpenAI da etapa presetdesign. */
-public record GeraLandingJobDto(
+public record RecordJobDto(
         UUID id,
         Long experimentId,
         String section,

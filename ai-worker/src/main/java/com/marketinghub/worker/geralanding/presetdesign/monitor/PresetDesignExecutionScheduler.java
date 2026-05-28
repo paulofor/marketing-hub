@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.presetdesign;
+package com.marketinghub.worker.geralanding.presetdesign.monitor;
 
 
 
@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 public class PresetDesignExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(PresetDesignExecutionScheduler.class);
 
-    private final GeraLandingPresetDesignExecutionService executionService;
+    private final PresetDesignExecutionProcessor processor;
     private final PresetDesignPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public PresetDesignExecutionScheduler(GeraLandingPresetDesignExecutionService executionService,
+    public PresetDesignExecutionScheduler(PresetDesignExecutionProcessor processor,
                                           PresetDesignPendingJobsService pendingJobsService,
                                           @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
-        this.executionService = executionService;
+        this.processor = processor;
         this.pendingJobsService = pendingJobsService;
         this.pendingLimit = Math.max(1, pendingLimit);
     }
@@ -30,7 +30,7 @@ public class PresetDesignExecutionScheduler {
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {
-            executionService.processExecutions(pendingJobsService.listPendingPresetDesignJobs(pendingLimit));
+            processor.processExecutions(pendingJobsService.listPendingPresetDesignJobs(pendingLimit));
         } catch (Exception ex) {
             log.error("PresetDesignExecutionScheduler cycle failed", ex);
             throw ex;

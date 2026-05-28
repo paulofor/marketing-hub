@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.deliverables;
+package com.marketinghub.worker.geralanding.deliverables.monitor;
 
 
 
@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 public class DeliverablesExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(DeliverablesExecutionScheduler.class);
 
-    private final GeraLandingDeliverablesExecutionService executionService;
+    private final DeliverablesExecutionProcessor processor;
     private final DeliverablesPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public DeliverablesExecutionScheduler(GeraLandingDeliverablesExecutionService executionService,
+    public DeliverablesExecutionScheduler(DeliverablesExecutionProcessor processor,
                                           DeliverablesPendingJobsService pendingJobsService,
                                           @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
-        this.executionService = executionService;
+        this.processor = processor;
         this.pendingJobsService = pendingJobsService;
         this.pendingLimit = Math.max(1, pendingLimit);
     }
@@ -30,7 +30,7 @@ public class DeliverablesExecutionScheduler {
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {
-            executionService.processExecutions(pendingJobsService.listPendingDeliverablesJobs(pendingLimit));
+            processor.processExecutions(pendingJobsService.listPendingDeliverablesJobs(pendingLimit));
         } catch (Exception ex) {
             log.error("DeliverablesExecutionScheduler cycle failed", ex);
             throw ex;

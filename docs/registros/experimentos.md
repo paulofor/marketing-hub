@@ -2037,3 +2037,24 @@
   - atualizadas importações e referências em `GeraLandingExecutionService`, `GeraLandingCopyBackendClient` e `GeraLandingExecutionServiceTest` para os novos pacotes.
 - validação executada:
   - `mvn -q -Dtest=GeraLandingExecutionServiceTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 14:20:00 UTC
+- solicitação: remover classes adaptadoras `GeraLandingExecution<Etapa>Service` com pouca responsabilidade no fluxo monitorado de etapas, mantendo somente agendador, polling de pendências e processor no pacote `geralanding.<etapa>.monitor`.
+- causa-raiz identificada: a etapa `wireframe` mantinha duas camadas de delegação para execução (`GeraLandingExecutionWireframeService` e `GeraLandingWireframeExecutionService`) sem ganho funcional, aumentando acoplamento e ruído arquitetural.
+- correção aplicada:
+  - removidas as classes `GeraLandingExecutionWireframeService` e `GeraLandingWireframeExecutionService` do pacote `geralanding.wireframe.monitor`;
+  - criado `WireframeExecutionProcessor` para concentrar o processamento da lista retornada pelo polling;
+  - atualizado `WireframeExecutionScheduler` para orquestrar apenas `WireframePendingJobsService` + `WireframeExecutionProcessor`.
+- validação executada:
+  - `mvn -q -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 15:05:00 UTC
+- solicitação: aplicar o mesmo padrão do wireframe para as demais etapas, mantendo em `geralanding.<etapa>.monitor` apenas 3 papéis (scheduler, pending jobs e processor).
+- causa-raiz identificada: as etapas `copy`, `imageplanning`, `presetdesign` e `deliverables` ainda mantinham classes `GeraLanding<Etapa>ExecutionService` apenas como camada adaptadora, sem responsabilidade adicional.
+- correção aplicada:
+  - movidos schedulers e serviços de pendências para os pacotes `monitor` de cada etapa;
+  - criados processors dedicados por etapa (`CopyExecutionProcessor`, `ImagePlanningExecutionProcessor`, `PresetDesignExecutionProcessor`, `DeliverablesExecutionProcessor`);
+  - removidas classes adaptadoras `GeraLandingCopyExecutionService`, `GeraLandingImagePlanningExecutionService`, `GeraLandingPresetDesignExecutionService` e `GeraLandingDeliverablesExecutionService`;
+  - atualizado cada scheduler para orquestrar apenas `PendingJobsService` + `ExecutionProcessor` da própria etapa.
+- validação executada:
+  - `mvn -q -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

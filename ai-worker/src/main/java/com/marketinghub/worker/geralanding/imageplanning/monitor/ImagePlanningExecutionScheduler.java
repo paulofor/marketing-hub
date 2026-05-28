@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.imageplanning;
+package com.marketinghub.worker.geralanding.imageplanning.monitor;
 
 
 
@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 public class ImagePlanningExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(ImagePlanningExecutionScheduler.class);
 
-    private final GeraLandingImagePlanningExecutionService executionService;
+    private final ImagePlanningExecutionProcessor processor;
     private final ImagePlanningPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
-    public ImagePlanningExecutionScheduler(GeraLandingImagePlanningExecutionService executionService,
+    public ImagePlanningExecutionScheduler(ImagePlanningExecutionProcessor processor,
                                            ImagePlanningPendingJobsService pendingJobsService,
                                            @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
-        this.executionService = executionService;
+        this.processor = processor;
         this.pendingJobsService = pendingJobsService;
         this.pendingLimit = Math.max(1, pendingLimit);
     }
@@ -30,7 +30,7 @@ public class ImagePlanningExecutionScheduler {
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {
-            executionService.processExecutions(pendingJobsService.listPendingImagePlanningJobs(pendingLimit));
+            processor.processExecutions(pendingJobsService.listPendingImagePlanningJobs(pendingLimit));
         } catch (Exception ex) {
             log.error("ImagePlanningExecutionScheduler cycle failed", ex);
             throw ex;

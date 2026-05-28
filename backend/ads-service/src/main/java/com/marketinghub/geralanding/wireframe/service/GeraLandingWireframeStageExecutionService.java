@@ -20,6 +20,7 @@ public class GeraLandingWireframeStageExecutionService {
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
 
+    /** Inicializa o serviço com os repositórios necessários para consultar execuções de wireframe. */
     public GeraLandingWireframeStageExecutionService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository) {
@@ -61,6 +62,18 @@ public class GeraLandingWireframeStageExecutionService {
                         STATUS_COMPLETED);
         return executions.stream()
                 .map(this::toSummaryResponse)
+                .toList();
+    }
+
+    /** Lista os jobs iniciados da etapa wireframe para processamento independente de experimento. */
+    @Transactional(readOnly = true)
+    public List<GeraLandingWireframePendingExecutionResponse> listPending(String stageCode) {
+        return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
+                .stream()
+                .map(execution -> new GeraLandingWireframePendingExecutionResponse(
+                        execution.getExperimentId(),
+                        fromDatabaseIdJob(execution.getIdJob()),
+                        execution.getStageCode()))
                 .toList();
     }
 

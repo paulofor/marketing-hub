@@ -88,6 +88,13 @@ class ArquiteturaTest {
                     .because("[ARQUITETURA][BACKEND][GeraLanding] serviços em geralanding.*.service só podem acessar classes permitidas dentro de com.marketinghub");
 
     @ArchTest
+    static final ArchRule backendStageControllersMustExposePendingMethod =
+            classes().that().resideInAPackage("com.marketinghub.geralanding.*.web..")
+                    .and().haveNameMatching(".*\\.Backend[A-Za-z0-9]+Controller")
+                    .should(havePendingMethod())
+                    .because("[ARQUITETURA] [BACKEND][GeraLanding] toda classe Backend<etapa>Controller deve expor o método pending para a fila interna da etapa");
+
+    @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
             classes().that(classesBelongingToLayer("web")).should(onlyDependOnLayer("service"));
 
@@ -205,6 +212,24 @@ class ArquiteturaTest {
             public boolean test(JavaClass input) {
                 String packageName = input.getPackageName();
                 return packageName.startsWith("com.marketinghub") && !packageName.startsWith(allowedPackagePrefix);
+            }
+        };
+    }
+
+    /**
+     * Garante que controllers internos por etapa exponham o método pending.
+     */
+    private static ArchCondition<JavaClass> havePendingMethod() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][GeraLanding] Backend<etapa>Controller has pending method") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                boolean hasPending = item.getMethods().stream()
+                        .anyMatch(method -> method.getName().equals("pending"));
+                if (!hasPending) {
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
+                            + " deve declarar método pending para expor a fila interna da etapa";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
             }
         };
     }

@@ -34,7 +34,7 @@ class GeraLandingWireframeStageExecutionServiceTest {
                 "landing-page-wireframe", "INICIADO"))
                 .thenReturn(List.of(execution));
 
-        List<GeraLandingWireframePendingExecutionResponse> response = service.listPending("landing-page-wireframe");
+        List<RecordWireframePending> response = service.listPending("landing-page-wireframe");
 
         assertEquals(1, response.size());
         assertEquals(77L, response.get(0).experimentId());

@@ -7,12 +7,16 @@ import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAsse
 import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,8 +95,8 @@ class ArquiteturaTest {
     static final ArchRule backendStageControllersMustExposePendingMethod =
             classes().that().resideInAPackage("com.marketinghub.geralanding.*.web..")
                     .and().haveNameMatching(".*\\.Backend[A-Za-z0-9]+Controller")
-                    .should(havePendingMethod())
-                    .because("[ARQUITETURA] [BACKEND][GeraLanding] toda classe Backend<etapa>Controller deve expor o método pending para a fila interna da etapa");
+                    .should(havePendingMethodReturningStagePendingRecord())
+                    .because("[ARQUITETURA] [BACKEND][GeraLanding] toda classe Backend<Etapa>Controller deve expor pending retornando List<Record<Etapa>Pending> para a fila interna da etapa");
 
     @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
@@ -217,21 +221,65 @@ class ArquiteturaTest {
     }
 
     /**
-     * Garante que controllers internos por etapa exponham o método pending.
+     * Garante que controllers internos por etapa exponham pending com o record canônico da etapa.
      */
-    private static ArchCondition<JavaClass> havePendingMethod() {
-        return new ArchCondition<>("[ARQUITETURA] [BACKEND][GeraLanding] Backend<etapa>Controller has pending method") {
+    private static ArchCondition<JavaClass> havePendingMethodReturningStagePendingRecord() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][GeraLanding] Backend<Etapa>Controller.pending returns List<Record<Etapa>Pending>") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
-                boolean hasPending = item.getMethods().stream()
-                        .anyMatch(method -> method.getName().equals("pending"));
-                if (!hasPending) {
+                Optional<JavaMethod> pendingMethod = item.getMethods().stream()
+                        .filter(method -> method.getName().equals("pending"))
+                        .findFirst();
+                if (pendingMethod.isEmpty()) {
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
                             + " deve declarar método pending para expor a fila interna da etapa";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                    return;
+                }
+
+                String stageName = extractBackendStageName(item);
+                String expectedRecordName = "Record" + stageName + "Pending";
+                Type returnType = pendingMethod.get().reflect().getGenericReturnType();
+                boolean validReturnType = isListOfExpectedRecord(returnType, expectedRecordName);
+                if (!validReturnType) {
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
+                            + " método=pending deve retornar List<" + expectedRecordName + ">"
+                            + " conforme o padrão Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>"
+                            + "; retorno atual=" + returnType.getTypeName();
                     events.add(SimpleConditionEvent.violated(item, message));
                 }
             }
         };
+    }
+
+    /**
+     * Extrai o nome da etapa do controller Backend<Etapa>Controller.
+     */
+    private static String extractBackendStageName(JavaClass item) {
+        Matcher matcher = Pattern.compile("^Backend([A-Za-z0-9]+)Controller$").matcher(item.getSimpleName());
+        if (matcher.matches()) {
+            return matcher.group(1);
+        }
+        return "";
+    }
+
+    /**
+     * Verifica se o tipo de retorno é exatamente List<Record<Etapa>Pending>.
+     */
+    private static boolean isListOfExpectedRecord(Type returnType, String expectedRecordName) {
+        if (!(returnType instanceof ParameterizedType parameterizedType)) {
+            return false;
+        }
+        if (!List.class.equals(parameterizedType.getRawType())) {
+            return false;
+        }
+        Type[] typeArguments = parameterizedType.getActualTypeArguments();
+        if (typeArguments.length != 1) {
+            return false;
+        }
+        String actualTypeName = typeArguments[0].getTypeName();
+        return actualTypeName.endsWith("." + expectedRecordName);
     }
 
     /**

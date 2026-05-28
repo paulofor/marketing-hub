@@ -2210,3 +2210,10 @@
   - registrado o padrão em `docs/canonical/arquitetura-etapas.md` e no Swagger canônico do GeraLanding;
   - criada regra ArchUnit para exigir método `pending` em classes `Backend<Etapa>Controller` do GeraLanding;
   - adicionados testes unitários do controller e serviço de wireframe.
+
+## 2026-05-28 — Padronização de retorno pending por etapa
+
+- Renomeado o record de pendência da etapa wireframe para `RecordWireframePending`.
+- Ajustado `BackendWireframeController.pending` para retornar diretamente `List<RecordWireframePending>`.
+- Registrada no cânone de arquitetura por etapa a regra `Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>`.
+- Atualizado `ArquiteturaTest` para validar o contrato genérico do método `pending` por etapa.

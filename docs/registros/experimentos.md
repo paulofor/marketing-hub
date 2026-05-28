@@ -2099,3 +2099,12 @@
   - atualizados imports/referências em `GeraLandingImagePlanningOpenAiExecutionService` e `ImagePlanningPendingJobsService`.
 - validação executada:
   - `mvn -q -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 18:20:00 UTC
+- solicitação: retirar o ponto final da regra ArchUnit de `geralanding.wireframe` para corrigir falso-positivo.
+- causa-raiz identificada: a checagem permitia apenas pacote `geralanding.comum.` (com subpacote), mas a classe alvo estava no pacote exato `geralanding.comum`.
+- correção aplicada:
+  - ajustada a condição `targetPackage.contains(".geralanding.comum.")` para `targetPackage.contains(".geralanding.comum")` em `ArquiteturaTest`.
+- validação executada:
+  - inspeção estática da regra alterada com `nl -ba` para confirmar remoção do ponto final no matcher.
+  - execução de `mvn -q -Dtest=com.marketinghub.worker.geralanding.ArquiteturaTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

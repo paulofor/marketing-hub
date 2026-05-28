@@ -122,7 +122,7 @@ class ArquiteturaTest {
 
                     String targetPackage = dependency.getTargetClass().getPackageName();
                     boolean valid = targetPackage.contains(".geralanding." + ownSubpackage + ".")
-                            || targetPackage.contains(".geralanding.comum.");
+                            || targetPackage.contains(".geralanding.comum");
                     if (!valid) {
                         String message = "[ARQUITETURA] classe-origem=" + item.getName()
                                 + " possui dependência violadora: " + dependency.getDescription()

@@ -1,9 +1,8 @@
 package com.marketinghub.worker.geralanding.copy;
 
-import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto;
+import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.util.UrlUtils;
 import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
-import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -34,17 +33,17 @@ public class GeraLandingCopyBackendClient {
         this.apiPrefix = apiPrefix;
     }
 
-    public List<GeraLandingStageExecutionDto> listPendingExecutions(int limit) {
+    public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/pending");
         String uri = url + "?limit=" + Math.max(1, limit);
         log.info("Fetching pending gera-landing stage executions from {}", uri);
-        List<GeraLandingStageExecutionDto> payload = webClient.get()
+        List<GeraLandingStageExecutionDetailDto> payload = webClient.get()
                 .uri(uri)
                 .exchangeToFlux(response -> handleListResponse(uri, response.statusCode(), response))
                 .collectList()
                 .doOnError(err -> log.error("Failed to fetch pending gera-landing stage executions from {}", uri, err))
                 .block();
-        List<GeraLandingStageExecutionDto> result = payload != null ? payload : List.of();
+        List<GeraLandingStageExecutionDetailDto> result = payload != null ? payload : List.of();
         log.info("Backend returned {} pending gera-landing stage execution(s)", result.size());
         return result;
     }
@@ -291,7 +290,7 @@ public class GeraLandingCopyBackendClient {
     /**
      * Consulta o controller wireframe.web para obter os detalhes de um job específico da etapa wireframe.
      */
-    public GeraLandingStageExecutionDetailDto fetchWireframeStageExecutionDetail(Long experimentId, String idJob) {
+    public com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto fetchWireframeStageExecutionDetail(Long experimentId, String idJob) {
         String uri = UrlUtils.joinPath(
                 backendBaseUrl,
                 apiPrefix,
@@ -299,7 +298,7 @@ public class GeraLandingCopyBackendClient {
         return webClient.get()
                 .uri(uri)
                 .retrieve()
-                .bodyToMono(GeraLandingStageExecutionDetailDto.class)
+                .bodyToMono(com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto.class)
                 .onErrorReturn(null)
                 .block();
     }
@@ -330,7 +329,7 @@ public class GeraLandingCopyBackendClient {
         return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
     }
 
-    private Flux<GeraLandingStageExecutionDto> handleListResponse(String uri,
+    private Flux<GeraLandingStageExecutionDetailDto> handleListResponse(String uri,
                                                                   HttpStatusCode status,
                                                                   org.springframework.web.reactive.function.client.ClientResponse response) {
         if (status.isError()) {
@@ -339,6 +338,6 @@ public class GeraLandingCopyBackendClient {
                     .flatMapMany(body -> Mono.error(new IllegalStateException(
                             "GET %s failed with status %s: %s".formatted(uri, status, body))));
         }
-        return response.bodyToFlux(GeraLandingStageExecutionDto.class);
+        return response.bodyToFlux(GeraLandingStageExecutionDetailDto.class);
     }
 }

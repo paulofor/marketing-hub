@@ -5,7 +5,7 @@ import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingImagePlanningBackendClient;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingExperimentImagePlanningRequest;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload;
-import com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionImagePlanningDto;
+import com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.imageplanning.RecebeResponse;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +28,9 @@ public class GeraLandingImagePlanningOpenAiExecutionService {
         this.backendClient = backendClient; this.openAiClient = openAiClient; this.montaRequest = montaRequest; this.recebeResponse = recebeResponse;
     }
     /** Processa os jobs pendentes da etapa imageplanning. */
-    public void processExecutions(List<GeraLandingStageExecutionImagePlanningDto> jobs) { if (!openAiClient.isEnabled()) return; for (GeraLandingStageExecutionImagePlanningDto e : jobs) processExecution(e); }
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) { if (!openAiClient.isEnabled()) return; for (GeraLandingStageExecutionDetailDto e : jobs) processExecution(e); }
     /** Processa um job individual da etapa imageplanning. */
-    public void processExecution(GeraLandingStageExecutionImagePlanningDto execution) {
+    public void processExecution(GeraLandingStageExecutionDetailDto execution) {
         if (execution == null || !StringUtils.hasText(execution.idJob())) return;
         try {
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());

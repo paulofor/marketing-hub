@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe.monitor;
 
-import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ public class GeraLandingWireframeExecutionService {
     }
 
     /** Processa os jobs pendentes da etapa wireframe. */
-    public void processExecutions(List<GeraLandingStageExecutionWireframeDto> jobs) {
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) {
         executionService.processExecutions(jobs);
     }
 }

@@ -2,7 +2,6 @@ package com.marketinghub.worker.geralanding.copy;
 
 import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
-import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
@@ -15,15 +14,15 @@ public class CopyPendingJobsService {
     private final GeraLandingCopyBackendClient backendClient;
     public CopyPendingJobsService(GeraLandingCopyBackendClient backendClient) { this.backendClient = backendClient; }
     /** Lista jobs pendentes de copy validados no endpoint da etapa. */
-    public List<GeraLandingStageExecutionDto> listPendingCopyJobs(int limit) {
+    public List<GeraLandingStageExecutionDetailDto> listPendingCopyJobs(int limit) {
         return backendClient.listPendingExecutions(limit).stream().filter(this::isCopyStage).filter(this::isPending).toList();
     }
     /** Valida se a execução pertence à etapa copy. */
-    private boolean isCopyStage(GeraLandingStageExecutionDto execution) {
+    private boolean isCopyStage(GeraLandingStageExecutionDetailDto execution) {
         return execution != null && StringUtils.hasText(execution.stageCode()) && STAGE_CODE.equals(execution.stageCode().trim().toLowerCase(Locale.ROOT));
     }
     /** Confirma via endpoint copy.web que o job segue em INICIADO. */
-    private boolean isPending(GeraLandingStageExecutionDto execution) {
+    private boolean isPending(GeraLandingStageExecutionDetailDto execution) {
         if (execution == null || execution.experimentId() == null || !StringUtils.hasText(execution.idJob())) return false;
         GeraLandingStageExecutionDetailDto d = backendClient.fetchCopyStageExecutionDetail(execution.experimentId(), execution.idJob());
         return d != null && "INICIADO".equalsIgnoreCase(d.status());

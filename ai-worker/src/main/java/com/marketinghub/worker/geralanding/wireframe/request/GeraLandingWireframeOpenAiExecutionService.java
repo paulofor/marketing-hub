@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.wireframe.request;
 
-import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionWireframeDto;
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingWireframeBackendClient;
@@ -27,9 +27,9 @@ public class GeraLandingWireframeOpenAiExecutionService {
         this.backendClient = backendClient; this.openAiClient = openAiClient; this.montaRequest = montaRequest; this.recebeResponse = recebeResponse;
     }
     /** Processa os jobs pendentes da etapa wireframe. */
-    public void processExecutions(List<GeraLandingStageExecutionWireframeDto> jobs) { if (!openAiClient.isEnabled()) return; for (GeraLandingStageExecutionWireframeDto e: jobs) processExecution(e); }
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) { if (!openAiClient.isEnabled()) return; for (GeraLandingStageExecutionDetailDto e: jobs) processExecution(e); }
     /** Processa um job individual da etapa wireframe. */
-    public void processExecution(GeraLandingStageExecutionWireframeDto execution) {
+    public void processExecution(GeraLandingStageExecutionDetailDto execution) {
         if (execution == null || !StringUtils.hasText(execution.idJob())) return;
         try {
             Map<String,Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());

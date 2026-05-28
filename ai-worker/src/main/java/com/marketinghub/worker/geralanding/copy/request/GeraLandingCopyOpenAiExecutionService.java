@@ -5,7 +5,7 @@ import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.copy.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest;
 import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
-import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDto;
+import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.copy.RecebeResponse;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +33,13 @@ public class GeraLandingCopyOpenAiExecutionService {
     }
 
     /** Processa os jobs pendentes da etapa copy. */
-    public void processExecutions(List<GeraLandingStageExecutionDto> jobs) {
+    public void processExecutions(List<GeraLandingStageExecutionDetailDto> jobs) {
         if (!openAiClient.isEnabled()) return;
-        for (GeraLandingStageExecutionDto execution : jobs) processExecution(execution);
+        for (GeraLandingStageExecutionDetailDto execution : jobs) processExecution(execution);
     }
 
     /** Processa um job individual da etapa copy. */
-    public void processExecution(GeraLandingStageExecutionDto execution) {
+    public void processExecution(GeraLandingStageExecutionDetailDto execution) {
         if (execution == null || !StringUtils.hasText(execution.idJob())) return;
         try {
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());

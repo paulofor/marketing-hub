@@ -43,8 +43,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
@@ -148,8 +148,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
@@ -232,8 +232,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 
@@ -338,8 +338,8 @@ class GeraLandingExecutionServiceTest {
                 Mockito.mock(com.marketinghub.worker.geralanding.copy.RecebeResponse.class);
         com.marketinghub.worker.geralanding.imageplanning.RecebeResponse imagePlanningRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.imageplanning.RecebeResponse.class);
-        com.marketinghub.worker.geralanding.presetdesign.RecebeResponse presetDesignRecebeResponse =
-                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.RecebeResponse.class);
+        com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse presetDesignRecebeResponse =
+                Mockito.mock(com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse.class);
         com.marketinghub.worker.geralanding.deliverables.RecebeResponse deliverablesRecebeResponse =
                 Mockito.mock(com.marketinghub.worker.geralanding.deliverables.RecebeResponse.class);
 

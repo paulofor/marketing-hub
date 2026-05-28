@@ -1,6 +1,7 @@
-package com.marketinghub.worker.geralanding.presetdesign;
+package com.marketinghub.worker.geralanding.presetdesign.backend;
 
 import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionDetailDto;
+import com.marketinghub.worker.geralanding.presetdesign.response.RecordPresetDesignResponse;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +20,7 @@ public class GeraLandingPresetDesignBackendClient {
     }
 
     /** Envia resultado da etapa para o backend principal com mapeamento para payload base. */
-    public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionPresetDesignPayload payload) {
+    public void receiveResult(String idJob, Long experimentId, String stageCode, RecordPresetDesignResponse payload) {
         backendClient.receiveResult(idJob, experimentId, stageCode, payload);
     }
 

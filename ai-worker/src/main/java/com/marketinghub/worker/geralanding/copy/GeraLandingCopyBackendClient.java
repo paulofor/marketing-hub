@@ -216,7 +216,7 @@ public class GeraLandingCopyBackendClient {
 
     /** Recebe resultado da etapa preset design usando o payload tipado da etapa. */
     public void receiveResult(String idJob, Long experimentId, String stageCode,
-                              com.marketinghub.worker.geralanding.presetdesign.GeraLandingJobCompletionPresetDesignPayload payload) {
+                              com.marketinghub.worker.geralanding.presetdesign.response.RecordPresetDesignResponse payload) {
         receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
                 payload != null ? payload.responseContent() : null,
                 payload != null ? payload.rawResponse() : null,

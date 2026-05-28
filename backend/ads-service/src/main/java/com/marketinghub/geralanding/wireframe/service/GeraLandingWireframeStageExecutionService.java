@@ -1,13 +1,21 @@
 package com.marketinghub.geralanding.wireframe.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,17 +23,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class GeraLandingWireframeStageExecutionService {
 
+    private static final Logger log = LoggerFactory.getLogger(GeraLandingWireframeStageExecutionService.class);
+    private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
+    private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para consultar execuções de wireframe. */
     public GeraLandingWireframeStageExecutionService(
             ExperimentRepository experimentRepository,
-            GeraLandingStageExecutionRepository executionRepository) {
+            GeraLandingStageExecutionRepository executionRepository,
+            ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
+        this.objectMapper = objectMapper;
     }
 
 
@@ -73,8 +86,74 @@ public class GeraLandingWireframeStageExecutionService {
                 .map(execution -> new RecordWireframePending(
                         execution.getExperimentId(),
                         fromDatabaseIdJob(execution.getIdJob()),
-                        execution.getStageCode()))
+                        execution.getStageCode(),
+                        toPendingExperiment(execution.getExperiment()),
+                        toPendingHypothesis(execution.getExperiment())))
                 .toList();
+    }
+
+    /** Converte o experimento da execução para os dados expostos na fila pending. */
+    private RecordWireframeExperiment toPendingExperiment(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        return new RecordWireframeExperiment(
+                experiment.getId(),
+                experiment.getName(),
+                experiment.getHypothesis(),
+                enumValueToText(experiment.getStatus()),
+                enumValueToText(experiment.getStage()),
+                experiment.getCreativeTextPrompt(),
+                experiment.getCreativeImagePrompt(),
+                experiment.getCampaignAngle(),
+                experiment.getAdCopy(),
+                experiment.getAdImageBriefing(),
+                experiment.getLandingPageCopy(),
+                experiment.getLandingPageWireframe(),
+                experiment.getLandingPageImagePlanning(),
+                experiment.getLandingPageDesignPreset(),
+                experiment.getLandingPageDeliverables(),
+                experiment.getHtmlGeraLanding());
+    }
+
+    /** Converte a hipótese associada ao experimento para o framework exposto na fila pending. */
+    private RecordWireframeHypothesis toPendingHypothesis(Experiment experiment) {
+        if (experiment == null) {
+            return null;
+        }
+        return new RecordWireframeHypothesis(
+                experiment.getHypothesisRefIdForPending(),
+                experiment.getHypothesisRefTitleForPending(),
+                resolveFramework(experiment.getId(), experiment.getHypothesisFrameworkJsonForPending()));
+    }
+
+    /** Resolve o JSON do framework da hipótese como objeto estruturado com todos os blocos canônicos. */
+    private Map<String, Object> resolveFramework(Long experimentId, String frameworkJson) {
+        Map<String, Object> framework = new LinkedHashMap<>();
+        if (frameworkJson != null && !frameworkJson.isBlank()) {
+            try {
+                framework.putAll(objectMapper.readValue(frameworkJson, FRAMEWORK_TYPE));
+            } catch (JsonProcessingException ex) {
+                log.warn("Falha ao ler framework da hipótese no pending wireframe. experimentId={}", experimentId, ex);
+            }
+        }
+        ensureFrameworkSections(framework);
+        return framework;
+    }
+
+    /** Garante presença dos itens canônicos Dor, Resultado, Mecanismo, Prova, Oferta e checklist. */
+    private void ensureFrameworkSections(Map<String, Object> framework) {
+        framework.putIfAbsent("pain", new LinkedHashMap<String, Object>());
+        framework.putIfAbsent("result", new LinkedHashMap<String, Object>());
+        framework.putIfAbsent("mechanism", new LinkedHashMap<String, Object>());
+        framework.putIfAbsent("proof", new LinkedHashMap<String, Object>());
+        framework.putIfAbsent("offer", new LinkedHashMap<String, Object>());
+        framework.putIfAbsent("checklist", new LinkedHashMap<String, Object>());
+    }
+
+    /** Converte um enum de experimento para texto sem acoplar o serviço às classes concretas do enum. */
+    private String enumValueToText(Object value) {
+        return value != null ? String.valueOf(value) : null;
     }
 
     @Transactional(readOnly = true)

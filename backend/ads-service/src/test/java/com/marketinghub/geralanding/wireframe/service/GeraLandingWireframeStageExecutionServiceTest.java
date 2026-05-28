@@ -1,15 +1,21 @@
 package com.marketinghub.geralanding.wireframe.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** Valida as consultas de execução específicas da etapa wireframe. */
@@ -21,9 +27,39 @@ class GeraLandingWireframeStageExecutionServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         GeraLandingWireframeStageExecutionService service =
-                new GeraLandingWireframeStageExecutionService(experimentRepository, executionRepository);
+                new GeraLandingWireframeStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        Experiment experiment = mock(Experiment.class);
+        when(experiment.getId()).thenReturn(77L);
+        when(experiment.getName()).thenReturn("Experimento Wireframe");
+        when(experiment.getHypothesis()).thenReturn("Hipótese de valor");
+        when(experiment.getCreativeTextPrompt()).thenReturn("Prompt texto");
+        when(experiment.getCreativeImagePrompt()).thenReturn("Prompt imagem");
+        when(experiment.getCampaignAngle()).thenReturn("Ângulo campanha");
+        when(experiment.getAdCopy()).thenReturn("Copy anúncio");
+        when(experiment.getAdImageBriefing()).thenReturn("Briefing imagem");
+        when(experiment.getLandingPageCopy()).thenReturn("Copy landing");
+        when(experiment.getLandingPageWireframe()).thenReturn("Wireframe landing");
+        when(experiment.getLandingPageImagePlanning()).thenReturn("Planejamento imagem");
+        when(experiment.getLandingPageDesignPreset()).thenReturn("Preset design");
+        when(experiment.getLandingPageDeliverables()).thenReturn("Entregáveis landing");
+        when(experiment.getHtmlGeraLanding()).thenReturn("<html>GeraLanding</html>");
+        UUID hypothesisId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        when(experiment.getHypothesisRefIdForPending()).thenReturn(hypothesisId);
+        when(experiment.getHypothesisRefTitleForPending()).thenReturn("Hipótese Framework");
+        when(experiment.getHypothesisFrameworkJsonForPending()).thenReturn("""
+                {
+                  "version": "v1",
+                  "pain": {"surface": "Dor superficial", "root": "Dor raiz"},
+                  "result": {"desiredResult": "Resultado desejado"},
+                  "mechanism": {"core": "Mecanismo central"},
+                  "proof": {"type": "Prova"},
+                  "offer": {"name": "Oferta"},
+                  "checklist": {"painReady": true}
+                }
+                """);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(77L)
+                .experiment(experiment)
                 .stageCode("landing-page-wireframe")
                 .executionRequestedAt(Instant.parse("2026-05-28T10:00:00Z"))
                 .createdAt(Instant.parse("2026-05-28T10:00:00Z"))
@@ -38,7 +74,32 @@ class GeraLandingWireframeStageExecutionServiceTest {
 
         assertEquals(1, response.size());
         assertEquals(77L, response.get(0).experimentId());
-        assertEquals("job-77", response.get(0).idJob());
+        assertEquals("job-77", response.get(0).jobid());
         assertEquals("landing-page-wireframe", response.get(0).stageCode());
+        assertNotNull(response.get(0).experiment());
+        assertEquals(77L, response.get(0).experiment().id());
+        assertEquals("Experimento Wireframe", response.get(0).experiment().name());
+        assertEquals("Hipótese de valor", response.get(0).experiment().hypothesis());
+        assertEquals("Prompt texto", response.get(0).experiment().creativeTextPrompt());
+        assertEquals("Prompt imagem", response.get(0).experiment().creativeImagePrompt());
+        assertEquals("Ângulo campanha", response.get(0).experiment().campaignAngle());
+        assertEquals("Copy anúncio", response.get(0).experiment().adCopy());
+        assertEquals("Briefing imagem", response.get(0).experiment().adImageBriefing());
+        assertEquals("Copy landing", response.get(0).experiment().landingPageCopy());
+        assertEquals("Wireframe landing", response.get(0).experiment().landingPageWireframe());
+        assertEquals("Planejamento imagem", response.get(0).experiment().landingPageImagePlanning());
+        assertEquals("Preset design", response.get(0).experiment().landingPageDesignPreset());
+        assertEquals("Entregáveis landing", response.get(0).experiment().landingPageDeliverables());
+        assertEquals("<html>GeraLanding</html>", response.get(0).experiment().htmlGeraLanding());
+        assertNotNull(response.get(0).hypothesis());
+        assertEquals(hypothesisId, response.get(0).hypothesis().id());
+        assertEquals("Hipótese Framework", response.get(0).hypothesis().title());
+        assertEquals("v1", response.get(0).hypothesis().framework().get("version"));
+        assertEquals("Dor superficial", ((Map<?, ?>) response.get(0).hypothesis().framework().get("pain")).get("surface"));
+        assertEquals("Resultado desejado", ((Map<?, ?>) response.get(0).hypothesis().framework().get("result")).get("desiredResult"));
+        assertTrue(response.get(0).hypothesis().framework().containsKey("mechanism"));
+        assertTrue(response.get(0).hypothesis().framework().containsKey("proof"));
+        assertTrue(response.get(0).hypothesis().framework().containsKey("offer"));
+        assertTrue(response.get(0).hypothesis().framework().containsKey("checklist"));
     }
 }

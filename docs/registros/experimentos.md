@@ -2217,3 +2217,35 @@
 - Ajustado `BackendWireframeController.pending` para retornar diretamente `List<RecordWireframePending>`.
 - Registrada no cânone de arquitetura por etapa a regra `Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>`.
 - Atualizado `ArquiteturaTest` para validar o contrato genérico do método `pending` por etapa.
+
+## 2026-05-28 21:55:00 UTC
+- solicitação: incluir o experimento junto aos itens pendentes da etapa `landing-page-wireframe` e garantir teste para atributos `experiment` e `jobid` no retorno de `pending`.
+- causa-raiz tratada: o contrato interno global de pendências expunha apenas identificadores mínimos (`experimentId`, `idJob`/etapa), obrigando consumidores a buscar o experimento em chamada separada para identificar contexto básico do job.
+- correção aplicada:
+  - o record `RecordWireframePending` passou a expor `jobid`, `stageCode`, `experimentId` e o resumo `experiment`;
+  - criado `RecordWireframeExperiment` com os campos mínimos do experimento necessários para identificação do job pendente;
+  - o serviço de execução de wireframe passou a montar o resumo do experimento a partir da execução carregada;
+  - a consulta de pendências no repositório passou a carregar o relacionamento `experiment` via `EntityGraph` para evitar consulta adicional por item;
+  - o cânone de arquitetura por etapa e o Swagger canônico do GeraLanding foram atualizados com o novo contrato de pending;
+  - adicionados testes garantindo os dados do experimento no service e a serialização da resposta como lista contendo `experiment` e `jobid`.
+
+## 2026-05-28 22:20:00 UTC
+- solicitação: ampliar o objeto `experiment` retornado pelo pending de `landing-page-wireframe` com artefatos de criação usados no fluxo e levantar os campos existentes de hipótese.
+- causa-raiz tratada: o resumo anterior do experimento ainda era insuficiente para consumidores da fila reaproveitarem contexto de prompts, anúncios e etapas já geradas sem novas chamadas ao backend.
+- correção aplicada:
+  - `RecordWireframeExperiment` passou a incluir `creativeTextPrompt`, `creativeImagePrompt`, `campaignAngle`, `adCopy`, `adImageBriefing`, `landingPageCopy`, `landingPageWireframe`, `landingPageImagePlanning`, `landingPageDesignPreset`, `landingPageDeliverables` e `htmlGeraLanding`;
+  - o mapeamento de pending da etapa wireframe passou a preencher esses campos a partir da entidade `Experiment` carregada pela execução;
+  - os testes do service e do controller foram atualizados para validar os novos campos serializados no objeto `experiment`;
+  - o cânone de arquitetura por etapa e o Swagger canônico do GeraLanding foram atualizados com os novos campos do contrato;
+  - os campos da tabela/entidade/DTO de hipótese foram levantados para orientar a próxima decisão de contrato.
+
+## 2026-05-28 22:45:00 UTC
+- solicitação: incluir `hypothesis.framework` com todos os itens canônicos no retorno da lista de pendentes da etapa `landing-page-wireframe`.
+- causa-raiz tratada: o payload de pending já carregava o experimento, mas ainda não entregava o framework da hipótese no mesmo contrato, obrigando consumidores da fila a buscar a hipótese separadamente para obter Dor → Resultado → Mecanismo → Prova → Oferta.
+- correção aplicada:
+  - `RecordWireframePending` passou a incluir o atributo `hypothesis` além de `experiment`;
+  - criado `RecordWireframeHypothesis` com `id`, `title` e `framework`;
+  - o serviço de wireframe passou a resolver `hypothesis.framework` a partir do JSON da hipótese e garantir presença dos blocos `pain`, `result`, `mechanism`, `proof`, `offer` e `checklist`;
+  - a entidade `Experiment` passou a expor métodos operacionais para acessar id, título e framework JSON da hipótese associada sem acoplar o serviço da etapa ao pacote de hipótese;
+  - a consulta de pending passou a carregar `experiment.hypothesisRef` junto com o experimento;
+  - testes do service/controller, cânone de arquitetura por etapa e Swagger canônico foram atualizados para o novo contrato.

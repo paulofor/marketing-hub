@@ -67,10 +67,10 @@ public class GeraLandingWireframeStageExecutionService {
 
     /** Lista os jobs iniciados da etapa wireframe para processamento independente de experimento. */
     @Transactional(readOnly = true)
-    public List<GeraLandingWireframePendingExecutionResponse> listPending(String stageCode) {
+    public List<RecordWireframePending> listPending(String stageCode) {
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
                 .stream()
-                .map(execution -> new GeraLandingWireframePendingExecutionResponse(
+                .map(execution -> new RecordWireframePending(
                         execution.getExperimentId(),
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode()))

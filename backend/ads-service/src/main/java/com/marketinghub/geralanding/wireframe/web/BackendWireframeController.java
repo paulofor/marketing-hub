@@ -1,11 +1,11 @@
 package com.marketinghub.geralanding.wireframe.web;
 
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
-import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframePendingExecutionResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionDetailResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
+import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,10 +51,8 @@ public class BackendWireframeController {
 
   /** Lista os jobs pendentes iniciados da etapa wireframe para processamento pelo Worker AI. */
   @GetMapping("/internal/geralanding/wireframe/stage-executions/pending")
-  public ResponseEntity<List<GeraLandingWireframePendingExecutionResponse>> pending() {
-    List<GeraLandingWireframePendingExecutionResponse> response =
-        executionService.listPending(STAGE_CODE);
-    return ResponseEntity.ok(response);
+  public List<RecordWireframePending> pending() {
+    return executionService.listPending(STAGE_CODE);
   }
 
   /** Retorna os detalhes de uma execução específica da etapa. */

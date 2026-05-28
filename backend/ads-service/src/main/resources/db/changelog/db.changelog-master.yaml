@@ -798,3 +798,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-27-oprm-estabelecimento-cnae-raiz-email.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-05-28-oprm-estabelecimento-cnae-raiz-mei-simples.yaml
+      relativeToChangelogFile: true

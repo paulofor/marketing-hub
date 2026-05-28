@@ -2108,3 +2108,13 @@
 - validação executada:
   - inspeção estática da regra alterada com `nl -ba` para confirmar remoção do ponto final no matcher.
   - execução de `mvn -q -Dtest=com.marketinghub.worker.geralanding.ArquiteturaTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 19:05:00 UTC
+- solicitação: usar `geralanding.wireframe` como referência para remover dependências cruzadas entre slices do Worker AI e corrigir falhas do `ArquiteturaTest`.
+- causa-raiz identificada: `copy.backend.GeraLandingCopyBackendClient` concentrava contratos e métodos de `imageplanning`, `presetdesign` e `wireframe`, e `imageplanning/presetdesign` dependiam diretamente de `copy.backend`.
+- correção aplicada:
+  - removidas, em `copy.backend.GeraLandingCopyBackendClient`, as APIs tipadas e consultas específicas de `imageplanning`, `presetdesign` e `wireframe`;
+  - reescrito `imageplanning.backend.GeraLandingImagePlanningBackendClient` para encapsular seu próprio fluxo HTTP com DTO e payload da própria etapa, sem depender de `copy`;
+  - reescrito `presetdesign.backend.GeraLandingPresetDesignBackendClient` no mesmo padrão de isolamento por etapa.
+- validação executada:
+  - `mvn -q -Dtest=ArquiteturaTest test` em `ai-worker/` (bloqueado por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

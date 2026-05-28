@@ -41,7 +41,7 @@ public class GeraLandingWireframeBackendClient {
 
     /** Lista execuções pendentes da etapa wireframe no backend. */
     public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/pending");
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions/pending");
         String uri = url + "?limit=" + Math.max(1, limit);
         List<GeraLandingStageExecutionDetailDto> payload = webClient.get()
                 .uri(uri)
@@ -80,7 +80,7 @@ public class GeraLandingWireframeBackendClient {
 
     /** Envia estado de falha da execução wireframe ao backend. */
     public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
-        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
@@ -91,7 +91,7 @@ public class GeraLandingWireframeBackendClient {
 
     /** Registra no backend o dispatch do job wireframe para a OpenAI. */
     public void receiveDispatch(String idJob, Long experimentId, String stageCode, String openAiJobId) {
-        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
@@ -101,7 +101,7 @@ public class GeraLandingWireframeBackendClient {
 
     /** Envia ao backend o resultado final da etapa wireframe. */
     public void receiveResult(String idJob, Long experimentId, String stageCode, RecordWireframeResponse payload) {
-        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);

@@ -2153,3 +2153,13 @@
   - preservada documentação canônica apenas como regra de consumo/isolamento, sem introduzir implementação nova no backend.
 - validação executada:
   - `mvn -q -DskipTests compile` em `ai-worker/`.
+## 2026-05-28 20:15:00 UTC
+- solicitação: renomear `GeraLandingJobDto` para `RecordJobDto` em todas as etapas do `geralanding` no `ai-worker`.
+- causa-raiz identificada: o nome anterior mantinha o prefixo legado do módulo e não seguia o padrão curto de records adotado nas etapas do GeraLanding.
+- correção aplicada:
+  - records de job OpenAI renomeados para `RecordJobDto` nos pacotes geral, `copy`, `deliverables`, `imageplanning`, `presetdesign` e `wireframe`;
+  - imports, assinaturas e instanciações atualizados nos serviços de execução OpenAI do GeraLanding;
+  - cliente flex geral atualizado para aceitar `RecordJobDto` do fluxo geral e das etapas `deliverables`, `imageplanning` e `presetdesign`.
+- validação executada:
+  - inspeção estática com `rg` para garantir ausência do nome antigo no código Java do `ai-worker`;
+  - `mvn -q -DskipTests compile` em `ai-worker/` (bloqueado por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

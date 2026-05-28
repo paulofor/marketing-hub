@@ -7,7 +7,7 @@ import com.marketinghub.worker.geralanding.deliverables.GeraLandingExperimentDel
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload;
 import com.marketinghub.worker.geralanding.deliverables.MontaRequest;
 import com.marketinghub.worker.geralanding.deliverables.RecebeResponse;
-import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingJobDto;
+import com.marketinghub.worker.geralanding.deliverables.dto.RecordJobDto;
 import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -88,7 +88,7 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
                     new GeraLandingExperimentDeliverablesRequest(execution.experimentId(), dadosPrompt);
             String prompt = montaRequest.montarPrompt(requestData);
             String requestBody = montaRequest.montar(requestData);
-            GeraLandingJobDto openAiJob = new GeraLandingJobDto(
+            RecordJobDto openAiJob = new RecordJobDto(
                     UUID.fromString(execution.idJob()),
                     execution.experimentId(),
                     execution.stageCode(),
@@ -105,7 +105,7 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
     }
 
     /** Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa deliverables. */
-    private GeraLandingJobCompletionDeliverablesPayload generate(GeraLandingJobDto job) throws Exception {
+    private GeraLandingJobCompletionDeliverablesPayload generate(RecordJobDto job) throws Exception {
         log.info("Iniciando geração gera-landing deliverables via OpenAI flex [jobId={}, stage={}, model={}, requestBodyLength={}]", job.id(), job.section(), job.model(), safeLength(job.requestBodyJson()));
         log.info("Payload requestBodyJson do gera-landing deliverables [jobId={}, stage={}, requestBodyPreview={}]", job.id(), job.section(), preview(job.requestBodyJson()));
         OpenAiResponse response = createFlexResponse(job);
@@ -131,7 +131,7 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
     }
 
     /** Prepara e executa a chamada flex da OpenAI para a etapa deliverables. */
-    private OpenAiResponse createFlexResponse(GeraLandingJobDto job) throws Exception {
+    private OpenAiResponse createFlexResponse(RecordJobDto job) throws Exception {
         try {
             log.info("Iniciando preparação do request para flex deliverables [jobId={}, stage={}, requestBodyJsonPreview={}]", job.id(), job.section(), preview(job.requestBodyJson()));
             Map<String, Object> requestBody = prepareRequestBodyForFlex(job);
@@ -164,7 +164,7 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
     }
 
     /** Converte o requestBodyJson em mapa ou aplica fallback usando prompt textual. */
-    private Map<String, Object> prepareRequestBodyForFlex(GeraLandingJobDto job) throws Exception {
+    private Map<String, Object> prepareRequestBodyForFlex(RecordJobDto job) throws Exception {
         String requestBodyJson = job.requestBodyJson();
         if (StringUtils.hasText(requestBodyJson)) {
             String trimmed = requestBodyJson.trim();
@@ -178,7 +178,7 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
     }
 
     /** Remove cercas markdown de JSON (```json ... ```) para manter conteúdo parseável no pipeline. */
-    private String sanitizeModelResponse(String modelResponse, GeraLandingJobDto job) {
+    private String sanitizeModelResponse(String modelResponse, RecordJobDto job) {
         if (!StringUtils.hasText(modelResponse)) {
             return modelResponse;
         }
@@ -196,7 +196,7 @@ public class GeraLandingDeliverablesOpenAiExecutionService {
     }
 
     /** Cria um corpo mínimo de requisição quando apenas o prompt textual está disponível. */
-    private Map<String, Object> buildRequestBodyFromPrompt(GeraLandingJobDto job, String promptText) {
+    private Map<String, Object> buildRequestBodyFromPrompt(RecordJobDto job, String promptText) {
         if (!StringUtils.hasText(promptText)) {
             throw new IllegalStateException("Payload da OpenAI ausente: requestBodyJson e prompt vazios para gera-landing deliverables");
         }

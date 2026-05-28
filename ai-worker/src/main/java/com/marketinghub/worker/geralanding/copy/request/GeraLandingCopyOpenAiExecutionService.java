@@ -6,7 +6,7 @@ import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendCl
 import com.marketinghub.worker.geralanding.copy.GeraLandingExperimentRequest;
 import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
 import com.marketinghub.worker.geralanding.copy.response.RecebeResponse;
-import com.marketinghub.worker.geralanding.copy.dto.GeraLandingJobDto;
+import com.marketinghub.worker.geralanding.copy.dto.RecordJobDto;
 import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -72,7 +72,7 @@ public class GeraLandingCopyOpenAiExecutionService {
             String prompt = montaRequest.montarPrompt(requestData);
             String requestBody = montaRequest.montar(requestData);
             String openAiModel = "gpt-5.2";
-            GeraLandingJobDto openAiJob = new GeraLandingJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), openAiModel, requestBody, prompt, null);
+            RecordJobDto openAiJob = new RecordJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), openAiModel, requestBody, prompt, null);
             var payload = generate(openAiJob);
             recebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
         } catch (Exception ex) {
@@ -82,7 +82,7 @@ public class GeraLandingCopyOpenAiExecutionService {
     }
 
     /** Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa. */
-    private GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) { /* shortened by parity */
+    private GeraLandingJobCompletionPayload generate(RecordJobDto job) { /* shortened by parity */
         try {
             OpenAiResponse response = createFlexResponse(job);
             String rawOutput = objectMapper.writeValueAsString(response);
@@ -101,9 +101,9 @@ public class GeraLandingCopyOpenAiExecutionService {
         }
     }
 
-    private OpenAiResponse createFlexResponse(GeraLandingJobDto job) throws Exception { Map<String, Object> requestBody = prepareRequestBodyForFlex(job); requestBody.put("service_tier", "flex"); OpenAiResponse response = webClient.post().uri("/responses").contentType(MediaType.APPLICATION_JSON).bodyValue(requestBody).retrieve().bodyToMono(OpenAiResponse.class).block(flexTimeout); if (response == null) throw new IllegalStateException("OpenAI flex retornou resposta vazia para gera-landing"); if (StringUtils.hasText(response.errorMessage())) throw new IllegalStateException("OpenAI flex retornou erro para gera-landing: " + response.errorMessage()); return response; }
-    private Map<String, Object> prepareRequestBodyForFlex(GeraLandingJobDto job) throws Exception { String requestBodyJson = job.requestBodyJson(); if (StringUtils.hasText(requestBodyJson)) { String trimmed = requestBodyJson.trim(); if (trimmed.startsWith("{") || trimmed.startsWith("[")) return objectMapper.readValue(trimmed, new TypeReference<>() {}); return buildRequestBodyFromPrompt(job, trimmed);} return buildRequestBodyFromPrompt(job, job.prompt()); }
-    private String sanitizeModelResponse(String modelResponse, GeraLandingJobDto job) { if (!StringUtils.hasText(modelResponse)) return modelResponse; String trimmed = modelResponse.trim(); if (!trimmed.startsWith("```json")) return modelResponse; String withoutPrefix = trimmed.substring("```json".length()).trim(); if (withoutPrefix.endsWith("```")) withoutPrefix = withoutPrefix.substring(0, withoutPrefix.length() - 3).trim(); log.warn("Model response veio com code fence JSON; removendo cercas markdown [jobId={}, stage={}]", job.id(), job.section()); return withoutPrefix; }
-    private Map<String, Object> buildRequestBodyFromPrompt(GeraLandingJobDto job, String promptText) { if (!StringUtils.hasText(promptText)) throw new IllegalStateException("Payload da OpenAI ausente: requestBodyJson e prompt vazios para gera-landing"); Map<String, Object> requestBody = new LinkedHashMap<>(); requestBody.put("model", StringUtils.hasText(job.model()) ? job.model() : "gpt-5.2"); requestBody.put("input", List.of(Map.of("role", "system", "content", "[gera-landing-pipeline] Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."), Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", promptText))))); return requestBody; }
+    private OpenAiResponse createFlexResponse(RecordJobDto job) throws Exception { Map<String, Object> requestBody = prepareRequestBodyForFlex(job); requestBody.put("service_tier", "flex"); OpenAiResponse response = webClient.post().uri("/responses").contentType(MediaType.APPLICATION_JSON).bodyValue(requestBody).retrieve().bodyToMono(OpenAiResponse.class).block(flexTimeout); if (response == null) throw new IllegalStateException("OpenAI flex retornou resposta vazia para gera-landing"); if (StringUtils.hasText(response.errorMessage())) throw new IllegalStateException("OpenAI flex retornou erro para gera-landing: " + response.errorMessage()); return response; }
+    private Map<String, Object> prepareRequestBodyForFlex(RecordJobDto job) throws Exception { String requestBodyJson = job.requestBodyJson(); if (StringUtils.hasText(requestBodyJson)) { String trimmed = requestBodyJson.trim(); if (trimmed.startsWith("{") || trimmed.startsWith("[")) return objectMapper.readValue(trimmed, new TypeReference<>() {}); return buildRequestBodyFromPrompt(job, trimmed);} return buildRequestBodyFromPrompt(job, job.prompt()); }
+    private String sanitizeModelResponse(String modelResponse, RecordJobDto job) { if (!StringUtils.hasText(modelResponse)) return modelResponse; String trimmed = modelResponse.trim(); if (!trimmed.startsWith("```json")) return modelResponse; String withoutPrefix = trimmed.substring("```json".length()).trim(); if (withoutPrefix.endsWith("```")) withoutPrefix = withoutPrefix.substring(0, withoutPrefix.length() - 3).trim(); log.warn("Model response veio com code fence JSON; removendo cercas markdown [jobId={}, stage={}]", job.id(), job.section()); return withoutPrefix; }
+    private Map<String, Object> buildRequestBodyFromPrompt(RecordJobDto job, String promptText) { if (!StringUtils.hasText(promptText)) throw new IllegalStateException("Payload da OpenAI ausente: requestBodyJson e prompt vazios para gera-landing"); Map<String, Object> requestBody = new LinkedHashMap<>(); requestBody.put("model", StringUtils.hasText(job.model()) ? job.model() : "gpt-5.2"); requestBody.put("input", List.of(Map.of("role", "system", "content", "[gera-landing-pipeline] Você é um Especialista em Marketing focado em vendas de produtos digitais pela Internet."), Map.of("role", "user", "content", List.of(Map.of("type", "input_text", "text", promptText))))); return requestBody; }
     private String preview(String value) { if (!StringUtils.hasText(value)) return "<empty>"; String normalized = value.replace("\n", "\\n").replace("\r", "\\r"); if (normalized.length() <= LOG_PREVIEW_LIMIT) return normalized; return normalized.substring(0, LOG_PREVIEW_LIMIT) + "...(truncated)"; }
 }

@@ -1,4 +1,4 @@
-package com.marketinghub.worker.geralanding.imageplanning;
+package com.marketinghub.worker.geralanding.imageplanning.request;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingExperimentImagePlanningRequest;

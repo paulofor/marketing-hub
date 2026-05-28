@@ -1,5 +1,6 @@
-package com.marketinghub.worker.geralanding.imageplanning;
+package com.marketinghub.worker.geralanding.imageplanning.backend;
 
+import com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload;
 import com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
 import org.springframework.stereotype.Component;

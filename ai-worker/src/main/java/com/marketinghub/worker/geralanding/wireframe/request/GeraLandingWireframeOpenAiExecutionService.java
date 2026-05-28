@@ -2,7 +2,7 @@ package com.marketinghub.worker.geralanding.wireframe.request;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.GeraLandingJobDto;
+import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingWireframeBackendClient;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload;

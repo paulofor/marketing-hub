@@ -58,9 +58,9 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
     }
 
     /**
-     * Executa em 28/05 às 14:05 a ingestão direta de todos os arquivos ESTABELECIMENTOS na tabela dedicada.
+     * Executa em 29/05 às 10:00 a ingestão direta de todos os arquivos ESTABELECIMENTOS na tabela dedicada.
      */
-    @Scheduled(cron = "0 5 14 28 5 *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 0 10 29 5 *", zone = "America/Sao_Paulo")
     public void runScheduledEstabelecimentoCnaeRaizIngestion() {
         log.info("Iniciando ingestão simples OPRM de ESTABELECIMENTOS para oprm_estabelecimento_cnae_raiz.");
         if (!scheduleProperties.enabled()) {

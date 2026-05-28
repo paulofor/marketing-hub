@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.deliverables.request;
 
-import com.marketinghub.worker.geralanding.GeraLandingJobDto;
+import com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingDeliverablesBackendClient;
 import com.marketinghub.worker.geralanding.deliverables.GeraLandingExperimentDeliverablesRequest;

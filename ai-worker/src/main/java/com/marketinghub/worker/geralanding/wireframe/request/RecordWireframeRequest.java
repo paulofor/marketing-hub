@@ -3,7 +3,7 @@ package com.marketinghub.worker.geralanding.wireframe.request;
 import java.util.Map;
 
 /** Concentra os dados do experimento usados na geração de wireframe. */
-public record GeraLandingExperimentWireframeRequest(
+public record RecordWireframeRequest(
         Long experimentId,
         Map<String, Object> dados) {
 

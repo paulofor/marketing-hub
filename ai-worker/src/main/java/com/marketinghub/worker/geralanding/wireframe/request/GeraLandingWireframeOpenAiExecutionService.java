@@ -82,7 +82,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
         }
         try {
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());
-            GeraLandingExperimentWireframeRequest requestData = new GeraLandingExperimentWireframeRequest(execution.experimentId(), dadosPrompt);
+            RecordWireframeRequest requestData = new RecordWireframeRequest(execution.experimentId(), dadosPrompt);
             String prompt = montaRequest.montarPrompt(requestData);
             String requestBody = montaRequest.montar(requestData);
             GeraLandingJobDto openAiJob = new GeraLandingJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), "gpt-5.2", requestBody, prompt, null);

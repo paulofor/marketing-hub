@@ -32,4 +32,6 @@ GET /api/internal/geralanding/wireframe/stage-executions/pending
 
 O endpoint fica no `BackendWireframeController`, usa o método `pending` e retorna uma lista de
 `RecordWireframePending` com os jobs da etapa `landing-page-wireframe` com status `INICIADO`, em ordem
-crescente de solicitação de execução.
+crescente de solicitação de execução. Cada item da lista deve conter, no mínimo, os atributos `jobid`
+e `experiment`. O atributo `experiment` deve ser um objeto resumido com os dados mínimos necessários
+para o consumidor da fila identificar o experimento sem expor a entidade completa.

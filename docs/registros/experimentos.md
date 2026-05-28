@@ -2217,3 +2217,14 @@
 - Ajustado `BackendWireframeController.pending` para retornar diretamente `List<RecordWireframePending>`.
 - Registrada no cânone de arquitetura por etapa a regra `Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>`.
 - Atualizado `ArquiteturaTest` para validar o contrato genérico do método `pending` por etapa.
+
+## 2026-05-28 21:55:00 UTC
+- solicitação: incluir o experimento junto aos itens pendentes da etapa `landing-page-wireframe` e garantir teste para atributos `experiment` e `jobid` no retorno de `pending`.
+- causa-raiz tratada: o contrato interno global de pendências expunha apenas identificadores mínimos (`experimentId`, `idJob`/etapa), obrigando consumidores a buscar o experimento em chamada separada para identificar contexto básico do job.
+- correção aplicada:
+  - o record `RecordWireframePending` passou a expor `jobid`, `stageCode`, `experimentId` e o resumo `experiment`;
+  - criado `RecordWireframeExperiment` com os campos mínimos do experimento necessários para identificação do job pendente;
+  - o serviço de execução de wireframe passou a montar o resumo do experimento a partir da execução carregada;
+  - a consulta de pendências no repositório passou a carregar o relacionamento `experiment` via `EntityGraph` para evitar consulta adicional por item;
+  - o cânone de arquitetura por etapa e o Swagger canônico do GeraLanding foram atualizados com o novo contrato de pending;
+  - adicionados testes garantindo os dados do experimento no service e a serialização da resposta como lista contendo `experiment` e `jobid`.

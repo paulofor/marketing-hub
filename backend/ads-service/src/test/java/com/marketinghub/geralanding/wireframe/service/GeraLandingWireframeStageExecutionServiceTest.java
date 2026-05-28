@@ -1,9 +1,11 @@
 package com.marketinghub.geralanding.wireframe.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
@@ -22,8 +24,13 @@ class GeraLandingWireframeStageExecutionServiceTest {
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         GeraLandingWireframeStageExecutionService service =
                 new GeraLandingWireframeStageExecutionService(experimentRepository, executionRepository);
+        Experiment experiment = mock(Experiment.class);
+        when(experiment.getId()).thenReturn(77L);
+        when(experiment.getName()).thenReturn("Experimento Wireframe");
+        when(experiment.getHypothesis()).thenReturn("Hipótese de valor");
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(77L)
+                .experiment(experiment)
                 .stageCode("landing-page-wireframe")
                 .executionRequestedAt(Instant.parse("2026-05-28T10:00:00Z"))
                 .createdAt(Instant.parse("2026-05-28T10:00:00Z"))
@@ -38,7 +45,11 @@ class GeraLandingWireframeStageExecutionServiceTest {
 
         assertEquals(1, response.size());
         assertEquals(77L, response.get(0).experimentId());
-        assertEquals("job-77", response.get(0).idJob());
+        assertEquals("job-77", response.get(0).jobid());
         assertEquals("landing-page-wireframe", response.get(0).stageCode());
+        assertNotNull(response.get(0).experiment());
+        assertEquals(77L, response.get(0).experiment().id());
+        assertEquals("Experimento Wireframe", response.get(0).experiment().name());
+        assertEquals("Hipótese de valor", response.get(0).experiment().hypothesis());
     }
 }

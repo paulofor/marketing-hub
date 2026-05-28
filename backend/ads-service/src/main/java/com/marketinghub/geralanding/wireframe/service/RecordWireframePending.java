@@ -3,7 +3,8 @@ package com.marketinghub.geralanding.wireframe.service;
 /** Representa o item mínimo de pendência da etapa wireframe consumido pelo Worker AI. */
 public record RecordWireframePending(
         Long experimentId,
-        String idJob,
-        String stageCode
+        String jobid,
+        String stageCode,
+        RecordWireframeExperiment experiment
 ) {
 }

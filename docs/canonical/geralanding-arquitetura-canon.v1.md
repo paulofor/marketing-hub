@@ -63,7 +63,12 @@ Regras arquiteturais refletidas (ArchUnit):
 - Cada subpacote funcional (`copy`, `presetdesign`, `stage`, `wireframe`, `deliverables`, `imageplanning`) só pode acessar o próprio pacote e `geralanding.comum` dentro de `com.marketinghub`.
 - `geralanding.comum` só pode acessar o próprio pacote.
 
-## 3) Regras de integração
+## 3) Contrato HTTP canônico
+
+- O Swagger/OpenAPI canônico dos endpoints HTTP do backend GeraLanding por etapa fica em `docs/canonical/geralanding-backend-swagger.v1.yaml`.
+- Qualquer criação, remoção ou mudança de endpoint em `com.marketinghub.geralanding.*.web` deve manter esse Swagger sincronizado no mesmo PR.
+
+## 4) Regras de integração
 
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend GeraLanding.
 - O polling e os callbacks internos do GeraLanding no Worker AI devem consumir endpoints específicos por etapa: `/api/internal/geralanding/wireframe/stage-executions/*`, `/api/internal/geralanding/copy/stage-executions/*`, `/api/internal/geralanding/image-prompts/stage-executions/*`, `/api/internal/geralanding/design-preset/stage-executions/*` e `/api/internal/geralanding/deliverables/stage-executions/*`.

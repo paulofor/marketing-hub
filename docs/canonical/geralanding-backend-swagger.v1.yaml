@@ -1,0 +1,458 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Backend - GeraLanding por etapa
+  version: v1
+  description: |
+    Contrato canônico dos endpoints HTTP expostos pelo backend `ads-service` no pacote
+    `com.marketinghub.geralanding`, organizados por etapa operacional do GeraLanding.
+
+    Fonte de verdade revisada em código:
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/GeraLandingWireframeController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/web/GeraLandingCopyController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/web/GeraLandingDesignPresetController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java`
+
+    Todos os endpoints listados abaixo ficam sob o escopo de um experimento e usam o prefixo
+    `/api/experiments/{experimentId}/geralanding`.
+servers:
+  - url: http://191.252.181.168
+    description: Backend principal para acessos executados pelo Codex
+  - url: http://191.252.181.168:8000
+    description: Backend principal documentado para operação externa
+tags:
+  - name: landing-page-wireframe
+    description: Etapa de geração do wireframe da landing.
+  - name: landing-page-copy
+    description: Etapa de geração da copy da landing.
+  - name: landing-page-image-planning
+    description: Etapa de planejamento de imagens/prompts visuais da landing.
+  - name: landing-page-design-preset
+    description: Etapa de definição do preset visual e consolidação visual da landing.
+  - name: landing-page-deliverables
+    description: Etapa de geração dos entregáveis finais vinculados à landing/oferta.
+paths:
+  /api/experiments/{experimentId}/geralanding/wireframe/start:
+    post:
+      tags:
+        - landing-page-wireframe
+      summary: Inicia a etapa landing-page-wireframe.
+      description: Registra uma nova execução inicial da etapa de wireframe para o experimento informado.
+      operationId: startGeraLandingWireframe
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução da etapa registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+              example:
+                idJob: 7d3d1f3a-9f6f-41b7-9b4b-3f5c3f4d9a01
+                status: INICIADO
+  /api/experiments/{experimentId}/geralanding/wireframe/stage-executions:
+    get:
+      tags:
+        - landing-page-wireframe
+      summary: Lista execuções da etapa landing-page-wireframe.
+      description: Retorna os resumos das execuções de wireframe do experimento, com opção de incluir execuções concluídas.
+      operationId: listGeraLandingWireframeExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          description: Lista de execuções da etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}:
+    get:
+      tags:
+        - landing-page-wireframe
+      summary: Detalha uma execução da etapa landing-page-wireframe.
+      description: Retorna todos os dados persistidos para o job de wireframe do experimento.
+      operationId: getGeraLandingWireframeExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          description: Detalhe da execução da etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+  /api/experiments/{experimentId}/geralanding/copy/start:
+    post:
+      tags:
+        - landing-page-copy
+      summary: Inicia a etapa landing-page-copy.
+      description: Registra uma nova execução inicial da etapa de copy para o experimento informado.
+      operationId: startGeraLandingCopy
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução da etapa registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+  /api/experiments/{experimentId}/geralanding/copy/stage-executions:
+    get:
+      tags:
+        - landing-page-copy
+      summary: Lista execuções da etapa landing-page-copy.
+      description: Retorna os resumos das execuções de copy do experimento, com opção de incluir execuções concluídas.
+      operationId: listGeraLandingCopyExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          description: Lista de execuções da etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/experiments/{experimentId}/geralanding/copy/stage-executions/{idJob}:
+    get:
+      tags:
+        - landing-page-copy
+      summary: Detalha uma execução da etapa landing-page-copy.
+      description: Retorna todos os dados persistidos para o job de copy do experimento.
+      operationId: getGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          description: Detalhe da execução da etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+  /api/experiments/{experimentId}/geralanding/image-prompts/start:
+    post:
+      tags:
+        - landing-page-image-planning
+      summary: Inicia a etapa landing-page-image-planning.
+      description: Registra uma nova execução inicial da etapa de planejamento de imagens para o experimento informado.
+      operationId: startGeraLandingImagePlanning
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução da etapa registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+  /api/experiments/{experimentId}/geralanding/image-prompts/stage-executions:
+    get:
+      tags:
+        - landing-page-image-planning
+      summary: Lista execuções da etapa landing-page-image-planning.
+      description: Retorna os resumos das execuções de planejamento de imagens do experimento, com opção de incluir execuções concluídas.
+      operationId: listGeraLandingImagePlanningExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          description: Lista de execuções da etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/experiments/{experimentId}/geralanding/image-prompts/stage-executions/{idJob}:
+    get:
+      tags:
+        - landing-page-image-planning
+      summary: Detalha uma execução da etapa landing-page-image-planning.
+      description: Retorna todos os dados persistidos para o job de planejamento de imagens do experimento.
+      operationId: getGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          description: Detalhe da execução da etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+  /api/experiments/{experimentId}/geralanding/design-preset/start:
+    post:
+      tags:
+        - landing-page-design-preset
+      summary: Inicia a etapa landing-page-design-preset.
+      description: Registra uma nova execução inicial da etapa de preset visual para o experimento informado.
+      operationId: startGeraLandingDesignPreset
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução da etapa registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+  /api/experiments/{experimentId}/geralanding/design-preset/stage-executions:
+    get:
+      tags:
+        - landing-page-design-preset
+      summary: Lista execuções da etapa landing-page-design-preset.
+      description: Retorna os resumos das execuções de preset visual do experimento, com opção de incluir execuções concluídas.
+      operationId: listGeraLandingDesignPresetExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          description: Lista de execuções da etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/experiments/{experimentId}/geralanding/design-preset/stage-executions/{idJob}:
+    get:
+      tags:
+        - landing-page-design-preset
+      summary: Detalha uma execução da etapa landing-page-design-preset.
+      description: Retorna todos os dados persistidos para o job de preset visual do experimento.
+      operationId: getGeraLandingDesignPresetExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          description: Detalhe da execução da etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+  /api/experiments/{experimentId}/geralanding/deliverables/start:
+    post:
+      tags:
+        - landing-page-deliverables
+      summary: Inicia a etapa landing-page-deliverables.
+      description: Registra uma nova execução inicial da etapa de entregáveis para o experimento informado.
+      operationId: startGeraLandingDeliverables
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução da etapa registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+  /api/experiments/{experimentId}/geralanding/deliverables/stage-executions:
+    get:
+      tags:
+        - landing-page-deliverables
+      summary: Lista execuções da etapa landing-page-deliverables.
+      description: Retorna os resumos das execuções de entregáveis do experimento, com opção de incluir execuções concluídas.
+      operationId: listGeraLandingDeliverablesExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          description: Lista de execuções da etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/experiments/{experimentId}/geralanding/deliverables/stage-executions/{idJob}:
+    get:
+      tags:
+        - landing-page-deliverables
+      summary: Detalha uma execução da etapa landing-page-deliverables.
+      description: Retorna todos os dados persistidos para o job de entregáveis do experimento.
+      operationId: getGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          description: Detalhe da execução da etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+components:
+  parameters:
+    ExperimentId:
+      name: experimentId
+      in: path
+      required: true
+      description: Identificador numérico do experimento dono da execução GeraLanding.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    IdJob:
+      name: idJob
+      in: path
+      required: true
+      description: Identificador textual do job da execução da etapa.
+      schema:
+        type: string
+        minLength: 1
+    IncludeCompleted:
+      name: includeCompleted
+      in: query
+      required: false
+      description: Quando `true`, inclui execuções com status `CONCLUIDO`; o padrão do backend é `true`.
+      schema:
+        type: boolean
+        default: true
+  schemas:
+    StageStatus:
+      type: string
+      description: Status operacional persistido para a execução da etapa.
+      enum:
+        - INICIADO
+        - AGUARDANDO_RETORNO_OPENAI
+        - EM_PROCESSAMENTO
+        - CONCLUIDO
+        - FALHA
+    StageStartResponse:
+      type: object
+      required:
+        - idJob
+        - status
+      additionalProperties: false
+      properties:
+        idJob:
+          type: string
+          description: Identificador do job criado para a etapa.
+        status:
+          $ref: '#/components/schemas/StageStatus'
+    StageExecutionSummary:
+      type: object
+      required:
+        - idJob
+        - status
+        - executionRequestedAt
+      additionalProperties: false
+      properties:
+        idJob:
+          type: string
+          description: Identificador do job da etapa.
+        status:
+          $ref: '#/components/schemas/StageStatus'
+        executionRequestedAt:
+          type: string
+          format: date-time
+          description: Momento em que a execução foi solicitada.
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: Custo estimado/persistido da execução em dólar, quando disponível.
+    StageExecutionDetail:
+      type: object
+      required:
+        - idJob
+        - experimentId
+        - stageCode
+        - status
+      additionalProperties: false
+      properties:
+        idJob:
+          type: string
+        experimentId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+          enum:
+            - landing-page-wireframe
+            - landing-page-copy
+            - landing-page-image-planning
+            - landing-page-design-preset
+            - landing-page-deliverables
+        executionRequestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        processingStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        promptTemplateId:
+          type: string
+          nullable: true
+        promptContent:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        openAiRequestBody:
+          type: string
+          nullable: true
+          description: Corpo bruto enviado para a OpenAI quando persistido para rastreabilidade.
+        openAiModel:
+          type: string
+          nullable: true
+        schemaJson:
+          type: string
+          nullable: true
+        promptMarkdownContent:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StageStatus'
+        openAiJobId:
+          type: string
+          nullable: true
+        modelResponse:
+          type: string
+          nullable: true
+        provisionalHtml:
+          type: string
+          nullable: true
+          description: HTML provisório produzido pela etapa quando aplicável.
+        errorMessage:
+          type: string
+          nullable: true
+        errorDetail:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+          nullable: true

@@ -375,15 +375,18 @@ components:
           type: string
         experiment:
           $ref: '#/components/schemas/PendingStageExperiment'
+        hypothesis:
+          $ref: '#/components/schemas/PendingStageHypothesis'
       required:
         - experimentId
         - jobid
         - stageCode
         - experiment
+        - hypothesis
     PendingStageExperiment:
       type: object
       additionalProperties: false
-      description: Resumo mínimo do experimento associado ao job pendente.
+      description: Dados do experimento associados ao job pendente de wireframe.
       properties:
         id:
           type: integer
@@ -400,8 +403,90 @@ components:
         stage:
           type: string
           nullable: true
+        creativeTextPrompt:
+          type: string
+          nullable: true
+        creativeImagePrompt:
+          type: string
+          nullable: true
+        campaignAngle:
+          type: string
+          nullable: true
+        adCopy:
+          type: string
+          nullable: true
+        adImageBriefing:
+          type: string
+          nullable: true
+        landingPageCopy:
+          type: string
+          nullable: true
+        landingPageWireframe:
+          type: string
+          nullable: true
+        landingPageImagePlanning:
+          type: string
+          nullable: true
+        landingPageDesignPreset:
+          type: string
+          nullable: true
+        landingPageDeliverables:
+          type: string
+          nullable: true
+        htmlGeraLanding:
+          type: string
+          nullable: true
       required:
         - id
+    PendingStageHypothesis:
+      type: object
+      additionalProperties: false
+      description: Hipótese e framework canônico associados ao job pendente de wireframe.
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        framework:
+          $ref: '#/components/schemas/PendingStageHypothesisFramework'
+      required:
+        - framework
+    PendingStageHypothesisFramework:
+      type: object
+      additionalProperties: true
+      description: Framework Dor → Resultado → Mecanismo → Prova → Oferta da hipótese.
+      properties:
+        version:
+          type: string
+          nullable: true
+        pain:
+          type: object
+          additionalProperties: true
+        result:
+          type: object
+          additionalProperties: true
+        mechanism:
+          type: object
+          additionalProperties: true
+        proof:
+          type: object
+          additionalProperties: true
+        offer:
+          type: object
+          additionalProperties: true
+        checklist:
+          type: object
+          additionalProperties: true
+      required:
+        - pain
+        - result
+        - mechanism
+        - proof
+        - offer
+        - checklist
     StageExecutionSummary:
       type: object
       required:

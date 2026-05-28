@@ -5,6 +5,7 @@ public record RecordWireframePending(
         Long experimentId,
         String jobid,
         String stageCode,
-        RecordWireframeExperiment experiment
+        RecordWireframeExperiment experiment,
+        RecordWireframeHypothesis hypothesis
 ) {
 }

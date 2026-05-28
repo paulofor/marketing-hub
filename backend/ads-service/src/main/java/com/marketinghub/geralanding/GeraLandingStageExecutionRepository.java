@@ -20,8 +20,8 @@ public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraL
 
     List<GeraLandingStageExecution> findTop20ByStatusInOrderByExecutionRequestedAtAsc(List<String> statuses);
 
-    /** Busca as execuções mais antigas de uma etapa com o status informado e experimento carregado. */
-    @EntityGraph(attributePaths = "experiment")
+    /** Busca as execuções mais antigas de uma etapa com experimento e hipótese carregados. */
+    @EntityGraph(attributePaths = {"experiment", "experiment.hypothesisRef"})
     List<GeraLandingStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(String stageCode,
                                                                                                 String status);
 

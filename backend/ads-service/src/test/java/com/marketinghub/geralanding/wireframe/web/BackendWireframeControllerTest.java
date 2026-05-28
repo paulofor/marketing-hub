@@ -11,8 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeExperiment;
+import com.marketinghub.geralanding.wireframe.service.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** Valida o contrato do controller de backend da etapa wireframe. */
@@ -29,7 +32,8 @@ class BackendWireframeControllerTest {
                         12L,
                         "job-12",
                         "landing-page-wireframe",
-                        new RecordWireframeExperiment(12L, "Experimento 12", "Hipótese", "PLANNED", "LANDING")));
+                        pendingExperiment(12L, "Experimento 12", "Hipótese"),
+                        pendingHypothesis()));
         when(executionService.listPending("landing-page-wireframe")).thenReturn(pending);
 
         List<RecordWireframePending> response = controller.pending();
@@ -49,7 +53,8 @@ class BackendWireframeControllerTest {
                         33L,
                         "bbed57d0-dcc7-40ab-b936-20a19e21c7fe",
                         "landing-page-wireframe",
-                        new RecordWireframeExperiment(33L, "Experimento 33", "Hipótese 33", "PLANNED", "LANDING"))));
+                        pendingExperiment(33L, "Experimento 33", "Hipótese 33"),
+                        pendingHypothesis())));
 
         JsonNode json = new ObjectMapper().valueToTree(controller.pending());
 
@@ -59,5 +64,50 @@ class BackendWireframeControllerTest {
         assertTrue(json.get(0).has("jobid"));
         assertEquals("bbed57d0-dcc7-40ab-b936-20a19e21c7fe", json.get(0).get("jobid").asText());
         assertEquals(33L, json.get(0).get("experiment").get("id").asLong());
+        assertEquals("Prompt texto", json.get(0).get("experiment").get("creativeTextPrompt").asText());
+        assertEquals("<html>GeraLanding</html>", json.get(0).get("experiment").get("htmlGeraLanding").asText());
+        assertTrue(json.get(0).has("hypothesis"));
+        assertEquals("Hipótese Framework", json.get(0).get("hypothesis").get("title").asText());
+        assertEquals("Dor superficial", json.get(0).get("hypothesis").get("framework").get("pain").get("surface").asText());
+        assertTrue(json.get(0).get("hypothesis").get("framework").has("result"));
+        assertTrue(json.get(0).get("hypothesis").get("framework").has("mechanism"));
+        assertTrue(json.get(0).get("hypothesis").get("framework").has("proof"));
+        assertTrue(json.get(0).get("hypothesis").get("framework").has("offer"));
+        assertTrue(json.get(0).get("hypothesis").get("framework").has("checklist"));
+    }
+
+    /** Cria a hipótese usada pelos testes de contrato pending. */
+    private RecordWireframeHypothesis pendingHypothesis() {
+        return new RecordWireframeHypothesis(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                "Hipótese Framework",
+                Map.of(
+                        "pain", Map.of("surface", "Dor superficial"),
+                        "result", Map.of("desiredResult", "Resultado desejado"),
+                        "mechanism", Map.of("core", "Mecanismo central"),
+                        "proof", Map.of("type", "Prova"),
+                        "offer", Map.of("name", "Oferta"),
+                        "checklist", Map.of("painReady", true)));
+    }
+
+    /** Cria o resumo de experimento usado pelos testes de contrato pending. */
+    private RecordWireframeExperiment pendingExperiment(Long id, String name, String hypothesis) {
+        return new RecordWireframeExperiment(
+                id,
+                name,
+                hypothesis,
+                "PLANNED",
+                "LANDING",
+                "Prompt texto",
+                "Prompt imagem",
+                "Ângulo campanha",
+                "Copy anúncio",
+                "Briefing imagem",
+                "Copy landing",
+                "Wireframe landing",
+                "Planejamento imagem",
+                "Preset design",
+                "Entregáveis landing",
+                "<html>GeraLanding</html>");
     }
 }

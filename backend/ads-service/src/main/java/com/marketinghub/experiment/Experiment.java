@@ -17,6 +17,7 @@ import com.marketinghub.sampleemail.SampleEmail;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * Experiment grouping ad sets and creatives.
@@ -85,6 +86,21 @@ public class Experiment {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hypothesis_id", nullable = false)
     private com.marketinghub.hypothesis.Hypothesis hypothesisRef;
+
+    /** Retorna o identificador da hipótese associada para contratos operacionais internos. */
+    public UUID getHypothesisRefIdForPending() {
+        return hypothesisRef != null ? hypothesisRef.getId() : null;
+    }
+
+    /** Retorna o título da hipótese associada para contratos operacionais internos. */
+    public String getHypothesisRefTitleForPending() {
+        return hypothesisRef != null ? hypothesisRef.getTitle() : null;
+    }
+
+    /** Retorna o JSON do framework da hipótese associada para contratos operacionais internos. */
+    public String getHypothesisFrameworkJsonForPending() {
+        return hypothesisRef != null ? hypothesisRef.getFrameworkJson() : null;
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "metric_preset_id")

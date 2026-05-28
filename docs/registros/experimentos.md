@@ -2178,3 +2178,14 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/web/GeraLandingDesignPresetController.java
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java
+
+## 2026-05-28 20:45:00 UTC
+- solicitação: verificar se todos os acessos dos pacotes do Worker AI `geralanding.<etapa>` usam endpoints declarados no Swagger canônico em `docs/canonical`.
+- causa-raiz identificada: o Swagger canônico atual documenta apenas endpoints públicos por experimento (`start`, listagem e detalhe), enquanto os clients do Worker AI ainda consomem endpoints operacionais internos por etapa (`pending`, `receive-result`, `receive-dispatch` e, no caso de copy, `receive-prompt`) e endpoints auxiliares de experimento/nicho que não aparecem nesse Swagger.
+- resultado da verificação:
+  - acessos compatíveis: consultas de detalhe por etapa em `/api/experiments/{experimentId}/geralanding/<etapa>/stage-executions/{idJob}`;
+  - acessos não declarados no Swagger canônico: `/api/internal/geralanding/<etapa>/stage-executions/pending`, `/receive-result`, `/receive-dispatch`, `/receive-prompt`, `/api/experiments/{experimentId}`, `/api/niches/{nicheId}` e `/api/niches/{nicheId}/hypotheses`.
+- validação executada:
+  - `find docs/canonical -type f` para confirmar que o único Swagger canônico YAML é `docs/canonical/geralanding-backend-swagger.v1.yaml`;
+  - `rg`/script Python sobre `ai-worker/src/main/java/com/marketinghub/worker/geralanding` para enumerar chamadas HTTP montadas com `UrlUtils.joinPath` e `.uri(...)`;
+  - `rg` nos controllers do backend em `backend/ads-service/src/main/java/com/marketinghub/geralanding` para comparar os endpoints expostos pelo pacote `com.marketinghub.geralanding` com o Swagger.

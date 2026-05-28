@@ -1,6 +1,6 @@
 package com.marketinghub.worker.geralanding.presetdesign.request;
 
-import com.marketinghub.worker.geralanding.GeraLandingJobDto;
+import com.marketinghub.worker.geralanding.presetdesign.dto.RecordJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
 import com.marketinghub.worker.geralanding.presetdesign.backend.GeraLandingPresetDesignBackendClient;
 import com.marketinghub.worker.geralanding.presetdesign.GeraLandingExperimentPresetDesignRequest;
@@ -36,7 +36,7 @@ public class GeraLandingPresetDesignOpenAiExecutionService {
             Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());
             GeraLandingExperimentPresetDesignRequest requestData = new GeraLandingExperimentPresetDesignRequest(execution.experimentId(), dadosPrompt);
             String prompt = montaRequest.montarPrompt(requestData); String requestBody = montaRequest.montar(requestData);
-            GeraLandingJobDto openAiJob = new GeraLandingJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), "gpt-5.2", requestBody, prompt, null);
+            RecordJobDto openAiJob = new RecordJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), "gpt-5.2", requestBody, prompt, null);
             var basePayload = openAiClient.generate(openAiJob);
             RecordPresetDesignResponse pl = new RecordPresetDesignResponse(basePayload.responseContent(), basePayload.rawResponse(), basePayload.requestBodyJson(), basePayload.openAiJobId(), basePayload.inputTokens(), basePayload.outputTokens(), basePayload.costUsd());
             recebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), pl);

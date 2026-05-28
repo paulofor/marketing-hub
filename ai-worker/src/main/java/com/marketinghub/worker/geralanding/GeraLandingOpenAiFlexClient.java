@@ -60,14 +60,28 @@ public class GeraLandingOpenAiFlexClient {
     /**
      * Executa a geração no endpoint /responses da OpenAI para DTO da etapa deliverables.
      */
-    public GeraLandingJobCompletionPayload generate(com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingJobDto job) {
+    public GeraLandingJobCompletionPayload generate(com.marketinghub.worker.geralanding.deliverables.dto.RecordJobDto job) {
+        return generateFromValues(job.id(), job.section(), job.model(), job.requestBodyJson(), job.prompt());
+    }
+
+    /**
+     * Executa a geração no endpoint /responses da OpenAI para DTO da etapa imageplanning.
+     */
+    public GeraLandingJobCompletionPayload generate(com.marketinghub.worker.geralanding.imageplanning.dto.RecordJobDto job) {
+        return generateFromValues(job.id(), job.section(), job.model(), job.requestBodyJson(), job.prompt());
+    }
+
+    /**
+     * Executa a geração no endpoint /responses da OpenAI para DTO da etapa presetdesign.
+     */
+    public GeraLandingJobCompletionPayload generate(com.marketinghub.worker.geralanding.presetdesign.dto.RecordJobDto job) {
         return generateFromValues(job.id(), job.section(), job.model(), job.requestBodyJson(), job.prompt());
     }
 
     /**
      * Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa.
      */
-    public GeraLandingJobCompletionPayload generate(GeraLandingJobDto job) {
+    public GeraLandingJobCompletionPayload generate(RecordJobDto job) {
         return generateFromValues(job.id(), job.section(), job.model(), job.requestBodyJson(), job.prompt());
     }
 

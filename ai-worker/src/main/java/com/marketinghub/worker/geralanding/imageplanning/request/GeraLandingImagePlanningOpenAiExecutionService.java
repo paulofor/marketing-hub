@@ -2,11 +2,11 @@ package com.marketinghub.worker.geralanding.imageplanning.request;
 
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
-import com.marketinghub.worker.geralanding.imageplanning.GeraLandingImagePlanningBackendClient;
+import com.marketinghub.worker.geralanding.imageplanning.backend.GeraLandingImagePlanningBackendClient;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingExperimentImagePlanningRequest;
 import com.marketinghub.worker.geralanding.imageplanning.GeraLandingJobCompletionImagePlanningPayload;
 import com.marketinghub.worker.geralanding.imageplanning.dto.GeraLandingStageExecutionDetailDto;
-import com.marketinghub.worker.geralanding.imageplanning.RecebeResponse;
+import com.marketinghub.worker.geralanding.imageplanning.response.RecebeResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,9 +22,9 @@ public class GeraLandingImagePlanningOpenAiExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingImagePlanningOpenAiExecutionService.class);
     private final GeraLandingImagePlanningBackendClient backendClient;
     private final GeraLandingOpenAiFlexClient openAiClient;
-    private final com.marketinghub.worker.geralanding.imageplanning.MontaRequest montaRequest;
+    private final com.marketinghub.worker.geralanding.imageplanning.request.MontaRequest montaRequest;
     private final RecebeResponse recebeResponse;
-    public GeraLandingImagePlanningOpenAiExecutionService(GeraLandingImagePlanningBackendClient backendClient, GeraLandingOpenAiFlexClient openAiClient, com.marketinghub.worker.geralanding.imageplanning.MontaRequest montaRequest, RecebeResponse recebeResponse) {
+    public GeraLandingImagePlanningOpenAiExecutionService(GeraLandingImagePlanningBackendClient backendClient, GeraLandingOpenAiFlexClient openAiClient, com.marketinghub.worker.geralanding.imageplanning.request.MontaRequest montaRequest, RecebeResponse recebeResponse) {
         this.backendClient = backendClient; this.openAiClient = openAiClient; this.montaRequest = montaRequest; this.recebeResponse = recebeResponse;
     }
     /** Processa os jobs pendentes da etapa imageplanning. */

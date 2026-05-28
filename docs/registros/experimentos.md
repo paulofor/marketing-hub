@@ -2088,3 +2088,14 @@
   - referências ajustadas em `GeraLandingWireframeOpenAiExecutionService` e `MontaRequest`.
 - validação executada:
   - inspeção estática das referências com `rg` para garantir ausência do nome antigo em código Java da etapa wireframe.
+
+## 2026-05-28 18:00:00 UTC
+- solicitação: usar a mesma estrutura do wireframe no worker ai para replicar na etapa `geralanding.imageplanning`.
+- causa-raiz identificada: `imageplanning` ainda mantinha classes `MontaRequest`, `RecebeResponse` e `GeraLandingImagePlanningBackendClient` no pacote raiz da etapa, divergindo do padrão por responsabilidade aplicado em `wireframe`.
+- correção aplicada:
+  - movida integração backend para `geralanding.imageplanning.backend.GeraLandingImagePlanningBackendClient`;
+  - movido callback de resposta para `geralanding.imageplanning.response.RecebeResponse`;
+  - movido montador de request OpenAI para `geralanding.imageplanning.request.MontaRequest`;
+  - atualizados imports/referências em `GeraLandingImagePlanningOpenAiExecutionService` e `ImagePlanningPendingJobsService`.
+- validação executada:
+  - `mvn -q -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

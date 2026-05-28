@@ -2058,3 +2058,12 @@
   - atualizado cada scheduler para orquestrar apenas `PendingJobsService` + `ExecutionProcessor` da própria etapa.
 - validação executada:
   - `mvn -q -DskipTests compile` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 16:10:00 UTC
+- solicitação: renomear `GeraLandingJobCompletionWireframePayload` para `RecordWireframeResponse` na etapa `geralanding.wireframe` do `ai-worker`.
+- causa-raiz identificada: nome anterior longo e inconsistente com o padrão desejado para objeto de resposta da etapa wireframe.
+- correção aplicada:
+  - classe record renomeada para `RecordWireframeResponse`;
+  - atualizadas todas as referências/importações no fluxo wireframe (backend client, execução OpenAI e receive response) e no teste de execução.
+- validação executada:
+  - `mvn -q -Dtest=GeraLandingExecutionServiceTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

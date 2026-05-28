@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.wireframe.backend.GeraLandingWireframeBackendClient;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
-import com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload;
+import com.marketinghub.worker.geralanding.wireframe.response.RecordWireframeResponse;
 import com.marketinghub.worker.geralanding.wireframe.response.RecebeResponse;
 import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiResponse;
@@ -86,7 +86,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
             String prompt = montaRequest.montarPrompt(requestData);
             String requestBody = montaRequest.montar(requestData);
             GeraLandingJobDto openAiJob = new GeraLandingJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), "gpt-5.2", requestBody, prompt, null);
-            GeraLandingJobCompletionWireframePayload payload = generate(openAiJob);
+            RecordWireframeResponse payload = generate(openAiJob);
             recebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
         } catch (Exception ex) {
             log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})", execution.idJob(), execution.experimentId(), ex);
@@ -95,7 +95,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
     }
 
     /** Executa a geração no endpoint /responses da OpenAI e devolve o payload final da etapa wireframe. */
-    private GeraLandingJobCompletionWireframePayload generate(GeraLandingJobDto job) throws Exception {
+    private RecordWireframeResponse generate(GeraLandingJobDto job) throws Exception {
         log.info("Iniciando geração gera-landing wireframe via OpenAI flex [jobId={}, stage={}, model={}, requestBodyLength={}]", job.id(), job.section(), job.model(), safeLength(job.requestBodyJson()));
         log.info("Payload requestBodyJson do gera-landing wireframe [jobId={}, stage={}, requestBodyPreview={}]", job.id(), job.section(), preview(job.requestBodyJson()));
         OpenAiResponse response = createFlexResponse(job);
@@ -110,7 +110,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
         Integer inputTokens = response.usage() != null ? response.usage().effectiveInputTokens() : null;
         Integer outputTokens = response.usage() != null ? response.usage().effectiveOutputTokens() : null;
         log.info("Finalizando geração gera-landing wireframe [jobId={}, stage={}, responseId={}, inputTokens={}, outputTokens={}]", job.id(), job.section(), response.id(), inputTokens, outputTokens);
-        return new GeraLandingJobCompletionWireframePayload(modelResponse, rawOutput, job.requestBodyJson(), response.id(), inputTokens, outputTokens, OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
+        return new RecordWireframeResponse(modelResponse, rawOutput, job.requestBodyJson(), response.id(), inputTokens, outputTokens, OpenAiCostEstimator.estimateUsd(job.model(), response.usage()));
     }
 
     /** Prepara e executa a chamada flex da OpenAI para a etapa wireframe. */

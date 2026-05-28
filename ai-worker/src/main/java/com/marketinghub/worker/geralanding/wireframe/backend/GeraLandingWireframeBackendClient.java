@@ -2,7 +2,7 @@ package com.marketinghub.worker.geralanding.wireframe.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
-import com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload;
+import com.marketinghub.worker.geralanding.wireframe.response.RecordWireframeResponse;
 import com.marketinghub.worker.util.UrlUtils;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,7 +100,7 @@ public class GeraLandingWireframeBackendClient {
     }
 
     /** Envia ao backend o resultado final da etapa wireframe. */
-    public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionWireframePayload payload) {
+    public void receiveResult(String idJob, Long experimentId, String stageCode, RecordWireframeResponse payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", experimentId);

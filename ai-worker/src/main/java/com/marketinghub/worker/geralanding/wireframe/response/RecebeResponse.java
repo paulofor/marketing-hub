@@ -23,7 +23,7 @@ public class RecebeResponse {
     /**
      * Envia para o backend os dados de despacho e de resultado da etapa, incluindo a resposta crua da OpenAI.
      */
-    public void processar(Long experimentId, String stageCode, String idJob, GeraLandingJobCompletionWireframePayload payload) {
+    public void processar(Long experimentId, String stageCode, String idJob, RecordWireframeResponse payload) {
         if (payload != null && payload.openAiJobId() != null && !payload.openAiJobId().isBlank()) {
             backendClient.receiveDispatch(idJob, experimentId, stageCode, payload.openAiJobId());
         }

@@ -242,7 +242,7 @@ public class GeraLandingCopyBackendClient {
 
     /** Recebe resultado da etapa wireframe usando o payload tipado da etapa. */
     public void receiveResult(String idJob, Long experimentId, String stageCode,
-                              com.marketinghub.worker.geralanding.wireframe.response.GeraLandingJobCompletionWireframePayload payload) {
+                              com.marketinghub.worker.geralanding.wireframe.response.RecordWireframeResponse payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/stage-executions");
         Map<String, Object> body = new java.util.LinkedHashMap<>();

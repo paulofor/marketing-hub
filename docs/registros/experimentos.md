@@ -2163,3 +2163,18 @@
 - validação executada:
   - inspeção estática com `rg` para garantir ausência do nome antigo no código Java do `ai-worker`;
   - `mvn -q -DskipTests compile` em `ai-worker/` (bloqueado por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 14:08:18 UTC-3
+- solicitação para criar um Swagger canônico com os endpoints existentes no backend do GeraLanding organizados por etapa.
+- raciocínio aplicado: verificar diretamente os controllers do pacote `com.marketinghub.geralanding` para documentar apenas contratos realmente expostos pelo backend e evitar inventar endpoints inexistentes.
+- registro do que foi feito: criado o OpenAPI canônico `docs/canonical/geralanding-backend-swagger.v1.yaml` com endpoints de start, listagem e detalhe das etapas wireframe, copy, image planning, design preset e deliverables; também foi adicionada referência ao Swagger no cânone de arquitetura do GeraLanding.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/canonical/geralanding-arquitetura-canon.v1.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/GeraLandingWireframeController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/web/GeraLandingCopyController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/web/GeraLandingDesignPresetController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java

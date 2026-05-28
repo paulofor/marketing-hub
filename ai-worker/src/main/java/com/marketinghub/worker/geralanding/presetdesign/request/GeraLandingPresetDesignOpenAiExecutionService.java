@@ -2,11 +2,11 @@ package com.marketinghub.worker.geralanding.presetdesign.request;
 
 import com.marketinghub.worker.geralanding.GeraLandingJobDto;
 import com.marketinghub.worker.geralanding.GeraLandingOpenAiFlexClient;
-import com.marketinghub.worker.geralanding.presetdesign.GeraLandingPresetDesignBackendClient;
+import com.marketinghub.worker.geralanding.presetdesign.backend.GeraLandingPresetDesignBackendClient;
 import com.marketinghub.worker.geralanding.presetdesign.GeraLandingExperimentPresetDesignRequest;
-import com.marketinghub.worker.geralanding.presetdesign.GeraLandingJobCompletionPresetDesignPayload;
+import com.marketinghub.worker.geralanding.presetdesign.response.RecordPresetDesignResponse;
 import com.marketinghub.worker.geralanding.presetdesign.dto.GeraLandingStageExecutionDetailDto;
-import com.marketinghub.worker.geralanding.presetdesign.RecebeResponse;
+import com.marketinghub.worker.geralanding.presetdesign.response.RecebeResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,7 +38,7 @@ public class GeraLandingPresetDesignOpenAiExecutionService {
             String prompt = montaRequest.montarPrompt(requestData); String requestBody = montaRequest.montar(requestData);
             GeraLandingJobDto openAiJob = new GeraLandingJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), "gpt-5.2", requestBody, prompt, null);
             var basePayload = openAiClient.generate(openAiJob);
-            GeraLandingJobCompletionPresetDesignPayload pl = new GeraLandingJobCompletionPresetDesignPayload(basePayload.responseContent(), basePayload.rawResponse(), basePayload.requestBodyJson(), basePayload.openAiJobId(), basePayload.inputTokens(), basePayload.outputTokens(), basePayload.costUsd());
+            RecordPresetDesignResponse pl = new RecordPresetDesignResponse(basePayload.responseContent(), basePayload.rawResponse(), basePayload.requestBodyJson(), basePayload.openAiJobId(), basePayload.inputTokens(), basePayload.outputTokens(), basePayload.costUsd());
             recebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), pl);
         } catch (Exception ex) {
             log.error("Falha ao processar etapa presetdesign para executionId={} (experimentId={})", execution.idJob(), execution.experimentId(), ex);

@@ -2067,3 +2067,14 @@
   - atualizadas todas as referências/importações no fluxo wireframe (backend client, execução OpenAI e receive response) e no teste de execução.
 - validação executada:
   - `mvn -q -Dtest=GeraLandingExecutionServiceTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).
+
+## 2026-05-28 17:05:00 UTC
+- solicitação: replicar para `geralanding.presetdesign` a mesma estrutura de pacotes consolidada na etapa `geralanding.wireframe`.
+- causa-raiz identificada: a etapa `presetdesign` ainda mantinha classes centrais em pacote raiz da etapa, diferente da organização por responsabilidade usada em `wireframe`.
+- correção aplicada:
+  - movida a integração com backend para `geralanding.presetdesign.backend.GeraLandingPresetDesignBackendClient`;
+  - movida a classe de callback para `geralanding.presetdesign.response.RecebeResponse`;
+  - criado o record `geralanding.presetdesign.response.RecordPresetDesignResponse` para alinhar payload de retorno ao padrão de resposta por etapa;
+  - atualizadas referências/importações nos fluxos de monitor/request e no backend client compartilhado.
+- validação executada:
+  - `mvn -q -Dtest=GeraLandingExecutionServiceTest test` em `ai-worker/` (falhou por dependência privada externa `com.marketinghub:ads-service:0.0.1-SNAPSHOT` com HTTP 401 no GitHub Packages).

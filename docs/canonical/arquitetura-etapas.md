@@ -22,6 +22,49 @@ Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>
 
 Exemplo: `BackendWireframeController.pending` deve retornar `List<RecordWireframePending>`.
 
+## Etapa 2 — Agendamento e busca de novos itens para processamento
+
+A segunda etapa operacional de qualquer processamento assíncrono por Worker AI é o ciclo de
+agendamento e busca de novos itens aptos para processamento. O padrão canônico deve seguir o
+comportamento do scheduler de wireframe do Worker AI:
+
+1. o Worker AI deve possuir um scheduler específico da etapa, nomeado no padrão
+   `<Etapa>ExecutionScheduler`;
+2. o scheduler deve executar periodicamente via `@Scheduled` com cron explícito na anotação, sem
+   variável intermediária para o cron;
+3. a cada ciclo, o scheduler deve delegar a busca de pendências a um serviço específico da etapa,
+   nomeado no padrão `<Etapa>PendingJobsService`;
+4. o serviço de pendências deve consultar exclusivamente o endpoint interno `pending` da própria etapa
+   no backend, respeitando o isolamento por módulo/etapa;
+5. o endpoint `pending` deve retornar somente itens realmente aptos ao processamento da etapa,
+   preferencialmente com status `INICIADO`;
+6. o Worker AI pode aplicar um limite operacional de leitura/processamento, mas esse limite não pode
+   alterar o contrato semântico do item;
+7. falhas no ciclo agendado devem ser registradas em log com stack trace completo antes de serem
+   propagadas ou tratadas.
+
+Cada item retornado pelo `pending` deve vir completo como uma **unidade de trabalho fechada**. Isso
+significa que o item precisa carregar, no próprio payload da listagem, todos os identificadores, dados
+de contexto e artefatos necessários para executar a etapa sem depender de uma chamada adicional de
+detalhe antes do processamento. A unidade de trabalho fechada deve conter, no mínimo:
+
+- identificador único do job da etapa;
+- identificador do experimento ou entidade principal processada;
+- código da etapa;
+- status operacional que justifica a seleção para processamento;
+- dados completos da entidade principal necessários para montar o prompt ou executar a regra da etapa;
+- dados completos da hipótese, framework ou demais insumos de domínio exigidos pela etapa;
+- artefatos anteriores já produzidos e necessários para continuidade do fluxo, serializados como JSON
+  estruturado quando forem JSON válido;
+- metadados mínimos de ordenação/rastreabilidade quando existirem no backend.
+
+É proibido desenhar a busca de pendências como uma lista parcial que obrigue o Worker AI a buscar
+detalhes complementares por job antes de processar. Caso alguma etapa precise de dados adicionais para
+funcionar, a causa-raiz deve ser corrigida no contrato `pending` do backend para que o item continue
+sendo publicado como unidade de trabalho fechada. Esse padrão reduz acoplamento, evita inconsistência
+entre leituras em momentos diferentes, melhora rastreabilidade e mantém o backend como fonte única dos
+dados operacionais.
+
 ## GeraLanding — wireframe
 
 A etapa `landing-page-wireframe` expõe a fila interna pelo endpoint:

@@ -2293,3 +2293,16 @@
   - removido o método `fetchWireframeStageExecutionDetail` do client de wireframe do Worker AI;
   - o cânone de arquitetura por etapa foi atualizado para declarar que o `pending` de wireframe é fonte suficiente para o Worker AI, sem chamada adicional de detalhe antes do processamento;
   - adicionados testes garantindo que o serviço usa apenas a lista pending estruturada e que o client faz somente uma requisição ao endpoint interno de pendências.
+
+## 2026-05-28 22:53:51 UTC-3
+- solicitação para documentar no cânone de arquitetura por etapas a segunda etapa operacional do Worker AI: agendamento e busca de novos itens para processamento.
+- raciocínio aplicado: usar o scheduler de wireframe como referência concreta para formalizar que cada ciclo agendado consulta apenas a fila interna `pending` da própria etapa e que cada item deve chegar completo como unidade de trabalho fechada.
+- foi feito: inclusão da seção "Etapa 2 — Agendamento e busca de novos itens para processamento" em `docs/canonical/arquitetura-etapas.md`, deixando explícito que o contrato `pending` deve carregar todos os identificadores, dados de contexto e artefatos necessários sem chamada adicional de detalhe antes do processamento.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/canonical/arquitetura-etapas.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/monitor/WireframeExecutionScheduler.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/monitor/WireframePendingJobsService.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/backend/GeraLandingWireframeBackendClient.java

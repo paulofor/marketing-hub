@@ -2489,3 +2489,13 @@
   - o JSON enviado em falha agora segue o contrato de `recebe-resposta`, com campos de resultado nulos e `errorMessage`/`errorDetail` preenchidos;
   - `BackendWireframeService.markCompletedFromResponse(...)` passou a normalizar a falha também quando chegar apenas `errorDetail`, garantindo persistência de `error_message`, `error_detail`, `completed_at` e status `FALHA` sem gravar artefato no experimento;
   - testes unitários cobrem o endpoint chamado pelo Worker AI e a persistência de falha no backend.
+
+## 2026-05-29 16:53:52 UTC-3
+- solicitação para retirar o agendamento automático do `ai-worker` na etapa `geralanding.wireframe`.
+- raciocínio: a causa do processamento periódico estava na classe `WireframeExecutionScheduler`, com bean Spring e anotação `@Scheduled`; remover o vínculo com o agendador evita execução automática sem alterar o serviço de processamento manual.
+- registro do que foi feito: removido o agendamento Spring da etapa wireframe no pacote `com.marketinghub.worker.geralanding.wireframe.monitor`, mantendo o método `run()` apenas como ciclo manual e atualizando os comentários de responsabilidade.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/monitor/WireframeExecutionScheduler.java

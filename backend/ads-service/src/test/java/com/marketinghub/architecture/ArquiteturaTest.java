@@ -99,6 +99,13 @@ class ArquiteturaTest {
                     .because("[ARQUITETURA] [BACKEND][GeraLanding] toda classe Backend<Etapa>Controller deve expor pending retornando List<Record<Etapa>Pending> para a fila interna da etapa");
 
     @ArchTest
+    static final ArchRule backendWireframeControllerMustExposeEnviadoParaIAMethod = classes()
+            .that()
+            .haveFullyQualifiedName("com.marketinghub.geralanding.wireframe.web.BackendWireframeController")
+            .should(haveEnviadoParaIAMethod())
+            .because("[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController deve expor enviadoParaIA(String idJob) para o callback interno de envio à IA");
+
+    @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
             classes().that(classesBelongingToLayer("web")).should(onlyDependOnLayer("service"));
 
@@ -247,6 +254,35 @@ class ArquiteturaTest {
                             + " método=pending deve retornar List<" + expectedRecordName + ">"
                             + " conforme o padrão Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>"
                             + "; retorno atual=" + returnType.getTypeName();
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
+    /**
+     * Garante que BackendWireframeController exponha o método interno enviadoParaIA recebendo jobId.
+     */
+    private static ArchCondition<JavaClass> haveEnviadoParaIAMethod() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController.enviadoParaIA(String)") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                Optional<JavaMethod> method = item.getMethods().stream()
+                        .filter(candidate -> candidate.getName().equals("enviadoParaIA"))
+                        .findFirst();
+                if (method.isEmpty()) {
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] classe=" + item.getName()
+                            + " deve declarar método enviadoParaIA para receber o job enviado à IA";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                    return;
+                }
+
+                Class<?>[] parameterTypes = method.get().reflect().getParameterTypes();
+                boolean validSignature = parameterTypes.length == 1 && String.class.equals(parameterTypes[0]);
+                if (!validSignature) {
+                    String message = "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] classe=" + item.getName()
+                            + " método=enviadoParaIA deve receber exatamente um parâmetro String idJob";
                     events.add(SimpleConditionEvent.violated(item, message));
                 }
             }

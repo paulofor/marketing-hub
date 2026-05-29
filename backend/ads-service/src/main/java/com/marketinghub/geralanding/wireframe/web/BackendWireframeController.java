@@ -55,6 +55,12 @@ public class BackendWireframeController {
     return executionService.listPending(STAGE_CODE);
   }
 
+  /** Recebe o job enviado para IA sem alterar estado persistido nesta primeira versão. */
+  @PostMapping("/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia")
+  public ResponseEntity<Void> enviadoParaIA(@PathVariable String idJob) {
+    return ResponseEntity.accepted().build();
+  }
+
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}")
   public ResponseEntity<GeraLandingWireframeStageExecutionDetailResponse> detailStageExecution(

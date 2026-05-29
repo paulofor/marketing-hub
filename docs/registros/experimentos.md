@@ -2262,6 +2262,22 @@
 - validação executada:
   - `./../mvnw -Dtest=GeraLandingWireframeStageExecutionServiceTest,BackendWireframeControllerTest test` em `backend/ads-service/`.
 
+## 2026-05-28 21:30:47 UTC-3
+- solicitação: criar um documento canônico com diagramas das informações tratadas pela OpenAI, incluindo framework de hipóteses e atributos do experimento vindos das etapas do pipeline.
+- raciocínio aplicado: centralizar em `/docs/canonical` a visão de dados enviados/recebidos pela OpenAI para preservar rastreabilidade, separar metadado técnico de artefato final e manter aderência ao eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+- registro do que foi feito: criado o cânone `docs/canonical/openai-informacoes-tratadas-canon.v1.md`, com diagramas Mermaid, matriz de atributos de hipótese, atributos de experimento, etapas do pipeline, envelope técnico de job e checklists de governança; também foi adicionada referência no procedimento canônico de experimento.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/modelo-dados-hipotese.md
+  - docs/modelo-dados-experimento.md
+  - docs/experiment-pipeline-artifacts-visual.md
+  - docs/ai-worker/experimento-criativo-service.md
+  - docs/ai-worker/produto-sucesso-nicho-hypotese-service.md
+  - backend/ads-service/src/main/java/com/marketinghub/hypothesis/Hypothesis.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/Experiment.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/ExperimentPipelineSection.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/ExperimentPipelineGenerationJob.java
 ## 2026-05-29 — Worker AI preparado para fila pending estruturada do wireframe
 
 - Ajustado o client do Worker AI da etapa `landing-page-wireframe` para consumir diretamente o endpoint interno `/api/internal/geralanding/wireframe/stage-executions/pending`, preservando os artefatos JSON estruturados enviados pelo backend (`experiment` e `hypothesis.framework`) sem voltar a depender da varredura por experimento.

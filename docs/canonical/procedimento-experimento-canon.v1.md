@@ -183,6 +183,7 @@ A interface de Experimentos deve manter abas/visões que permitam acompanhar, de
 - Ordem/seções do pipeline no backend: `ExperimentPipelineSection`.
 - Clientes OpenAI do pipeline e Gera Landing no Worker AI.
 - Prompts versionados no Worker AI em `src/main/resources/prompts/...`.
+- Informações tratadas pela OpenAI, incluindo framework de hipótese e atributos do experimento: `docs/canonical/openai-informacoes-tratadas-canon.v1.md`.
 - Endpoint de aprovação/publicação de landing no módulo Gera Landing do backend.
 
 ## 14. Governança de evolução deste cânone

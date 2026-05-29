@@ -4,19 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
-import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
-import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
+import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -81,17 +80,32 @@ class BackendWireframeControllerTest {
         assertTrue(output.getOut().contains("prompt=Prompt para IA"));
     }
 
-    /** Deve receber a resposta da IA sem acionar processamento nesta versão inicial. */
+    /** Deve receber a resposta da IA e delegar a conclusão da execução wireframe. */
     @Test
-    void recebeRespostaShouldAcceptPayloadWithoutProcessing() {
+    void recebeRespostaShouldDelegatePayloadToWireframeService() {
         BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(executionService);
-        RecebeRespostaRequest payload = new RecebeRespostaRequest();
+        RecebeRespostaRequest payload = new RecebeRespostaRequest(
+                44L,
+                "landing-page-wireframe",
+                "{\"landingPageWireframe\":{}}",
+                120,
+                80,
+                new BigDecimal("0.012300"),
+                "openai-job-1");
 
         var response = controller.recebeResposta("job-ia-1", payload);
 
         assertEquals(202, response.getStatusCode().value());
-        verifyNoInteractions(executionService);
+        verify(executionService).markCompletedFromResponse(
+                "job-ia-1",
+                44L,
+                "landing-page-wireframe",
+                "{\"landingPageWireframe\":{}}",
+                120,
+                80,
+                new BigDecimal("0.012300"),
+                "openai-job-1");
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */

@@ -26,7 +26,7 @@ public class WireframeExecutionScheduler {
     }
 
     /** Executa o ciclo da etapa wireframe consultando apenas o endpoint específico da etapa. */
-    @Scheduled(cron = "0 */30 * * * *")
+    @Scheduled(cron = "0 */15 * * * *")
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {

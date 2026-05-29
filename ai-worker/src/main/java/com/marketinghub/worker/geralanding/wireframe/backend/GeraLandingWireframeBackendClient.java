@@ -5,8 +5,6 @@ import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecuti
 import com.marketinghub.worker.geralanding.wireframe.response.RecordWireframeResponse;
 import com.marketinghub.worker.util.UrlUtils;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,71 +36,39 @@ public class GeraLandingWireframeBackendClient {
         this.objectMapper = objectMapper;
     }
 
-    /** Lista execuções pendentes da etapa wireframe usando os endpoints de experimento expostos pelo backend. */
+    /** Lista execuções pendentes da etapa wireframe usando a fila interna canônica do backend. */
     public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
         int effectiveLimit = Math.max(1, limit);
-        List<Map<String, Object>> experiments = listExperiments();
-        List<GeraLandingStageExecutionDetailDto> pending = new ArrayList<>();
-        for (Map<String, Object> experiment : experiments) {
-            Long experimentId = asLong(experiment.get("id"));
-            if (experimentId == null) {
-                continue;
-            }
-            pending.addAll(listPendingExecutionsForExperiment(experimentId));
-        }
-        return pending.stream()
-                .sorted(Comparator.comparing(
-                        GeraLandingStageExecutionDetailDto::executionRequestedAt,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                .limit(effectiveLimit)
-                .toList();
-    }
-
-    /** Lista os experimentos para descobrir os ids necessários ao endpoint de wireframe por experimento. */
-    private List<Map<String, Object>> listExperiments() {
-        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments");
+        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions/pending");
         List<Map<String, Object>> payload = webClient.get()
                 .uri(uri)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
-                .doOnError(err -> log.error("Falha ao buscar experimentos para pendências wireframe. uri={}", uri, err))
-                .onErrorReturn(List.of())
-                .block();
-        return payload != null ? payload : List.of();
-    }
-
-    /** Lista as execuções abertas de wireframe de um experimento usando a URL canônica atual do backend. */
-    private List<GeraLandingStageExecutionDetailDto> listPendingExecutionsForExperiment(Long experimentId) {
-        String uri = UrlUtils.joinPath(
-                backendBaseUrl,
-                apiPrefix,
-                "/experiments/" + experimentId + "/geralanding/wireframe/stage-executions") + "?includeCompleted=false";
-        List<Map<String, Object>> payload = webClient.get()
-                .uri(uri)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
-                .doOnError(err -> log.error("Falha ao buscar execuções pendentes wireframe por experimento. uri={}", uri, err))
+                .doOnError(err -> log.error("Falha ao buscar fila interna de pendências wireframe. uri={}", uri, err))
                 .onErrorReturn(List.of())
                 .block();
         if (payload == null || payload.isEmpty()) {
             return List.of();
         }
         return payload.stream()
-                .map(item -> toPendingExecutionDto(experimentId, item))
+                .map(this::toPendingExecutionDto)
+                .filter(item -> item.experimentId() != null && item.idJob() != null)
+                .limit(effectiveLimit)
                 .toList();
     }
 
-    /** Converte o resumo da listagem pública de wireframe para o DTO consumido pelo scheduler da etapa. */
-    private GeraLandingStageExecutionDetailDto toPendingExecutionDto(Long experimentId, Map<String, Object> item) {
+    /** Converte o item da fila interna de wireframe para o DTO consumido pelo scheduler da etapa. */
+    private GeraLandingStageExecutionDetailDto toPendingExecutionDto(Map<String, Object> item) {
         return new GeraLandingStageExecutionDetailDto(
-                experimentId,
-                "landing-page-wireframe",
-                asString(item.get("idJob")),
-                asString(item.get("status")),
-                asInstant(item.get("executionRequestedAt")),
+                asLong(item.get("experimentId")),
+                asString(item.get("stageCode")),
+                asString(item.get("jobid")),
+                "INICIADO",
                 null,
                 null,
-                asString(item.get("openAiJobId")));
+                null,
+                null,
+                buildPromptDataFromPending(item));
     }
 
     /** Carrega os dados de prompt para a geração wireframe a partir do experimento. */
@@ -128,6 +94,31 @@ public class GeraLandingWireframeBackendClient {
         payload.put("landingPageWireframe", parseJsonField(experiment.get("landingPageWireframe")));
         payload.put("NICHE_NAME", resolveNicheName(experiment.get("nicheId")));
         populateHypothesisFields(payload, experiment.get("nicheId"), experiment.get("hypothesisId"));
+        return payload;
+    }
+
+    /** Carrega os dados de prompt preferindo o JSON estruturado recebido da fila interna pending. */
+    public Map<String, Object> loadPromptData(GeraLandingStageExecutionDetailDto execution) {
+        if (execution != null && execution.promptData() != null && !execution.promptData().isEmpty()) {
+            return execution.promptData();
+        }
+        return execution != null ? loadPromptData(execution.experimentId()) : Map.of();
+    }
+
+    /** Monta os dados de prompt a partir do contrato PendingStageExecution enviado pelo backend. */
+    private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
+        Map<String, Object> experiment = asMap(pending.get("experiment"));
+        Map<String, Object> hypothesis = asMap(pending.get("hypothesis"));
+        Map<String, Object> framework = asMap(hypothesis.get("framework"));
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
+        payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
+        payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));
+        payload.put("landingPageWireframe", normalizeJsonArtifact(experiment.get("landingPageWireframe")));
+        payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
+        payload.put("PAIN_JSON", framework.getOrDefault("pain", Map.of()));
+        payload.put("RESULT_JSON", framework.getOrDefault("result", Map.of()));
         return payload;
     }
 
@@ -218,6 +209,38 @@ public class GeraLandingWireframeBackendClient {
         String nicheUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/niches/" + nicheId);
         Map<String, Object> niche = webClient.get().uri(nicheUrl).retrieve().bodyToMono(Map.class).onErrorReturn(Map.of()).block();
         return niche != null && niche.get("name") != null ? String.valueOf(niche.get("name")) : "";
+    }
+
+    /** Converte objetos genéricos de JSON em mapa quando possível, ou retorna mapa vazio. */
+    private Map<String, Object> asMap(Object value) {
+        if (value instanceof Map<?, ?> rawMap) {
+            Map<String, Object> converted = new LinkedHashMap<>();
+            rawMap.forEach((key, rawValue) -> {
+                if (key != null) {
+                    converted.put(String.valueOf(key), rawValue);
+                }
+            });
+            return converted;
+        }
+        return Map.of();
+    }
+
+    /** Normaliza artefatos recebidos da fila pending preservando JSON estruturado e convertendo strings JSON legadas. */
+    private Object normalizeJsonArtifact(Object value) {
+        if (value instanceof String text) {
+            return parseJsonField(text);
+        }
+        return value != null ? value : Map.of();
+    }
+
+    /** Retorna o primeiro valor textual preenchido entre possíveis nomes vindos do contrato do backend. */
+    private String firstText(Object... values) {
+        for (Object value : values) {
+            if (value != null && !value.toString().isBlank()) {
+                return value.toString();
+            }
+        }
+        return "";
     }
 
     /** Tenta converter campos JSON serializados para mapa, mantendo texto cru quando inválido. */

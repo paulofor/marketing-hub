@@ -2261,3 +2261,9 @@
   - testes do service e do controller foram atualizados para validar `campaignAngle` e demais artefatos como JSON estruturado no pending.
 - validação executada:
   - `./../mvnw -Dtest=GeraLandingWireframeStageExecutionServiceTest,BackendWireframeControllerTest test` em `backend/ads-service/`.
+
+## 2026-05-29 — Worker AI preparado para fila pending estruturada do wireframe
+
+- Ajustado o client do Worker AI da etapa `landing-page-wireframe` para consumir diretamente o endpoint interno `/api/internal/geralanding/wireframe/stage-executions/pending`, preservando os artefatos JSON estruturados enviados pelo backend (`experiment` e `hypothesis.framework`) sem voltar a depender da varredura por experimento.
+- A montagem dos dados de prompt passou a preferir o JSON já entregue na fila pending, mantendo fallback legado por `experimentId` quando o backend não enviar dados embutidos.
+- Adicionado teste unitário cobrindo o contrato `jobid`, `experiment`, `hypothesis.framework` e a preservação do JSON estruturado no DTO consumido pelo scheduler de wireframe.

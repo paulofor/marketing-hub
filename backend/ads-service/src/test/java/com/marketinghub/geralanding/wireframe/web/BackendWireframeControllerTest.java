@@ -10,16 +10,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
-import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
+import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 /** Valida o contrato do controller de backend da etapa wireframe. */
+@ExtendWith(OutputCaptureExtension.class)
 class BackendWireframeControllerTest {
 
     /** Deve delegar o início da etapa diretamente para o BackendWireframeService. */
@@ -60,7 +64,7 @@ class BackendWireframeControllerTest {
 
     /** Deve receber o prompt enviado para IA e delegar marcação de espera pelo retorno OpenAI. */
     @Test
-    void recebePromptShouldMarkExecutionWaitingOpenAiDispatch() {
+    void recebePromptShouldMarkExecutionWaitingOpenAiDispatch(CapturedOutput output) {
         BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(executionService);
         RecebePromptRequest payload = new RecebePromptRequest("Prompt para IA", "openai-job-1");
@@ -71,6 +75,7 @@ class BackendWireframeControllerTest {
         assertEquals("Prompt para IA", payload.prompt());
         assertEquals("openai-job-1", payload.jobidopenai());
         verify(executionService).markWaitingOpenAiDispatch("job-ia-1", "Prompt para IA", "openai-job-1");
+        assertTrue(output.getOut().contains("prompt=Prompt para IA"));
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */

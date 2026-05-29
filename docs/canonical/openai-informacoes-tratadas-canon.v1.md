@@ -1,194 +1,46 @@
-# Cânone v1 — Informações Tratadas pela OpenAI no Marketing Hub
+# Cânone v1 — Modelo de Dados das Informações Tratadas por IA
 
-## 1. Objetivo
+## 1. Objetivo do modelo de dados
 
-Este documento define, em nível canônico, quais informações do Marketing Hub podem ser enviadas para a OpenAI, quais respostas podem retornar, como esses dados se conectam ao framework de hipóteses e como os atributos do experimento alimentam as etapas do pipeline.
+Este documento define exclusivamente o **modelo de dados** onde ficam persistidas as informações tratadas pelos modelos de IA no Marketing Hub.
 
-A finalidade é preservar rastreabilidade, evitar vazamento de metadados técnicos para artefatos finais e manter o eixo comercial do sistema: **Dor → Resultado → Mecanismo → Prova → Oferta**.
+O foco deste cânone é responder:
 
-## 2. Escopo
+- em quais tabelas ficam os dados enviados aos modelos;
+- em quais tabelas ficam as respostas recebidas dos modelos;
+- em quais colunas ficam prompts, respostas brutas, respostas normalizadas, artefatos funcionais, modelo usado, tokens, custo e status;
+- como hipótese, experimento e jobs de geração se relacionam.
 
-Aplica-se aos fluxos que usam OpenAI para estruturar ou gerar artefatos comerciais, principalmente:
+Este documento **não** define fluxo operacional, estratégia de prompt, critérios comerciais, checklist de publicação, UI ou regras de execução. Esses temas pertencem a outros cânones.
 
-- geração do framework de hipótese;
-- geração de etapas do pipeline de experimento;
-- geração de etapas do Gera Landing;
-- geração de criativos, e-mails, entregáveis e fluxos do portal do lead quando derivados do experimento.
+## 2. Escopo do modelo
 
-Este documento não substitui o cânone operacional de execução do experimento; ele complementa esse cânone com a visão de dados tratados pela OpenAI.
+O modelo canônico das informações tratadas por IA é composto por cinco grupos de persistência:
 
-## 3. Princípios obrigatórios
+1. **Entrada semântica e resultado consolidado da hipótese**: tabela `hypothesis`.
+2. **Jobs de geração do framework da hipótese**: tabela `hypothesis_framework_generation_job`.
+3. **Artefatos consolidados do experimento**: tabela `experiment`.
+4. **Jobs de geração do pipeline do experimento e imagens derivadas**: tabelas `experiment_pipeline_generation_job` e `framework_image_generation_job`.
+5. **Registro genérico de geração por worker**: tabela `ai_worker_generation`, usada quando a geração não pertence a uma fila especializada.
 
-1. **Enviar somente contexto útil para transformação comercial**: toda informação enviada à OpenAI deve ajudar a entender dor real, resultado desejado, mecanismo, prova, oferta, público, canal ou restrição de execução.
-2. **Separar dado funcional de metadado técnico**: prompts, modelos, custos, IDs de job e respostas brutas são necessários para auditoria, mas não podem contaminar artefatos finais publicados.
-3. **Persistir rastreabilidade**: toda geração deve guardar, quando disponível, modelo, prompt, corpo de requisição, resposta bruta, resposta normalizada, tokens, custo e status operacional.
-4. **Evitar JSON dentro de JSON em campo textual**: quando houver payload estruturado, preferir campos/contratos explícitos e schema por etapa.
-5. **Preservar a cadeia de valor**: a OpenAI deve transformar dados existentes e hipóteses explícitas em artefatos melhores, não inventar demanda artificial sem aderência ao mercado.
-
-## 4. Visão macro dos dados tratados
-
-```mermaid
-flowchart LR
-    Market[Nicho e mercado] --> Hypothesis[Hipótese]
-    Hypothesis --> Framework[Framework canônico\nDor → Resultado → Mecanismo → Prova → Oferta]
-    Framework --> Experiment[Experimento]
-    Experiment --> Pipeline[Pipeline de geração]
-    Pipeline --> OpenAI[OpenAI\ntexto, estrutura, imagem e variações]
-    OpenAI --> Audit[Auditoria técnica\nprompt, request, raw response, tokens, custo]
-    OpenAI --> Artifacts[Artefatos funcionais\nângulo, anúncio, landing, criativos, e-mails]
-    Artifacts --> Publish[Publicação controlada\nsem metadado técnico]
-```
-
-## 5. Framework canônico da hipótese
-
-O framework da hipótese é o principal insumo semântico para a OpenAI. Ele deve organizar a tese de venda antes da geração de artefatos.
-
-```mermaid
-flowchart TD
-    Pain[Dor\nproblema, incômodo, esforço, risco ou frustração] --> Outcome[Resultado\nmelhoria prática prometida]
-    Outcome --> Mechanism[Mecanismo\ncomo a transformação pode acontecer]
-    Mechanism --> Proof[Prova\nevidência, plausibilidade ou sinal de confiança]
-    Proof --> Offer[Oferta\nproduto digital, pacote, preço, CTA e entrega]
-    Offer --> SuccessRule[Regra de sucesso\nKPI, CPL, CVR, amostra e critério de validação]
-```
-
-### 5.1 Atributos de hipótese usados pela OpenAI
-
-| Atributo | Uso esperado pela OpenAI | Observação canônica |
-|---|---|---|
-| `title` | nome curto da tese comercial | deve resumir a oportunidade sem excesso técnico |
-| `marketNiche` | contexto de mercado e público | origem do recorte comercial |
-| `premiseAngle` | ângulo inicial de persuasão | usado para posicionamento e variações de copy |
-| `promise` | promessa de valor | deve ser verificável e ligada ao resultado |
-| `problem` | dor/insight do cliente | insumo central para evitar demanda artificial |
-| `persona` | público/persona alvo | orienta linguagem, objeções e canais |
-| `mechanism` | mecanismo de solução | base para explicação e diferenciação |
-| `uniqueMechanism` | mecanismo único | reforça singularidade da oferta |
-| `entrega` | entregável ou formato do produto | conecta promessa ao que o cliente recebe |
-| `frameworkJson` | snapshot estruturado do framework | fonte preferencial para prompts estruturados |
-| `prompt` | prompt usado para gerar a hipótese | metadado técnico de auditoria, não artefato final |
-| `model` | modelo responsável pela geração | metadado técnico de auditoria |
-| `costUsd`, `cost`, `totalCost`, `expense` | custos de geração/execução | métricas operacionais e econômicas |
-| `imageFilterTitle` | filtro semântico para imagens | ajuda a manter coerência visual |
-| `successRule` | critério de validação da hipótese | guia decisões de aprovação/reprovação |
-| `offerType`, `price`, `offerPackage` | embalagem comercial | usados para proposta, CTA e valor percebido |
-| `kpiTargetCpl`, `status`, `generatedAt` | governança da hipótese | usados para priorização e auditoria |
-
-## 6. Atributos do experimento que alimentam a OpenAI
-
-O experimento transforma a hipótese em execução validável. A OpenAI pode usar atributos do experimento para gerar mensagens, páginas, imagens, entregáveis e fluxos, sempre respeitando o estágio e o contrato da etapa.
-
-### 6.1 Contexto comercial e de vínculo
-
-| Atributo | Uso esperado |
-|---|---|
-| `id`, `name` | identificação operacional e nome do experimento |
-| `niche` | recorte de mercado usado no contexto do prompt |
-| `hypothesis` | texto curto da hipótese no experimento |
-| `hypothesisRef.id`, `hypothesisRef.title`, `hypothesisRef.frameworkJson` | vínculo com a hipótese canônica e seu framework |
-| `platform` | canal de execução e adaptação de linguagem |
-| `stage` | fase operacional do experimento |
-| `primaryVariable` | variável principal testada |
-| `primaryMetric` | métrica principal usada para julgamento |
-
-### 6.2 Métricas, orçamento e critérios de validação
-
-| Atributo | Uso esperado |
-|---|---|
-| `metricPreset` | padrão de métricas aplicado ao experimento |
-| `kpiTargetCpl` | CPL alvo para validar aquisição |
-| `stopLossCpl` | limite de perda aceitável |
-| `sampleSize` | tamanho de amostra desejado |
-| `baselineCvr` | taxa de conversão base |
-| `targetCvr` | taxa de conversão alvo |
-| `dailyBudget` | orçamento diário |
-| `unitPrice` | preço unitário em BRL |
-| `cost`, `totalCost`, `expense` | custos e despesas acumuladas |
-| `mdePercent` | efeito mínimo detectável |
-| `startDate`, `endDate`, `status` | janela e estado do experimento |
-
-### 6.3 Canais, contas e publicação
-
-| Atributo | Uso esperado |
-|---|---|
-| `facebookPage`, `facebookInstantForm`, `instagramAccount` | contexto de publicação Meta/Instagram |
-| `facebookReleaseRequestedAt` | auditoria da solicitação de liberação |
-| `funnelResetAt` | controle operacional do funil |
-| `followUpActionUrl` | destino operacional pós-lead |
-| `journeyTemplate` | jornada aplicável ao lead |
-| `leadPortalFlow`, `leadPortalFlowModel`, `schemaFirstLeadPortalEnabled` | geração e governança do portal do lead |
-| `imageGenerationModel`, `imageGenerationQuality` | configuração para geração visual |
-
-### 6.4 Artefatos produzidos ou refinados pela OpenAI no experimento
-
-| Atributo persistido no experimento | Etapa/uso |
-|---|---|
-| `creativeTextPrompt` | prompt funcional para texto de criativo |
-| `creativeImagePrompt` | prompt funcional para imagem de criativo |
-| `campaignAngle` | saída da etapa `CAMPAIGN_ANGLE` |
-| `adCopy` | saída da etapa `AD_COPY` |
-| `adImageBriefing` | saída da etapa `AD_IMAGE_BRIEFING` |
-| `landingPageWireframe` | saída da etapa `LANDING_PAGE_WIREFRAME` |
-| `landingPageCopy` | saída da etapa `LANDING_PAGE_COPY` |
-| `landingPageImagePlanning` | saída da etapa `LANDING_PAGE_IMAGE_PLANNING` |
-| `landingPageDesignPreset` | JSON funcional da etapa `LANDING_PAGE_DESIGN_PRESET` |
-| `htmlGeraLanding` | HTML consolidado operacional do Gera Landing |
-| `landingPageDeliverables` | entregáveis previstos para a landing/produto |
-| `landingPageHtml` | HTML final aprovado/publicável |
-| `landingPageCopyJobId`, `landingPageWireframeJobId` | vínculo técnico com jobs de geração |
-
-### 6.5 Contadores de geração assistida por IA
-
-| Atributo | Uso esperado |
-|---|---|
-| `creativesToGenerate` | quantidade de criativos a gerar |
-| `instantFormsToGenerate` | quantidade de formulários instantâneos a gerar |
-| `emailsToGenerate` | quantidade de e-mails a gerar |
-| `sampleEmailsToGenerate` | quantidade de e-mails de amostra a gerar |
-| `deliverablesToGenerate` | quantidade de definições de entregáveis a gerar |
-| `leadPortalFlowsToGenerate` | quantidade de fluxos do portal do lead a gerar |
-| `imagesPerPackage`, `openImagesPerPackage`, `compressedImagesPerPackage` | parâmetros de pacote de imagens/entregáveis |
-
-## 7. Pipeline canônico de experimento e informações por etapa
-
-```mermaid
-flowchart LR
-    H[Hipótese + framework] --> E[Experimento]
-    E --> CA[CAMPAIGN_ANGLE\nângulo]
-    CA --> AD[AD_COPY\ncopy do anúncio]
-    AD --> IMG[AD_IMAGE_BRIEFING\nbriefing visual]
-    IMG --> WF[LANDING_PAGE_WIREFRAME\nestrutura]
-    WF --> COPY[LANDING_PAGE_COPY\ncopy da landing]
-    WF --> PLAN[LANDING_PAGE_IMAGE_PLANNING\nplanejamento visual]
-    PLAN --> PRESET[LANDING_PAGE_DESIGN_PRESET\ndesign + HTML provisório]
-    PRESET --> HTML[LANDING_PAGE_HTML\nHTML final]
-```
-
-| Etapa | Entradas principais para OpenAI | Saída funcional | Persistência principal |
-|---|---|---|---|
-| `CAMPAIGN_ANGLE` | hipótese, framework, nicho, persona, dor, promessa, mecanismo, prova, oferta e instruções customizadas | tese/ângulo central de campanha | `experiment.campaign_angle` |
-| `AD_COPY` | ângulo aprovado, hipótese, público, plataforma e restrições de anúncio | texto do anúncio | `experiment.ad_copy` |
-| `AD_IMAGE_BRIEFING` | copy do anúncio, ângulo, persona, oferta e direção visual | briefing/prompt de imagem | `experiment.ad_image_briefing` |
-| `LANDING_PAGE_WIREFRAME` | briefing visual, oferta, promessa, mecanismo e CTA | estrutura de seções da landing | `experiment.landing_page_wireframe` |
-| `LANDING_PAGE_COPY` | wireframe, ângulo, anúncio, framework e prova | textos finais por seção | `experiment.landing_page_copy` |
-| `LANDING_PAGE_IMAGE_PLANNING` | wireframe/copy, intenção visual, oferta e slots de imagem | lista de imagens e prompts visuais | `experiment.landing_page_image_planning` |
-| `LANDING_PAGE_DESIGN_PRESET` | wireframe, copy, plano de imagens e restrições visuais | preset de design e HTML provisório consolidado | `experiment.landing_page_design_preset`, `experiment.html_geralanding` |
-| `LANDING_PAGE_HTML` | preset, copy, imagens finais e validações de contrato | HTML final publicável | `experiment.landing_page_html` |
-
-## 8. Job de geração: envelope técnico auditável
-
-Cada chamada controlada para a OpenAI no pipeline deve produzir ou atualizar um registro de job com metadados operacionais.
+## 3. Diagrama entidade-relacionamento canônico
 
 ```mermaid
 erDiagram
-    EXPERIMENT ||--o{ EXPERIMENT_PIPELINE_GENERATION_JOB : "origina"
+    MARKET_NICHE ||--o{ HYPOTHESIS : "origina"
+    HYPOTHESIS ||--o{ HYPOTHESIS_FRAMEWORK_GENERATION_JOB : "possui"
     HYPOTHESIS ||--o{ EXPERIMENT : "fundamenta"
+    EXPERIMENT ||--o{ EXPERIMENT_PIPELINE_GENERATION_JOB : "possui"
+    EXPERIMENT ||--o{ FRAMEWORK_IMAGE_GENERATION_JOB : "possui"
 
     HYPOTHESIS {
-        UUID id PK
+        BINARY16 id PK
+        BIGINT market_niche_id FK
         VARCHAR title
-        LONGTEXT problem
+        BIGINT premise_angle_id FK
         LONGTEXT promise
+        LONGTEXT problem
+        VARCHAR persona
         LONGTEXT mechanism
         LONGTEXT unique_mechanism
         LONGTEXT entrega
@@ -196,29 +48,91 @@ erDiagram
         LONGTEXT prompt
         VARCHAR model
         DECIMAL cost_usd
+        DECIMAL cost
+        DECIMAL total_cost
+        DECIMAL expense
+        VARCHAR image_filter_title
         TEXT success_rule
+        VARCHAR offer_type
+        DECIMAL price
+        BIGINT offer_package_id FK
+        DECIMAL kpi_target_cpl
+        VARCHAR status
+        TIMESTAMP generated_at
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    HYPOTHESIS_FRAMEWORK_GENERATION_JOB {
+        BINARY16 id PK
+        BINARY16 hypothesis_id FK
+        VARCHAR section
+        VARCHAR status
+        VARCHAR stage
+        VARCHAR model
+        VARCHAR worker_id
+        LONGTEXT custom_instructions
+        LONGTEXT prompt
+        LONGTEXT request_body_json
+        LONGTEXT raw_response
+        LONGTEXT response_content
+        INT input_tokens
+        INT output_tokens
+        DECIMAL cost_usd
+        LONGTEXT error_message
+        DATETIME started_at
+        DATETIME finished_at
+        DATETIME created_at
+        DATETIME updated_at
     }
 
     EXPERIMENT {
         BIGINT id PK
         BIGINT niche_id FK
-        UUID hypothesis_id FK
+        BINARY16 hypothesis_id FK
         VARCHAR name
+        VARCHAR hypothesis
+        VARCHAR platform
+        VARCHAR stage
         VARCHAR primary_variable
         VARCHAR primary_metric
+        LONGTEXT creative_text_prompt
+        LONGTEXT creative_image_prompt
         LONGTEXT campaign_angle
         LONGTEXT ad_copy
         LONGTEXT ad_image_briefing
         LONGTEXT landing_page_wireframe
+        BINARY36 landing_page_wireframe_job_id
         LONGTEXT landing_page_copy
+        BINARY36 landing_page_copy_job_id
         LONGTEXT landing_page_image_planning
         LONGTEXT landing_page_design_preset
         LONGTEXT html_geralanding
+        LONGTEXT landing_page_deliverables
         LONGTEXT landing_page_html
+        BIGINT image_model_id FK
+        BIGINT image_model_quality_id FK
+        VARCHAR lead_portal_flow_model
+        BIGINT lead_portal_flow_id FK
+        BOOLEAN schema_first_lead_portal_enabled
+        INT creatives_to_generate
+        INT instant_forms_to_generate
+        INT emails_to_generate
+        INT sample_emails_to_generate
+        INT deliverables_to_generate
+        INT lead_portal_flows_to_generate
+        INT images_per_package
+        INT open_images_per_package
+        INT compressed_images_per_package
+        DECIMAL cost
+        DECIMAL total_cost
+        DECIMAL expense
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
     }
 
     EXPERIMENT_PIPELINE_GENERATION_JOB {
-        UUID id PK
+        CHAR36 id PK
         BIGINT experiment_id FK
         VARCHAR section
         VARCHAR status
@@ -236,85 +150,312 @@ erDiagram
         LONGTEXT error_message
         DATETIME started_at
         DATETIME finished_at
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    FRAMEWORK_IMAGE_GENERATION_JOB {
+        CHAR36 id PK
+        BIGINT experiment_id FK
+        VARCHAR planning_item_key
+        VARCHAR status
+        VARCHAR stage
+        VARCHAR worker_id
+        VARCHAR model
+        LONGTEXT prompt
+        VARCHAR batch_id
+        BIGINT asset_id
+        VARCHAR source_url
+        VARCHAR web_url
+        LONGTEXT error_message
+        DATETIME started_at
+        DATETIME finished_at
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    AI_WORKER_GENERATION {
+        BIGINT id PK
+        VARCHAR domain
+        VARCHAR reference_id
+        VARCHAR model
+        LONGTEXT prompt
+        LONGTEXT raw_response
+        INT input_tokens
+        INT output_tokens
+        DECIMAL cost_usd
+        TIMESTAMP created_at
     }
 ```
 
-### 8.1 Campos técnicos do job
+## 4. Tabela `hypothesis`
 
-| Campo | Função | Pode ir para artefato final? |
-|---|---|---|
-| `section` | identifica a etapa do pipeline | não |
-| `status`, `stage` | estado operacional | não |
-| `model`, `workerId` | auditoria do executor/modelo | não |
-| `customInstructions` | instruções adicionais do usuário/operador | somente se forem conteúdo funcional explícito da etapa |
-| `prompt` | prompt final enviado à OpenAI | não |
-| `requestBodyJson` | corpo técnico da requisição | não |
-| `rawResponse` | resposta bruta do modelo | não |
-| `responseContent` | conteúdo funcional normalizado | sim, após validação e mapeamento por whitelist |
-| `inputTokens`, `outputTokens`, `costUsd` | custo/telemetria | não |
-| `errorMessage`, `startedAt`, `finishedAt` | diagnóstico operacional | não |
+A tabela `hypothesis` armazena a hipótese comercial, seu framework consolidado e metadados diretos da geração da hipótese por IA.
 
-## 9. Fluxo de controle contra contaminação de artefato final
-
-```mermaid
-sequenceDiagram
-    participant UI as Frontend Experimento
-    participant BE as Backend
-    participant JOB as Job de geração
-    participant AI as OpenAI
-    participant MAP as Mapper/Validator
-    participant FINAL as Artefato final
-
-    UI->>BE: Solicita geração da etapa
-    BE->>JOB: Cria job com seção, contexto e instruções
-    JOB->>AI: Envia prompt + contexto funcional
-    AI-->>JOB: Retorna rawResponse/responseContent
-    JOB->>BE: Atualiza auditoria, tokens, custo e status
-    BE->>MAP: Normaliza resposta por schema/contrato
-    MAP->>MAP: Remove metadados técnicos e valida campos permitidos
-    MAP-->>FINAL: Publica somente payload funcional aprovado
-```
-
-Regras mandatórias:
-
-1. O payload final publicado deve conter somente campos do contrato funcional da etapa.
-2. Comentários técnicos, flags internas, IDs de job, prompts, mensagens de debug e instruções operacionais não podem aparecer em HTML, copy, JSON final de oferta ou payload público.
-3. Resposta bruta de modelo deve ficar em campo de auditoria, não em campo funcional.
-4. Validações de etapa devem bloquear metainstruções do modelo, placeholders, instruções para operador e textos como “substituir depois”, “targetSectionId real” ou equivalentes.
-
-## 10. Matriz de governança das informações tratadas
-
-| Categoria | Exemplos | Destino correto | Regra de governança |
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
 |---|---|---|---|
-| Contexto de mercado | nicho, persona, dor, problema | prompt e artefato funcional validado | deve reforçar necessidade real |
-| Estratégia de venda | promessa, resultado, mecanismo, prova, oferta | prompt e artefato funcional validado | deve manter coerência com framework |
-| Parâmetros do experimento | KPI, CPL, orçamento, amostra, variável, métrica | prompt quando relevante e auditoria | não transformar métrica técnica em texto público sem necessidade |
-| Conteúdo gerado | copy, briefing, wireframe, plano de imagem, HTML | campos funcionais do experimento | publicar somente após validação |
-| Telemetria OpenAI | modelo, tokens, custo, request, raw response | job/auditoria | nunca publicar como artefato final |
-| Diagnóstico operacional | erro, status, stage, worker | job/log | usado para causa-raiz, nunca para o cliente final |
+| `id` | `BINARY(16)` | chave | Identificador da hipótese. |
+| `market_niche_id` | FK | vínculo de contexto | Liga a hipótese ao nicho de mercado. |
+| `title` | `VARCHAR(255)` | artefato funcional | Nome curto da hipótese. |
+| `promise` | `LONGTEXT` | artefato funcional | Promessa de valor gerada/refinada. |
+| `problem` | `LONGTEXT` | artefato funcional | Dor ou problema do cliente. |
+| `persona` | `VARCHAR` | artefato funcional | Persona alvo da hipótese. |
+| `mechanism` | `LONGTEXT` | artefato funcional | Mecanismo de solução. |
+| `unique_mechanism` | `LONGTEXT` | artefato funcional | Diferencial do mecanismo. |
+| `entrega` | `LONGTEXT` | artefato funcional | Entregável prometido. |
+| `framework_json` | `LONGTEXT` | artefato funcional estruturado | Snapshot do framework Dor → Resultado → Mecanismo → Prova → Oferta. |
+| `prompt` | `LONGTEXT` | metadado técnico | Prompt usado para gerar a hipótese. |
+| `model` | `VARCHAR(191)` | metadado técnico | Modelo usado na geração da hipótese. |
+| `cost_usd` | `DECIMAL(10,4)` | telemetria | Custo estimado em USD. |
+| `cost`, `total_cost`, `expense` | `DECIMAL` | métrica econômica | Custos em BRL ou acumulados ligados à hipótese. |
+| `image_filter_title` | `VARCHAR(255)` | artefato auxiliar | Rótulo semântico para seleção/filtragem visual. |
+| `success_rule` | `TEXT` | artefato funcional | Regra de sucesso da hipótese. |
+| `offer_type` | `VARCHAR`/enum | artefato funcional | Tipo de oferta. |
+| `price` | `DECIMAL(6,2)` | artefato funcional | Preço planejado. |
+| `offer_package_id` | FK | vínculo de artefato | Liga a hipótese a um pacote de entregáveis. |
+| `kpi_target_cpl` | `DECIMAL(7,2)` | métrica de validação | CPL alvo da hipótese. |
+| `status` | `VARCHAR`/enum | governança | Estado da hipótese. |
+| `generated_at` | `TIMESTAMP` | auditoria | Data/hora de geração por IA. |
+| `created_at`, `updated_at` | `TIMESTAMP` | auditoria | Datas de criação e atualização. |
 
-## 11. Checklist canônico antes de enviar contexto à OpenAI
+### 4.1 Regra estrutural da tabela `hypothesis`
 
-- [ ] O contexto enviado tem relação direta com dor, resultado, mecanismo, prova, oferta, público ou execução?
-- [ ] Dados sensíveis, secrets e credenciais foram excluídos?
-- [ ] O prompt deixa claro a etapa e o contrato de saída?
-- [ ] O prompt evita pedir JSON serializado dentro de texto quando existe schema próprio?
-- [ ] O framework da hipótese foi usado como fonte semântica principal quando disponível?
-- [ ] As saídas anteriores do pipeline foram usadas somente quando são predecessoras lógicas da etapa?
+- Campos funcionais consolidados ficam diretamente na hipótese (`promise`, `problem`, `mechanism`, `framework_json` etc.).
+- Campos técnicos da geração direta ficam na própria hipótese somente quando representam a geração consolidada da hipótese (`prompt`, `model`, `cost_usd`, `generated_at`).
+- Histórico detalhado por seção do framework não fica em `hypothesis`; fica em `hypothesis_framework_generation_job`.
 
-## 12. Checklist canônico antes de publicar artefato gerado
+## 5. Tabela `hypothesis_framework_generation_job`
 
-- [ ] O conteúdo foi normalizado para o contrato da etapa?
-- [ ] O mapper usa whitelist de campos funcionais?
-- [ ] `prompt`, `requestBodyJson`, `rawResponse`, `model`, `workerId`, tokens, custo e erro ficaram fora do payload final?
-- [ ] O HTML/copy final não contém comentário técnico, placeholder, metainstrução ou instrução ao operador?
-- [ ] O artefato mantém coerência com o framework Dor → Resultado → Mecanismo → Prova → Oferta?
-- [ ] A publicação está rastreável por job, etapa, data e custo, sem expor metadados ao cliente?
+A tabela `hypothesis_framework_generation_job` armazena cada job de geração ou refinamento de seções do framework da hipótese.
 
-## 13. Relação com outros documentos canônicos
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
+|---|---|---|---|
+| `id` | `BINARY(16)` | chave | Identificador do job. |
+| `hypothesis_id` | FK | vínculo | Hipótese atendida pelo job. |
+| `section` | `VARCHAR(32)` | classificador funcional | Seção do framework gerada/refinada. |
+| `status` | `VARCHAR(32)` | estado operacional | Estado do job. |
+| `stage` | `VARCHAR(32)` | estado operacional | Estágio de processamento. |
+| `model` | `VARCHAR(191)` | metadado técnico | Modelo usado no job. |
+| `worker_id` | `VARCHAR(191)` | metadado técnico | Worker responsável. |
+| `custom_instructions` | `LONGTEXT` | entrada controlada | Instruções adicionais aplicadas ao job. |
+| `prompt` | `LONGTEXT` | entrada técnica | Prompt final enviado ao modelo. |
+| `request_body_json` | `LONGTEXT` | entrada técnica estruturada | Corpo de requisição enviado ao modelo. |
+| `raw_response` | `LONGTEXT` | saída bruta | Resposta integral retornada pelo modelo. |
+| `response_content` | `LONGTEXT` | saída normalizada | Conteúdo extraído para aplicação no domínio. |
+| `input_tokens` | `INT` | telemetria | Tokens de entrada. |
+| `output_tokens` | `INT` | telemetria | Tokens de saída. |
+| `cost_usd` | `DECIMAL(10,4)` | telemetria | Custo do job. |
+| `error_message` | `LONGTEXT` | diagnóstico | Erro persistido quando o job falha. |
+| `started_at`, `finished_at` | `DATETIME` | auditoria | Janela de execução do job. |
+| `created_at`, `updated_at` | `DATETIME` | auditoria | Datas de criação e atualização. |
 
-- Procedimento operacional do experimento: `docs/canonical/procedimento-experimento-canon.v1.md`.
-- Arquitetura do Gera Landing: `docs/canonical/geralanding-arquitetura-canon.v1.md`.
-- Publicação de campanha no Facebook: `docs/canonical/facebook-campaign-publication-canon.v1.md`.
+### 5.1 Índices e vínculos
 
-Qualquer mudança em atributos enviados à OpenAI, ordem de etapas, contratos de saída ou regras de publicação deve atualizar este documento e o cânone operacional correspondente.
+| Estrutura | Colunas | Finalidade |
+|---|---|---|
+| PK | `id` | Identificação do job. |
+| FK | `hypothesis_id -> hypothesis.id` | Vincular job à hipótese. |
+| Índice | `status`, `created_at` | Busca de jobs pendentes ou recentes. |
+| Índice | `hypothesis_id` | Histórico por hipótese. |
+
+## 6. Tabela `experiment`
+
+A tabela `experiment` armazena o experimento e os artefatos funcionais consolidados produzidos/refinados por IA para execução comercial.
+
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
+|---|---|---|---|
+| `id` | `BIGINT` | chave | Identificador do experimento. |
+| `niche_id` | FK | vínculo de contexto | Nicho do experimento. |
+| `hypothesis_id` | FK | vínculo semântico | Hipótese que fundamenta o experimento. |
+| `name` | `VARCHAR(255)` | identificação funcional | Nome do experimento. |
+| `hypothesis` | `VARCHAR(255)` | snapshot textual | Resumo da hipótese no experimento. |
+| `platform` | `VARCHAR`/enum | contexto funcional | Plataforma/canal do experimento. |
+| `stage` | `VARCHAR`/enum | estado funcional | Estágio macro do experimento. |
+| `primary_variable` | `VARCHAR(191)` | métrica de teste | Variável principal do teste. |
+| `primary_metric` | `VARCHAR(191)` | métrica de teste | Métrica principal de avaliação. |
+| `creative_text_prompt` | `LONGTEXT` | entrada funcional | Prompt funcional para geração de texto de criativo. |
+| `creative_image_prompt` | `LONGTEXT` | entrada funcional | Prompt funcional para geração de imagem de criativo. |
+| `campaign_angle` | `LONGTEXT` | artefato funcional | Resultado consolidado da etapa de ângulo de campanha. |
+| `ad_copy` | `LONGTEXT` | artefato funcional | Texto de anúncio consolidado. |
+| `ad_image_briefing` | `LONGTEXT` | artefato funcional | Briefing/prompt visual do anúncio. |
+| `landing_page_wireframe` | `LONGTEXT` | artefato funcional | Estrutura consolidada da landing page. |
+| `landing_page_wireframe_job_id` | `BINARY(36)` | vínculo técnico | Job que originou/atualizou o wireframe. |
+| `landing_page_copy` | `LONGTEXT` | artefato funcional | Copy consolidada da landing page. |
+| `landing_page_copy_job_id` | `BINARY(36)` | vínculo técnico | Job que originou/atualizou a copy. |
+| `landing_page_image_planning` | `LONGTEXT` | artefato funcional | Planejamento de imagens da landing page. |
+| `landing_page_design_preset` | `LONGTEXT` | artefato funcional estruturado | Preset de design da landing page. |
+| `html_geralanding` | `LONGTEXT` | artefato funcional | HTML operacional consolidado do Gera Landing. |
+| `landing_page_deliverables` | `LONGTEXT` | artefato funcional | Entregáveis associados à landing/produto. |
+| `landing_page_html` | `LONGTEXT` | artefato funcional publicável | HTML final da landing page. |
+| `image_model_id` | FK | configuração de IA | Modelo de imagem configurado. |
+| `image_model_quality_id` | FK | configuração de IA | Qualidade/parâmetro de geração de imagem. |
+| `lead_portal_flow_model` | `VARCHAR(191)` | configuração/artefato | Modelo ou identificador funcional do fluxo do portal. |
+| `lead_portal_flow_id` | FK | vínculo de artefato | Fluxo do portal do lead associado. |
+| `schema_first_lead_portal_enabled` | `BOOLEAN` | configuração | Indica geração orientada por schema no portal do lead. |
+| `creatives_to_generate` | `INT` | parâmetro de geração | Quantidade de criativos a gerar. |
+| `instant_forms_to_generate` | `INT` | parâmetro de geração | Quantidade de formulários a gerar. |
+| `emails_to_generate` | `INT` | parâmetro de geração | Quantidade de e-mails a gerar. |
+| `sample_emails_to_generate` | `INT` | parâmetro de geração | Quantidade de e-mails de amostra a gerar. |
+| `deliverables_to_generate` | `INT` | parâmetro de geração | Quantidade de entregáveis a gerar. |
+| `lead_portal_flows_to_generate` | `INT` | parâmetro de geração | Quantidade de fluxos do portal a gerar. |
+| `images_per_package` | `INT` | parâmetro de geração | Quantidade padrão de imagens por pacote. |
+| `open_images_per_package` | `INT` | parâmetro de geração | Quantidade de imagens abertas por pacote. |
+| `compressed_images_per_package` | `INT` | parâmetro de geração | Quantidade de imagens compactadas por pacote. |
+| `cost`, `total_cost`, `expense` | `DECIMAL` | métrica econômica | Custos associados ao experimento. |
+| `created_at`, `updated_at` | `TIMESTAMP` | auditoria | Datas de criação e atualização. |
+
+### 6.1 Regra estrutural da tabela `experiment`
+
+- `experiment` guarda o **estado consolidado** dos artefatos funcionais usados no experimento.
+- `experiment` não é a tabela de auditoria completa das chamadas à IA.
+- Auditoria de chamada, request, resposta bruta, tokens e custo por etapa ficam em `experiment_pipeline_generation_job`.
+- Jobs de imagem por item planejado ficam em `framework_image_generation_job`.
+
+## 7. Tabela `experiment_pipeline_generation_job`
+
+A tabela `experiment_pipeline_generation_job` armazena os jobs textuais/estruturais do pipeline do experimento.
+
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
+|---|---|---|---|
+| `id` | `CHAR(36)` | chave | Identificador do job. |
+| `experiment_id` | FK | vínculo | Experimento atendido pelo job. |
+| `section` | `VARCHAR` | classificador funcional | Etapa do pipeline gerada/refinada. |
+| `status` | `VARCHAR(32)` | estado operacional | Estado do job. |
+| `stage` | `VARCHAR(32)` | estado operacional | Estágio de processamento. |
+| `model` | `VARCHAR(191)` | metadado técnico | Modelo usado. |
+| `worker_id` | `VARCHAR(191)` | metadado técnico | Worker responsável. |
+| `custom_instructions` | `LONGTEXT` | entrada controlada | Instruções adicionais da etapa. |
+| `prompt` | `LONGTEXT` | entrada técnica | Prompt final enviado ao modelo. |
+| `request_body_json` | `LONGTEXT` | entrada técnica estruturada | Corpo de requisição enviado ao modelo. |
+| `raw_response` | `LONGTEXT` | saída bruta | Resposta integral retornada pelo modelo. |
+| `response_content` | `LONGTEXT` | saída normalizada | Conteúdo extraído para a etapa. |
+| `input_tokens` | `INT` | telemetria | Tokens de entrada. |
+| `output_tokens` | `INT` | telemetria | Tokens de saída. |
+| `cost_usd` | `DECIMAL(10,4)` | telemetria | Custo do job. |
+| `error_message` | `LONGTEXT` | diagnóstico | Erro persistido quando o job falha. |
+| `started_at`, `finished_at` | `DATETIME` | auditoria | Janela de execução. |
+| `created_at`, `updated_at` | `DATETIME` | auditoria | Datas de criação e atualização. |
+
+### 7.1 Valores canônicos de `section`
+
+| `section` | Campo consolidado principal em `experiment` |
+|---|---|
+| `CAMPAIGN_ANGLE` | `campaign_angle` |
+| `AD_COPY` | `ad_copy` |
+| `AD_IMAGE_BRIEFING` | `ad_image_briefing` |
+| `LANDING_PAGE_WIREFRAME` | `landing_page_wireframe`, `landing_page_wireframe_job_id` |
+| `LANDING_PAGE_COPY` | `landing_page_copy`, `landing_page_copy_job_id` |
+| `LANDING_PAGE_IMAGE_PLANNING` | `landing_page_image_planning` |
+| `LANDING_PAGE_DESIGN_PRESET` | `landing_page_design_preset`, `html_geralanding` |
+| `LANDING_PAGE_HTML` | `landing_page_html` |
+| `LANDING_PAGE_DELIVERABLES` | `landing_page_deliverables` |
+
+### 7.2 Índices e vínculos
+
+| Estrutura | Colunas | Finalidade |
+|---|---|---|
+| PK | `id` | Identificação do job. |
+| FK | `experiment_id -> experiment.id` | Vincular job ao experimento. |
+| Índice | `status`, `created_at` | Busca de jobs pendentes ou recentes. |
+| Índice | `experiment_id` | Histórico por experimento. |
+
+## 8. Tabela `framework_image_generation_job`
+
+A tabela `framework_image_generation_job` armazena jobs de geração de imagens associados a itens do planejamento visual do experimento.
+
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
+|---|---|---|---|
+| `id` | `CHAR(36)` | chave | Identificador do job de imagem. |
+| `experiment_id` | FK | vínculo | Experimento atendido pelo job. |
+| `planning_item_key` | `VARCHAR(191)` | classificador funcional | Item do planejamento visual que originou a imagem. |
+| `status` | `VARCHAR(32)` | estado operacional | Estado do job. |
+| `stage` | `VARCHAR(32)` | estado operacional | Estágio de processamento. |
+| `worker_id` | `VARCHAR(191)` | metadado técnico | Worker responsável. |
+| `model` | `VARCHAR(191)` | metadado técnico | Modelo de imagem usado. |
+| `prompt` | `LONGTEXT` | entrada técnica/funcional | Prompt de imagem enviado ao modelo. |
+| `batch_id` | `VARCHAR(191)` | metadado técnico | Lote externo/interno de geração. |
+| `asset_id` | `BIGINT` | vínculo de artefato | Asset gerado e armazenado no sistema. |
+| `source_url` | `VARCHAR(1024)` | saída funcional/técnica | URL de origem retornada pela geração. |
+| `web_url` | `VARCHAR(1024)` | saída funcional/técnica | URL pública ou web da imagem. |
+| `error_message` | `LONGTEXT` | diagnóstico | Erro persistido quando o job falha. |
+| `started_at`, `finished_at` | `DATETIME` | auditoria | Janela de execução. |
+| `created_at`, `updated_at` | `DATETIME` | auditoria | Datas de criação e atualização. |
+
+### 8.1 Índices e vínculos
+
+| Estrutura | Colunas | Finalidade |
+|---|---|---|
+| PK | `id` | Identificação do job. |
+| FK | `experiment_id -> experiment.id` | Vincular job ao experimento. |
+| Índice | `status`, `created_at` | Busca de jobs pendentes ou recentes. |
+| Índice | `experiment_id`, `planning_item_key`, `status`, `created_at` | Histórico por item visual do experimento. |
+
+## 9. Tabela `ai_worker_generation`
+
+A tabela `ai_worker_generation` armazena registros genéricos de geração por IA quando o fluxo não usa uma tabela especializada de job.
+
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
+|---|---|---|---|
+| `id` | `BIGINT` | chave | Identificador do registro. |
+| `domain` | `VARCHAR(100)` | classificador funcional | Domínio ou tipo de geração. |
+| `reference_id` | `VARCHAR(100)` | vínculo externo | Identificador do objeto relacionado no domínio. |
+| `model` | `VARCHAR(191)` | metadado técnico | Modelo usado. |
+| `prompt` | `LONGTEXT` | entrada técnica | Prompt enviado ao modelo. |
+| `raw_response` | `LONGTEXT` | saída bruta | Resposta integral retornada pelo modelo. |
+| `input_tokens` | `INT` | telemetria | Tokens de entrada. |
+| `output_tokens` | `INT` | telemetria | Tokens de saída. |
+| `cost_usd` | `DECIMAL(10,4)` | telemetria | Custo da geração. |
+| `created_at` | `TIMESTAMP` | auditoria | Data de criação do registro. |
+
+### 9.1 Índices
+
+| Estrutura | Colunas | Finalidade |
+|---|---|---|
+| PK | `id` | Identificação do registro. |
+| Índice | `domain`, `created_at DESC` | Consulta por domínio e recência. |
+
+## 10. Separação canônica por tipo de dado persistido
+
+| Tipo de dado | Colunas/tabelas principais | Observação de modelo |
+|---|---|---|
+| Entrada funcional consolidada | `hypothesis.promise`, `hypothesis.problem`, `hypothesis.mechanism`, `experiment.creative_text_prompt`, `experiment.creative_image_prompt` | Dados usados como insumo semântico ou prompt funcional. |
+| Entrada técnica enviada ao modelo | `*.prompt`, `*.request_body_json`, `*.custom_instructions` nas tabelas de job | Deve permanecer em tabelas de auditoria/job quando representa chamada específica. |
+| Saída bruta do modelo | `hypothesis_framework_generation_job.raw_response`, `experiment_pipeline_generation_job.raw_response`, `ai_worker_generation.raw_response` | Resposta integral, sem ser o artefato consolidado. |
+| Saída normalizada por job | `hypothesis_framework_generation_job.response_content`, `experiment_pipeline_generation_job.response_content` | Conteúdo extraído da resposta para aplicação no domínio. |
+| Artefato funcional consolidado | `hypothesis.framework_json`, `experiment.campaign_angle`, `experiment.ad_copy`, `experiment.landing_page_*`, `experiment.html_geralanding` | Estado atual aprovado/assumido pelo domínio. |
+| Configuração de modelo | `hypothesis.model`, `experiment_pipeline_generation_job.model`, `hypothesis_framework_generation_job.model`, `framework_image_generation_job.model`, `ai_worker_generation.model`, `experiment.image_model_id`, `experiment.image_model_quality_id` | Identifica modelo ou configuração usada. |
+| Telemetria | `input_tokens`, `output_tokens`, `cost_usd`, `cost`, `total_cost`, `expense` | Custos e uso. |
+| Estado operacional | `status`, `stage`, `worker_id`, `error_message`, `started_at`, `finished_at` | Controle de fila, execução e diagnóstico. |
+| Vínculo de origem | `hypothesis_id`, `experiment_id`, `section`, `planning_item_key`, `reference_id`, `domain` | Permite rastrear a que objeto a geração pertence. |
+
+## 11. Cardinalidades canônicas
+
+| Relação | Cardinalidade | Significado no modelo |
+|---|---|---|
+| `market_niche -> hypothesis` | 1:N | Um nicho pode originar várias hipóteses. |
+| `hypothesis -> hypothesis_framework_generation_job` | 1:N | Uma hipótese pode ter vários jobs de framework. |
+| `hypothesis -> experiment` | 1:N | Uma hipótese pode fundamentar vários experimentos. |
+| `experiment -> experiment_pipeline_generation_job` | 1:N | Um experimento pode ter vários jobs por etapa do pipeline. |
+| `experiment -> framework_image_generation_job` | 1:N | Um experimento pode ter vários jobs de imagem. |
+| `ai_worker_generation.domain/reference_id -> objeto de domínio` | N:1 lógico | Vínculo genérico, sem FK física canônica obrigatória. |
+
+## 12. Regras canônicas de localização de dados
+
+1. **Hipótese consolidada** fica em `hypothesis`.
+2. **Histórico de geração/refinamento de framework da hipótese** fica em `hypothesis_framework_generation_job`.
+3. **Experimento e artefatos consolidados do pipeline** ficam em `experiment`.
+4. **Histórico de chamadas textuais/estruturais do pipeline do experimento** fica em `experiment_pipeline_generation_job`.
+5. **Jobs de imagem por item planejado** ficam em `framework_image_generation_job`.
+6. **Gerações genéricas não cobertas por filas especializadas** ficam em `ai_worker_generation`.
+7. **Resposta bruta do modelo** deve ficar em coluna `raw_response` de tabela de job/auditoria, não em coluna de artefato consolidado.
+8. **Conteúdo normalizado de uma chamada** deve ficar em `response_content` quando existir tabela de job especializada.
+9. **Artefato funcional atual do domínio** deve ficar no campo consolidado do objeto de domínio (`hypothesis` ou `experiment`).
+10. **Modelo, tokens, custo, worker, status e erro** são metadados técnicos e pertencem às colunas de auditoria/job, exceto campos agregados já existentes em `hypothesis` e `experiment`.
+
+## 13. Documentos relacionados de modelo de dados
+
+- `docs/modelo-dados-hipotese.md`
+- `docs/modelo-dados-experimento.md`
+- `docs/data-model.md`
+- `docs/canonical/procedimento-experimento-canon.v1.md`
+- `docs/canonical/geralanding-arquitetura-canon.v1.md`

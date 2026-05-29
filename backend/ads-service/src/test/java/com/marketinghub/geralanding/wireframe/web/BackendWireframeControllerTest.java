@@ -65,6 +65,10 @@ class BackendWireframeControllerTest {
         assertEquals("bbed57d0-dcc7-40ab-b936-20a19e21c7fe", json.get(0).get("jobid").asText());
         assertEquals(33L, json.get(0).get("experiment").get("id").asLong());
         assertEquals("Prompt texto", json.get(0).get("experiment").get("creativeTextPrompt").asText());
+        assertTrue(json.get(0).get("experiment").get("campaignAngle").isObject());
+        assertEquals(
+                "Promessa clara",
+                json.get(0).get("experiment").get("campaignAngle").get("campaignAngle").get("singleMindedPromise").asText());
         assertEquals("<html>GeraLanding</html>", json.get(0).get("experiment").get("htmlGeraLanding").asText());
         assertTrue(json.get(0).has("hypothesis"));
         assertEquals("Hipótese Framework", json.get(0).get("hypothesis").get("title").asText());
@@ -100,8 +104,8 @@ class BackendWireframeControllerTest {
                 "LANDING",
                 "Prompt texto",
                 "Prompt imagem",
-                "Ângulo campanha",
-                "Copy anúncio",
+                Map.of("campaignAngle", Map.of("singleMindedPromise", "Promessa clara")),
+                Map.of("adCopy", Map.of("headline", "Headline")),
                 "Briefing imagem",
                 "Copy landing",
                 "Wireframe landing",

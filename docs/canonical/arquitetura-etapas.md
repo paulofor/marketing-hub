@@ -37,6 +37,21 @@ crescente de solicitação de execução. Cada item da lista deve conter, no mí
 da fila identificar o experimento e usar os artefatos já gerados: `id`, `name`, `hypothesis`, `status`,
 `stage`, `creativeTextPrompt`, `creativeImagePrompt`, `campaignAngle`, `adCopy`, `adImageBriefing`,
 `landingPageCopy`, `landingPageWireframe`, `landingPageImagePlanning`, `landingPageDesignPreset`,
-`landingPageDeliverables` e `htmlGeraLanding`. O atributo `hypothesis` deve expor `id`, `title` e
-`framework` com todos os itens canônicos do framework Dor → Resultado → Mecanismo → Prova → Oferta:
-`pain`, `result`, `mechanism`, `proof`, `offer` e `checklist`.
+`landingPageDeliverables` e `htmlGeraLanding`. Campos de artefato que armazenam JSON textual no banco
+(`campaignAngle`, `adCopy`, `adImageBriefing`, `landingPageCopy`, `landingPageWireframe`,
+`landingPageImagePlanning`, `landingPageDesignPreset` e `landingPageDeliverables`) devem ser
+serializados no contrato `pending` como JSON estruturado sempre que o conteúdo for JSON válido, e não
+como string contendo JSON escapado. Apenas conteúdo realmente textual ou JSON inválido pode permanecer
+como string bruta, com log de diagnóstico no caso inválido. O atributo `hypothesis` deve expor `id`,
+`title` e `framework` com todos os itens canônicos do framework Dor → Resultado → Mecanismo → Prova →
+Oferta: `pain`, `result`, `mechanism`, `proof`, `offer` e `checklist`.
+
+## Regra global — JSON estruturado em contratos internos
+
+Sempre que um endpoint interno expuser dados que são artefatos JSON persistidos em colunas textuais, a
+camada de contrato deve reidratar o conteúdo para objeto/array JSON antes de serializar a resposta. É
+proibido publicar JSON dentro de string em listas `pending`, callbacks de worker ou payloads de etapa,
+pois isso quebra o contrato semântico do consumidor, dificulta validação por schema e pode causar perda
+de estrutura em campos como `campaignAngle`. O padrão obrigatório é: detectar conteúdo JSON válido,
+converter com `ObjectMapper`/parser equivalente, manter campos textuais como texto e registrar log com
+contexto operacional quando um campo aparentemente JSON não puder ser convertido.

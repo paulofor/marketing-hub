@@ -105,15 +105,36 @@ public class GeraLandingWireframeStageExecutionService {
                 enumValueToText(experiment.getStage()),
                 experiment.getCreativeTextPrompt(),
                 experiment.getCreativeImagePrompt(),
-                experiment.getCampaignAngle(),
-                experiment.getAdCopy(),
-                experiment.getAdImageBriefing(),
-                experiment.getLandingPageCopy(),
-                experiment.getLandingPageWireframe(),
-                experiment.getLandingPageImagePlanning(),
-                experiment.getLandingPageDesignPreset(),
-                experiment.getLandingPageDeliverables(),
+                resolveJsonArtifact(experiment.getId(), "campaignAngle", experiment.getCampaignAngle()),
+                resolveJsonArtifact(experiment.getId(), "adCopy", experiment.getAdCopy()),
+                resolveJsonArtifact(experiment.getId(), "adImageBriefing", experiment.getAdImageBriefing()),
+                resolveJsonArtifact(experiment.getId(), "landingPageCopy", experiment.getLandingPageCopy()),
+                resolveJsonArtifact(experiment.getId(), "landingPageWireframe", experiment.getLandingPageWireframe()),
+                resolveJsonArtifact(experiment.getId(), "landingPageImagePlanning", experiment.getLandingPageImagePlanning()),
+                resolveJsonArtifact(experiment.getId(), "landingPageDesignPreset", experiment.getLandingPageDesignPreset()),
+                resolveJsonArtifact(experiment.getId(), "landingPageDeliverables", experiment.getLandingPageDeliverables()),
                 experiment.getHtmlGeraLanding());
+    }
+
+    /** Preserva artefatos JSON como objetos estruturados na fila pending, mantendo textos não JSON intactos. */
+    private Object resolveJsonArtifact(Long experimentId, String fieldName, String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return rawValue;
+        }
+        String trimmed = rawValue.trim();
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+            return rawValue;
+        }
+        try {
+            return objectMapper.readValue(trimmed, Object.class);
+        } catch (JsonProcessingException ex) {
+            log.warn(
+                    "Falha ao ler artefato JSON no pending wireframe; mantendo texto bruto. experimentId={} fieldName={}",
+                    experimentId,
+                    fieldName,
+                    ex);
+            return rawValue;
+        }
     }
 
     /** Converte a hipótese associada ao experimento para o framework exposto na fila pending. */

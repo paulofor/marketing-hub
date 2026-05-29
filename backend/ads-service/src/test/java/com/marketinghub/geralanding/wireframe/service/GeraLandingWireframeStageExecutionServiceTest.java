@@ -34,11 +34,11 @@ class GeraLandingWireframeStageExecutionServiceTest {
         when(experiment.getHypothesis()).thenReturn("Hipótese de valor");
         when(experiment.getCreativeTextPrompt()).thenReturn("Prompt texto");
         when(experiment.getCreativeImagePrompt()).thenReturn("Prompt imagem");
-        when(experiment.getCampaignAngle()).thenReturn("Ângulo campanha");
-        when(experiment.getAdCopy()).thenReturn("Copy anúncio");
+        when(experiment.getCampaignAngle()).thenReturn("{\"campaignAngle\":{\"singleMindedPromise\":\"Promessa clara\"}}");
+        when(experiment.getAdCopy()).thenReturn("{\"adCopy\":{\"headline\":\"Headline\"}}");
         when(experiment.getAdImageBriefing()).thenReturn("Briefing imagem");
-        when(experiment.getLandingPageCopy()).thenReturn("Copy landing");
-        when(experiment.getLandingPageWireframe()).thenReturn("Wireframe landing");
+        when(experiment.getLandingPageCopy()).thenReturn("{\"landingPageCopy\":{\"hero\":{\"headline\":\"Hero\"}}}");
+        when(experiment.getLandingPageWireframe()).thenReturn("{\"landingPageWireframe\":{\"sectionOrder\":[\"hero\"]}}");
         when(experiment.getLandingPageImagePlanning()).thenReturn("Planejamento imagem");
         when(experiment.getLandingPageDesignPreset()).thenReturn("Preset design");
         when(experiment.getLandingPageDeliverables()).thenReturn("Entregáveis landing");
@@ -82,11 +82,17 @@ class GeraLandingWireframeStageExecutionServiceTest {
         assertEquals("Hipótese de valor", response.get(0).experiment().hypothesis());
         assertEquals("Prompt texto", response.get(0).experiment().creativeTextPrompt());
         assertEquals("Prompt imagem", response.get(0).experiment().creativeImagePrompt());
-        assertEquals("Ângulo campanha", response.get(0).experiment().campaignAngle());
-        assertEquals("Copy anúncio", response.get(0).experiment().adCopy());
+        Map<?, ?> campaignAngle = (Map<?, ?>) response.get(0).experiment().campaignAngle();
+        assertEquals("Promessa clara", ((Map<?, ?>) campaignAngle.get("campaignAngle")).get("singleMindedPromise"));
+        Map<?, ?> adCopy = (Map<?, ?>) response.get(0).experiment().adCopy();
+        assertEquals("Headline", ((Map<?, ?>) adCopy.get("adCopy")).get("headline"));
         assertEquals("Briefing imagem", response.get(0).experiment().adImageBriefing());
-        assertEquals("Copy landing", response.get(0).experiment().landingPageCopy());
-        assertEquals("Wireframe landing", response.get(0).experiment().landingPageWireframe());
+        Map<?, ?> landingPageCopy = (Map<?, ?>) response.get(0).experiment().landingPageCopy();
+        assertEquals(
+                "Hero",
+                ((Map<?, ?>) ((Map<?, ?>) landingPageCopy.get("landingPageCopy")).get("hero")).get("headline"));
+        Map<?, ?> landingPageWireframe = (Map<?, ?>) response.get(0).experiment().landingPageWireframe();
+        assertEquals(List.of("hero"), ((Map<?, ?>) landingPageWireframe.get("landingPageWireframe")).get("sectionOrder"));
         assertEquals("Planejamento imagem", response.get(0).experiment().landingPageImagePlanning());
         assertEquals("Preset design", response.get(0).experiment().landingPageDesignPreset());
         assertEquals("Entregáveis landing", response.get(0).experiment().landingPageDeliverables());

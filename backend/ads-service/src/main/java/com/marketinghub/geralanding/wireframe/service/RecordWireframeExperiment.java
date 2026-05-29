@@ -9,14 +9,14 @@ public record RecordWireframeExperiment(
         String stage,
         String creativeTextPrompt,
         String creativeImagePrompt,
-        String campaignAngle,
-        String adCopy,
-        String adImageBriefing,
-        String landingPageCopy,
-        String landingPageWireframe,
-        String landingPageImagePlanning,
-        String landingPageDesignPreset,
-        String landingPageDeliverables,
+        Object campaignAngle,
+        Object adCopy,
+        Object adImageBriefing,
+        Object landingPageCopy,
+        Object landingPageWireframe,
+        Object landingPageImagePlanning,
+        Object landingPageDesignPreset,
+        Object landingPageDeliverables,
         String htmlGeraLanding
 ) {
 }

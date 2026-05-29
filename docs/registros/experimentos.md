@@ -2249,3 +2249,15 @@
   - a entidade `Experiment` passou a expor métodos operacionais para acessar id, título e framework JSON da hipótese associada sem acoplar o serviço da etapa ao pacote de hipótese;
   - a consulta de pending passou a carregar `experiment.hypothesisRef` junto com o experimento;
   - testes do service/controller, cânone de arquitetura por etapa e Swagger canônico foram atualizados para o novo contrato.
+
+## 2026-05-29 00:05:00 UTC
+- solicitação: ajustar a lista `pending` da etapa `landing-page-wireframe` para não serializar artefatos JSON como strings escapadas, evitando perda de estrutura em `campaignAngle` e campos equivalentes.
+- causa-raiz tratada: artefatos persistidos em colunas textuais eram repassados diretamente pelo contrato interno de pending, gerando JSON dentro de string e obrigando consumidores a reparsear campos que deveriam chegar estruturados.
+- correção aplicada:
+  - `RecordWireframeExperiment` passou a aceitar artefatos como `Object` nos campos JSON-backed;
+  - o serviço de wireframe passou a reidratar JSON válido de `campaignAngle`, `adCopy`, `adImageBriefing`, `landingPageCopy`, `landingPageWireframe`, `landingPageImagePlanning`, `landingPageDesignPreset` e `landingPageDeliverables` antes de serializar a resposta;
+  - conteúdo textual real permanece como string e JSON aparentemente inválido gera log com `experimentId` e nome do campo;
+  - o cânone de arquitetura por etapa e o Swagger canônico do GeraLanding foram atualizados para proibir JSON dentro de string nos contratos internos;
+  - testes do service e do controller foram atualizados para validar `campaignAngle` e demais artefatos como JSON estruturado no pending.
+- validação executada:
+  - `./../mvnw -Dtest=GeraLandingWireframeStageExecutionServiceTest,BackendWireframeControllerTest test` em `backend/ads-service/`.

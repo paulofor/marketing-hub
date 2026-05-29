@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe.service;
+package com.marketinghub.geralanding.wireframe.service.detailStageExecution;
 
 import java.math.BigDecimal;
 import java.time.Instant;

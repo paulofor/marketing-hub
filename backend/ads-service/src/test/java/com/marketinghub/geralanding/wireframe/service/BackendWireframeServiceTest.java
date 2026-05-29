@@ -3,7 +3,10 @@ package com.marketinghub.geralanding.wireframe.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,11 +18,39 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** Valida as consultas de execução específicas da etapa wireframe. */
 class BackendWireframeServiceTest {
+
+    /** Deve registrar o início usando o código canônico da etapa wireframe. */
+    @Test
+    void startShouldRegisterInitialExecutionForWireframeStage() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendWireframeService service =
+                new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
+        Experiment experiment = mock(Experiment.class);
+        when(experiment.getId()).thenReturn(91L);
+        when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
+        when(executionRepository.save(any(GeraLandingStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        GeraLandingWireframeStartResponse response = service.start(91L);
+
+        assertNotNull(response.idJob());
+        assertEquals("INICIADO", response.status());
+        verify(experimentRepository).findById(91L);
+        verify(executionRepository).save(argThat(execution ->
+                execution.getExperimentId().equals(91L)
+                        && execution.getExperiment() == experiment
+                        && execution.getStageCode().equals("landing-page-wireframe")
+                        && execution.getStatus().equals("INICIADO")
+                        && execution.getPromptTemplateId().equals("manual/start")
+                        && execution.getIdJob() != null));
+    }
 
     /** Deve buscar somente jobs iniciados da etapa wireframe para o endpoint interno pending. */
     @Test

@@ -151,9 +151,10 @@ public class BackendWireframeService {
             execution.setInputTokens(inputTokens);
             execution.setOutputTokens(outputTokens);
             execution.setCostUsd(costUsd);
-            String normalizedErrorMessage = StringUtils.hasText(errorMessage) ? errorMessage.trim() : null;
+            String normalizedErrorDetail = StringUtils.hasText(errorDetail) ? errorDetail.trim() : null;
+            String normalizedErrorMessage = normalizeErrorMessage(errorMessage, normalizedErrorDetail);
             execution.setErrorMessage(normalizedErrorMessage);
-            execution.setErrorDetail(StringUtils.hasText(errorDetail) ? errorDetail.trim() : null);
+            execution.setErrorDetail(normalizedErrorDetail);
             execution.setCompletedAt(Instant.now());
             execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
 
@@ -173,6 +174,17 @@ public class BackendWireframeService {
                     ex);
             throw ex;
         }
+    }
+
+    /** Normaliza a mensagem de erro e garante status FALHA quando o callback traz apenas detalhe técnico. */
+    private String normalizeErrorMessage(String errorMessage, String normalizedErrorDetail) {
+        if (StringUtils.hasText(errorMessage)) {
+            return errorMessage.trim();
+        }
+        if (StringUtils.hasText(normalizedErrorDetail)) {
+            return "Falha ao processar etapa wireframe";
+        }
+        return null;
     }
 
     /** Persiste o artefato JSON final do wireframe no experimento associado à execução concluída. */

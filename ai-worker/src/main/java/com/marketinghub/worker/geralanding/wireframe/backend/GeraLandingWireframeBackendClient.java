@@ -123,15 +123,26 @@ public class GeraLandingWireframeBackendClient {
         return payload;
     }
 
-    /** Envia estado de falha da execução wireframe ao backend pelo callback específico recebe-resposta. */
+    /** Envia o JSON de erro da execução wireframe ao backend pelo callback específico recebe-resposta. */
     public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", experimentId);
         body.put("stageCode", stageCode);
+        body.put("modelResponse", null);
+        body.put("inputTokens", null);
+        body.put("outputTokens", null);
+        body.put("costUsd", null);
+        body.put("openAiJobId", null);
         body.put("errorMessage", errorMessage);
         body.put("errorDetail", errorDetail);
-        webClient.post().uri(baseUrl + "/{idJob}/receive-result", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
+        log.info("Enviando JSON de erro wireframe ao backend. idJob={}, experimentId={}, stageCode={}, hasErrorMessage={}, hasErrorDetail={}",
+                idJob,
+                experimentId,
+                stageCode,
+                errorMessage != null && !errorMessage.isBlank(),
+                errorDetail != null && !errorDetail.isBlank());
+        webClient.post().uri(baseUrl + "/{idJob}/recebe-resposta", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
     }
 
     /** Envia ao backend o prompt despachado para IA e o identificador do job OpenAI conforme contrato recebe-prompt. */

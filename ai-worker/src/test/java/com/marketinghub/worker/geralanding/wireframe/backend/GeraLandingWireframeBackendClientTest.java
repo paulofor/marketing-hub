@@ -2,9 +2,11 @@ package com.marketinghub.worker.geralanding.wireframe.backend;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.geralanding.wireframe.dto.GeraLandingStageExecutionDetailDto;
 import java.util.List;
+import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -86,6 +88,36 @@ class GeraLandingWireframeBackendClientTest {
                         java.util.Map.class,
                         value -> assertThat(value).containsEntry("primaryPromise", "Agenda cheia"));
         assertThat(server.getRequestCount()).isEqualTo(1);
+    }
+
+    /** Deve enviar falhas da etapa wireframe para o mesmo callback recebe-resposta usado no sucesso. */
+    @Test
+    void receiveFailureShouldCallRecebeRespostaWithErrorJson() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(202));
+        GeraLandingWireframeBackendClient client = new GeraLandingWireframeBackendClient(
+                WebClient.builder(),
+                server.url("/").toString(),
+                "/api",
+                new ObjectMapper());
+
+        client.receiveFailure(
+                "bbed57d0-dcc7-40ab-b936-20a19e21c7fe",
+                44L,
+                "landing-page-wireframe",
+                "Falha OpenAI",
+                "Stack trace resumido");
+
+        var request = server.takeRequest();
+        assertThat(request.getMethod()).isEqualTo("POST");
+        assertThat(request.getPath())
+                .isEqualTo("/api/internal/geralanding/wireframe/stage-executions/bbed57d0-dcc7-40ab-b936-20a19e21c7fe/recebe-resposta");
+        Map<String, Object> payload = new ObjectMapper().readValue(request.getBody().readUtf8(), new TypeReference<>() {});
+        assertThat(payload)
+                .containsEntry("experimentId", 44)
+                .containsEntry("stageCode", "landing-page-wireframe")
+                .containsEntry("errorMessage", "Falha OpenAI")
+                .containsEntry("errorDetail", "Stack trace resumido");
+        assertThat(payload).containsKeys("modelResponse", "inputTokens", "outputTokens", "costUsd", "openAiJobId");
     }
 
     /** Cria resposta JSON para simular os endpoints reais do backend. */

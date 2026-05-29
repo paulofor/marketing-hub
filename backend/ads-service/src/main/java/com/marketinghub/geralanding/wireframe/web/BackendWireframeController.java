@@ -54,10 +54,11 @@ public class BackendWireframeController {
     return executionService.listPending(STAGE_CODE);
   }
 
-  /** Recebe o prompt enviado para IA sem alterar estado persistido nesta primeira versão. */
+  /** Recebe o prompt enviado para IA e marca a execução como aguardando retorno da OpenAI. */
   @PostMapping("/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt")
   public ResponseEntity<Void> recebePrompt(
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
+    executionService.markWaitingOpenAiDispatch(idJob, payload.prompt(), payload.jobidopenai());
     return ResponseEntity.accepted().build();
   }
 

@@ -25,6 +25,7 @@ public class GeraLandingWireframeBackendClient {
     private final String apiPrefix;
     private final ObjectMapper objectMapper;
 
+    /** Inicializa o client HTTP com a URL base do backend e o mapper usado para reidratar artefatos JSON. */
     public GeraLandingWireframeBackendClient(
             WebClient.Builder builder,
             @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
@@ -155,15 +156,6 @@ public class GeraLandingWireframeBackendClient {
         body.put("costUsd", payload != null ? payload.costUsd() : null);
         body.put("openAiJobId", payload != null ? payload.openAiJobId() : null);
         webClient.post().uri(baseUrl + "/{idJob}/receive-result", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
-    }
-
-    /** Busca os detalhes de uma execução específica da etapa wireframe. */
-    public GeraLandingStageExecutionDetailDto fetchWireframeStageExecutionDetail(Long experimentId, String idJob) {
-        String uri = UrlUtils.joinPath(
-                backendBaseUrl,
-                apiPrefix,
-                "/experiments/" + experimentId + "/geralanding/wireframe/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
     }
 
     /** Preenche no payload dados de hipótese usados para montar o prompt da etapa. */

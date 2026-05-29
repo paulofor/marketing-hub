@@ -19,18 +19,18 @@ public class WireframePendingJobsService {
 
     private final GeraLandingWireframeBackendClient backendClient;
 
+    /** Recebe o client responsável pelo contrato HTTP da fila interna de wireframe. */
     public WireframePendingJobsService(GeraLandingWireframeBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 
     /**
-     * Busca execuções pendentes da etapa wireframe e confirma o estado via controller wireframe.web.
+     * Busca execuções pendentes da etapa wireframe usando exclusivamente a lista pending estruturada.
      */
     public List<GeraLandingStageExecutionDetailDto> listPendingWireframeJobs(int limit) {
         List<GeraLandingStageExecutionDetailDto> pendingExecutions = backendClient.listPendingExecutions(limit);
         List<GeraLandingStageExecutionDetailDto> wireframeJobs = pendingExecutions.stream()
                 .filter(this::isWireframeStage)
-                .filter(this::isPendingOnWireframeController)
                 .toList();
         log.info("Wireframe pending jobs fetched: {} (from total pending={})", wireframeJobs.size(), pendingExecutions.size());
         return wireframeJobs;
@@ -45,16 +45,4 @@ public class WireframePendingJobsService {
                 && WIREFRAME_STAGE_CODE.equals(execution.stageCode().trim().toLowerCase(Locale.ROOT));
     }
 
-    /**
-     * Consulta o endpoint wireframe.web para confirmar que o job segue pendente.
-     */
-    private boolean isPendingOnWireframeController(GeraLandingStageExecutionDetailDto execution) {
-        if (execution == null || execution.experimentId() == null || !StringUtils.hasText(execution.idJob())) {
-            return false;
-        }
-        GeraLandingStageExecutionDetailDto detail = backendClient.fetchWireframeStageExecutionDetail(
-                execution.experimentId(),
-                execution.idJob());
-        return detail != null && "INICIADO".equalsIgnoreCase(detail.status());
-    }
 }

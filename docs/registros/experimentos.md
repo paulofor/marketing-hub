@@ -2267,3 +2267,13 @@
 - Ajustado o client do Worker AI da etapa `landing-page-wireframe` para consumir diretamente o endpoint interno `/api/internal/geralanding/wireframe/stage-executions/pending`, preservando os artefatos JSON estruturados enviados pelo backend (`experiment` e `hypothesis.framework`) sem voltar a depender da varredura por experimento.
 - A montagem dos dados de prompt passou a preferir o JSON já entregue na fila pending, mantendo fallback legado por `experimentId` quando o backend não enviar dados embutidos.
 - Adicionado teste unitário cobrindo o contrato `jobid`, `experiment`, `hypothesis.framework` e a preservação do JSON estruturado no DTO consumido pelo scheduler de wireframe.
+
+## 2026-05-29 — Worker AI wireframe sem consulta adicional de detalhe
+
+- Solicitação: remover a necessidade de `fetchWireframeStageExecutionDetail` no fluxo de wireframe, porque tudo que a etapa precisa já vem na lista de pendentes.
+- Causa-raiz tratada: o serviço de pendências ainda confirmava cada job com uma chamada extra ao endpoint de detalhe, apesar de o contrato `pending` já carregar status, experimento, hipótese e artefatos estruturados suficientes para processamento.
+- Correção aplicada:
+  - `WireframePendingJobsService` passou a usar exclusivamente `listPendingExecutions` e filtrar apenas o código da etapa `landing-page-wireframe`;
+  - removido o método `fetchWireframeStageExecutionDetail` do client de wireframe do Worker AI;
+  - o cânone de arquitetura por etapa foi atualizado para declarar que o `pending` de wireframe é fonte suficiente para o Worker AI, sem chamada adicional de detalhe antes do processamento;
+  - adicionados testes garantindo que o serviço usa apenas a lista pending estruturada e que o client faz somente uma requisição ao endpoint interno de pendências.

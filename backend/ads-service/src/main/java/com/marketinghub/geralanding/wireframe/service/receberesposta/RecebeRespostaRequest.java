@@ -1,4 +1,15 @@
 package com.marketinghub.geralanding.wireframe.service.receberesposta;
 
-/** Representa o payload inicial para receber a resposta da IA na etapa wireframe. */
-public record RecebeRespostaRequest() {}
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
+
+/** Representa o payload final enviado pelo Worker AI para concluir a resposta da etapa wireframe. */
+public record RecebeRespostaRequest(
+        @NotNull Long experimentId,
+        @NotBlank String stageCode,
+        String modelResponse,
+        Integer inputTokens,
+        Integer outputTokens,
+        BigDecimal costUsd,
+        String openAiJobId) {}

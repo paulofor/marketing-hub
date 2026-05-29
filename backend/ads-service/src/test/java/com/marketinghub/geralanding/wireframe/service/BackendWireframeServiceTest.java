@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,7 @@ import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -158,11 +160,53 @@ class BackendWireframeServiceTest {
 
         service.markWaitingOpenAiDispatch("job-ia-1", "Prompt para IA", "openai-job-1");
 
-        assertEquals("Prompt para IA", execution.getPrompt());
+        assertEquals("Prompt para IA", execution.getOpenAiRequestBody());
         assertEquals("openai-job-1", execution.getOpenAiJobId());
         assertNotNull(execution.getProcessingStartedAt());
         assertEquals("AGUARDANDO_RETORNO_OPENAI", execution.getStatus());
         verify(executionRepository).save(execution);
+    }
+
+    /** Deve concluir a execução e gravar o artefato wireframe recebido do Worker AI. */
+    @Test
+    void markCompletedFromResponseShouldPersistExecutionAndExperimentArtifact() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendWireframeService service =
+                new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
+        Experiment experiment = mock(Experiment.class);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(88L)
+                .experiment(experiment)
+                .stageCode("landing-page-wireframe")
+                .idJob("job-ia-1".getBytes(StandardCharsets.UTF_8))
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .build();
+        String modelResponse = "{\"landingPageWireframe\":{\"sectionOrder\":[\"hero\"]}}";
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(any(byte[].class)))
+                .thenReturn(Optional.of(execution));
+
+        service.markCompletedFromResponse(
+                "job-ia-1",
+                88L,
+                "landing-page-wireframe",
+                modelResponse,
+                321,
+                123,
+                new BigDecimal("0.045600"),
+                "openai-job-final");
+
+        assertEquals(modelResponse, execution.getModelResponse());
+        assertEquals("openai-job-final", execution.getOpenAiJobId());
+        assertEquals(321, execution.getInputTokens());
+        assertEquals(123, execution.getOutputTokens());
+        assertEquals(new BigDecimal("0.045600"), execution.getCostUsd());
+        assertNotNull(execution.getCompletedAt());
+        assertEquals("CONCLUIDO", execution.getStatus());
+        verify(executionRepository).save(execution);
+        verify(experiment).setLandingPageWireframe(modelResponse);
+        verify(experimentRepository).save(experiment);
+        verify(experimentRepository, never()).findById(88L);
     }
 
 }

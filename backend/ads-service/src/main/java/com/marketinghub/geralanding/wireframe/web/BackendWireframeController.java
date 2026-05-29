@@ -4,10 +4,9 @@ import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
-import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
-import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
+import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.slf4j.Logger;
@@ -71,10 +70,28 @@ public class BackendWireframeController {
     return ResponseEntity.accepted().build();
   }
 
-  /** Recebe a resposta da IA para a etapa wireframe sem processá-la nesta versão inicial. */
+  /** Recebe a resposta da IA para a etapa wireframe e conclui a execução do job. */
   @PostMapping("/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta")
   public ResponseEntity<Void> recebeResposta(
       @PathVariable String idJob, @Valid @RequestBody RecebeRespostaRequest payload) {
+    LOGGER.info(
+        "[GeraLanding][Wireframe] Recebida resposta da IA idJob={} experimentId={} stageCode={} openAiJobId={} inputTokens={} outputTokens={} costUsd={}",
+        idJob,
+        payload.experimentId(),
+        payload.stageCode(),
+        payload.openAiJobId(),
+        payload.inputTokens(),
+        payload.outputTokens(),
+        payload.costUsd());
+    executionService.markCompletedFromResponse(
+        idJob,
+        payload.experimentId(),
+        payload.stageCode(),
+        payload.modelResponse(),
+        payload.inputTokens(),
+        payload.outputTokens(),
+        payload.costUsd(),
+        payload.openAiJobId());
     return ResponseEntity.accepted().build();
   }
 

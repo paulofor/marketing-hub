@@ -25,6 +25,7 @@ public class BackendWireframeService {
 
     private static final Logger log = LoggerFactory.getLogger(BackendWireframeService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
+    private static final String STAGE_CODE = "landing-page-wireframe";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private final ExperimentRepository experimentRepository;
@@ -41,9 +42,14 @@ public class BackendWireframeService {
         this.objectMapper = objectMapper;
     }
 
-    /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
+    /** Inicia a execução manual da etapa wireframe usando o código canônico da etapa. */
     @Transactional
-    public GeraLandingWireframeStartResponse registerInitialExecution(Long experimentId, String stageCode) {
+    public GeraLandingWireframeStartResponse start(Long experimentId) {
+        return registerInitialExecution(experimentId, STAGE_CODE);
+    }
+
+    /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
+    private GeraLandingWireframeStartResponse registerInitialExecution(Long experimentId, String stageCode) {
         Instant now = Instant.now();
         var experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));

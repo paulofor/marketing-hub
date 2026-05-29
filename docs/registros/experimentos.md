@@ -2360,3 +2360,12 @@
 - Correção aplicada:
   - classe principal, construtor, logger, imports, injeções e testes foram renomeados para `BackendWireframeService`;
   - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.
+
+## 2026-05-29 — Start do wireframe concentrado no BackendWireframeService
+
+- Solicitação: excluir `GeraLandingWireframeStageService` e passar o tratamento de `start` para `BackendWireframeService`.
+- Correção aplicada:
+  - `BackendWireframeService` passou a expor `start(Long experimentId)` usando internamente o código canônico `landing-page-wireframe`;
+  - `BackendWireframeController` passou a depender somente de `BackendWireframeService` para iniciar, listar, detalhar e expor callbacks da etapa;
+  - a classe intermediária `GeraLandingWireframeStageService` foi removida;
+  - os testes unitários do controller e do service foram atualizados para validar a delegação direta e o registro inicial da etapa.

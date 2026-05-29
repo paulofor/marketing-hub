@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
-import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
+import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
@@ -22,12 +22,27 @@ import org.junit.jupiter.api.Test;
 /** Valida o contrato do controller de backend da etapa wireframe. */
 class BackendWireframeControllerTest {
 
+    /** Deve delegar o início da etapa diretamente para o BackendWireframeService. */
+    @Test
+    void startShouldDelegateToBackendWireframeService() {
+        BackendWireframeService executionService = mock(BackendWireframeService.class);
+        BackendWireframeController controller = new BackendWireframeController(executionService);
+        GeraLandingWireframeStartResponse startResponse =
+                new GeraLandingWireframeStartResponse("job-start", "INICIADO");
+        when(executionService.start(44L)).thenReturn(startResponse);
+
+        var response = controller.start(44L);
+
+        assertEquals(202, response.getStatusCode().value());
+        assertEquals(startResponse, response.getBody());
+        verify(executionService).start(44L);
+    }
+
     /** Deve delegar a listagem pendente para a etapa canônica de wireframe. */
     @Test
     void pendingShouldReturnStartedWireframeJobs() {
-        GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
         BackendWireframeService executionService = mock(BackendWireframeService.class);
-        BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
+        BackendWireframeController controller = new BackendWireframeController(executionService);
         List<RecordWireframePending> pending = List.of(
                 new RecordWireframePending(
                         12L,
@@ -46,9 +61,8 @@ class BackendWireframeControllerTest {
     /** Deve receber o prompt enviado para IA sem alterar estado nesta primeira versão. */
     @Test
     void recebePromptShouldAcceptPromptPayloadWithoutSideEffects() {
-        GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
         BackendWireframeService executionService = mock(BackendWireframeService.class);
-        BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
+        BackendWireframeController controller = new BackendWireframeController(executionService);
         BackendWireframeController.RecebePromptRequest payload =
                 new BackendWireframeController.RecebePromptRequest("Prompt para IA", "openai-job-1");
 
@@ -57,15 +71,14 @@ class BackendWireframeControllerTest {
         assertEquals(202, response.getStatusCode().value());
         assertEquals("Prompt para IA", payload.prompt());
         assertEquals("openai-job-1", payload.jobidopenai());
-        verifyNoInteractions(stageService, executionService);
+        verifyNoInteractions(executionService);
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */
     @Test
     void pendingShouldSerializeListItemsWithExperimentAndJobid() throws Exception {
-        GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
         BackendWireframeService executionService = mock(BackendWireframeService.class);
-        BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
+        BackendWireframeController controller = new BackendWireframeController(executionService);
         when(executionService.listPending("landing-page-wireframe")).thenReturn(List.of(
                 new RecordWireframePending(
                         33L,

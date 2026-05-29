@@ -87,7 +87,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
             String requestBody = montaRequest.montar(requestData);
             RecordJobDto openAiJob = new RecordJobDto(UUID.fromString(execution.idJob()), execution.experimentId(), execution.stageCode(), "gpt-5.2", requestBody, prompt, null);
             RecordWireframeResponse payload = generate(openAiJob);
-            recebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), payload);
+            recebeResponse.processar(execution.experimentId(), execution.stageCode(), execution.idJob(), prompt, payload);
         } catch (Exception ex) {
             log.error("Falha ao processar etapa wireframe para executionId={} (experimentId={})", execution.idJob(), execution.experimentId(), ex);
             backendClient.receiveFailure(execution.idJob(), execution.experimentId(), execution.stageCode(), ex.getMessage(), ExceptionUtils.getRootCauseMessage(ex));

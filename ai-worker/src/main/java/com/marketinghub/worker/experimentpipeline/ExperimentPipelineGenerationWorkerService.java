@@ -27,6 +27,7 @@ public class ExperimentPipelineGenerationWorkerService {
         this.workerId = resolveWorkerId(configuredWorkerId);
     }
 
+    /** Processa pendências do pipeline legado sem acionar callbacks genéricos do GeraLanding. */
     public void processPending() {
         log.info("Experiment pipeline worker cycle started");
         if (!openAiClient.isEnabled()) {
@@ -51,10 +52,7 @@ public class ExperimentPipelineGenerationWorkerService {
                         claimed.id(), workerId, claimed.section());
                 backendClient.updateStage(claimed.id(), "SENT_TO_OPENAI");
                 backendClient.updateStage(claimed.id(), "WAITING_OPENAI");
-                String expectedModel = "gpt-5.2";
-                backendClient.registerGeraLandingPrompt(claimed.experimentId(), claimed.section(), claimed.id().toString(), claimed.requestBodyJson(), expectedModel);
                 ExperimentPipelineJobCompletionPayload payload = openAiClient.generate(claimed);
-                backendClient.registerGeraLandingResult(claimed.experimentId(), claimed.section(), claimed.id().toString(), payload);
                 log.info("Job {} received OpenAI output; completing job in backend", claimed.id());
                 completeInBackendWithRetry(claimed.id(), payload);
                 log.info("Job {} completed successfully", claimed.id());

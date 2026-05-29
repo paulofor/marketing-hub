@@ -194,7 +194,9 @@ class BackendWireframeServiceTest {
                 321,
                 123,
                 new BigDecimal("0.045600"),
-                "openai-job-final");
+                "openai-job-final",
+                null,
+                null);
 
         assertEquals(modelResponse, execution.getModelResponse());
         assertEquals("openai-job-final", execution.getOpenAiJobId());
@@ -207,6 +209,45 @@ class BackendWireframeServiceTest {
         verify(experiment).setLandingPageWireframe(modelResponse);
         verify(experimentRepository).save(experiment);
         verify(experimentRepository, never()).findById(88L);
+    }
+
+    /** Deve marcar a execução como falha sem gravar artefato quando o Worker AI retorna erro. */
+    @Test
+    void markCompletedFromResponseShouldPersistFailureWithoutExperimentArtifact() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendWireframeService service =
+                new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
+        Experiment experiment = mock(Experiment.class);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(88L)
+                .experiment(experiment)
+                .stageCode("landing-page-wireframe")
+                .idJob("job-ia-erro".getBytes(StandardCharsets.UTF_8))
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .build();
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(any(byte[].class)))
+                .thenReturn(Optional.of(execution));
+
+        service.markCompletedFromResponse(
+                "job-ia-erro",
+                88L,
+                "landing-page-wireframe",
+                null,
+                null,
+                null,
+                null,
+                null,
+                " Falha OpenAI ",
+                " Detalhe técnico ");
+
+        assertEquals("Falha OpenAI", execution.getErrorMessage());
+        assertEquals("Detalhe técnico", execution.getErrorDetail());
+        assertNotNull(execution.getCompletedAt());
+        assertEquals("FALHA", execution.getStatus());
+        verify(executionRepository).save(execution);
+        verify(experiment, never()).setLandingPageWireframe(any());
+        verify(experimentRepository, never()).save(experiment);
     }
 
 }

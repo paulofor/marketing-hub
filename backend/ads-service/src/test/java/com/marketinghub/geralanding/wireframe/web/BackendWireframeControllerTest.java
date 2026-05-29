@@ -92,7 +92,9 @@ class BackendWireframeControllerTest {
                 120,
                 80,
                 new BigDecimal("0.012300"),
-                "openai-job-1");
+                "openai-job-1",
+                null,
+                null);
 
         var response = controller.recebeResposta("job-ia-1", payload);
 
@@ -105,7 +107,42 @@ class BackendWireframeControllerTest {
                 120,
                 80,
                 new BigDecimal("0.012300"),
-                "openai-job-1");
+                "openai-job-1",
+                null,
+                null);
+    }
+
+
+    /** Deve receber payload de erro e delegar a falha para o serviço da etapa wireframe. */
+    @Test
+    void recebeRespostaShouldDelegateErrorPayloadToWireframeService() {
+        BackendWireframeService executionService = mock(BackendWireframeService.class);
+        BackendWireframeController controller = new BackendWireframeController(executionService);
+        RecebeRespostaRequest payload = new RecebeRespostaRequest(
+                44L,
+                "landing-page-wireframe",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Falha OpenAI",
+                "Stack trace resumido");
+
+        var response = controller.recebeResposta("job-ia-erro", payload);
+
+        assertEquals(202, response.getStatusCode().value());
+        verify(executionService).markCompletedFromResponse(
+                "job-ia-erro",
+                44L,
+                "landing-page-wireframe",
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Falha OpenAI",
+                "Stack trace resumido");
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */

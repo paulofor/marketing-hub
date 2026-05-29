@@ -184,7 +184,7 @@ public class BackendWireframeService {
 
     @Transactional(readOnly = true)
     /** Retorna o detalhe da execução convertido para o DTO local da etapa. */
-    public GeraLandingWireframeStageExecutionDetailResponse getStageExecutionDetail(Long experimentId, String idJob) {
+    public RecordBackendWireframeDetalheDto getStageExecutionDetail(Long experimentId, String idJob) {
         GeraLandingStageExecution execution = executionRepository
                 .findTopByExperimentIdAndIdJobOrderByExecutionRequestedAtDesc(experimentId, toDatabaseIdJob(idJob))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
@@ -201,8 +201,8 @@ public class BackendWireframeService {
     }
 
     /** Converte o detalhe transversal para o detalhe local da etapa. */
-    private GeraLandingWireframeStageExecutionDetailResponse toDetailResponse(GeraLandingStageExecution execution) {
-        return new GeraLandingWireframeStageExecutionDetailResponse(
+    private RecordBackendWireframeDetalheDto toDetailResponse(GeraLandingStageExecution execution) {
+        return new RecordBackendWireframeDetalheDto(
                 fromDatabaseIdJob(execution.getIdJob()),
                 execution.getExperimentId(),
                 execution.getStageCode(),

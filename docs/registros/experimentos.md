@@ -2373,3 +2373,11 @@
   - `BackendWireframeController` passou a depender somente de `BackendWireframeService` para iniciar, listar, detalhar e expor callbacks da etapa;
   - a classe intermediária `GeraLandingWireframeStageService` foi removida;
   - os testes unitários do controller e do service foram atualizados para validar a delegação direta e o registro inicial da etapa.
+
+## 2026-05-29 — DTO de detalhe do wireframe renomeado
+
+- Solicitação: alterar o nome de `GeraLandingWireframeStageExecutionDetailResponse` para `RecordBackendWireframeDetalheDto`.
+- Correção aplicada:
+  - o record Java de detalhe da execução da etapa `landing-page-wireframe` foi renomeado para `RecordBackendWireframeDetalheDto`;
+  - `BackendWireframeService` e `BackendWireframeController` foram atualizados para usar o novo nome no retorno do detalhe da execução;
+  - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.

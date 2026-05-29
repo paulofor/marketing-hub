@@ -2,8 +2,8 @@ package com.marketinghub.geralanding.wireframe.web;
 
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
-import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionDetailResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
+import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -65,9 +65,9 @@ public class BackendWireframeController {
 
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}")
-  public ResponseEntity<GeraLandingWireframeStageExecutionDetailResponse> detailStageExecution(
+  public ResponseEntity<RecordBackendWireframeDetalheDto> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    GeraLandingWireframeStageExecutionDetailResponse response =
+    RecordBackendWireframeDetalheDto response =
         executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }

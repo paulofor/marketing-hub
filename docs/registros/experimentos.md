@@ -2381,3 +2381,14 @@
   - o record Java de detalhe da execução da etapa `landing-page-wireframe` foi renomeado para `RecordBackendWireframeDetalheDto`;
   - `BackendWireframeService` e `BackendWireframeController` foram atualizados para usar o novo nome no retorno do detalhe da execução;
   - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.
+
+## 2026-05-29 07:48:04 UTC-3
+- solicitação para reorganizar os records usados pelo endpoint backend de wireframe do GeraLanding em um pacote `start` dentro de `geralanding.wireframe.service`.
+- raciocínio aplicado: manter os contratos de payload/resposta do endpoint agrupados em subpacote específico, sem alterar comportamento de negócio ou o contrato JSON exposto.
+- foi feito: movimentação dos records de resposta, detalhe e pendência da etapa wireframe para `com.marketinghub.geralanding.wireframe.service.start`, com atualização dos imports do service, controller e testes relacionados.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/service/BackendWireframeService.java

@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe.service;
+package com.marketinghub.geralanding.wireframe.service.start;
 
 /** Representa os dados do experimento expostos na fila interna da etapa wireframe. */
 public record RecordWireframeExperiment(

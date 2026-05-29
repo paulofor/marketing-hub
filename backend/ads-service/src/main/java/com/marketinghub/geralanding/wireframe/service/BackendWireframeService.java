@@ -1,5 +1,11 @@
 package com.marketinghub.geralanding.wireframe.service;
 
+import com.marketinghub.geralanding.wireframe.service.start.GeraLandingWireframeExecutionSummaryResponse;
+import com.marketinghub.geralanding.wireframe.service.start.GeraLandingWireframeStartResponse;
+import com.marketinghub.geralanding.wireframe.service.start.RecordBackendWireframeDetalheDto;
+import com.marketinghub.geralanding.wireframe.service.start.RecordWireframeExperiment;
+import com.marketinghub.geralanding.wireframe.service.start.RecordWireframeHypothesis;
+import com.marketinghub.geralanding.wireframe.service.start.RecordWireframePending;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

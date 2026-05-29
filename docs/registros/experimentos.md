@@ -2426,6 +2426,17 @@
   - `BackendWireframeController.recebePrompt` passou a registrar `idJob`, `jobidopenai` e o valor literal de `payload.prompt()` antes de delegar para `BackendWireframeService.markWaitingOpenAiDispatch`;
   - o teste do controller foi atualizado para capturar o log e garantir que o prompt recebido aparece na saída de log.
 
+## 2026-05-29 — Records dos endpoints de listagem e detalhe do wireframe isolados
+
+- Solicitação: dentro de `geralanding.wireframe.service`, criar os pacotes `listStageExecutions` e `detailStageExecution` e mover para eles os records usados pelos endpoints correspondentes do controller.
+- Correção aplicada:
+  - `GeraLandingWireframeExecutionSummaryResponse` foi movido para `com.marketinghub.geralanding.wireframe.service.listStageExecutions`;
+  - `RecordBackendWireframeDetalheDto` foi movido para `com.marketinghub.geralanding.wireframe.service.detailStageExecution`;
+  - `BackendWireframeService` e `BackendWireframeController` passaram a importar os records a partir dos novos subpacotes.
+
+## 2026-05-29 — Persistência do prompt no callback de despacho do wireframe
+
+- Ajuste adicional validado por teste unitário: `BackendWireframeService.markWaitingOpenAiDispatch` também passou a preencher o campo `prompt` da execução ao receber o prompt despachado, mantendo `openAiRequestBody` preservado com o mesmo conteúdo para compatibilidade.
 ## 2026-05-29 — Swagger completo do BackendWireframeController
 
 - Solicitação: atualizar o Swagger com todos os endpoints expostos pelo `BackendWireframeController`.

@@ -1,12 +1,12 @@
 package com.marketinghub.geralanding.wireframe.web;
 
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
-import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
+import com.marketinghub.geralanding.wireframe.service.listStageExecutions.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
-import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
-import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
+import com.marketinghub.geralanding.wireframe.service.detailStageExecution.RecordBackendWireframeDetalheDto;
 import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
+import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.slf4j.Logger;

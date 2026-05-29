@@ -7,6 +7,8 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.geralanding.wireframe.service.detailStageExecution.RecordBackendWireframeDetalheDto;
+import com.marketinghub.geralanding.wireframe.service.listStageExecutions.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
@@ -112,6 +114,7 @@ public class BackendWireframeService {
                         "GeraLanding execution not found for idJob: " + idJob
                 ));
 
+        execution.setPrompt(prompt);
         execution.setOpenAiRequestBody(prompt);
         execution.setOpenAiJobId(openAiJobId);
         execution.setProcessingStartedAt(Instant.now());

@@ -81,7 +81,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
             return;
         }
         try {
-            Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution.experimentId());
+            Map<String, Object> dadosPrompt = backendClient.loadPromptData(execution);
             RecordWireframeRequest requestData = new RecordWireframeRequest(execution.experimentId(), dadosPrompt);
             String prompt = montaRequest.montarPrompt(requestData);
             String requestBody = montaRequest.montar(requestData);

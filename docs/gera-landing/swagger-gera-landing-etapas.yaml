@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Gera Landing Etapas API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     Contrato Swagger para todas as etapas do Gera Landing no backend (pacote `com.marketinghub.geralanding`).
 servers:
@@ -10,27 +10,132 @@ paths:
   /api/experiments/{experimentId}/geralanding/wireframe/start:
     post:
       tags:
-        - Gera Landing
+        - Gera Landing Wireframe
       summary: Inicia geração manual de wireframe
       description: |
-        Registra uma execução inicial da etapa de wireframe para o experimento.
+        Registra uma execução inicial da etapa `landing-page-wireframe` para o experimento.
       parameters:
-        - name: experimentId
-          in: path
-          required: true
-          description: ID numérico interno do experimento.
-          schema:
-            type: integer
-            format: int64
+        - $ref: "#/components/parameters/ExperimentIdPath"
       responses:
-        '202':
+        "202":
           description: Etapa aceita para processamento assíncrono.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeraLandingStartResponse'
-        '404':
+                $ref: "#/components/schemas/GeraLandingWireframeStartResponse"
+        "404":
           description: Experimento não encontrado.
+
+  /api/experiments/{experimentId}/geralanding/wireframe/stage-executions:
+    get:
+      tags:
+        - Gera Landing Wireframe
+      summary: Lista execuções da etapa wireframe
+      description: |
+        Lista as execuções da etapa `landing-page-wireframe` de um experimento.
+      parameters:
+        - $ref: "#/components/parameters/ExperimentIdPath"
+        - name: includeCompleted
+          in: query
+          required: false
+          description: Indica se execuções concluídas devem ser incluídas na listagem.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Lista de execuções da etapa wireframe.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeraLandingWireframeExecutionSummaryResponse"
+        "404":
+          description: Experimento não encontrado.
+
+  /api/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}:
+    get:
+      tags:
+        - Gera Landing Wireframe
+      summary: Detalha execução da etapa wireframe
+      description: |
+        Retorna os detalhes de uma execução específica da etapa `landing-page-wireframe`.
+      parameters:
+        - $ref: "#/components/parameters/ExperimentIdPath"
+        - $ref: "#/components/parameters/IdJobPath"
+      responses:
+        "200":
+          description: Detalhe da execução da etapa wireframe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordBackendWireframeDetalheDto"
+        "404":
+          description: Experimento ou execução não encontrada.
+
+  /api/internal/geralanding/wireframe/stage-executions/pending:
+    get:
+      tags:
+        - Gera Landing Wireframe Internal
+      summary: Lista jobs pendentes de wireframe
+      description: |
+        Lista os jobs pendentes iniciados da etapa `landing-page-wireframe` para processamento pelo Worker AI.
+      responses:
+        "200":
+          description: Lista de pendências da etapa wireframe.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecordWireframePending"
+
+  /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags:
+        - Gera Landing Wireframe Internal
+      summary: Recebe prompt enviado para IA
+      description: |
+        Recebe o prompt enviado para IA, registra o prompt e marca a execução como aguardando retorno da OpenAI.
+      parameters:
+        - $ref: "#/components/parameters/IdJobPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecebePromptRequest"
+      responses:
+        "202":
+          description: Prompt recebido e execução marcada como aguardando retorno da OpenAI.
+        "400":
+          description: Payload inválido.
+        "404":
+          description: Execução não encontrada.
+
+  /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags:
+        - Gera Landing Wireframe Internal
+      summary: Recebe resposta da IA para wireframe
+      description: |
+        Recebe a resposta da IA para a etapa `landing-page-wireframe` e conclui a execução do job.
+      parameters:
+        - $ref: "#/components/parameters/IdJobPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecebeRespostaRequest"
+      responses:
+        "202":
+          description: Resposta recebida e execução concluída.
+        "400":
+          description: Payload inválido.
+        "404":
+          description: Execução não encontrada.
 
   /api/internal/geralanding/stage-executions:
     post:
@@ -44,13 +149,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeraLandingWorkerPromptRequest'
+              $ref: "#/components/schemas/GeraLandingWorkerPromptRequest"
       responses:
-        '202':
+        "202":
           description: Execução registrada com sucesso.
-        '400':
+        "400":
           description: Payload inválido.
-        '404':
+        "404":
           description: Experimento não encontrado.
 
   /api/internal/geralanding/stage-executions/{idJob}/receive-prompt:
@@ -61,24 +166,19 @@ paths:
       description: |
         Atualiza uma execução existente pelo `idJob`, persistindo prompt e marcando status em processamento.
       parameters:
-        - name: idJob
-          in: path
-          required: true
-          description: Identificador do job da execução.
-          schema:
-            type: string
+        - $ref: "#/components/parameters/IdJobPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeraLandingPromptReceiveRequest'
+              $ref: "#/components/schemas/GeraLandingPromptReceiveRequest"
       responses:
-        '202':
+        "202":
           description: Prompt recebido e execução atualizada.
-        '400':
+        "400":
           description: Payload inválido.
-        '404':
+        "404":
           description: Execução não encontrada.
 
   /api/internal/geralanding/stage-executions/pending:
@@ -89,17 +189,286 @@ paths:
       description: |
         Retorna até 20 execuções com status `INICIADO` ordenadas pela data da requisição.
       responses:
-        '200':
+        "200":
           description: Lista de execuções pendentes.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GeraLandingPendingExecutionResponse'
+                  $ref: "#/components/schemas/GeraLandingPendingExecutionResponse"
 
 components:
+  parameters:
+    ExperimentIdPath:
+      name: experimentId
+      in: path
+      required: true
+      description: ID numérico interno do experimento.
+      schema:
+        type: integer
+        format: int64
+    IdJobPath:
+      name: idJob
+      in: path
+      required: true
+      description: Identificador do job da execução.
+      schema:
+        type: string
+
   schemas:
+    GeraLandingWireframeStartResponse:
+      type: object
+      properties:
+        idJob:
+          type: string
+          description: Identificador do job criado para a execução.
+        status:
+          type: string
+          description: Status inicial da execução.
+
+    GeraLandingWireframeExecutionSummaryResponse:
+      type: object
+      properties:
+        idJob:
+          type: string
+          description: Identificador do job da execução.
+        status:
+          type: string
+          description: Status atual da execução.
+        executionRequestedAt:
+          type: string
+          format: date-time
+          description: Data e hora em que a execução foi solicitada.
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: Custo da execução em dólar, quando calculado.
+
+    RecordBackendWireframeDetalheDto:
+      type: object
+      properties:
+        idJob:
+          type: string
+        experimentId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+          example: landing-page-wireframe
+        executionRequestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        processingStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        promptTemplateId:
+          type: string
+          nullable: true
+        promptContent:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        openAiRequestBody:
+          type: string
+          nullable: true
+        openAiModel:
+          type: string
+          nullable: true
+        schemaJson:
+          type: string
+          nullable: true
+        promptMarkdownContent:
+          type: string
+          nullable: true
+        status:
+          type: string
+        openAiJobId:
+          type: string
+          nullable: true
+        modelResponse:
+          type: string
+          nullable: true
+        provisionalHtml:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        errorDetail:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+
+    RecordWireframePending:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        jobid:
+          type: string
+          description: Identificador do job pendente.
+        stageCode:
+          type: string
+          example: landing-page-wireframe
+        experiment:
+          $ref: "#/components/schemas/RecordWireframeExperiment"
+        hypothesis:
+          $ref: "#/components/schemas/RecordWireframeHypothesis"
+
+    RecordWireframeExperiment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+        hypothesis:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        stage:
+          type: string
+          nullable: true
+        creativeTextPrompt:
+          type: string
+          nullable: true
+        creativeImagePrompt:
+          type: string
+          nullable: true
+        campaignAngle:
+          type: object
+          nullable: true
+          additionalProperties: true
+        adCopy:
+          type: object
+          nullable: true
+          additionalProperties: true
+        adImageBriefing:
+          type: object
+          nullable: true
+          additionalProperties: true
+        landingPageCopy:
+          type: object
+          nullable: true
+          additionalProperties: true
+        landingPageWireframe:
+          type: object
+          nullable: true
+          additionalProperties: true
+        landingPageImagePlanning:
+          type: object
+          nullable: true
+          additionalProperties: true
+        landingPageDesignPreset:
+          type: object
+          nullable: true
+          additionalProperties: true
+        landingPageDeliverables:
+          type: object
+          nullable: true
+          additionalProperties: true
+        htmlGeraLanding:
+          type: string
+          nullable: true
+
+    RecordWireframeHypothesis:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          nullable: true
+        framework:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    RecebePromptRequest:
+      type: object
+      required:
+        - prompt
+        - jobidopenai
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          description: Prompt enviado ao provedor de IA.
+        jobidopenai:
+          type: string
+          minLength: 1
+          description: Identificador do job aberto na OpenAI.
+
+    RecebeRespostaRequest:
+      type: object
+      required:
+        - experimentId
+        - stageCode
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+          description: ID do experimento associado à execução.
+        stageCode:
+          type: string
+          minLength: 1
+          example: landing-page-wireframe
+          description: Código da etapa concluída.
+        modelResponse:
+          type: string
+          nullable: true
+          description: Resposta bruta ou normalizada retornada pelo modelo.
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+          description: Total de tokens de entrada reportado pelo provedor.
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+          description: Total de tokens de saída reportado pelo provedor.
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: Custo estimado da execução em dólar.
+        openAiJobId:
+          type: string
+          nullable: true
+          description: Identificador do job no provedor OpenAI.
+
     GeraLandingStartResponse:
       type: object
       properties:

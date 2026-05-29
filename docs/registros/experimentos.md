@@ -2425,3 +2425,10 @@
 - Correção aplicada:
   - `BackendWireframeController.recebePrompt` passou a registrar `idJob`, `jobidopenai` e o valor literal de `payload.prompt()` antes de delegar para `BackendWireframeService.markWaitingOpenAiDispatch`;
   - o teste do controller foi atualizado para capturar o log e garantir que o prompt recebido aparece na saída de log.
+
+## 2026-05-29 — Swagger completo do BackendWireframeController
+
+- Solicitação: atualizar o Swagger com todos os endpoints expostos pelo `BackendWireframeController`.
+- Correção aplicada:
+  - `docs/gera-landing/swagger-gera-landing-etapas.yaml` passou a documentar os seis endpoints do controller de wireframe: start, listagem, detalhe, pending, `recebe-prompt` e `recebe-resposta`;
+  - foram adicionados parâmetros reutilizáveis e schemas para respostas, pendências e payloads específicos da etapa `landing-page-wireframe`.

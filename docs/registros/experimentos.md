@@ -2386,6 +2386,10 @@
 - solicitação para persistir no backend o prompt recebido pelo endpoint interno de wireframe e marcar a execução como aguardando retorno da OpenAI.
 - raciocínio aplicado: a causa-raiz era que `recebePrompt` aceitava o payload sem efeito persistente, mantendo o job iniciado sem registrar `prompt`, `openAiJobId`, início do processamento e status de espera.
 - foi feito: criação de `BackendWireframeService.markWaitingOpenAiDispatch`, chamada pelo `BackendWireframeController.recebePrompt`, e atualização dos testes unitários do serviço e do controller para cobrir a persistência e a delegação.
+## 2026-05-29 07:49:55 UTC-3
+- solicitação: no backend, criar o pacote `recebeprompt` dentro de `geralanding.wireframe.service` e mover para ele os records usados pelo endpoint `recebe-prompt`.
+- raciocínio: separar o contrato do payload interno do endpoint em pacote de serviço específico, evitando record aninhado no controller e deixando o endpoint depender de um DTO explícito.
+- registro do que foi feito: criado `RecebePromptRequest` em `com.marketinghub.geralanding.wireframe.service.recebeprompt`, atualizado o controller de wireframe para usar esse record externo e ajustado o teste do controller para o novo pacote.
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - backend/AGENTS.md
@@ -2394,3 +2398,9 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/wireframe/service/BackendWireframeServiceTest.java
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeControllerTest.java
+## 2026-05-29 — Records pending do wireframe isolados em subpacote
+
+- Solicitação: dentro de `geralanding.wireframe.service`, criar o pacote `pending` e mover para ele todos os records usados pelo endpoint interno pending da etapa `landing-page-wireframe`.
+- Correção aplicada:
+  - `RecordWireframePending`, `RecordWireframeExperiment` e `RecordWireframeHypothesis` foram movidos para `com.marketinghub.geralanding.wireframe.service.pending`;
+  - `BackendWireframeService`, `BackendWireframeController` e os testes relacionados foram atualizados para importar os records a partir do novo subpacote.

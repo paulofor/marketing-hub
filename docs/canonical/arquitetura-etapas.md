@@ -26,114 +26,94 @@ Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>
 
 Exemplo: `BackendWireframeController.pending` deve retornar `List<RecordWireframePending>`.
 
-## Backend — regras globais de isolamento de módulos
+## Etapa 2 — Agendamento e busca de novos itens para processamento
 
-As regras abaixo valem para classes analisadas no pacote `com.marketinghub` do backend:
+A segunda etapa operacional de qualquer processamento assíncrono por Worker AI é o ciclo de
+agendamento e busca de novos itens aptos para processamento. O padrão canônico deve seguir o
+comportamento do scheduler de wireframe do Worker AI:
 
-- **MOIS isolado**: classes em `com.marketinghub.mois..` não podem depender de outros pacotes internos
-  `com.marketinghub`, exceto o próprio prefixo `com.marketinghub.mois`.
-- **OPRM isolado**: classes em `com.marketinghub.oprm..` não podem depender de outros pacotes internos
-  `com.marketinghub`, exceto o próprio prefixo `com.marketinghub.oprm`.
-- **Biblioteca de páginas de venda MOIS isolada**: classes em
-  `com.marketinghub.mois.bibliotecapaginavenda.worker.v1..` não podem depender de outros pacotes internos
-  `com.marketinghub`, exceto o próprio pacote da biblioteca.
-- **Demais pacotes não consomem a biblioteca MOIS**: qualquer classe em `com.marketinghub..` fora de
-  `com.marketinghub.mois.bibliotecapaginavenda.worker.v1..` não pode depender da biblioteca de páginas de
-  venda MOIS.
+1. o Worker AI deve possuir um scheduler específico da etapa, nomeado no padrão
+   `<Etapa>ExecutionScheduler`;
+2. o scheduler deve executar periodicamente via `@Scheduled` com cron explícito na anotação, sem
+   variável intermediária para o cron;
+3. a cada ciclo, o scheduler deve delegar a busca de pendências a um serviço específico da etapa,
+   nomeado no padrão `<Etapa>PendingJobsService`;
+4. o serviço de pendências deve consultar exclusivamente o endpoint interno `pending` da própria etapa
+   no backend, respeitando o isolamento por módulo/etapa;
+5. o endpoint `pending` deve retornar somente itens realmente aptos ao processamento da etapa,
+   preferencialmente com status `INICIADO`;
+6. o Worker AI pode aplicar um limite operacional de leitura/processamento, mas esse limite não pode
+   alterar o contrato semântico do item;
+7. falhas no ciclo agendado devem ser registradas em log com stack trace completo antes de serem
+   propagadas ou tratadas.
 
-## Backend — biblioteca de páginas de venda MOIS
+Cada item retornado pelo `pending` deve vir completo como uma **unidade de trabalho fechada**. Isso
+significa que o item precisa carregar, no próprio payload da listagem, todos os identificadores, dados
+de contexto e artefatos necessários para executar a etapa sem depender de uma chamada adicional de
+detalhe antes do processamento. A unidade de trabalho fechada deve conter, no mínimo:
 
-A biblioteca de páginas de venda do MOIS usa pacotes no padrão:
+- identificador único do job da etapa;
+- identificador do experimento ou entidade principal processada;
+- código da etapa;
+- status operacional que justifica a seleção para processamento;
+- dados completos da entidade principal necessários para montar o prompt ou executar a regra da etapa;
+- dados completos da hipótese, framework ou demais insumos de domínio exigidos pela etapa;
+- artefatos anteriores já produzidos e necessários para continuidade do fluxo, serializados como JSON
+  estruturado quando forem JSON válido;
+- metadados mínimos de ordenação/rastreabilidade quando existirem no backend.
 
-```text
-com.marketinghub.mois.bibliotecapaginavenda.<namespace>.<versao>.<layer>
-```
+É proibido desenhar a busca de pendências como uma lista parcial que obrigue o Worker AI a buscar
+detalhes complementares por job antes de processar. Caso alguma etapa precise de dados adicionais para
+funcionar, a causa-raiz deve ser corrigida no contrato `pending` do backend para que o item continue
+sendo publicado como unidade de trabalho fechada. Esse padrão reduz acoplamento, evita inconsistência
+entre leituras em momentos diferentes, melhora rastreabilidade e mantém o backend como fonte única dos
+dados operacionais.
 
-Onde:
+## Etapa 3 — Montagem do request OpenAI com prompt, schema e dados da solicitação
 
-- `<namespace>` é um identificador alfanumérico ou com `_`;
-- `<versao>` segue o padrão `vN`, por exemplo `v1`;
-- `<layer>` deve ser `web`, `service` ou `repository`.
+A terceira etapa operacional de qualquer processamento assíncrono por Worker AI é transformar a
+unidade de trabalho fechada recebida do backend em um request completo para o endpoint da OpenAI. O
+padrão canônico deve seguir o comportamento da etapa wireframe do Worker AI:
 
-As dependências entre layers devem respeitar o mesmo `<namespace>` e a mesma `<versao>`:
+1. o serviço executor da etapa, nomeado no padrão `<Etapa>OpenAiExecutionService`, deve receber a
+   unidade de trabalho fechada produzida pela Etapa 2;
+2. antes de chamar a OpenAI, o executor deve obter os dados de prompt a partir do próprio item recebido
+   do backend, preservando o backend como fonte única da solicitação;
+3. o executor deve criar um record/DTO de request da própria etapa, no padrão `Record<Etapa>Request`,
+   contendo o identificador da entidade principal e o mapa de dados já estruturado;
+4. a montagem do payload da OpenAI deve ficar em um montador isolado da etapa, nomeado no padrão
+   `MontaRequest`, dentro do pacote da própria etapa;
+5. o `MontaRequest` deve carregar o arquivo markdown de prompt da etapa a partir de
+   `ai-worker/src/main/resources/prompts/<dominio>/<arquivo-da-etapa>.md`;
+6. o `MontaRequest` deve carregar o schema JSON da etapa a partir de
+   `ai-worker/src/main/resources/prompts/<dominio>/<arquivo-da-etapa>-schema.json`;
+7. os placeholders do prompt devem ser resolvidos usando os dados estruturados da unidade de trabalho,
+   sem inserir JSON serializado dentro de outro JSON textual quando o contrato permitir objeto/array;
+8. o body enviado à OpenAI deve conter, no mínimo, `model`, `input` com mensagens `system` e `user`, e
+   `text.format` com `type=json_schema`, `name`, `schema` e `strict=true`;
+9. antes do envio, o request deve ser convertido para mapa/objeto JSON validável e não pode permanecer
+   apenas como texto opaco;
+10. o executor deve registrar logs com contexto operacional (`jobId`, etapa, modelo e prévia segura do
+    payload) antes do envio e depois da resposta, preservando stack trace completo em falhas HTTP ou
+    inesperadas;
+11. a chamada à OpenAI deve ser feita pelo endpoint `/responses`, com `Content-Type: application/json`
+    e corpo JSON montado pelo `MontaRequest`;
+12. quando a etapa usar modo flex, o executor deve adicionar `service_tier=flex` ao corpo final antes de
+    enviar ao endpoint `/responses`.
 
-- classes do layer `web` podem depender apenas de classes do próprio layer `web` ou do layer `service` no
-  mesmo `<namespace>/<versao>`;
-- classes do layer `service` podem depender apenas de classes do próprio layer `service` ou do layer
-  `repository` no mesmo `<namespace>/<versao>`;
-- dependências para classes fora desse padrão de pacote não são tratadas por esta regra específica, mas
-  continuam sujeitas às demais regras globais de isolamento.
+No exemplo de wireframe, o fluxo é: `GeraLandingWireframeOpenAiExecutionService` recebe a execução
+pendente, chama `backendClient.loadPromptData(execution)` para aproveitar os dados estruturados da
+solicitação, cria `RecordWireframeRequest`, solicita ao `MontaRequest` o prompt final e o request body,
+cria um `RecordJobDto`, converte o `requestBodyJson` em mapa, acrescenta `service_tier=flex` e envia o
+payload para `POST /responses`. O prompt markdown usado é
+`prompts/geralanding/landing-page-wireframe.md`, e o schema de saída estruturada usado é
+`prompts/geralanding/landing-page-wireframe-schema.json`.
 
-## Backend — GeraLanding por etapa
-
-As regras abaixo valem para dependências internas sob `com.marketinghub.geralanding..`:
-
-- **Web por etapa**: classes em `com.marketinghub.geralanding.<etapa>.web..` só podem depender de classes
-  `com.marketinghub.geralanding.<etapa>.web..` ou
-  `com.marketinghub.geralanding.<etapa>.service..` da mesma `<etapa>`.
-- **Provisório por etapa**: classes em `com.marketinghub.geralanding.<etapa>.provisorio..` só podem depender
-  de classes `com.marketinghub.geralanding.<etapa>.provisorio..` da mesma `<etapa>`.
-- **Service com whitelist explícita**: classes em `com.marketinghub.geralanding..service..` só podem depender,
-  dentro de `com.marketinghub`, de classes do próprio pacote ou dos tipos canonicamente permitidos:
-  - `com.marketinghub.experiment.Experiment`;
-  - `com.marketinghub.experiment.repository.ExperimentRepository`;
-  - `com.marketinghub.geralanding.GeraLandingStageExecution`;
-  - `com.marketinghub.geralanding.GeraLandingStageExecutionRepository`;
-  - `com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder`.
-- **Controllers internos por etapa**: toda classe em `com.marketinghub.geralanding.<etapa>.web..` com nome
-  `Backend<Etapa>Controller` deve declarar método `pending` retornando exatamente
-  `List<Record<Etapa>Pending>`.
-
-## Backend — GeraLandingStageExecutionService e assemblers canônicos
-
-O serviço `com.marketinghub.geralanding.GeraLandingStageExecutionService` deve usar apenas os contratos
-canônicos atuais dos assemblers provisórios:
-
-- **Design preset**:
-  - é proibido chamar `DesignPresetProvisionalHtmlAssembler.assemble(String, String)`;
-  - é obrigatório chamar `DesignPresetProvisionalHtmlAssembler.assemble(String, String, String, String, String)`
-    quando `STAGE_DESIGN_PRESET` for processado.
-- **Wireframe**:
-  - é proibido chamar `WireframeProvisionalHtmlAssembler.assemble(String)`;
-  - é obrigatório chamar `WireframeProvisionalHtmlAssembler.assemble(String, String)` quando
-    `STAGE_WIREFRAME` for processado.
-- **Copy**:
-  - é proibido chamar `CopyProvisionalHtmlAssembler.assemble(String, String)`;
-  - é obrigatório chamar `CopyProvisionalHtmlAssembler.assemble(String, String, String)` quando `STAGE_COPY`
-    for processado.
-
-Os tipos canônicos de assembler também devem permanecer estáveis:
-
-- qualquer classe com nome simples `WireframeProvisionalHtmlAssembler` deve residir em pacote
-  `..geralanding.wireframe..`;
-- qualquer classe com nome simples `DesignPresetProvisionalHtmlAssembler` deve residir em pacote
-  `..geralanding.designpreset..`;
-- o tipo `WireframeProvisionalHtmlAssembler` deve continuar existindo como tipo canônico atribuível à classe
-  `com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler`.
-
-## Worker AI — GeraLanding
-
-As regras abaixo valem para classes analisadas no pacote `com.marketinghub.worker` do Worker AI:
-
-- **Sem dependência do pipeline legado**: qualquer classe em `..geralanding..` não pode depender de classes em
-  `..experimentpipeline..`.
-- **Independência entre subpacotes principais**: os subpacotes
-  `com.marketinghub.worker.geralanding.wireframe..`, `copy..`, `imageplanning..` e `presetdesign..` não devem
-  depender uns dos outros.
-- **Acesso por subpacote ou comum**: dentro de dependências `com.marketinghub..`, cada subpacote do
-  GeraLanding só pode acessar classes do próprio subpacote ou de `..geralanding.comum..`:
-  - `..geralanding.copy..` só pode acessar `..geralanding.copy..` ou `..geralanding.comum..`;
-  - `..geralanding.presetdesign..` só pode acessar `..geralanding.presetdesign..` ou
-    `..geralanding.comum..`;
-  - `..geralanding.stage..` só pode acessar `..geralanding.stage..` ou `..geralanding.comum..`;
-  - `..geralanding.wireframe..` só pode acessar `..geralanding.wireframe..` ou
-    `..geralanding.comum..`;
-  - `..geralanding.deliverables..` só pode acessar `..geralanding.deliverables..` ou
-    `..geralanding.comum..`;
-  - `..geralanding.imageplanning..` só pode acessar `..geralanding.imageplanning..` ou
-    `..geralanding.comum..`.
-- **Comum isolado**: classes em `..geralanding.comum..` só podem acessar outras classes do próprio pacote
-  `..geralanding.comum..` dentro de `com.marketinghub..`.
+Essa etapa não deve buscar novamente detalhes operacionais no backend para completar a solicitação. Se
+o prompt ou o schema exigir algum dado que não veio na unidade de trabalho fechada, a correção deve ser
+feita na Etapa 2, ampliando o contrato `pending` do backend. A responsabilidade da Etapa 3 é apenas
+ingerir a solicitação já completa, combinar esses dados com os arquivos versionados de prompt/schema e
+enviar um request determinístico e rastreável para a OpenAI.
 
 ## GeraLanding — wireframe
 

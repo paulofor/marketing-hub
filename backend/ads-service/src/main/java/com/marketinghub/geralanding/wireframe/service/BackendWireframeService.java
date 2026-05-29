@@ -13,6 +13,7 @@ import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExp
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /** Responsável por adaptar consultas de execução para o contrato da etapa wireframe. */
 @Service
@@ -119,6 +121,65 @@ public class BackendWireframeService {
         execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);
 
         executionRepository.save(execution);
+    }
+
+    /** Conclui a execução da etapa wireframe com a resposta final devolvida pelo Worker AI. */
+    @Transactional
+    public void markCompletedFromResponse(
+            String idJob,
+            Long experimentId,
+            String stageCode,
+            String modelResponse,
+            Integer inputTokens,
+            Integer outputTokens,
+            BigDecimal costUsd,
+            String openAiJobId) {
+        GeraLandingStageExecution execution = executionRepository
+                .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
+                .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                        experimentId,
+                        stageCode))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+        try {
+            execution.setModelResponse(modelResponse);
+            if (StringUtils.hasText(openAiJobId)) {
+                execution.setOpenAiJobId(openAiJobId);
+            }
+            execution.setInputTokens(inputTokens);
+            execution.setOutputTokens(outputTokens);
+            execution.setCostUsd(costUsd);
+            execution.setErrorMessage(null);
+            execution.setErrorDetail(null);
+            execution.setCompletedAt(Instant.now());
+            execution.setStatus(STATUS_COMPLETED);
+
+            executionRepository.save(execution);
+            persistWireframeArtifactOnExperiment(execution, modelResponse);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Erro ao concluir resposta wireframe (idJob={}, experimentId={}, stageCode={}, openAiJobId={}, modelResponseLength={})",
+                    idJob,
+                    experimentId,
+                    stageCode,
+                    openAiJobId,
+                    modelResponse != null ? modelResponse.length() : 0,
+                    ex);
+            throw ex;
+        }
+    }
+
+    /** Persiste o artefato JSON final do wireframe no experimento associado à execução concluída. */
+    private void persistWireframeArtifactOnExperiment(GeraLandingStageExecution execution, String modelResponse) {
+        if (!StringUtils.hasText(modelResponse)) {
+            return;
+        }
+        Experiment experiment = execution.getExperiment();
+        if (experiment == null) {
+            experiment = experimentRepository.findById(execution.getExperimentId())
+                    .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + execution.getExperimentId()));
+        }
+        experiment.setLandingPageWireframe(modelResponse);
+        experimentRepository.save(experiment);
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

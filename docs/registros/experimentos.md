@@ -2437,3 +2437,9 @@
 ## 2026-05-29 — Persistência do prompt no callback de despacho do wireframe
 
 - Ajuste adicional validado por teste unitário: `BackendWireframeService.markWaitingOpenAiDispatch` também passou a preencher o campo `prompt` da execução ao receber o prompt despachado, mantendo `openAiRequestBody` preservado com o mesmo conteúdo para compatibilidade.
+## 2026-05-29 — Swagger completo do BackendWireframeController
+
+- Solicitação: atualizar o Swagger com todos os endpoints expostos pelo `BackendWireframeController`.
+- Correção aplicada:
+  - `docs/gera-landing/swagger-gera-landing-etapas.yaml` passou a documentar os seis endpoints do controller de wireframe: start, listagem, detalhe, pending, `recebe-prompt` e `recebe-resposta`;
+  - foram adicionados parâmetros reutilizáveis e schemas para respostas, pendências e payloads específicos da etapa `landing-page-wireframe`.

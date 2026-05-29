@@ -155,7 +155,7 @@ public class GeraLandingWireframeBackendClient {
         body.put("outputTokens", payload != null ? payload.outputTokens() : null);
         body.put("costUsd", payload != null ? payload.costUsd() : null);
         body.put("openAiJobId", payload != null ? payload.openAiJobId() : null);
-        webClient.post().uri(baseUrl + "/{idJob}/receive-result", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
+        webClient.post().uri(baseUrl + "/{idJob}/recebe-resposta", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
     }
 
     /** Preenche no payload dados de hipótese usados para montar o prompt da etapa. */

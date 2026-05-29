@@ -2353,3 +2353,10 @@
   - o payload `RecebePromptRequest` documenta os campos contratuais `prompt` e `jobidopenai` para rastrear o prompt enviado à IA e o job aberto na OpenAI;
   - o Swagger canônico e o cânone de arquitetura por etapas foram atualizados com o novo nome, endpoint e corpo JSON;
   - os testes unitários e o `ArquiteturaTest` passaram a validar o método `recebePrompt` e sua assinatura com payload.
+
+## 2026-05-29 — Serviço backend de wireframe renomeado
+
+- Solicitação: alterar o nome de `GeraLandingWireframeStageExecutionService` para `BackendWireframeService`.
+- Correção aplicada:
+  - classe principal, construtor, logger, imports, injeções e testes foram renomeados para `BackendWireframeService`;
+  - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.

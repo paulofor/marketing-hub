@@ -19,15 +19,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** Valida as consultas de execução específicas da etapa wireframe. */
-class GeraLandingWireframeStageExecutionServiceTest {
+class BackendWireframeServiceTest {
 
     /** Deve buscar somente jobs iniciados da etapa wireframe para o endpoint interno pending. */
     @Test
     void listPendingShouldQueryStartedJobsForStage() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        GeraLandingWireframeStageExecutionService service =
-                new GeraLandingWireframeStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendWireframeService service =
+                new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(77L);
         when(experiment.getName()).thenReturn("Experimento Wireframe");

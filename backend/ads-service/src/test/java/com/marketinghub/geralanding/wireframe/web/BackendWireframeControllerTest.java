@@ -14,6 +14,7 @@ import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartR
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
+import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -63,8 +64,7 @@ class BackendWireframeControllerTest {
     void recebePromptShouldAcceptPromptPayloadWithoutSideEffects() {
         BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(executionService);
-        BackendWireframeController.RecebePromptRequest payload =
-                new BackendWireframeController.RecebePromptRequest("Prompt para IA", "openai-job-1");
+        RecebePromptRequest payload = new RecebePromptRequest("Prompt para IA", "openai-job-1");
 
         var response = controller.recebePrompt("job-ia-1", payload);
 

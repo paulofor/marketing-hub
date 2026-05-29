@@ -5,8 +5,8 @@ import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecut
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
+import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -59,9 +59,6 @@ public class BackendWireframeController {
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
     return ResponseEntity.accepted().build();
   }
-
-  /** Payload interno com o prompt enviado ao provedor de IA e o job aberto no OpenAI. */
-  public record RecebePromptRequest(@NotBlank String prompt, @NotBlank String jobidopenai) {}
 
   /** Retorna os detalhes de uma execução específica da etapa. */
   @GetMapping("/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}")

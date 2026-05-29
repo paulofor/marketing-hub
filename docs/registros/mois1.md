@@ -5,6 +5,15 @@
 > Em caso de dúvida entre arquivos de registro, este é o ponto único de verdade.
 
 
+
+## 2026-05-29 - Agendamento pontual do ciclo 1 Hotmart
+
+- ajustado o agendamento do ciclo 1 do `mois-hotmart-collector` para executar em 29/05 às 19:30 no timezone `America/Sao_Paulo`, conforme solicitação operacional.
+- mantido cron literal diretamente na anotação `@Scheduled`, conforme regra operacional para agendamentos Spring Boot.
+
+Arquivos alterados:
+- `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorScheduler.java`
+
 ## 2026-05-18 19:27:36 UTC-3
 - criada a camada backend de snapshots brutos da Biblioteca de Páginas de Vendas do MOIS.
 - adicionado endpoint `POST /api/mois/sales-library/snapshots:capture` para capturar HTML bruto e screenshot PNG básico das URLs ingeridas.

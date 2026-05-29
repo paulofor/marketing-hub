@@ -65,6 +65,52 @@ sendo publicado como unidade de trabalho fechada. Esse padrão reduz acoplamento
 entre leituras em momentos diferentes, melhora rastreabilidade e mantém o backend como fonte única dos
 dados operacionais.
 
+## Etapa 3 — Montagem do request OpenAI com prompt, schema e dados da solicitação
+
+A terceira etapa operacional de qualquer processamento assíncrono por Worker AI é transformar a
+unidade de trabalho fechada recebida do backend em um request completo para o endpoint da OpenAI. O
+padrão canônico deve seguir o comportamento da etapa wireframe do Worker AI:
+
+1. o serviço executor da etapa, nomeado no padrão `<Etapa>OpenAiExecutionService`, deve receber a
+   unidade de trabalho fechada produzida pela Etapa 2;
+2. antes de chamar a OpenAI, o executor deve obter os dados de prompt a partir do próprio item recebido
+   do backend, preservando o backend como fonte única da solicitação;
+3. o executor deve criar um record/DTO de request da própria etapa, no padrão `Record<Etapa>Request`,
+   contendo o identificador da entidade principal e o mapa de dados já estruturado;
+4. a montagem do payload da OpenAI deve ficar em um montador isolado da etapa, nomeado no padrão
+   `MontaRequest`, dentro do pacote da própria etapa;
+5. o `MontaRequest` deve carregar o arquivo markdown de prompt da etapa a partir de
+   `ai-worker/src/main/resources/prompts/<dominio>/<arquivo-da-etapa>.md`;
+6. o `MontaRequest` deve carregar o schema JSON da etapa a partir de
+   `ai-worker/src/main/resources/prompts/<dominio>/<arquivo-da-etapa>-schema.json`;
+7. os placeholders do prompt devem ser resolvidos usando os dados estruturados da unidade de trabalho,
+   sem inserir JSON serializado dentro de outro JSON textual quando o contrato permitir objeto/array;
+8. o body enviado à OpenAI deve conter, no mínimo, `model`, `input` com mensagens `system` e `user`, e
+   `text.format` com `type=json_schema`, `name`, `schema` e `strict=true`;
+9. antes do envio, o request deve ser convertido para mapa/objeto JSON validável e não pode permanecer
+   apenas como texto opaco;
+10. o executor deve registrar logs com contexto operacional (`jobId`, etapa, modelo e prévia segura do
+    payload) antes do envio e depois da resposta, preservando stack trace completo em falhas HTTP ou
+    inesperadas;
+11. a chamada à OpenAI deve ser feita pelo endpoint `/responses`, com `Content-Type: application/json`
+    e corpo JSON montado pelo `MontaRequest`;
+12. quando a etapa usar modo flex, o executor deve adicionar `service_tier=flex` ao corpo final antes de
+    enviar ao endpoint `/responses`.
+
+No exemplo de wireframe, o fluxo é: `GeraLandingWireframeOpenAiExecutionService` recebe a execução
+pendente, chama `backendClient.loadPromptData(execution)` para aproveitar os dados estruturados da
+solicitação, cria `RecordWireframeRequest`, solicita ao `MontaRequest` o prompt final e o request body,
+cria um `RecordJobDto`, converte o `requestBodyJson` em mapa, acrescenta `service_tier=flex` e envia o
+payload para `POST /responses`. O prompt markdown usado é
+`prompts/geralanding/landing-page-wireframe.md`, e o schema de saída estruturada usado é
+`prompts/geralanding/landing-page-wireframe-schema.json`.
+
+Essa etapa não deve buscar novamente detalhes operacionais no backend para completar a solicitação. Se
+o prompt ou o schema exigir algum dado que não veio na unidade de trabalho fechada, a correção deve ser
+feita na Etapa 2, ampliando o contrato `pending` do backend. A responsabilidade da Etapa 3 é apenas
+ingerir a solicitação já completa, combinar esses dados com os arquivos versionados de prompt/schema e
+enviar um request determinístico e rastreável para a OpenAI.
+
 ## GeraLanding — wireframe
 
 A etapa `landing-page-wireframe` expõe a fila interna pelo endpoint:

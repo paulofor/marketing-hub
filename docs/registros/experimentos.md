@@ -2306,3 +2306,19 @@
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/monitor/WireframeExecutionScheduler.java
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/monitor/WireframePendingJobsService.java
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/backend/GeraLandingWireframeBackendClient.java
+
+## 2026-05-28 22:58:09 UTC-3
+- solicitação para complementar o cânone de arquitetura por etapas com a Etapa 3 do Worker AI: obtenção dos arquivos de prompt e schema, ingestão dos dados da solicitação recebida do backend e envio do request para o endpoint da OpenAI.
+- raciocínio aplicado: usar o wireframe como exemplo concreto para documentar que a unidade de trabalho fechada é transformada em `Record<Etapa>Request`, combinada com prompt markdown e schema JSON versionados, convertida em payload JSON validável e enviada ao endpoint `/responses` da OpenAI.
+- foi feito: inclusão da seção "Etapa 3 — Montagem do request OpenAI com prompt, schema e dados da solicitação" em `docs/canonical/arquitetura-etapas.md`, declarando responsabilidades do `<Etapa>OpenAiExecutionService`, do `MontaRequest`, dos arquivos `*.md`/`*-schema.json`, dos logs e da chamada `POST /responses`.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/canonical/arquitetura-etapas.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/request/GeraLandingWireframeOpenAiExecutionService.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/request/MontaRequest.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/comum/MontaRequestSupport.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/request/RecordWireframeRequest.java
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json

@@ -142,6 +142,23 @@ carrega todos os dados necessários para processamento da etapa, o Worker AI de 
 lista como fonte suficiente e não deve fazer chamada adicional de detalhe da execução antes de processar o
 job.
 
+Após montar e enviar o prompt para IA, o Worker AI deve chamar o callback interno:
+
+```http
+POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt
+Content-Type: application/json
+
+{
+  "prompt": "...",
+  "jobidopenai": "..."
+}
+```
+
+O endpoint fica no `BackendWireframeController`, usa o método `recebePrompt` e recebe o payload com os
+campos obrigatórios `prompt` e `jobidopenai`. Nesta primeira versão o backend apenas aceita a chamada
+com `202 Accepted`, sem alterar estado persistido, mantendo rastreabilidade contratual do prompt e do
+job aberto na OpenAI para evolução posterior.
+
 ## Regra global — JSON estruturado em contratos internos
 
 Sempre que um endpoint interno expuser dados que são artefatos JSON persistidos em colunas textuais, a

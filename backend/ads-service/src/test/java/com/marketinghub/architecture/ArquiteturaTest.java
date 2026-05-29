@@ -99,11 +99,11 @@ class ArquiteturaTest {
                     .because("[ARQUITETURA] [BACKEND][GeraLanding] toda classe Backend<Etapa>Controller deve expor pending retornando List<Record<Etapa>Pending> para a fila interna da etapa");
 
     @ArchTest
-    static final ArchRule backendWireframeControllerMustExposeEnviadoParaIAMethod = classes()
+    static final ArchRule backendWireframeControllerMustExposeRecebePromptMethod = classes()
             .that()
             .haveFullyQualifiedName("com.marketinghub.geralanding.wireframe.web.BackendWireframeController")
-            .should(haveEnviadoParaIAMethod())
-            .because("[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController deve expor enviadoParaIA(String idJob) para o callback interno de envio à IA");
+            .should(haveRecebePromptMethod())
+            .because("[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController deve expor recebePrompt(String idJob, RecebePromptRequest payload) para receber o prompt enviado à IA");
 
     @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
@@ -261,28 +261,31 @@ class ArquiteturaTest {
     }
 
     /**
-     * Garante que BackendWireframeController exponha o método interno enviadoParaIA recebendo jobId.
+     * Garante que BackendWireframeController exponha o método interno recebePrompt recebendo jobId e payload.
      */
-    private static ArchCondition<JavaClass> haveEnviadoParaIAMethod() {
+    private static ArchCondition<JavaClass> haveRecebePromptMethod() {
         return new ArchCondition<>(
-                "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController.enviadoParaIA(String)") {
+                "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController.recebePrompt(String, RecebePromptRequest)") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 Optional<JavaMethod> method = item.getMethods().stream()
-                        .filter(candidate -> candidate.getName().equals("enviadoParaIA"))
+                        .filter(candidate -> candidate.getName().equals("recebePrompt"))
                         .findFirst();
                 if (method.isEmpty()) {
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] classe=" + item.getName()
-                            + " deve declarar método enviadoParaIA para receber o job enviado à IA";
+                            + " deve declarar método recebePrompt para receber o prompt enviado à IA";
                     events.add(SimpleConditionEvent.violated(item, message));
                     return;
                 }
 
                 Class<?>[] parameterTypes = method.get().reflect().getParameterTypes();
-                boolean validSignature = parameterTypes.length == 1 && String.class.equals(parameterTypes[0]);
+                boolean validSignature = parameterTypes.length == 2
+                        && String.class.equals(parameterTypes[0])
+                        && "com.marketinghub.geralanding.wireframe.web.BackendWireframeController$RecebePromptRequest"
+                                .equals(parameterTypes[1].getName());
                 if (!validSignature) {
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] classe=" + item.getName()
-                            + " método=enviadoParaIA deve receber exatamente um parâmetro String idJob";
+                            + " método=recebePrompt deve receber exatamente String idJob e RecebePromptRequest payload";
                     events.add(SimpleConditionEvent.violated(item, message));
                 }
             }

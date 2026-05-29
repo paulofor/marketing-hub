@@ -10,7 +10,7 @@ info:
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java`
 
     Este Swagger mantém somente os endpoints internos necessários para o Worker AI consumir jobs
-    pendentes de wireframe e informar o envio do job para IA.
+    pendentes de wireframe e informar o prompt enviado para IA.
 servers:
   - url: http://191.252.181.168
     description: Backend principal para acessos executados pelo Codex
@@ -36,18 +36,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PendingStageExecution'
-  /api/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia:
+  /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt:
     post:
       tags:
         - landing-page-wireframe
-      summary: Recebe confirmação interna de envio do job de wireframe para IA.
-      description: Endpoint inicial para o Worker AI informar o job enviado para IA; nesta versão o backend apenas aceita a chamada sem alterar estado persistido.
-      operationId: enviadoParaIAGeraLandingWireframeExecution
+      summary: Recebe o prompt interno enviado para IA no job de wireframe.
+      description: Endpoint inicial para o Worker AI informar o prompt enviado para IA e o identificador do job aberto na OpenAI; nesta versão o backend apenas aceita a chamada sem alterar estado persistido.
+      operationId: recebePromptGeraLandingWireframeExecution
       parameters:
         - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebePromptRequest'
       responses:
         '202':
-          description: Confirmação aceita sem alteração operacional nesta versão.
+          description: Prompt aceito sem alteração operacional nesta versão.
 components:
   parameters:
     IdJob:
@@ -59,6 +65,22 @@ components:
         type: string
         minLength: 1
   schemas:
+    RecebePromptRequest:
+      type: object
+      additionalProperties: false
+      description: Payload do prompt enviado para IA pelo Worker AI.
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          description: Prompt final enviado ao provedor de IA.
+        jobidopenai:
+          type: string
+          minLength: 1
+          description: Identificador do job aberto na OpenAI para rastreabilidade.
+      required:
+        - prompt
+        - jobidopenai
     PendingStageExecution:
       type: object
       additionalProperties: false

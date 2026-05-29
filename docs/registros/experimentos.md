@@ -2361,6 +2361,10 @@
   - classe principal, construtor, logger, imports, injeções e testes foram renomeados para `BackendWireframeService`;
   - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.
 
+## 2026-05-29 — Remoção do DTO inicial de wireframe
+
+- Solicitação: excluir `GeraLandingWireframeStartExecutionResponse`.
+- Correção aplicada: removido o record Java obsoleto do backend, que não possuía referências ativas no código e não faz mais parte do contrato reduzido da etapa `landing-page-wireframe`.
 ## 2026-05-29 — Start do wireframe concentrado no BackendWireframeService
 
 - Solicitação: excluir `GeraLandingWireframeStageService` e passar o tratamento de `start` para `BackendWireframeService`.

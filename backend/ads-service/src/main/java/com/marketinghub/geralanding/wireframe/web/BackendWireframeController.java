@@ -75,14 +75,15 @@ public class BackendWireframeController {
   public ResponseEntity<Void> recebeResposta(
       @PathVariable String idJob, @Valid @RequestBody RecebeRespostaRequest payload) {
     LOGGER.info(
-        "[GeraLanding][Wireframe] Recebida resposta da IA idJob={} experimentId={} stageCode={} openAiJobId={} inputTokens={} outputTokens={} costUsd={}",
+        "[GeraLanding][Wireframe] Recebida resposta da IA idJob={} experimentId={} stageCode={} openAiJobId={} inputTokens={} outputTokens={} costUsd={} hasError={}",
         idJob,
         payload.experimentId(),
         payload.stageCode(),
         payload.openAiJobId(),
         payload.inputTokens(),
         payload.outputTokens(),
-        payload.costUsd());
+        payload.costUsd(),
+        payload.errorMessage() != null && !payload.errorMessage().isBlank());
     executionService.markCompletedFromResponse(
         idJob,
         payload.experimentId(),
@@ -91,7 +92,9 @@ public class BackendWireframeController {
         payload.inputTokens(),
         payload.outputTokens(),
         payload.costUsd(),
-        payload.openAiJobId());
+        payload.openAiJobId(),
+        payload.errorMessage(),
+        payload.errorDetail());
     return ResponseEntity.accepted().build();
   }
 

@@ -36,6 +36,7 @@ public class BackendWireframeService {
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
     private final ObjectMapper objectMapper;
@@ -123,7 +124,7 @@ public class BackendWireframeService {
         executionRepository.save(execution);
     }
 
-    /** Conclui a execução da etapa wireframe com a resposta final devolvida pelo Worker AI. */
+    /** Conclui ou falha a execução da etapa wireframe com a resposta devolvida pelo Worker AI. */
     @Transactional
     public void markCompletedFromResponse(
             String idJob,
@@ -133,7 +134,9 @@ public class BackendWireframeService {
             Integer inputTokens,
             Integer outputTokens,
             BigDecimal costUsd,
-            String openAiJobId) {
+            String openAiJobId,
+            String errorMessage,
+            String errorDetail) {
         GeraLandingStageExecution execution = executionRepository
                 .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
                 .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
@@ -148,21 +151,25 @@ public class BackendWireframeService {
             execution.setInputTokens(inputTokens);
             execution.setOutputTokens(outputTokens);
             execution.setCostUsd(costUsd);
-            execution.setErrorMessage(null);
-            execution.setErrorDetail(null);
+            String normalizedErrorMessage = StringUtils.hasText(errorMessage) ? errorMessage.trim() : null;
+            execution.setErrorMessage(normalizedErrorMessage);
+            execution.setErrorDetail(StringUtils.hasText(errorDetail) ? errorDetail.trim() : null);
             execution.setCompletedAt(Instant.now());
-            execution.setStatus(STATUS_COMPLETED);
+            execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
 
             executionRepository.save(execution);
-            persistWireframeArtifactOnExperiment(execution, modelResponse);
+            if (normalizedErrorMessage == null) {
+                persistWireframeArtifactOnExperiment(execution, modelResponse);
+            }
         } catch (RuntimeException ex) {
             log.error(
-                    "Erro ao concluir resposta wireframe (idJob={}, experimentId={}, stageCode={}, openAiJobId={}, modelResponseLength={})",
+                    "Erro ao concluir resposta wireframe (idJob={}, experimentId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
                     idJob,
                     experimentId,
                     stageCode,
                     openAiJobId,
                     modelResponse != null ? modelResponse.length() : 0,
+                    errorMessage,
                     ex);
             throw ex;
         }

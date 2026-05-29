@@ -150,60 +150,6 @@ public class ExperimentPipelineBackendClient {
                 .block();
     }
 
-    public void registerGeraLandingPrompt(Long experimentId,
-                                          String stageCode,
-                                          String jobId,
-                                          String promptContent,
-                                          String openAiJobId) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions");
-        Map<String, Object> body = new java.util.LinkedHashMap<>();
-        body.put("experimentId", experimentId);
-        body.put("stageCode", stageCode);
-        body.put("jobId", jobId);
-        body.put("promptContent", promptContent);
-        body.put("openAiJobId", openAiJobId);
-        webClient.post()
-                .uri(url)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .doOnSuccess(ignored -> log.info("GeraLanding prompt execution persisted (experimentId={}, stageCode={}, jobId={})",
-                        experimentId, stageCode, jobId))
-                .doOnError(err -> log.warn("Failed to persist GeraLanding prompt execution (experimentId={}, stageCode={}, jobId={})",
-                        experimentId, stageCode, jobId, err))
-                .onErrorResume(err -> Mono.empty())
-                .block();
-    }
-
-
-
-    /**
-     * Registra no backend o retorno da OpenAI para uma execução do GeraLanding.
-     */
-    public void registerGeraLandingResult(Long experimentId,
-                                          String stageCode,
-                                          String jobId,
-                                          ExperimentPipelineJobCompletionPayload payload) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/stage-executions/", jobId, "/receive-result");
-        Map<String, Object> body = new java.util.LinkedHashMap<>();
-        body.put("experimentId", experimentId);
-        body.put("stageCode", stageCode);
-        body.put("modelResponse", payload.responseContent());
-        body.put("inputTokens", payload.inputTokens());
-        body.put("outputTokens", payload.outputTokens());
-        body.put("costUsd", payload.costUsd());
-        log.info("Enviando retorno para backend (jobId={}, url={}, payload={})", jobId, url, body);
-        webClient.post()
-                .uri(url)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .doOnSuccess(ignored -> log.info("Retorno do GeraLanding enviado ao backend (jobId={}, url={})", jobId, url))
-                .doOnError(err -> log.error("Falha ao enviar retorno do GeraLanding ao backend (jobId={}, url={}, payload={})", jobId, url, body, err))
-                .onErrorResume(err -> Mono.empty())
-                .block();
-    }
-
     private Flux<ExperimentPipelineJobDto> handleListResponse(String uri,
                                                               HttpStatusCode status,
                                                               org.springframework.web.reactive.function.client.ClientResponse response) {

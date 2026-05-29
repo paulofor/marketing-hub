@@ -59,7 +59,7 @@ paths:
       tags:
         - landing-page-wireframe
       summary: Recebe a resposta interna retornada pela IA no job de wireframe.
-      description: Endpoint inicial para o Worker AI informar a resposta da IA; nesta primeira versão o backend apenas aceita a chamada sem processar o payload.
+      description: Endpoint para o Worker AI informar sucesso ou falha da IA; o backend persiste métricas, artefato em sucesso e erro operacional em falha.
       operationId: recebeRespostaGeraLandingWireframeExecution
       parameters:
         - $ref: '#/components/parameters/IdJob'
@@ -71,7 +71,7 @@ paths:
               $ref: '#/components/schemas/RecebeRespostaRequest'
       responses:
         '202':
-          description: Resposta aceita sem processamento operacional nesta versão.
+          description: Resposta aceita e execução concluída ou marcada como falha.
 components:
   parameters:
     IdJob:
@@ -101,8 +101,51 @@ components:
         - jobidopenai
     RecebeRespostaRequest:
       type: object
-      description: Payload inicial da resposta da IA pelo Worker AI; campos definitivos serão especificados na próxima evolução do contrato.
-      additionalProperties: true
+      description: Payload de retorno da IA pelo Worker AI para sucesso ou falha da etapa wireframe.
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+          description: ID do experimento associado à execução.
+        stageCode:
+          type: string
+          minLength: 1
+          description: Código canônico da etapa.
+        modelResponse:
+          type: string
+          nullable: true
+          description: Resposta retornada pelo modelo quando a execução teve sucesso.
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+          description: Tokens de entrada reportados pelo provedor.
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+          description: Tokens de saída reportados pelo provedor.
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+          description: Custo estimado da execução em dólar.
+        openAiJobId:
+          type: string
+          nullable: true
+          description: Identificador do job no provedor OpenAI.
+        errorMessage:
+          type: string
+          nullable: true
+          description: Mensagem operacional da falha quando a etapa não conclui.
+        errorDetail:
+          type: string
+          nullable: true
+          description: Detalhe técnico da falha quando disponível.
+      required:
+        - experimentId
+        - stageCode
     PendingStageExecution:
       type: object
       additionalProperties: false

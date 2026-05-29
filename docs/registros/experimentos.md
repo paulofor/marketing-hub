@@ -2472,3 +2472,11 @@
   - `mvn test -Dtest=BackendWireframeServiceTest,BackendWireframeControllerTest` em `backend/ads-service`;
   - `mvn install -DskipTests` em `backend/ads-service` para disponibilizar o artefato local usado pelo `ai-worker`;
   - `mvn test -Dtest=WireframePendingJobsServiceTest,ExperimentPipelineOpenAiClientTest` em `ai-worker`.
+
+## 2026-05-29 — Swagger canônico revisado contra BackendWireframeController
+
+- Solicitação: verificar o `BackendWireframeController` e atualizar o Swagger se necessário.
+- Correção aplicada:
+  - revisado o controller `BackendWireframeController`, que expõe endpoints públicos de start, listagem e detalhe da etapa wireframe, além dos endpoints internos `pending`, `recebe-prompt` e `recebe-resposta`;
+  - `docs/canonical/geralanding-backend-swagger.v1.yaml` passou a documentar também os três endpoints públicos do controller;
+  - adicionados no Swagger canônico o parâmetro `ExperimentId`, os schemas `WireframeStartResponse`, `WireframeStageExecutionSummary` e `WireframeStageExecutionDetail`, e a tag separada `landing-page-wireframe-internal` para diferenciar contratos internos consumidos pelo Worker AI.

@@ -11,30 +11,24 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-@Component
 public class WireframeBackendClient implements StageBackendPort<WireframeInput, WireframeOutput> {
 
-    private static final String DEFAULT_STATUS_STARTED = "INICIADO";
+    private static final String STATUS_STARTED = "INICIADO";
 
     private final WebClient webClient;
-    private final String backendBaseUrl;
-    private final String apiPrefix;
+    private final WireframeWorkerProperties properties;
     private final ObjectMapper objectMapper;
 
     public WireframeBackendClient(
             WebClient.Builder builder,
-            @Value("${backend.base-url}") String backendBaseUrl,
-            @Value("${backend.api-prefix:/api}") String apiPrefix,
+            WireframeWorkerProperties properties,
             ObjectMapper objectMapper
     ) {
         this.webClient = builder.build();
-        this.backendBaseUrl = stripTrailingSlash(backendBaseUrl);
-        this.apiPrefix = normalizePath(apiPrefix);
+        this.properties = properties;
         this.objectMapper = objectMapper;
     }
 
@@ -42,8 +36,8 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
     public List<StageExecution<WireframeInput>> listPending(int limit) {
         int effectiveLimit = Math.max(1, limit);
         String uri = joinPath(
-                backendBaseUrl,
-                apiPrefix,
+                properties.backendBaseUrl(),
+                properties.apiPrefix(),
                 "/internal/geralanding/wireframe/stage-executions/pending"
         );
 
@@ -51,8 +45,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
                 .uri(uri)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
-                .onErrorReturn(List.of())
-                .block();
+                .block(properties.timeout());
 
         if (payload == null || payload.isEmpty()) {
             return List.of();
@@ -67,24 +60,20 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
 
     @Override
     public void markDispatched(StageExecution<WireframeInput> execution, OpenAiDispatch dispatch) {
-        String baseUrl = stageExecutionBaseUrl();
-
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("prompt", dispatch.prompt());
         body.put("jobidopenai", dispatch.openAiJobId());
 
         webClient.post()
-                .uri(baseUrl + "/{idJob}/recebe-prompt", execution.idJob())
+                .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-prompt", execution.idJob())
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Void.class)
-                .block();
+                .block(properties.timeout());
     }
 
     @Override
     public void markCompleted(StageExecution<WireframeInput> execution, OpenAiResult<WireframeOutput> result) {
-        String baseUrl = stageExecutionBaseUrl();
-
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", execution.aggregateId());
         body.put("stageCode", execution.stageCode());
@@ -97,17 +86,15 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         body.put("errorDetail", null);
 
         webClient.post()
-                .uri(baseUrl + "/{idJob}/recebe-resposta", execution.idJob())
+                .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-resposta", execution.idJob())
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Void.class)
-                .block();
+                .block(properties.timeout());
     }
 
     @Override
     public void markFailed(StageExecution<WireframeInput> execution, Throwable error) {
-        String baseUrl = stageExecutionBaseUrl();
-
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("experimentId", execution.aggregateId());
         body.put("stageCode", execution.stageCode());
@@ -120,11 +107,11 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         body.put("errorDetail", error != null ? stackTraceSummary(error) : null);
 
         webClient.post()
-                .uri(baseUrl + "/{idJob}/recebe-resposta", execution.idJob())
+                .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-resposta", execution.idJob())
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Void.class)
-                .block();
+                .block(properties.timeout());
     }
 
     private StageExecution<WireframeInput> toStageExecution(Map<String, Object> item) {
@@ -132,20 +119,18 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         String stageCode = asString(item.get("stageCode"));
         String idJob = asString(item.get("jobid"));
 
-        Map<String, Object> promptData = buildPromptDataFromPending(item);
-
         WireframeInput input = new WireframeInput(
                 experimentId,
                 stageCode,
                 idJob,
-                promptData
+                buildPromptDataFromPending(item)
         );
 
         return new StageExecution<>(
                 idJob,
                 experimentId,
                 stageCode,
-                DEFAULT_STATUS_STARTED,
+                STATUS_STARTED,
                 asInstant(item.get("executionRequestedAt")),
                 input
         );
@@ -160,6 +145,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
         payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
         payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));
+        payload.put("landingPageCopy", normalizeJsonArtifact(experiment.get("landingPageCopy")));
         payload.put("landingPageWireframe", normalizeJsonArtifact(experiment.get("landingPageWireframe")));
         payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
         payload.put("PAIN_JSON", framework.getOrDefault("pain", Map.of()));
@@ -239,7 +225,11 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
     }
 
     private String stageExecutionBaseUrl() {
-        return joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
+        return joinPath(
+                properties.backendBaseUrl(),
+                properties.apiPrefix(),
+                "/internal/geralanding/wireframe/stage-executions"
+        );
     }
 
     private String stackTraceSummary(Throwable error) {
@@ -269,17 +259,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return builder.toString();
     }
 
-    private String normalizePath(String value) {
-        if (value == null || value.isBlank()) {
-            return "";
-        }
-        return "/" + stripSlashes(value);
-    }
-
     private String stripTrailingSlash(String value) {
-        if (value == null) {
-            return "";
-        }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 

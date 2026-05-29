@@ -6,9 +6,7 @@ import com.marketinghub.worker.openai.core.port.StageResponseHandler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
 public class WireframeResponseHandler implements StageResponseHandler<WireframeInput, WireframeOutput> {
 
     private static final Logger log = LoggerFactory.getLogger(WireframeResponseHandler.class);

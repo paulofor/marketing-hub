@@ -3,11 +3,6 @@ package com.marketinghub.worker.openai.core.openai;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Estimador simples de custo.
- *
- * Ajuste os valores por 1M tokens conforme o modelo usado.
- */
 public class OpenAiCostEstimator {
 
     private final BigDecimal inputUsdPerMillionTokens;
@@ -17,8 +12,8 @@ public class OpenAiCostEstimator {
             BigDecimal inputUsdPerMillionTokens,
             BigDecimal outputUsdPerMillionTokens
     ) {
-        this.inputUsdPerMillionTokens = inputUsdPerMillionTokens;
-        this.outputUsdPerMillionTokens = outputUsdPerMillionTokens;
+        this.inputUsdPerMillionTokens = inputUsdPerMillionTokens == null ? BigDecimal.ZERO : inputUsdPerMillionTokens;
+        this.outputUsdPerMillionTokens = outputUsdPerMillionTokens == null ? BigDecimal.ZERO : outputUsdPerMillionTokens;
     }
 
     public BigDecimal estimate(Integer inputTokens, Integer outputTokens) {
@@ -31,9 +26,5 @@ public class OpenAiCostEstimator {
                 .divide(BigDecimal.valueOf(1_000_000), 8, RoundingMode.HALF_UP);
 
         return input.add(output).setScale(8, RoundingMode.HALF_UP);
-    }
-
-    public static OpenAiCostEstimator zero() {
-        return new OpenAiCostEstimator(BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }

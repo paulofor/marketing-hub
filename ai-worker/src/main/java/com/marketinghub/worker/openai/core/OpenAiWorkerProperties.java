@@ -14,8 +14,4 @@ public record OpenAiWorkerProperties(
         }
         Objects.requireNonNull(timeout, "timeout must not be null");
     }
-
-    public static OpenAiWorkerProperties defaults() {
-        return new OpenAiWorkerProperties(true, 10, Duration.ofMinutes(30));
-    }
 }

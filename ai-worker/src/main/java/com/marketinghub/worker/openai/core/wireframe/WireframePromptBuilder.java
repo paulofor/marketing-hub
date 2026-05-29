@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
+import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
 
 import java.io.IOException;
@@ -12,47 +13,37 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
 
-@Component
 public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput> {
 
     private final ObjectMapper objectMapper;
-    private final String model;
-    private final String promptResource;
-    private final String schemaResource;
-    private final String schemaName;
+    private final OpenAiClientProperties openAiProperties;
+    private final WireframeWorkerProperties wireframeProperties;
 
     public WireframePromptBuilder(
             ObjectMapper objectMapper,
-            @Value("${openai.model:gpt-5.2}") String model,
-            @Value("${wireframe.prompt.resource:prompts/geralanding-wireframe.md}") String promptResource,
-            @Value("${wireframe.schema.resource:schemas/geralanding-wireframe.schema.json}") String schemaResource,
-            @Value("${wireframe.schema.name:landing_page_wireframe}") String schemaName
+            OpenAiClientProperties openAiProperties,
+            WireframeWorkerProperties wireframeProperties
     ) {
         this.objectMapper = objectMapper;
-        this.model = model;
-        this.promptResource = promptResource;
-        this.schemaResource = schemaResource;
-        this.schemaName = schemaName;
+        this.openAiProperties = openAiProperties;
+        this.wireframeProperties = wireframeProperties;
     }
 
     @Override
     public OpenAiRequest build(StageExecution<WireframeInput> execution) {
-        WireframeInput input = execution.input();
-        Map<String, Object> data = input.promptData();
+        Map<String, Object> data = execution.input().promptData();
 
-        String prompt = resolvePrompt(loadResource(promptResource), data);
-        String schemaJson = loadResource(schemaResource);
+        String prompt = resolvePrompt(loadResource(wireframeProperties.promptResource()), data);
+        String schemaJson = loadResource(wireframeProperties.schemaResource());
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
 
         return new OpenAiRequest(
-                model,
+                openAiProperties.model(),
                 prompt,
                 requestBodyJson,
-                schemaName,
+                wireframeProperties.schemaName(),
                 schemaJson,
                 Map.of(
                         "stageCode", execution.stageCode(),
@@ -68,7 +59,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
 
             Map<String, Object> format = new LinkedHashMap<>();
             format.put("type", "json_schema");
-            format.put("name", schemaName);
+            format.put("name", wireframeProperties.schemaName());
             format.put("schema", schema);
             format.put("strict", true);
 
@@ -76,7 +67,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
             text.put("format", format);
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", model);
+            body.put("model", openAiProperties.model());
             body.put("input", prompt);
             body.put("text", text);
 
@@ -118,8 +109,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
 
     private String loadResource(String path) {
         try {
-            ClassPathResource resource = new ClassPathResource(path);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
+            return new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);
         } catch (IOException error) {
             throw new StageWorkerException("Could not load resource from classpath: " + path, error);
         }

@@ -8,48 +8,36 @@ import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
 
-import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/**
- * Implementação síncrona da OpenAI Responses API.
- *
- * Para background mode/polling, crie outra implementação de OpenAiClientPort
- * mantendo o mesmo contrato.
- */
-@Component
 public class ResponsesApiOpenAiClient implements OpenAiClientPort {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
-    private final Duration timeout;
+    private final OpenAiClientProperties properties;
     private final OpenAiCostEstimator costEstimator;
     private final Map<String, OpenAiResult<String>> resultCache = new ConcurrentHashMap<>();
 
     public ResponsesApiOpenAiClient(
             WebClient.Builder builder,
             ObjectMapper objectMapper,
-            @Value("${openai.api-key}") String apiKey,
-            @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            @Value("${openai.timeout:PT30M}") Duration timeout,
-            @Value("${openai.cost.input-usd-per-million-tokens:0}") BigDecimal inputUsdPerMillionTokens,
-            @Value("${openai.cost.output-usd-per-million-tokens:0}") BigDecimal outputUsdPerMillionTokens
+            OpenAiClientProperties properties
     ) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
-        this.timeout = Objects.requireNonNull(timeout, "timeout must not be null");
-        this.costEstimator = new OpenAiCostEstimator(inputUsdPerMillionTokens, outputUsdPerMillionTokens);
+        this.properties = Objects.requireNonNull(properties, "properties must not be null");
+        this.costEstimator = new OpenAiCostEstimator(
+                properties.inputUsdPerMillionTokens(),
+                properties.outputUsdPerMillionTokens()
+        );
         this.webClient = builder
-                .baseUrl(baseUrl)
-                .defaultHeader("Authorization", "Bearer " + apiKey)
+                .baseUrl(properties.baseUrl())
+                .defaultHeader("Authorization", "Bearer " + properties.apiKey())
                 .defaultHeader("Content-Type", "application/json")
                 .build();
     }
@@ -64,7 +52,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .block(timeout);
+                    .block(properties.timeout());
 
             if (raw == null) {
                 throw new StageWorkerException("OpenAI returned an empty response");
@@ -75,7 +63,6 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
             String modelResponse = extractModelResponse(raw);
             Integer inputTokens = extractInteger(raw, "usage", "input_tokens");
             Integer outputTokens = extractInteger(raw, "usage", "output_tokens");
-            BigDecimal costUsd = costEstimator.estimate(inputTokens, outputTokens);
 
             OpenAiResult<String> result = new OpenAiResult<>(
                     openAiJobId,
@@ -84,7 +71,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     modelResponse,
                     inputTokens,
                     outputTokens,
-                    costUsd
+                    costEstimator.estimate(inputTokens, outputTokens)
             );
 
             if (openAiJobId != null) {

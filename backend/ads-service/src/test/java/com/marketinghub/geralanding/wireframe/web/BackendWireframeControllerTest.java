@@ -43,16 +43,20 @@ class BackendWireframeControllerTest {
         verify(executionService).listPending("landing-page-wireframe");
     }
 
-    /** Deve receber confirmação de envio para IA sem alterar estado nesta primeira versão. */
+    /** Deve receber o prompt enviado para IA sem alterar estado nesta primeira versão. */
     @Test
-    void enviadoParaIAShouldAcceptJobWithoutSideEffects() {
+    void recebePromptShouldAcceptPromptPayloadWithoutSideEffects() {
         GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
         GeraLandingWireframeStageExecutionService executionService = mock(GeraLandingWireframeStageExecutionService.class);
         BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
+        BackendWireframeController.RecebePromptRequest payload =
+                new BackendWireframeController.RecebePromptRequest("Prompt para IA", "openai-job-1");
 
-        var response = controller.enviadoParaIA("job-ia-1");
+        var response = controller.recebePrompt("job-ia-1", payload);
 
         assertEquals(202, response.getStatusCode().value());
+        assertEquals("Prompt para IA", payload.prompt());
+        assertEquals("openai-job-1", payload.jobidopenai());
         verifyNoInteractions(stageService, executionService);
     }
 

@@ -2344,3 +2344,12 @@
 - Correção aplicada:
   - `docs/canonical/geralanding-backend-swagger.v1.yaml` passou a documentar somente `GET /api/internal/geralanding/wireframe/stage-executions/pending` e `POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia`;
   - foram removidas do Swagger as entradas públicas de start/list/detail das etapas e as tags/componentes que ficaram sem uso no contrato reduzido.
+
+## 2026-05-29 — Callback recebePrompt do wireframe com payload OpenAI
+
+- Solicitação: renomear o método `enviadoParaIA` do `BackendWireframeController` para `recebePrompt` e exigir no POST os dados `prompt` e `jobidopenai`.
+- Correção aplicada:
+  - `BackendWireframeController` passou a expor o callback interno `/api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt` pelo método `recebePrompt(String idJob, RecebePromptRequest payload)`, mantendo `202 Accepted` sem efeitos colaterais nesta primeira versão;
+  - o payload `RecebePromptRequest` documenta os campos contratuais `prompt` e `jobidopenai` para rastrear o prompt enviado à IA e o job aberto na OpenAI;
+  - o Swagger canônico e o cânone de arquitetura por etapas foram atualizados com o novo nome, endpoint e corpo JSON;
+  - os testes unitários e o `ArquiteturaTest` passaram a validar o método `recebePrompt` e sua assinatura com payload.

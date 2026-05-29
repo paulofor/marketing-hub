@@ -1,15 +1,10 @@
 package com.marketinghub.worker.geralanding.wireframe.monitor;
 
-
 import com.marketinghub.worker.geralanding.wireframe.request.GeraLandingWireframeOpenAiExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
-/** Agenda o processamento de jobs pendentes da etapa wireframe. */
-@Component
+/** Mantém o ciclo manual de processamento de jobs pendentes da etapa wireframe, sem agendamento automático. */
 public class WireframeExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(WireframeExecutionScheduler.class);
 
@@ -17,16 +12,16 @@ public class WireframeExecutionScheduler {
     private final WireframePendingJobsService pendingJobsService;
     private final int pendingLimit;
 
+    /** Recebe os serviços necessários para executar manualmente o ciclo da etapa wireframe. */
     public WireframeExecutionScheduler(GeraLandingWireframeOpenAiExecutionService executionService,
                                        WireframePendingJobsService pendingJobsService,
-                                       @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
+                                       int pendingLimit) {
         this.executionService = executionService;
         this.pendingJobsService = pendingJobsService;
         this.pendingLimit = Math.max(1, pendingLimit);
     }
 
-    /** Executa o ciclo da etapa wireframe consultando apenas o endpoint específico da etapa. */
-    @Scheduled(cron = "0 */15 * * * *")
+    /** Executa manualmente o ciclo da etapa wireframe consultando apenas o endpoint específico da etapa. */
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {

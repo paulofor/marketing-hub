@@ -2390,3 +2390,9 @@
   - AGENTS.md
   - backend/AGENTS.md
   - docs/registros/experimentos.md
+## 2026-05-29 — Records pending do wireframe isolados em subpacote
+
+- Solicitação: dentro de `geralanding.wireframe.service`, criar o pacote `pending` e mover para ele todos os records usados pelo endpoint interno pending da etapa `landing-page-wireframe`.
+- Correção aplicada:
+  - `RecordWireframePending`, `RecordWireframeExperiment` e `RecordWireframeHypothesis` foram movidos para `com.marketinghub.geralanding.wireframe.service.pending`;
+  - `BackendWireframeService`, `BackendWireframeController` e os testes relacionados foram atualizados para importar os records a partir do novo subpacote.

@@ -6,6 +6,7 @@ import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartR
 import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
 import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
+import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;

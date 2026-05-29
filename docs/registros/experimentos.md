@@ -2404,3 +2404,10 @@
 - Correção aplicada:
   - `RecordWireframePending`, `RecordWireframeExperiment` e `RecordWireframeHypothesis` foram movidos para `com.marketinghub.geralanding.wireframe.service.pending`;
   - `BackendWireframeService`, `BackendWireframeController` e os testes relacionados foram atualizados para importar os records a partir do novo subpacote.
+
+## 2026-05-29 — Log do prompt recebido no callback de wireframe
+
+- Solicitação: no `BackendWireframeController`, registrar em log o campo `payload.prompt()` recebido pelo callback interno `recebe-prompt`.
+- Correção aplicada:
+  - `BackendWireframeController.recebePrompt` passou a registrar `idJob`, `jobidopenai` e o valor literal de `payload.prompt()` antes de delegar para `BackendWireframeService.markWaitingOpenAiDispatch`;
+  - o teste do controller foi atualizado para capturar o log e garantir que o prompt recebido aparece na saída de log.

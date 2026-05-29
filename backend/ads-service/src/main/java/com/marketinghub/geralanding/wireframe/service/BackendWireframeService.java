@@ -21,9 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Responsável por adaptar consultas de execução para o contrato da etapa wireframe. */
 @Service
-public class GeraLandingWireframeStageExecutionService {
+public class BackendWireframeService {
 
-    private static final Logger log = LoggerFactory.getLogger(GeraLandingWireframeStageExecutionService.class);
+    private static final Logger log = LoggerFactory.getLogger(BackendWireframeService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -32,7 +32,7 @@ public class GeraLandingWireframeStageExecutionService {
     private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para consultar execuções de wireframe. */
-    public GeraLandingWireframeStageExecutionService(
+    public BackendWireframeService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
             ObjectMapper objectMapper) {
@@ -41,9 +41,8 @@ public class GeraLandingWireframeStageExecutionService {
         this.objectMapper = objectMapper;
     }
 
-
-    @Transactional
     /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
+    @Transactional
     public GeraLandingWireframeStartResponse registerInitialExecution(Long experimentId, String stageCode) {
         Instant now = Instant.now();
         var experiment = experimentRepository.findById(experimentId)
@@ -64,8 +63,8 @@ public class GeraLandingWireframeStageExecutionService {
         return new GeraLandingWireframeStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
     }
 
-    @Transactional(readOnly = true)
     /** Lista execuções da etapa convertendo para o DTO local da etapa. */
+    @Transactional(readOnly = true)
     public List<GeraLandingWireframeExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode, boolean includeCompleted) {
         List<GeraLandingStageExecution> executions = includeCompleted
                 ? executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(experimentId, stageCode)

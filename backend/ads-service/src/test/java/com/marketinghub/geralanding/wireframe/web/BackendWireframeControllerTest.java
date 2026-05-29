@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
+import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframeHypothesis;
@@ -26,7 +26,7 @@ class BackendWireframeControllerTest {
     @Test
     void pendingShouldReturnStartedWireframeJobs() {
         GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
-        GeraLandingWireframeStageExecutionService executionService = mock(GeraLandingWireframeStageExecutionService.class);
+        BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
         List<RecordWireframePending> pending = List.of(
                 new RecordWireframePending(
@@ -47,7 +47,7 @@ class BackendWireframeControllerTest {
     @Test
     void recebePromptShouldAcceptPromptPayloadWithoutSideEffects() {
         GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
-        GeraLandingWireframeStageExecutionService executionService = mock(GeraLandingWireframeStageExecutionService.class);
+        BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
         BackendWireframeController.RecebePromptRequest payload =
                 new BackendWireframeController.RecebePromptRequest("Prompt para IA", "openai-job-1");
@@ -64,7 +64,7 @@ class BackendWireframeControllerTest {
     @Test
     void pendingShouldSerializeListItemsWithExperimentAndJobid() throws Exception {
         GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
-        GeraLandingWireframeStageExecutionService executionService = mock(GeraLandingWireframeStageExecutionService.class);
+        BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
         when(executionService.listPending("landing-page-wireframe")).thenReturn(List.of(
                 new RecordWireframePending(

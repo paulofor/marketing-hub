@@ -1,8 +1,8 @@
 package com.marketinghub.geralanding.wireframe.web;
 
+import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionDetailResponse;
-import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageExecutionService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStageService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
@@ -25,12 +25,12 @@ public class BackendWireframeController {
   private static final String STAGE_CODE = "landing-page-wireframe";
 
   private final GeraLandingWireframeStageService stageService;
-  private final GeraLandingWireframeStageExecutionService executionService;
+  private final BackendWireframeService executionService;
 
   /** Inicializa o controller com os serviços da etapa wireframe. */
   public BackendWireframeController(
       GeraLandingWireframeStageService stageService,
-      GeraLandingWireframeStageExecutionService executionService) {
+      BackendWireframeService executionService) {
     this.stageService = stageService;
     this.executionService = executionService;
   }

@@ -6,9 +6,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class GeraLandingWireframeStageService {
   private static final String STAGE_NAME = "landing-page-wireframe";
-  private final GeraLandingWireframeStageExecutionService executionService;
+  private final BackendWireframeService executionService;
 
-  public GeraLandingWireframeStageService(GeraLandingWireframeStageExecutionService executionService) {
+  /** Inicializa o serviço com o executor backend da etapa wireframe. */
+  public GeraLandingWireframeStageService(BackendWireframeService executionService) {
     this.executionService = executionService;
   }
 

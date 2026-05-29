@@ -2404,3 +2404,10 @@
 - Correção aplicada:
   - `RecordWireframePending`, `RecordWireframeExperiment` e `RecordWireframeHypothesis` foram movidos para `com.marketinghub.geralanding.wireframe.service.pending`;
   - `BackendWireframeService`, `BackendWireframeController` e os testes relacionados foram atualizados para importar os records a partir do novo subpacote.
+
+## 2026-05-29 — Remoção de import legado do pending de wireframe
+
+- Solicitação: retirar o import antigo de `RecordWireframePending` no `BackendWireframeController`.
+- Correção aplicada:
+  - removido o import legado `com.marketinghub.geralanding.wireframe.service.RecordWireframePending`;
+  - mantido o import correto em `com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending`.

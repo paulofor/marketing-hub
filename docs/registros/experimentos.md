@@ -2480,3 +2480,12 @@
   - revisado o controller `BackendWireframeController`, que expõe endpoints públicos de start, listagem e detalhe da etapa wireframe, além dos endpoints internos `pending`, `recebe-prompt` e `recebe-resposta`;
   - `docs/canonical/geralanding-backend-swagger.v1.yaml` passou a documentar também os três endpoints públicos do controller;
   - adicionados no Swagger canônico o parâmetro `ExperimentId`, os schemas `WireframeStartResponse`, `WireframeStageExecutionSummary` e `WireframeStageExecutionDetail`, e a tag separada `landing-page-wireframe-internal` para diferenciar contratos internos consumidos pelo Worker AI.
+
+## 2026-05-29 — Falha do wireframe registrada pelo recebe-resposta
+
+- Solicitação: ajustar `receiveFailure` da etapa wireframe para chamar o mesmo callback `recebe-resposta` usado no sucesso, enviando o JSON do erro, e garantir que o backend grave a falha na tabela do GeraLanding com status `FALHA`.
+- Correção aplicada:
+  - `GeraLandingWireframeBackendClient.receiveFailure(...)` passou a enviar o payload de erro para `/api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta`, eliminando a chamada legada `/receive-result` no caminho de falha;
+  - o JSON enviado em falha agora segue o contrato de `recebe-resposta`, com campos de resultado nulos e `errorMessage`/`errorDetail` preenchidos;
+  - `BackendWireframeService.markCompletedFromResponse(...)` passou a normalizar a falha também quando chegar apenas `errorDetail`, garantindo persistência de `error_message`, `error_detail`, `completed_at` e status `FALHA` sem gravar artefato no experimento;
+  - testes unitários cobrem o endpoint chamado pelo Worker AI e a persistência de falha no backend.

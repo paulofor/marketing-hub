@@ -250,4 +250,45 @@ class BackendWireframeServiceTest {
         verify(experimentRepository, never()).save(experiment);
     }
 
+
+    /** Deve marcar falha mesmo quando o callback recebe apenas detalhe técnico do erro. */
+    @Test
+    void markCompletedFromResponseShouldFailWhenOnlyErrorDetailIsPresent() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendWireframeService service =
+                new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
+        Experiment experiment = mock(Experiment.class);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(88L)
+                .experiment(experiment)
+                .stageCode("landing-page-wireframe")
+                .idJob("job-ia-detalhe".getBytes(StandardCharsets.UTF_8))
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .build();
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(any(byte[].class)))
+                .thenReturn(Optional.of(execution));
+
+        service.markCompletedFromResponse(
+                "job-ia-detalhe",
+                88L,
+                "landing-page-wireframe",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                " Stack trace sem mensagem principal ");
+
+        assertEquals("Falha ao processar etapa wireframe", execution.getErrorMessage());
+        assertEquals("Stack trace sem mensagem principal", execution.getErrorDetail());
+        assertNotNull(execution.getCompletedAt());
+        assertEquals("FALHA", execution.getStatus());
+        verify(executionRepository).save(execution);
+        verify(experiment, never()).setLandingPageWireframe(any());
+        verify(experimentRepository, never()).save(experiment);
+    }
+
+
 }

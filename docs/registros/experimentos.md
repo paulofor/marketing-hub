@@ -2413,3 +2413,15 @@
   - `BackendWireframeController` passou a expor `/api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta`, retornando `202 Accepted` sem acionar serviço nesta primeira versão;
   - o contrato canônico do GeraLanding foi atualizado para registrar o novo callback inicial;
   - teste unitário do controller valida que o endpoint aceita o payload vazio sem efeitos colaterais.
+## 2026-05-29 — Remoção de import legado do pending de wireframe
+
+- Solicitação: retirar o import antigo de `RecordWireframePending` no `BackendWireframeController`.
+- Correção aplicada:
+  - removido o import legado `com.marketinghub.geralanding.wireframe.service.RecordWireframePending`;
+  - mantido o import correto em `com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending`.
+## 2026-05-29 — Log do prompt recebido no callback de wireframe
+
+- Solicitação: no `BackendWireframeController`, registrar em log o campo `payload.prompt()` recebido pelo callback interno `recebe-prompt`.
+- Correção aplicada:
+  - `BackendWireframeController.recebePrompt` passou a registrar `idJob`, `jobidopenai` e o valor literal de `payload.prompt()` antes de delegar para `BackendWireframeService.markWaitingOpenAiDispatch`;
+  - o teste do controller foi atualizado para capturar o log e garantir que o prompt recebido aparece na saída de log.

@@ -2404,3 +2404,12 @@
 - Correção aplicada:
   - `RecordWireframePending`, `RecordWireframeExperiment` e `RecordWireframeHypothesis` foram movidos para `com.marketinghub.geralanding.wireframe.service.pending`;
   - `BackendWireframeService`, `BackendWireframeController` e os testes relacionados foram atualizados para importar os records a partir do novo subpacote.
+
+## 2026-05-29 — Callback recebeResposta vazio do wireframe
+
+- Solicitação: criar no `BackendWireframeController` um endpoint POST `recebeResposta`, semelhante ao `recebePrompt`, mas com payload próprio e inicialmente sem processamento.
+- Correção aplicada:
+  - criado o payload `RecebeRespostaRequest` em `com.marketinghub.geralanding.wireframe.service.receberesposta`;
+  - `BackendWireframeController` passou a expor `/api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta`, retornando `202 Accepted` sem acionar serviço nesta primeira versão;
+  - o contrato canônico do GeraLanding foi atualizado para registrar o novo callback inicial;
+  - teste unitário do controller valida que o endpoint aceita o payload vazio sem efeitos colaterais.

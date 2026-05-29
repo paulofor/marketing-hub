@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
+import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
@@ -71,6 +73,19 @@ class BackendWireframeControllerTest {
         assertEquals("Prompt para IA", payload.prompt());
         assertEquals("openai-job-1", payload.jobidopenai());
         verify(executionService).markWaitingOpenAiDispatch("job-ia-1", "Prompt para IA", "openai-job-1");
+    }
+
+    /** Deve receber a resposta da IA sem acionar processamento nesta versão inicial. */
+    @Test
+    void recebeRespostaShouldAcceptPayloadWithoutProcessing() {
+        BackendWireframeService executionService = mock(BackendWireframeService.class);
+        BackendWireframeController controller = new BackendWireframeController(executionService);
+        RecebeRespostaRequest payload = new RecebeRespostaRequest();
+
+        var response = controller.recebeResposta("job-ia-1", payload);
+
+        assertEquals(202, response.getStatusCode().value());
+        verifyNoInteractions(executionService);
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */

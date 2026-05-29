@@ -155,9 +155,21 @@ Content-Type: application/json
 ```
 
 O endpoint fica no `BackendWireframeController`, usa o método `recebePrompt` e recebe o payload com os
-campos obrigatórios `prompt` e `jobidopenai`. Nesta primeira versão o backend apenas aceita a chamada
-com `202 Accepted`, sem alterar estado persistido, mantendo rastreabilidade contratual do prompt e do
-job aberto na OpenAI para evolução posterior.
+campos obrigatórios `prompt` e `jobidopenai`, mantendo rastreabilidade contratual do prompt e do job
+aberto na OpenAI.
+
+Após receber a resposta da IA, o Worker AI deve chamar o callback interno inicial:
+
+```http
+POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta
+Content-Type: application/json
+
+{}
+```
+
+O endpoint fica no `BackendWireframeController`, usa o método `recebeResposta` e recebe o payload
+`RecebeRespostaRequest`. Nesta primeira versão o backend apenas aceita a chamada com `202 Accepted`,
+sem processar a resposta, para reservar o contrato antes da definição do payload definitivo.
 
 ## Regra global — JSON estruturado em contratos internos
 

@@ -4,8 +4,8 @@ import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
-import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
 import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
+import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -59,6 +59,13 @@ public class BackendWireframeController {
   public ResponseEntity<Void> recebePrompt(
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
     executionService.markWaitingOpenAiDispatch(idJob, payload.prompt(), payload.jobidopenai());
+    return ResponseEntity.accepted().build();
+  }
+
+  /** Recebe a resposta da IA para a etapa wireframe sem processá-la nesta versão inicial. */
+  @PostMapping("/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta")
+  public ResponseEntity<Void> recebeResposta(
+      @PathVariable String idJob, @Valid @RequestBody RecebeRespostaRequest payload) {
     return ResponseEntity.accepted().build();
   }
 

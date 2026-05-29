@@ -2432,3 +2432,10 @@
 - Correção aplicada:
   - `docs/gera-landing/swagger-gera-landing-etapas.yaml` passou a documentar os seis endpoints do controller de wireframe: start, listagem, detalhe, pending, `recebe-prompt` e `recebe-resposta`;
   - foram adicionados parâmetros reutilizáveis e schemas para respostas, pendências e payloads específicos da etapa `landing-page-wireframe`.
+
+## 2026-05-29 — Regra ArchUnit para subpacotes internos de service do GeraLanding
+
+- Solicitação: alterar a regra de arquitetura do backend para permitir que classes em pacotes `service` acessem classes de pacotes internos `service.*`.
+- Correção aplicada:
+  - a regra ArchUnit de `com.marketinghub.geralanding..service..` passou a aceitar dependências para toda a árvore `geralanding.<etapa>.service` e `geralanding.<etapa>.service.*` da mesma etapa;
+  - o cânone de arquitetura do GeraLanding foi sincronizado para registrar a permissão explícita de dependência entre o pacote `service` e seus subpacotes internos.

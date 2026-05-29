@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Responsável por representar os detalhes de uma execução da etapa wireframe. */
-public record GeraLandingWireframeStageExecutionDetailResponse(
+public record RecordBackendWireframeDetalheDto(
         String idJob,
         Long experimentId,
         String stageCode,

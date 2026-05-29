@@ -2382,6 +2382,14 @@
   - `BackendWireframeService` e `BackendWireframeController` foram atualizados para usar o novo nome no retorno do detalhe da execução;
   - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.
 
+## 2026-05-29 07:49:55 UTC-3
+- solicitação: no backend, criar o pacote `recebeprompt` dentro de `geralanding.wireframe.service` e mover para ele os records usados pelo endpoint `recebe-prompt`.
+- raciocínio: separar o contrato do payload interno do endpoint em pacote de serviço específico, evitando record aninhado no controller e deixando o endpoint depender de um DTO explícito.
+- registro do que foi feito: criado `RecebePromptRequest` em `com.marketinghub.geralanding.wireframe.service.recebeprompt`, atualizado o controller de wireframe para usar esse record externo e ajustado o teste do controller para o novo pacote.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
 ## 2026-05-29 — Records pending do wireframe isolados em subpacote
 
 - Solicitação: dentro de `geralanding.wireframe.service`, criar o pacote `pending` e mover para ele todos os records usados pelo endpoint interno pending da etapa `landing-page-wireframe`.

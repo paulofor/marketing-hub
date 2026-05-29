@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,6 +41,19 @@ class BackendWireframeControllerTest {
 
         assertEquals(pending, response);
         verify(executionService).listPending("landing-page-wireframe");
+    }
+
+    /** Deve receber confirmação de envio para IA sem alterar estado nesta primeira versão. */
+    @Test
+    void enviadoParaIAShouldAcceptJobWithoutSideEffects() {
+        GeraLandingWireframeStageService stageService = mock(GeraLandingWireframeStageService.class);
+        GeraLandingWireframeStageExecutionService executionService = mock(GeraLandingWireframeStageExecutionService.class);
+        BackendWireframeController controller = new BackendWireframeController(stageService, executionService);
+
+        var response = controller.enviadoParaIA("job-ia-1");
+
+        assertEquals(202, response.getStatusCode().value());
+        verifyNoInteractions(stageService, executionService);
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */

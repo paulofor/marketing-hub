@@ -2327,3 +2327,20 @@
 - Solicitação: tornar `docs/canonical/openai-informacoes-tratadas-canon.v1.md` completamente focado no modelo de dados onde ficam as informações tratadas pelos modelos de IA.
 - Correção aplicada: o cânone foi reescrito para conter somente a visão de persistência, tabelas, colunas, relacionamentos, cardinalidades e regras de localização dos dados de IA.
 - Escopo documentado: `hypothesis`, `hypothesis_framework_generation_job`, `experiment`, `experiment_pipeline_generation_job`, `framework_image_generation_job` e `ai_worker_generation`.
+
+## 2026-05-29 — Endpoint interno de envio para IA no wireframe
+
+- Solicitação: criar um endpoint na etapa `landing-page-wireframe` que receba o `jobId` quando o job for enviado para IA, inicialmente sem alterar estado persistido.
+- Correção aplicada:
+  - `BackendWireframeController` passou a expor o método `enviadoParaIA(String idJob)` no endpoint interno `/api/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia`, retornando `202 Accepted` sem efeitos colaterais nesta primeira versão;
+  - o Swagger canônico do GeraLanding foi atualizado com o novo contrato;
+  - a regra ArchUnit passou a exigir a existência do método `enviadoParaIA` no controller de wireframe;
+  - teste unitário do controller valida que a chamada é aceita e não interage com os serviços enquanto o comportamento operacional ainda não for implementado.
+
+
+## 2026-05-29 — Swagger GeraLanding reduzido aos endpoints internos do wireframe
+
+- Solicitação: retirar do Swagger canônico todos os endpoints, deixando apenas a fila `pending` e o callback `enviado-para-ia` da etapa `landing-page-wireframe`.
+- Correção aplicada:
+  - `docs/canonical/geralanding-backend-swagger.v1.yaml` passou a documentar somente `GET /api/internal/geralanding/wireframe/stage-executions/pending` e `POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia`;
+  - foram removidas do Swagger as entradas públicas de start/list/detail das etapas e as tags/componentes que ficaram sem uso no contrato reduzido.

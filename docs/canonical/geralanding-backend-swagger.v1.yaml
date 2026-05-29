@@ -410,34 +410,35 @@ components:
           type: string
           nullable: true
         campaignAngle:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         adCopy:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         adImageBriefing:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageCopy:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageWireframe:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageImagePlanning:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageDesignPreset:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageDeliverables:
-          type: string
-          nullable: true
+          $ref: '#/components/schemas/JsonBackedArtifact'
         htmlGeraLanding:
           type: string
           nullable: true
       required:
         - id
+    JsonBackedArtifact:
+      description: Artefato persistido em coluna textual, mas exposto como JSON estruturado quando o conteúdo armazenado for JSON válido; texto bruto só é aceito para conteúdo realmente textual ou fallback de diagnóstico.
+      nullable: true
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
+        - type: string
     PendingStageHypothesis:
       type: object
       additionalProperties: false

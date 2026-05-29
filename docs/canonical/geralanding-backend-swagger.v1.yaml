@@ -10,7 +10,7 @@ info:
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java`
 
     Este Swagger mantém somente os endpoints internos necessários para o Worker AI consumir jobs
-    pendentes de wireframe e informar o prompt enviado para IA.
+    pendentes de wireframe, informar o prompt enviado para IA e, em seguida, informar a resposta recebida da IA.
 servers:
   - url: http://191.252.181.168
     description: Backend principal para acessos executados pelo Codex
@@ -41,7 +41,7 @@ paths:
       tags:
         - landing-page-wireframe
       summary: Recebe o prompt interno enviado para IA no job de wireframe.
-      description: Endpoint inicial para o Worker AI informar o prompt enviado para IA e o identificador do job aberto na OpenAI; nesta versão o backend apenas aceita a chamada sem alterar estado persistido.
+      description: Endpoint para o Worker AI informar o prompt enviado para IA e o identificador do job aberto na OpenAI, preservando rastreabilidade do envio.
       operationId: recebePromptGeraLandingWireframeExecution
       parameters:
         - $ref: '#/components/parameters/IdJob'
@@ -53,7 +53,25 @@ paths:
               $ref: '#/components/schemas/RecebePromptRequest'
       responses:
         '202':
-          description: Prompt aceito sem alteração operacional nesta versão.
+          description: Prompt aceito para rastreabilidade do envio à IA.
+  /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags:
+        - landing-page-wireframe
+      summary: Recebe a resposta interna retornada pela IA no job de wireframe.
+      description: Endpoint inicial para o Worker AI informar a resposta da IA; nesta primeira versão o backend apenas aceita a chamada sem processar o payload.
+      operationId: recebeRespostaGeraLandingWireframeExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebeRespostaRequest'
+      responses:
+        '202':
+          description: Resposta aceita sem processamento operacional nesta versão.
 components:
   parameters:
     IdJob:
@@ -81,6 +99,10 @@ components:
       required:
         - prompt
         - jobidopenai
+    RecebeRespostaRequest:
+      type: object
+      description: Payload inicial da resposta da IA pelo Worker AI; campos definitivos serão especificados na próxima evolução do contrato.
+      additionalProperties: true
     PendingStageExecution:
       type: object
       additionalProperties: false

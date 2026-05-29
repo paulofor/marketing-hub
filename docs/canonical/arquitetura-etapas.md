@@ -1,5 +1,9 @@
 # Arquitetura canônica por etapa
 
+Este documento consolida as regras canônicas de arquitetura por etapa que são protegidas pelos testes
+`ArquiteturaTest` do backend e do Worker AI. Toda alteração estrutural deve preservar estas regras ou alterar
+primeiro este cânone e, em seguida, sincronizar os testes de arquitetura correspondentes.
+
 ## Backend por etapa
 
 Todo controller interno de backend criado para uma etapa operacional deve seguir o padrão de nome

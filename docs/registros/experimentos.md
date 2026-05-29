@@ -2322,3 +2322,8 @@
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/request/RecordWireframeRequest.java
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md
   - ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe-schema.json
+## 2026-05-29 — Cânone OpenAI reorientado para modelo de dados
+
+- Solicitação: tornar `docs/canonical/openai-informacoes-tratadas-canon.v1.md` completamente focado no modelo de dados onde ficam as informações tratadas pelos modelos de IA.
+- Correção aplicada: o cânone foi reescrito para conter somente a visão de persistência, tabelas, colunas, relacionamentos, cardinalidades e regras de localização dos dados de IA.
+- Escopo documentado: `hypothesis`, `hypothesis_framework_generation_job`, `experiment`, `experiment_pipeline_generation_job`, `framework_image_generation_job` e `ai_worker_generation`.

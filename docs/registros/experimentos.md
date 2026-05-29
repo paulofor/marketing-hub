@@ -2381,3 +2381,10 @@
   - o record Java de detalhe da execução da etapa `landing-page-wireframe` foi renomeado para `RecordBackendWireframeDetalheDto`;
   - `BackendWireframeService` e `BackendWireframeController` foram atualizados para usar o novo nome no retorno do detalhe da execução;
   - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.
+
+## 2026-05-29 — Records pending do wireframe isolados em subpacote
+
+- Solicitação: dentro de `geralanding.wireframe.service`, criar o pacote `pending` e mover para ele todos os records usados pelo endpoint interno pending da etapa `landing-page-wireframe`.
+- Correção aplicada:
+  - `RecordWireframePending`, `RecordWireframeExperiment` e `RecordWireframeHypothesis` foram movidos para `com.marketinghub.geralanding.wireframe.service.pending`;
+  - `BackendWireframeService`, `BackendWireframeController` e os testes relacionados foram atualizados para importar os records a partir do novo subpacote.

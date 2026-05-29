@@ -4,7 +4,7 @@ import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
-import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
+import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;

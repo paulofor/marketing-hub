@@ -110,7 +110,7 @@ public class BackendWireframeService {
                         "GeraLanding execution not found for idJob: " + idJob
                 ));
 
-        execution.setPrompt(prompt);
+        execution.setOpenAiRequestBody(prompt);
         execution.setOpenAiJobId(openAiJobId);
         execution.setProcessingStartedAt(Instant.now());
         execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);

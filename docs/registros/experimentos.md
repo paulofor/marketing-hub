@@ -2499,3 +2499,17 @@
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/monitor/WireframeExecutionScheduler.java
+
+## 2026-05-29 17:41:38 UTC-3
+- solicitação para ligar o novo worker OpenAI core da etapa wireframe do GeraLanding, retirar a variável de cron e executar o agendamento a cada 5 minutos.
+- raciocínio: o scheduler novo já existia no pacote `worker.openai.core.wireframe`, mas estava condicionado por propriedade desabilitada por padrão e usava cron parametrizado; a correção ativa o worker por configuração operacional e fixa o cron diretamente na anotação conforme regra de agendamentos Spring Boot.
+- registro do que foi feito: ajustado o scheduler de wireframe para cron literal de 5 minutos, removida a propriedade `cron` do record de configuração, adicionadas propriedades obrigatórias para habilitar o worker e apontar prompt/schema/backend, e incluídos comentários de responsabilidade nas classes/métodos Java alterados.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeExecutionScheduler.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeWorkerConfiguration.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeWorkerProperties.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/request/MontaRequest.java
+  - ai-worker/src/main/resources/application.properties

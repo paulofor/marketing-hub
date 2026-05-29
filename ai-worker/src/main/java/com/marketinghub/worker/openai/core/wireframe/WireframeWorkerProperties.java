@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
 
+/** Responsabilidade: concentrar as propriedades operacionais do worker OpenAI da etapa wireframe. */
 @Validated
 @ConfigurationProperties(prefix = "wireframe.worker")
 public record WireframeWorkerProperties(
@@ -31,20 +32,15 @@ public record WireframeWorkerProperties(
         String schemaName,
 
         @NotNull
-        Duration timeout,
-
-        @NotBlank
-        String cron
+        Duration timeout
 ) {
+    /** Normaliza valores opcionais usados pelo worker de wireframe quando a configuração externa omite o campo. */
     public WireframeWorkerProperties {
         if (apiPrefix == null || apiPrefix.isBlank()) {
             apiPrefix = "/api";
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);
-        }
-        if (cron == null || cron.isBlank()) {
-            cron = "0 */30 * * * *";
         }
     }
 }

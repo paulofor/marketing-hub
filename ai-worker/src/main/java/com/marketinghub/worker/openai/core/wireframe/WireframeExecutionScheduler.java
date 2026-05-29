@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 
+/** Responsabilidade: agendar o processamento periódico dos jobs pendentes da etapa wireframe no core OpenAI. */
 public class WireframeExecutionScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(WireframeExecutionScheduler.class);
@@ -14,6 +15,7 @@ public class WireframeExecutionScheduler {
     private final StageWorker<WireframeInput, WireframeOutput> worker;
     private final WireframeWorkerProperties properties;
 
+    /** Recebe o worker e as propriedades usadas pelo ciclo agendado de wireframe. */
     public WireframeExecutionScheduler(
             StageWorker<WireframeInput, WireframeOutput> worker,
             WireframeWorkerProperties properties
@@ -22,7 +24,8 @@ public class WireframeExecutionScheduler {
         this.properties = properties;
     }
 
-    @Scheduled(cron = "${wireframe.worker.cron:0 */30 * * * *}")
+    /** Executa a cada cinco minutos o ciclo de processamento dos jobs pendentes de wireframe. */
+    @Scheduled(cron = "0 */5 * * * *")
     public void run() {
         ProcessingSummary summary = worker.processPending(properties.pendingLimit());
 

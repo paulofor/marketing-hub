@@ -2450,3 +2450,11 @@
 - Correção aplicada:
   - a regra ArchUnit de `com.marketinghub.geralanding..service..` passou a aceitar dependências para toda a árvore `geralanding.<etapa>.service` e `geralanding.<etapa>.service.*` da mesma etapa;
   - o cânone de arquitetura do GeraLanding foi sincronizado para registrar a permissão explícita de dependência entre o pacote `service` e seus subpacotes internos.
+
+## 2026-05-29 00:00:00 UTC
+- solicitação: trocar no Worker AI da etapa wireframe a chamada de `receiveDispatch` pelo callback `recebe-prompt`, enviando o prompt e o identificador do job OpenAI conforme Swagger canônico.
+- causa-raiz identificada: o fluxo ativo de wireframe registrava o `openAiJobId` via `receive-dispatch` após a resposta da OpenAI, mas o contrato documentado para rastreabilidade do prompt é `POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt` com `prompt` e `jobidopenai`.
+- correção aplicada:
+  - `GeraLandingWireframeOpenAiExecutionService` passou a repassar o prompt montado ao processador de resposta;
+  - `RecebeResponse` da etapa wireframe passou a chamar `recebePrompt` antes do envio do resultado, substituindo a chamada a `receiveDispatch`;
+  - `GeraLandingWireframeBackendClient` passou a postar no endpoint `/recebe-prompt` com payload contendo apenas `prompt` e `jobidopenai`, conforme contrato do Swagger.

@@ -134,14 +134,13 @@ public class GeraLandingWireframeBackendClient {
         webClient.post().uri(baseUrl + "/{idJob}/receive-result", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
     }
 
-    /** Registra no backend o dispatch do job wireframe para a OpenAI. */
-    public void receiveDispatch(String idJob, Long experimentId, String stageCode, String openAiJobId) {
+    /** Envia ao backend o prompt despachado para IA e o identificador do job OpenAI conforme contrato recebe-prompt. */
+    public void recebePrompt(String idJob, String prompt, String openAiJobId) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("experimentId", experimentId);
-        body.put("stageCode", stageCode);
-        body.put("openAiJobId", openAiJobId);
-        webClient.post().uri(baseUrl + "/{idJob}/receive-dispatch", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
+        body.put("prompt", prompt);
+        body.put("jobidopenai", openAiJobId);
+        webClient.post().uri(baseUrl + "/{idJob}/recebe-prompt", idJob).bodyValue(body).retrieve().bodyToMono(Void.class).block();
     }
 
     /** Envia ao backend o resultado final da etapa wireframe. */

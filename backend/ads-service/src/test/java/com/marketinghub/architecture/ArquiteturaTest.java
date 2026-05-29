@@ -89,7 +89,7 @@ class ArquiteturaTest {
     static final ArchRule geralandingServicePackagesShouldOnlyAccessAllowedMarketingHubClasses =
             classes().that().resideInAPackage("com.marketinghub.geralanding..service..")
                     .should(onlyDependOnAllowedMarketingHubClasses())
-                    .because("[ARQUITETURA][BACKEND][GeraLanding] serviços em geralanding.*.service só podem acessar classes permitidas dentro de com.marketinghub");
+                    .because("[ARQUITETURA] [BACKEND][GeraLanding] serviços em geralanding.*.service só podem acessar classes permitidas dentro de com.marketinghub");
 
     @ArchTest
     static final ArchRule backendStageControllersMustExposePendingMethod =
@@ -281,7 +281,7 @@ class ArquiteturaTest {
                 Class<?>[] parameterTypes = method.get().reflect().getParameterTypes();
                 boolean validSignature = parameterTypes.length == 2
                         && String.class.equals(parameterTypes[0])
-                        && "com.marketinghub.geralanding.wireframe.web.BackendWireframeController$RecebePromptRequest"
+                        && "com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest"
                                 .equals(parameterTypes[1].getName());
                 if (!validSignature) {
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] classe=" + item.getName()
@@ -385,10 +385,10 @@ class ArquiteturaTest {
     }
 
     /**
-     * Garante que serviços geralanding acessem apenas classes permitidas dentro de com.marketinghub.
+     * Garante que serviços geralanding acessem serviços internos da mesma etapa e classes compartilhadas permitidas.
      */
     private static ArchCondition<JavaClass> onlyDependOnAllowedMarketingHubClasses() {
-        return new ArchCondition<>("[ARQUITETURA][BACKEND][GeraLanding] depend only on explicit allowed classes") {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][GeraLanding] depend only on same-stage service packages and explicit allowed classes") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 item.getDirectDependenciesFromSelf().forEach(dependency -> {
@@ -397,7 +397,7 @@ class ArquiteturaTest {
                     if (!targetName.startsWith("com.marketinghub.")) {
                         return;
                     }
-                    if (targetClass.getPackageName().equals(item.getPackageName())
+                    if (isSameStageServiceDependency(item, targetClass)
                             || targetName.equals(EXPERIMENT_CLASS)
                             || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
@@ -409,6 +409,7 @@ class ArquiteturaTest {
                             + " possui import/dependência violadora: " + dependency.getDescription()
                             + " (alvo: " + targetName + ")"
                             + " | regra: serviços em geralanding.*.service só podem acessar "
+                            + "pacotes internos geralanding.<etapa>.service.* da mesma etapa, "
                             + EXPERIMENT_CLASS + ", "
                             + EXPERIMENT_REPOSITORY_CLASS + ", "
                             + GERALANDING_STAGE_EXECUTION_CLASS + ", "
@@ -418,6 +419,16 @@ class ArquiteturaTest {
                 });
             }
         };
+    }
+
+    /**
+     * Verifica se a dependência alvo pertence à árvore service da mesma etapa GeraLanding.
+     */
+    private static boolean isSameStageServiceDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceStage = extractGeraLandingStage(sourceClass.getPackageName());
+        String targetStage = extractGeraLandingStage(targetClass.getPackageName());
+        String targetLayer = extractGeraLandingLayer(targetClass.getPackageName());
+        return sourceStage != null && sourceStage.equals(targetStage) && "service".equals(targetLayer);
     }
 
     /**

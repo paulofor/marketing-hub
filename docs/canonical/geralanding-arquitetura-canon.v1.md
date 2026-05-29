@@ -10,13 +10,19 @@ Consolidar a arquitetura do GeraLanding com base nas regras automatizadas de Arc
 flowchart LR
     WEB["Pacote: geralanding.<etapa>.web"]
     SERV["Pacote: geralanding.<etapa>.service"]
+    SERV_INT["Pacotes internos: geralanding.<etapa>.service.*"]
     PROV["Pacote: geralanding.<etapa>.provisorio"]
     EXP["Pacote: com.marketinghub.experiment (Experiment + ExperimentRepository)"]
     EXEC["Pacote: com.marketinghub.geralanding.execution (GeraLandingStageExecution + GeraLandingStageExecutionRepository)"]
 
     WEB -->|pode usar| SERV
+    SERV -->|pode usar| SERV_INT
+    SERV_INT -->|pode usar| SERV
+    SERV_INT -->|pode usar| SERV_INT
     SERV -->|pode usar| EXP
     SERV -->|pode usar| EXEC
+    SERV_INT -->|pode usar| EXP
+    SERV_INT -->|pode usar| EXEC
 ```
 
 > Leitura do diagrama: cada caixa é um pacote. Só existe seta quando há dependência permitida. Sem seta = não pode usar diretamente.
@@ -26,10 +32,10 @@ Regras arquiteturais refletidas (ArchUnit):
 - `GeraLandingStageExecutionService` não pode chamar assinaturas legadas dos assemblers de wireframe/copy/design preset.
 - `GeraLandingStageExecutionService` deve chamar explicitamente as assinaturas canônicas dos assemblers.
 - `WireframeProvisionalHtmlAssembler` deve residir em `geralanding.wireframe` e `DesignPresetProvisionalHtmlAssembler` em `geralanding.designpreset`.
-- Serviços em `com.marketinghub.geralanding..service..` podem depender de classes do próprio pacote de serviço (mesma etapa) e de `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository` no domínio `com.marketinghub`.
+- Serviços em `com.marketinghub.geralanding..service..` podem depender de classes da árvore interna de serviço da mesma etapa (`geralanding.<etapa>.service` e `geralanding.<etapa>.service.*`) e de `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository` e do builder de `GeraLandingStageExecution` no domínio `com.marketinghub`.
 - `geralanding.*.web` só pode acessar `geralanding.*.web` e `geralanding.*.service` da mesma etapa.
 - `geralanding.*.provisorio` só pode acessar `geralanding.*.provisorio` da mesma etapa.
-- `geralanding.*.service` só pode acessar classes `com.marketinghub` permitidas: classes do próprio pacote `service` da etapa, `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution` e `GeraLandingStageExecutionRepository`.
+- `geralanding.*.service` só pode acessar classes `com.marketinghub` permitidas: classes da árvore interna `service` da mesma etapa (`service` e `service.*`), `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository` e o builder de `GeraLandingStageExecution`.
 
 ## 2) Worker AI (ai-worker / `com.marketinghub.worker.geralanding`)
 

@@ -4,11 +4,12 @@ import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartResponse;
 import com.marketinghub.geralanding.wireframe.service.RecordBackendWireframeDetalheDto;
-import com.marketinghub.geralanding.wireframe.service.RecordWireframePending;
-import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
+import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api")
 public class BackendWireframeController {
+  private static final Logger LOGGER = LoggerFactory.getLogger(BackendWireframeController.class);
   private static final String STAGE_CODE = "landing-page-wireframe";
 
   private final BackendWireframeService executionService;
@@ -54,10 +56,15 @@ public class BackendWireframeController {
     return executionService.listPending(STAGE_CODE);
   }
 
-  /** Recebe o prompt enviado para IA e marca a execução como aguardando retorno da OpenAI. */
+  /** Recebe o prompt enviado para IA, registra o prompt e marca a execução como aguardando retorno da OpenAI. */
   @PostMapping("/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt")
   public ResponseEntity<Void> recebePrompt(
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
+    LOGGER.info(
+        "[GeraLanding][Wireframe] Recebido prompt enviado para IA idJob={} jobidopenai={} prompt={}",
+        idJob,
+        payload.jobidopenai(),
+        payload.prompt());
     executionService.markWaitingOpenAiDispatch(idJob, payload.prompt(), payload.jobidopenai());
     return ResponseEntity.accepted().build();
   }

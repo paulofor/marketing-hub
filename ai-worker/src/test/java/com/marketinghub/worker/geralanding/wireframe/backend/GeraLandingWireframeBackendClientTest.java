@@ -29,13 +29,26 @@ class GeraLandingWireframeBackendClientTest {
     }
 
     @Test
-    void listPendingExecutionsCallsExperimentScopedWireframeUrl() throws Exception {
-        server.enqueue(jsonResponse("[{\"id\":34,\"name\":\"Experimento 34\"}]"));
+    void listPendingExecutionsCallsInternalWireframeQueueAndKeepsStructuredJson() throws Exception {
         server.enqueue(jsonResponse("["
-                + "{\"idJob\":\"ef92d7d2-7d84-4b1e-a5a5-ccf3034da4bd\","
-                + "\"status\":\"INICIADO\","
-                + "\"executionRequestedAt\":\"2026-05-28T16:21:35.330Z\","
-                + "\"costUsd\":null}"
+                + "{\"experimentId\":34,"
+                + "\"jobid\":\"ef92d7d2-7d84-4b1e-a5a5-ccf3034da4bd\","
+                + "\"stageCode\":\"landing-page-wireframe\","
+                + "\"experiment\":{"
+                + "\"id\":34,"
+                + "\"name\":\"Personal trainers\","
+                + "\"campaignAngle\":{\"primaryPromise\":\"Agenda cheia\"},"
+                + "\"adCopy\":{\"headline\":\"Sem desconto\"},"
+                + "\"adImageBriefing\":{\"concept\":\"Calendário lotado\"},"
+                + "\"landingPageWireframe\":null"
+                + "},"
+                + "\"hypothesis\":{"
+                + "\"framework\":{"
+                + "\"pain\":{\"summary\":\"agenda vazia\"},"
+                + "\"result\":{\"summary\":\"agenda cheia\"}"
+                + "}"
+                + "}"
+                + "}"
                 + "]"));
 
         GeraLandingWireframeBackendClient client = new GeraLandingWireframeBackendClient(
@@ -46,14 +59,17 @@ class GeraLandingWireframeBackendClientTest {
 
         List<GeraLandingStageExecutionDetailDto> pending = client.listPendingExecutions(20);
 
-        assertThat(server.takeRequest().getPath()).isEqualTo("/api/experiments");
         assertThat(server.takeRequest().getPath())
-                .isEqualTo("/api/experiments/34/geralanding/wireframe/stage-executions?includeCompleted=false");
+                .isEqualTo("/api/internal/geralanding/wireframe/stage-executions/pending");
         assertThat(pending).hasSize(1);
         assertThat(pending.getFirst().experimentId()).isEqualTo(34L);
         assertThat(pending.getFirst().stageCode()).isEqualTo("landing-page-wireframe");
         assertThat(pending.getFirst().idJob()).isEqualTo("ef92d7d2-7d84-4b1e-a5a5-ccf3034da4bd");
         assertThat(pending.getFirst().status()).isEqualTo("INICIADO");
+        assertThat(pending.getFirst().promptData())
+                .containsKeys("campaignAngle", "adCopy", "adImageBriefing", "landingPageWireframe", "NICHE_NAME", "PAIN_JSON", "RESULT_JSON");
+        assertThat(pending.getFirst().promptData().get("campaignAngle"))
+                .isInstanceOfSatisfying(java.util.Map.class, value -> assertThat(value).containsEntry("primaryPromise", "Agenda cheia"));
     }
 
     /** Cria resposta JSON para simular os endpoints reais do backend. */

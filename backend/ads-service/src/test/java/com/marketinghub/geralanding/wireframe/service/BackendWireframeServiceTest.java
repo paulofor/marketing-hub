@@ -139,4 +139,29 @@ class BackendWireframeServiceTest {
         assertTrue(response.get(0).hypothesis().framework().containsKey("offer"));
         assertTrue(response.get(0).hypothesis().framework().containsKey("checklist"));
     }
+
+    /** Deve persistir prompt, job OpenAI e status de espera quando o Worker AI informa o despacho. */
+    @Test
+    void markWaitingOpenAiDispatchShouldPersistPromptOpenAiJobAndWaitingStatus() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendWireframeService service =
+                new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .idJob("job-ia-1".getBytes(StandardCharsets.UTF_8))
+                .executionRequestedAt(Instant.parse("2026-05-28T10:00:00Z"))
+                .status("INICIADO")
+                .build();
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(any(byte[].class)))
+                .thenReturn(Optional.of(execution));
+
+        service.markWaitingOpenAiDispatch("job-ia-1", "Prompt para IA", "openai-job-1");
+
+        assertEquals("Prompt para IA", execution.getPrompt());
+        assertEquals("openai-job-1", execution.getOpenAiJobId());
+        assertNotNull(execution.getProcessingStartedAt());
+        assertEquals("AGUARDANDO_RETORNO_OPENAI", execution.getStatus());
+        verify(executionRepository).save(execution);
+    }
+
 }

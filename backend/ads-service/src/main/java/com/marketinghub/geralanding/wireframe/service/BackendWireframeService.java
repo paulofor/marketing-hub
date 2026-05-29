@@ -27,6 +27,7 @@ public class BackendWireframeService {
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "landing-page-wireframe";
     private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
@@ -95,6 +96,23 @@ public class BackendWireframeService {
                         toPendingExperiment(execution.getExperiment()),
                         toPendingHypothesis(execution.getExperiment())))
                 .toList();
+    }
+
+    /** Marca a execução como aguardando retorno da OpenAI após receber o prompt despachado. */
+    @Transactional
+    public void markWaitingOpenAiDispatch(String idJob, String prompt, String openAiJobId) {
+        GeraLandingStageExecution execution = executionRepository
+                .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "GeraLanding execution not found for idJob: " + idJob
+                ));
+
+        execution.setPrompt(prompt);
+        execution.setOpenAiJobId(openAiJobId);
+        execution.setProcessingStartedAt(Instant.now());
+        execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);
+
+        executionRepository.save(execution);
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

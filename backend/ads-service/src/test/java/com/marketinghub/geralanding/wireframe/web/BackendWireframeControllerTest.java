@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -58,9 +57,9 @@ class BackendWireframeControllerTest {
         verify(executionService).listPending("landing-page-wireframe");
     }
 
-    /** Deve receber o prompt enviado para IA sem alterar estado nesta primeira versão. */
+    /** Deve receber o prompt enviado para IA e delegar marcação de espera pelo retorno OpenAI. */
     @Test
-    void recebePromptShouldAcceptPromptPayloadWithoutSideEffects() {
+    void recebePromptShouldMarkExecutionWaitingOpenAiDispatch() {
         BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(executionService);
         BackendWireframeController.RecebePromptRequest payload =
@@ -71,7 +70,7 @@ class BackendWireframeControllerTest {
         assertEquals(202, response.getStatusCode().value());
         assertEquals("Prompt para IA", payload.prompt());
         assertEquals("openai-job-1", payload.jobidopenai());
-        verifyNoInteractions(executionService);
+        verify(executionService).markWaitingOpenAiDispatch("job-ia-1", "Prompt para IA", "openai-job-1");
     }
 
     /** Deve serializar pending como lista com atributos experiment e jobid em cada item. */

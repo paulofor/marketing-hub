@@ -2381,3 +2381,16 @@
   - o record Java de detalhe da execução da etapa `landing-page-wireframe` foi renomeado para `RecordBackendWireframeDetalheDto`;
   - `BackendWireframeService` e `BackendWireframeController` foram atualizados para usar o novo nome no retorno do detalhe da execução;
   - este registro documenta a alteração para manter rastreabilidade do tema Experimentos.
+
+## 2026-05-29 08:05:26 UTC-3
+- solicitação para persistir no backend o prompt recebido pelo endpoint interno de wireframe e marcar a execução como aguardando retorno da OpenAI.
+- raciocínio aplicado: a causa-raiz era que `recebePrompt` aceitava o payload sem efeito persistente, mantendo o job iniciado sem registrar `prompt`, `openAiJobId`, início do processamento e status de espera.
+- foi feito: criação de `BackendWireframeService.markWaitingOpenAiDispatch`, chamada pelo `BackendWireframeController.recebePrompt`, e atualização dos testes unitários do serviço e do controller para cobrir a persistência e a delegação.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/service/BackendWireframeService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/wireframe/service/BackendWireframeServiceTest.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeControllerTest.java

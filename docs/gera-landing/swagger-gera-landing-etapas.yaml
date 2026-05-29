@@ -120,7 +120,7 @@ paths:
         - Gera Landing Wireframe Internal
       summary: Recebe resposta da IA para wireframe
       description: |
-        Recebe a resposta da IA para a etapa `landing-page-wireframe` e conclui a execução do job.
+        Recebe a resposta da IA para a etapa `landing-page-wireframe` e conclui ou falha a execução do job.
       parameters:
         - $ref: "#/components/parameters/IdJobPath"
       requestBody:
@@ -131,7 +131,7 @@ paths:
               $ref: "#/components/schemas/RecebeRespostaRequest"
       responses:
         "202":
-          description: Resposta recebida e execução concluída.
+          description: Resposta recebida e execução concluída ou marcada como falha.
         "400":
           description: Payload inválido.
         "404":
@@ -468,6 +468,14 @@ components:
           type: string
           nullable: true
           description: Identificador do job no provedor OpenAI.
+        errorMessage:
+          type: string
+          nullable: true
+          description: Mensagem operacional da falha quando o Worker AI não consegue concluir a etapa.
+        errorDetail:
+          type: string
+          nullable: true
+          description: Detalhe técnico da falha quando disponível.
 
     GeraLandingStartResponse:
       type: object

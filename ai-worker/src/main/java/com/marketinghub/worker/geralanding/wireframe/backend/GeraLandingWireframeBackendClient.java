@@ -123,7 +123,7 @@ public class GeraLandingWireframeBackendClient {
         return payload;
     }
 
-    /** Envia estado de falha da execução wireframe ao backend. */
+    /** Envia estado de falha da execução wireframe ao backend pelo callback específico recebe-resposta. */
     public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/wireframe/stage-executions");
         Map<String, Object> body = new LinkedHashMap<>();

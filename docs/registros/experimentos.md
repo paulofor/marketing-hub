@@ -2458,3 +2458,17 @@
   - `GeraLandingWireframeOpenAiExecutionService` passou a repassar o prompt montado ao processador de resposta;
   - `RecebeResponse` da etapa wireframe passou a chamar `recebePrompt` antes do envio do resultado, substituindo a chamada a `receiveDispatch`;
   - `GeraLandingWireframeBackendClient` passou a postar no endpoint `/recebe-prompt` com payload contendo apenas `prompt` e `jobidopenai`, conforme contrato do Swagger.
+## 2026-05-29 — Wireframe usa recebe-resposta para sucesso e falha
+
+- Solicitação: excluir o caminho legado de callback `receive-result` para a etapa wireframe, fazer o Worker AI chamar `recebe-resposta` tanto em sucesso quanto em erro, e ajustar o backend para tratar falhas nesse endpoint específico.
+- Correção aplicada:
+  - removidas do fluxo legado `experimentpipeline` as chamadas genéricas de registro do GeraLanding para `/internal/geralanding/stage-executions` e `/receive-result`;
+  - `GeraLandingWireframeBackendClient.receiveFailure(...)` passou a postar no endpoint específico `/api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta`;
+  - o envio de sucesso da etapa wireframe deixou de tentar `receive-dispatch` antes de `recebe-resposta`, garantindo que o callback específico seja alcançado no caminho feliz;
+  - `RecebeRespostaRequest` da etapa wireframe passou a aceitar `errorMessage` e `errorDetail`;
+  - `BackendWireframeService.markCompletedFromResponse(...)` passou a marcar a execução como `FALHA` quando houver `errorMessage`, persistindo erro e detalhe sem gravar artefato no experimento; no sucesso mantém `CONCLUIDO` e grava o wireframe;
+  - Swagger canônico e Swagger operacional do GeraLanding foram sincronizados com o contrato de sucesso/falha do `recebe-resposta`.
+- Testes executados:
+  - `mvn test -Dtest=BackendWireframeServiceTest,BackendWireframeControllerTest` em `backend/ads-service`;
+  - `mvn install -DskipTests` em `backend/ads-service` para disponibilizar o artefato local usado pelo `ai-worker`;
+  - `mvn test -Dtest=WireframePendingJobsServiceTest,ExperimentPipelineOpenAiClientTest` em `ai-worker`.

@@ -14,20 +14,26 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * Responsável por validar o contrato HTTP do client backend da etapa wireframe.
+ */
 class GeraLandingWireframeBackendClientTest {
     private MockWebServer server;
 
+    /** Inicializa o servidor HTTP simulado usado nos testes do client. */
     @BeforeEach
     void setUp() throws Exception {
         server = new MockWebServer();
         server.start();
     }
 
+    /** Encerra o servidor HTTP simulado ao final de cada teste. */
     @AfterEach
     void tearDown() throws Exception {
         server.shutdown();
     }
 
+    /** Deve consultar apenas a fila interna pending de wireframe e preservar JSON estruturado. */
     @Test
     void listPendingExecutionsCallsInternalWireframeQueueAndKeepsStructuredJson() throws Exception {
         server.enqueue(jsonResponse("["
@@ -67,9 +73,19 @@ class GeraLandingWireframeBackendClientTest {
         assertThat(pending.getFirst().idJob()).isEqualTo("ef92d7d2-7d84-4b1e-a5a5-ccf3034da4bd");
         assertThat(pending.getFirst().status()).isEqualTo("INICIADO");
         assertThat(pending.getFirst().promptData())
-                .containsKeys("campaignAngle", "adCopy", "adImageBriefing", "landingPageWireframe", "NICHE_NAME", "PAIN_JSON", "RESULT_JSON");
+                .containsKeys(
+                        "campaignAngle",
+                        "adCopy",
+                        "adImageBriefing",
+                        "landingPageWireframe",
+                        "NICHE_NAME",
+                        "PAIN_JSON",
+                        "RESULT_JSON");
         assertThat(pending.getFirst().promptData().get("campaignAngle"))
-                .isInstanceOfSatisfying(java.util.Map.class, value -> assertThat(value).containsEntry("primaryPromise", "Agenda cheia"));
+                .isInstanceOfSatisfying(
+                        java.util.Map.class,
+                        value -> assertThat(value).containsEntry("primaryPromise", "Agenda cheia"));
+        assertThat(server.getRequestCount()).isEqualTo(1);
     }
 
     /** Cria resposta JSON para simular os endpoints reais do backend. */

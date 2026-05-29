@@ -44,7 +44,10 @@ serializados no contrato `pending` como JSON estruturado sempre que o conteúdo 
 como string contendo JSON escapado. Apenas conteúdo realmente textual ou JSON inválido pode permanecer
 como string bruta, com log de diagnóstico no caso inválido. O atributo `hypothesis` deve expor `id`,
 `title` e `framework` com todos os itens canônicos do framework Dor → Resultado → Mecanismo → Prova →
-Oferta: `pain`, `result`, `mechanism`, `proof`, `offer` e `checklist`.
+Oferta: `pain`, `result`, `mechanism`, `proof`, `offer` e `checklist`. Como esse contrato `pending`
+carrega todos os dados necessários para processamento da etapa, o Worker AI de wireframe deve consumir a
+lista como fonte suficiente e não deve fazer chamada adicional de detalhe da execução antes de processar o
+job.
 
 ## Regra global — JSON estruturado em contratos internos
 

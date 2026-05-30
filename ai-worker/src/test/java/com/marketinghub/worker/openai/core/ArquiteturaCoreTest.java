@@ -58,7 +58,8 @@ class ArquiteturaCoreTest {
             "exception",
             "model",
             "openai",
-            "port"
+            "port",
+            "prompt"
     );
 
     private static final DescribedPredicate<JavaClass> ARE_IN_CORE_ROOT_PACKAGE =
@@ -76,6 +77,7 @@ class ArquiteturaCoreTest {
                     String packageName = input.getPackageName();
                     return packageName.startsWith(BASE_PACKAGE + ".model")
                             || packageName.startsWith(BASE_PACKAGE + ".port")
+                            || packageName.startsWith(BASE_PACKAGE + ".prompt")
                             || packageName.startsWith(BASE_PACKAGE + ".exception");
                 }
             };

@@ -2605,3 +2605,15 @@
   - o `WireframeBackendClient` passou a enviar `promptMarkdownContent` ao backend no callback `recebe-prompt`.
   - o DTO, controller e serviço backend de wireframe passaram a receber e persistir `promptMarkdownContent`, com fallback para clientes antigos que ainda enviem o conteúdo apenas em `prompt`.
 - impacto esperado: novas execuções do wireframe OpenAI core passam a exibir o conteúdo do arquivo `.md` na tela de detalhe, sem perder o prompt renderizado usado na chamada à OpenAI.
+
+## 2026-05-30 — Correção de placeholders `dados-*` no OpenAI core wireframe
+- tarefa: corrigir a substituição de placeholders em prompts editáveis executados pelo `ai-worker` no módulo `openai.core`, especialmente no formato `{{dados-campaignAngle}}`, `{{dados-adCopy}}`, `{{dados-adImageBriefing}}` e `{{prompt-regras-globais}}`.
+- causa-raiz: o `WireframePromptBuilder` substituía apenas chaves diretas (`{{campaignAngle}}` e `${campaignAngle}`), enquanto os prompts do GeraLanding usam também placeholders prefixados por tipo (`dados-` para payload do job e `prompt-` para inclusão de markdown base).
+- correção aplicada:
+  - centralizada a resolução em `PromptTemplateResolver`, dentro de `openai.core.prompt`, para reutilização por todas as etapas atuais e futuras do core OpenAI.
+  - o `WireframePromptBuilder` passou apenas a delegar a renderização de templates ao resolvedor comum, mantendo no adapter da etapa somente carregamento de recurso, serialização JSON e montagem do request específico.
+  - adicionada resolução de placeholders prefixados com uma ou duas chaves: `{dados-*}`, `{{dados-*}}`, `{prompt-*}` e `{{prompt-*}}`.
+  - inclusões `prompt-*` passam a carregar arquivos `.md` irmãos do prompt atual, permitindo reaproveitar `regras-globais.md` no OpenAI core.
+  - mantida compatibilidade com placeholders diretos existentes, como `{{NICHE_NAME}}` e `${NICHE_NAME}`.
+  - criado teste unitário no pacote comum cobrindo exatamente o formato informado pelo usuário.
+- impacto esperado: os prompts publicados para a OpenAI deixam de conter placeholders não resolvidos nesses campos críticos, preservando o eixo Dor → Resultado → Mecanismo → Prova → Oferta no fluxo de geração de landing page.

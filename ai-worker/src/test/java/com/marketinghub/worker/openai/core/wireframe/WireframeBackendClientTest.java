@@ -3,6 +3,7 @@ package com.marketinghub.worker.openai.core.wireframe;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
@@ -145,6 +146,24 @@ class WireframeBackendClientTest {
                 .doesNotContain("\"if\"")
                 .doesNotContain("\"then\"")
                 .doesNotContain("\"not\"");
+    }
+
+    /** Deve manter apenas pagina.corpo no contrato de estrutura visual, sem pagina.body duplicado. */
+    @Test
+    void wireframeSchemaShouldUseOnlyCorpoAndRejectDuplicatedBodyField() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        JsonNode pagina = schema.path("properties").path("pagina");
+        JsonNode paginaProperties = pagina.path("properties");
+        JsonNode corpo = paginaProperties.path("corpo");
+
+        assertThat(paginaProperties.has("body")).isFalse();
+        assertThat(pagina.path("required").toString()).isEqualTo("[\"head\",\"corpo\"]");
+        assertThat(corpo.path("required").toString()).isEqualTo("[\"estilos\",\"secoes\"]");
+        assertThat(corpo.path("properties").has("estilos")).isTrue();
+        assertThat(corpo.path("properties").path("estilos").path("items").path("enum").toString())
+                .isEqualTo("[\"bgBody\",\"fontBase\",\"textPrimary\",\"marginReset\"]");
     }
 
 }

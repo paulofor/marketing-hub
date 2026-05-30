@@ -46,23 +46,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "secoes": {
-              "type": "array",
-              "minItems": 4,
-              "items": {
-                "$ref": "#/$defs/secao"
-              }
-            }
-          },
-          "required": [
-            "secoes"
-          ]
-        },
-        "body": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "classes": {
+            "estilos": {
               "type": "array",
               "minItems": 4,
               "maxItems": 4,
@@ -75,17 +59,24 @@
                   "marginReset"
                 ]
               }
+            },
+            "secoes": {
+              "type": "array",
+              "minItems": 4,
+              "items": {
+                "$ref": "#/$defs/secao"
+              }
             }
           },
           "required": [
-            "classes"
+            "estilos",
+            "secoes"
           ]
         }
       },
       "required": [
         "head",
-        "corpo",
-        "body"
+        "corpo"
       ]
     }
   },

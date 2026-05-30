@@ -117,6 +117,8 @@ enviar um request determinístico e rastreável para a OpenAI.
 
 ## GeraLanding — wireframe
 
+Contrato de saída do wireframe: a raiz deve conter `definicoes` e `pagina`; dentro de `pagina`, são permitidos apenas `head` e `corpo` para a estrutura da página. As classes globais aplicadas ao elemento HTML `<body>` devem ser declaradas em `pagina.corpo.estilos`; o campo `pagina.body` é proibido para evitar duplicidade semântica entre `body` e `corpo` na resposta do modelo.
+
 A etapa `landing-page-wireframe` expõe a fila interna pelo endpoint:
 
 ```http

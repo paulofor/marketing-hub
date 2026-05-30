@@ -13,8 +13,8 @@ import com.marketinghub.geralanding.wireframe.service.GeraLandingWireframeStartR
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExperiment;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeHypothesis;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
-import com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest;
-import com.marketinghub.geralanding.wireframe.service.receberesposta.RecebeRespostaRequest;
+import com.marketinghub.geralanding.wireframe.service.recebePrompt.RecebePromptRequest;
+import com.marketinghub.geralanding.wireframe.service.recebeResposta.RecebeRespostaRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;

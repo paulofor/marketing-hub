@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe.service.receberesposta;
+package com.marketinghub.geralanding.wireframe.service.recebeResposta;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

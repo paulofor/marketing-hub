@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.wireframe.service.recebeprompt;
+package com.marketinghub.geralanding.wireframe.service.recebePrompt;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;

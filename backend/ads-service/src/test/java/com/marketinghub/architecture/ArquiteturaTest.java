@@ -7,6 +7,7 @@ import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAsse
 import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -16,10 +17,17 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Garante isolamento arquitetural entre módulos/pacotes internos do backend.
@@ -37,6 +45,14 @@ class ArquiteturaTest {
             "com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder";
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
+    private static final Pattern BACKEND_STAGE_WEB_PACKAGE_PATTERN =
+            Pattern.compile("^com\\.marketinghub\\.geralanding\\.[a-zA-Z0-9_]+\\.web$");
+    private static final Pattern BACKEND_STAGE_SERVICE_PACKAGE_PATTERN =
+            Pattern.compile("^com\\.marketinghub\\.geralanding\\.[a-zA-Z0-9_]+\\.service$");
+    private static final Pattern BACKEND_CONTROLLER_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Controller$");
+    private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
+    private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
+            "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
 
     @ArchTest
     static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -104,6 +120,103 @@ class ArquiteturaTest {
             .haveFullyQualifiedName("com.marketinghub.geralanding.wireframe.web.BackendWireframeController")
             .should(haveRecebePromptMethod())
             .because("[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController deve expor recebePrompt(String idJob, RecebePromptRequest payload) para receber o prompt enviado à IA");
+
+
+    /**
+     * Garante que cada pacote web backend de etapa tenha somente o controller canônico anotado.
+     */
+    @ArchTest
+    static void backendStageWebPackagesMustHaveSingleAnnotatedBackendController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        backendStageWebPackages(importedClasses).forEach((packageName, packageClasses) -> {
+            List<JavaClass> controllers = packageClasses.stream()
+                    .filter(ArquiteturaTest::isBackendControllerClass)
+                    .toList();
+            if (controllers.isEmpty()) {
+                return;
+            }
+            if (packageClasses.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraLanding] pacote=" + packageName
+                        + " deve conter apenas uma classe Backend<Etapa>Controller; classes="
+                        + simpleNames(packageClasses));
+            }
+            if (controllers.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraLanding] pacote=" + packageName
+                        + " deve conter exatamente uma classe Backend<Etapa>Controller; controllers="
+                        + simpleNames(controllers));
+                return;
+            }
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraLanding] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+            if (!hasRequestMappingApi(controller)) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraLanding] classe=" + controller.getName()
+                        + " deve possuir @RequestMapping(\"/api\")");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que cada pacote service backend de etapa tenha o serviço canônico anotado e subpacotes obrigatórios.
+     */
+    @ArchTest
+    static void backendStageServicePackagesMustHaveCanonicalServiceAndRequiredSubpackages(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        backendStageServicePackages(importedClasses).forEach((packageName, packageClasses) -> {
+            List<JavaClass> services = packageClasses.stream()
+                    .filter(ArquiteturaTest::isBackendServiceClass)
+                    .toList();
+            if (services.isEmpty()) {
+                return;
+            }
+            if (services.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraLanding] pacote=" + packageName
+                        + " deve conter exatamente uma classe Backend<Etapa>Service; services="
+                        + simpleNames(services));
+                return;
+            }
+            JavaClass serviceClass = services.get(0);
+            if (!serviceClass.isAnnotatedWith(Service.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraLanding] classe=" + serviceClass.getName()
+                        + " deve possuir @Service");
+            }
+            REQUIRED_BACKEND_SERVICE_SUBPACKAGES.forEach(requiredSubpackage -> {
+                String requiredPackage = packageName + "." + requiredSubpackage;
+                boolean exists = importedClasses.stream()
+                        .filter(ArquiteturaTest::isProductionTopLevelClass)
+                        .anyMatch(candidate -> candidate.getPackageName().equals(requiredPackage));
+                if (!exists) {
+                    violations.add("[ARQUITETURA] [BACKEND][GeraLanding] pacote=" + packageName
+                            + " deve possuir subpacote obrigatório " + requiredSubpackage);
+                }
+            });
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que os subpacotes obrigatórios de service contenham apenas records.
+     */
+    @ArchTest
+    static void backendStageServiceRequiredSubpackagesMustContainOnlyRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        backendStageServicePackages(importedClasses).keySet().forEach(servicePackage ->
+                REQUIRED_BACKEND_SERVICE_SUBPACKAGES.forEach(requiredSubpackage -> {
+                    String requiredPackage = servicePackage + "." + requiredSubpackage;
+                    importedClasses.stream()
+                            .filter(ArquiteturaTest::isProductionTopLevelClass)
+                            .filter(candidate -> candidate.getPackageName().equals(requiredPackage))
+                            .filter(candidate -> !candidate.reflect().isRecord())
+                            .forEach(candidate -> violations.add(
+                                    "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + candidate.getName()
+                                            + " está no subpacote obrigatório " + requiredSubpackage
+                                            + " e deve ser declarada como record"));
+                }));
+        failWithArchitectureViolations(violations);
+    }
 
     @ArchTest
     static final ArchRule moisSalesLibraryWebShouldOnlyDependOnServiceLayer =
@@ -214,6 +327,98 @@ class ArquiteturaTest {
             .beAssignableTo(WireframeProvisionalHtmlAssembler.class)
             .because("[ARQUITETURA][BACKEND][WireframeProvisionalHtmlAssembler] o tipo canônico do assembler de wireframe deve existir e permanecer estável");
 
+
+    /**
+     * Agrupa classes de produção dos pacotes web diretos que seguem o padrão de etapa backend.
+     */
+    private static Map<String, List<JavaClass>> backendStageWebPackages(JavaClasses importedClasses) {
+        Map<String, List<JavaClass>> packages = new LinkedHashMap<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> BACKEND_STAGE_WEB_PACKAGE_PATTERN.matcher(javaClass.getPackageName()).matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .forEach(javaClass -> packages
+                        .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
+                        .add(javaClass));
+        return packages;
+    }
+
+    /**
+     * Agrupa classes de produção dos pacotes service diretos que seguem o padrão de etapa backend.
+     */
+    private static Map<String, List<JavaClass>> backendStageServicePackages(JavaClasses importedClasses) {
+        Map<String, List<JavaClass>> packages = new LinkedHashMap<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> BACKEND_STAGE_SERVICE_PACKAGE_PATTERN.matcher(javaClass.getPackageName()).matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .forEach(javaClass -> packages
+                        .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
+                        .add(javaClass));
+        return packages;
+    }
+
+    /**
+     * Identifica classes de produção top-level, removendo testes e classes internas importadas pelo ArchUnit.
+     */
+    private static boolean isProductionTopLevelClass(JavaClass javaClass) {
+        return !javaClass.getSimpleName().endsWith("Test")
+                && !javaClass.getName().contains("$")
+                && !javaClass.getPackageName().startsWith("com.marketinghub.architecture");
+    }
+
+    /**
+     * Verifica se a classe segue o padrão de nome Backend<Etapa>Controller.
+     */
+    private static boolean isBackendControllerClass(JavaClass javaClass) {
+        return BACKEND_CONTROLLER_NAME_PATTERN.matcher(javaClass.getSimpleName()).matches();
+    }
+
+    /**
+     * Verifica se a classe segue o padrão de nome Backend<Etapa>Service.
+     */
+    private static boolean isBackendServiceClass(JavaClass javaClass) {
+        return BACKEND_SERVICE_NAME_PATTERN.matcher(javaClass.getSimpleName()).matches();
+    }
+
+    /**
+     * Verifica se o controller usa @RequestMapping com valor ou path exatamente /api.
+     */
+    private static boolean hasRequestMappingApi(JavaClass javaClass) {
+        RequestMapping requestMapping = javaClass.reflect().getAnnotation(RequestMapping.class);
+        if (requestMapping == null) {
+            return false;
+        }
+        return containsOnlyApi(requestMapping.value()) || containsOnlyApi(requestMapping.path());
+    }
+
+    /**
+     * Verifica se o atributo da anotação possui somente o mapeamento /api.
+     */
+    private static boolean containsOnlyApi(String[] mappings) {
+        return mappings.length == 1 && "/api".equals(mappings[0]);
+    }
+
+    /**
+     * Retorna os nomes simples das classes para mensagens de falha determinísticas.
+     */
+    private static List<String> simpleNames(List<JavaClass> classes) {
+        return classes.stream()
+                .map(JavaClass::getSimpleName)
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * Falha o teste de arquitetura com mensagens iniciadas pelo prefixo obrigatório.
+     */
+    private static void failWithArchitectureViolations(List<String> violations) {
+        if (!violations.isEmpty()) {
+            violations.sort(String::compareTo);
+            throw new AssertionError(String.join(System.lineSeparator(), violations));
+        }
+    }
+
     /**
      * Retorna predicado que identifica classes internas fora do pacote permitido.
      */
@@ -281,7 +486,7 @@ class ArquiteturaTest {
                 Class<?>[] parameterTypes = method.get().reflect().getParameterTypes();
                 boolean validSignature = parameterTypes.length == 2
                         && String.class.equals(parameterTypes[0])
-                        && "com.marketinghub.geralanding.wireframe.service.recebeprompt.RecebePromptRequest"
+                        && "com.marketinghub.geralanding.wireframe.service.recebePrompt.RecebePromptRequest"
                                 .equals(parameterTypes[1].getName());
                 if (!validSignature) {
                     String message = "[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] classe=" + item.getName()

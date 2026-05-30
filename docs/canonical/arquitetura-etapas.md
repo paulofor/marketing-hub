@@ -6,8 +6,14 @@ primeiro este cânone e, em seguida, sincronizar os testes de arquitetura corres
 
 ## Backend por etapa
 
-Todo controller interno de backend criado para uma etapa operacional deve seguir o padrão de nome
-`Backend<Etapa>Controller` e deve declarar um método público chamado `pending`.
+Todo controller interno de backend criado para uma etapa operacional deve ficar no pacote direto
+`web`, seguir o padrão de nome `Backend<Etapa>Controller`, ser a única classe desse pacote, declarar
+`@RestController`, declarar `@RequestMapping("/api")` e possuir um método público chamado `pending`.
+
+O pacote direto `service` da etapa deve conter uma classe canônica `Backend<Etapa>Service` anotada
+com `@Service` e deve possuir os subpacotes obrigatórios `detailStageExecution`,
+`listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`. Esses subpacotes representam
+as bordas contratuais da etapa e devem conter somente tipos Java declarados como `record`.
 
 Esse método representa o contrato mínimo da fila interna da etapa para o Worker AI:
 

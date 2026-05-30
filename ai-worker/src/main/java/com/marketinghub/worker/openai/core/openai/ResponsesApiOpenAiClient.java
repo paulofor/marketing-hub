@@ -14,10 +14,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /** Responsabilidade: executar chamadas síncronas para a OpenAI Responses API no core OpenAI. */
 public class ResponsesApiOpenAiClient implements OpenAiClientPort {
+
+    private static final Logger log = LoggerFactory.getLogger(ResponsesApiOpenAiClient.class);
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -47,8 +52,11 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
     /** Envia o request cru para a OpenAI e devolve os dados de despacho para auditoria no backend. */
     @Override
     public OpenAiDispatch dispatch(OpenAiRequest request) {
+        String requestBodyJson = request.requestBodyJson();
+        String marketingHubJobId = marketingHubJobId(request);
         try {
-            Map<String, Object> requestBody = objectMapper.readValue(request.requestBodyJson(), Map.class);
+            Map<String, Object> requestBody = objectMapper.readValue(requestBodyJson, Map.class);
+            log.info("Enviando request cru para OpenAI Responses API [jobId={}, schemaName={}, requestBodyJson={}]", marketingHubJobId, request.schemaName(), requestBodyJson);
 
             Map<String, Object> raw = webClient.post()
                     .uri("/responses")
@@ -62,6 +70,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
             }
 
             String rawJson = objectMapper.writeValueAsString(raw);
+            log.info("Resposta crua recebida da OpenAI Responses API [jobId={}, openAiJobId={}, rawResponseJson={}]", marketingHubJobId, stringValue(raw.get("id")), rawJson);
             String openAiJobId = stringValue(raw.get("id"));
             String modelResponse = extractModelResponse(raw);
             Integer inputTokens = extractInteger(raw, "usage", "input_tokens");
@@ -88,9 +97,25 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     request.requestBodyJson(),
                     Instant.now()
             );
+        } catch (WebClientResponseException error) {
+            log.error(
+                    "Falha HTTP na OpenAI Responses API [jobId={}, schemaName={}, status={}, responseBody={}, requestBodyJson={}]",
+                    marketingHubJobId,
+                    request.schemaName(),
+                    error.getStatusCode().value(),
+                    error.getResponseBodyAsString(),
+                    requestBodyJson,
+                    error);
+            throw new StageWorkerException("OpenAI Responses API returned HTTP " + error.getStatusCode().value(), error);
         } catch (JsonProcessingException error) {
             throw new StageWorkerException("Invalid OpenAI request JSON", error);
         }
+    }
+
+    /** Recupera o idJob do Marketing Hub a partir dos metadados do request para correlacionar logs operacionais. */
+    private String marketingHubJobId(OpenAiRequest request) {
+        Object value = request.metadata().get("idJob");
+        return value != null ? value.toString() : "<unknown>";
     }
 
     /** Recupera a resposta bruta da OpenAI armazenada localmente após o despacho síncrono. */

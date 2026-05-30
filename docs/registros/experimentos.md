@@ -2526,3 +2526,28 @@
 - Testes previstos/atualizados:
   - backend: validação do controller e da persistência das três informações;
   - ai-worker: validação do payload HTTP enviado pelo core para o endpoint `recebe-prompt`.
+
+## 2026-05-30 — Investigação da falha do job wireframe 123f3449
+
+- Solicitação: pesquisar o que aconteceu com o job `123f3449-4a7e-4962-80a7-b796cf7fc9b3` do GeraLanding wireframe no experimento 34.
+- Causa-raiz provável: a execução chegou à chamada da OpenAI Responses API e falhou com `400 Bad Request`; a tabela `gera_landing_stage_execution` não recebeu `prompt`, `schema_json`, `openai_request_body`, `openai_model` nem `openai_job_id` para esse job, indicando falha antes do callback de rastreabilidade `recebe-prompt`.
+- Evidências coletadas:
+  - banco via MCP: o job está em `FALHA`, etapa `landing-page-wireframe`, criado em `2026-05-30T01:59:43.633Z` e concluído em `2026-05-30T02:00:22.549Z`, com `error_message = 400 Bad Request from POST https://api.openai.com/v1/responses`;
+  - logs via MCP: não havia mais linhas filtráveis pelo job/erro na janela consultada, apesar da aplicação possuir log do corpo HTTP da OpenAI no catch de `WebClientResponseException`;
+  - código local: o montador da etapa wireframe usa Structured Outputs com `strict=true`, e o schema atual contém `uniqueItems`, palavra-chave não listada entre as propriedades de array suportadas na documentação oficial de Structured Outputs da OpenAI.
+- Próximo passo recomendado: corrigir a etapa wireframe para remover/substituir `uniqueItems` do schema estrito, persistir o corpo da resposta HTTP da OpenAI em `error_detail` quando houver `WebClientResponseException`, e reexecutar o job para validar a causa-raiz com resposta completa.
+- Comandos usados na investigação:
+  - consultas MCP `db_query` em `gera_landing_stage_execution`;
+  - consultas MCP `java_module_logs` nos módulos `backend` e `ai-worker`;
+  - inspeção local com `rg`, `nl` e scripts Python pontuais sobre schema/código.
+
+## 2026-05-30 — Correção do schema e log do request OpenAI no wireframe
+
+- Solicitação: retirar `uniqueItems` do schema da etapa `landing-page-wireframe` e garantir que, em falhas como o `400 Bad Request` da OpenAI, o Worker AI registre no log o request enviado à OpenAI.
+- Causa-raiz tratada: o schema estrito do wireframe exigia unicidade em `pagina.body.classes`, mas essa validação não era necessária no contrato funcional e aumentava o risco de rejeição do schema pela OpenAI Responses API.
+- Correção aplicada:
+  - removido `uniqueItems` de `pagina.body.classes` no schema do wireframe;
+  - o client core `ResponsesApiOpenAiClient` passou a registrar o request cru antes da chamada à OpenAI e a resposta crua no sucesso;
+  - em erro HTTP da Responses API, o log agora inclui `jobId`, schema, status, corpo de resposta da OpenAI e `requestBodyJson` enviado;
+  - o executor legado/flex da etapa wireframe também passou a registrar o request final cru no envio e no log de falha HTTP.
+- Teste adicionado: validação unitária de que uma rejeição HTTP da OpenAI registra o request cru com o `jobId` do Marketing Hub.

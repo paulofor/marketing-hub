@@ -115,12 +115,14 @@ public class GeraLandingWireframeOpenAiExecutionService {
 
     /** Prepara e executa a chamada flex da OpenAI para a etapa wireframe. */
     private OpenAiResponse createFlexResponse(RecordJobDto job) throws Exception {
+        String finalRequestBodyJson = null;
         try {
             log.info("Iniciando preparação do request para flex wireframe [jobId={}, stage={}, requestBodyJsonPreview={}]", job.id(), job.section(), preview(job.requestBodyJson()));
             Map<String, Object> requestBody = prepareRequestBodyForFlex(job);
             log.info("RequestBody parseado para flex wireframe [jobId={}, stage={}, keys={}, requestBodyMapPreview={}]", job.id(), job.section(), requestBody.keySet(), preview(objectMapper.writeValueAsString(requestBody)));
             requestBody.put("service_tier", "flex");
-            log.info("RequestBody final para /responses wireframe [jobId={}, stage={}, requestBodyWithFlexPreview={}]", job.id(), job.section(), preview(objectMapper.writeValueAsString(requestBody)));
+            finalRequestBodyJson = objectMapper.writeValueAsString(requestBody);
+            log.info("RequestBody final cru para /responses wireframe [jobId={}, stage={}, requestBodyJson={}]", job.id(), job.section(), finalRequestBodyJson);
 
             OpenAiResponse response = webClient.post().uri("/responses")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -138,7 +140,7 @@ public class GeraLandingWireframeOpenAiExecutionService {
             return response;
         } catch (WebClientResponseException ex) {
             HttpStatusCode statusCode = ex.getStatusCode();
-            log.error("Falha HTTP OpenAI flex no gera-landing wireframe [jobId={}, stage={}, status={}, responseBody={}]", job.id(), job.section(), statusCode.value(), ex.getResponseBodyAsString(), ex);
+            log.error("Falha HTTP OpenAI flex no gera-landing wireframe [jobId={}, stage={}, status={}, responseBody={}, requestBodyJson={}]", job.id(), job.section(), statusCode.value(), ex.getResponseBodyAsString(), finalRequestBodyJson, ex);
             throw new IllegalStateException("Falha HTTP ao gerar conteúdo de gera-landing wireframe em modo flex", ex);
         } catch (Exception ex) {
             log.error("Falha inesperada no gera-landing wireframe em modo flex [jobId={}, stage={}, model={}, requestBodyPreview={}]", job.id(), job.section(), job.model(), preview(job.requestBodyJson()), ex);

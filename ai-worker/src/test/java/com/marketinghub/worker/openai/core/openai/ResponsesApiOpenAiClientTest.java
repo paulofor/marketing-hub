@@ -8,7 +8,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.openai.core.exception.StageWorkerException;
+import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -79,7 +79,11 @@ class ResponsesApiOpenAiClientTest {
 
         Throwable thrown = catchThrowable(() -> client.dispatch(request));
 
-        assertThat(thrown).isInstanceOf(StageWorkerException.class);
+        assertThat(thrown).isInstanceOf(OpenAiHttpException.class);
+        assertThat(thrown.getMessage())
+                .contains("OpenAI Responses API returned HTTP 400")
+                .contains("Invalid schema");
+        assertThat(((OpenAiHttpException) thrown).responseBody()).contains("Invalid schema");
         assertThat(appender.list)
                 .extracting(ILoggingEvent::getFormattedMessage)
                 .anySatisfy(message -> assertThat(message)

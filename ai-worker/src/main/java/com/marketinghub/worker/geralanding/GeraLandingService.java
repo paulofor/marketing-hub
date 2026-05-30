@@ -25,6 +25,9 @@ import org.springframework.util.StringUtils;
 
 import org.springframework.core.io.ClassPathResource;
 
+/**
+ * Responsabilidade: montar prompts do GeraLanding com dados do experimento e registrar rastreabilidade operacional.
+ */
 @Service
 public class GeraLandingService {
 
@@ -122,12 +125,27 @@ public class GeraLandingService {
         return context.dados();
     }
 
+    /** Resolve placeholders simples, registra os tokens tratados e preserva rastreabilidade da montagem. */
     private String resolverPlaceholders(String template, Map<String, Object> dadosPayload) throws IOException {
-        String resolved = template;
         Set<String> stack = new LinkedHashSet<>();
         Set<String> placeholdersDados = new HashSet<>();
         Set<String> placeholdersPrompt = new HashSet<>();
         Set<String> placeholdersMustache = new HashSet<>();
+        String resolved = resolverPlaceholders(
+                template, dadosPayload, stack, placeholdersMustache, placeholdersPrompt, placeholdersDados);
+        log.info("Placeholders tratados na resolução de prompt. promptRefs={}, dadosRefs={}, mustacheRefs={}",
+                placeholdersPrompt, placeholdersDados, placeholdersMustache);
+        return resolved;
+    }
+
+    /** Resolve placeholders reprocessando referências encadeadas e bloqueando ciclos na pilha de prompts. */
+    private String resolverPlaceholders(String template,
+                                        Map<String, Object> dadosPayload,
+                                        Set<String> stack,
+                                        Set<String> placeholdersMustache,
+                                        Set<String> placeholdersPrompt,
+                                        Set<String> placeholdersDados) throws IOException {
+        String resolved = template;
         Deque<String> pending = new ArrayDeque<>();
         pending.push(template);
         while (!pending.isEmpty()) {
@@ -139,48 +157,81 @@ public class GeraLandingService {
                 found = true;
                 String tipo = matcher.group(1);
                 String nome = matcher.group(2);
-                String token = tipo + ":" + nome;
-                String replacement;
-                if ("prompt".equals(tipo)) {
-                    placeholdersPrompt.add(nome);
-                    if (!stack.add(token)) {
-                        throw new IllegalStateException("Referência circular de prompts detectada: " + token);
-                    }
-                    replacement = resolverPlaceholders(carregarPromptBase(nome + ".md"), dadosPayload);
-                    stack.remove(token);
-                } else {
-                    placeholdersDados.add(nome);
-                    Object dado = dadosPayload.get(nome);
-                    replacement = renderPlaceholderValue(dado);
-                }
+                String replacement = resolveTypedPlaceholder(tipo, nome, dadosPayload, stack, placeholdersMustache, placeholdersPrompt, placeholdersDados);
                 matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
             }
             matcher.appendTail(buffer);
             resolved = buffer.toString();
-            resolved = resolverMustachePlaceholders(resolved, dadosPayload, placeholdersMustache);
+            resolved = resolverMustachePlaceholders(
+                    resolved, dadosPayload, stack, placeholdersMustache, placeholdersPrompt, placeholdersDados);
             if (found) {
                 pending.push(resolved);
             }
         }
-        log.info("Placeholders tratados na resolução de prompt. promptRefs={}, dadosRefs={}, mustacheRefs={}",
-                placeholdersPrompt, placeholdersDados, placeholdersMustache);
         return resolved;
     }
 
+    /** Resolve placeholders no formato mustache, incluindo aliases {{prompt-*}} e {{dados-*}}. */
     private String resolverMustachePlaceholders(String template,
                                                 Map<String, Object> dadosPayload,
-                                                Set<String> placeholdersMustache) throws IOException {
+                                                Set<String> stack,
+                                                Set<String> placeholdersMustache,
+                                                Set<String> placeholdersPrompt,
+                                                Set<String> placeholdersDados) throws IOException {
         Matcher matcher = MUSTACHE_PLACEHOLDER_PATTERN.matcher(template);
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
             String nome = matcher.group(1);
             placeholdersMustache.add(nome);
-            Object dado = dadosPayload.get(nome);
-            String replacement = renderPlaceholderValue(dado);
+            String replacement = resolveMustachePlaceholder(nome, dadosPayload, stack, placeholdersMustache, placeholdersPrompt, placeholdersDados);
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(buffer);
         return buffer.toString();
+    }
+
+    /** Resolve um placeholder mustache como dado direto ou como alias prefixado por prompt-/dados-. */
+    private String resolveMustachePlaceholder(String nome,
+                                              Map<String, Object> dadosPayload,
+                                              Set<String> stack,
+                                              Set<String> placeholdersMustache,
+                                              Set<String> placeholdersPrompt,
+                                              Set<String> placeholdersDados) throws IOException {
+        if (nome != null && nome.startsWith("prompt-")) {
+            return resolveTypedPlaceholder("prompt", nome.substring("prompt-".length()), dadosPayload, stack,
+                    placeholdersMustache, placeholdersPrompt, placeholdersDados);
+        }
+        if (nome != null && nome.startsWith("dados-")) {
+            return resolveTypedPlaceholder("dados", nome.substring("dados-".length()), dadosPayload, stack,
+                    placeholdersMustache, placeholdersPrompt, placeholdersDados);
+        }
+        return renderPlaceholderValue(dadosPayload.get(nome));
+    }
+
+    /** Resolve o valor de um placeholder tipado, carregando prompts recursivos ou dados do payload. */
+    private String resolveTypedPlaceholder(String tipo,
+                                           String nome,
+                                           Map<String, Object> dadosPayload,
+                                           Set<String> stack,
+                                           Set<String> placeholdersMustache,
+                                           Set<String> placeholdersPrompt,
+                                           Set<String> placeholdersDados) throws IOException {
+        if ("prompt".equals(tipo)) {
+            placeholdersPrompt.add(nome);
+            String token = tipo + ":" + nome;
+            if (!stack.add(token)) {
+                throw new IllegalStateException("Referência circular de prompts detectada: " + token);
+            }
+            try {
+                return resolverPlaceholders(
+                        carregarPromptBase(nome + ".md"), dadosPayload, stack, placeholdersMustache,
+                        placeholdersPrompt, placeholdersDados);
+            } finally {
+                stack.remove(token);
+            }
+        }
+        placeholdersDados.add(nome);
+        return renderPlaceholderValue(dadosPayload.get(nome));
     }
 
     private String renderPlaceholderValue(Object dado) throws JsonProcessingException {

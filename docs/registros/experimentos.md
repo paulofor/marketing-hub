@@ -2595,3 +2595,13 @@
   - atualizado o comentário do método para refletir a nova cadência de 1 minuto.
 - impacto esperado: o Worker AI passa a buscar jobs pendentes de wireframe do OpenAI core a cada minuto, reduzindo espera operacional sem alterar contratos de backend ou payloads OpenAI.
 - 2026-05-30 (UTC): ajuste operacional no `ai-worker` OpenAI core para usar `gpt-5.2` como modelo padrão. Foram atualizados `openai.model`, o fallback `OPENAI_MODEL` nos docker-compose do worker e a documentação do README, mantendo a possibilidade de sobrescrita por variável de ambiente para preservar controle operacional por ambiente.
+
+## 2026-05-30 — Correção de placeholders mustache em prompts GeraLanding
+- tarefa: corrigir a substituição de campos em prompts do GeraLanding quando o usuário usa tokens no formato `{{prompt-*}}` e `{{dados-*}}`, como `{{prompt-regras-globais}}`, `{{dados-campaignAngle}}`, `{{dados-adCopy}}` e `{{dados-adImageBriefing}}`.
+- causa-raiz: a resolução antiga aceitava `{prompt-*}` e `{dados-*}` com uma chave normalizada, mas no formato mustache tratava todo conteúdo como chave direta do payload; por isso `{{prompt-regras-globais}}` e `{{dados-campaignAngle}}` eram buscados literalmente no mapa de dados e ficavam vazios.
+- correção aplicada:
+  - o resolver mustache passou a reconhecer os prefixos `prompt-` e `dados-`;
+  - `{{prompt-*}}` agora carrega prompts base recursivamente com proteção contra referência circular;
+  - `{{dados-*}}` agora remove o prefixo antes de buscar o campo real do payload;
+  - adicionado prompt de teste reproduzindo exatamente o padrão reportado e teste unitário garantindo a substituição dos três artefatos de campanha.
+- impacto esperado: prompts configurados com chaves mustache passam a montar corretamente as regras globais e os artefatos `campaignAngle`, `adCopy` e `adImageBriefing` antes do envio para o modelo.

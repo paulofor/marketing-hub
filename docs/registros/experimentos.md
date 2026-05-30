@@ -2626,3 +2626,13 @@
   - mantida compatibilidade com placeholders diretos existentes, como `{{NICHE_NAME}}` e `${NICHE_NAME}`.
   - criado teste unitário no pacote comum cobrindo exatamente o formato informado pelo usuário.
 - impacto esperado: os prompts publicados para a OpenAI deixam de conter placeholders não resolvidos nesses campos críticos, preservando o eixo Dor → Resultado → Mecanismo → Prova → Oferta no fluxo de geração de landing page.
+
+## 2026-05-30 — Simplificação do schema wireframe para usar apenas corpo
+- tarefa: ajustar o contrato da etapa `landing-page-wireframe` para eliminar a duplicidade entre `pagina.body` e `pagina.corpo` na resposta do modelo.
+- causa-raiz: o schema permitia dois campos conceitualmente sobrepostos (`body` e `corpo`) dentro de `pagina`, o que tornava a resposta exibida na tela confusa e aumentava o risco de divergência no contrato estruturado.
+- correção aplicada:
+  - removido `pagina.body` do schema de wireframe;
+  - movidas as classes globais do elemento HTML `<body>` para `pagina.corpo.estilos`, mantendo apenas `head` e `corpo` dentro de `pagina`;
+  - atualizado o prompt da etapa para proibir `pagina.body` e orientar o modelo a responder somente com `pagina.corpo.estilos`;
+  - adicionada validação unitária garantindo que o schema não reintroduza `pagina.body` e mantenha `corpo.estilos` como campo obrigatório.
+- impacto esperado: novas respostas do wireframe deixam de exibir `body` e `corpo` simultaneamente, preservando um contrato mais simples, objetivo e aderente à tela operacional.

@@ -121,5 +121,12 @@ Criei uma excpetion para esse service
 > front-end
 > provosiorios
 
+(29-05-2026)
 
+Aconteceu algo bem interessante, depois de passar uns 3 dias trabalhando em uma arquitetura nova para o worker ai fui pedir ajuda ao chatgpt 5.5. Pedi para acessar e fazer o diagrama como vinha fazendo sempre. No entanto depois pedi para sugerir melhorias, aí que veio a surpresa ele fez uma arquitetura completamente diferente e aparentemente melhor.
+Se eu tentasse criar no começo eu não conseguiria, não tinha como imaginar uma série de coisas.
+
+Assim como no caso daquele programa que eu fiz e ele melhorou aconteceu algo parecido. Ele funciona muito bem para melhora algo que já existe.
+
+Fico pensando como fazer isso no âmbito de venda de produtos, tenho que mandar muitos dados para ele de execução anteriores.
 

@@ -71,6 +71,7 @@ class BackendWireframeControllerTest {
         BackendWireframeController controller = new BackendWireframeController(executionService);
         RecebePromptRequest payload = new RecebePromptRequest(
                 "Prompt para IA",
+                "# Prompt markdown bruto",
                 "{\"type\":\"object\"}",
                 "{\"model\":\"gpt-test\"}",
                 "openai-job-1");
@@ -80,11 +81,13 @@ class BackendWireframeControllerTest {
         assertEquals(202, response.getStatusCode().value());
         assertEquals("Prompt para IA", payload.prompt());
         assertEquals("openai-job-1", payload.jobidopenai());
+        assertEquals("# Prompt markdown bruto", payload.promptMarkdownContent());
         assertEquals("{\"type\":\"object\"}", payload.schemaJson());
         assertEquals("{\"model\":\"gpt-test\"}", payload.requestBodyJson());
         verify(executionService).markWaitingOpenAiDispatch(
                 "job-ia-1",
                 "Prompt para IA",
+                "# Prompt markdown bruto",
                 "{\"type\":\"object\"}",
                 "{\"model\":\"gpt-test\"}",
                 "openai-job-1");

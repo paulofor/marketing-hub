@@ -66,6 +66,7 @@ class WireframeBackendClientTest {
                 "Prompt renderizado",
                 "{\"type\":\"object\"}",
                 "{\"model\":\"gpt-test\",\"input\":\"Prompt renderizado\"}",
+                "# Prompt markdown bruto",
                 Instant.parse("2026-05-29T10:01:00Z"));
 
         client.markDispatched(execution, dispatch);
@@ -77,6 +78,7 @@ class WireframeBackendClientTest {
         Map<String, Object> payload = objectMapper.readValue(request.getBody().readUtf8(), new TypeReference<>() {});
         assertThat(payload)
                 .containsEntry("prompt", "Prompt renderizado")
+                .containsEntry("promptMarkdownContent", "# Prompt markdown bruto")
                 .containsEntry("schemaJson", "{\"type\":\"object\"}")
                 .containsEntry("requestBodyJson", "{\"model\":\"gpt-test\",\"input\":\"Prompt renderizado\"}")
                 .containsEntry("jobidopenai", "openai-job-1");

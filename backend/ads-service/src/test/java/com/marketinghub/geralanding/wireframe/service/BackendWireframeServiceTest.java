@@ -161,11 +161,13 @@ class BackendWireframeServiceTest {
         service.markWaitingOpenAiDispatch(
                 "job-ia-1",
                 "Prompt para IA",
+                "# Prompt markdown bruto",
                 "{\"type\":\"object\"}",
                 "{\"model\":\"gpt-test\"}",
                 "openai-job-1");
 
         assertEquals("Prompt para IA", execution.getPrompt());
+        assertEquals("# Prompt markdown bruto", execution.getPromptMarkdownContent());
         assertEquals("{\"type\":\"object\"}", execution.getSchemaJson());
         assertEquals("{\"model\":\"gpt-test\"}", execution.getOpenAiRequestBody());
         assertEquals("openai-job-1", execution.getOpenAiJobId());

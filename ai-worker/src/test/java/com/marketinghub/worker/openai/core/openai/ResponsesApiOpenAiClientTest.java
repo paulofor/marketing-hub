@@ -75,6 +75,7 @@ class ResponsesApiOpenAiClientTest {
                 requestBodyJson,
                 "schema-wireframe",
                 "{\"type\":\"object\"}",
+                "# Prompt markdown bruto",
                 Map.of("idJob", "job-123"));
 
         Throwable thrown = catchThrowable(() -> client.dispatch(request));

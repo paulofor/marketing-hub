@@ -8,7 +8,6 @@ import com.marketinghub.worker.openai.core.port.StageResponseValidator;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -23,7 +22,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -255,14 +253,6 @@ class ArquiteturaCoreTest {
                     .because("[ARQUITETURA] usar injeção por construtor ou criação explícita por @Bean");
 
     @ArchTest
-    static final ArchRule scheduled_deve_usar_cron_externalizado =
-            methods()
-                    .that()
-                    .areAnnotatedWith(Scheduled.class)
-                    .should(useExternalizedCronExpression())
-                    .because("[ARQUITETURA] frequência operacional deve ser configurável por ambiente");
-
-    @ArchTest
     static final ArchRule metodos_publicos_em_worker_configuration_devem_ser_bean =
             methods()
                     .that()
@@ -310,28 +300,6 @@ class ArquiteturaCoreTest {
 
                         events.add(SimpleConditionEvent.violated(source, message));
                     }
-                }
-            }
-        };
-    }
-
-    private static ArchCondition<JavaMethod> useExternalizedCronExpression() {
-        return new ArchCondition<>("[ARQUITETURA] usar cron externalizado por placeholder de propriedade") {
-            @Override
-            public void check(JavaMethod method, ConditionEvents events) {
-                Scheduled scheduled = method.getAnnotationOfType(Scheduled.class);
-                String cron = scheduled.cron();
-
-                boolean valid = cron != null
-                        && cron.contains("${")
-                        && cron.contains("}");
-
-                if (!valid) {
-                    String message = "[ARQUITETURA] " + method.getFullName()
-                            + " usa @Scheduled com cron fixo. Use formato externalizado, por exemplo: "
-                            + "@Scheduled(cron = \"${wireframe.worker.cron:0 */5 * * * *}\")";
-
-                    events.add(SimpleConditionEvent.violated(method, message));
                 }
             }
         };

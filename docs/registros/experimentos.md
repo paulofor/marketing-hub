@@ -2526,3 +2526,12 @@
 - Testes previstos/atualizados:
   - backend: validação do controller e da persistência das três informações;
   - ai-worker: validação do payload HTTP enviado pelo core para o endpoint `recebe-prompt`.
+
+## 2026-05-29 23:20:28 UTC-3
+- solicitação para desligar todos os schedulers do Worker AI no pacote `geralanding.*`.
+- raciocínio aplicado: remover a anotação `@Scheduled` apenas das classes de monitoramento das etapas GeraLanding, preservando os métodos `run()` para eventual execução manual e sem afetar schedulers de outros domínios do Worker AI.
+- foi feito: os agendamentos automáticos das etapas copy, image-planning, design-preset e deliverables foram desativados por remoção das anotações Spring Scheduling e dos imports correspondentes.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md

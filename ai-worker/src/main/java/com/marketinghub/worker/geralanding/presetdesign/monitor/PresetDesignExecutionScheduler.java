@@ -1,14 +1,11 @@
 package com.marketinghub.worker.geralanding.presetdesign.monitor;
 
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Agenda o processamento de jobs pendentes da etapa design-preset. */
+/** Mantém desligado o agendamento automático de jobs pendentes da etapa design-preset. */
 @Component
 public class PresetDesignExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(PresetDesignExecutionScheduler.class);
@@ -17,6 +14,7 @@ public class PresetDesignExecutionScheduler {
     private final PresetDesignPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
+    /** Configura as dependências da etapa design-preset mantendo limite mínimo de um job. */
     public PresetDesignExecutionScheduler(PresetDesignExecutionProcessor processor,
                                           PresetDesignPendingJobsService pendingJobsService,
                                           @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
@@ -25,8 +23,7 @@ public class PresetDesignExecutionScheduler {
         this.pendingLimit = Math.max(1, pendingLimit);
     }
 
-    /** Executa o ciclo da etapa design-preset consultando apenas o endpoint específico da etapa. */
-    @Scheduled(cron = "30 */1 * * * *")
+    /** Executa manualmente o ciclo da etapa design-preset consultando apenas o endpoint específico da etapa. */
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {

@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.web.reactive.function.client.WebClient;
 
+/** Responsabilidade: executar chamadas síncronas para a OpenAI Responses API no core OpenAI. */
 public class ResponsesApiOpenAiClient implements OpenAiClientPort {
 
     private final WebClient webClient;
@@ -24,6 +25,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
     private final OpenAiCostEstimator costEstimator;
     private final Map<String, OpenAiResult<String>> resultCache = new ConcurrentHashMap<>();
 
+    /** Inicializa o cliente com WebClient, ObjectMapper, propriedades e estimador de custo. */
     public ResponsesApiOpenAiClient(
             WebClient.Builder builder,
             ObjectMapper objectMapper,
@@ -42,6 +44,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                 .build();
     }
 
+    /** Envia o request cru para a OpenAI e devolve os dados de despacho para auditoria no backend. */
     @Override
     public OpenAiDispatch dispatch(OpenAiRequest request) {
         try {
@@ -81,6 +84,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
             return new OpenAiDispatch(
                     openAiJobId,
                     request.prompt(),
+                    request.schemaJson(),
                     request.requestBodyJson(),
                     Instant.now()
             );
@@ -89,6 +93,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         }
     }
 
+    /** Recupera a resposta bruta da OpenAI armazenada localmente após o despacho síncrono. */
     @Override
     public OpenAiResult<String> awaitResult(OpenAiDispatch dispatch) {
         if (dispatch.openAiJobId() == null) {
@@ -104,6 +109,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         return result;
     }
 
+    /** Extrai o texto principal da resposta retornada pela OpenAI. */
     private String extractModelResponse(Map<String, Object> raw) {
         Object outputText = raw.get("output_text");
         if (outputText != null && !outputText.toString().isBlank()) {
@@ -138,6 +144,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         throw new StageWorkerException("Could not extract model response text from OpenAI response");
     }
 
+    /** Extrai um número inteiro de uma chave filha dentro de uma chave pai na resposta da OpenAI. */
     private Integer extractInteger(Map<String, Object> raw, String parentKey, String childKey) {
         Object parent = raw.get(parentKey);
         if (!(parent instanceof Map<?, ?> map)) {
@@ -156,6 +163,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         return null;
     }
 
+    /** Converte valores recebidos da OpenAI para texto quando presentes. */
     private String stringValue(Object value) {
         return value != null ? value.toString() : null;
     }

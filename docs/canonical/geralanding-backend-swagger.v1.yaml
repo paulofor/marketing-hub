@@ -272,18 +272,28 @@ components:
     RecebePromptRequest:
       type: object
       additionalProperties: false
-      description: Payload do prompt enviado para IA pelo Worker AI.
+      description: Payload com prompt, schema e request cru enviados para IA pelo Worker AI.
       properties:
         prompt:
           type: string
           minLength: 1
           description: Prompt final enviado ao provedor de IA.
+        schemaJson:
+          type: string
+          minLength: 1
+          description: Schema JSON usado para restringir a resposta da OpenAI.
+        requestBodyJson:
+          type: string
+          minLength: 1
+          description: Request cru completo enviado para a OpenAI Responses API.
         jobidopenai:
           type: string
           minLength: 1
           description: Identificador do job aberto na OpenAI para rastreabilidade.
       required:
         - prompt
+        - schemaJson
+        - requestBodyJson
         - jobidopenai
     RecebeRespostaRequest:
       type: object

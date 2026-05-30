@@ -2513,3 +2513,16 @@
   - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeWorkerProperties.java
   - ai-worker/src/main/java/com/marketinghub/worker/geralanding/wireframe/request/MontaRequest.java
   - ai-worker/src/main/resources/application.properties
+
+## 2026-05-29 — Recebe-prompt persiste prompt, schema e request cru
+
+- Solicitação: enviar para o endpoint interno `recebe-prompt` da etapa wireframe as três variáveis geradas no Worker AI core: `prompt`, `schemaJson` e `requestBodyJson`.
+- Causa-raiz: o Worker AI core já montava as três informações antes do despacho para a OpenAI, mas o callback `recebe-prompt` enviava ao backend apenas `prompt` e `jobidopenai`; no backend, `openai_request_body` era preenchido indevidamente com o mesmo conteúdo do prompt e `schema_json` não era atualizado nesse fluxo.
+- Correção aplicada:
+  - o despacho do core OpenAI passou a carregar `schemaJson` junto com `prompt` e `requestBodyJson`;
+  - `WireframeBackendClient.markDispatched(...)` passou a enviar `prompt`, `schemaJson`, `requestBodyJson` e `jobidopenai` para `/recebe-prompt`;
+  - `RecebePromptRequest` da etapa wireframe passou a receber os três campos obrigatórios;
+  - `BackendWireframeService.markWaitingOpenAiDispatch(...)` passou a persistir `prompt`, `schema_json` e `openai_request_body` separadamente na tabela `gera_landing_stage_execution`.
+- Testes previstos/atualizados:
+  - backend: validação do controller e da persistência das três informações;
+  - ai-worker: validação do payload HTTP enviado pelo core para o endpoint `recebe-prompt`.

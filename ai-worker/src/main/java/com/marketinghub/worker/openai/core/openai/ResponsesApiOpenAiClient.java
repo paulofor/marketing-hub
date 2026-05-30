@@ -96,6 +96,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     request.prompt(),
                     request.schemaJson(),
                     request.requestBodyJson(),
+                    request.promptMarkdownContent(),
                     Instant.now()
             );
         } catch (WebClientResponseException error) {

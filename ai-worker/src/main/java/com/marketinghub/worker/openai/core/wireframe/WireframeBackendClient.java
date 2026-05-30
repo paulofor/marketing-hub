@@ -66,6 +66,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
     public void markDispatched(StageExecution<WireframeInput> execution, OpenAiDispatch dispatch) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("prompt", dispatch.prompt());
+        body.put("promptMarkdownContent", dispatch.promptMarkdownContent());
         body.put("schemaJson", dispatch.schemaJson());
         body.put("requestBodyJson", dispatch.requestBodyJson());
         body.put("jobidopenai", dispatch.openAiJobId());

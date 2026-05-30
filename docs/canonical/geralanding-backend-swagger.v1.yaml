@@ -278,6 +278,10 @@ components:
           type: string
           minLength: 1
           description: Prompt final enviado ao provedor de IA.
+        promptMarkdownContent:
+          type: string
+          nullable: true
+          description: Conteúdo bruto do arquivo markdown usado como base para montar o prompt.
         schemaJson:
           type: string
           minLength: 1

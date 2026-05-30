@@ -7,20 +7,23 @@ import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
 import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
+import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.springframework.core.io.ClassPathResource;
 
+/** Responsabilidade: montar o prompt, schema e request OpenAI da etapa wireframe. */
 public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput> {
 
     private final ObjectMapper objectMapper;
     private final OpenAiClientProperties openAiProperties;
     private final WireframeWorkerProperties wireframeProperties;
+    private final PromptTemplateResolver promptTemplateResolver;
 
+    /** Inicializa o builder com serializador, propriedades OpenAI e propriedades da etapa wireframe. */
     public WireframePromptBuilder(
             ObjectMapper objectMapper,
             OpenAiClientProperties openAiProperties,
@@ -29,13 +32,17 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         this.objectMapper = objectMapper;
         this.openAiProperties = openAiProperties;
         this.wireframeProperties = wireframeProperties;
+        this.promptTemplateResolver = new PromptTemplateResolver(this::loadResource, this::toJsonOrText);
     }
 
+    /** Monta o request completo da OpenAI mantendo o conteúdo bruto do markdown usado no prompt. */
     @Override
     public OpenAiRequest build(StageExecution<WireframeInput> execution) {
         Map<String, Object> data = execution.input().promptData();
 
-        String prompt = resolvePrompt(loadResource(wireframeProperties.promptResource()), data);
+        String promptResource = wireframeProperties.promptResource();
+        String promptMarkdownContent = loadResource(promptResource);
+        String prompt = promptTemplateResolver.resolve(promptMarkdownContent, data, promptResource);
         String schemaJson = loadResource(wireframeProperties.schemaResource());
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
 
@@ -45,6 +52,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
                 requestBodyJson,
                 wireframeProperties.schemaName(),
                 schemaJson,
+                promptMarkdownContent,
                 Map.of(
                         "stageCode", execution.stageCode(),
                         "idJob", execution.idJob(),
@@ -53,6 +61,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         );
     }
 
+    /** Serializa o corpo compatível com Responses API usando schema JSON estrito. */
     private String buildResponsesApiRequest(String prompt, String schemaJson) {
         try {
             Object schema = objectMapper.readValue(schemaJson, Object.class);
@@ -77,20 +86,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         }
     }
 
-    private String resolvePrompt(String template, Map<String, Object> data) {
-        String result = template;
-
-        for (Map.Entry<String, Object> entry : data.entrySet()) {
-            String key = entry.getKey();
-            String value = toJsonOrText(entry.getValue());
-
-            result = result.replace("{{" + key + "}}", value);
-            result = result.replace("${" + key + "}", value);
-        }
-
-        return result;
-    }
-
+    /** Converte valores de placeholder para texto ou JSON formatado antes da substituição. */
     private String toJsonOrText(Object value) {
         if (value == null) {
             return "";
@@ -107,6 +103,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         }
     }
 
+    /** Lê recursos do classpath usados como prompt markdown ou schema da etapa. */
     private String loadResource(String path) {
         try {
             return new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);

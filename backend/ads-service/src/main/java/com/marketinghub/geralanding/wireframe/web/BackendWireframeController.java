@@ -62,15 +62,17 @@ public class BackendWireframeController {
   public ResponseEntity<Void> recebePrompt(
       @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
     LOGGER.info(
-        "[GeraLanding][Wireframe] Recebido request enviado para IA idJob={} jobidopenai={} promptLength={} schemaLength={} requestBodyLength={}",
+        "[GeraLanding][Wireframe] Recebido request enviado para IA idJob={} jobidopenai={} promptLength={} promptMarkdownLength={} schemaLength={} requestBodyLength={}",
         idJob,
         payload.jobidopenai(),
         payload.prompt().length(),
+        payload.promptMarkdownContent() != null ? payload.promptMarkdownContent().length() : 0,
         payload.schemaJson().length(),
         payload.requestBodyJson().length());
     executionService.markWaitingOpenAiDispatch(
         idJob,
         payload.prompt(),
+        payload.promptMarkdownContent(),
         payload.schemaJson(),
         payload.requestBodyJson(),
         payload.jobidopenai());

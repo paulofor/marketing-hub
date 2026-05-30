@@ -111,6 +111,7 @@ public class BackendWireframeService {
     public void markWaitingOpenAiDispatch(
             String idJob,
             String prompt,
+            String promptMarkdownContent,
             String schemaJson,
             String requestBodyJson,
             String openAiJobId) {
@@ -121,6 +122,7 @@ public class BackendWireframeService {
                 ));
 
         execution.setPrompt(prompt);
+        execution.setPromptMarkdownContent(resolvePromptMarkdownContent(prompt, promptMarkdownContent));
         execution.setSchemaJson(schemaJson);
         execution.setOpenAiRequestBody(requestBodyJson);
         execution.setOpenAiJobId(openAiJobId);
@@ -128,6 +130,14 @@ public class BackendWireframeService {
         execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);
 
         executionRepository.save(execution);
+    }
+
+    /** Resolve o markdown bruto do prompt mantendo compatibilidade com clientes antigos que enviavam esse conteúdo em prompt. */
+    private String resolvePromptMarkdownContent(String prompt, String promptMarkdownContent) {
+        if (promptMarkdownContent != null && !promptMarkdownContent.isBlank()) {
+            return promptMarkdownContent;
+        }
+        return prompt;
     }
 
     /** Conclui ou falha a execução da etapa wireframe com a resposta devolvida pelo Worker AI. */

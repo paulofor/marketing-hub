@@ -9,6 +9,7 @@ public record OpenAiDispatch(
         String prompt,
         String schemaJson,
         String requestBodyJson,
+        String promptMarkdownContent,
         Instant dispatchedAt
 ) {
     /** Valida os campos obrigatórios e define o horário do despacho quando ausente. */
@@ -16,6 +17,7 @@ public record OpenAiDispatch(
         Objects.requireNonNull(prompt, "prompt must not be null");
         Objects.requireNonNull(schemaJson, "schemaJson must not be null");
         Objects.requireNonNull(requestBodyJson, "requestBodyJson must not be null");
+        Objects.requireNonNull(promptMarkdownContent, "promptMarkdownContent must not be null");
         dispatchedAt = dispatchedAt == null ? Instant.now() : dispatchedAt;
     }
 }

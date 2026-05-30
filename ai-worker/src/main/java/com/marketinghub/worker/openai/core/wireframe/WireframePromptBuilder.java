@@ -15,12 +15,14 @@ import java.util.Map;
 
 import org.springframework.core.io.ClassPathResource;
 
+/** Responsabilidade: montar o prompt, schema e request OpenAI da etapa wireframe. */
 public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput> {
 
     private final ObjectMapper objectMapper;
     private final OpenAiClientProperties openAiProperties;
     private final WireframeWorkerProperties wireframeProperties;
 
+    /** Inicializa o builder com serializador, propriedades OpenAI e propriedades da etapa wireframe. */
     public WireframePromptBuilder(
             ObjectMapper objectMapper,
             OpenAiClientProperties openAiProperties,
@@ -31,11 +33,13 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         this.wireframeProperties = wireframeProperties;
     }
 
+    /** Monta o request completo da OpenAI mantendo o conteúdo bruto do markdown usado no prompt. */
     @Override
     public OpenAiRequest build(StageExecution<WireframeInput> execution) {
         Map<String, Object> data = execution.input().promptData();
 
-        String prompt = resolvePrompt(loadResource(wireframeProperties.promptResource()), data);
+        String promptMarkdownContent = loadResource(wireframeProperties.promptResource());
+        String prompt = resolvePrompt(promptMarkdownContent, data);
         String schemaJson = loadResource(wireframeProperties.schemaResource());
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
 
@@ -45,6 +49,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
                 requestBodyJson,
                 wireframeProperties.schemaName(),
                 schemaJson,
+                promptMarkdownContent,
                 Map.of(
                         "stageCode", execution.stageCode(),
                         "idJob", execution.idJob(),
@@ -53,6 +58,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         );
     }
 
+    /** Serializa o corpo compatível com Responses API usando schema JSON estrito. */
     private String buildResponsesApiRequest(String prompt, String schemaJson) {
         try {
             Object schema = objectMapper.readValue(schemaJson, Object.class);
@@ -77,6 +83,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         }
     }
 
+    /** Aplica os dados do job nos placeholders do conteúdo markdown do prompt. */
     private String resolvePrompt(String template, Map<String, Object> data) {
         String result = template;
 
@@ -91,6 +98,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         return result;
     }
 
+    /** Converte valores de placeholder para texto ou JSON formatado antes da substituição. */
     private String toJsonOrText(Object value) {
         if (value == null) {
             return "";
@@ -107,6 +115,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         }
     }
 
+    /** Lê recursos do classpath usados como prompt markdown ou schema da etapa. */
     private String loadResource(String path) {
         try {
             return new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);

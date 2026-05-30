@@ -2595,3 +2595,13 @@
   - atualizado o comentário do método para refletir a nova cadência de 1 minuto.
 - impacto esperado: o Worker AI passa a buscar jobs pendentes de wireframe do OpenAI core a cada minuto, reduzindo espera operacional sem alterar contratos de backend ou payloads OpenAI.
 - 2026-05-30 (UTC): ajuste operacional no `ai-worker` OpenAI core para usar `gpt-5.2` como modelo padrão. Foram atualizados `openai.model`, o fallback `OPENAI_MODEL` nos docker-compose do worker e a documentação do README, mantendo a possibilidade de sobrescrita por variável de ambiente para preservar controle operacional por ambiente.
+
+## 2026-05-30 — Persistência do markdown bruto no OpenAI core wireframe
+- tarefa: ajustar o fluxo `openai.core` da etapa `landing-page-wireframe` para tratar o conteúdo lido do arquivo `.md` como `promptMarkdownContent` e persisti-lo no backend para rastreabilidade da tela de detalhe.
+- causa-raiz: o worker carregava o markdown do prompt, renderizava o texto final e enviava apenas o campo `prompt` no callback `recebe-prompt`; o contrato específico de wireframe no backend não recebia nem persistia `promptMarkdownContent`, deixando a seção “Conteúdo do arquivo .md usado no prompt” vazia.
+- correção aplicada:
+  - o `WireframePromptBuilder` passou a manter o markdown bruto em `promptMarkdownContent` antes de renderizar o `prompt` final.
+  - `OpenAiRequest` e `OpenAiDispatch` passaram a transportar `promptMarkdownContent` junto com o prompt renderizado, schema e request cru.
+  - o `WireframeBackendClient` passou a enviar `promptMarkdownContent` ao backend no callback `recebe-prompt`.
+  - o DTO, controller e serviço backend de wireframe passaram a receber e persistir `promptMarkdownContent`, com fallback para clientes antigos que ainda enviem o conteúdo apenas em `prompt`.
+- impacto esperado: novas execuções do wireframe OpenAI core passam a exibir o conteúdo do arquivo `.md` na tela de detalhe, sem perder o prompt renderizado usado na chamada à OpenAI.

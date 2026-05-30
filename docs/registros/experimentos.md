@@ -2578,3 +2578,11 @@
   - substituída a chamada incompatível por `.and(ARE_NOT_WORKER_CONFIGURATION)`, preservando a intenção da regra.
   - padronizadas mensagens de falha do `ArquiteturaCoreTest` com o prefixo obrigatório `[ARQUITETURA] `.
 - validação: `mvn test-compile -DskipTests` foi executado em `ai-worker`, mas não pôde chegar à compilação porque a dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` retornou `401 Unauthorized` no GitHub Packages neste ambiente.
+
+## 2026-05-30 — Remoção da exigência de cron externalizado no ArquiteturaCoreTest
+- tarefa: retirar dos testes de arquitetura do Worker AI a exigência de que métodos `@Scheduled` usem cron externalizado por placeholder de propriedade.
+- causa-raiz: a regra arquitetural `scheduled_deve_usar_cron_externalizado` conflita com o cânone atual de agendamento por etapa, que define cron explícito diretamente na anotação `@Scheduled`, sem variável intermediária.
+- correção aplicada:
+  - removida a regra ArchUnit `scheduled_deve_usar_cron_externalizado` de `ArquiteturaCoreTest`.
+  - removida a condição auxiliar `useExternalizedCronExpression()` e imports que só existiam para validar placeholder de cron.
+- impacto esperado: schedulers como `WireframeExecutionScheduler.run()` deixam de falhar no teste de arquitetura por usar cron fixo direto na anotação.

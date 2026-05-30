@@ -30,16 +30,16 @@ Dor: {{PAIN_JSON}}
 Resultado: {{RESULT_JSON}}
 
 
-{prompt-regras-globais}
+{{prompt-regras-globais}}
 
 Ângulo da Campanha que vai ser publicada:
-{dados-campaignAngle}
+{{dados-campaignAngle}}
 
 Copy do Anuncio:
-{dados-adCopy}
+{{dados-adCopy}}
 
 Briefing das Imagens dos Anuncios:
-{dados-adImageBriefing}
+{{dados-adImageBriefing}}
 
 
 template_id: landing-wireframe

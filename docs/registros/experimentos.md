@@ -2569,3 +2569,12 @@
   - ajustado `ResponsesApiOpenAiClient` para lançar `OpenAiHttpException` em falhas HTTP da Responses API.
   - adicionado teste garantindo que o callback `recebe-resposta` envia ao backend o trecho bruto de erro da OpenAI em `errorMessage`/`errorDetail`.
 - impacto esperado: o backend passa a receber o detalhe real do erro da OpenAI, incluindo `message`, `type`, `param` e `code`, e a etapa wireframe deixa de enviar schema com `allOf` incompatível.
+
+## 2026-05-30 — Correção de compilação em ArquiteturaCoreTest do Worker AI
+- tarefa: corrigir falha de compilação no `testCompile` do módulo `ai-worker` causada pela chamada inexistente `doNotHaveSimpleNameEndingWith` na DSL do ArchUnit usada pelo projeto.
+- causa-raiz: a regra arquitetural que bloqueia `@Component`, `@Service` e `@Configuration` em classes de etapa tentou usar um método não disponível em `ClassesThat` com ArchUnit 1.3.0.
+- correção aplicada:
+  - criado predicado explícito `ARE_NOT_WORKER_CONFIGURATION` para excluir classes cujo nome termina com `WorkerConfiguration`.
+  - substituída a chamada incompatível por `.and(ARE_NOT_WORKER_CONFIGURATION)`, preservando a intenção da regra.
+  - padronizadas mensagens de falha do `ArquiteturaCoreTest` com o prefixo obrigatório `[ARQUITETURA] `.
+- validação: `mvn test-compile -DskipTests` foi executado em `ai-worker`, mas não pôde chegar à compilação porque a dependência privada `com.marketinghub:ads-service:0.0.1-SNAPSHOT` retornou `401 Unauthorized` no GitHub Packages neste ambiente.

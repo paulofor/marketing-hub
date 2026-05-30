@@ -117,6 +117,31 @@ class GeraLandingServiceTest {
                 .contains("- experimentMetadata:");
     }
 
+
+    @Test
+    void deveResolverAliasesMustacheDePromptEDadosComHifen() throws Exception {
+        GeraLandingPromptContext context = new GeraLandingPromptContext(
+                10L,
+                "id-job-original",
+                "test-placeholder-mustache",
+                Map.of(
+                        "campaignAngle", Map.of("headline", "Ângulo de economia de esforço"),
+                        "adCopy", Map.of("headline", "Resultado claro", "ctaText", "Começar agora"),
+                        "adImageBriefing", Map.of("scene", "Pessoa vendo o resultado no celular")));
+
+        String prompt = service.montarPromptEtapa(context, "test-placeholder-mustache");
+
+        assertThat(prompt)
+                .contains("REGRAS GLOBAIS")
+                .contains("Ângulo de economia de esforço")
+                .contains("Resultado claro")
+                .contains("Pessoa vendo o resultado no celular")
+                .doesNotContain("{{prompt-regras-globais}}")
+                .doesNotContain("{{dados-campaignAngle}}")
+                .doesNotContain("{{dados-adCopy}}")
+                .doesNotContain("{{dados-adImageBriefing}}");
+    }
+
     @Test
     void deveRegistrarPromptMontadoComChaveDeRastreio() throws Exception {
         GeraLandingPromptContext context = novoContexto();

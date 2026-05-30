@@ -55,9 +55,18 @@ public final class MontaRequestSupport {
         }
     }
 
-    private static String resolverPlaceholders(String template, Map<String, Object> dadosPayload, ObjectMapper objectMapper) throws IOException {
+    /** Resolve placeholders simples e reprocessa o texto até não haver referências encadeadas. */
+    private static String resolverPlaceholders(String template, Map<String, Object> dadosPayload, ObjectMapper objectMapper)
+            throws IOException {
+        return resolverPlaceholders(template, dadosPayload, objectMapper, new LinkedHashSet<>());
+    }
+
+    /** Resolve placeholders preservando a pilha de prompts para bloquear referências circulares. */
+    private static String resolverPlaceholders(String template,
+                                               Map<String, Object> dadosPayload,
+                                               ObjectMapper objectMapper,
+                                               Set<String> stack) throws IOException {
         String resolved = template;
-        Set<String> stack = new LinkedHashSet<>();
         Deque<String> pending = new ArrayDeque<>();
         pending.push(template);
         while (!pending.isEmpty()) {
@@ -69,21 +78,11 @@ public final class MontaRequestSupport {
                 found = true;
                 String tipo = matcher.group(1);
                 String nome = matcher.group(2);
-                String replacement;
-                if ("prompt".equals(tipo)) {
-                    String token = tipo + ":" + nome;
-                    if (!stack.add(token)) {
-                        throw new IllegalStateException("Referência circular de prompts detectada: " + token);
-                    }
-                    replacement = resolverPlaceholders(carregarPromptBase(nome + ".md"), dadosPayload, objectMapper);
-                    stack.remove(token);
-                } else {
-                    replacement = renderPlaceholderValue(dadosPayload.get(nome), objectMapper);
-                }
+                String replacement = resolveTypedPlaceholder(tipo, nome, dadosPayload, objectMapper, stack);
                 matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
             }
             matcher.appendTail(buffer);
-            resolved = resolverMustachePlaceholders(buffer.toString(), dadosPayload, objectMapper);
+            resolved = resolverMustachePlaceholders(buffer.toString(), dadosPayload, objectMapper, stack);
             if (found) {
                 pending.push(resolved);
             }
@@ -91,17 +90,55 @@ public final class MontaRequestSupport {
         return resolved;
     }
 
-    private static String resolverMustachePlaceholders(String template, Map<String, Object> dadosPayload, ObjectMapper objectMapper)
+    /** Resolve placeholders no formato mustache, incluindo aliases {{prompt-*}} e {{dados-*}}. */
+    private static String resolverMustachePlaceholders(String template,
+                                                       Map<String, Object> dadosPayload,
+                                                       ObjectMapper objectMapper,
+                                                       Set<String> stack)
             throws IOException {
         Matcher matcher = MUSTACHE_PLACEHOLDER_PATTERN.matcher(template);
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
             String nome = matcher.group(1);
-            String replacement = renderPlaceholderValue(dadosPayload.get(nome), objectMapper);
+            String replacement = resolveMustachePlaceholder(nome, dadosPayload, objectMapper, stack);
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(buffer);
         return buffer.toString();
+    }
+
+    /** Resolve um placeholder mustache como dado direto ou como alias prefixado por prompt-/dados-. */
+    private static String resolveMustachePlaceholder(String nome,
+                                                     Map<String, Object> dadosPayload,
+                                                     ObjectMapper objectMapper,
+                                                     Set<String> stack) throws IOException {
+        if (nome != null && nome.startsWith("prompt-")) {
+            return resolveTypedPlaceholder("prompt", nome.substring("prompt-".length()), dadosPayload, objectMapper, stack);
+        }
+        if (nome != null && nome.startsWith("dados-")) {
+            return resolveTypedPlaceholder("dados", nome.substring("dados-".length()), dadosPayload, objectMapper, stack);
+        }
+        return renderPlaceholderValue(dadosPayload.get(nome), objectMapper);
+    }
+
+    /** Resolve o valor de um placeholder tipado, carregando prompts recursivos ou dados do payload. */
+    private static String resolveTypedPlaceholder(String tipo,
+                                                  String nome,
+                                                  Map<String, Object> dadosPayload,
+                                                  ObjectMapper objectMapper,
+                                                  Set<String> stack) throws IOException {
+        if ("prompt".equals(tipo)) {
+            String token = tipo + ":" + nome;
+            if (!stack.add(token)) {
+                throw new IllegalStateException("Referência circular de prompts detectada: " + token);
+            }
+            try {
+                return resolverPlaceholders(carregarPromptBase(nome + ".md"), dadosPayload, objectMapper, stack);
+            } finally {
+                stack.remove(token);
+            }
+        }
+        return renderPlaceholderValue(dadosPayload.get(nome), objectMapper);
     }
 
     private static String renderPlaceholderValue(Object dado, ObjectMapper objectMapper) throws JsonProcessingException {

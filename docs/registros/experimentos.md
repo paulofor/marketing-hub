@@ -2551,3 +2551,11 @@
   - em erro HTTP da Responses API, o log agora inclui `jobId`, schema, status, corpo de resposta da OpenAI e `requestBodyJson` enviado;
   - o executor legado/flex da etapa wireframe também passou a registrar o request final cru no envio e no log de falha HTTP.
 - Teste adicionado: validação unitária de que uma rejeição HTTP da OpenAI registra o request cru com o `jobId` do Marketing Hub.
+## 2026-05-29 23:20:28 UTC-3
+- solicitação para desligar todos os schedulers do Worker AI no pacote `geralanding.*`.
+- raciocínio aplicado: remover a anotação `@Scheduled` apenas das classes de monitoramento das etapas GeraLanding, preservando os métodos `run()` para eventual execução manual e sem afetar schedulers de outros domínios do Worker AI.
+- foi feito: os agendamentos automáticos das etapas copy, image-planning, design-preset e deliverables foram desativados por remoção das anotações Spring Scheduling e dos imports correspondentes.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md

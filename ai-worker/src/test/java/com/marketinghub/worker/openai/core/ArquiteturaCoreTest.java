@@ -90,6 +90,14 @@ class ArquiteturaCoreTest {
                 }
             };
 
+    private static final DescribedPredicate<JavaClass> ARE_NOT_WORKER_CONFIGURATION =
+            new DescribedPredicate<>("classes que não terminam com WorkerConfiguration") {
+                @Override
+                public boolean test(JavaClass input) {
+                    return !input.getSimpleName().endsWith("WorkerConfiguration");
+                }
+            };
+
     @ArchTest
     static final ArchRule core_generico_nao_deve_depender_de_frameworks =
             noClasses()
@@ -103,7 +111,7 @@ class ArquiteturaCoreTest {
                             "com.fasterxml.jackson..",
                             "reactor.."
                     )
-                    .because("o core genérico, ports, models e exceptions devem continuar independentes de frameworks");
+                    .because("[ARQUITETURA] o core genérico, ports, models e exceptions devem continuar independentes de frameworks");
 
     @ArchTest
     static final ArchRule core_generico_nao_deve_depender_de_etapas_concretas =
@@ -111,7 +119,7 @@ class ArquiteturaCoreTest {
                     .that(ARE_IN_CORE_ROOT_PACKAGE.or(ARE_IN_CORE_SUPPORT_PACKAGES))
                     .should()
                     .dependOnClassesThat(ARE_IN_STAGE_PACKAGE)
-                    .because("o core deve ser reutilizável e não pode conhecer wireframe, copy, designpreset ou etapas futuras");
+                    .because("[ARQUITETURA] o core deve ser reutilizável e não pode conhecer wireframe, copy, designpreset ou etapas futuras");
 
     @ArchTest
     static final ArchRule pacote_openai_nao_deve_depender_de_etapas_concretas =
@@ -120,14 +128,14 @@ class ArquiteturaCoreTest {
                     .resideInAPackage(BASE_PACKAGE + ".openai..")
                     .should()
                     .dependOnClassesThat(ARE_IN_STAGE_PACKAGE)
-                    .because("a integração OpenAI deve servir para todas as etapas, não apenas para uma etapa específica");
+                    .because("[ARQUITETURA] a integração OpenAI deve servir para todas as etapas, não apenas para uma etapa específica");
 
     @ArchTest
     static final ArchRule etapas_concretas_nao_devem_depender_de_outras_etapas =
             classes()
                     .that(ARE_IN_STAGE_PACKAGE)
                     .should(notDependOnOtherStagePackages())
-                    .because("cada etapa deve ser plugável e independente das demais");
+                    .because("[ARQUITETURA] cada etapa deve ser plugável e independente das demais");
 
     @ArchTest
     static final ArchRule pacotes_do_core_nao_devem_ter_ciclos =
@@ -144,7 +152,7 @@ class ArquiteturaCoreTest {
                     .haveSimpleNameEndingWith("BackendClient")
                     .should()
                     .beAssignableTo(StageBackendPort.class)
-                    .because("o acesso ao backend deve passar pelo port StageBackendPort");
+                    .because("[ARQUITETURA] o acesso ao backend deve passar pelo port StageBackendPort");
 
     @ArchTest
     static final ArchRule prompt_builder_da_etapa_deve_implementar_stage_prompt_builder =
@@ -154,7 +162,7 @@ class ArquiteturaCoreTest {
                     .haveSimpleNameEndingWith("PromptBuilder")
                     .should()
                     .beAssignableTo(StagePromptBuilder.class)
-                    .because("a montagem de prompt/request deve passar pelo port StagePromptBuilder");
+                    .because("[ARQUITETURA] a montagem de prompt/request deve passar pelo port StagePromptBuilder");
 
     @ArchTest
     static final ArchRule response_validator_da_etapa_deve_implementar_stage_response_validator =
@@ -164,7 +172,7 @@ class ArquiteturaCoreTest {
                     .haveSimpleNameEndingWith("ResponseValidator")
                     .should()
                     .beAssignableTo(StageResponseValidator.class)
-                    .because("a validação da resposta do modelo deve ser explícita por etapa");
+                    .because("[ARQUITETURA] a validação da resposta do modelo deve ser explícita por etapa");
 
     @ArchTest
     static final ArchRule response_handler_da_etapa_deve_implementar_stage_response_handler =
@@ -174,7 +182,7 @@ class ArquiteturaCoreTest {
                     .haveSimpleNameEndingWith("ResponseHandler")
                     .should()
                     .beAssignableTo(StageResponseHandler.class)
-                    .because("hooks de sucesso/falha devem seguir o port StageResponseHandler");
+                    .because("[ARQUITETURA] hooks de sucesso/falha devem seguir o port StageResponseHandler");
 
     @ArchTest
     static final ArchRule clients_openai_devem_implementar_openai_client_port =
@@ -185,7 +193,7 @@ class ArquiteturaCoreTest {
                     .haveSimpleNameEndingWith("OpenAiClient")
                     .should()
                     .beAssignableTo(OpenAiClientPort.class)
-                    .because("toda chamada OpenAI deve ser feita por trás do port OpenAiClientPort");
+                    .because("[ARQUITETURA] toda chamada OpenAI deve ser feita por trás do port OpenAiClientPort");
 
     @ArchTest
     static final ArchRule configuracoes_de_etapa_devem_ser_condicionais =
@@ -199,7 +207,7 @@ class ArquiteturaCoreTest {
                     .beAnnotatedWith(EnableConfigurationProperties.class)
                     .andShould()
                     .beAnnotatedWith(ConditionalOnProperty.class)
-                    .because("cada etapa deve subir somente quando <stage>.worker.enabled=true");
+                    .because("[ARQUITETURA] cada etapa deve subir somente quando <stage>.worker.enabled=true");
 
     @ArchTest
     static final ArchRule properties_de_etapa_devem_ser_tipadas_e_validadas =
@@ -211,21 +219,20 @@ class ArquiteturaCoreTest {
                     .beAnnotatedWith(ConfigurationProperties.class)
                     .andShould()
                     .beAnnotatedWith(Validated.class)
-                    .because("configuração da etapa deve ser tipada, validada e centralizada");
+                    .because("[ARQUITETURA] configuração da etapa deve ser tipada, validada e centralizada");
 
     @ArchTest
     static final ArchRule classes_de_etapa_nao_devem_usar_component_service_ou_configuration_fora_da_configuracao =
             noClasses()
                     .that(ARE_IN_STAGE_PACKAGE)
-                    .and()
-                    .doNotHaveSimpleNameEndingWith("WorkerConfiguration")
+                    .and(ARE_NOT_WORKER_CONFIGURATION)
                     .should()
                     .beAnnotatedWith(Component.class)
                     .orShould()
                     .beAnnotatedWith(Service.class)
                     .orShould()
                     .beAnnotatedWith(Configuration.class)
-                    .because("beans da etapa devem ser controlados pela configuração condicional da etapa");
+                    .because("[ARQUITETURA] beans da etapa devem ser controlados pela configuração condicional da etapa");
 
     @ArchTest
     static final ArchRule nao_usar_value_no_core_openai =
@@ -235,7 +242,7 @@ class ArquiteturaCoreTest {
                     .resideInAPackage(BASE_PACKAGE + "..")
                     .should()
                     .beAnnotatedWith(Value.class)
-                    .because("configuração deve ser tipada com @ConfigurationProperties, não espalhada com @Value");
+                    .because("[ARQUITETURA] configuração deve ser tipada com @ConfigurationProperties, não espalhada com @Value");
 
     @ArchTest
     static final ArchRule nao_usar_field_injection_no_core_openai =
@@ -245,7 +252,7 @@ class ArquiteturaCoreTest {
                     .resideInAPackage(BASE_PACKAGE + "..")
                     .should()
                     .beAnnotatedWith(Autowired.class)
-                    .because("usar injeção por construtor ou criação explícita por @Bean");
+                    .because("[ARQUITETURA] usar injeção por construtor ou criação explícita por @Bean");
 
     @ArchTest
     static final ArchRule scheduled_deve_usar_cron_externalizado =
@@ -253,7 +260,7 @@ class ArquiteturaCoreTest {
                     .that()
                     .areAnnotatedWith(Scheduled.class)
                     .should(useExternalizedCronExpression())
-                    .because("frequência operacional deve ser configurável por ambiente");
+                    .because("[ARQUITETURA] frequência operacional deve ser configurável por ambiente");
 
     @ArchTest
     static final ArchRule metodos_publicos_em_worker_configuration_devem_ser_bean =
@@ -265,7 +272,7 @@ class ArquiteturaCoreTest {
                     .haveSimpleNameEndingWith("WorkerConfiguration")
                     .should()
                     .beAnnotatedWith(Bean.class)
-                    .because("a configuração da etapa deve criar beans explicitamente");
+                    .because("[ARQUITETURA] a configuração da etapa deve criar beans explicitamente");
 
     @ArchTest
     static final ArchRule core_openai_nao_deve_depender_de_pacotes_legados_de_worker =
@@ -280,10 +287,10 @@ class ArquiteturaCoreTest {
                             "com.marketinghub.worker.geralanding.designpreset..",
                             "com.marketinghub.worker.geralanding.imageplanning.."
                     )
-                    .because("o novo core OpenAI deve substituir o acoplamento com implementações antigas");
+                    .because("[ARQUITETURA] o novo core OpenAI deve substituir o acoplamento com implementações antigas");
 
     private static ArchCondition<JavaClass> notDependOnOtherStagePackages() {
-        return new ArchCondition<>("não depender de outra etapa concreta") {
+        return new ArchCondition<>("[ARQUITETURA] não depender de outra etapa concreta") {
             @Override
             public void check(JavaClass source, ConditionEvents events) {
                 String sourceStage = stageNameOf(source);
@@ -297,7 +304,7 @@ class ArquiteturaCoreTest {
                     String targetStage = stageNameOf(target);
 
                     if (targetStage != null && !sourceStage.equals(targetStage)) {
-                        String message = source.getName()
+                        String message = "[ARQUITETURA] " + source.getName()
                                 + " pertence à etapa '" + sourceStage + "' mas depende da etapa '"
                                 + targetStage + "' via: " + dependency.getDescription();
 
@@ -309,7 +316,7 @@ class ArquiteturaCoreTest {
     }
 
     private static ArchCondition<JavaMethod> useExternalizedCronExpression() {
-        return new ArchCondition<>("usar cron externalizado por placeholder de propriedade") {
+        return new ArchCondition<>("[ARQUITETURA] usar cron externalizado por placeholder de propriedade") {
             @Override
             public void check(JavaMethod method, ConditionEvents events) {
                 Scheduled scheduled = method.getAnnotationOfType(Scheduled.class);
@@ -320,7 +327,7 @@ class ArquiteturaCoreTest {
                         && cron.contains("}");
 
                 if (!valid) {
-                    String message = method.getFullName()
+                    String message = "[ARQUITETURA] " + method.getFullName()
                             + " usa @Scheduled com cron fixo. Use formato externalizado, por exemplo: "
                             + "@Scheduled(cron = \"${wireframe.worker.cron:0 */5 * * * *}\")";
 

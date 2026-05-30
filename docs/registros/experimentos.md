@@ -2636,3 +2636,12 @@
   - atualizado o prompt da etapa para proibir `pagina.body` e orientar o modelo a responder somente com `pagina.corpo.estilos`;
   - adicionada validação unitária garantindo que o schema não reintroduza `pagina.body` e mantenha `corpo.estilos` como campo obrigatório.
 - impacto esperado: novas respostas do wireframe deixam de exibir `body` e `corpo` simultaneamente, preservando um contrato mais simples, objetivo e aderente à tela operacional.
+## 2026-05-30 — Fixação de Flex processing no OpenAI core
+- tarefa: fixar o envio das chamadas do `ai-worker` no módulo `openai.core` em modo Flex para a OpenAI Responses API.
+- causa-raiz: o `ResponsesApiOpenAiClient` enviava o `requestBodyJson` montado pela etapa sem acrescentar `service_tier=flex`, permitindo que a OpenAI processasse a requisição no tier padrão/automático, apesar da regra canônica do GeraLanding exigir Flex.
+- correção aplicada:
+  - o `ResponsesApiOpenAiClient` agora transforma o payload final antes do envio para `/responses`, sobrescrevendo qualquer valor anterior de `service_tier` para `flex`.
+  - o despacho auditável retornado ao backend também passa a carregar o `requestBodyJson` final com `service_tier=flex`.
+  - os logs de envio e falha HTTP passam a refletir o request final em modo Flex.
+  - adicionados testes unitários garantindo que o payload enviado à OpenAI e o despacho persistível ficam fixados em `service_tier=flex`, inclusive quando o request original vier com outro tier.
+- impacto esperado: todas as etapas atuais e futuras que usam o cliente comum `openai.core` passam a obedecer ao contrato de Flex processing sem depender de cada builder de etapa lembrar de acrescentar o campo manualmente.

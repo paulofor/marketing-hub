@@ -1,6 +1,7 @@
 package com.marketinghub.worker.openai.core.openai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
@@ -50,14 +51,20 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                 .build();
     }
 
-    /** Envia o request cru para a OpenAI e devolve os dados de despacho para auditoria no backend. */
+    /** Envia o request final em modo flex para a OpenAI e devolve os dados de despacho para auditoria no backend. */
     @Override
     public OpenAiDispatch dispatch(OpenAiRequest request) {
-        String requestBodyJson = request.requestBodyJson();
+        String originalRequestBodyJson = request.requestBodyJson();
         String marketingHubJobId = marketingHubJobId(request);
+        String requestBodyJson = originalRequestBodyJson;
         try {
-            Map<String, Object> requestBody = objectMapper.readValue(requestBodyJson, Map.class);
-            log.info("Enviando request cru para OpenAI Responses API [jobId={}, schemaName={}, requestBodyJson={}]", marketingHubJobId, request.schemaName(), requestBodyJson);
+            Map<String, Object> requestBody = buildFlexRequestBody(originalRequestBodyJson);
+            requestBodyJson = objectMapper.writeValueAsString(requestBody);
+            log.info(
+                    "Enviando request final em modo flex para OpenAI Responses API [jobId={}, schemaName={}, requestBodyJson={}]",
+                    marketingHubJobId,
+                    request.schemaName(),
+                    requestBodyJson);
 
             Map<String, Object> raw = webClient.post()
                     .uri("/responses")
@@ -95,7 +102,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     openAiJobId,
                     request.prompt(),
                     request.schemaJson(),
-                    request.requestBodyJson(),
+                    requestBodyJson,
                     request.promptMarkdownContent(),
                     Instant.now()
             );
@@ -110,8 +117,21 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     error);
             throw new OpenAiHttpException(error.getStatusCode().value(), error.getResponseBodyAsString(), error);
         } catch (JsonProcessingException error) {
+            log.error(
+                    "Falha ao preparar request JSON da OpenAI Responses API [jobId={}, schemaName={}, originalRequestBodyJson={}]",
+                    marketingHubJobId,
+                    request.schemaName(),
+                    originalRequestBodyJson,
+                    error);
             throw new StageWorkerException("Invalid OpenAI request JSON", error);
         }
+    }
+
+    /** Monta o payload final da Responses API fixando o processamento OpenAI em service_tier flex. */
+    private Map<String, Object> buildFlexRequestBody(String requestBodyJson) throws JsonProcessingException {
+        Map<String, Object> requestBody = objectMapper.readValue(requestBodyJson, new TypeReference<>() {});
+        requestBody.put("service_tier", "flex");
+        return requestBody;
     }
 
     /** Recupera o idJob do Marketing Hub a partir dos metadados do request para correlacionar logs operacionais. */

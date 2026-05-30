@@ -7,6 +7,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
@@ -51,9 +52,9 @@ class ResponsesApiOpenAiClientTest {
         server.shutdown();
     }
 
-    /** Deve registrar o request cru enviado à OpenAI quando a Responses API rejeitar a chamada com erro HTTP. */
+    /** Deve registrar o request final em modo flex quando a Responses API rejeitar a chamada com erro HTTP. */
     @Test
-    void dispatchShouldLogRawOpenAiRequestWhenHttpErrorHappens() {
+    void dispatchShouldLogFlexOpenAiRequestWhenHttpErrorHappens() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(400)
                 .setHeader("Content-Type", "application/json")
@@ -80,6 +81,13 @@ class ResponsesApiOpenAiClientTest {
 
         Throwable thrown = catchThrowable(() -> client.dispatch(request));
 
+        Map<String, Object> sentPayload = new ObjectMapper().readValue(
+                server.takeRequest().getBody().readUtf8(),
+                new TypeReference<>() {});
+        assertThat(sentPayload)
+                .containsEntry("model", "gpt-test")
+                .containsEntry("input", "Prompt")
+                .containsEntry("service_tier", "flex");
         assertThat(thrown).isInstanceOf(OpenAiHttpException.class);
         assertThat(thrown.getMessage())
                 .contains("OpenAI Responses API returned HTTP 400")
@@ -90,7 +98,61 @@ class ResponsesApiOpenAiClientTest {
                 .anySatisfy(message -> assertThat(message)
                         .contains("Falha HTTP na OpenAI Responses API")
                         .contains("jobId=job-123")
-                        .contains("requestBodyJson=" + requestBodyJson)
+                        .contains("\"service_tier\":\"flex\"")
                         .contains("Invalid schema"));
+    }
+
+    /** Deve fixar service_tier flex no payload enviado e no despacho auditável do core OpenAI. */
+    @Test
+    void dispatchShouldForceFlexServiceTierInOpenAiPayloadAndDispatch() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": "resp-test",
+                          "output": [
+                            {
+                              "type": "message",
+                              "content": [
+                                {"type": "output_text", "text": "{\\"ok\\":true}"}
+                              ]
+                            }
+                          ],
+                          "usage": {"input_tokens": 10, "output_tokens": 5}
+                        }
+                        """));
+        ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
+                WebClient.builder(),
+                new ObjectMapper(),
+                new OpenAiClientProperties(
+                        "test-key",
+                        server.url("/").toString(),
+                        "gpt-test",
+                        Duration.ofSeconds(5),
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO));
+        OpenAiRequest request = new OpenAiRequest(
+                "gpt-test",
+                "Prompt",
+                "{\"model\":\"gpt-test\",\"input\":\"Prompt\",\"service_tier\":\"default\"}",
+                "schema-wireframe",
+                "{\"type\":\"object\"}",
+                "# Prompt markdown bruto",
+                Map.of("idJob", "job-123"));
+
+        var dispatch = client.dispatch(request);
+
+        Map<String, Object> sentPayload = new ObjectMapper().readValue(
+                server.takeRequest().getBody().readUtf8(),
+                new TypeReference<>() {});
+        assertThat(sentPayload)
+                .containsEntry("model", "gpt-test")
+                .containsEntry("input", "Prompt")
+                .containsEntry("service_tier", "flex");
+        Map<String, Object> dispatchPayload = new ObjectMapper().readValue(
+                dispatch.requestBodyJson(),
+                new TypeReference<>() {});
+        assertThat(dispatchPayload).containsEntry("service_tier", "flex");
     }
 }

@@ -2626,3 +2626,13 @@
   - mantida compatibilidade com placeholders diretos existentes, como `{{NICHE_NAME}}` e `${NICHE_NAME}`.
   - criado teste unitário no pacote comum cobrindo exatamente o formato informado pelo usuário.
 - impacto esperado: os prompts publicados para a OpenAI deixam de conter placeholders não resolvidos nesses campos críticos, preservando o eixo Dor → Resultado → Mecanismo → Prova → Oferta no fluxo de geração de landing page.
+
+## 2026-05-30 — Fixação de Flex processing no OpenAI core
+- tarefa: fixar o envio das chamadas do `ai-worker` no módulo `openai.core` em modo Flex para a OpenAI Responses API.
+- causa-raiz: o `ResponsesApiOpenAiClient` enviava o `requestBodyJson` montado pela etapa sem acrescentar `service_tier=flex`, permitindo que a OpenAI processasse a requisição no tier padrão/automático, apesar da regra canônica do GeraLanding exigir Flex.
+- correção aplicada:
+  - o `ResponsesApiOpenAiClient` agora transforma o payload final antes do envio para `/responses`, sobrescrevendo qualquer valor anterior de `service_tier` para `flex`.
+  - o despacho auditável retornado ao backend também passa a carregar o `requestBodyJson` final com `service_tier=flex`.
+  - os logs de envio e falha HTTP passam a refletir o request final em modo Flex.
+  - adicionados testes unitários garantindo que o payload enviado à OpenAI e o despacho persistível ficam fixados em `service_tier=flex`, inclusive quando o request original vier com outro tier.
+- impacto esperado: todas as etapas atuais e futuras que usam o cliente comum `openai.core` passam a obedecer ao contrato de Flex processing sem depender de cada builder de etapa lembrar de acrescentar o campo manualmente.

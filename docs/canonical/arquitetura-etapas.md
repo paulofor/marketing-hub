@@ -150,13 +150,15 @@ Content-Type: application/json
 
 {
   "prompt": "...",
+  "schemaJson": "...",
+  "requestBodyJson": "...",
   "jobidopenai": "..."
 }
 ```
 
 O endpoint fica no `BackendWireframeController`, usa o método `recebePrompt` e recebe o payload com os
-campos obrigatórios `prompt` e `jobidopenai`, mantendo rastreabilidade contratual do prompt e do job
-aberto na OpenAI.
+campos obrigatórios `prompt`, `schemaJson`, `requestBodyJson` e `jobidopenai`, mantendo rastreabilidade
+contratual do prompt renderizado, do schema, do request cru enviado à OpenAI e do job aberto na OpenAI.
 
 Após receber a resposta da IA, o Worker AI deve chamar o callback interno inicial:
 

@@ -69,15 +69,26 @@ class BackendWireframeControllerTest {
     void recebePromptShouldMarkExecutionWaitingOpenAiDispatch(CapturedOutput output) {
         BackendWireframeService executionService = mock(BackendWireframeService.class);
         BackendWireframeController controller = new BackendWireframeController(executionService);
-        RecebePromptRequest payload = new RecebePromptRequest("Prompt para IA", "openai-job-1");
+        RecebePromptRequest payload = new RecebePromptRequest(
+                "Prompt para IA",
+                "{\"type\":\"object\"}",
+                "{\"model\":\"gpt-test\"}",
+                "openai-job-1");
 
         var response = controller.recebePrompt("job-ia-1", payload);
 
         assertEquals(202, response.getStatusCode().value());
         assertEquals("Prompt para IA", payload.prompt());
         assertEquals("openai-job-1", payload.jobidopenai());
-        verify(executionService).markWaitingOpenAiDispatch("job-ia-1", "Prompt para IA", "openai-job-1");
-        assertTrue(output.getOut().contains("prompt=Prompt para IA"));
+        assertEquals("{\"type\":\"object\"}", payload.schemaJson());
+        assertEquals("{\"model\":\"gpt-test\"}", payload.requestBodyJson());
+        verify(executionService).markWaitingOpenAiDispatch(
+                "job-ia-1",
+                "Prompt para IA",
+                "{\"type\":\"object\"}",
+                "{\"model\":\"gpt-test\"}",
+                "openai-job-1");
+        assertTrue(output.getOut().contains("requestBodyLength="));
     }
 
     /** Deve receber a resposta da IA e delegar a conclusão da execução wireframe. */

@@ -106,9 +106,14 @@ public class BackendWireframeService {
                 .toList();
     }
 
-    /** Marca a execução como aguardando retorno da OpenAI após receber o prompt despachado. */
+    /** Marca a execução como aguardando retorno da OpenAI após receber prompt, schema e request cru despachados. */
     @Transactional
-    public void markWaitingOpenAiDispatch(String idJob, String prompt, String openAiJobId) {
+    public void markWaitingOpenAiDispatch(
+            String idJob,
+            String prompt,
+            String schemaJson,
+            String requestBodyJson,
+            String openAiJobId) {
         GeraLandingStageExecution execution = executionRepository
                 .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -116,7 +121,8 @@ public class BackendWireframeService {
                 ));
 
         execution.setPrompt(prompt);
-        execution.setOpenAiRequestBody(prompt);
+        execution.setSchemaJson(schemaJson);
+        execution.setOpenAiRequestBody(requestBodyJson);
         execution.setOpenAiJobId(openAiJobId);
         execution.setProcessingStartedAt(Instant.now());
         execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);

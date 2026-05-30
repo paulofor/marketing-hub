@@ -14,6 +14,7 @@ import java.util.Map;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/** Responsabilidade: integrar a etapa wireframe do core OpenAI aos endpoints internos do backend. */
 public class WireframeBackendClient implements StageBackendPort<WireframeInput, WireframeOutput> {
 
     private static final String STATUS_STARTED = "INICIADO";
@@ -22,6 +23,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
     private final WireframeWorkerProperties properties;
     private final ObjectMapper objectMapper;
 
+    /** Inicializa o cliente com WebClient, propriedades de wireframe e ObjectMapper para normalizar artefatos. */
     public WireframeBackendClient(
             WebClient.Builder builder,
             WireframeWorkerProperties properties,
@@ -32,6 +34,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         this.objectMapper = objectMapper;
     }
 
+    /** Busca no backend os jobs de wireframe iniciados e aptos para processamento pela OpenAI. */
     @Override
     public List<StageExecution<WireframeInput>> listPending(int limit) {
         int effectiveLimit = Math.max(1, limit);
@@ -58,10 +61,13 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
                 .toList();
     }
 
+    /** Envia ao backend o prompt renderizado, o schema e o request cru despachados para a OpenAI. */
     @Override
     public void markDispatched(StageExecution<WireframeInput> execution, OpenAiDispatch dispatch) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("prompt", dispatch.prompt());
+        body.put("schemaJson", dispatch.schemaJson());
+        body.put("requestBodyJson", dispatch.requestBodyJson());
         body.put("jobidopenai", dispatch.openAiJobId());
 
         webClient.post()
@@ -72,6 +78,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
                 .block(properties.timeout());
     }
 
+    /** Envia ao backend a resposta validada da OpenAI para concluir a etapa wireframe. */
     @Override
     public void markCompleted(StageExecution<WireframeInput> execution, OpenAiResult<WireframeOutput> result) {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -93,6 +100,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
                 .block(properties.timeout());
     }
 
+    /** Envia ao backend os dados de falha quando a etapa wireframe não é concluída. */
     @Override
     public void markFailed(StageExecution<WireframeInput> execution, Throwable error) {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -114,6 +122,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
                 .block(properties.timeout());
     }
 
+    /** Converte o payload pendente do backend para o modelo interno de execução da etapa. */
     private StageExecution<WireframeInput> toStageExecution(Map<String, Object> item) {
         Long experimentId = asLong(item.get("experimentId"));
         String stageCode = asString(item.get("stageCode"));
@@ -136,6 +145,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         );
     }
 
+    /** Monta os dados do prompt com os artefatos e informações de framework disponíveis no backend. */
     private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> experiment = asMap(pending.get("experiment"));
         Map<String, Object> hypothesis = asMap(pending.get("hypothesis"));
@@ -154,6 +164,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return payload;
     }
 
+    /** Normaliza artefatos que podem chegar como JSON textual, objeto estruturado ou valor simples. */
     private Object normalizeJsonArtifact(Object value) {
         if (value instanceof String text) {
             return parseJsonField(text);
@@ -161,6 +172,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return value != null ? value : Map.of();
     }
 
+    /** Interpreta um campo textual JSON quando possível, preservando o texto original em caso de formato inválido. */
     private Object parseJsonField(String raw) {
         if (raw == null || raw.isBlank()) {
             return Map.of();
@@ -173,6 +185,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         }
     }
 
+    /** Extrai um mapa tipado quando o valor recebido é um objeto JSON. */
     private Map<String, Object> asMap(Object value) {
         if (value instanceof Map<?, ?> rawMap) {
             Map<String, Object> converted = new LinkedHashMap<>();
@@ -187,6 +200,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return Map.of();
     }
 
+    /** Converte um valor genérico para Long quando possível. */
     private Long asLong(Object value) {
         if (value instanceof Number number) {
             return number.longValue();
@@ -199,10 +213,12 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return null;
     }
 
+    /** Converte um valor genérico para texto preservando nulo quando ausente. */
     private String asString(Object value) {
         return value != null ? value.toString() : null;
     }
 
+    /** Converte um valor genérico para Instant quando possível. */
     private Instant asInstant(Object value) {
         if (value instanceof Instant instant) {
             return instant;
@@ -215,6 +231,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return null;
     }
 
+    /** Retorna o primeiro valor textual não vazio entre as opções informadas. */
     private String firstText(Object... values) {
         for (Object value : values) {
             if (value != null && !value.toString().isBlank()) {
@@ -224,6 +241,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return "";
     }
 
+    /** Monta a URL base dos endpoints internos de execução da etapa wireframe. */
     private String stageExecutionBaseUrl() {
         return joinPath(
                 properties.backendBaseUrl(),
@@ -232,6 +250,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         );
     }
 
+    /** Resume a stack trace em texto para envio controlado ao backend. */
     private String stackTraceSummary(Throwable error) {
         StringBuilder builder = new StringBuilder(error.toString());
         for (StackTraceElement element : error.getStackTrace()) {
@@ -243,6 +262,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return builder.toString();
     }
 
+    /** Junta partes de URL evitando barras duplicadas entre segmentos. */
     private String joinPath(String... parts) {
         StringBuilder builder = new StringBuilder();
         for (String part : parts) {
@@ -259,10 +279,12 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         return builder.toString();
     }
 
+    /** Remove a barra final de um segmento de URL quando presente. */
     private String stripTrailingSlash(String value) {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
+    /** Remove barras iniciais e finais de um segmento intermediário de URL. */
     private String stripSlashes(String value) {
         String result = value;
         while (result.startsWith("/")) {

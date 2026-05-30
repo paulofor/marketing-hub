@@ -2594,3 +2594,4 @@
   - atualizado o cron literal do método `run()` para `0 */1 * * * *`, mantendo a regra operacional de cron direto na anotação `@Scheduled`.
   - atualizado o comentário do método para refletir a nova cadência de 1 minuto.
 - impacto esperado: o Worker AI passa a buscar jobs pendentes de wireframe do OpenAI core a cada minuto, reduzindo espera operacional sem alterar contratos de backend ou payloads OpenAI.
+- 2026-05-30 (UTC): ajuste operacional no `ai-worker` OpenAI core para usar `gpt-5.2` como modelo padrão. Foram atualizados `openai.model`, o fallback `OPENAI_MODEL` nos docker-compose do worker e a documentação do README, mantendo a possibilidade de sobrescrita por variável de ambiente para preservar controle operacional por ambiente.

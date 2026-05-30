@@ -24,8 +24,8 @@ public class WireframeExecutionScheduler {
         this.properties = properties;
     }
 
-    /** Executa a cada cinco minutos o ciclo de processamento dos jobs pendentes de wireframe. */
-    @Scheduled(cron = "0 */5 * * * *")
+    /** Executa a cada um minuto o ciclo de processamento dos jobs pendentes de wireframe. */
+    @Scheduled(cron = "0 */1 * * * *")
     public void run() {
         ProcessingSummary summary = worker.processPending(properties.pendingLimit());
 

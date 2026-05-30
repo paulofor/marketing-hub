@@ -2587,4 +2587,11 @@
   - removida a condição auxiliar `useExternalizedCronExpression()` e imports que só existiam para validar placeholder de cron.
 - impacto esperado: schedulers como `WireframeExecutionScheduler.run()` deixam de falhar no teste de arquitetura por usar cron fixo direto na anotação.
 
+## 2026-05-30 — Ajuste do scheduler OpenAI core wireframe para 1 minuto
+- tarefa: alterar o scheduler do OpenAI core da etapa `landing-page-wireframe` de 5 minutos para 1 minuto.
+- causa-raiz: a cadência fixa em `WireframeExecutionScheduler` ainda estava configurada com cron `0 */5 * * * *`, atrasando o processamento de jobs pendentes de wireframe no fluxo GeraLanding.
+- correção aplicada:
+  - atualizado o cron literal do método `run()` para `0 */1 * * * *`, mantendo a regra operacional de cron direto na anotação `@Scheduled`.
+  - atualizado o comentário do método para refletir a nova cadência de 1 minuto.
+- impacto esperado: o Worker AI passa a buscar jobs pendentes de wireframe do OpenAI core a cada minuto, reduzindo espera operacional sem alterar contratos de backend ou payloads OpenAI.
 - 2026-05-30 (UTC): ajuste operacional no `ai-worker` OpenAI core para usar `gpt-5.2` como modelo padrão. Foram atualizados `openai.model`, o fallback `OPENAI_MODEL` nos docker-compose do worker e a documentação do README, mantendo a possibilidade de sobrescrita por variável de ambiente para preservar controle operacional por ambiente.

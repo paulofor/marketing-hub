@@ -2559,3 +2559,13 @@
   - AGENTS.md
   - ai-worker/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-05-30 — Correção de erro OpenAI no wireframe core
+- tarefa: corrigir falha na etapa `landing-page-wireframe` do worker em `openai.core` quando a OpenAI Responses API rejeita o schema estruturado.
+- causa-raiz: o schema `experiment_pipeline_landing_page_wireframe` continha `allOf` com condicionais `if/then/not`, recurso não aceito pelo subset de JSON Schema usado em Structured Outputs estrito; além disso, o erro HTTP bruto retornado pela OpenAI ficava encapsulado apenas como causa e não era enviado de forma visível ao backend.
+- correção aplicada:
+  - removido `allOf` do schema de wireframe para evitar rejeição imediata da OpenAI por `invalid_json_schema`.
+  - criado `OpenAiHttpException` para preservar `statusCode` e `responseBody` bruto da OpenAI.
+  - ajustado `ResponsesApiOpenAiClient` para lançar `OpenAiHttpException` em falhas HTTP da Responses API.
+  - adicionado teste garantindo que o callback `recebe-resposta` envia ao backend o trecho bruto de erro da OpenAI em `errorMessage`/`errorDetail`.
+- impacto esperado: o backend passa a receber o detalhe real do erro da OpenAI, incluindo `message`, `type`, `param` e `code`, e a etapa wireframe deixa de enviar schema com `allOf` incompatível.

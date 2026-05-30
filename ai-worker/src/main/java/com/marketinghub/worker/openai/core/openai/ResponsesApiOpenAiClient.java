@@ -2,6 +2,7 @@ package com.marketinghub.worker.openai.core.openai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
@@ -106,7 +107,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     error.getResponseBodyAsString(),
                     requestBodyJson,
                     error);
-            throw new StageWorkerException("OpenAI Responses API returned HTTP " + error.getStatusCode().value(), error);
+            throw new OpenAiHttpException(error.getStatusCode().value(), error.getResponseBodyAsString(), error);
         } catch (JsonProcessingException error) {
             throw new StageWorkerException("Invalid OpenAI request JSON", error);
         }

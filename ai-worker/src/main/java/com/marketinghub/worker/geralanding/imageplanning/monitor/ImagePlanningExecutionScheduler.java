@@ -1,14 +1,11 @@
 package com.marketinghub.worker.geralanding.imageplanning.monitor;
 
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Agenda o processamento de jobs pendentes da etapa image-planning. */
+/** Mantém desligado o agendamento automático de jobs pendentes da etapa image-planning. */
 @Component
 public class ImagePlanningExecutionScheduler {
     private static final Logger log = LoggerFactory.getLogger(ImagePlanningExecutionScheduler.class);
@@ -17,6 +14,7 @@ public class ImagePlanningExecutionScheduler {
     private final ImagePlanningPendingJobsService pendingJobsService;
     private final int pendingLimit;
 
+    /** Configura as dependências da etapa image-planning mantendo limite mínimo de um job. */
     public ImagePlanningExecutionScheduler(ImagePlanningExecutionProcessor processor,
                                            ImagePlanningPendingJobsService pendingJobsService,
                                            @Value("${geralanding.execution.pending-limit:20}") int pendingLimit) {
@@ -25,8 +23,7 @@ public class ImagePlanningExecutionScheduler {
         this.pendingLimit = Math.max(1, pendingLimit);
     }
 
-    /** Executa o ciclo da etapa image-planning consultando apenas o endpoint específico da etapa. */
-    @Scheduled(cron = "20 */1 * * * *")
+    /** Executa manualmente o ciclo da etapa image-planning consultando apenas o endpoint específico da etapa. */
     public void run() {
         long startedAt = System.currentTimeMillis();
         try {

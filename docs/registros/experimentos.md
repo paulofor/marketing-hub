@@ -2731,3 +2731,31 @@
   - reforçada a regra de hierarquia: títulos e CTAs devem ser mais curtos, enquanto textos explicativos podem ter faixas maiores, sempre com limite para não cansar o usuário no mobile;
   - sincronizado o cânone de arquitetura por etapa para registrar `tamMinimo` e `tamMaximo` como contrato contextual de espaço textual do wireframe.
 - impacto esperado: a etapa de wireframe passa a reservar espaços de copy mais coerentes com a tela, preservando escaneabilidade, avanço para CTA e clareza comercial da página.
+## 2026-05-31 — Estrutura backend image planning alinhada ao wireframe
+- tarefa: reorganizar a etapa backend `geralanding.imageplanning` para seguir a mesma estrutura operacional consolidada em `geralanding.wireframe`.
+- causa-raiz: a etapa de planejamento de imagens tinha controller/serviços mais enxutos e não expunha todos os contratos internos padronizados de fila, recebimento de prompt, despacho e recebimento de resposta usados pelo fluxo core do Worker AI.
+- correção aplicada:
+  - criado o serviço `BackendImagePlanningService` com start, listagem de execuções, pending interno, recebimento de prompt, recebimento de dispatch e conclusão/falha da resposta;
+  - separados DTOs em subpacotes por caso de uso (`pending`, `recebePrompt`, `recebeResposta`, `detailStageExecution`, `listStageExecutions`), espelhando a organização do wireframe;
+  - atualizado o controller de image planning para usar `/api` como raiz e expor endpoints internos `/internal/geralanding/image-prompts/stage-executions/...` compatíveis com o Worker AI;
+  - adicionados testes unitários de service e controller para validar start, pending, callbacks e persistência do artefato `landingPageImagePlanning`.
+- impacto esperado: a etapa `landing-page-image-planning` passa a ter rastreabilidade e isolamento equivalentes ao wireframe, reduzindo divergências operacionais entre módulos GeraLanding.
+## 2026-05-31 - Worker AI core OpenAI para image planning
+
+- solicitação: criar o módulo da etapa `imageplanning` dentro do Worker AI em `openai.core`, seguindo o padrão já usado pela etapa `wireframe`.
+- causa-raiz/objetivo: aproximar a etapa de planejamento de imagens do novo padrão plugável do core OpenAI (`StageWorker` + ports/adapters por etapa), mantendo isolamento arquitetural entre etapas e preparando a substituição do fluxo legado.
+- foi feito no `ai-worker`: criado o pacote `com.marketinghub.worker.openai.core.imageplanning` com `ImagePlanningBackendClient`, `ImagePlanningPromptBuilder`, `ImagePlanningResponseValidator`, `ImagePlanningResponseHandler`, `ImagePlanningExecutionScheduler`, `ImagePlanningWorkerConfiguration`, `ImagePlanningWorkerProperties`, `ImagePlanningInput` e `ImagePlanningOutput`.
+- o novo adapter usa os recursos canônicos `landing-page-image-planning.md` e `landing-page-image-planning-schema.json`, monta dados de prompt com `campaignAngle`, `adCopy`, `adImageBriefing`, `landingPageWireframe` e contexto de nicho/framework, e envia callbacks no padrão `recebe-prompt`/`recebe-resposta` para a rota interna de `image-prompts`.
+- configuração adicionada em `application.properties` sob `imageplanning.worker.*`, com defaults equivalentes às etapas `wireframe` e `copy`.
+- teste adicionado: `ImagePlanningBackendClientTest`, validando montagem de dados pendentes e payload do callback `recebe-prompt`.
+- validação executada: `mvn test -Dtest='ImagePlanningBackendClientTest,ArquiteturaCoreTest'` no `ai-worker`; o build não chegou a compilar por limitação de ambiente/autenticação ao resolver `com.marketinghub:ads-service:0.0.1-SNAPSHOT` no GitHub Packages (HTTP 401).
+
+## 2026-05-31 — Copy do GeraLanding restrita ao wireframe
+- tarefa: ajustar o prompt e o schema da etapa `landing-page-copy` para impedir criação de conteúdo fora da estrutura definida pelo wireframe.
+- causa-raiz: o contrato anterior obrigava campos como `faq`, `ctaBlocks`, `formMicrocopy`, `imageAccessibilityPlan`, `consistencyChecks` e metadados estratégicos, permitindo que a etapa copy inventasse blocos não definidos no wireframe.
+- correção aplicada:
+  - o schema da etapa copy agora aceita somente `bodySections`, com seções e itens textuais existentes no wireframe;
+  - o prompt foi reforçado para tratar o wireframe como única fonte de verdade estrutural e proibir FAQs, CTAs extras, planos de imagem, checks, notas e metadados não definidos como elementos textuais;
+  - adicionados testes de contrato garantindo que o schema expõe apenas `bodySections` e que o prompt bloqueia blocos extras;
+  - atualizado o JSON de exemplo da etapa copy para remover blocos fora do wireframe e manter somente `bodySections`.
+- impacto esperado: a etapa copy passa a preencher apenas os textos solicitados pelo wireframe, reduzindo divergência entre etapas e evitando contaminação do artefato final com conteúdo inventado.

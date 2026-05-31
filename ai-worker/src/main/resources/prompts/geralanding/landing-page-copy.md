@@ -42,6 +42,7 @@ Regra central de contrato:
 - O wireframe é a única fonte de verdade estrutural.
 - A etapa copy não decide estrutura, não adiciona seções, não adiciona blocos e não cria metadados.
 - A etapa copy apenas escreve o valor `texto` para ids textuais existentes no wireframe.
+- Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada texto deve ser claro em leitura rápida, reduzir carga cognitiva, evitar explicação longa sem necessidade e conduzir naturalmente para o próximo CTA ou próximo passo definido pelo wireframe.
 
 Elementos de contexto (usar apenas para escolher palavras, sem mudar a estrutura do wireframe):
 - `nicho`: define com quem a landing está falando.

@@ -2835,3 +2835,15 @@
 - impacto esperado: a etapa PresetDesign passa a operar no padrão novo do Worker AI core, com rastreabilidade uniforme e menos risco de duplicidade operacional, fortalecendo a criação de landing pages mais vendáveis e consistentes.
 - ajuste complementar: criado no backend o contrato interno da etapa `design-preset` com fila pending e callbacks `recebe-prompt`/`recebe-resposta`, para que o novo Worker AI core tenha endpoints reais equivalentes aos da etapa wireframe.
 - 2026-05-31 UTC — Reestruturada a etapa backend de preset design do GeraLanding para o pacote canônico `geralanding.presetdesign`, em paridade com `geralanding.wireframe`: controller `BackendPresetDesignController`, serviço `BackendPresetDesignService` e DTOs em subpacotes `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`, preservando os endpoints HTTP existentes de `design-preset`.
+
+## 2026-05-31 20:14:52 UTC-3
+- solicitação: no backend, acionar o assembler de HTML do módulo design preset após o callback de resposta do Worker AI, persistindo o HTML gerado em `html_geralanding`/`htmlGeraLanding`.
+- raciocínio: a etapa específica `landing-page-design-preset` já persistia o JSON canônico recebido do Worker AI, mas o novo serviço backend da etapa não consolidava automaticamente wireframe, copy, planejamento de imagem e preset em HTML final para uso pelo GeraLanding.
+- foi feito: `BackendPresetDesignService` passou a receber `DesignPresetProvisionalHtmlAssembler`, montar o HTML após salvar o design preset no experimento, persistir o resultado em `htmlGeraLanding` e registrar o mesmo HTML em `provisionalHtml` da execução; o teste unitário da etapa foi ajustado para cobrir essa montagem e persistência.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/presetdesign/service/BackendPresetDesignService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlAssembler.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/presetdesign/service/BackendPresetDesignServiceTest.java

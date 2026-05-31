@@ -126,6 +126,8 @@ enviar um request determinístico e rastreável para a OpenAI.
 
 Contrato de saída do wireframe: a raiz deve conter `definicoes` e `pagina`; dentro de `pagina`, são permitidos apenas `head` e `corpo` para a estrutura da página. As classes globais aplicadas ao elemento HTML `<body>` devem ser declaradas em `pagina.corpo.estilos`; o campo `pagina.body` é proibido para evitar duplicidade semântica entre `body` e `corpo` na resposta do modelo.
 
+Nos elementos de texto do wireframe, `texto.conteudo` permanece vazio nessa etapa, mas `tamMinimo` e `tamMaximo` devem ser tratados como contrato de espaço textual para a etapa posterior de copy. Esses limites não podem ser arbitrários: precisam seguir a função do texto no espaço da tela, a hierarquia visual e o esforço cognitivo do usuário no mobile. Títulos, chamadas, CTAs, bullets, badges e labels devem reservar faixas menores e escaneáveis; parágrafos, explicações de mecanismo, prova, FAQ e objeções podem reservar faixas maiores quando a função do bloco exigir contexto, sempre evitando parede de texto e preservando avanço para o CTA. O limite mínimo deve representar o menor texto ainda útil para cumprir a função comercial do elemento, e o limite máximo deve representar o maior texto que cabe sem quebrar clareza, hierarquia ou conversão.
+
 A etapa `landing-page-wireframe` expõe a fila interna pelo endpoint:
 
 ```http

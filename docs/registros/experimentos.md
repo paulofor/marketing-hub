@@ -2722,6 +2722,15 @@
   - incluídos exemplos de chamadas para start, pending, recebe-prompt e recebe-resposta.
 - impacto esperado: novas etapas backend do GeraLanding podem ser criadas com menos divergência de contrato, preservando rastreabilidade operacional e o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
 
+## 2026-05-31 — Critério contextual para tamanhos de copy no wireframe
+- tarefa: ajustar o prompt da etapa `landing-page-wireframe` para orientar melhor a definição de `tamMinimo` e `tamMaximo` dos textos planejados no wireframe.
+- causa-raiz: o prompt exigia os campos de tamanho da copy, mas não explicava que esses limites devem nascer da função comercial e visual do texto no espaço da tela; isso podia induzir faixas arbitrárias e inconsistentes entre títulos, CTAs, bullets e parágrafos explicativos.
+- correção aplicada:
+  - o prompt agora declara que os tamanhos mínimos e máximos são contrato de espaço textual para a etapa posterior de copy, não valores aleatórios;
+  - adicionadas orientações por função do elemento (`h1`, subtítulos, cards, botões, bullets, parágrafos, FAQ/prova/objeções e formulário);
+  - reforçada a regra de hierarquia: títulos e CTAs devem ser mais curtos, enquanto textos explicativos podem ter faixas maiores, sempre com limite para não cansar o usuário no mobile;
+  - sincronizado o cânone de arquitetura por etapa para registrar `tamMinimo` e `tamMaximo` como contrato contextual de espaço textual do wireframe.
+- impacto esperado: a etapa de wireframe passa a reservar espaços de copy mais coerentes com a tela, preservando escaneabilidade, avanço para CTA e clareza comercial da página.
 ## 2026-05-31 — Estrutura backend image planning alinhada ao wireframe
 - tarefa: reorganizar a etapa backend `geralanding.imageplanning` para seguir a mesma estrutura operacional consolidada em `geralanding.wireframe`.
 - causa-raiz: a etapa de planejamento de imagens tinha controller/serviços mais enxutos e não expunha todos os contratos internos padronizados de fila, recebimento de prompt, despacho e recebimento de resposta usados pelo fluxo core do Worker AI.

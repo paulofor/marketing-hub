@@ -15,6 +15,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -53,6 +54,8 @@ class ArquiteturaTest {
     private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
+    private static final List<String> REQUIRED_BACKEND_CONTROLLER_METHODS = List.of(
+            "start", "listStageExecutions", "pending", "recebePrompt", "recebeResposta", "detailStageExecution");
 
     @ArchTest
     static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -120,6 +123,13 @@ class ArquiteturaTest {
             .haveFullyQualifiedName("com.marketinghub.geralanding.wireframe.web.BackendWireframeController")
             .should(haveRecebePromptMethod())
             .because("[ARQUITETURA] [BACKEND][GeraLanding][Wireframe] BackendWireframeController deve expor recebePrompt(String idJob, RecebePromptRequest payload) para receber o prompt enviado à IA");
+
+    @ArchTest
+    static final ArchRule backendStageControllersMustExposeOnlyCanonicalMethodsAndDelegateToService =
+            classes().that().resideInAPackage("com.marketinghub.geralanding.*.web..")
+                    .and().haveNameMatching(".*\\.Backend[A-Za-z0-9]+Controller")
+                    .should(haveOnlyCanonicalControllerMethodsCallingService())
+                    .because("[ARQUITETURA] [BACKEND][GeraLanding] Backend<Etapa>Controller deve expor exatamente start, listStageExecutions, pending, recebePrompt, recebeResposta e detailStageExecution, sempre delegando ao Backend<Etapa>Service");
 
 
     /**
@@ -495,6 +505,84 @@ class ArquiteturaTest {
                 }
             }
         };
+    }
+
+    /**
+     * Garante que controllers backend tenham apenas os métodos públicos canônicos e deleguem ao service.
+     */
+    private static ArchCondition<JavaClass> haveOnlyCanonicalControllerMethodsCallingService() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][GeraLanding] Backend<Etapa>Controller exposes only canonical public methods and delegates to service") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                List<JavaMethod> publicMethods = item.getMethods().stream()
+                        .filter(method -> method.getOwner().equals(item))
+                        .filter(method -> Modifier.isPublic(method.reflect().getModifiers()))
+                        .filter(method -> !method.reflect().isSynthetic())
+                        .sorted(Comparator.comparing(JavaMethod::getName))
+                        .toList();
+                List<String> actualMethodNames = publicMethods.stream()
+                        .map(JavaMethod::getName)
+                        .toList();
+                REQUIRED_BACKEND_CONTROLLER_METHODS.stream()
+                        .filter(requiredMethod -> !actualMethodNames.contains(requiredMethod))
+                        .forEach(requiredMethod -> events.add(SimpleConditionEvent.violated(
+                                item,
+                                "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
+                                        + " deve declarar o método público obrigatório " + requiredMethod
+                                        + " e expor somente os métodos canônicos "
+                                        + REQUIRED_BACKEND_CONTROLLER_METHODS)));
+                actualMethodNames.stream()
+                        .filter(actualMethod -> !REQUIRED_BACKEND_CONTROLLER_METHODS.contains(actualMethod))
+                        .forEach(extraMethod -> events.add(SimpleConditionEvent.violated(
+                                item,
+                                "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
+                                        + " declara método público extra " + extraMethod
+                                        + "; controllers Backend<Etapa>Controller devem expor somente "
+                                        + REQUIRED_BACKEND_CONTROLLER_METHODS)));
+                REQUIRED_BACKEND_CONTROLLER_METHODS.forEach(requiredMethod -> {
+                    long occurrences = actualMethodNames.stream()
+                            .filter(requiredMethod::equals)
+                            .count();
+                    if (occurrences > 1) {
+                        events.add(SimpleConditionEvent.violated(
+                                item,
+                                "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
+                                        + " declara overload do método público " + requiredMethod
+                                        + "; cada método canônico deve existir exatamente uma vez"));
+                    }
+                });
+
+                String expectedServiceClassName = expectedBackendServiceClassName(item);
+                publicMethods.stream()
+                        .filter(method -> REQUIRED_BACKEND_CONTROLLER_METHODS.contains(method.getName()))
+                        .filter(method -> !callsExpectedBackendService(method, expectedServiceClassName))
+                        .forEach(method -> events.add(SimpleConditionEvent.violated(
+                                item,
+                                "[ARQUITETURA] [BACKEND][GeraLanding] classe=" + item.getName()
+                                        + " método=" + method.getName()
+                                        + " deve chamar o service canônico " + expectedServiceClassName
+                                        + " para manter o controller sem regra de negócio")));
+            }
+        };
+    }
+
+    /**
+     * Monta o nome totalmente qualificado do service canônico esperado para o controller da etapa.
+     */
+    private static String expectedBackendServiceClassName(JavaClass controllerClass) {
+        String stagePackage = extractGeraLandingStage(controllerClass.getPackageName());
+        Matcher matcher = BACKEND_CONTROLLER_NAME_PATTERN.matcher(controllerClass.getSimpleName());
+        String stageName = matcher.matches() ? matcher.group(1) : "";
+        return "com.marketinghub.geralanding." + stagePackage + ".service.Backend" + stageName + "Service";
+    }
+
+    /**
+     * Verifica se o método do controller realiza chamada direta ao service canônico da etapa.
+     */
+    private static boolean callsExpectedBackendService(JavaMethod method, String expectedServiceClassName) {
+        return method.getMethodCallsFromSelf().stream()
+                .anyMatch(call -> call.getTargetOwner().getName().equals(expectedServiceClassName));
     }
 
     /**

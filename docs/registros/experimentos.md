@@ -2685,3 +2685,14 @@
   - ajustado o cliente de copy para usar apenas o payload e DTO próprios do pacote `geralanding.copy`;
   - revisados os comentários de responsabilidade da classe e dos métodos alterados.
 - impacto esperado: o slice copy volta a cumprir a regra ArchUnit de independência entre `copy`, `imageplanning`, `presetdesign` e `deliverables`, reduzindo acoplamento e preservando a evolução isolada de cada etapa.
+
+## 2026-05-31 — Módulo OpenAI core para etapa copy do GeraLanding
+- tarefa: criar o módulo `openai.core.copy` no Worker AI seguindo o padrão operacional já usado pela etapa `openai.core.wireframe`.
+- causa-raiz: a etapa `landing-page-copy` ainda dependia do fluxo legado do GeraLanding e precisava migrar para o worker genérico do core OpenAI, com polling por etapa, montagem de prompt/schema, validação de resposta e callbacks auditáveis ao backend.
+- correção aplicada:
+  - criado o pacote `com.marketinghub.worker.openai.core.copy` com backend client, input/output, prompt builder, response validator, response handler, properties, configuration e scheduler próprios da etapa copy;
+  - configuradas propriedades `copy.worker.*` para habilitar o polling periódico da etapa e usar os recursos `landing-page-copy.md` e `landing-page-copy-schema.json`;
+  - o adapter copy passou a consumir `/api/internal/geralanding/copy/stage-executions/pending` e devolver prompt/resposta pelos endpoints específicos `/recebe-prompt` e `/recebe-resposta`;
+  - o payload de prompt da etapa copy inclui `landingPageWireframe` e `CASE_DATA_BLOCK` com dor, resultado, mecanismo, prova, oferta e artefatos estratégicos para preservar o eixo Dor → Resultado → Mecanismo → Prova → Oferta;
+  - o cliente OpenAI compartilhado do core agora é registrado apenas quando ainda não existir bean equivalente, permitindo wireframe e copy ativos ao mesmo tempo.
+- impacto esperado: novas execuções da etapa `landing-page-copy` podem ser processadas pelo padrão `openai.core`, mantendo isolamento por etapa, rastreabilidade do request enviado à OpenAI e aderência ao contrato da landing page.

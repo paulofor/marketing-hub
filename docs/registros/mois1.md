@@ -662,3 +662,14 @@ Arquivos alterados:
   - mois-hotmart-collector/AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-05-31 — Hotmart ciclo 1: alerta acionável para token JWT expirado
+
+- Corrigida a causa-raiz do ciclo 1 da Hotmart persistir `COLLECTION_EXECUTED` mesmo quando a API retornava `401 invalid_token` por JWT expirado.
+- O coletor agora classifica respostas `401/403`, `invalid_token`, `Expired JWT` e `BadJWTException` como falha acionável, persiste o job como `COLLECTION_ERROR` e grava mensagem explícita orientando o usuário a atualizar o token na tela Hotmart.
+- A tela `/hotmart` passou a destacar a ação necessária com alerta vermelho quando a última execução indicar erro de token Hotmart.
+
+Arquivos alterados:
+- `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorService.java`
+- `mois-hotmart-collector/src/test/java/com/marketinghub/moishotmart/service/HotmartCollectorServiceTest.java`
+- `frontend/src/pages/hotmart/HotmartPage.tsx`

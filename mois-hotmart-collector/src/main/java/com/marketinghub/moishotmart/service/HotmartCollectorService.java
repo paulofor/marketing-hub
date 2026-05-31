@@ -30,6 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Responsável por coletar produtos da Hotmart, diagnosticar falhas do token e persistir o estado operacional no backend MOIS.
+ */
 @Service
 public class HotmartCollectorService {
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorService.class);
@@ -86,10 +89,16 @@ public class HotmartCollectorService {
         this.defaultMarketTheme = defaultMarketTheme;
     }
 
+    /**
+     * Executa a coleta padrão delegando para o ciclo 1 de listagem.
+     */
     public HotmartCollectionResponse collect(HotmartCollectionRequest request) {
         return collectFirstCycle(request);
     }
 
+    /**
+     * Executa o ciclo 1 de listagem da Hotmart e marca erro acionável quando a API rejeita o JWT salvo.
+     */
     public HotmartCollectionResponse collectFirstCycle(HotmartCollectionRequest request) {
         int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), HOTMART_MAX_PRODUCTS_PER_RUN);
 
@@ -120,11 +129,21 @@ public class HotmartCollectorService {
         );
         logTokenDiagnostics(hotmartAccessToken);
 
+        StringBuilder apiFailureMessage = new StringBuilder();
+        boolean[] tokenUpdateRequired = new boolean[] {false};
         try (Playwright ignored = Playwright.create()) {
-            int apiCollected = collectProductsViaMarketApi(hotmartAccessToken, boundedMax, products);
+            int apiCollected = collectProductsViaMarketApi(hotmartAccessToken, boundedMax, products, apiFailureMessage, tokenUpdateRequired);
             log.info("Coleta API Hotmart finalizada. produtosColetadosViaApi={}", apiCollected);
-            status = "COLLECTION_EXECUTED";
-            message = "Coleta executada via API da Hotmart usando JWT salvo em configurações gerais.";
+            if (apiFailureMessage.isEmpty()) {
+                status = "COLLECTION_EXECUTED";
+                message = "Coleta executada via API da Hotmart usando JWT salvo em configurações gerais.";
+            } else {
+                status = "COLLECTION_ERROR";
+                message = apiFailureMessage.toString();
+                if (tokenUpdateRequired[0]) {
+                    log.warn("Hotmart ciclo 1 requer atualização do token JWT pelo usuário. mensagem={}", message);
+                }
+            }
         } catch (Exception ex) {
             status = "COLLECTION_ERROR";
             message = "Falha na coleta API: " + ex.getMessage();
@@ -134,6 +153,9 @@ public class HotmartCollectorService {
         return new HotmartCollectionResponse(status, message, products);
     }
 
+    /**
+     * Executa o ciclo 2 enriquecendo detalhes dos produtos já persistidos pelo ciclo 1.
+     */
     public HotmartCollectionResponse collectSecondCycleFromBackend(HotmartCollectionRequest request) {
         List<HotmartProductSnapshot> enrichedProducts = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
@@ -376,7 +398,40 @@ public class HotmartCollectorService {
         }
     }
 
-    private int collectProductsViaMarketApi(String accessToken, int boundedMax, List<HotmartProductSnapshot> products) {
+    /**
+     * Monta a mensagem operacional que será exibida ao usuário quando a Hotmart rejeitar a coleta.
+     */
+    static String buildHotmartApiFailureMessage(int statusCode, String body) {
+        if (isHotmartTokenUpdateRequired(statusCode, body)) {
+            return "Token JWT da Hotmart expirado ou inválido. Atualize o token na tela Hotmart para liberar o próximo ciclo de coleta.";
+        }
+        return "Falha na API da Hotmart durante a coleta. status=" + statusCode
+                + ". Revise o token JWT e tente novamente.";
+    }
+
+    /**
+     * Identifica respostas da Hotmart que exigem ação do usuário para renovar o JWT salvo.
+     */
+    static boolean isHotmartTokenUpdateRequired(int statusCode, String body) {
+        if (statusCode == 401 || statusCode == 403) {
+            return true;
+        }
+        String normalizedBody = body == null ? "" : body.toLowerCase(java.util.Locale.ROOT);
+        return normalizedBody.contains("invalid_token")
+                || normalizedBody.contains("expired jwt")
+                || normalizedBody.contains("badjwtexception");
+    }
+
+    /**
+     * Percorre a API de marketplace da Hotmart e devolve mensagem de falha quando uma página não pode ser coletada.
+     */
+    private int collectProductsViaMarketApi(
+            String accessToken,
+            int boundedMax,
+            List<HotmartProductSnapshot> products,
+            StringBuilder apiFailureMessage,
+            boolean[] tokenUpdateRequired
+    ) {
         try {
             int targetProducts = Math.min(boundedMax, HOTMART_MAX_PRODUCTS_PER_RUN);
             int page = 1;
@@ -413,6 +468,14 @@ public class HotmartCollectorService {
                         response.statusCode(),
                         truncateForLog(body, 10_000));
                 if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                    String userMessage = buildHotmartApiFailureMessage(response.statusCode(), body);
+                    apiFailureMessage.append(userMessage);
+                    tokenUpdateRequired[0] = isHotmartTokenUpdateRequired(response.statusCode(), body);
+                    log.warn("Hotmart ciclo 1 interrompido por falha da API. page={}, status={}, tokenUpdateRequired={}, mensagem={}",
+                            page,
+                            response.statusCode(),
+                            tokenUpdateRequired[0],
+                            userMessage);
                     break;
                 }
                 JsonNode data = objectMapper.readTree(body);
@@ -486,6 +549,9 @@ public class HotmartCollectorService {
                     targetProducts);
             return products.size();
         } catch (Exception ex) {
+            if (apiFailureMessage.isEmpty()) {
+                apiFailureMessage.append("Falha técnica na API da Hotmart durante a coleta. Revise o token JWT e tente novamente.");
+            }
             log.warn("Falha na coleta de produtos via API Hotmart.", ex);
             return 0;
         }

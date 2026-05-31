@@ -183,7 +183,7 @@ A interface de Experimentos deve manter abas/visões que permitam acompanhar, de
 
 1. Criar experimento na tela.
 2. Entrar no detalhe e executar etapas do pipeline inicial (`campaign angle` → `ad copy` → `ad image briefing`).
-3. Executar etapas do Gera Landing (`wireframe` → `copy` → `image planning` + geração de imagens → `design preset` → `landing html`).
+3. Executar etapas do Gera Landing (`wireframe` → `copy` → `image planning` → `image generation` → `design preset` → `landing html`).
 4. Gerar anúncios com IA.
 5. Aprovar anúncios.
 6. Ir para aba Landing, revisar/aprovar/publicar landing e confirmar URL final para campanha.
@@ -214,9 +214,10 @@ Este documento passa a ser a **única fonte canônica** para definição operaci
 
 1. `landing-page-wireframe`
 2. `landing-page-copy`
-3. `landing-page-image-planning` (+ geração de imagens)
-4. `landing-page-design-preset`
-5. `landing-page-deliverables`
+3. `landing-page-image-planning`
+4. `landing-page-image-generation`
+5. `landing-page-design-preset`
+6. `landing-page-deliverables`
 
 ### 15.2 Regra mandatória para HTML provisório da etapa preset design
 

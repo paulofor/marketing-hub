@@ -2794,3 +2794,13 @@
   - o schema JSON da etapa agora exige `landingPageImagePlanning.images[]`;
   - o prompt da etapa foi sincronizado para instruir a saída no mesmo caminho consumido pelo backend.
 - impacto esperado: novas execuções do Image Planning serão persistidas no formato já lido pelo Gera imagens, permitindo que o total planejado apareça corretamente antes e durante a geração real das imagens.
+
+## 2026-05-31 — Geração de imagens no padrão OpenAI core
+- tarefa: colocar a etapa real de geração de imagens do framework no mesmo formato operacional das demais etapas do `openai.core` no Worker AI.
+- causa-raiz/objetivo: o fluxo de `framework-image` ainda dependia de um scheduler/serviço legado próprio, diferente do padrão `StageWorker` + ports/adapters usado por `wireframe`, `copy` e `imageplanning`, dificultando rastreabilidade uniforme e evolução por etapa.
+- correção aplicada:
+  - criado o pacote `com.marketinghub.worker.openai.core.imagegeneration` com configuração, scheduler, backend adapter, prompt builder, cliente OpenAI Images API, validador e handler no formato do core;
+  - mantido o contrato de backend existente de `framework-image`, incluindo claim, estágios, upload em storage, otimização de imagem e conclusão/falha do job;
+  - o scheduler legado de `framework-image` passou a ficar desligado por padrão e disponível apenas por fallback explícito via `framework-image.legacy-scheduler.enabled`;
+  - adicionadas propriedades `imagegeneration.worker.*` para operar a etapa pelo padrão novo sem quebrar as chaves existentes de rollout e habilitação.
+- impacto esperado: a etapa **Gera imagens** passa a seguir o mesmo modelo operacional das outras etapas do Worker AI core, com logs de request/resposta OpenAI e payload ao backend, reduzindo divergência entre etapas e mantendo foco em gerar ativos visuais úteis para conversão.

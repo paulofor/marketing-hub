@@ -2685,3 +2685,12 @@
   - ajustado o cliente de copy para usar apenas o payload e DTO próprios do pacote `geralanding.copy`;
   - revisados os comentários de responsabilidade da classe e dos métodos alterados.
 - impacto esperado: o slice copy volta a cumprir a regra ArchUnit de independência entre `copy`, `imageplanning`, `presetdesign` e `deliverables`, reduzindo acoplamento e preservando a evolução isolada de cada etapa.
+
+## 2026-05-31 — Exemplo genérico de bloco backend GeraLanding
+- tarefa: criar em `/exemplos/bloco backend` uma referência genérica baseada no módulo backend `geralanding.wireframe`.
+- causa-raiz: a estrutura de wireframe já consolida o fluxo backend de etapa do GeraLanding, mas faltava um exemplo reaproveitável para orientar novas etapas sem copiar diretamente código de produção.
+- alteração aplicada:
+  - documentado o fluxo de controller, service, DTOs, estados e contratos HTTP esperados;
+  - adicionados templates genéricos de controller e service com comentários de responsabilidade e logs operacionais;
+  - incluídos exemplos de chamadas para start, pending, recebe-prompt e recebe-resposta.
+- impacto esperado: novas etapas backend do GeraLanding podem ser criadas com menos divergência de contrato, preservando rastreabilidade operacional e o eixo Dor → Resultado → Mecanismo → Prova → Oferta.

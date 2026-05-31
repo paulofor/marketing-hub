@@ -2645,3 +2645,12 @@
   - os logs de envio e falha HTTP passam a refletir o request final em modo Flex.
   - adicionados testes unitários garantindo que o payload enviado à OpenAI e o despacho persistível ficam fixados em `service_tier=flex`, inclusive quando o request original vier com outro tier.
 - impacto esperado: todas as etapas atuais e futuras que usam o cliente comum `openai.core` passam a obedecer ao contrato de Flex processing sem depender de cada builder de etapa lembrar de acrescentar o campo manualmente.
+
+## 2026-05-30 — Exclusividade de classes em `estilos` no wireframe
+- tarefa: ajustar a etapa `landing-page-wireframe` do OpenAI core para impedir que a resposta JSON repita classes em `estrutura`, `posicao`, `layout` e `mistas` dentro de seções da página.
+- causa-raiz: o schema ainda permitia campos categorizados de classes em `pagina.corpo.secoes[]`, enquanto o prompt também exigia esses campos; isso induzia a OpenAI a duplicar as mesmas classes nos grupos categorizados e novamente em `estilos[]`.
+- alteração aplicada:
+  - removidos `estrutura`, `posicao`, `layout` e `mistas` do contrato de cada seção no schema `landing-page-wireframe-schema.json`;
+  - atualizado o prompt `landing-page-wireframe.md` para declarar que classes aplicadas em `head`, `corpo`, seções e elementos internos devem ficar somente em `estilos[]`;
+  - registrada a regra canônica no governance canon para evitar reintrodução da duplicidade.
+- impacto esperado: novas respostas JSON da etapa wireframe exibem as definições canônicas somente em `definicoes` e aplicam nomes de classes somente via `estilos[]`, deixando a tela operacional mais simples e sem repetição.

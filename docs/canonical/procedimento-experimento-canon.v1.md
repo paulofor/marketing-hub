@@ -258,3 +258,9 @@ Critérios mínimos de bloqueio:
 
 Mensagem padrão recomendada: `IllegalStateException: Copy inválida: vazamento de metainstrução/texto técnico detectado em <campo>=<valor>`.
 
+### 15.6 Regra mandatória — pouco esforço na copy da landing
+
+A etapa `landing-page-copy` deve aplicar o princípio de pouco esforço em todos os campos textuais finais: o usuário não quer trabalhar para entender a comunicação da página. A copy deve ser clara em leitura rápida, respeitar os limites `tamMinimo`/`tamMaximo` definidos pelo wireframe, evitar explicações longas sem necessidade, não multiplicar escolhas de ação e conduzir naturalmente para o CTA ou próximo passo previsto na estrutura do wireframe.
+
+Essa regra não autoriza criar novos blocos, seções, FAQs, CTAs ou metadados: o wireframe permanece a única fonte de verdade estrutural, e o princípio de pouco esforço deve ser aplicado somente dentro dos textos que o wireframe já solicitou.
+

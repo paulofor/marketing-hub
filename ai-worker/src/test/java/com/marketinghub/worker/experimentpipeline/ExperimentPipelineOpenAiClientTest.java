@@ -25,6 +25,7 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+/** Verifica a montagem de payloads OpenAI do pipeline de experimentos. */
 class ExperimentPipelineOpenAiClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -1000,6 +1001,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(payload.get("model")).isEqualTo("gpt-5.1-codex");
     }
 
+    /** Confirma que o rastreio do template de copy reflete a versão atual do prompt carregado. */
     @Test
     void storesTemplateTraceInTrackedRequestBodyForLandingCopy() throws Exception {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
@@ -1031,7 +1033,7 @@ class ExperimentPipelineOpenAiClientTest {
         Map<String, Object> templateTrace = (Map<String, Object>) trackedRequest.get("templateTrace");
         assertThat(templateTrace)
                 .containsEntry("template_id", "landing-page-copy")
-                .containsEntry("template_version", "v3")
+                .containsEntry("template_version", "v4")
                 .containsEntry("artifact_target", "landingPageCopy")
                 .containsEntry("model", "gpt-5.2");
     }

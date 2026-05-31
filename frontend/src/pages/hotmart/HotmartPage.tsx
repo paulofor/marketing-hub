@@ -9,6 +9,21 @@ import {
   useHotmartCollectionJobs,
 } from "../../api/settings/useHotmartCollectedProducts";
 
+function shouldShowHotmartTokenAlert(
+  status?: string | null,
+  message?: string | null,
+) {
+  const normalizedStatus = status ?? "";
+  const normalizedMessage = (message ?? "").toLowerCase();
+  return (
+    normalizedStatus === "COLLECTION_ERROR" ||
+    normalizedStatus === "HOTMART_TOKEN_EXPIRED" ||
+    normalizedMessage.includes("token jwt da hotmart") ||
+    normalizedMessage.includes("invalid_token") ||
+    normalizedMessage.includes("expired jwt")
+  );
+}
+
 function formatUpdatedAt(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -37,7 +52,10 @@ export default function HotmartPage() {
     }
   }, [data?.value]);
 
-  const updatedAt = useMemo(() => formatUpdatedAt(data?.updatedAt), [data?.updatedAt]);
+  const updatedAt = useMemo(
+    () => formatUpdatedAt(data?.updatedAt),
+    [data?.updatedAt],
+  );
   const latestHotmartJob = useMemo(() => {
     const firstItem = hotmartProductsQuery.data?.[0];
     return {
@@ -46,7 +64,14 @@ export default function HotmartPage() {
     };
   }, [hotmartProductsQuery.data]);
 
-  const latestHotmartExecution = useMemo(() => hotmartJobsQuery.data?.[0], [hotmartJobsQuery.data]);
+  const latestHotmartExecution = useMemo(
+    () => hotmartJobsQuery.data?.[0],
+    [hotmartJobsQuery.data],
+  );
+  const showHotmartTokenAlert = shouldShowHotmartTokenAlert(
+    latestHotmartExecution?.status,
+    latestHotmartExecution?.message,
+  );
 
   const hotmartCycleStats = useMemo(() => {
     const products = hotmartProductsQuery.data ?? [];
@@ -54,7 +79,10 @@ export default function HotmartPage() {
 
     const productsByCycle = new Map<string, number>();
     for (const product of products) {
-      productsByCycle.set(product.jobId, (productsByCycle.get(product.jobId) ?? 0) + 1);
+      productsByCycle.set(
+        product.jobId,
+        (productsByCycle.get(product.jobId) ?? 0) + 1,
+      );
     }
 
     return {
@@ -95,19 +123,29 @@ export default function HotmartPage() {
         <div className="card-header">
           <h5 className="mb-1">Token de acesso</h5>
           <p className="text-muted small mb-0">
-            Cole aqui o JWT obtido no login da Hotmart para uso nas integrações deste módulo.
+            Cole aqui o JWT obtido no login da Hotmart para uso nas integrações
+            deste módulo.
           </p>
         </div>
         <div className="card-body">
           {isLoading ? <p className="mb-0">Carregando token...</p> : null}
           {isError ? (
-            <p className="text-danger mb-0">Não foi possível carregar o token salvo.</p>
+            <p className="text-danger mb-0">
+              Não foi possível carregar o token salvo.
+            </p>
           ) : null}
 
           {!isLoading && !isError ? (
-            <form onSubmit={handleSubmit} className="d-flex flex-column gap-3" noValidate>
+            <form
+              onSubmit={handleSubmit}
+              className="d-flex flex-column gap-3"
+              noValidate
+            >
               <div>
-                <label htmlFor="hotmartAccessToken" className="form-label fw-semibold">
+                <label
+                  htmlFor="hotmartAccessToken"
+                  className="form-label fw-semibold"
+                >
                   JWT Hotmart <span className="text-danger">*</span>
                 </label>
                 <textarea
@@ -130,7 +168,11 @@ export default function HotmartPage() {
                 >
                   {updateSetting.isPending ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      />
                       Salvando...
                     </>
                   ) : (
@@ -141,22 +183,28 @@ export default function HotmartPage() {
             </form>
           ) : null}
 
-          {feedback ? <div className="alert alert-info mt-3 mb-0">{feedback}</div> : null}
-          {latestHotmartExecution?.status === "COLLECTION_ERROR" ? (
-            <div className="alert alert-warning mt-3 mb-0" role="alert">
-              <strong>Falha na última coleta:</strong> {latestHotmartExecution.message || "Verifique o token JWT da Hotmart."}
+          {feedback ? (
+            <div className="alert alert-info mt-3 mb-0">{feedback}</div>
+          ) : null}
+          {showHotmartTokenAlert ? (
+            <div
+              className="alert alert-danger border border-danger mt-3 mb-0"
+              role="alert"
+            >
+              <strong>Ação necessária: atualize o token Hotmart.</strong>{" "}
+              {latestHotmartExecution?.message ||
+                "A última coleta não conseguiu autenticar na Hotmart."}
             </div>
           ) : null}
-
         </div>
       </section>
-
 
       <section className="card mt-3 shadow-sm border-0">
         <div className="card-header">
           <h5 className="mb-1">Resumo de ciclos Hotmart</h5>
           <p className="text-muted small mb-0">
-            Mostra a quantidade de jobs executados e o total de produtos coletados no período carregado.
+            Mostra a quantidade de jobs executados e o total de produtos
+            coletados no período carregado.
           </p>
         </div>
         <div className="card-body">
@@ -165,7 +213,9 @@ export default function HotmartPage() {
           ) : null}
 
           {hotmartJobsQuery.isError || hotmartProductsQuery.isError ? (
-            <p className="text-danger mb-0">Não foi possível carregar o resumo de ciclos.</p>
+            <p className="text-danger mb-0">
+              Não foi possível carregar o resumo de ciclos.
+            </p>
           ) : null}
 
           {!hotmartJobsQuery.isLoading &&
@@ -177,13 +227,19 @@ export default function HotmartPage() {
                 <div className="col-12 col-md-6">
                   <div className="border rounded p-3 h-100">
                     <div className="text-muted small">Jobs executados</div>
-                    <div className="fs-4 fw-semibold">{hotmartCycleStats.totalExecutedJobs}</div>
+                    <div className="fs-4 fw-semibold">
+                      {hotmartCycleStats.totalExecutedJobs}
+                    </div>
                   </div>
                 </div>
                 <div className="col-12 col-md-6">
                   <div className="border rounded p-3 h-100">
-                    <div className="text-muted small">Total de produtos (geral)</div>
-                    <div className="fs-4 fw-semibold">{hotmartCycleStats.totalProducts}</div>
+                    <div className="text-muted small">
+                      Total de produtos (geral)
+                    </div>
+                    <div className="fs-4 fw-semibold">
+                      {hotmartCycleStats.totalProducts}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -205,14 +261,18 @@ export default function HotmartPage() {
                           <td className="small">{cycle.jobId}</td>
                           <td>{cycle.status}</td>
                           <td>{cycle.createdAt}</td>
-                          <td className="text-end fw-semibold">{cycle.productsCount}</td>
+                          <td className="text-end fw-semibold">
+                            {cycle.productsCount}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               ) : (
-                <p className="mb-0 text-secondary">Nenhum ciclo encontrado para o workspace.</p>
+                <p className="mb-0 text-secondary">
+                  Nenhum ciclo encontrado para o workspace.
+                </p>
               )}
             </>
           ) : null}
@@ -223,28 +283,37 @@ export default function HotmartPage() {
         <div className="card-header">
           <h5 className="mb-1">Produtos coletados da Hotmart</h5>
           <p className="text-muted small mb-0">
-            Exibe os produtos da última coleta automática registrada para o workspace.
+            Exibe os produtos da última coleta automática registrada para o
+            workspace.
           </p>
         </div>
         <div className="card-body">
-          {hotmartProductsQuery.isLoading ? <p className="mb-0">Carregando produtos...</p> : null}
+          {hotmartProductsQuery.isLoading ? (
+            <p className="mb-0">Carregando produtos...</p>
+          ) : null}
           {hotmartProductsQuery.isError ? (
-            <p className="text-danger mb-0">Não foi possível carregar os produtos coletados.</p>
+            <p className="text-danger mb-0">
+              Não foi possível carregar os produtos coletados.
+            </p>
           ) : null}
           {!hotmartProductsQuery.isLoading &&
           !hotmartProductsQuery.isError &&
           hotmartProductsQuery.data &&
           hotmartProductsQuery.data.length === 0 ? (
-            <p className="mb-0 text-secondary">Nenhuma coleta Hotmart encontrada até o momento.</p>
+            <p className="mb-0 text-secondary">
+              Nenhuma coleta Hotmart encontrada até o momento.
+            </p>
           ) : null}
 
           {hotmartProductsQuery.data && hotmartProductsQuery.data.length > 0 ? (
             <>
               <p className="small text-muted mb-3">
-                Job mais recente: <strong>{latestHotmartJob.id}</strong> · Data/hora: <strong>{latestHotmartJob.collectedAt}</strong>
+                Job mais recente: <strong>{latestHotmartJob.id}</strong> ·
+                Data/hora: <strong>{latestHotmartJob.collectedAt}</strong>
               </p>
 
-              {hotmartProductsQuery.data && hotmartProductsQuery.data.length > 0 ? (
+              {hotmartProductsQuery.data &&
+              hotmartProductsQuery.data.length > 0 ? (
                 <div className="row g-3">
                   {hotmartProductsQuery.data.map((item) => {
                     const imageUrl = item.imageUrl;
@@ -254,7 +323,10 @@ export default function HotmartPage() {
                     const salesPageUrl = item.salesPageUrl?.trim() || null;
 
                     return (
-                      <article key={item.referenceId} className="col-12 col-md-6 col-lg-4">
+                      <article
+                        key={item.referenceId}
+                        className="col-12 col-md-6 col-lg-4"
+                      >
                         <div className="card h-100 border">
                           {imageUrl ? (
                             <img
@@ -266,14 +338,21 @@ export default function HotmartPage() {
                           ) : null}
                           <div className="card-body d-flex flex-column">
                             <h6 className="card-title">{item.title}</h6>
-                            <p className="small text-muted mb-2">Produtor: {producer || "Não informado"}</p>
+                            <p className="small text-muted mb-2">
+                              Produtor: {producer || "Não informado"}
+                            </p>
                             <p className="small mb-2">
-                              Temperatura: <strong>{item.temperature ?? "—"}</strong>
+                              Temperatura:{" "}
+                              <strong>{item.temperature ?? "—"}</strong>
                             </p>
                             <p className="small mb-2">
                               Página de vendas:{" "}
                               {salesPageUrl ? (
-                                <a href={salesPageUrl} target="_blank" rel="noreferrer">
+                                <a
+                                  href={salesPageUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
                                   {salesPageUrl}
                                 </a>
                               ) : (
@@ -283,7 +362,9 @@ export default function HotmartPage() {
                             <p className="small mb-3">
                               Preço:{" "}
                               <strong>
-                                {price ? `${currency} ${price}` : "Não informado"}
+                                {price
+                                  ? `${currency} ${price}`
+                                  : "Não informado"}
                               </strong>
                             </p>
                             {salesPageUrl ? (
@@ -296,7 +377,11 @@ export default function HotmartPage() {
                                 Ver página de vendas
                               </a>
                             ) : (
-                              <button type="button" className="btn btn-outline-secondary btn-sm mt-auto" disabled>
+                              <button
+                                type="button"
+                                className="btn btn-outline-secondary btn-sm mt-auto"
+                                disabled
+                              >
                                 Página de vendas indisponível
                               </button>
                             )}

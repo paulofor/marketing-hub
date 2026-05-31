@@ -35,23 +35,25 @@ Exemplo: `BackendWireframeController.pending` deve retornar `List<RecordWirefram
 ## Etapa 2 — Agendamento e busca de novos itens para processamento
 
 A segunda etapa operacional de qualquer processamento assíncrono por Worker AI é o ciclo de
-agendamento e busca de novos itens aptos para processamento. O padrão canônico deve seguir o
-comportamento do scheduler de wireframe do Worker AI:
+agendamento e busca de novos itens aptos para processamento. Para novas migrações, o padrão
+canônico do Worker AI deve seguir o núcleo `com.marketinghub.worker.openai.core`, já aplicado à
+etapa wireframe:
 
-1. o Worker AI deve possuir um scheduler específico da etapa, nomeado no padrão
-   `<Etapa>ExecutionScheduler`;
+1. o Worker AI deve possuir um scheduler específico da etapa dentro de `openai.core.<etapa>`, nomeado
+   no padrão `<Etapa>ExecutionScheduler`;
 2. o scheduler deve executar periodicamente via `@Scheduled` com cron explícito na anotação, sem
    variável intermediária para o cron;
-3. a cada ciclo, o scheduler deve delegar a busca de pendências a um serviço específico da etapa,
-   nomeado no padrão `<Etapa>PendingJobsService`;
-4. o serviço de pendências deve consultar exclusivamente o endpoint interno `pending` da própria etapa
-   no backend, respeitando o isolamento por módulo/etapa;
+3. a cada ciclo, o scheduler deve delegar o processamento ao `StageWorker`, que orquestra busca,
+   montagem de prompt, chamada OpenAI, validação e callbacks;
+4. a busca de pendências deve ficar em um adapter da própria etapa que implemente `StageBackendPort`
+   e consulte exclusivamente o endpoint interno `pending` da própria etapa no backend, respeitando o
+   isolamento por módulo/etapa;
 5. o endpoint `pending` deve retornar somente itens realmente aptos ao processamento da etapa,
    preferencialmente com status `INICIADO`;
 6. o Worker AI pode aplicar um limite operacional de leitura/processamento, mas esse limite não pode
    alterar o contrato semântico do item;
-7. falhas no ciclo agendado devem ser registradas em log com stack trace completo antes de serem
-   propagadas ou tratadas.
+7. falhas no ciclo agendado e nas integrações devem ser registradas em log com contexto operacional e
+   stack trace completo antes de serem propagadas, convertidas ou devolvidas ao backend.
 
 Cada item retornado pelo `pending` deve vir completo como uma **unidade de trabalho fechada**. Isso
 significa que o item precisa carregar, no próprio payload da listagem, todos os identificadores, dados
@@ -79,41 +81,40 @@ dados operacionais.
 
 A terceira etapa operacional de qualquer processamento assíncrono por Worker AI é transformar a
 unidade de trabalho fechada recebida do backend em um request completo para o endpoint da OpenAI. O
-padrão canônico deve seguir o comportamento da etapa wireframe do Worker AI:
+padrão canônico deve seguir o núcleo `com.marketinghub.worker.openai.core`:
 
-1. o serviço executor da etapa, nomeado no padrão `<Etapa>OpenAiExecutionService`, deve receber a
-   unidade de trabalho fechada produzida pela Etapa 2;
-2. antes de chamar a OpenAI, o executor deve obter os dados de prompt a partir do próprio item recebido
-   do backend, preservando o backend como fonte única da solicitação;
-3. o executor deve criar um record/DTO de request da própria etapa, no padrão `Record<Etapa>Request`,
-   contendo o identificador da entidade principal e o mapa de dados já estruturado;
-4. a montagem do payload da OpenAI deve ficar em um montador isolado da etapa, nomeado no padrão
-   `MontaRequest`, dentro do pacote da própria etapa;
-5. o `MontaRequest` deve carregar o arquivo markdown de prompt da etapa a partir de
+1. o `StageWorker` deve receber a unidade de trabalho fechada produzida pela Etapa 2 por meio de um
+   adapter `StageBackendPort` da própria etapa;
+2. antes de chamar a OpenAI, o adapter da etapa deve obter os dados de prompt a partir do próprio item
+   recebido do backend, preservando o backend como fonte única da solicitação;
+3. cada etapa deve possuir records/modelos de input e output próprios dentro de `openai.core.<etapa>`;
+4. a montagem do prompt, schema e payload da OpenAI deve ficar em um builder isolado da etapa que
+   implemente `StagePromptBuilder`, nomeado no padrão `<Etapa>PromptBuilder`;
+5. o builder deve carregar o arquivo markdown de prompt da etapa a partir de
    `ai-worker/src/main/resources/prompts/<dominio>/<arquivo-da-etapa>.md`;
-6. o `MontaRequest` deve carregar o schema JSON da etapa a partir de
+6. o builder deve carregar o schema JSON da etapa a partir de
    `ai-worker/src/main/resources/prompts/<dominio>/<arquivo-da-etapa>-schema.json`;
 7. os placeholders do prompt devem ser resolvidos usando os dados estruturados da unidade de trabalho,
    sem inserir JSON serializado dentro de outro JSON textual quando o contrato permitir objeto/array;
-8. o body enviado à OpenAI deve conter, no mínimo, `model`, `input` com mensagens `system` e `user`, e
-   `text.format` com `type=json_schema`, `name`, `schema` e `strict=true`;
+8. o body enviado à OpenAI deve conter, no mínimo, `model`, `input` e `text.format` com
+   `type=json_schema`, `name`, `schema` e `strict=true`;
 9. antes do envio, o request deve ser convertido para mapa/objeto JSON validável e não pode permanecer
    apenas como texto opaco;
-10. o executor deve registrar logs com contexto operacional (`jobId`, etapa, modelo e prévia segura do
-    payload) antes do envio e depois da resposta, preservando stack trace completo em falhas HTTP ou
-    inesperadas;
+10. o client OpenAI do core deve registrar logs com contexto operacional (`jobId`, etapa/modelo/schema e
+    payload/resposta crus) antes do envio e depois da resposta, preservando stack trace completo em
+    falhas HTTP ou inesperadas;
 11. a chamada à OpenAI deve ser feita pelo endpoint `/responses`, com `Content-Type: application/json`
-    e corpo JSON montado pelo `MontaRequest`;
-12. quando a etapa usar modo flex, o executor deve adicionar `service_tier=flex` ao corpo final antes de
-    enviar ao endpoint `/responses`.
+    e corpo JSON produzido pelo `StagePromptBuilder` da etapa;
+12. quando a etapa usar modo flex, o client OpenAI do core deve adicionar `service_tier=flex` ao corpo
+    final antes de enviar ao endpoint `/responses`.
 
-No exemplo de wireframe, o fluxo é: `GeraLandingWireframeOpenAiExecutionService` recebe a execução
-pendente, chama `backendClient.loadPromptData(execution)` para aproveitar os dados estruturados da
-solicitação, cria `RecordWireframeRequest`, solicita ao `MontaRequest` o prompt final e o request body,
-cria um `RecordJobDto`, converte o `requestBodyJson` em mapa, acrescenta `service_tier=flex` e envia o
-payload para `POST /responses`. O prompt markdown usado é
-`prompts/geralanding/landing-page-wireframe.md`, e o schema de saída estruturada usado é
-`prompts/geralanding/landing-page-wireframe-schema.json`.
+No exemplo de wireframe, o fluxo canônico agora é: `WireframeExecutionScheduler` chama
+`StageWorker.processPending`, o `WireframeBackendClient` consulta o endpoint `pending` e transforma a
+unidade de trabalho em `StageExecution<WireframeInput>`, o `WireframePromptBuilder` monta o prompt e o
+request usando `prompts/geralanding/landing-page-wireframe.md` e
+`prompts/geralanding/landing-page-wireframe-schema.json`, o `ResponsesApiOpenAiClient` adiciona
+`service_tier=flex` e envia para `POST /responses`, o `WireframeResponseValidator` valida a resposta, e
+o `WireframeBackendClient` registra prompt, resposta, conclusão ou falha nos callbacks do backend.
 
 Essa etapa não deve buscar novamente detalhes operacionais no backend para completar a solicitação. Se
 o prompt ou o schema exigir algum dado que não veio na unidade de trabalho fechada, a correção deve ser
@@ -147,8 +148,8 @@ como string bruta, com log de diagnóstico no caso inválido. O atributo `hypoth
 `title` e `framework` com todos os itens canônicos do framework Dor → Resultado → Mecanismo → Prova →
 Oferta: `pain`, `result`, `mechanism`, `proof`, `offer` e `checklist`. Como esse contrato `pending`
 carrega todos os dados necessários para processamento da etapa, o Worker AI de wireframe deve consumir a
-lista como fonte suficiente e não deve fazer chamada adicional de detalhe da execução antes de processar o
-job.
+lista como fonte suficiente pelo adapter `openai.core.wireframe.WireframeBackendClient` e não deve fazer
+chamada adicional de detalhe da execução antes de processar o job.
 
 Após montar e enviar o prompt para IA, o Worker AI deve chamar o callback interno:
 

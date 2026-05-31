@@ -2654,3 +2654,14 @@
   - atualizado o prompt `landing-page-wireframe.md` para declarar que classes aplicadas em `head`, `corpo`, seções e elementos internos devem ficar somente em `estilos[]`;
   - registrada a regra canônica no governance canon para evitar reintrodução da duplicidade.
 - impacto esperado: novas respostas JSON da etapa wireframe exibem as definições canônicas somente em `definicoes` e aplicam nomes de classes somente via `estilos[]`, deixando a tela operacional mais simples e sem repetição.
+
+## 2026-05-31 — Desativação do pacote legado wireframe no Worker AI
+- tarefa: excluir do `ai-worker` o pacote legado `com.marketinghub.worker.geralanding.wireframe` e consolidar a etapa `landing-page-wireframe` no novo núcleo `com.marketinghub.worker.openai.core.wireframe`.
+- causa-raiz: a etapa wireframe já possui implementação no `openai.core`, com `StageWorker`, adapters de backend, builder de prompt, validador e client comum da Responses API; manter o pacote legado ativo criava duplicidade operacional e risco de duas implementações consumirem a mesma fila.
+- correção aplicada:
+  - removidas as classes e testes do pacote legado `geralanding.wireframe` no Worker AI;
+  - atualizado o `ArquiteturaTest` do Worker AI para retirar `wireframe` dos slices legados e manter a guarda apenas das etapas ainda não migradas;
+  - preservados os prompts e schemas versionados em `src/main/resources/prompts/geralanding`, que continuam sendo consumidos pelo `WireframePromptBuilder` do `openai.core`;
+  - atualizados os cânones de arquitetura por etapa, GeraLanding e procedimento de experimento para definir `openai.core.wireframe` como implementação canônica atual;
+  - registrada a diretriz de migração futura das demais etapas (`copy`, `imageplanning`, `presetdesign`, `deliverables`) para `openai.core.<etapa>`.
+- impacto esperado: apenas o novo worker de wireframe baseado no OpenAI core processa a fila `landing-page-wireframe`, reduzindo acoplamento legado e preparando a migração das próximas etapas sem alterar o contrato do backend.

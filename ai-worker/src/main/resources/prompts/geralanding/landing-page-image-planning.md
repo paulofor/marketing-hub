@@ -7,8 +7,8 @@ Objetivo: ler o wireframe salvo no experimento e gerar um planejamento de prompt
 ## Regras
 - Use como base os elementos de imagem definidos no wireframe (`tag: img`).
 - Não altere estrutura do wireframe nem da copy; apenas planeje imagens.
-- A resposta DEVE ser um objeto com o atributo raiz `imagePlan` (array) e cada item deve possuir `sectionId`, `elementId`, `imagePrompt` e `imageGoal`.
-- É proibido retornar array na raiz ou concatenar múltiplos JSONs; retorne exatamente um único objeto JSON com `imagePlan`.
+- A resposta DEVE ser um objeto com o atributo `images` (array) dentro de `landingPageImagePlanning` e cada item deve possuir `sectionId`, `elementId`, `imagePrompt` e `imageGoal`.
+- É proibido retornar array na raiz ou concatenar múltiplos JSONs; retorne exatamente um único objeto JSON com `landingPageImagePlanning.images`.
 - O prompt deve ser claro para execução posterior no Worker AI, com contexto comercial e visual.
 
 ## Contexto disponível

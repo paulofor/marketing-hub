@@ -2786,3 +2786,11 @@
   - substituída a fila de respostas do `MockWebServer` por um dispatcher determinístico no teste de hipóteses;
   - mantida a transação necessária no cenário que valida associações JPA, com o isolamento HTTP garantido pelo dispatcher determinístico.
 - impacto esperado: a suíte do Worker AI passa a validar a versão atual do prompt e reduz intermitência nos testes de geração de hipóteses, mantendo o fluxo Dor → Resultado → Mecanismo → Prova → Oferta confiável para produtos vendáveis.
+
+## 2026-05-31 — Schema do Image Planning alinhado ao contador de imagens
+- tarefa: alterar o schema da etapa `landing-page-image-planning` para manter a contagem correta no bloco **Gera imagens**.
+- causa-raiz: o AI Worker passou a gerar `landingPageImagePlanning.imagePlan[]`, enquanto o backend que calcula `/framework-images/summary` conta os itens em `landingPageImagePlanning.images[]`; com isso, planejamentos concluídos eram salvos, mas apareciam com `totalItems = 0`.
+- correção aplicada:
+  - o schema JSON da etapa agora exige `landingPageImagePlanning.images[]`;
+  - o prompt da etapa foi sincronizado para instruir a saída no mesmo caminho consumido pelo backend.
+- impacto esperado: novas execuções do Image Planning serão persistidas no formato já lido pelo Gera imagens, permitindo que o total planejado apareça corretamente antes e durante a geração real das imagens.

@@ -6,7 +6,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "imagePlan": {
+        "images": {
           "type": "array",
           "minItems": 1,
           "items": {
@@ -22,7 +22,7 @@
           }
         }
       },
-      "required": ["imagePlan"]
+      "required": ["images"]
     }
   },
   "required": ["landingPageImagePlanning"]

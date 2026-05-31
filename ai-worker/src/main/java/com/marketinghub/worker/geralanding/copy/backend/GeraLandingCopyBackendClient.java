@@ -1,11 +1,11 @@
 package com.marketinghub.worker.geralanding.copy.backend;
 
+import com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload;
 import com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto;
 import com.marketinghub.worker.util.UrlUtils;
-import com.marketinghub.worker.geralanding.GeraLandingJobCompletionPayload;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +16,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/** Responsabilidade: centralizar a integração HTTP da etapa copy com os endpoints do GeraLanding no backend. */
 @Component
-/** Responsabilidade: centralizar a integração HTTP do worker com os endpoints de execução do GeraLanding no backend. */
 public class GeraLandingCopyBackendClient {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingCopyBackendClient.class);
 
@@ -25,6 +25,7 @@ public class GeraLandingCopyBackendClient {
     private final String backendBaseUrl;
     private final String apiPrefix;
 
+    /** Configura o cliente HTTP com a URL base e o prefixo de API do backend. */
     public GeraLandingCopyBackendClient(WebClient.Builder builder,
                                     @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
                                     @Value("${backend.api-prefix:/api}") String apiPrefix) {
@@ -33,6 +34,7 @@ public class GeraLandingCopyBackendClient {
         this.apiPrefix = apiPrefix;
     }
 
+    /** Lista execuções pendentes da etapa copy respeitando o limite mínimo de consulta. */
     public List<GeraLandingStageExecutionDetailDto> listPendingExecutions(int limit) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/internal/geralanding/copy/stage-executions/pending");
         String uri = url + "?limit=" + Math.max(1, limit);
@@ -48,6 +50,7 @@ public class GeraLandingCopyBackendClient {
         return result;
     }
 
+    /** Carrega os dados de experimento necessários para montar o prompt da etapa copy. */
     public Map<String, Object> loadPromptData(Long experimentId) {
         if (experimentId == null) {
             return Map.of();
@@ -73,6 +76,7 @@ public class GeraLandingCopyBackendClient {
         return payload;
     }
 
+    /** Preenche no payload os campos de dor e resultado da hipótese selecionada. */
     private void populateHypothesisFields(Map<String, Object> payload, Object nicheId, Object hypothesisId) {
         if (nicheId == null || hypothesisId == null) {
             return;
@@ -107,6 +111,7 @@ public class GeraLandingCopyBackendClient {
                 });
     }
 
+    /** Resolve o nome do nicho vinculado ao experimento para enriquecer o prompt. */
     private String resolveNicheName(Object nicheId) {
         if (nicheId == null) {
             return "";
@@ -121,6 +126,7 @@ public class GeraLandingCopyBackendClient {
         return niche != null && niche.get("name") != null ? String.valueOf(niche.get("name")) : "";
     }
 
+    /** Converte campos JSON textuais do experimento em mapas quando o conteúdo é válido. */
     private Object parseJsonField(Object value) {
         if (!(value instanceof String raw) || raw.isBlank()) {
             return Map.of();
@@ -128,10 +134,12 @@ public class GeraLandingCopyBackendClient {
         try {
             return new com.fasterxml.jackson.databind.ObjectMapper().readValue(raw, Map.class);
         } catch (Exception ex) {
+            log.warn("Campo textual do experimento não pôde ser convertido de JSON para a etapa copy; mantendo valor bruto", ex);
             return raw;
         }
     }
 
+    /** Envia ao backend o prompt, o request OpenAI e os metadados usados na etapa copy. */
     public void receivePrompt(String idJob,
                               Long experimentId,
                               String stageCode,
@@ -165,8 +173,7 @@ public class GeraLandingCopyBackendClient {
                 .block();
     }
 
-
-
+    /** Envia ao backend o resultado final da etapa copy recebido da OpenAI. */
     public void receiveResult(String idJob, Long experimentId, String stageCode, GeraLandingJobCompletionPayload payload) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/copy/stage-executions");
@@ -187,33 +194,7 @@ public class GeraLandingCopyBackendClient {
     }
 
 
-    
-    /** Recebe resultado da etapa copy usando o payload tipado da etapa. */
-    public void receiveResult(String idJob, Long experimentId, String stageCode,
-                              com.marketinghub.worker.geralanding.copy.GeraLandingJobCompletionPayload payload) {
-        receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
-                payload != null ? payload.responseContent() : null,
-                payload != null ? payload.rawResponse() : null,
-                payload != null ? payload.requestBodyJson() : null,
-                payload != null ? payload.openAiJobId() : null,
-                payload != null ? payload.inputTokens() : null,
-                payload != null ? payload.outputTokens() : null,
-                payload != null ? payload.costUsd() : null));
-    }
-
-    /** Recebe resultado da etapa deliverables usando o payload tipado da etapa. */
-    public void receiveResult(String idJob, Long experimentId, String stageCode,
-                              com.marketinghub.worker.geralanding.deliverables.GeraLandingJobCompletionDeliverablesPayload payload) {
-        receiveResult(idJob, experimentId, stageCode, new GeraLandingJobCompletionPayload(
-                payload != null ? payload.responseContent() : null,
-                payload != null ? payload.rawResponse() : null,
-                payload != null ? payload.requestBodyJson() : null,
-                payload != null ? payload.openAiJobId() : null,
-                payload != null ? payload.inputTokens() : null,
-                payload != null ? payload.outputTokens() : null,
-                payload != null ? payload.costUsd() : null));
-    }
-
+    /** Comunica ao backend a falha de processamento da etapa copy com mensagem e detalhe técnico. */
     public void receiveFailure(String idJob, Long experimentId, String stageCode, String errorMessage, String errorDetail) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/copy/stage-executions");
@@ -230,6 +211,7 @@ public class GeraLandingCopyBackendClient {
                 .block();
     }
 
+    /** Registra no backend o identificador do job OpenAI disparado para a etapa copy. */
     public void receiveDispatch(String idJob, Long experimentId, String stageCode, String openAiJobId) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
                 "/internal/geralanding/copy/stage-executions");
@@ -245,20 +227,19 @@ public class GeraLandingCopyBackendClient {
                 .block();
     }
 
-
-
     /** Consulta detalhes da execução da etapa copy no controller copy.web. */
-    public com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto fetchCopyStageExecutionDetail(Long experimentId, String idJob) {
-        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/geralanding/copy/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.copy.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
+    public GeraLandingStageExecutionDetailDto fetchCopyStageExecutionDetail(Long experimentId, String idJob) {
+        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix,
+                "/experiments/" + experimentId + "/geralanding/copy/stage-executions/" + idJob);
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(GeraLandingStageExecutionDetailDto.class)
+                .onErrorReturn(null)
+                .block();
     }
 
-    /** Consulta detalhes da execução da etapa deliverables no controller deliverables.web. */
-    public com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto fetchDeliverablesStageExecutionDetail(Long experimentId, String idJob) {
-        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/geralanding/deliverables/stage-executions/" + idJob);
-        return webClient.get().uri(uri).retrieve().bodyToMono(com.marketinghub.worker.geralanding.deliverables.dto.GeraLandingStageExecutionDetailDto.class).onErrorReturn(null).block();
-    }
-
+    /** Trata a resposta de listagem de execuções pendentes, propagando erro HTTP com corpo da resposta. */
     private Flux<GeraLandingStageExecutionDetailDto> handleListResponse(String uri,
                                                                   HttpStatusCode status,
                                                                   org.springframework.web.reactive.function.client.ClientResponse response) {

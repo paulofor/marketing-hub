@@ -2823,3 +2823,14 @@
   - simplificado `GeraLandingService` para continuar apenas como montador de prompts, sem depender do client legado da etapa copy;
   - ajustado o teste do serviço de prompt e a regra de arquitetura para aceitar a ausência do pacote legado após a substituição pelo `openai.core`.
 - impacto esperado: a etapa `landing-page-copy` passa a ter uma única implementação ativa no Worker AI, baseada no core OpenAI, preservando rastreabilidade uniforme e diminuindo retrabalho em futuras evoluções.
+
+## 2026-05-31 — PresetDesign no Worker AI OpenAI core
+- tarefa: criar o módulo da etapa `landing-page-design-preset` dentro de `com.marketinghub.worker.openai.core.presetdesign`, seguindo o padrão operacional já usado pela etapa `wireframe`.
+- causa-raiz/objetivo: reduzir divergência entre etapas do GeraLanding e deixar o preset visual com o mesmo fluxo `StageWorker` + ports/adapters do OpenAI core, preservando isolamento por etapa.
+- correção aplicada:
+  - criado o pacote `openai.core.presetdesign` com backend client, prompt builder, validador, handler, scheduler, configuração Spring e propriedades tipadas;
+  - adicionadas propriedades `presetdesign.worker.*` apontando para os recursos canônicos `landing-page-design-preset.md` e `landing-page-design-preset-schema.json`;
+  - o adapter usa os endpoints internos da etapa `design-preset` e envia prompt, schema, request cru, resposta, tokens, custo e erro no mesmo contrato do core;
+  - adicionados testes do contrato HTTP e da montagem do request OpenAI com schema estrito.
+- impacto esperado: a etapa PresetDesign passa a operar no padrão novo do Worker AI core, com rastreabilidade uniforme e menos risco de duplicidade operacional, fortalecendo a criação de landing pages mais vendáveis e consistentes.
+- ajuste complementar: criado no backend o contrato interno da etapa `design-preset` com fila pending e callbacks `recebe-prompt`/`recebe-resposta`, para que o novo Worker AI core tenha endpoints reais equivalentes aos da etapa wireframe.

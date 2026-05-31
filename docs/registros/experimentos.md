@@ -2740,3 +2740,13 @@
 - configuração adicionada em `application.properties` sob `imageplanning.worker.*`, com defaults equivalentes às etapas `wireframe` e `copy`.
 - teste adicionado: `ImagePlanningBackendClientTest`, validando montagem de dados pendentes e payload do callback `recebe-prompt`.
 - validação executada: `mvn test -Dtest='ImagePlanningBackendClientTest,ArquiteturaCoreTest'` no `ai-worker`; o build não chegou a compilar por limitação de ambiente/autenticação ao resolver `com.marketinghub:ads-service:0.0.1-SNAPSHOT` no GitHub Packages (HTTP 401).
+
+## 2026-05-31 — Copy do GeraLanding restrita ao wireframe
+- tarefa: ajustar o prompt e o schema da etapa `landing-page-copy` para impedir criação de conteúdo fora da estrutura definida pelo wireframe.
+- causa-raiz: o contrato anterior obrigava campos como `faq`, `ctaBlocks`, `formMicrocopy`, `imageAccessibilityPlan`, `consistencyChecks` e metadados estratégicos, permitindo que a etapa copy inventasse blocos não definidos no wireframe.
+- correção aplicada:
+  - o schema da etapa copy agora aceita somente `bodySections`, com seções e itens textuais existentes no wireframe;
+  - o prompt foi reforçado para tratar o wireframe como única fonte de verdade estrutural e proibir FAQs, CTAs extras, planos de imagem, checks, notas e metadados não definidos como elementos textuais;
+  - adicionados testes de contrato garantindo que o schema expõe apenas `bodySections` e que o prompt bloqueia blocos extras;
+  - atualizado o JSON de exemplo da etapa copy para remover blocos fora do wireframe e manter somente `bodySections`.
+- impacto esperado: a etapa copy passa a preencher apenas os textos solicitados pelo wireframe, reduzindo divergência entre etapas e evitando contaminação do artefato final com conteúdo inventado.

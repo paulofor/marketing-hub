@@ -2823,3 +2823,13 @@
   - simplificado `GeraLandingService` para continuar apenas como montador de prompts, sem depender do client legado da etapa copy;
   - ajustado o teste do serviço de prompt e a regra de arquitetura para aceitar a ausência do pacote legado após a substituição pelo `openai.core`.
 - impacto esperado: a etapa `landing-page-copy` passa a ter uma única implementação ativa no Worker AI, baseada no core OpenAI, preservando rastreabilidade uniforme e diminuindo retrabalho em futuras evoluções.
+
+## 2026-05-31 — Backend GeraLanding presetdesign
+- tarefa: criar no backend a estrutura `com.marketinghub.geralanding.presetdesign` seguindo o mesmo padrão de pacotes da etapa `geralanding.wireframe`.
+- causa-raiz/objetivo: a etapa `landing-page-design-preset` ainda estava exposta por classes em `geralanding.designpreset`, sem a mesma organização operacional usada por wireframe para controller, service, pending, callbacks e detalhe.
+- implementação:
+  - adicionados controller, service e records de `presetdesign` com endpoints de start, listagem, pending, `receive-prompt`/`recebe-prompt`, `receive-dispatch`, `receive-result`/`recebe-resposta` e detalhe;
+  - a fila pending da etapa agora expõe os mesmos artefatos estruturados de experimento e framework usados por wireframe, preservando `landingPageDesignPreset` como artefato canônico;
+  - a conclusão da etapa persiste `experiment.landingPageDesignPreset` e atualiza `htmlGeraLanding` com o HTML provisório consolidado pelos artefatos anteriores;
+  - o controller legado de `designpreset` deixou de ser bean Spring para evitar duplicidade de rotas com a nova estrutura `presetdesign`.
+- validação: adicionados testes unitários específicos para service e controller da nova estrutura presetdesign.

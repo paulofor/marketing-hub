@@ -1,10 +1,10 @@
-package com.marketinghub.geralanding.designpreset.service;
+package com.marketinghub.geralanding.presetdesign.service.detailStageExecution;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** Responsável por representar os detalhes de uma execução da etapa designpreset. */
-public record GeraLandingDesignPresetStageExecutionDetailResponse(
+/** Responsável por representar os detalhes de uma execução da etapa presetdesign. */
+public record RecordBackendPresetDesignDetalheDto(
         String idJob,
         Long experimentId,
         String stageCode,

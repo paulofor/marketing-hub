@@ -2675,3 +2675,13 @@
   - criados DTOs/records segmentados em `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta` para alinhar a árvore de pacotes de copy ao padrão de wireframe;
   - adicionados testes unitários de serviço e controller cobrindo início, pending, callbacks internos e persistência do artefato final.
 - impacto esperado: a etapa `landing-page-copy` fica pronta para o mesmo fluxo operacional do wireframe, reduzindo divergência de contratos com o Worker AI e preservando rastreabilidade de prompt, request, métricas, falhas e artefato final.
+
+## 2026-05-31 — Isolamento arquitetural do GeraLanding copy no Worker AI
+- tarefa: corrigir a violação de arquitetura em que o slice `geralanding.copy` dependia diretamente de tipos do slice `geralanding.deliverables`.
+- causa-raiz: o cliente HTTP da etapa copy (`GeraLandingCopyBackendClient`) tinha overload para receber payload de deliverables e método para buscar detalhe de execução de deliverables, criando acoplamento transversal entre etapas que devem permanecer isoladas.
+- correção aplicada:
+  - removido o overload de `receiveResult` que aceitava `GeraLandingJobCompletionDeliverablesPayload`;
+  - removida a consulta de detalhe da etapa deliverables de dentro do backend client da etapa copy;
+  - ajustado o cliente de copy para usar apenas o payload e DTO próprios do pacote `geralanding.copy`;
+  - revisados os comentários de responsabilidade da classe e dos métodos alterados.
+- impacto esperado: o slice copy volta a cumprir a regra ArchUnit de independência entre `copy`, `imageplanning`, `presetdesign` e `deliverables`, reduzindo acoplamento e preservando a evolução isolada de cada etapa.

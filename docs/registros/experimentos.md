@@ -2676,6 +2676,23 @@
   - adicionados testes unitários de serviço e controller cobrindo início, pending, callbacks internos e persistência do artefato final.
 - impacto esperado: a etapa `landing-page-copy` fica pronta para o mesmo fluxo operacional do wireframe, reduzindo divergência de contratos com o Worker AI e preservando rastreabilidade de prompt, request, métricas, falhas e artefato final.
 
+## 2026-05-31 11:45:53 UTC-3
+- solicitação para analisar o módulo `openai.core.wireframe` do Worker AI e criar um exemplo genérico reutilizável em `/exemplos`.
+- raciocínio aplicado: documentar o padrão do `StageWorker` como bloco genérico, separando responsabilidades de backend port, prompt builder, validador, handler, scheduler, propriedades e configuração Spring sem acoplar o exemplo às regras específicas de wireframe.
+- foi feito: criação da pasta `exemplos/bloco openai core` com README explicativo, exemplo de configuração, prompt genérico, schema JSON e payload pendente de backend para servir como referência de implementação de novas etapas OpenAI Core.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/StageWorker.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeWorkerConfiguration.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeExecutionScheduler.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframePromptBuilder.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeResponseValidator.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeResponseHandler.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeInput.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeOutput.java
 ## 2026-05-31 — Isolamento arquitetural do GeraLanding copy no Worker AI
 - tarefa: corrigir a violação de arquitetura em que o slice `geralanding.copy` dependia diretamente de tipos do slice `geralanding.deliverables`.
 - causa-raiz: o cliente HTTP da etapa copy (`GeraLandingCopyBackendClient`) tinha overload para receber payload de deliverables e método para buscar detalhe de execução de deliverables, criando acoplamento transversal entre etapas que devem permanecer isoladas.

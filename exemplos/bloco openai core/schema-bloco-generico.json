@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Marketing Hub - Bloco Generico",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "resultado": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "descricao": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proximaAcao": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "titulo",
+        "descricao",
+        "proximaAcao"
+      ]
+    },
+    "evidenciasUsadas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "riscosDeAderencia": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "resultado",
+    "evidenciasUsadas",
+    "riscosDeAderencia"
+  ]
+}

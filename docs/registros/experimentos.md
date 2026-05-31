@@ -2721,3 +2721,13 @@
   - adicionados templates genéricos de controller e service com comentários de responsabilidade e logs operacionais;
   - incluídos exemplos de chamadas para start, pending, recebe-prompt e recebe-resposta.
 - impacto esperado: novas etapas backend do GeraLanding podem ser criadas com menos divergência de contrato, preservando rastreabilidade operacional e o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+
+## 2026-05-31 - Worker AI core OpenAI para image planning
+
+- solicitação: criar o módulo da etapa `imageplanning` dentro do Worker AI em `openai.core`, seguindo o padrão já usado pela etapa `wireframe`.
+- causa-raiz/objetivo: aproximar a etapa de planejamento de imagens do novo padrão plugável do core OpenAI (`StageWorker` + ports/adapters por etapa), mantendo isolamento arquitetural entre etapas e preparando a substituição do fluxo legado.
+- foi feito no `ai-worker`: criado o pacote `com.marketinghub.worker.openai.core.imageplanning` com `ImagePlanningBackendClient`, `ImagePlanningPromptBuilder`, `ImagePlanningResponseValidator`, `ImagePlanningResponseHandler`, `ImagePlanningExecutionScheduler`, `ImagePlanningWorkerConfiguration`, `ImagePlanningWorkerProperties`, `ImagePlanningInput` e `ImagePlanningOutput`.
+- o novo adapter usa os recursos canônicos `landing-page-image-planning.md` e `landing-page-image-planning-schema.json`, monta dados de prompt com `campaignAngle`, `adCopy`, `adImageBriefing`, `landingPageWireframe` e contexto de nicho/framework, e envia callbacks no padrão `recebe-prompt`/`recebe-resposta` para a rota interna de `image-prompts`.
+- configuração adicionada em `application.properties` sob `imageplanning.worker.*`, com defaults equivalentes às etapas `wireframe` e `copy`.
+- teste adicionado: `ImagePlanningBackendClientTest`, validando montagem de dados pendentes e payload do callback `recebe-prompt`.
+- validação executada: `mvn test -Dtest='ImagePlanningBackendClientTest,ArquiteturaCoreTest'` no `ai-worker`; o build não chegou a compilar por limitação de ambiente/autenticação ao resolver `com.marketinghub:ads-service:0.0.1-SNAPSHOT` no GitHub Packages (HTTP 401).

@@ -96,6 +96,18 @@ Trecho obrigatório do contrato de seção/elementos (manter):
 - `briefingVisual` é exclusivo de `img`: para outras tags, manter `briefingVisual: null` (não preencher objeto).
 - `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
+- `tamMinimo` e `tamMaximo` não são números aleatórios: eles são o contrato de espaço textual para a próxima etapa de copy e devem ser definidos pela função do texto no layout, pela intenção comercial do bloco e pelo esforço cognitivo aceitável no mobile.
+- Defina `tamMinimo`/`tamMaximo` por tipo de texto e contexto de tela:
+  - Títulos principais (`h1`) e chamadas de primeira dobra: curtos, fortes e escaneáveis; use faixa pequena/média para caber bem no hero sem empurrar CTA e imagem para baixo.
+  - Subtítulos (`h2`, `h3`) e títulos de cards: ainda menores que blocos explicativos; devem nomear a ideia, a dor, o resultado ou a objeção com clareza, sem virar parágrafo.
+  - Botões e links de ação (`button`, `a`): faixas muito curtas; texto direto de ação, sem explicação embutida.
+  - Bullets, `li`, badges e microcopy auxiliar: faixas curtas; cada item deve comunicar uma ideia só, facilitando leitura rápida.
+  - Parágrafos explicativos (`p`) e descrições de mecanismo/prova/oferta: faixas maiores que títulos, mas controladas; permitir contexto suficiente para explicar por que aquilo importa, sem cansar o usuário.
+  - FAQ, prova, como funciona e objeções: podem ter faixa média quando precisam remover dúvida real, mas divida em blocos pequenos em vez de liberar textos longos em um único elemento.
+  - Labels/placeholders de formulário: faixas curtas e funcionais; não usar como área de persuasão.
+- Em geral, `tamMinimo` deve representar o menor texto ainda útil para cumprir a função comercial do elemento; `tamMaximo` deve representar o maior texto que cabe naquele espaço sem quebrar escaneabilidade, hierarquia visual ou avanço para o CTA.
+- Quanto mais alto o elemento estiver na página e quanto mais próximo estiver do CTA principal, menor deve ser o limite de copy; explicações mais longas devem ficar em seções posteriores, onde o usuário já aceitou entender mecanismo, prova ou oferta.
+- Preserve a hierarquia: título orienta, subtítulo enquadra, parágrafo explica, bullet facilita decisão, CTA move para ação. Não dê a um título limite de parágrafo nem a um parágrafo limite tão curto que impeça explicar o mecanismo.
 - `elementosInternos` pode ser lista vazia, mas sempre deve existir.
 
 

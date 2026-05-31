@@ -1,0 +1,327 @@
+{
+  "pageGoal": "Gerar leads (nome e email) para enviar uma amostra personalizada em PDF (1 página, com marca d’água) + mini-kit, aumentando confiança e reduzindo a conversa começar em “quanto custa?” sem contexto.",
+  "messageMatchSource": "Anúncios com promessa de amostra em PDF e mini-kit (convite + resposta anti-preço + mapa 4 semanas + 2 check-ins), com ênfase em briefing rápido e prova visual antes de comprar.",
+  "messageMatchNotes": "A página mantém a mesma promessa do anúncio: uma prévia personalizada e tangível (PDF com marca d’água + mini-kit) para usar hoje, reduzindo o risco de parecer genérico. O texto reforça baixo esforço no cadastro e descreve claramente o que vem no kit, sem prometer resultado garantido.",
+  "primaryCTA": "Preencha o briefing (2 min) e gere sua amostra em PDF",
+  "bodySections": [
+    {
+      "sectionId": "sec-hero",
+      "items": [
+        {
+          "id": "hero-h1",
+          "texto": "Preencha o briefing (2 min) e gere sua amostra personalizada em PDF"
+        },
+        {
+          "id": "hero-sub",
+          "texto": "Receba uma prévia de 1 página (com marca d’água) + mini-kit para usar hoje e tirar a conversa do “quanto custa?” antes da briga de preço."
+        },
+        {
+          "id": "hero-b1",
+          "texto": "PDF 1 página com marca d’água (prévia real)"
+        },
+        {
+          "id": "hero-b2",
+          "texto": "Resposta curta anti-preço (pronta para copiar)"
+        },
+        {
+          "id": "hero-b3",
+          "texto": "Mapa de 4 semanas + 2 check-ins (Sem. 1 e 2)"
+        },
+        {
+          "id": "hero-cta-primary",
+          "texto": "Gerar minha amostra em PDF"
+        },
+        {
+          "id": "hero-cta-secondary",
+          "texto": "Ver o que vem no kit"
+        },
+        {
+          "id": "hero-cta-tertiary",
+          "texto": "Como funciona"
+        }
+      ]
+    },
+    {
+      "sectionId": "sec-o-que-recebe",
+      "items": [
+        {
+          "id": "recebe-h2",
+          "texto": "O que você recebe (preview do kit)"
+        },
+        {
+          "id": "recebe-sub",
+          "texto": "Uma prévia prática para usar hoje no Instagram/WhatsApp: convite, resposta anti-preço e um começo guiado para as primeiras semanas."
+        },
+        {
+          "id": "card-item-1-title",
+          "texto": "Convite/Bio + mensagem"
+        },
+        {
+          "id": "card-item-1-desc",
+          "texto": "Texto curto para atrair o aluno certo e explicar o valor antes do “quanto custa?”."
+        },
+        {
+          "id": "card-item-2-title",
+          "texto": "Resposta curta anti-preço"
+        },
+        {
+          "id": "card-item-2-desc",
+          "texto": "Resposta pronta que tira a conversa do comparativo e puxa para um próximo passo."
+        },
+        {
+          "id": "card-item-3-title",
+          "texto": "Mapa visual (4 semanas)"
+        },
+        {
+          "id": "card-item-3-desc",
+          "texto": "Marcos simples para o aluno ver direção e perceber progresso logo no começo."
+        },
+        {
+          "id": "card-item-4-title",
+          "texto": "2 check-ins (Semanas 1 e 2)"
+        },
+        {
+          "id": "card-item-4-desc",
+          "texto": "Mensagens prontas para manter presença e cuidado sem improvisar todo dia."
+        },
+        {
+          "id": "recebe-cta",
+          "texto": "Quero gerar minha amostra personalizada em PDF"
+        }
+      ]
+    },
+    {
+      "sectionId": "sec-como-funciona",
+      "items": [
+        {
+          "id": "como-h2",
+          "texto": "Como funciona (3 passos)"
+        },
+        {
+          "id": "como-sub",
+          "texto": "Sem call, sem complicação: você preenche, o material é gerado e você já sai com um kit claro para usar na pré-venda e no começo do aluno."
+        },
+        {
+          "id": "step-1-title",
+          "texto": "1) Preencha o briefing"
+        },
+        {
+          "id": "step-1-desc",
+          "texto": "Responda poucas perguntas e diga o básico do seu atendimento. Leva cerca de 2 minutos."
+        },
+        {
+          "id": "step-2-title",
+          "texto": "2) Receba a prévia em PDF"
+        },
+        {
+          "id": "step-2-desc",
+          "texto": "Você recebe uma amostra de 1 página com marca d’água e os principais blocos do kit."
+        },
+        {
+          "id": "step-3-title",
+          "texto": "3) Use hoje com seus leads"
+        },
+        {
+          "id": "step-3-desc",
+          "texto": "Coloque o convite no ar, responda o “quanto custa?” com mais clareza e inicie com mapa + check-ins."
+        },
+        {
+          "id": "como-cta",
+          "texto": "Preencher briefing e gerar a amostra em PDF"
+        }
+      ]
+    },
+    {
+      "sectionId": "sec-prova-preview",
+      "items": [
+        {
+          "id": "preview-h2",
+          "texto": "Veja como fica a amostra (1 página)"
+        },
+        {
+          "id": "preview-p",
+          "texto": "Antes de decidir qualquer próximo passo, você vê uma prévia visual do material: estrutura clara, pronta para usar e com marca d’água por ser amostra."
+        },
+        {
+          "id": "preview-li-1",
+          "texto": "Blocos do kit organizados em 1 página"
+        },
+        {
+          "id": "preview-li-2",
+          "texto": "Convite + resposta anti-preço em formato direto"
+        },
+        {
+          "id": "preview-li-3",
+          "texto": "Mapa 4 semanas + check-ins para o começo"
+        },
+        {
+          "id": "preview-cta",
+          "texto": "Gerar minha amostra personalizada em PDF"
+        }
+      ]
+    },
+    {
+      "sectionId": "sec-formulario",
+      "items": [
+        {
+          "id": "form-h2",
+          "texto": "Gerar amostra personalizada em PDF"
+        },
+        {
+          "id": "form-sub",
+          "texto": "Deixe seu nome e email para receber a amostra (PDF 1 página com marca d’água) + mini-kit. Sem WhatsApp e sem ligação."
+        },
+        {
+          "id": "form-submit",
+          "texto": "Enviar e receber minha amostra em PDF"
+        },
+        {
+          "id": "form-privacy",
+          "texto": "Seus dados ficam protegidos. Você pode sair da lista quando quiser."
+        }
+      ]
+    }
+  ],
+  "ctaBlocks": [
+    {
+      "placement": "hero",
+      "ctaVariant": "primary",
+      "ctaLabel": "Gerar minha amostra em PDF",
+      "ctaUrl": "#sec-formulario",
+      "matchAdCta": "Preencha o briefing (2 min) e gere sua amostra personalizada em PDF.",
+      "ctaSupport": "Amostra em PDF (1 página) + mini-kit para usar hoje.",
+      "messageMatchNotes": "Mantém a promessa central do anúncio e reduz fricção com benefício direto (prévia tangível).",
+      "ctaType": "conversion",
+      "targetSectionId": "sec-formulario"
+    },
+    {
+      "placement": "hero",
+      "ctaVariant": "secondary",
+      "ctaLabel": "Ver o que vem no kit",
+      "ctaUrl": "#sec-o-que-recebe",
+      "matchAdCta": "Mini-kit: convite + resposta anti-preço + mapa 4 semanas + 2 check-ins.",
+      "ctaSupport": "Veja os itens antes de preencher.",
+      "messageMatchNotes": "Para quem ainda quer entender o entregável antes de enviar dados.",
+      "ctaType": "navigation",
+      "targetSectionId": "sec-o-que-recebe"
+    },
+    {
+      "placement": "mid",
+      "ctaVariant": "primary",
+      "ctaLabel": "Quero gerar minha amostra personalizada em PDF",
+      "ctaUrl": "#sec-formulario",
+      "matchAdCta": "Preencha o briefing (2 min) e gere sua amostra personalizada em PDF.",
+      "ctaSupport": "Leva pouco tempo para começar.",
+      "messageMatchNotes": "Reforço de conversão após detalhar o kit.",
+      "ctaType": "conversion",
+      "targetSectionId": "sec-formulario"
+    },
+    {
+      "placement": "final",
+      "ctaVariant": "primary",
+      "ctaLabel": "Enviar e receber minha amostra em PDF",
+      "ctaUrl": "#sec-formulario",
+      "matchAdCta": "Gerar amostra personalizada em PDF.",
+      "ctaSupport": "Nome e email. Sem WhatsApp.",
+      "messageMatchNotes": "CTA final alinhado ao formulário e às principais objeções de fricção.",
+      "ctaType": "conversion",
+      "targetSectionId": "sec-formulario"
+    }
+  ],
+  "faq": [
+    {
+      "question": "Isso é uma consultoria ou precisa de call?",
+      "answer": "Não. É uma amostra em PDF + mini-kit gerados a partir das suas respostas. Você recebe o material e aplica do seu jeito.",
+      "objectionTag": "sem_consultoria"
+    },
+    {
+      "question": "Vai pedir meu WhatsApp?",
+      "answer": "Não. Para receber a amostra, pedimos apenas nome e email.",
+      "objectionTag": "medo_de_spam_whatsapp"
+    },
+    {
+      "question": "O material não vai ficar genérico?",
+      "answer": "A amostra é montada com base no seu briefing. E por ser prévia, vai com marca d’água — assim você consegue avaliar se o estilo encaixa no seu público antes de seguir.",
+      "objectionTag": "generico"
+    },
+    {
+      "question": "O que exatamente vem nessa amostra?",
+      "answer": "Um PDF de 1 página (com marca d’água) com: convite/bio + mensagem, resposta curta anti-preço, mapa visual de 4 semanas e 2 check-ins (semanas 1 e 2).",
+      "objectionTag": "o_que_recebo"
+    }
+  ],
+  "consistencyChecks": [
+    {
+      "check": "CTA_MATCH",
+      "status": "PASS",
+      "details": "Os CTAs repetem a mesma ação do anúncio: preencher briefing rápido e gerar/receber amostra em PDF, com linguagem direta e foco em prova."
+    },
+    {
+      "check": "PROMISE_MATCH",
+      "status": "PASS",
+      "details": "A promessa permanece como prévia personalizada (PDF 1 página com marca d’água) + mini-kit com itens específicos, evitando garantias de resultado e mantendo foco em uso prático."
+    },
+    {
+      "check": "GOOGLE_LANDING_BEST_PRACTICES",
+      "status": "PASS",
+      "details": "Mensagem clara acima da dobra, prova visual/preview, explicação do que vem e como funciona, CTAs consistentes, coleta mínima de dados e microcopy de privacidade."
+    }
+  ],
+  "complianceNotes": "Evita promessas de resultado garantido (ex.: “agenda cheia garantida”) e não sugere consultoria/call ou acompanhamento humano. O tempo “2 min” é usado apenas para o preenchimento do briefing/cadastro, sem prometer prazo fixo de entrega completa. Quando houver referência a rapidez de geração, tratar como estimativa e sem garantia individual.",
+  "formMicrocopy": {
+    "privacyNotice": "Usaremos seu email apenas para enviar a amostra e informações relacionadas. Você pode cancelar a qualquer momento.",
+    "consentNotice": "Ao enviar, você concorda em receber a amostra em PDF e mensagens sobre o material. Sem spam e sem WhatsApp."
+  },
+  "imageAccessibilityPlan": [
+    {
+      "imageId": "hero-img-product",
+      "sectionId": "sec-hero",
+      "altText": "Mockup de uma amostra personalizada em PDF (1 página com marca d’água) ao lado de cartões do mini-kit: convite/bio, resposta anti-preço, mapa de 4 semanas e check-ins"
+    },
+    {
+      "imageId": "card-item-1-img",
+      "sectionId": "sec-o-que-recebe",
+      "altText": "Card ilustrado do item do kit: convite/bio e mensagem pronta"
+    },
+    {
+      "imageId": "card-item-2-img",
+      "sectionId": "sec-o-que-recebe",
+      "altText": "Ilustração de conversa com a pergunta “Quanto custa?” e um cartão destacado de resposta anti-preço pronta"
+    },
+    {
+      "imageId": "card-item-3-img",
+      "sectionId": "sec-o-que-recebe",
+      "altText": "Diagrama simples de um mapa de progresso de 4 semanas com marcos"
+    },
+    {
+      "imageId": "card-item-4-img",
+      "sectionId": "sec-o-que-recebe",
+      "altText": "Checklist ilustrado com dois check-ins estruturados para a semana 1 e a semana 2"
+    },
+    {
+      "imageId": "step-1-img",
+      "sectionId": "sec-como-funciona",
+      "altText": "Ícone de formulário curto indicando o passo 1: preencher um briefing rápido"
+    },
+    {
+      "imageId": "step-2-img",
+      "sectionId": "sec-como-funciona",
+      "altText": "Diagrama mostrando respostas indo para um gerador e saindo como PDF, indicando o passo 2"
+    },
+    {
+      "imageId": "step-3-img",
+      "sectionId": "sec-como-funciona",
+      "altText": "Fluxo com ícones de post/stories, WhatsApp e mapa de progresso indicando o passo 3: aplicar o kit"
+    },
+    {
+      "imageId": "preview-img",
+      "sectionId": "sec-prova-preview",
+      "altText": "Mockup de um PDF de 1 página com marca d’água e blocos rotulados do kit: convite, resposta anti-preço, mapa 4 semanas e check-ins"
+    },
+    {
+      "imageId": "form-img",
+      "sectionId": "sec-formulario",
+      "altText": "Ilustração de um email com anexo em PDF e mini-cards do kit, sugerindo a entrega da amostra"
+    }
+  ]
+}

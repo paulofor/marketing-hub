@@ -1,0 +1,2542 @@
+{
+  "definicoes": {
+    "estrutura": {
+      "desktop": [
+        {
+          "nome": "bgBody",
+          "atributoCss": "padding",
+          "valor": "0"
+        },
+        {
+          "nome": "marginReset",
+          "atributoCss": "margin",
+          "valor": "0"
+        },
+        {
+          "nome": "sectionPadLg",
+          "atributoCss": "padding",
+          "valor": "64px 24px"
+        },
+        {
+          "nome": "sectionPadMd",
+          "atributoCss": "padding",
+          "valor": "48px 24px"
+        },
+        {
+          "nome": "container",
+          "atributoCss": "max-width",
+          "valor": "1100px"
+        },
+        {
+          "nome": "containerPad",
+          "atributoCss": "padding",
+          "valor": "0 24px"
+        },
+        {
+          "nome": "stackGapLg",
+          "atributoCss": "margin-bottom",
+          "valor": "24px"
+        },
+        {
+          "nome": "stackGapMd",
+          "atributoCss": "margin-bottom",
+          "valor": "16px"
+        },
+        {
+          "nome": "stackGapSm",
+          "atributoCss": "margin-bottom",
+          "valor": "10px"
+        },
+        {
+          "nome": "cardPad",
+          "atributoCss": "padding",
+          "valor": "18px"
+        },
+        {
+          "nome": "formPad",
+          "atributoCss": "padding",
+          "valor": "18px"
+        },
+        {
+          "nome": "imgRadiusPad",
+          "atributoCss": "padding",
+          "valor": "0"
+        },
+        {
+          "nome": "heroPad",
+          "atributoCss": "padding",
+          "valor": "72px 24px"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "bgBody",
+          "atributoCss": "padding",
+          "valor": "0"
+        },
+        {
+          "nome": "marginReset",
+          "atributoCss": "margin",
+          "valor": "0"
+        },
+        {
+          "nome": "sectionPadLg",
+          "atributoCss": "padding",
+          "valor": "40px 16px"
+        },
+        {
+          "nome": "sectionPadMd",
+          "atributoCss": "padding",
+          "valor": "32px 16px"
+        },
+        {
+          "nome": "container",
+          "atributoCss": "max-width",
+          "valor": "680px"
+        },
+        {
+          "nome": "containerPad",
+          "atributoCss": "padding",
+          "valor": "0 16px"
+        },
+        {
+          "nome": "stackGapLg",
+          "atributoCss": "margin-bottom",
+          "valor": "18px"
+        },
+        {
+          "nome": "stackGapMd",
+          "atributoCss": "margin-bottom",
+          "valor": "12px"
+        },
+        {
+          "nome": "stackGapSm",
+          "atributoCss": "margin-bottom",
+          "valor": "8px"
+        },
+        {
+          "nome": "cardPad",
+          "atributoCss": "padding",
+          "valor": "14px"
+        },
+        {
+          "nome": "formPad",
+          "atributoCss": "padding",
+          "valor": "14px"
+        },
+        {
+          "nome": "imgRadiusPad",
+          "atributoCss": "padding",
+          "valor": "0"
+        },
+        {
+          "nome": "heroPad",
+          "atributoCss": "padding",
+          "valor": "44px 16px"
+        }
+      ]
+    },
+    "posicao": {
+      "desktop": [
+        {
+          "nome": "relative",
+          "atributoCss": "position",
+          "valor": "relative"
+        },
+        {
+          "nome": "zTop",
+          "atributoCss": "z-index",
+          "valor": "5"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "relative",
+          "atributoCss": "position",
+          "valor": "relative"
+        },
+        {
+          "nome": "zTop",
+          "atributoCss": "z-index",
+          "valor": "5"
+        }
+      ]
+    },
+    "layout": {
+      "desktop": [
+        {
+          "nome": "fontBase",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "textPrimary",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "sectionBgAlt",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "containerCenter",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "row2col",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "row2colTpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "1.2fr 0.8fr"
+        },
+        {
+          "nome": "row2colGap",
+          "atributoCss": "gap",
+          "valor": "28px"
+        },
+        {
+          "nome": "row2colAlign",
+          "atributoCss": "align-items",
+          "valor": "center"
+        },
+        {
+          "nome": "stack",
+          "atributoCss": "display",
+          "valor": "flex"
+        },
+        {
+          "nome": "stackCol",
+          "atributoCss": "flex-direction",
+          "valor": "column"
+        },
+        {
+          "nome": "stackGap",
+          "atributoCss": "gap",
+          "valor": "12px"
+        },
+        {
+          "nome": "cardsGrid3",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "cardsGrid3Tpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "repeat(3, 1fr)"
+        },
+        {
+          "nome": "cardsGridGap",
+          "atributoCss": "gap",
+          "valor": "16px"
+        },
+        {
+          "nome": "cardsGrid2",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "cardsGrid2Tpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "repeat(2, 1fr)"
+        },
+        {
+          "nome": "centerInline",
+          "atributoCss": "justify-content",
+          "valor": "center"
+        },
+        {
+          "nome": "alignCenter",
+          "atributoCss": "align-items",
+          "valor": "center"
+        },
+        {
+          "nome": "formGrid",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "formGridTpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "1fr 1fr"
+        },
+        {
+          "nome": "formGridGap",
+          "atributoCss": "gap",
+          "valor": "12px"
+        },
+        {
+          "nome": "ctaRow",
+          "atributoCss": "display",
+          "valor": "flex"
+        },
+        {
+          "nome": "ctaRowGap",
+          "atributoCss": "gap",
+          "valor": "12px"
+        },
+        {
+          "nome": "ctaRowWrap",
+          "atributoCss": "flex-wrap",
+          "valor": "wrap"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "fontBase",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "textPrimary",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "sectionBgAlt",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "containerCenter",
+          "atributoCss": "display",
+          "valor": "block"
+        },
+        {
+          "nome": "row2col",
+          "atributoCss": "display",
+          "valor": "flex"
+        },
+        {
+          "nome": "row2colTpl",
+          "atributoCss": "flex-direction",
+          "valor": "column"
+        },
+        {
+          "nome": "row2colGap",
+          "atributoCss": "gap",
+          "valor": "16px"
+        },
+        {
+          "nome": "row2colAlign",
+          "atributoCss": "align-items",
+          "valor": "stretch"
+        },
+        {
+          "nome": "stack",
+          "atributoCss": "display",
+          "valor": "flex"
+        },
+        {
+          "nome": "stackCol",
+          "atributoCss": "flex-direction",
+          "valor": "column"
+        },
+        {
+          "nome": "stackGap",
+          "atributoCss": "gap",
+          "valor": "10px"
+        },
+        {
+          "nome": "cardsGrid3",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "cardsGrid3Tpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "1fr"
+        },
+        {
+          "nome": "cardsGridGap",
+          "atributoCss": "gap",
+          "valor": "12px"
+        },
+        {
+          "nome": "cardsGrid2",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "cardsGrid2Tpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "1fr"
+        },
+        {
+          "nome": "centerInline",
+          "atributoCss": "justify-content",
+          "valor": "center"
+        },
+        {
+          "nome": "alignCenter",
+          "atributoCss": "align-items",
+          "valor": "center"
+        },
+        {
+          "nome": "formGrid",
+          "atributoCss": "display",
+          "valor": "grid"
+        },
+        {
+          "nome": "formGridTpl",
+          "atributoCss": "grid-template-columns",
+          "valor": "1fr"
+        },
+        {
+          "nome": "formGridGap",
+          "atributoCss": "gap",
+          "valor": "10px"
+        },
+        {
+          "nome": "ctaRow",
+          "atributoCss": "display",
+          "valor": "flex"
+        },
+        {
+          "nome": "ctaRowGap",
+          "atributoCss": "gap",
+          "valor": "10px"
+        },
+        {
+          "nome": "ctaRowWrap",
+          "atributoCss": "flex-wrap",
+          "valor": "wrap"
+        }
+      ]
+    },
+    "mistas": {
+      "desktop": [
+        {
+          "nome": "liftSm",
+          "atributoCss": "transform",
+          "valor": "translateY(-2px)"
+        }
+      ],
+      "mobile": [
+        {
+          "nome": "liftSm",
+          "atributoCss": "transform",
+          "valor": "translateY(-2px)"
+        }
+      ]
+    }
+  },
+  "pagina": {
+    "head": {
+      "texto": ""
+    },
+    "corpo": {
+      "estilos": [
+        "bgBody",
+        "fontBase",
+        "textPrimary",
+        "marginReset"
+      ],
+      "secoes": [
+        {
+          "nome": "Hero — Amostra personalizada em PDF",
+          "objetivo": "Capturar atenção com a promessa central alinhada ao anúncio e levar imediatamente para o formulário (ação principal), reforçando a prova rápida: briefing (2 min) → amostra em PDF (~3 min) com marca d’água + mini-kit.",
+          "id": "sec-hero",
+          "elementosSeccao": [
+            {
+              "id": "hero-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 9999,
+                "tamMinimo": 1,
+                "conteudo": ""
+              },
+              "elementosInternos": [
+                {
+                  "id": "hero-grid",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "hero-left",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "hero-h1",
+                          "tag": "h1",
+                          "texto": {
+                            "tamMaximo": 120,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapMd"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "hero-sub",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 220,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapLg"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "hero-bullets",
+                          "tag": "ul",
+                          "texto": {
+                            "tamMaximo": 9999,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [
+                            {
+                              "id": "hero-b1",
+                              "tag": "li",
+                              "texto": {
+                                "tamMaximo": 60,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            },
+                            {
+                              "id": "hero-b2",
+                              "tag": "li",
+                              "texto": {
+                                "tamMaximo": 60,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            },
+                            {
+                              "id": "hero-b3",
+                              "tag": "li",
+                              "texto": {
+                                "tamMaximo": 60,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            }
+                          ],
+                          "estilos": [
+                            "stackGapLg"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "hero-cta-row",
+                          "tag": "div",
+                          "texto": {
+                            "tamMaximo": 9999,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [
+                            {
+                              "id": "hero-cta-primary",
+                              "tag": "a",
+                              "texto": {
+                                "tamMaximo": 60,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "buttonPrimary",
+                              "interacao": {
+                                "intencaoAcao": "Ir para o formulário para preencher briefing e gerar amostra em PDF",
+                                "targetSectionId": "#sec-formulario",
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            },
+                            {
+                              "id": "hero-cta-secondary",
+                              "tag": "a",
+                              "texto": {
+                                "tamMaximo": 50,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "buttonSecondary",
+                              "interacao": {
+                                "intencaoAcao": "Navegar para a seção que explica o que vem na amostra (entregáveis)",
+                                "targetSectionId": "#sec-o-que-recebe",
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            },
+                            {
+                              "id": "hero-cta-tertiary",
+                              "tag": "a",
+                              "texto": {
+                                "tamMaximo": 50,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "buttonSecondary",
+                              "interacao": {
+                                "intencaoAcao": "Navegar para a seção que explica como funciona (passos)",
+                                "targetSectionId": "#sec-como-funciona",
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            }
+                          ],
+                          "estilos": [
+                            "ctaRow",
+                            "ctaRowGap",
+                            "ctaRowWrap"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "stack",
+                        "stackCol",
+                        "stackGap"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "hero-right",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "hero-img-product",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Hero (lado direito no desktop; abaixo do texto no mobile) como âncora visual do produto/entrega imediatamente.",
+                            "tipoVisualEsperado": "Mockup de PDF A4 (1 página) com marca d’água visível + mini-kit em cartões (convite, resposta anti-preço, mapa 4 semanas, 2 check-ins), com micro-selos de tempo (~3 min / briefing 2 min).",
+                            "funcaoComercial": "Provar que existe um entregável concreto e reduzir risco de ‘comprar no escuro’, aumentando cliques para o formulário.",
+                            "objecaoQueRemove": "‘Não sei o que vou receber’ / ‘Isso é só promessa’ / ‘Vai dar trabalho?’",
+                            "classificacaoVisual": "mockup"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/mockup-amostra-pdf-hero.png",
+                            "alt": "Mockup da amostra personalizada em PDF (1 página com marca d’água) e mini-kit com convite, resposta anti-preço, mapa de 4 semanas e check-ins",
+                            "width": 1200,
+                            "height": 900
+                          },
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "stack",
+                        "stackCol",
+                        "stackGap"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "row2col",
+                    "row2colTpl",
+                    "row2colGap",
+                    "row2colAlign"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                }
+              ],
+              "estilos": [
+                "container",
+                "containerPad",
+                "containerCenter"
+              ],
+              "briefingVisual": null,
+              "componente": "none",
+              "interacao": {
+                "intencaoAcao": "",
+                "targetSectionId": null,
+                "hrefEsperado": null
+              },
+              "asset": null,
+              "contratoCampo": null
+            }
+          ],
+          "oQueQuerProvocarNoUsuario": "Entendimento imediato da proposta (amostra em PDF gerada rápido) e sensação de baixo esforço + curiosidade para ver a amostra.",
+          "papelComercial": "Primeira dobra de conversão com promessa + prova visual + CTA âncora.",
+          "fasePersuasao": "promessa-prova-acao",
+          "objeçãoQueRemove": "‘Não quero perder tempo’ e ‘Não sei o que vou receber’.",
+          "prioridadeConversao": 10,
+          "acaoEsperada": "Clicar no CTA e ir para o formulário.",
+          "fonteContexto": [
+            "campaignAngle.primaryCTA",
+            "campaignAngle.landingMatchLine",
+            "campaignAngle.proofSummary"
+          ],
+          "estilos": [
+            "heroPad",
+            "relative"
+          ]
+        },
+        {
+          "nome": "O que você recebe (preview do kit)",
+          "objetivo": "Detalhar de forma escaneável os itens do mini-kit que acompanham a amostra em PDF, reforçando que é uma prévia gerada por IA e pronta para usar hoje.",
+          "id": "sec-o-que-recebe",
+          "elementosSeccao": [
+            {
+              "id": "recebe-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 9999,
+                "tamMinimo": 1,
+                "conteudo": ""
+              },
+              "elementosInternos": [
+                {
+                  "id": "recebe-header",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "recebe-h2",
+                      "tag": "h2",
+                      "texto": {
+                        "tamMaximo": 80,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [],
+                      "estilos": [
+                        "stackGapSm"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "recebe-sub",
+                      "tag": "p",
+                      "texto": {
+                        "tamMaximo": 180,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [],
+                      "estilos": [
+                        "stackGapMd"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "stack",
+                    "stackCol",
+                    "stackGap"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                },
+                {
+                  "id": "recebe-grid",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "card-item-1",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "card-item-1-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘O que você recebe’, dentro do primeiro card (convite/bio + mensagem).",
+                            "tipoVisualEsperado": "Tile/card visual do item ‘Convite/Bio + Mensagem’ com estética de kit pronto.",
+                            "funcaoComercial": "Tornar o entregável tangível e reduzir a sensação de ‘curso’/abstração.",
+                            "objecaoQueRemove": "‘Isso não é prático’ / ‘Não vem nada pronto’.",
+                            "classificacaoVisual": "mockup"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/tile-convite-bio.png",
+                            "alt": "Card do mini-kit: convite/bio + mensagem",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-1-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-1-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 120,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "card-item-2",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "card-item-2-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘O que você recebe’, card do item ‘Resposta curta anti-preço’.",
+                            "tipoVisualEsperado": "Balão de chat estilizado com ‘Quanto custa?’ em cinza e um cartão destacado ‘Resposta anti-preço (pronta)’.",
+                            "funcaoComercial": "Conectar direto com a dor do anúncio e mostrar um componente específico do kit.",
+                            "objecaoQueRemove": "‘O lead só quer preço’ / ‘Eu não sei responder sem virar desconto’.",
+                            "classificacaoVisual": "print conceitual"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/tile-resposta-antipreco.png",
+                            "alt": "Conceito visual: pergunta 'Quanto custa?' e cartão 'Resposta anti-preço (pronta)'",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-2-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-2-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 120,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "card-item-3",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "card-item-3-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘O que você recebe’, card do ‘Mapa visual de progresso (4 semanas)’.",
+                            "tipoVisualEsperado": "Mini-diagrama timeline Week 1–4 com marcos simples (começo guiado).",
+                            "funcaoComercial": "Antecipar a percepção de progresso/estrutura nas primeiras semanas.",
+                            "objecaoQueRemove": "‘Aluno desanima rápido’ / ‘Não dá para mostrar progresso no começo’.",
+                            "classificacaoVisual": "diagrama"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/tile-mapa-4-semanas.png",
+                            "alt": "Diagrama do mapa de progresso de 4 semanas com marcos",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-3-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-3-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 120,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "card-item-4",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "card-item-4-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘O que você recebe’, card dos ‘2 check-ins (semanas 1 e 2)’.",
+                            "tipoVisualEsperado": "Checklist/etapas de 2 check-ins com ícones simples (sem prints reais).",
+                            "funcaoComercial": "Mostrar cuidado/contato estruturado sem prometer acompanhamento humano (é material pronto).",
+                            "objecaoQueRemove": "‘Sem acompanhamento o aluno some’ / ‘Não tenho tempo para inventar check-ins’.",
+                            "classificacaoVisual": "ilustração"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/tile-checkins-semana1-2.png",
+                            "alt": "Ilustração de 2 check-ins estruturados (semana 1 e 2)",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-4-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "card-item-4-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 120,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "cardsGrid2",
+                    "cardsGrid2Tpl",
+                    "cardsGridGap"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                },
+                {
+                  "id": "recebe-cta-row",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "recebe-cta",
+                      "tag": "a",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [],
+                      "estilos": [],
+                      "briefingVisual": null,
+                      "componente": "buttonPrimary",
+                      "interacao": {
+                        "intencaoAcao": "Ir para o formulário para gerar a amostra personalizada em PDF",
+                        "targetSectionId": "#sec-formulario",
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "ctaRow",
+                    "ctaRowGap",
+                    "ctaRowWrap"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                }
+              ],
+              "estilos": [
+                "container",
+                "containerPad",
+                "containerCenter"
+              ],
+              "briefingVisual": null,
+              "componente": "none",
+              "interacao": {
+                "intencaoAcao": "",
+                "targetSectionId": null,
+                "hrefEsperado": null
+              },
+              "asset": null,
+              "contratoCampo": null
+            }
+          ],
+          "oQueQuerProvocarNoUsuario": "Clareza imediata do que está incluso e sensação de ‘isso é usável hoje’.",
+          "papelComercial": "Aprofundar a oferta/entrega e conectar com a dor ‘quanto custa?’ e com retenção nas primeiras semanas.",
+          "fasePersuasao": "prova-oferta",
+          "objeçãoQueRemove": "‘Não sei o que vem’ e ‘Isso não resolve meu problema prático’.",
+          "prioridadeConversao": 8,
+          "acaoEsperada": "Sentir confiança no preview e clicar para preencher o formulário.",
+          "fonteContexto": [
+            "campaignAngle.proofSummary",
+            "campaignAngle.landingMatchLine",
+            "PAIN_JSON.root"
+          ],
+          "estilos": [
+            "sectionPadMd"
+          ]
+        },
+        {
+          "nome": "Como funciona (3 passos)",
+          "objetivo": "Explicar o mecanismo de forma simples (sem virar promessa principal): briefing curto → geração por IA → você usa a amostra/kit hoje para atrair e iniciar com começo guiado.",
+          "id": "sec-como-funciona",
+          "elementosSeccao": [
+            {
+              "id": "como-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 9999,
+                "tamMinimo": 1,
+                "conteudo": ""
+              },
+              "elementosInternos": [
+                {
+                  "id": "como-header",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "como-h2",
+                      "tag": "h2",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [],
+                      "estilos": [
+                        "stackGapSm"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "como-sub",
+                      "tag": "p",
+                      "texto": {
+                        "tamMaximo": 170,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [],
+                      "estilos": [
+                        "stackGapMd"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "stack",
+                    "stackCol",
+                    "stackGap"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                },
+                {
+                  "id": "como-grid",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "step-1",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "step-1-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘Como funciona’, passo 1 (Briefing 2 min).",
+                            "tipoVisualEsperado": "Ícone/ilustração simples de formulário curto (2 campos destacados) + indicador ‘2 min’.",
+                            "funcaoComercial": "Reduzir fricção e antecipar baixo esforço.",
+                            "objecaoQueRemove": "‘Vai dar trabalho’ / ‘Não tenho tempo’.",
+                            "classificacaoVisual": "ilustração"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/como-passo1-briefing.png",
+                            "alt": "Ilustração do passo 1: preencher briefing curto (~2 min)",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "step-1-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "step-1-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 140,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "step-2",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "step-2-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘Como funciona’, passo 2 (Geração por IA em ~3 min).",
+                            "tipoVisualEsperado": "Diagrama simples: respostas → engrenagem/IA → PDF/tiles; com indicador ‘~3 min’.",
+                            "funcaoComercial": "Reforçar a prova de velocidade e automação (sem trabalho manual).",
+                            "objecaoQueRemove": "‘Isso depende de alguém me atender’ / ‘Vai demorar’.",
+                            "classificacaoVisual": "diagrama"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/como-passo2-geracao.png",
+                            "alt": "Diagrama do passo 2: IA gera a amostra em PDF em ~3 min",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "step-2-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "step-2-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 140,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "step-3",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "step-3-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção ‘Como funciona’, passo 3 (Usar hoje no Instagram/WhatsApp e no início do acompanhamento).",
+                            "tipoVisualEsperado": "Fluxo simples com ícones: post/stories → WhatsApp → mapa 4 semanas/check-ins.",
+                            "funcaoComercial": "Conectar a entrega com o uso prático (atração + início guiado) sem prometer resultado garantido.",
+                            "objecaoQueRemove": "‘Ok, mas como uso isso?’",
+                            "classificacaoVisual": "diagrama"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/como-passo3-uso.png",
+                            "alt": "Diagrama do passo 3: usar o kit em posts/stories, WhatsApp e início guiado",
+                            "width": 800,
+                            "height": 600
+                          },
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "step-3-title",
+                          "tag": "h3",
+                          "texto": {
+                            "tamMaximo": 50,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "step-3-desc",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 140,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "cardPad"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "card",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "cardsGrid3",
+                    "cardsGrid3Tpl",
+                    "cardsGridGap"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                },
+                {
+                  "id": "como-cta-row",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "como-cta",
+                      "tag": "a",
+                      "texto": {
+                        "tamMaximo": 70,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [],
+                      "estilos": [],
+                      "briefingVisual": null,
+                      "componente": "buttonPrimary",
+                      "interacao": {
+                        "intencaoAcao": "Ir para o formulário para gerar a amostra personalizada em PDF",
+                        "targetSectionId": "#sec-formulario",
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "ctaRow",
+                    "ctaRowGap",
+                    "ctaRowWrap"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                }
+              ],
+              "estilos": [
+                "container",
+                "containerPad",
+                "containerCenter"
+              ],
+              "briefingVisual": null,
+              "componente": "none",
+              "interacao": {
+                "intencaoAcao": "",
+                "targetSectionId": null,
+                "hrefEsperado": null
+              },
+              "asset": null,
+              "contratoCampo": null
+            }
+          ],
+          "oQueQuerProvocarNoUsuario": "Redução de fricção e entendimento claro do fluxo (rápido e automático).",
+          "papelComercial": "Explicação do mecanismo com simplicidade, reforçando automação e velocidade.",
+          "fasePersuasao": "mecanismo-prova",
+          "objeçãoQueRemove": "‘Isso parece complexo’ / ‘Vai exigir call/consultoria’.",
+          "prioridadeConversao": 7,
+          "acaoEsperada": "Avançar para preencher o formulário.",
+          "fonteContexto": [
+            "campaignAngle.mechanismSummary",
+            "campaignAngle.proofSummary"
+          ],
+          "estilos": [
+            "sectionPadMd",
+            "sectionBgAlt"
+          ]
+        },
+        {
+          "nome": "Prova/preview — como fica a amostra (1 página)",
+          "objetivo": "Aumentar confiança mostrando um preview visual do PDF de 1 página com marca d’água e a estrutura do conteúdo (sem revelar dados pessoais).",
+          "id": "sec-prova-preview",
+          "elementosSeccao": [
+            {
+              "id": "preview-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 9999,
+                "tamMinimo": 1,
+                "conteudo": ""
+              },
+              "elementosInternos": [
+                {
+                  "id": "preview-grid",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "preview-left",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "preview-h2",
+                          "tag": "h2",
+                          "texto": {
+                            "tamMaximo": 80,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "preview-p",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 200,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapMd"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "preview-points",
+                          "tag": "ul",
+                          "texto": {
+                            "tamMaximo": 9999,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [
+                            {
+                              "id": "preview-li-1",
+                              "tag": "li",
+                              "texto": {
+                                "tamMaximo": 70,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            },
+                            {
+                              "id": "preview-li-2",
+                              "tag": "li",
+                              "texto": {
+                                "tamMaximo": 70,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            },
+                            {
+                              "id": "preview-li-3",
+                              "tag": "li",
+                              "texto": {
+                                "tamMaximo": 70,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            }
+                          ],
+                          "estilos": [
+                            "stackGapLg"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "preview-cta-row",
+                          "tag": "div",
+                          "texto": {
+                            "tamMaximo": 9999,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [
+                            {
+                              "id": "preview-cta",
+                              "tag": "a",
+                              "texto": {
+                                "tamMaximo": 80,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [],
+                              "estilos": [],
+                              "briefingVisual": null,
+                              "componente": "buttonPrimary",
+                              "interacao": {
+                                "intencaoAcao": "Ir para o formulário para gerar a amostra personalizada em PDF",
+                                "targetSectionId": "#sec-formulario",
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            }
+                          ],
+                          "estilos": [
+                            "ctaRow",
+                            "ctaRowGap",
+                            "ctaRowWrap"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "stack",
+                        "stackCol",
+                        "stackGap"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "preview-right",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "preview-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Seção de prova/preview, lado direito: visual grande do PDF para leitura rápida dos blocos (sem copy legível demais).",
+                            "tipoVisualEsperado": "Mockup de uma página A4 com marca d’água e blocos rotulados (Convite, Anti-preço, Mapa 4 semanas, Check-ins) + selo ‘Amostra’.",
+                            "funcaoComercial": "Aumentar confiança mostrando um ‘exemplo do que vem’ e reforçar tangibilidade.",
+                            "objecaoQueRemove": "‘Não sei se isso é real’ / ‘Não sei se vai ficar bom para mim’.",
+                            "classificacaoVisual": "mockup"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/mockup-preview-pdf-1pagina.png",
+                            "alt": "Preview mockup do PDF de 1 página com marca d’água e seções do kit",
+                            "width": 1200,
+                            "height": 900
+                          },
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "stack",
+                        "stackCol",
+                        "stackGap"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "row2col",
+                    "row2colTpl",
+                    "row2colGap",
+                    "row2colAlign"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                }
+              ],
+              "estilos": [
+                "container",
+                "containerPad",
+                "containerCenter"
+              ],
+              "briefingVisual": null,
+              "componente": "none",
+              "interacao": {
+                "intencaoAcao": "",
+                "targetSectionId": null,
+                "hrefEsperado": null
+              },
+              "asset": null,
+              "contratoCampo": null
+            }
+          ],
+          "oQueQuerProvocarNoUsuario": "Confiança (preview real) e desejo de ver a versão personalizada.",
+          "papelComercial": "Remoção de risco com demonstração do entregável (prova visual).",
+          "fasePersuasao": "prova",
+          "objeçãoQueRemove": "‘Vou preencher e não vai vir nada útil’ / ‘Parece genérico’.",
+          "prioridadeConversao": 8,
+          "acaoEsperada": "Clicar para preencher o formulário.",
+          "fonteContexto": [
+            "campaignAngle.proofSummary",
+            "campaignAngle.landingMatchLine"
+          ],
+          "estilos": [
+            "sectionPadLg"
+          ]
+        },
+        {
+          "nome": "Formulário — gerar amostra personalizada em PDF",
+          "objetivo": "Coletar somente nome e email para entrega da amostra personalizada em PDF, com CTA alinhado ao anúncio e reforço de expectativa de tempo/entrega (estimativa).",
+          "id": "sec-formulario",
+          "elementosSeccao": [
+            {
+              "id": "form-container",
+              "tag": "div",
+              "texto": {
+                "tamMaximo": 9999,
+                "tamMinimo": 1,
+                "conteudo": ""
+              },
+              "elementosInternos": [
+                {
+                  "id": "form-grid",
+                  "tag": "div",
+                  "texto": {
+                    "tamMaximo": 9999,
+                    "tamMinimo": 1,
+                    "conteudo": ""
+                  },
+                  "elementosInternos": [
+                    {
+                      "id": "form-left",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "form-h2",
+                          "tag": "h2",
+                          "texto": {
+                            "tamMaximo": 80,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapSm"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "form-sub",
+                          "tag": "p",
+                          "texto": {
+                            "tamMaximo": 220,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [
+                            "stackGapMd"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        },
+                        {
+                          "id": "form-box",
+                          "tag": "div",
+                          "texto": {
+                            "tamMaximo": 9999,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [
+                            {
+                              "id": "form-el",
+                              "tag": "form",
+                              "texto": {
+                                "tamMaximo": 9999,
+                                "tamMinimo": 1,
+                                "conteudo": ""
+                              },
+                              "elementosInternos": [
+                                {
+                                  "id": "form-fields",
+                                  "tag": "div",
+                                  "texto": {
+                                    "tamMaximo": 9999,
+                                    "tamMinimo": 1,
+                                    "conteudo": ""
+                                  },
+                                  "elementosInternos": [
+                                    {
+                                      "id": "input-nome",
+                                      "tag": "input",
+                                      "texto": {
+                                        "tamMaximo": 1,
+                                        "tamMinimo": 1,
+                                        "conteudo": ""
+                                      },
+                                      "elementosInternos": [],
+                                      "estilos": [],
+                                      "briefingVisual": null,
+                                      "componente": "formInput",
+                                      "interacao": {
+                                        "intencaoAcao": "Preencher campo de nome para geração da amostra",
+                                        "targetSectionId": null,
+                                        "hrefEsperado": null
+                                      },
+                                      "asset": null,
+                                      "contratoCampo": {
+                                        "type": "text",
+                                        "name": "nome",
+                                        "autocomplete": "name",
+                                        "required": true,
+                                        "placeholder": ""
+                                      }
+                                    },
+                                    {
+                                      "id": "input-email",
+                                      "tag": "input",
+                                      "texto": {
+                                        "tamMaximo": 1,
+                                        "tamMinimo": 1,
+                                        "conteudo": ""
+                                      },
+                                      "elementosInternos": [],
+                                      "estilos": [],
+                                      "briefingVisual": null,
+                                      "componente": "formInput",
+                                      "interacao": {
+                                        "intencaoAcao": "Preencher campo de email para receber a amostra em PDF",
+                                        "targetSectionId": null,
+                                        "hrefEsperado": null
+                                      },
+                                      "asset": null,
+                                      "contratoCampo": {
+                                        "type": "email",
+                                        "name": "email",
+                                        "autocomplete": "email",
+                                        "required": true,
+                                        "placeholder": ""
+                                      }
+                                    }
+                                  ],
+                                  "estilos": [
+                                    "formGrid",
+                                    "formGridTpl",
+                                    "formGridGap",
+                                    "stackGapMd"
+                                  ],
+                                  "briefingVisual": null,
+                                  "componente": "none",
+                                  "interacao": {
+                                    "intencaoAcao": "",
+                                    "targetSectionId": null,
+                                    "hrefEsperado": null
+                                  },
+                                  "asset": null,
+                                  "contratoCampo": null
+                                },
+                                {
+                                  "id": "form-submit",
+                                  "tag": "button",
+                                  "texto": {
+                                    "tamMaximo": 60,
+                                    "tamMinimo": 1,
+                                    "conteudo": ""
+                                  },
+                                  "elementosInternos": [],
+                                  "estilos": [],
+                                  "briefingVisual": null,
+                                  "componente": "buttonPrimary",
+                                  "interacao": {
+                                    "intencaoAcao": "Enviar formulário para gerar a amostra personalizada em PDF",
+                                    "targetSectionId": null,
+                                    "hrefEsperado": null
+                                  },
+                                  "asset": null,
+                                  "contratoCampo": null
+                                },
+                                {
+                                  "id": "form-privacy",
+                                  "tag": "p",
+                                  "texto": {
+                                    "tamMaximo": 140,
+                                    "tamMinimo": 1,
+                                    "conteudo": ""
+                                  },
+                                  "elementosInternos": [],
+                                  "estilos": [
+                                    "stackGapSm"
+                                  ],
+                                  "briefingVisual": null,
+                                  "componente": "none",
+                                  "interacao": {
+                                    "intencaoAcao": "",
+                                    "targetSectionId": null,
+                                    "hrefEsperado": null
+                                  },
+                                  "asset": null,
+                                  "contratoCampo": null
+                                }
+                              ],
+                              "estilos": [
+                                "stack",
+                                "stackCol",
+                                "stackGap"
+                              ],
+                              "briefingVisual": null,
+                              "componente": "none",
+                              "interacao": {
+                                "intencaoAcao": "",
+                                "targetSectionId": null,
+                                "hrefEsperado": null
+                              },
+                              "asset": null,
+                              "contratoCampo": null
+                            }
+                          ],
+                          "estilos": [
+                            "formPad"
+                          ],
+                          "briefingVisual": null,
+                          "componente": "card",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": null,
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "stack",
+                        "stackCol",
+                        "stackGap"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    },
+                    {
+                      "id": "form-right",
+                      "tag": "div",
+                      "texto": {
+                        "tamMaximo": 9999,
+                        "tamMinimo": 1,
+                        "conteudo": ""
+                      },
+                      "elementosInternos": [
+                        {
+                          "id": "form-img",
+                          "tag": "img",
+                          "texto": {
+                            "tamMaximo": 1,
+                            "tamMinimo": 1,
+                            "conteudo": ""
+                          },
+                          "elementosInternos": [],
+                          "estilos": [],
+                          "briefingVisual": {
+                            "ondeEntraNoVisual": "Ao lado do formulário como reforço final de prova/entrega (o que chega no email).",
+                            "tipoVisualEsperado": "Mockup ‘email/caixa de entrada’ estilizado (sem marcas reais) com anexo PDF + mini-tiles do kit.",
+                            "funcaoComercial": "Reduzir hesitação na hora do envio, reforçando que o resultado chega em PDF e é um preview com marca d’água.",
+                            "objecaoQueRemove": "‘Vou preencher e não vou receber’ / ‘Vai demorar’ / ‘Não é PDF de verdade’.",
+                            "classificacaoVisual": "print conceitual"
+                          },
+                          "componente": "none",
+                          "interacao": {
+                            "intencaoAcao": "",
+                            "targetSectionId": null,
+                            "hrefEsperado": null
+                          },
+                          "asset": {
+                            "src": "assets/visual-entrega-email-pdf.png",
+                            "alt": "Conceito visual de entrega: email com anexo PDF e mini-kit",
+                            "width": 1200,
+                            "height": 900
+                          },
+                          "contratoCampo": null
+                        }
+                      ],
+                      "estilos": [
+                        "stack",
+                        "stackCol",
+                        "stackGap"
+                      ],
+                      "briefingVisual": null,
+                      "componente": "none",
+                      "interacao": {
+                        "intencaoAcao": "",
+                        "targetSectionId": null,
+                        "hrefEsperado": null
+                      },
+                      "asset": null,
+                      "contratoCampo": null
+                    }
+                  ],
+                  "estilos": [
+                    "row2col",
+                    "row2colTpl",
+                    "row2colGap",
+                    "row2colAlign"
+                  ],
+                  "briefingVisual": null,
+                  "componente": "none",
+                  "interacao": {
+                    "intencaoAcao": "",
+                    "targetSectionId": null,
+                    "hrefEsperado": null
+                  },
+                  "asset": null,
+                  "contratoCampo": null
+                }
+              ],
+              "estilos": [
+                "container",
+                "containerPad",
+                "containerCenter"
+              ],
+              "briefingVisual": null,
+              "componente": "none",
+              "interacao": {
+                "intencaoAcao": "",
+                "targetSectionId": null,
+                "hrefEsperado": null
+              },
+              "asset": null,
+              "contratoCampo": null
+            }
+          ],
+          "oQueQuerProvocarNoUsuario": "Decisão rápida: ‘ok, faz sentido e é simples’ → preencher e enviar.",
+          "papelComercial": "Seção principal de captura (conversão).",
+          "fasePersuasao": "acao",
+          "objeçãoQueRemove": "‘Não quero me comprometer’ / ‘Vai pedir WhatsApp’ / ‘Vai ser chato’.",
+          "prioridadeConversao": 10,
+          "acaoEsperada": "Preencher nome e email e enviar.",
+          "fonteContexto": [
+            "campaignAngle.primaryCTA",
+            "campaignAngle.landingMatchLine"
+          ],
+          "estilos": [
+            "sectionPadLg",
+            "sectionBgAlt",
+            "relative",
+            "zTop"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.designpreset.web;
+package com.marketinghub.geralanding.presetdesign.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -8,14 +8,13 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStageExecutionService;
-import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStageService;
-import com.marketinghub.geralanding.designpreset.service.GeraLandingDesignPresetStartResponse;
-import com.marketinghub.geralanding.designpreset.service.RecebePromptRequest;
-import com.marketinghub.geralanding.designpreset.service.RecebeRespostaRequest;
-import com.marketinghub.geralanding.designpreset.service.RecordDesignPresetExperiment;
-import com.marketinghub.geralanding.designpreset.service.RecordDesignPresetHypothesis;
-import com.marketinghub.geralanding.designpreset.service.RecordDesignPresetPending;
+import com.marketinghub.geralanding.presetdesign.service.BackendPresetDesignService;
+import com.marketinghub.geralanding.presetdesign.service.GeraLandingPresetDesignStartResponse;
+import com.marketinghub.geralanding.presetdesign.service.recebePrompt.RecebePromptRequest;
+import com.marketinghub.geralanding.presetdesign.service.recebeResposta.RecebeRespostaRequest;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignExperiment;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignHypothesis;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -23,28 +22,27 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** Valida o contrato HTTP da etapa design preset do GeraLanding. */
-class GeraLandingDesignPresetControllerTest {
+class BackendPresetDesignControllerTest {
 
     /** Deve delegar início da etapa design preset para o serviço específico. */
     @Test
     void startShouldDelegateToDesignPresetService() {
-        GeraLandingDesignPresetStageService stageService = mock(GeraLandingDesignPresetStageService.class);
-        GeraLandingDesignPresetStageExecutionService executionService = mock(GeraLandingDesignPresetStageExecutionService.class);
-        GeraLandingDesignPresetController controller = new GeraLandingDesignPresetController(stageService, executionService);
-        when(stageService.start(44L)).thenReturn(new GeraLandingDesignPresetStartResponse("job-design-preset", "INICIADO"));
+        BackendPresetDesignService executionService = mock(BackendPresetDesignService.class);
+        BackendPresetDesignController controller = new BackendPresetDesignController(executionService);
+        when(executionService.start(44L)).thenReturn(new GeraLandingPresetDesignStartResponse("job-design-preset", "INICIADO"));
 
         var response = controller.start(44L);
 
         assertEquals(202, response.getStatusCode().value());
         assertEquals("job-design-preset", response.getBody().idJob());
-        verify(stageService).start(44L);
+        verify(executionService).start(44L);
     }
 
     /** Deve receber prompt e delegar o payload bruto para o serviço da etapa design preset. */
     @Test
     void receivePromptShouldDelegateToDesignPresetService() {
-        GeraLandingDesignPresetStageExecutionService executionService = mock(GeraLandingDesignPresetStageExecutionService.class);
-        GeraLandingDesignPresetController controller = new GeraLandingDesignPresetController(mock(GeraLandingDesignPresetStageService.class), executionService);
+        BackendPresetDesignService executionService = mock(BackendPresetDesignService.class);
+        BackendPresetDesignController controller = new BackendPresetDesignController(executionService);
         RecebePromptRequest payload = new RecebePromptRequest(
                 44L,
                 "landing-page-design-preset",
@@ -65,8 +63,8 @@ class GeraLandingDesignPresetControllerTest {
     /** Deve receber resposta de sucesso e delegar conclusão para o serviço da etapa design preset. */
     @Test
     void receiveResultShouldDelegateSuccessPayloadToDesignPresetService() {
-        GeraLandingDesignPresetStageExecutionService executionService = mock(GeraLandingDesignPresetStageExecutionService.class);
-        GeraLandingDesignPresetController controller = new GeraLandingDesignPresetController(mock(GeraLandingDesignPresetStageService.class), executionService);
+        BackendPresetDesignService executionService = mock(BackendPresetDesignService.class);
+        BackendPresetDesignController controller = new BackendPresetDesignController(executionService);
         RecebeRespostaRequest payload = new RecebeRespostaRequest(
                 44L,
                 "landing-page-design-preset",
@@ -88,16 +86,14 @@ class GeraLandingDesignPresetControllerTest {
 
     /** Deve serializar pending como lista com atributos compatíveis com o worker atual. */
     @Test
-    void pendingShouldSerializeListItemsWithExperimentJobidAndIdJob() throws Exception {
-        GeraLandingDesignPresetStageExecutionService executionService = mock(GeraLandingDesignPresetStageExecutionService.class);
-        GeraLandingDesignPresetController controller = new GeraLandingDesignPresetController(mock(GeraLandingDesignPresetStageService.class), executionService);
+    void pendingShouldSerializeListItemsWithExperimentAndJobid() throws Exception {
+        BackendPresetDesignService executionService = mock(BackendPresetDesignService.class);
+        BackendPresetDesignController controller = new BackendPresetDesignController(executionService);
         when(executionService.listPending("landing-page-design-preset")).thenReturn(List.of(
-                new RecordDesignPresetPending(
+                new RecordPresetDesignPending(
                         33L,
                         "job-design-preset",
-                        "job-design-preset",
                         "landing-page-design-preset",
-                        "INICIADO",
                         pendingExperiment(33L, "Experimento 33", "Hipótese 33"),
                         pendingHypothesis())));
 
@@ -106,16 +102,14 @@ class GeraLandingDesignPresetControllerTest {
         assertTrue(json.isArray());
         assertEquals(1, json.size());
         assertEquals("job-design-preset", json.get(0).get("jobid").asText());
-        assertEquals("job-design-preset", json.get(0).get("idJob").asText());
-        assertEquals("INICIADO", json.get(0).get("status").asText());
         assertEquals(33L, json.get(0).get("experiment").get("id").asLong());
         assertTrue(json.get(0).has("hypothesis"));
         assertEquals("Dor superficial", json.get(0).get("hypothesis").get("framework").get("pain").get("surface").asText());
     }
 
     /** Cria a hipótese usada pelos testes de contrato pending. */
-    private RecordDesignPresetHypothesis pendingHypothesis() {
-        return new RecordDesignPresetHypothesis(
+    private RecordPresetDesignHypothesis pendingHypothesis() {
+        return new RecordPresetDesignHypothesis(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
                 "Hipótese Framework",
                 Map.of(
@@ -128,8 +122,8 @@ class GeraLandingDesignPresetControllerTest {
     }
 
     /** Cria o resumo de experimento usado pelos testes de contrato pending. */
-    private RecordDesignPresetExperiment pendingExperiment(Long id, String name, String hypothesis) {
-        return new RecordDesignPresetExperiment(
+    private RecordPresetDesignExperiment pendingExperiment(Long id, String name, String hypothesis) {
+        return new RecordPresetDesignExperiment(
                 id,
                 name,
                 hypothesis,

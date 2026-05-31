@@ -33,7 +33,7 @@ flowchart LR
         CandidateService[Servico CNAE para candidatos]
     end
 
-    subgraph DB[(MySQL 5.7)]
+    subgraph DB[MySQL 5.7]
         CnaeDim[(oprm_cnpj_cnae_dim)]
         MarketSize[(oprm_market_size_by_cnae)]
         Establishment[(oprm_estabelecimento_cnae_raiz)]

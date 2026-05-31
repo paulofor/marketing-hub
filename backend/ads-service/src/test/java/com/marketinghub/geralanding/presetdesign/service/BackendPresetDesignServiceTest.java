@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.designpreset.service;
+package com.marketinghub.geralanding.presetdesign.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,6 +15,9 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.geralanding.presetdesign.service.detailStageExecution.RecordBackendPresetDesignDetalheDto;
+import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.GeraLandingPresetDesignExecutionSummaryResponse;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -24,22 +27,22 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** Valida as consultas de execução específicas da etapa design preset. */
-class GeraLandingDesignPresetStageExecutionServiceTest {
+class BackendPresetDesignServiceTest {
 
     /** Deve registrar o início usando o código canônico da etapa design preset. */
     @Test
     void startShouldRegisterInitialExecutionForDesignPresetStage() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        GeraLandingDesignPresetStageExecutionService service =
-                new GeraLandingDesignPresetStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendPresetDesignService service =
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(91L);
         when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
         when(executionRepository.save(any(GeraLandingStageExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        GeraLandingDesignPresetStartResponse response = service.registerInitialExecution(91L, "landing-page-design-preset");
+        GeraLandingPresetDesignStartResponse response = service.start(91L);
 
         assertNotNull(response.idJob());
         assertEquals("INICIADO", response.status());
@@ -58,8 +61,8 @@ class GeraLandingDesignPresetStageExecutionServiceTest {
     void listPendingShouldQueryStartedJobsForStage() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        GeraLandingDesignPresetStageExecutionService service =
-                new GeraLandingDesignPresetStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendPresetDesignService service =
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(77L);
         when(experiment.getName()).thenReturn("Experimento DesignPreset");
@@ -102,14 +105,12 @@ class GeraLandingDesignPresetStageExecutionServiceTest {
                 "landing-page-design-preset", "INICIADO"))
                 .thenReturn(List.of(execution));
 
-        List<RecordDesignPresetPending> pending = service.listPending("landing-page-design-preset");
+        List<RecordPresetDesignPending> pending = service.listPending("landing-page-design-preset");
 
         assertEquals(1, pending.size());
         assertEquals(77L, pending.get(0).experimentId());
         assertEquals("job-77", pending.get(0).jobid());
-        assertEquals("job-77", pending.get(0).idJob());
         assertEquals("landing-page-design-preset", pending.get(0).stageCode());
-        assertEquals("INICIADO", pending.get(0).status());
         assertEquals("Experimento DesignPreset", pending.get(0).experiment().name());
         assertTrue(pending.get(0).experiment().campaignAngle() instanceof java.util.Map<?, ?>);
         assertEquals(hypothesisId, pending.get(0).hypothesis().id());
@@ -121,8 +122,8 @@ class GeraLandingDesignPresetStageExecutionServiceTest {
     void markPromptReceivedShouldPersistPromptPayload() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        GeraLandingDesignPresetStageExecutionService service =
-                new GeraLandingDesignPresetStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendPresetDesignService service =
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper());
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .idJob("job-design-preset".getBytes(StandardCharsets.UTF_8))
                 .status("INICIADO")
@@ -146,8 +147,8 @@ class GeraLandingDesignPresetStageExecutionServiceTest {
     void markCompletedFromResponseShouldPersistDesignPresetArtifactOnSuccess() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        GeraLandingDesignPresetStageExecutionService service =
-                new GeraLandingDesignPresetStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendPresetDesignService service =
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(88L)
@@ -173,8 +174,8 @@ class GeraLandingDesignPresetStageExecutionServiceTest {
     void markCompletedFromResponseShouldNotPersistDesignPresetArtifactOnFailure() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        GeraLandingDesignPresetStageExecutionService service =
-                new GeraLandingDesignPresetStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendPresetDesignService service =
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(88L)

@@ -1,7 +1,7 @@
-package com.marketinghub.geralanding.designpreset.service;
+package com.marketinghub.geralanding.presetdesign.service.pending;
 
-/** Representa os dados do experimento expostos na fila interna da etapa design preset. */
-public record RecordDesignPresetExperiment(
+/** Representa os dados do experimento expostos na fila interna da etapa preset design. */
+public record RecordPresetDesignExperiment(
         Long id,
         String name,
         String hypothesis,

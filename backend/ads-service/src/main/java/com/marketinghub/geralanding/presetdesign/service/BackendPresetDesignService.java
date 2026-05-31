@@ -1,4 +1,4 @@
-package com.marketinghub.geralanding.designpreset.service;
+package com.marketinghub.geralanding.presetdesign.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -7,6 +7,11 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.geralanding.presetdesign.service.detailStageExecution.RecordBackendPresetDesignDetalheDto;
+import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.GeraLandingPresetDesignExecutionSummaryResponse;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignExperiment;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignHypothesis;
+import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -21,12 +26,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsável por adaptar consultas de execução para o contrato da etapa designpreset. */
+/** Responsável por adaptar consultas e callbacks para o contrato da etapa preset design. */
 @Service
-public class GeraLandingDesignPresetStageExecutionService {
+public class BackendPresetDesignService {
 
-    private static final Logger log = LoggerFactory.getLogger(GeraLandingDesignPresetStageExecutionService.class);
+    private static final Logger log = LoggerFactory.getLogger(BackendPresetDesignService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
+    private static final String STAGE_CODE = "landing-page-design-preset";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -36,7 +42,7 @@ public class GeraLandingDesignPresetStageExecutionService {
     private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para consultar execuções de design preset. */
-    public GeraLandingDesignPresetStageExecutionService(
+    public BackendPresetDesignService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
             ObjectMapper objectMapper) {
@@ -48,7 +54,7 @@ public class GeraLandingDesignPresetStageExecutionService {
 
     /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
     @Transactional
-    public GeraLandingDesignPresetStartResponse registerInitialExecution(Long experimentId, String stageCode) {
+    public GeraLandingPresetDesignStartResponse start(Long experimentId) {
         Instant now = Instant.now();
         var experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
@@ -56,7 +62,7 @@ public class GeraLandingDesignPresetStageExecutionService {
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(experiment.getId())
                 .experiment(experiment)
-                .stageCode(stageCode)
+                .stageCode(STAGE_CODE)
                 .executionRequestedAt(now)
                 .createdAt(now)
                 .promptTemplateId("manual/start")
@@ -65,20 +71,18 @@ public class GeraLandingDesignPresetStageExecutionService {
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
         GeraLandingStageExecution saved = executionRepository.save(execution);
-        return new GeraLandingDesignPresetStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+        return new GeraLandingPresetDesignStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
     }
 
     /** Lista os jobs iniciados da etapa design preset para processamento independente de experimento. */
     @Transactional(readOnly = true)
-    public List<RecordDesignPresetPending> listPending(String stageCode) {
+    public List<RecordPresetDesignPending> listPending(String stageCode) {
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
                 .stream()
-                .map(execution -> new RecordDesignPresetPending(
+                .map(execution -> new RecordPresetDesignPending(
                         execution.getExperimentId(),
                         fromDatabaseIdJob(execution.getIdJob()),
-                        fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode(),
-                        execution.getStatus(),
                         toPendingExperiment(execution.getExperiment()),
                         toPendingHypothesis(execution.getExperiment())))
                 .toList();
@@ -162,7 +166,7 @@ public class GeraLandingDesignPresetStageExecutionService {
 
     /** Lista execuções da etapa convertendo para o DTO local da etapa. */
     @Transactional(readOnly = true)
-    public List<GeraLandingDesignPresetExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode, boolean includeCompleted) {
+    public List<GeraLandingPresetDesignExecutionSummaryResponse> listExperimentStageExecutions(Long experimentId, String stageCode, boolean includeCompleted) {
         List<GeraLandingStageExecution> executions = includeCompleted
                 ? executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(experimentId, stageCode)
                 : executionRepository.findTop20ByExperimentIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
@@ -176,7 +180,7 @@ public class GeraLandingDesignPresetStageExecutionService {
 
     /** Retorna o detalhe da execução convertido para o DTO local da etapa. */
     @Transactional(readOnly = true)
-    public GeraLandingDesignPresetStageExecutionDetailResponse getStageExecutionDetail(Long experimentId, String idJob) {
+    public RecordBackendPresetDesignDetalheDto getStageExecutionDetail(Long experimentId, String idJob) {
         GeraLandingStageExecution execution = executionRepository
                 .findTopByExperimentIdAndIdJobOrderByExecutionRequestedAtDesc(experimentId, toDatabaseIdJob(idJob))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
@@ -224,11 +228,11 @@ public class GeraLandingDesignPresetStageExecutionService {
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */
-    private RecordDesignPresetExperiment toPendingExperiment(Experiment experiment) {
+    private RecordPresetDesignExperiment toPendingExperiment(Experiment experiment) {
         if (experiment == null) {
             return null;
         }
-        return new RecordDesignPresetExperiment(
+        return new RecordPresetDesignExperiment(
                 experiment.getId(),
                 experiment.getName(),
                 experiment.getHypothesis(),
@@ -269,11 +273,11 @@ public class GeraLandingDesignPresetStageExecutionService {
     }
 
     /** Converte a hipótese associada ao experimento para o framework exposto na fila pending. */
-    private RecordDesignPresetHypothesis toPendingHypothesis(Experiment experiment) {
+    private RecordPresetDesignHypothesis toPendingHypothesis(Experiment experiment) {
         if (experiment == null) {
             return null;
         }
-        return new RecordDesignPresetHypothesis(
+        return new RecordPresetDesignHypothesis(
                 experiment.getHypothesisRefIdForPending(),
                 experiment.getHypothesisRefTitleForPending(),
                 resolveFramework(experiment.getId(), experiment.getHypothesisFrameworkJsonForPending()));
@@ -309,8 +313,8 @@ public class GeraLandingDesignPresetStageExecutionService {
     }
 
     /** Converte o resumo transversal para o resumo local da etapa. */
-    private GeraLandingDesignPresetExecutionSummaryResponse toSummaryResponse(GeraLandingStageExecution execution) {
-        return new GeraLandingDesignPresetExecutionSummaryResponse(
+    private GeraLandingPresetDesignExecutionSummaryResponse toSummaryResponse(GeraLandingStageExecution execution) {
+        return new GeraLandingPresetDesignExecutionSummaryResponse(
                 fromDatabaseIdJob(execution.getIdJob()),
                 execution.getStatus(),
                 execution.getExecutionRequestedAt(),
@@ -318,8 +322,8 @@ public class GeraLandingDesignPresetStageExecutionService {
     }
 
     /** Converte o detalhe transversal para o detalhe local da etapa. */
-    private GeraLandingDesignPresetStageExecutionDetailResponse toDetailResponse(GeraLandingStageExecution execution) {
-        return new GeraLandingDesignPresetStageExecutionDetailResponse(
+    private RecordBackendPresetDesignDetalheDto toDetailResponse(GeraLandingStageExecution execution) {
+        return new RecordBackendPresetDesignDetalheDto(
                 fromDatabaseIdJob(execution.getIdJob()),
                 execution.getExperimentId(),
                 execution.getStageCode(),

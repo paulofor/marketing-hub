@@ -1,10 +1,10 @@
-package com.marketinghub.geralanding.designpreset.service;
+package com.marketinghub.geralanding.presetdesign.service.recebeResposta;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
-/** Representa o payload enviado pelo Worker AI para concluir ou falhar a resposta da etapa design preset. */
+/** Representa o payload enviado pelo Worker AI para concluir ou falhar a resposta da etapa preset design. */
 public record RecebeRespostaRequest(
         @NotNull Long experimentId,
         @NotBlank String stageCode,

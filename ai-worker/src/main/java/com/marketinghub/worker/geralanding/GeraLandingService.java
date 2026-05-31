@@ -2,7 +2,6 @@ package com.marketinghub.worker.geralanding;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdCopy;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.AdImageBriefing;
 import com.marketinghub.worker.creative.pipeline.AdImagePayloadBuilder.CampaignAngle;
@@ -12,21 +11,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import org.springframework.core.io.ClassPathResource;
-
 /**
- * Responsabilidade: montar prompts do GeraLanding com dados do experimento e registrar rastreabilidade operacional.
+ * Responsabilidade: montar prompts do GeraLanding com dados do experimento para as etapas do pipeline.
  */
 @Service
 public class GeraLandingService {
@@ -44,33 +42,38 @@ public class GeraLandingService {
     private static final String EXPERIMENT_METADATA = "experimentMetadata";
 
     private final ObjectMapper objectMapper;
-    private final GeraLandingCopyBackendClient backendClient;
 
-    public GeraLandingService(ObjectMapper objectMapper, GeraLandingCopyBackendClient backendClient) {
+    /** Inicializa o serviço com o ObjectMapper usado para renderizar dados estruturados nos prompts. */
+    public GeraLandingService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.backendClient = backendClient;
     }
 
+    /** Extrai o ângulo de campanha do contexto de prompt. */
     public CampaignAngle obterCampaignAngle(GeraLandingPromptContext context) {
         return objectMapper.convertValue(obterMapa(context, CAMPAIGN_ANGLE), CampaignAngle.class);
     }
 
+    /** Extrai a copy de anúncio do contexto de prompt. */
     public AdCopy obterAdCopy(GeraLandingPromptContext context) {
         return objectMapper.convertValue(obterMapa(context, AD_COPY), AdCopy.class);
     }
 
+    /** Extrai o briefing de imagem do anúncio do contexto de prompt. */
     public AdImageBriefing obterAdImageBriefing(GeraLandingPromptContext context) {
         return objectMapper.convertValue(obterMapa(context, AD_IMAGE_BRIEFING), AdImageBriefing.class);
     }
 
+    /** Extrai o wireframe da landing page do contexto de prompt. */
     public LandingPageWireframeDto obterLandingPageWireframe(GeraLandingPromptContext context) {
         return new LandingPageWireframeDto(obterMapa(context, LANDING_PAGE_WIREFRAME));
     }
 
+    /** Extrai os metadados do experimento do contexto de prompt. */
     public ExperimentMetadata obterExperimentMetadata(GeraLandingPromptContext context) {
         return objectMapper.convertValue(obterMapa(context, EXPERIMENT_METADATA), ExperimentMetadata.class);
     }
 
+    /** Monta o prompt final de uma etapa do GeraLanding resolvendo placeholders e dados do job. */
     public String montarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
         if (!StringUtils.hasText(etapa)) {
             throw new IllegalArgumentException("Nome da etapa é obrigatório");
@@ -86,18 +89,7 @@ public class GeraLandingService {
         return formatarPromptUsuario(etapa, resolvedPrompt, dadosPayload);
     }
 
-    public String montarERegistrarPromptEtapa(GeraLandingPromptContext context, String etapa) throws IOException {
-        String promptMontado = montarPromptEtapa(context, etapa);
-        log.info(
-                "Prompt da etapa após tratamento. experimentoId={}, jobId={}, etapa={}, prompt={}",
-                context != null ? context.experimentId() : null,
-                context != null ? context.idJob() : null,
-                etapa,
-                promptMontado);
-        registrarPromptMontado(context, etapa, promptMontado);
-        return promptMontado;
-    }
-
+    /** Carrega o markdown bruto do prompt de uma etapa do GeraLanding. */
     public String carregarPromptMarkdownCru(String etapa) throws IOException {
         if (!StringUtils.hasText(etapa)) {
             throw new IllegalArgumentException("Nome da etapa é obrigatório");
@@ -105,6 +97,7 @@ public class GeraLandingService {
         return carregarPromptBase(etapa.trim() + ".md");
     }
 
+    /** Obtém um campo estruturado do contexto como mapa, retornando vazio quando ausente. */
     private Map<String, Object> obterMapa(GeraLandingPromptContext context, String campo) {
         if (context == null || context.dados() == null || context.dados().isEmpty()) {
             return Collections.emptyMap();
@@ -118,6 +111,7 @@ public class GeraLandingService {
         return Collections.emptyMap();
     }
 
+    /** Obtém o mapa completo de dados do job para montagem do prompt. */
     private Map<String, Object> obterDadosDoJob(GeraLandingPromptContext context) {
         if (context == null || context.dados() == null) {
             return Collections.emptyMap();
@@ -234,6 +228,7 @@ public class GeraLandingService {
         return renderPlaceholderValue(dadosPayload.get(nome));
     }
 
+    /** Renderiza um valor de placeholder como texto simples ou JSON formatado. */
     private String renderPlaceholderValue(Object dado) throws JsonProcessingException {
         if (dado == null) {
             return "";
@@ -244,8 +239,7 @@ public class GeraLandingService {
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(dado);
     }
 
-
-
+    /** Formata o prompt resolvido no envelope textual enviado ao modelo. */
     private String formatarPromptUsuario(String etapa, String promptResolvido, Map<String, Object> dadosPayload) {
         String etapaNormalizada = StringUtils.hasText(etapa) ? etapa.trim() : "desconhecida";
         String promptLimpo = promptResolvido == null ? "" : promptResolvido.trim();
@@ -257,32 +251,13 @@ public class GeraLandingService {
                 %s
                 """.formatted(etapaNormalizada, promptLimpo);
     }
+
+    /** Carrega um arquivo de prompt base do classpath do GeraLanding. */
     private String carregarPromptBase(String fileName) throws IOException {
         ClassPathResource resource = new ClassPathResource(GERALANDING_PROMPT_BASE_PATH + fileName);
         if (!resource.exists()) {
             throw new IllegalArgumentException("Prompt não encontrado em geralanding: " + fileName);
         }
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-    }
-
-    private void registrarPromptMontado(GeraLandingPromptContext context, String etapa, String promptMontado) throws IOException {
-        if (context == null || promptMontado == null || promptMontado.isBlank()) {
-            return;
-        }
-        String referencia = "exp:%s|etapa:%s|job:%s".formatted(
-                context.experimentId(),
-                etapa,
-                context.idJob());
-        log.info("Registrando prompt montado com referencia={}", referencia);
-        String promptMarkdownContent = carregarPromptMarkdownCru(etapa);
-        backendClient.receivePrompt(
-                context.idJob(),
-                context.experimentId(),
-                etapa,
-                promptMontado,
-                null,
-                null,
-                null,
-                promptMarkdownContent);
     }
 }

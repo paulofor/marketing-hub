@@ -2804,3 +2804,13 @@
   - o scheduler legado de `framework-image` passou a ficar desligado por padrão e disponível apenas por fallback explícito via `framework-image.legacy-scheduler.enabled`;
   - adicionadas propriedades `imagegeneration.worker.*` para operar a etapa pelo padrão novo sem quebrar as chaves existentes de rollout e habilitação.
 - impacto esperado: a etapa **Gera imagens** passa a seguir o mesmo modelo operacional das outras etapas do Worker AI core, com logs de request/resposta OpenAI e payload ao backend, reduzindo divergência entre etapas e mantendo foco em gerar ativos visuais úteis para conversão.
+
+## 2026-05-31 — Backend GeraLanding image generation
+
+- tarefa: criar no backend a estrutura `com.marketinghub.geralanding.imagegeneration` espelhando o padrão operacional da etapa `geralanding.wireframe`.
+- implementação:
+  - adicionados controller, service e DTOs/records da etapa `landing-page-image-generation` com endpoints de início, listagem, pending, recebimento de prompt, recebimento de resposta e detalhe de execução;
+  - a fila pending expõe os mesmos artefatos necessários ao Worker AI que a etapa wireframe já disponibiliza, incluindo framework da hipótese e artefatos consolidados do experimento;
+  - a conclusão da etapa registra auditoria, tokens, custo e erro/sucesso em `GeraLandingStageExecution`, sem criar coluna consolidada nova em `experiment` porque a geração de imagens possui persistência própria por job/asset;
+  - atualizada a ordem canônica do Gera Landing para explicitar `landing-page-image-generation` após `landing-page-image-planning`.
+- validação: adicionados testes unitários específicos para service e controller da nova etapa.

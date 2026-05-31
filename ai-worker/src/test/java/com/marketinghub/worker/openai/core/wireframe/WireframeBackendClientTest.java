@@ -166,4 +166,25 @@ class WireframeBackendClientTest {
                 .isEqualTo("[\"bgBody\",\"fontBase\",\"textPrimary\",\"marginReset\"]");
     }
 
+    /** Deve impedir duplicidade de classes categorizadas nas seções do wireframe. */
+    @Test
+    void wireframeSchemaShouldKeepAppliedSectionClassesOnlyInEstilos() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        JsonNode secao = schema.path("$defs").path("secao");
+        JsonNode secaoProperties = secao.path("properties");
+
+        assertThat(secaoProperties.has("estilos")).isTrue();
+        assertThat(secaoProperties.has("estrutura")).isFalse();
+        assertThat(secaoProperties.has("posicao")).isFalse();
+        assertThat(secaoProperties.has("layout")).isFalse();
+        assertThat(secaoProperties.has("mistas")).isFalse();
+        assertThat(secao.path("required").toString())
+                .doesNotContain("estrutura")
+                .doesNotContain("posicao")
+                .doesNotContain("layout")
+                .doesNotContain("mistas");
+    }
+
 }

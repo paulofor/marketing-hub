@@ -37,6 +37,7 @@
 
 12. **Sem metainstrução no artefato final.** Qualquer texto técnico/operacional vazado em conteúdo final ao usuário (copy, CTA, FAQ, HTML publicado) deve bloquear publicação com erro explícito de contrato e apontamento do campo literal rejeitado.
 13. **Wireframe só aceita estilos existentes em definições canônicas.** O artefato de wireframe não pode introduzir `style`, `surfaceStyle`, `contrastMode`, `layoutPreset` ou variação visual fora do conjunto previsto nas definições canônicas vigentes. Qualquer estilo inexistente nas definições deve ser rejeitado em validação de contrato com indicação literal do valor inválido e da definição esperada.
+14. **Classes aplicadas do wireframe ficam somente em `estilos`.** No artefato `landingPageWireframe`, as categorias `estrutura`, `posicao`, `layout` e `mistas` existem apenas dentro de `definicoes` para declarar classes canônicas. Dentro de `pagina.head`, `pagina.corpo`, `pagina.corpo.secoes[]`, `elementosSeccao[]` e `elementosInternos[]`, nomes de classes aplicadas devem aparecer exclusivamente em `estilos[]`, sem duplicação em campos categorizados.
 
 ## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
 

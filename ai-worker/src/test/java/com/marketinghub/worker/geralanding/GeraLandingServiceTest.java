@@ -46,7 +46,7 @@ class GeraLandingServiceTest {
         assertThat(prompt).contains("Nicho: E-commerce");
         assertThat(prompt).contains("Baixa conversão");
         assertThat(prompt).contains("Mais vendas");
-        assertThat(prompt).contains("Em `estilos[]` (seção e elementos internos), use exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`");
+        assertThat(prompt).contains("toda classe aplicada deve aparecer SOMENTE no campo `estilos[]`");
         assertThat(prompt).doesNotContain("{{NICHE_NAME}}");
         assertThat(prompt).doesNotContain("{{PAIN_JSON}}");
         assertThat(prompt).doesNotContain("{{RESULT_JSON}}");

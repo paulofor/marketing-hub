@@ -2676,6 +2676,23 @@
   - adicionados testes unitários de serviço e controller cobrindo início, pending, callbacks internos e persistência do artefato final.
 - impacto esperado: a etapa `landing-page-copy` fica pronta para o mesmo fluxo operacional do wireframe, reduzindo divergência de contratos com o Worker AI e preservando rastreabilidade de prompt, request, métricas, falhas e artefato final.
 
+## 2026-05-31 11:45:53 UTC-3
+- solicitação para analisar o módulo `openai.core.wireframe` do Worker AI e criar um exemplo genérico reutilizável em `/exemplos`.
+- raciocínio aplicado: documentar o padrão do `StageWorker` como bloco genérico, separando responsabilidades de backend port, prompt builder, validador, handler, scheduler, propriedades e configuração Spring sem acoplar o exemplo às regras específicas de wireframe.
+- foi feito: criação da pasta `exemplos/bloco openai core` com README explicativo, exemplo de configuração, prompt genérico, schema JSON e payload pendente de backend para servir como referência de implementação de novas etapas OpenAI Core.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - docs/registros/experimentos.md
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/StageWorker.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeWorkerConfiguration.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeExecutionScheduler.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframePromptBuilder.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeResponseValidator.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeResponseHandler.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeInput.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/wireframe/WireframeOutput.java
 ## 2026-05-31 — Isolamento arquitetural do GeraLanding copy no Worker AI
 - tarefa: corrigir a violação de arquitetura em que o slice `geralanding.copy` dependia diretamente de tipos do slice `geralanding.deliverables`.
 - causa-raiz: o cliente HTTP da etapa copy (`GeraLandingCopyBackendClient`) tinha overload para receber payload de deliverables e método para buscar detalhe de execução de deliverables, criando acoplamento transversal entre etapas que devem permanecer isoladas.
@@ -2696,3 +2713,11 @@
   - o payload de prompt da etapa copy inclui `landingPageWireframe` e `CASE_DATA_BLOCK` com dor, resultado, mecanismo, prova, oferta e artefatos estratégicos para preservar o eixo Dor → Resultado → Mecanismo → Prova → Oferta;
   - o cliente OpenAI compartilhado do core agora é registrado apenas quando ainda não existir bean equivalente, permitindo wireframe e copy ativos ao mesmo tempo.
 - impacto esperado: novas execuções da etapa `landing-page-copy` podem ser processadas pelo padrão `openai.core`, mantendo isolamento por etapa, rastreabilidade do request enviado à OpenAI e aderência ao contrato da landing page.
+## 2026-05-31 — Exemplo genérico de bloco backend GeraLanding
+- tarefa: criar em `/exemplos/bloco backend` uma referência genérica baseada no módulo backend `geralanding.wireframe`.
+- causa-raiz: a estrutura de wireframe já consolida o fluxo backend de etapa do GeraLanding, mas faltava um exemplo reaproveitável para orientar novas etapas sem copiar diretamente código de produção.
+- alteração aplicada:
+  - documentado o fluxo de controller, service, DTOs, estados e contratos HTTP esperados;
+  - adicionados templates genéricos de controller e service com comentários de responsabilidade e logs operacionais;
+  - incluídos exemplos de chamadas para start, pending, recebe-prompt e recebe-resposta.
+- impacto esperado: novas etapas backend do GeraLanding podem ser criadas com menos divergência de contrato, preservando rastreabilidade operacional e o eixo Dor → Resultado → Mecanismo → Prova → Oferta.

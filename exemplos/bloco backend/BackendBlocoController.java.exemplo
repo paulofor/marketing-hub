@@ -1,0 +1,110 @@
+package com.marketinghub.geralanding.bloco.web;
+
+import com.marketinghub.geralanding.bloco.service.BackendBlocoService;
+import com.marketinghub.geralanding.bloco.service.GeraLandingBlocoStartResponse;
+import com.marketinghub.geralanding.bloco.service.detailStageExecution.RecordBackendBlocoDetalheDto;
+import com.marketinghub.geralanding.bloco.service.listStageExecutions.GeraLandingBlocoExecutionSummaryResponse;
+import com.marketinghub.geralanding.bloco.service.pending.RecordBlocoPending;
+import com.marketinghub.geralanding.bloco.service.recebePrompt.RecebePromptRequest;
+import com.marketinghub.geralanding.bloco.service.recebeResposta.RecebeRespostaRequest;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+/** Responsável por expor os endpoints de backend da etapa genérica bloco no GeraLanding. */
+@RestController
+@RequestMapping("/api")
+public class BackendBlocoController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackendBlocoController.class);
+    private static final String STAGE_CODE = "landing-page-bloco";
+
+    private final BackendBlocoService executionService;
+
+    /** Inicializa o controller com o serviço backend da etapa bloco. */
+    public BackendBlocoController(BackendBlocoService executionService) {
+        this.executionService = executionService;
+    }
+
+    /** Registra uma execução inicial da etapa bloco. */
+    @PostMapping("/experiments/{experimentId}/geralanding/bloco/start")
+    public ResponseEntity<GeraLandingBlocoStartResponse> start(@PathVariable Long experimentId) {
+        return ResponseEntity.accepted().body(executionService.start(experimentId));
+    }
+
+    /** Lista as execuções da etapa para o experimento. */
+    @GetMapping("/experiments/{experimentId}/geralanding/bloco/stage-executions")
+    public ResponseEntity<List<GeraLandingBlocoExecutionSummaryResponse>> listStageExecutions(
+            @PathVariable Long experimentId,
+            @RequestParam(defaultValue = "true") boolean includeCompleted) {
+        return ResponseEntity.ok(
+                executionService.listExperimentStageExecutions(experimentId, STAGE_CODE, includeCompleted));
+    }
+
+    /** Lista os jobs pendentes iniciados da etapa bloco para processamento pelo Worker AI. */
+    @GetMapping("/internal/geralanding/bloco/stage-executions/pending")
+    public List<RecordBlocoPending> pending() {
+        return executionService.listPending(STAGE_CODE);
+    }
+
+    /** Recebe prompt, schema e request enviados para IA e marca a execução aguardando retorno da OpenAI. */
+    @PostMapping("/internal/geralanding/bloco/stage-executions/{idJob}/recebe-prompt")
+    public ResponseEntity<Void> recebePrompt(
+            @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
+        LOGGER.info(
+                "[GeraLanding][Bloco] Recebido request enviado para IA idJob={} jobidopenai={} promptLength={} schemaLength={} requestBodyLength={}",
+                idJob,
+                payload.jobidopenai(),
+                payload.prompt().length(),
+                payload.schemaJson().length(),
+                payload.requestBodyJson().length());
+        executionService.markWaitingOpenAiDispatch(
+                idJob,
+                payload.prompt(),
+                payload.promptMarkdownContent(),
+                payload.schemaJson(),
+                payload.requestBodyJson(),
+                payload.jobidopenai());
+        return ResponseEntity.accepted().build();
+    }
+
+    /** Recebe a resposta da IA para a etapa bloco e conclui ou falha a execução do job. */
+    @PostMapping("/internal/geralanding/bloco/stage-executions/{idJob}/recebe-resposta")
+    public ResponseEntity<Void> recebeResposta(
+            @PathVariable String idJob, @Valid @RequestBody RecebeRespostaRequest payload) {
+        LOGGER.info(
+                "[GeraLanding][Bloco] Recebida resposta da IA idJob={} experimentId={} stageCode={} openAiJobId={} hasError={}",
+                idJob,
+                payload.experimentId(),
+                payload.stageCode(),
+                payload.openAiJobId(),
+                payload.errorMessage() != null && !payload.errorMessage().isBlank());
+        executionService.markCompletedFromResponse(
+                idJob,
+                payload.experimentId(),
+                payload.stageCode(),
+                payload.modelResponse(),
+                payload.inputTokens(),
+                payload.outputTokens(),
+                payload.costUsd(),
+                payload.openAiJobId(),
+                payload.errorMessage(),
+                payload.errorDetail());
+        return ResponseEntity.accepted().build();
+    }
+
+    /** Retorna os detalhes de uma execução específica da etapa. */
+    @GetMapping("/experiments/{experimentId}/geralanding/bloco/stage-executions/{idJob}")
+    public ResponseEntity<RecordBackendBlocoDetalheDto> detailStageExecution(
+            @PathVariable Long experimentId, @PathVariable String idJob) {
+        return ResponseEntity.ok(executionService.getStageExecutionDetail(experimentId, idJob));
+    }
+}

@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Query;
  */
 public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarketSizeByCnae, OprmMarketSizeByCnaeId> {
     /**
-     * Retorna o ranking paginado dos CNAEs no snapshot mais recente, ordenado por estabelecimentos ativos.
+     * Retorna o ranking paginado dos CNAEs no snapshot mais recente, ordenado por empresas MEI.
      */
     @Query("""
             select new com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto(
@@ -29,7 +29,7 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
             from OprmMarketSizeByCnae ms
             left join OprmCnpjCnaeDim c on c.cnaeCode = ms.id.cnaeCode
             where ms.id.snapshotDate = (select max(m2.id.snapshotDate) from OprmMarketSizeByCnae m2)
-            order by ms.totalEstabelecimentosAtivos desc
+            order by ms.totalEmpresasMei desc, ms.id.cnaeCode asc
             """)
     List<OprmTopCnaeMarketVolumeDto> findTopByLatestSnapshot(Pageable pageable);
 }

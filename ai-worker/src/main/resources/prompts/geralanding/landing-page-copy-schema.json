@@ -3,31 +3,17 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "pageGoal": {
-      "type": "string",
-      "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-    },
-    "messageMatchSource": {
-      "type": "string",
-      "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-    },
-    "messageMatchNotes": {
-      "type": "string",
-      "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-    },
-    "primaryCTA": {
-      "type": "string",
-      "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-    },
     "bodySections": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "sectionId": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "description": "Id literal de uma seção existente no wireframe, preservando a ordem original."
           },
           "items": {
             "type": "array",
@@ -38,19 +24,21 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "description": "Id técnico literal vindo do wireframe (elementosSeccao e elementosInternos)."
+                  "minLength": 1,
+                  "description": "Id literal de um elemento textual existente nessa seção do wireframe."
                 },
                 "texto": {
                   "type": "string",
                   "minLength": 1,
-                  "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
+                  "description": "Texto final para o elemento indicado, respeitando o limite textual definido no wireframe."
                 }
               },
               "required": [
                 "id",
                 "texto"
               ]
-            }
+            },
+            "description": "Somente elementos cujo texto foi solicitado no wireframe; não incluir ids inventados, metadados, imagens, containers ou campos sem texto solicitado."
           }
         },
         "required": [
@@ -58,202 +46,11 @@
           "items"
         ]
       },
-      "description": "Cada bodySection deve seguir exatamente a lista/ordem de seções do wireframe e conter items com pares id/texto baseados em uiTextTags, respeitando o tamanho sugerido em caracteres."
-    },
-    "ctaBlocks": {
-      "type": "array",
-      "minItems": 2,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "placement": {
-            "type": "string",
-            "enum": [
-              "hero",
-              "mid",
-              "final",
-              "sticky",
-              "inline"
-            ]
-          },
-          "ctaVariant": {
-            "type": "string",
-            "enum": [
-              "primary",
-              "secondary",
-              "ghost",
-              "sticky"
-            ]
-          },
-          "ctaLabel": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "ctaUrl": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "matchAdCta": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "ctaSupport": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "messageMatchNotes": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "ctaType": {
-            "type": "string",
-            "enum": [
-              "conversion",
-              "navigation"
-            ]
-          },
-          "targetSectionId": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "placement",
-          "ctaVariant",
-          "ctaType",
-          "ctaLabel",
-          "ctaUrl",
-          "matchAdCta",
-          "targetSectionId",
-          "ctaSupport",
-          "messageMatchNotes"
-        ]
-      }
-    },
-    "faq": {
-      "type": "array",
-      "minItems": 3,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "question": {
-            "type": "string",
-            "minLength": 12,
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "answer": {
-            "type": "string",
-            "minLength": 30,
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "objectionTag": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          }
-        },
-        "required": [
-          "question",
-          "answer",
-          "objectionTag"
-        ]
-      }
-    },
-    "consistencyChecks": {
-      "type": "array",
-      "minItems": 2,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "check": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PASS",
-              "WARN",
-              "FAIL"
-            ]
-          },
-          "details": {
-            "type": "string",
-            "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-          }
-        },
-        "required": [
-          "check",
-          "status",
-          "details"
-        ]
-      },
-      "description": "Use FAIL quando faltar uiTags/uiTextTags em slot obrigatório ou quando não houver mapeamento sectionId/slotId válido."
-    },
-    "complianceNotes": {
-      "type": "string",
-      "pattern": "^(?!.*(?i:(adCopy\\\\.|campaignAngle\\\\.|landingMatchLine|mechanismSummary|primaryCTA|messageMatchNotes|ctaMatchNotes|matchAdCta|usa literalmente|id[eê]ntic[oa] ao an[úu]ncio|[âa]ncora para o formul[áa]rio|landingPageWireframe|uiTags|uiTextTags|copySlots|sectionId|slotId|CASE_DATA|OUTPUT_CONTRACT|template_id|artifact_target|\\\\bV[1-3]-|lorem ipsum|como funciona \\\\(passo)))).+"
-    },
-    "formMicrocopy": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "privacyNotice": {
-          "type": "string",
-          "minLength": 20
-        },
-        "consentNotice": {
-          "type": "string",
-          "minLength": 20
-        }
-      },
-      "required": [
-        "privacyNotice",
-        "consentNotice"
-      ]
-    },
-    "imageAccessibilityPlan": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "imageId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "sectionId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "altText": {
-            "type": "string",
-            "minLength": 8
-          }
-        },
-        "required": [
-          "imageId",
-          "sectionId",
-          "altText"
-        ]
-      }
+      "description": "Lista espelhada do wireframe: mesmas seções, na mesma ordem, contendo apenas pares id/texto para pontos textuais solicitados."
     }
   },
   "required": [
-    "pageGoal",
-    "messageMatchSource",
-    "messageMatchNotes",
-    "primaryCTA",
-    "bodySections",
-    "ctaBlocks",
-    "formMicrocopy",
-    "faq",
-    "imageAccessibilityPlan",
-    "consistencyChecks",
-    "complianceNotes"
+    "bodySections"
   ],
-  "description": "Schema da etapa landing copy. A copy deve ser derivada dos sinais do wireframe anterior, especialmente uiTags e uiTextTags por sectionId/slotId."
+  "description": "Schema restritivo da etapa landing copy. A etapa apenas preenche texto nos pontos definidos pelo wireframe e não pode criar blocos, seções, perguntas, CTAs, metadados ou planos adicionais."
 }

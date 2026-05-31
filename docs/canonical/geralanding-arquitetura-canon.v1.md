@@ -41,7 +41,33 @@ Regras arquiteturais refletidas (ArchUnit):
 - Cada pacote direto `geralanding.<etapa>.service` de backend deve possuir os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`.
 - Os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta` devem conter somente tipos Java declarados como `record`, preservando DTOs contratuais imutáveis para as bordas de cada etapa.
 
-## 2) Worker AI (ai-worker / `com.marketinghub.worker.geralanding`)
+## 2) Worker AI — núcleo OpenAI (`ai-worker / com.marketinghub.worker.openai.core`)
+
+```mermaid
+flowchart TD
+    SCH[openai.core.<etapa>.<Etapa>ExecutionScheduler] --> WORKER[openai.core.StageWorker]
+    WORKER --> BACK[StageBackendPort<br/>adapter HTTP interno da etapa]
+    WORKER --> PROMPT[StagePromptBuilder<br/>prompt + schema da etapa]
+    WORKER --> OPENAI[OpenAiClientPort<br/>Responses API]
+    WORKER --> VALID[StageResponseValidator]
+    WORKER --> HANDLER[StageResponseHandler]
+
+    subgraph WIRE[Etapa migrada]
+      WB[openai.core.wireframe.WireframeBackendClient]
+      WP[openai.core.wireframe.WireframePromptBuilder]
+      WV[openai.core.wireframe.WireframeResponseValidator]
+      WH[openai.core.wireframe.WireframeResponseHandler]
+    end
+```
+
+Regras arquiteturais refletidas (ArchUnit):
+- A etapa `landing-page-wireframe` do Worker AI usa exclusivamente `com.marketinghub.worker.openai.core.wireframe`; o pacote legado `com.marketinghub.worker.geralanding.wireframe` está desativado e não deve ser recriado.
+- O core genérico (`openai.core`, `openai.core.model`, `openai.core.port`, `openai.core.prompt` e `openai.core.exception`) não pode depender de etapas concretas.
+- Cada etapa concreta dentro de `openai.core.<etapa>` deve ser configurada por `*WorkerConfiguration`, `*WorkerProperties`, adapters de port e beans declarados explicitamente; não deve usar `@Component`/`@Service` soltos fora da configuração da etapa.
+- Chamadas OpenAI devem passar pelo `OpenAiClientPort` e pelo client do core para preservar logs de request cru, resposta crua e correlação com `jobId` do Marketing Hub.
+- As próximas etapas do GeraLanding (`copy`, `imageplanning`, `presetdesign`, `deliverables` e etapas futuras) devem migrar gradualmente para o mesmo padrão `openai.core.<etapa>`, mantendo contratos do backend por etapa.
+
+## 2.1) Worker AI legado ainda não migrado (`ai-worker / com.marketinghub.worker.geralanding`)
 
 ```mermaid
 flowchart TD
@@ -51,26 +77,25 @@ flowchart TD
     EXEC --> STAGE[geralanding.stage.*]
     EXEC --> COMUM[geralanding.comum.*]
 
-    subgraph SLICES[Subpacotes com independência obrigatória]
-      SW[wireframe]
+    subgraph SLICES[Subpacotes legados ainda ativos]
       SC[copy]
       SI[imageplanning]
       SP[presetdesign]
+      SD[deliverables]
     end
 
-    SW -. notDependOnEachOther .- SC
-    SW -. notDependOnEachOther .- SI
-    SW -. notDependOnEachOther .- SP
     SC -. notDependOnEachOther .- SI
     SC -. notDependOnEachOther .- SP
+    SC -. notDependOnEachOther .- SD
     SI -. notDependOnEachOther .- SP
-
+    SI -. notDependOnEachOther .- SD
+    SP -. notDependOnEachOther .- SD
 ```
 
 Regras arquiteturais refletidas (ArchUnit):
 - `geralanding..` não pode depender de `experimentpipeline..` (isolamento do pipeline legado).
-- `wireframe`, `copy`, `imageplanning` e `presetdesign` devem ser independentes entre si.
-- Cada subpacote funcional (`copy`, `presetdesign`, `stage`, `wireframe`, `deliverables`, `imageplanning`) só pode acessar o próprio pacote e `geralanding.comum` dentro de `com.marketinghub`.
+- `copy`, `imageplanning`, `presetdesign` e `deliverables` devem permanecer independentes entre si até migrarem para `openai.core`.
+- Cada subpacote funcional legado (`copy`, `presetdesign`, `stage`, `deliverables`, `imageplanning`) só pode acessar o próprio pacote e `geralanding.comum` dentro de `com.marketinghub`.
 - `geralanding.comum` só pode acessar o próprio pacote.
 
 ## 3) Contrato HTTP canônico
@@ -81,7 +106,7 @@ Regras arquiteturais refletidas (ArchUnit):
 ## 4) Regras de integração
 
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend GeraLanding.
-- O polling e os callbacks internos do GeraLanding no Worker AI devem consumir endpoints específicos por etapa: `/api/internal/geralanding/wireframe/stage-executions/*`, `/api/internal/geralanding/copy/stage-executions/*`, `/api/internal/geralanding/image-prompts/stage-executions/*`, `/api/internal/geralanding/design-preset/stage-executions/*` e `/api/internal/geralanding/deliverables/stage-executions/*`.
+- O polling e os callbacks internos do GeraLanding no Worker AI devem consumir endpoints específicos por etapa: a etapa wireframe faz isso via `openai.core.wireframe.WireframeBackendClient`, e as etapas ainda legadas usam seus adapters atuais para `/api/internal/geralanding/copy/stage-executions/*`, `/api/internal/geralanding/image-prompts/stage-executions/*`, `/api/internal/geralanding/design-preset/stage-executions/*` e `/api/internal/geralanding/deliverables/stage-executions/*`.
 - Ajustes no Worker AI não devem criar controller interno genérico no backend para atender todas as etapas do GeraLanding.
 - O backend concentra regras de contrato, montagem de HTML provisório/final e publicação.
 - O worker ai concentra orquestração por etapa e integração com OpenAI, devolvendo resultados ao backend pelos endpoints do domínio GeraLanding.

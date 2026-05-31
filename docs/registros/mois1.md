@@ -649,3 +649,16 @@ Arquivos alterados:
   - mois-hotmart-collector/AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-05-31 — Agendamento do ciclo 1 Hotmart para 18:15 em 31 de maio
+- Ajustado o scheduler do ciclo 1 do coletor Hotmart para executar às 18:15 no dia 31 de maio, no horário de São Paulo.
+- Causa-raiz: necessidade operacional de executar a listagem Hotmart hoje em janela específica solicitada pelo operador.
+- Correção aplicada:
+  - `@Scheduled(cron = "0 15 18 31 5 *", zone = "America/Sao_Paulo")` no método do ciclo 1;
+  - renomeado o método para refletir o novo agendamento pontual;
+  - atualizado o log operacional para explicitar `hora=18:15`, `dia=31/05` e `timezone=America/Sao_Paulo`.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - docs/registros/mois1.md

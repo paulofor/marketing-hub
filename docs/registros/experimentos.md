@@ -2665,3 +2665,13 @@
   - atualizados os cânones de arquitetura por etapa, GeraLanding e procedimento de experimento para definir `openai.core.wireframe` como implementação canônica atual;
   - registrada a diretriz de migração futura das demais etapas (`copy`, `imageplanning`, `presetdesign`, `deliverables`) para `openai.core.<etapa>`.
 - impacto esperado: apenas o novo worker de wireframe baseado no OpenAI core processa a fila `landing-page-wireframe`, reduzindo acoplamento legado e preparando a migração das próximas etapas sem alterar o contrato do backend.
+
+## 2026-05-31 — Estrutura backend dedicada para GeraLanding copy
+- tarefa: estruturar o módulo backend `geralanding.copy` com a mesma organização operacional já usada em `geralanding.wireframe`.
+- causa-raiz: a etapa `landing-page-copy` tinha controller e serviço mais simples, sem endpoint interno de pending e callbacks dedicados para prompt, dispatch e resultado, enquanto o worker atual já buscava contratos internos específicos para processar a fila da etapa.
+- correção aplicada:
+  - o controller de copy passou a expor rotas públicas por experimento e rotas internas `/internal/geralanding/copy/stage-executions/*`, espelhando a separação da etapa wireframe;
+  - o serviço de execução de copy passou a listar pendências com dados estruturados do experimento e hipótese, persistir prompt/schema/request, registrar dispatch OpenAI, concluir/falhar execuções e salvar o artefato final em `landingPageCopy`;
+  - criados DTOs/records segmentados em `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta` para alinhar a árvore de pacotes de copy ao padrão de wireframe;
+  - adicionados testes unitários de serviço e controller cobrindo início, pending, callbacks internos e persistência do artefato final.
+- impacto esperado: a etapa `landing-page-copy` fica pronta para o mesmo fluxo operacional do wireframe, reduzindo divergência de contratos com o Worker AI e preservando rastreabilidade de prompt, request, métricas, falhas e artefato final.

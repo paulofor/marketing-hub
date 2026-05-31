@@ -1,10 +1,10 @@
-package com.marketinghub.geralanding.copy.service;
+package com.marketinghub.geralanding.copy.service.detailStageExecution;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Responsável por representar os detalhes de uma execução da etapa copy. */
-public record GeraLandingCopyStageExecutionDetailResponse(
+public record RecordBackendCopyDetalheDto(
         String idJob,
         Long experimentId,
         String stageCode,

@@ -1,42 +1,49 @@
 package com.marketinghub.geralanding.copy.web;
 
-import com.marketinghub.geralanding.copy.service.GeraLandingCopyExecutionSummaryResponse;
-import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionDetailResponse;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageExecutionService;
-import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStartResponse;
+import com.marketinghub.geralanding.copy.service.detailStageExecution.RecordBackendCopyDetalheDto;
+import com.marketinghub.geralanding.copy.service.listStageExecutions.GeraLandingCopyExecutionSummaryResponse;
+import com.marketinghub.geralanding.copy.service.pending.RecordCopyPending;
+import com.marketinghub.geralanding.copy.service.recebePrompt.RecebeDispatchRequest;
+import com.marketinghub.geralanding.copy.service.recebePrompt.RecebePromptRequest;
+import com.marketinghub.geralanding.copy.service.recebeResposta.RecebeRespostaRequest;
+import jakarta.validation.Valid;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por iniciar a etapa landing-page-copy no GeraLanding e expor consultas das execuções da etapa. */
+/** Responsável por expor os endpoints de backend da etapa landing-page-copy no GeraLanding. */
 @RestController
-@RequestMapping("/api/experiments/{experimentId}/geralanding")
+@RequestMapping("/api")
 public class GeraLandingCopyController {
+  private static final Logger LOGGER = LoggerFactory.getLogger(GeraLandingCopyController.class);
   private static final String STAGE_CODE = "landing-page-copy";
 
-  private final GeraLandingCopyStageService stageService;
   private final GeraLandingCopyStageExecutionService executionService;
 
-  public GeraLandingCopyController(GeraLandingCopyStageService stageService, GeraLandingCopyStageExecutionService executionService) {
-    this.stageService = stageService;
+  /** Inicializa o controller com o serviço backend da etapa copy. */
+  public GeraLandingCopyController(GeraLandingCopyStageExecutionService executionService) {
     this.executionService = executionService;
   }
 
   /** Registra uma execução inicial da etapa landing-page-copy. */
-  @PostMapping("/copy/start")
+  @PostMapping("/experiments/{experimentId}/geralanding/copy/start")
   public ResponseEntity<GeraLandingCopyStartResponse> start(@PathVariable Long experimentId) {
-    GeraLandingCopyStartResponse response = stageService.start(experimentId);
+    GeraLandingCopyStartResponse response = executionService.start(experimentId);
     return ResponseEntity.accepted().body(response);
   }
 
   /** Lista as execuções da etapa para o experimento. */
-  @GetMapping("/copy/stage-executions")
+  @GetMapping("/experiments/{experimentId}/geralanding/copy/stage-executions")
   public ResponseEntity<List<GeraLandingCopyExecutionSummaryResponse>> listStageExecutions(
       @PathVariable Long experimentId,
       @RequestParam(defaultValue = "true") boolean includeCompleted) {
@@ -45,12 +52,98 @@ public class GeraLandingCopyController {
     return ResponseEntity.ok(response);
   }
 
+  /** Lista os jobs pendentes iniciados da etapa copy para processamento pelo Worker AI. */
+  @GetMapping("/internal/geralanding/copy/stage-executions/pending")
+  public List<RecordCopyPending> pending() {
+    return executionService.listPending(STAGE_CODE);
+  }
+
+  /** Recebe prompt, schema e request cru enviados para IA. */
+  @PostMapping("/internal/geralanding/copy/stage-executions/{idJob}/receive-prompt")
+  public ResponseEntity<Void> receivePrompt(
+      @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
+    LOGGER.info(
+        "[GeraLanding][Copy] Recebido request enviado para IA idJob={} experimentId={} stageCode={} openAiJobId={} promptLength={} promptMarkdownLength={} schemaLength={} requestBodyLength={}",
+        idJob,
+        payload.experimentId(),
+        payload.stageCode(),
+        payload.openAiJobId(),
+        payload.prompt().length(),
+        payload.promptMarkdownContent() != null ? payload.promptMarkdownContent().length() : 0,
+        payload.schemaJson().length(),
+        payload.openAiRequestBody().length());
+    executionService.markPromptReceived(
+        idJob,
+        payload.prompt(),
+        payload.promptMarkdownContent(),
+        payload.schemaJson(),
+        payload.openAiRequestBody(),
+        payload.openAiModel(),
+        payload.openAiJobId());
+    return ResponseEntity.accepted().build();
+  }
+
+  /** Recebe prompt, schema e request cru enviados para IA pelo contrato em português. */
+  @PostMapping("/internal/geralanding/copy/stage-executions/{idJob}/recebe-prompt")
+  public ResponseEntity<Void> recebePrompt(
+      @PathVariable String idJob, @Valid @RequestBody RecebePromptRequest payload) {
+    return receivePrompt(idJob, payload);
+  }
+
+  /** Recebe o identificador remoto da IA e marca a execução aguardando retorno da OpenAI. */
+  @PostMapping("/internal/geralanding/copy/stage-executions/{idJob}/receive-dispatch")
+  public ResponseEntity<Void> receiveDispatch(
+      @PathVariable String idJob, @RequestBody RecebeDispatchRequest payload) {
+    LOGGER.info(
+        "[GeraLanding][Copy] Recebido dispatch OpenAI idJob={} experimentId={} stageCode={} openAiJobId={}",
+        idJob,
+        payload.experimentId(),
+        payload.stageCode(),
+        payload.openAiJobId());
+    executionService.markWaitingOpenAiDispatch(idJob, payload.openAiJobId());
+    return ResponseEntity.accepted().build();
+  }
+
+  /** Recebe a resposta da IA para a etapa copy e conclui a execução do job. */
+  @PostMapping("/internal/geralanding/copy/stage-executions/{idJob}/receive-result")
+  public ResponseEntity<Void> receiveResult(
+      @PathVariable String idJob, @Valid @RequestBody RecebeRespostaRequest payload) {
+    LOGGER.info(
+        "[GeraLanding][Copy] Recebida resposta da IA idJob={} experimentId={} stageCode={} openAiJobId={} inputTokens={} outputTokens={} costUsd={} hasError={}",
+        idJob,
+        payload.experimentId(),
+        payload.stageCode(),
+        payload.openAiJobId(),
+        payload.inputTokens(),
+        payload.outputTokens(),
+        payload.costUsd(),
+        payload.errorMessage() != null && !payload.errorMessage().isBlank());
+    executionService.markCompletedFromResponse(
+        idJob,
+        payload.experimentId(),
+        payload.stageCode(),
+        payload.modelResponse(),
+        payload.inputTokens(),
+        payload.outputTokens(),
+        payload.costUsd(),
+        payload.openAiJobId(),
+        payload.errorMessage(),
+        payload.errorDetail());
+    return ResponseEntity.accepted().build();
+  }
+
+  /** Recebe a resposta da IA para a etapa copy pelo contrato em português. */
+  @PostMapping("/internal/geralanding/copy/stage-executions/{idJob}/recebe-resposta")
+  public ResponseEntity<Void> recebeResposta(
+      @PathVariable String idJob, @Valid @RequestBody RecebeRespostaRequest payload) {
+    return receiveResult(idJob, payload);
+  }
+
   /** Retorna os detalhes de uma execução específica da etapa. */
-  @GetMapping("/copy/stage-executions/{idJob}")
-  public ResponseEntity<GeraLandingCopyStageExecutionDetailResponse> detailStageExecution(
+  @GetMapping("/experiments/{experimentId}/geralanding/copy/stage-executions/{idJob}")
+  public ResponseEntity<RecordBackendCopyDetalheDto> detailStageExecution(
       @PathVariable Long experimentId, @PathVariable String idJob) {
-    GeraLandingCopyStageExecutionDetailResponse response =
-        executionService.getStageExecutionDetail(experimentId, idJob);
+    RecordBackendCopyDetalheDto response = executionService.getStageExecutionDetail(experimentId, idJob);
     return ResponseEntity.ok(response);
   }
 }

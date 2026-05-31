@@ -2721,3 +2721,13 @@
   - adicionados templates genéricos de controller e service com comentários de responsabilidade e logs operacionais;
   - incluídos exemplos de chamadas para start, pending, recebe-prompt e recebe-resposta.
 - impacto esperado: novas etapas backend do GeraLanding podem ser criadas com menos divergência de contrato, preservando rastreabilidade operacional e o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+
+## 2026-05-31 — Estrutura backend image planning alinhada ao wireframe
+- tarefa: reorganizar a etapa backend `geralanding.imageplanning` para seguir a mesma estrutura operacional consolidada em `geralanding.wireframe`.
+- causa-raiz: a etapa de planejamento de imagens tinha controller/serviços mais enxutos e não expunha todos os contratos internos padronizados de fila, recebimento de prompt, despacho e recebimento de resposta usados pelo fluxo core do Worker AI.
+- correção aplicada:
+  - criado o serviço `BackendImagePlanningService` com start, listagem de execuções, pending interno, recebimento de prompt, recebimento de dispatch e conclusão/falha da resposta;
+  - separados DTOs em subpacotes por caso de uso (`pending`, `recebePrompt`, `recebeResposta`, `detailStageExecution`, `listStageExecutions`), espelhando a organização do wireframe;
+  - atualizado o controller de image planning para usar `/api` como raiz e expor endpoints internos `/internal/geralanding/image-prompts/stage-executions/...` compatíveis com o Worker AI;
+  - adicionados testes unitários de service e controller para validar start, pending, callbacks e persistência do artefato `landingPageImagePlanning`.
+- impacto esperado: a etapa `landing-page-image-planning` passa a ter rastreabilidade e isolamento equivalentes ao wireframe, reduzindo divergências operacionais entre módulos GeraLanding.

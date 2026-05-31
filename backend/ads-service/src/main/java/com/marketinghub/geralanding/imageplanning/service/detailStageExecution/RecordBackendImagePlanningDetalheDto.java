@@ -1,10 +1,10 @@
-package com.marketinghub.geralanding.imageplanning.service;
+package com.marketinghub.geralanding.imageplanning.service.detailStageExecution;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** Responsável por representar os detalhes de uma execução da etapa imageplanning. */
-public record GeraLandingImagePlanningStageExecutionDetailResponse(
+/** Responsável por representar os detalhes de uma execução da etapa image planning. */
+public record RecordBackendImagePlanningDetalheDto(
         String idJob,
         Long experimentId,
         String stageCode,

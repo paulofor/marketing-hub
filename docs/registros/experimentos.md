@@ -2759,3 +2759,14 @@
   - adicionados testes de contrato garantindo que o schema expõe apenas `bodySections` e que o prompt bloqueia blocos extras;
   - atualizado o JSON de exemplo da etapa copy para remover blocos fora do wireframe e manter somente `bodySections`.
 - impacto esperado: a etapa copy passa a preencher apenas os textos solicitados pelo wireframe, reduzindo divergência entre etapas e evitando contaminação do artefato final com conteúdo inventado.
+
+## 2026-05-31 — Correção de testes do Worker AI para copy e hipóteses
+- tarefa: corrigir falhas de testes no Worker AI relacionadas ao rastreio do template de `landing-page-copy` e à geração de hipóteses sem título.
+- causa-raiz:
+  - o teste de rastreio da copy ainda esperava `template_version: v3`, mas o prompt canônico da etapa está em `v4`;
+  - `NicheHypothesisServiceTest` usava fila sequencial do `MockWebServer`, o que podia esgotar respostas e gerar timeout em leituras bloqueantes quando a ordem/estado dos testes ficava desalinhada.
+- correção aplicada:
+  - atualizado o teste da etapa copy para validar `template_version: v4`;
+  - substituída a fila de respostas do `MockWebServer` por um dispatcher determinístico no teste de hipóteses;
+  - mantida a transação necessária no cenário que valida associações JPA, com o isolamento HTTP garantido pelo dispatcher determinístico.
+- impacto esperado: a suíte do Worker AI passa a validar a versão atual do prompt e reduz intermitência nos testes de geração de hipóteses, mantendo o fluxo Dor → Resultado → Mecanismo → Prova → Oferta confiável para produtos vendáveis.

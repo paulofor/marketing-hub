@@ -2,20 +2,16 @@ package com.marketinghub.worker.geralanding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.worker.geralanding.copy.backend.GeraLandingCopyBackendClient;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class GeraLandingServiceTest {
 
-    private final GeraLandingCopyBackendClient backendClient = Mockito.mock(GeraLandingCopyBackendClient.class);
-    private final GeraLandingService service = new GeraLandingService(new ObjectMapper(), backendClient);
+    private final GeraLandingService service = new GeraLandingService(new ObjectMapper());
 
     @Test
     void deveMontarPromptEtapaComPromptEDados() throws Exception {
@@ -140,25 +136,6 @@ class GeraLandingServiceTest {
                 .doesNotContain("{{dados-campaignAngle}}")
                 .doesNotContain("{{dados-adCopy}}")
                 .doesNotContain("{{dados-adImageBriefing}}");
-    }
-
-    @Test
-    void deveRegistrarPromptMontadoComChaveDeRastreio() throws Exception {
-        GeraLandingPromptContext context = novoContexto();
-
-        String prompt = service.montarERegistrarPromptEtapa(context, "test-placeholder");
-
-        assertThat(prompt).contains("Resultado claro");
-        verify(backendClient)
-                .receivePrompt(
-                        Mockito.eq("id-job-original"),
-                        Mockito.eq(10L),
-                        Mockito.eq("test-placeholder"),
-                        Mockito.eq(prompt),
-                        Mockito.isNull(),
-                        Mockito.isNull(),
-                        Mockito.isNull(),
-                        Mockito.anyString());
     }
 
     @Test

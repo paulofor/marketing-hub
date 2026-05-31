@@ -37,7 +37,9 @@ class ArquiteturaTest {
             .dependOnClassesThat()
             .resideInAPackage("com.marketinghub..")
             .andShould()
-            .resideOutsideOfPackages("..geralanding.copy..", "..geralanding.comum..");
+            .resideOutsideOfPackages("..geralanding.copy..", "..geralanding.comum..")
+            .allowEmptyShould(true)
+            .because("[ARQUITETURA] a etapa copy legada pode estar ausente quando substituída pelo openai.core");
 
     /** Garante que presetdesign só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
     @ArchTest

@@ -2814,3 +2814,12 @@
   - a conclusão da etapa registra auditoria, tokens, custo e erro/sucesso em `GeraLandingStageExecution`, sem criar coluna consolidada nova em `experiment` porque a geração de imagens possui persistência própria por job/asset;
   - atualizada a ordem canônica do Gera Landing para explicitar `landing-page-image-generation` após `landing-page-image-planning`.
 - validação: adicionados testes unitários específicos para service e controller da nova etapa.
+
+## 2026-05-31 — Remoção da copy legada do Worker AI
+- tarefa: excluir a implementação antiga da etapa `copy` dentro de `geralanding` no Worker AI, mantendo a execução oficial pela etapa `openai.core.copy`.
+- causa-raiz/objetivo: evitar duas versões de processamento para a mesma etapa de landing page, reduzindo risco de divergência operacional, duplicidade de schedulers/clients e acoplamento com o fluxo legado.
+- correção aplicada:
+  - removido o pacote legado `com.marketinghub.worker.geralanding.copy` e seus testes específicos;
+  - simplificado `GeraLandingService` para continuar apenas como montador de prompts, sem depender do client legado da etapa copy;
+  - ajustado o teste do serviço de prompt e a regra de arquitetura para aceitar a ausência do pacote legado após a substituição pelo `openai.core`.
+- impacto esperado: a etapa `landing-page-copy` passa a ter uma única implementação ativa no Worker AI, baseada no core OpenAI, preservando rastreabilidade uniforme e diminuindo retrabalho em futuras evoluções.

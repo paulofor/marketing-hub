@@ -37,7 +37,9 @@ class MontaRequestContractTest {
                 .contains("A raiz do JSON deve conter somente `bodySections`")
                 .contains("É proibido devolver `faq`, `ctaBlocks`, `formMicrocopy`, `imageAccessibilityPlan`, `consistencyChecks`, `complianceNotes`, `pageGoal`, `primaryCTA`, `messageMatchSource`, `messageMatchNotes`")
                 .contains("O wireframe é a única fonte de verdade estrutural")
-                .contains("A etapa copy apenas escreve o valor `texto` para ids textuais existentes no wireframe");
+                .contains("A etapa copy apenas escreve o valor `texto` para ids textuais existentes no wireframe")
+                .contains("Princípio de pouco esforço obrigatório")
+                .contains("o usuário não quer fazer esforço para entender a comunicação da página");
     }
 
     /** Lê um recurso JSON do classpath e converte para mapa genérico. */

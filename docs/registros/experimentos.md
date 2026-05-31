@@ -2760,6 +2760,22 @@
   - atualizado o JSON de exemplo da etapa copy para remover blocos fora do wireframe e manter somente `bodySections`.
 - impacto esperado: a etapa copy passa a preencher apenas os textos solicitados pelo wireframe, reduzindo divergência entre etapas e evitando contaminação do artefato final com conteúdo inventado.
 
+## 2026-05-31 — Princípio de pouco esforço no wireframe GeraLanding
+- tarefa: reforçar o prompt da etapa `landing-page-wireframe` com o princípio de pouco esforço na comunicação da landing page.
+- causa-raiz/objetivo: garantir que o wireframe seja planejado considerando que o usuário não quer esforço para entender a página, preservando clareza rápida, baixa carga cognitiva e avanço natural para o CTA.
+- correção aplicada:
+  - adicionada regra obrigatória no prompt do wireframe para reduzir esforço de entendimento, evitar excesso de informações simultâneas e limitar caminhos de decisão;
+  - sincronizado o cânone de arquitetura por etapa para registrar o princípio de pouco esforço como regra de composição do wireframe.
+- impacto esperado: as landings geradas devem comunicar a promessa e o próximo passo com mais simplicidade, aumentando a chance de conversão sem sacrificar aderência ao contrato técnico da etapa.
+
+## 2026-05-31 — Princípio de pouco esforço na copy GeraLanding
+- tarefa: reforçar o prompt da etapa `landing-page-copy` com o princípio de pouco esforço na comunicação textual da landing page.
+- causa-raiz/objetivo: complementar a regra já adicionada ao wireframe para garantir que a copy final também preserve clareza rápida, baixa carga cognitiva e avanço natural para o CTA.
+- correção aplicada:
+  - adicionada regra obrigatória no prompt da copy para orientar textos curtos, claros e vendáveis dentro dos elementos já definidos pelo wireframe;
+  - atualizado teste de contrato da etapa copy para validar a presença explícita da regra no prompt;
+  - sincronizado o procedimento canônico de experimento com a regra mandatória de pouco esforço na copy.
+- impacto esperado: a etapa copy deve preencher apenas os textos solicitados pelo wireframe, porém com linguagem mais simples e direta para reduzir esforço de entendimento e favorecer conversão.
 ## 2026-05-31 — Correção de testes do Worker AI para copy e hipóteses
 - tarefa: corrigir falhas de testes no Worker AI relacionadas ao rastreio do template de `landing-page-copy` e à geração de hipóteses sem título.
 - causa-raiz:

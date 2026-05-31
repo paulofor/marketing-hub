@@ -128,6 +128,8 @@ Contrato de saída do wireframe: a raiz deve conter `definicoes` e `pagina`; den
 
 Nos elementos de texto do wireframe, `texto.conteudo` permanece vazio nessa etapa, mas `tamMinimo` e `tamMaximo` devem ser tratados como contrato de espaço textual para a etapa posterior de copy. Esses limites não podem ser arbitrários: precisam seguir a função do texto no espaço da tela, a hierarquia visual e o esforço cognitivo do usuário no mobile. Títulos, chamadas, CTAs, bullets, badges e labels devem reservar faixas menores e escaneáveis; parágrafos, explicações de mecanismo, prova, FAQ e objeções podem reservar faixas maiores quando a função do bloco exigir contexto, sempre evitando parede de texto e preservando avanço para o CTA. O limite mínimo deve representar o menor texto ainda útil para cumprir a função comercial do elemento, e o limite máximo deve representar o maior texto que cabe sem quebrar clareza, hierarquia ou conversão.
 
+A composição do wireframe deve aplicar o princípio de pouco esforço: o usuário não quer ter trabalho para entender a comunicação da página. Por isso, cada seção precisa deixar a ideia principal evidente em leitura rápida, reduzir informações simultâneas, evitar escolhas concorrentes sem necessidade e conduzir de forma natural para a próxima ação/CTA.
+
 A etapa `landing-page-wireframe` expõe a fila interna pelo endpoint:
 
 ```http

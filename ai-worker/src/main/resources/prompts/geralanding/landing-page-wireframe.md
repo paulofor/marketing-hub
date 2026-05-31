@@ -120,6 +120,7 @@ Trecho obrigatório do contrato de seção/elementos (manter):
 
 Regras comerciais e estruturais obrigatórias (mantidas):
 - Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
+- Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada seção deve reduzir carga cognitiva, deixar a mensagem principal evidente em leitura rápida, usar poucos caminhos de decisão, evitar excesso de informações simultâneas e conduzir naturalmente para o próximo CTA.
 - Objetivo comercial obrigatório: estruturar a página para venda com foco na coleta de informação para envio de amostra/prova do produto (ex.: formulário/CTA de captura).
 - Fase wireframe NÃO preenche copy: em TODOS os elementos, `texto.conteudo` deve ser string vazia (`""`) nesta etapa.
 - Para tags de lista (`ul`), sempre declarar os `li` internos explicitamente.

@@ -20,8 +20,14 @@ import com.marketinghub.prompt.repository.PromptDomainRepository;
 import com.marketinghub.prompt.repository.PromptEntityRepository;
 import com.marketinghub.prompt.repository.PromptRepository;
 import com.marketinghub.worker.config.TestServiceMocksConfig;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,12 +42,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
+/** Verifica a geração e persistência de hipóteses de nicho via cliente OpenAI em lote. */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:aiworker;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
         "spring.datasource.driver-class-name=org.h2.Driver",
@@ -63,6 +66,7 @@ class NicheHypothesisServiceTest {
     static MockWebServer mockWebServer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AtomicReference<String> batchOutputBody = new AtomicReference<>("");
 
     @MockBean
     AiWorkerGenerationService aiWorkerGenerationService;
@@ -107,6 +111,7 @@ class NicheHypothesisServiceTest {
         mockWebServer.shutdown();
     }
 
+    /** Reinicia dados e respostas HTTP para isolar cada cenário de geração de hipóteses. */
     @BeforeEach
     void resetDb() {
         hypothesisRepository.deleteAll();
@@ -119,6 +124,8 @@ class NicheHypothesisServiceTest {
         promptRepository.deleteAll();
         seedPromptDomains();
         createActivePrompt();
+        batchOutputBody.set("");
+        mockWebServer.setDispatcher(openAiBatchDispatcher());
     }
 
     private void createActivePrompt() {
@@ -149,6 +156,7 @@ class NicheHypothesisServiceTest {
         promptDomainRepository.save(hypotheses);
     }
 
+    /** Garante que hipóteses válidas são criadas, rastreadas e removidas da fila do nicho. */
     @Test
     @org.springframework.transaction.annotation.Transactional
     void generateHypothesesForNiches() {
@@ -193,6 +201,7 @@ class NicheHypothesisServiceTest {
         assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
+    /** Garante que respostas sem título são descartadas sem bloquear as demais hipóteses válidas. */
     @Test
     void skipHypothesesWithoutTitle() {
         MarketNiche niche = MarketNiche.builder()
@@ -291,10 +300,8 @@ class NicheHypothesisServiceTest {
         assertThat(nicheRepository.findById(niche.getId()).orElseThrow().getHypothesesToGenerate()).isZero();
     }
 
+    /** Prepara o corpo JSONL que o dispatcher do OpenAI Batch devolverá para o nicho do cenário. */
     private void enqueueBatchResponse(Long nicheId, String content) {
-        mockWebServer.enqueue(jsonResponse("{\"id\":\"file-1\"}"));
-        mockWebServer.enqueue(jsonResponse("{\"id\":\"batch-1\",\"status\":\"validating\"}"));
-        mockWebServer.enqueue(jsonResponse("{\"id\":\"batch-1\",\"status\":\"completed\",\"output_file_id\":\"file-output-1\"}"));
         try {
             Map<String, Object> outputContent = Map.of(
                     "type", "output_text",
@@ -316,15 +323,38 @@ class NicheHypothesisServiceTest {
                             "status_code", 200,
                             "request_id", "req_123",
                             "body", responseBody));
-            String line = objectMapper.writeValueAsString(lineObject);
-            mockWebServer.enqueue(new MockResponse()
-                    .addHeader("Content-Type", "application/json")
-                    .setBody(line));
+            batchOutputBody.set(objectMapper.writeValueAsString(lineObject));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    /** Cria um dispatcher determinístico para evitar esgotamento de filas do MockWebServer entre testes. */
+    private Dispatcher openAiBatchDispatcher() {
+        return new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest request) {
+                String path = request.getPath();
+                if ("/files".equals(path)) {
+                    return jsonResponse("{\"id\":\"file-1\"}");
+                }
+                if ("/batches".equals(path)) {
+                    return jsonResponse("{\"id\":\"batch-1\",\"status\":\"validating\"}");
+                }
+                if ("/batches/batch-1".equals(path)) {
+                    return jsonResponse("{\"id\":\"batch-1\",\"status\":\"completed\",\"output_file_id\":\"file-output-1\"}");
+                }
+                if ("/files/file-output-1/content".equals(path)) {
+                    return new MockResponse()
+                            .addHeader("Content-Type", "application/json")
+                            .setBody(batchOutputBody.get());
+                }
+                return new MockResponse().setResponseCode(404).setBody("{}");
+            }
+        };
+    }
+
+    /** Monta uma resposta JSON simples para o MockWebServer. */
     private MockResponse jsonResponse(String body) {
         return new MockResponse()
                 .addHeader("Content-Type", "application/json")

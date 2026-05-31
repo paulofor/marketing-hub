@@ -1,0 +1,95 @@
+package com.marketinghub.geralanding.bloco.service;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+/** Representa a resposta de início da etapa genérica bloco do GeraLanding. */
+public record GeraLandingBlocoStartResponse(String idJob, String status) {}
+
+/** Responsável por representar o resumo de uma execução da etapa genérica bloco. */
+public record GeraLandingBlocoExecutionSummaryResponse(
+        String idJob,
+        String status,
+        Instant executionRequestedAt,
+        BigDecimal costUsd) {}
+
+/** Responsável por representar os detalhes de uma execução da etapa genérica bloco. */
+public record RecordBackendBlocoDetalheDto(
+        String idJob,
+        Long experimentId,
+        String stageCode,
+        Instant executionRequestedAt,
+        Instant createdAt,
+        Instant processingStartedAt,
+        Instant completedAt,
+        String promptTemplateId,
+        String promptContent,
+        String prompt,
+        String openAiRequestBody,
+        String openAiModel,
+        String schemaJson,
+        String promptMarkdownContent,
+        String status,
+        String openAiJobId,
+        String modelResponse,
+        String provisionalHtml,
+        String errorMessage,
+        String errorDetail,
+        Integer inputTokens,
+        Integer outputTokens,
+        BigDecimal costUsd) {}
+
+/** Representa os dados do experimento expostos na fila interna da etapa genérica bloco. */
+public record RecordBlocoExperiment(
+        Long id,
+        String name,
+        String hypothesis,
+        String status,
+        String stage,
+        String creativeTextPrompt,
+        String creativeImagePrompt,
+        Object campaignAngle,
+        Object adCopy,
+        Object adImageBriefing,
+        Object landingPageCopy,
+        Object landingPageWireframe,
+        Object landingPageImagePlanning,
+        Object landingPageDesignPreset,
+        Object landingPageDeliverables,
+        String htmlGeraLanding) {}
+
+/** Representa a hipótese e o framework usados na fila interna da etapa genérica bloco. */
+public record RecordBlocoHypothesis(
+        UUID id,
+        String title,
+        Map<String, Object> framework) {}
+
+/** Representa o item mínimo de pendência da etapa genérica bloco consumido pelo Worker AI. */
+public record RecordBlocoPending(
+        Long experimentId,
+        String jobid,
+        String stageCode,
+        RecordBlocoExperiment experiment,
+        RecordBlocoHypothesis hypothesis) {}
+
+/** Representa o payload interno com prompt, schema e request enviados ao provedor de IA. */
+public record RecebePromptRequest(
+        String prompt,
+        String promptMarkdownContent,
+        String schemaJson,
+        String requestBodyJson,
+        String jobidopenai) {}
+
+/** Representa o payload enviado pelo Worker AI para concluir ou falhar a resposta da etapa genérica bloco. */
+public record RecebeRespostaRequest(
+        Long experimentId,
+        String stageCode,
+        String modelResponse,
+        Integer inputTokens,
+        Integer outputTokens,
+        BigDecimal costUsd,
+        String openAiJobId,
+        String errorMessage,
+        String errorDetail) {}

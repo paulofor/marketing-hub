@@ -1,0 +1,181 @@
+package com.marketinghub.geralanding.bloco.service;
+
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.geralanding.bloco.service.detailStageExecution.RecordBackendBlocoDetalheDto;
+import com.marketinghub.geralanding.bloco.service.listStageExecutions.GeraLandingBlocoExecutionSummaryResponse;
+import com.marketinghub.geralanding.bloco.service.pending.RecordBlocoPending;
+import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+/** Responsável por adaptar execuções do GeraLanding para o contrato backend da etapa genérica bloco. */
+@Service
+public class BackendBlocoService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackendBlocoService.class);
+    private static final String STAGE_CODE = "landing-page-bloco";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
+
+    private final ExperimentRepository experimentRepository;
+    private final GeraLandingStageExecutionRepository executionRepository;
+
+    /** Inicializa o serviço com os repositórios necessários para consultar e persistir execuções. */
+    public BackendBlocoService(
+            ExperimentRepository experimentRepository,
+            GeraLandingStageExecutionRepository executionRepository) {
+        this.experimentRepository = experimentRepository;
+        this.executionRepository = executionRepository;
+    }
+
+    /** Inicia a execução manual da etapa bloco usando o código canônico da etapa. */
+    @Transactional
+    public GeraLandingBlocoStartResponse start(Long experimentId) {
+        Instant now = Instant.now();
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(experiment.getId())
+                .experiment(experiment)
+                .stageCode(STAGE_CODE)
+                .executionRequestedAt(now)
+                .createdAt(now)
+                .promptTemplateId("manual/start")
+                .promptContent("Início manual via interface do experimento.")
+                .status(STATUS_STARTED)
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .build();
+        GeraLandingStageExecution saved = executionRepository.save(execution);
+        return new GeraLandingBlocoStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+    }
+
+    /** Lista execuções da etapa convertendo para o DTO local da etapa. */
+    @Transactional(readOnly = true)
+    public List<GeraLandingBlocoExecutionSummaryResponse> listExperimentStageExecutions(
+            Long experimentId, String stageCode, boolean includeCompleted) {
+        return List.of();
+    }
+
+    /** Lista os jobs iniciados da etapa bloco para processamento pelo Worker AI. */
+    @Transactional(readOnly = true)
+    public List<RecordBlocoPending> listPending(String stageCode) {
+        return List.of();
+    }
+
+    /** Marca a execução como aguardando retorno da OpenAI após receber prompt, schema e request cru despachados. */
+    @Transactional
+    public void markWaitingOpenAiDispatch(
+            String idJob,
+            String prompt,
+            String promptMarkdownContent,
+            String schemaJson,
+            String requestBodyJson,
+            String openAiJobId) {
+        GeraLandingStageExecution execution = executionRepository
+                .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+        execution.setPrompt(prompt);
+        execution.setPromptMarkdownContent(StringUtils.hasText(promptMarkdownContent) ? promptMarkdownContent : prompt);
+        execution.setSchemaJson(schemaJson);
+        execution.setOpenAiRequestBody(requestBodyJson);
+        execution.setOpenAiJobId(openAiJobId);
+        execution.setProcessingStartedAt(Instant.now());
+        execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);
+        executionRepository.save(execution);
+    }
+
+    /** Conclui ou falha a execução da etapa bloco com a resposta devolvida pelo Worker AI. */
+    @Transactional
+    public void markCompletedFromResponse(
+            String idJob,
+            Long experimentId,
+            String stageCode,
+            String modelResponse,
+            Integer inputTokens,
+            Integer outputTokens,
+            BigDecimal costUsd,
+            String openAiJobId,
+            String errorMessage,
+            String errorDetail) {
+        GeraLandingStageExecution execution = executionRepository
+                .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
+                .or(() -> executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                        experimentId, stageCode))
+                .orElseThrow(() -> new EntityNotFoundException("GeraLanding execution not found for idJob: " + idJob));
+        try {
+            execution.setModelResponse(modelResponse);
+            if (StringUtils.hasText(openAiJobId)) {
+                execution.setOpenAiJobId(openAiJobId);
+            }
+            execution.setInputTokens(inputTokens);
+            execution.setOutputTokens(outputTokens);
+            execution.setCostUsd(costUsd);
+            String normalizedErrorDetail = StringUtils.hasText(errorDetail) ? errorDetail.trim() : null;
+            String normalizedErrorMessage = normalizeErrorMessage(errorMessage, normalizedErrorDetail);
+            execution.setErrorMessage(normalizedErrorMessage);
+            execution.setErrorDetail(normalizedErrorDetail);
+            execution.setCompletedAt(Instant.now());
+            execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
+            executionRepository.save(execution);
+            if (normalizedErrorMessage == null) {
+                persistArtifactOnExperiment(execution, modelResponse);
+            }
+        } catch (RuntimeException ex) {
+            LOGGER.error(
+                    "Erro ao concluir resposta bloco idJob={} experimentId={} stageCode={} openAiJobId={}",
+                    idJob,
+                    experimentId,
+                    stageCode,
+                    openAiJobId,
+                    ex);
+            throw ex;
+        }
+    }
+
+    /** Retorna os detalhes de auditoria de uma execução da etapa bloco. */
+    @Transactional(readOnly = true)
+    public RecordBackendBlocoDetalheDto getStageExecutionDetail(Long experimentId, String idJob) {
+        throw new EntityNotFoundException("Exemplo genérico: implementar consulta de detalhe conforme a etapa real.");
+    }
+
+    /** Normaliza a mensagem de erro e garante falha quando o callback traz apenas detalhe técnico. */
+    private String normalizeErrorMessage(String errorMessage, String normalizedErrorDetail) {
+        if (StringUtils.hasText(errorMessage)) {
+            return errorMessage.trim();
+        }
+        return StringUtils.hasText(normalizedErrorDetail) ? "Falha ao processar etapa bloco" : null;
+    }
+
+    /** Persiste no experimento o artefato final produzido pela etapa real. */
+    private void persistArtifactOnExperiment(GeraLandingStageExecution execution, String modelResponse) {
+        Experiment experiment = execution.getExperiment();
+        if (experiment == null) {
+            experiment = experimentRepository.findById(execution.getExperimentId())
+                    .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + execution.getExperimentId()));
+        }
+        // Exemplo: experiment.setLandingPageBloco(modelResponse);
+        experimentRepository.save(experiment);
+    }
+
+    /** Converte id de job textual para o formato gravado no banco. */
+    private byte[] toDatabaseIdJob(String idJob) {
+        return idJob.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** Converte id de job do banco para texto exposto na API. */
+    private String fromDatabaseIdJob(byte[] idJob) {
+        return idJob == null ? null : new String(idJob, StandardCharsets.UTF_8);
+    }
+}

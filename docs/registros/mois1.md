@@ -673,3 +673,12 @@ Arquivos alterados:
 - `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorService.java`
 - `mois-hotmart-collector/src/test/java/com/marketinghub/moishotmart/service/HotmartCollectorServiceTest.java`
 - `frontend/src/pages/hotmart/HotmartPage.tsx`
+
+## 2026-05-31 20:12:49 UTC-3
+- solicitado novo agendamento operacional do ciclo 1 do coletor Hotmart para 20:40 de 31 de maio, no horário de São Paulo.
+- a causa-raiz operacional era que o agendamento especial vigente estava fixado para 18:15 do mesmo dia, horário já inadequado para a nova janela solicitada.
+- atualizado o `HotmartCollectorScheduler` para disparar o ciclo 1 com cron `0 40 20 31 5 *`, mantendo `zone = "America/Sao_Paulo"` e log operacional alinhado para `hora=20:40`.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md

@@ -193,3 +193,6 @@
 
 - 2026-05-29 23:20:00 (UTC): correção de causa-raiz para `OutOfMemoryError` no `OprmMarketImportScheduler` durante o mapeamento `cnpjBase -> cnaePrincipal`: removido o mapa global de todos os estabelecimentos em heap e implementado processamento particionado do cruzamento `SIMPLES` x `ESTABELECIMENTOS` em 128 blocos, mantendo apenas uma partição em memória por vez; o cânone OPRM também passou a proibir materialização global desse vínculo.
 - 2026-05-31 00:00:00 (UTC): alteração solicitada na tela `/oprm/cnaes-volume` para ordenar o ranking de CNAEs por `Empresas MEI` em ordem decrescente; backend passou a ordenar a consulta por `totalEmpresasMei DESC` com desempate por CNAE, frontend deixou de reordenar a página em memória e o cânone OPRM foi sincronizado com a nova regra.
+- 2026-05-31 00:00:00 (UTC): criado documento de arquitetura para o fluxo CNAE → candidatos de nicho no OPRM, incluindo diagrama de arquitetura, diagrama de sequência, estados sugeridos, contratos candidatos e campos mínimos para transformar ranking CNAE em nichos aprováveis sem criação automática direta de `MarketNiche`.
+
+- 2026-05-31 00:00:00 (UTC): corrigida a sintaxe Mermaid do diagrama de arquitetura CNAE → nichos, substituindo o rótulo do subgraph do banco para formato compatível com o renderizador do GitHub e preservando os nós de tabelas como cilindros.

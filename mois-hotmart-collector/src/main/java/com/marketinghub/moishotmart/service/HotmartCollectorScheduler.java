@@ -28,7 +28,7 @@ public class HotmartCollectorScheduler {
             HotmartCollectorService collectorService,
             @Value("${collector.scheduler.enabled:true}") boolean enabled,
             @Value("${collector.scheduler.source:hotmart-market}") String source,
-            @Value("${collector.scheduler.max-products:25}") int maxProducts
+            @Value("${collector.scheduler.max-products:400}") int maxProducts
     ) {
         this.collectorService = collectorService;
         this.enabled = enabled;

@@ -2939,3 +2939,14 @@
   - ativada atualização periódica do histórico para remover execuções otimistas que já concluíram antes da próxima leitura de pendentes;
   - centralizada a mesclagem de execução otimista com pendentes/histórico para wireframe, copy, design preset, prompt de imagem e deliverables.
 - impacto esperado: o usuário passa a ver a evolução operacional real do job no frontend, reduzindo falsa percepção de travamento e facilitando decisão sobre próximas etapas da landing.
+
+## 2026-06-01 — Qualidade visual mínima no design preset
+- tarefa: reforçar a etapa `landing-page-design-preset` para orientar o modelo a gerar uma landing com acabamento visual mínimo vendável.
+- causa-raiz/objetivo: o prompt antigo validava contraste e CTA destacado, mas não obrigava requisitos concretos de layout, espaçamento, containers, imagens e formulário; isso podia permitir páginas visualmente frágeis, com texto colado, links padrão ou imagens desproporcionais.
+- correção aplicada:
+  - adicionada seção obrigatória de qualidade visual mínima ao prompt do preset design, cobrindo `body`, containers, hero responsivo, CTA real, imagens controladas, listas e formulário em card;
+  - adicionados critérios negativos explícitos contra texto colado na borda, link padrão de navegador, imagem gigante sem container e título que quebra agressivamente a primeira dobra;
+  - ampliado o schema do preset para aceitar grupos/tokens de estrutura e espaçamento necessários para largura máxima, grid, flex, centralização, padding/margin e controle de imagem;
+  - sincronizado o cânone de etapas e a lista de CSS para registrar que acabamento visual mínimo pode combinar propriedades estruturais e visuais quando necessário;
+  - adicionado teste unitário garantindo que o prompt enviado para `landing-page-design-preset` contém as regras visuais mínimas.
+- impacto esperado: as próximas execuções do design preset tendem a produzir HTML provisório com aparência mais profissional, maior clareza na primeira dobra e CTAs mais fortes para vendas.

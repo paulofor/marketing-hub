@@ -1,7 +1,7 @@
 package com.marketinghub.worker;
 
 import com.marketinghub.successproduct.SuccessProduct;
-import com.marketinghub.successproduct.repository.SuccessProductRepository;
+import com.marketinghub.repository.jpa.successproduct.SuccessProductRepository;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 

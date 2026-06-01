@@ -4,7 +4,7 @@ import com.marketinghub.deliverable.Deliverable;
 import com.marketinghub.deliverable.dto.CreateDeliverableRequest;
 import com.marketinghub.deliverable.service.DeliverableService;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;

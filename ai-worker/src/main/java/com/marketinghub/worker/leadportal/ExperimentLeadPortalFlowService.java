@@ -2,11 +2,11 @@ package com.marketinghub.worker.leadportal;
 
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
-import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

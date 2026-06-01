@@ -6,7 +6,7 @@ import com.marketinghub.experiment.CreativeGenerationMode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

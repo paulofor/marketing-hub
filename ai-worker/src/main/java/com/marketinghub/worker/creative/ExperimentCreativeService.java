@@ -6,7 +6,7 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.service.CreativeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.worker.creative.pipeline.ExperimentPipelineAdExtractor;
 import com.marketinghub.worker.creative.pipeline.PipelineAdCreativePlan;

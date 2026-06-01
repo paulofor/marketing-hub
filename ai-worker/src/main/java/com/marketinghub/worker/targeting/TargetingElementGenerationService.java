@@ -1,7 +1,7 @@
 package com.marketinghub.worker.targeting;
 
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.CreateTargetingElementRequest;

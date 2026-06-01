@@ -4,7 +4,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.niche.description.dto.CreateNicheDetailedDescriptionRequest;
 import com.marketinghub.niche.description.service.NicheDetailedDescriptionService;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

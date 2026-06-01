@@ -2939,3 +2939,14 @@
   - ativada atualização periódica do histórico para remover execuções otimistas que já concluíram antes da próxima leitura de pendentes;
   - centralizada a mesclagem de execução otimista com pendentes/histórico para wireframe, copy, design preset, prompt de imagem e deliverables.
 - impacto esperado: o usuário passa a ver a evolução operacional real do job no frontend, reduzindo falsa percepção de travamento e facilitando decisão sobre próximas etapas da landing.
+
+## 2026-06-01 — Regra comercial de imagens úteis no wireframe da landing
+- tarefa: substituir a exigência rígida de imagem em toda seção do wireframe por uma regra comercial orientada à conversão.
+- causa-raiz/objetivo: a regra anterior incentivava imagens decorativas e blocos visuais desproporcionais, aumentando esforço cognitivo e podendo competir com o CTA em vez de vender a oferta.
+- correção aplicada:
+  - o prompt de wireframe agora pede normalmente 2 a 4 imagens úteis, com exceção para nichos que exigem mais prova visual;
+  - imagens passam a ser permitidas somente quando cumprem função de prova, demonstração do produto, antes/depois, mecanismo ou redução de objeção;
+  - a imagem de produto permanece obrigatória, mas o hero deve usar container controlado, proporção e altura máximas, sem bloco full-width desproporcional;
+  - o schema do wireframe passou a exigir metadados visuais mínimos por imagem (`posicaoDesejada`, `aspectRatio`, `maxVisualHeight`, `layoutRole` e `relacaoComCta`);
+  - testes do Worker AI foram atualizados para proteger a nova regra do prompt e do schema.
+- impacto esperado: wireframes mais simples, objetivos e eficazes, com imagens a serviço da prova e do CTA em vez de preenchimento visual automático.

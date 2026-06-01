@@ -614,6 +614,29 @@
             "diagrama",
             "print conceitual"
           ]
+        },
+        "posicaoDesejada": {
+          "type": "string"
+        },
+        "aspectRatio": {
+          "type": "string"
+        },
+        "maxVisualHeight": {
+          "type": "string"
+        },
+        "layoutRole": {
+          "type": "string",
+          "enum": [
+            "product",
+            "proof",
+            "demonstration",
+            "before-after",
+            "mechanism",
+            "objection-reducer"
+          ]
+        },
+        "relacaoComCta": {
+          "type": "string"
         }
       },
       "required": [
@@ -621,7 +644,12 @@
         "tipoVisualEsperado",
         "funcaoComercial",
         "objecaoQueRemove",
-        "classificacaoVisual"
+        "classificacaoVisual",
+        "posicaoDesejada",
+        "aspectRatio",
+        "maxVisualHeight",
+        "layoutRole",
+        "relacaoComCta"
       ]
     }
   }

@@ -187,4 +187,43 @@ class WireframeBackendClientTest {
                 .doesNotContain("mistas");
     }
 
+    /** Deve refletir no prompt a regra comercial de imagens úteis em vez de imagem obrigatória por seção. */
+    @Test
+    void wireframePromptShouldRequireOnlyCommerciallyUsefulImages() throws Exception {
+        String promptMarkdown = new ClassPathResource("prompts/geralanding/landing-page-wireframe.md")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(promptMarkdown)
+                .contains("planejar normalmente entre 2 e 4 elementos `img` úteis")
+                .contains("somente quando a imagem cumpre função explícita de prova")
+                .contains("Hero com imagem controlada")
+                .contains("sem bloco full-width desproporcional")
+                .doesNotContain(
+                        "cada seção em `pagina.corpo.secoes[]` deve conter pelo menos um elemento `img`")
+                .doesNotContain("gerar no mínimo 4 elementos `img`");
+    }
+
+    /** Deve exigir metadados visuais mínimos para cada imagem planejada no wireframe. */
+    @Test
+    void wireframeSchemaShouldRequireVisualMetadataForImages() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        JsonNode briefingVisual = schema.path("$defs").path("briefingVisual");
+
+        assertThat(briefingVisual.path("properties").has("posicaoDesejada")).isTrue();
+        assertThat(briefingVisual.path("properties").has("aspectRatio")).isTrue();
+        assertThat(briefingVisual.path("properties").has("maxVisualHeight")).isTrue();
+        assertThat(briefingVisual.path("properties").path("layoutRole").path("enum").toString())
+                .isEqualTo(
+                        "[\"product\",\"proof\",\"demonstration\",\"before-after\",\"mechanism\",\"objection-reducer\"]");
+        assertThat(briefingVisual.path("properties").has("relacaoComCta")).isTrue();
+        assertThat(briefingVisual.path("required").toString())
+                .contains("posicaoDesejada")
+                .contains("aspectRatio")
+                .contains("maxVisualHeight")
+                .contains("layoutRole")
+                .contains("relacaoComCta");
+    }
+
 }

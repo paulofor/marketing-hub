@@ -754,3 +754,33 @@ Arquivos alterados:
 - atualizado o `HotmartCollectorScheduler` para disparar o ciclo 1 com cron literal `0 15 18 1 6 *`, mantendo guarda operacional para executar somente no ano de 2026.
 - atualizado o cânone Hotmart para refletir o novo horário vigente do ciclo 1.
 - mantido o alvo operacional de 500 produtos e o ciclo 2 sem alteração.
+
+## 2026-06-01 — Hotmart ciclo 1 corrigido para 400 produtos sem duplicação
+
+- Corrigida a causa-raiz da execução do ciclo 1 coletar apenas 25 itens: os `docker-compose` local e de deploy ainda sobrescreviam o padrão canônico com `COLLECTOR_SCHEDULER_MAX_PRODUCTS=25`, apesar do código/documentação operacional indicarem alvo maior.
+- Alinhado o alvo operacional vigente para **400 produtos**: 20 páginas completas x 20 itens por página.
+- Ajustado o ciclo 1 para sempre requisitar páginas completas de 20 itens, evitando sobreposição de ranking quando a última página era solicitada com menos linhas.
+- Adicionada deduplicação em memória por `ucode` ou por combinação normalizada de título/produtor antes de persistir o produto do ciclo 1.
+- Atualizados cânone, README/configurações e testes unitários do coletor Hotmart para travar o comportamento esperado.
+
+Arquivos alterados:
+- `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorService.java`
+- `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorScheduler.java`
+- `mois-hotmart-collector/src/main/resources/application.properties`
+- `mois-hotmart-collector/docker-compose.yml`
+- `mois-hotmart-collector/docker-compose.deploy.yml`
+- `mois-hotmart-collector/README.md`
+- `mois-hotmart-collector/src/test/java/com/marketinghub/moishotmart/service/HotmartCollectorServiceTest.java`
+- `docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md`
+
+## 2026-06-01 — Hotmart ciclo 1 reagendado para 21:00
+
+- ajuste operacional solicitado para alterar a execução do ciclo 1 Hotmart de **01/06/2026 às 18:15** para **01/06/2026 às 21:00** no timezone `America/Sao_Paulo`.
+- atualizado o `HotmartCollectorScheduler` para disparar o ciclo 1 com cron literal `0 0 21 1 6 *`, mantendo guarda operacional para executar somente no ano de 2026.
+- atualizado o cânone Hotmart para refletir o novo horário vigente do ciclo 1.
+- mantido o alvo operacional de 400 produtos e o ciclo 2 sem alteração.
+
+Arquivos alterados:
+- `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorScheduler.java`
+- `mois-hotmart-collector/src/test/java/com/marketinghub/moishotmart/service/HotmartCollectorSchedulerTest.java`
+- `docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md`

@@ -184,14 +184,14 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 Agendamento operacional vigente no `mois-hotmart-collector`:
 
-- **Ciclo 1 (listagem):** execução pontual em **1 de junho de 2026 às 18:15**, no fuso `America/Sao_Paulo`.
+- **Ciclo 1 (listagem):** execução pontual em **1 de junho de 2026 às 21:00**, no fuso `America/Sao_Paulo`.
 - **Ciclo 2 (detalhes):** execução diária às **17:00**, conforme scheduler vigente do coletor.
 - O cron do ciclo 1 fica hardcoded no `HotmartCollectorScheduler` para manter rastreabilidade operacional do horário combinado.
 
 Sequência operacional consolidada:
 
 1. Obter token JWT da Hotmart via configuração geral no backend.
-2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base, percorrendo até 25 páginas de 20 itens por execução (alvo operacional padrão de 500 produtos), salvo se a Hotmart retornar menos itens antes desse limite.
+2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base, percorrendo até 20 páginas de 20 itens por execução (alvo operacional padrão de 400 produtos), com requisições sempre em páginas completas de 20 itens e deduplicação por produto antes da persistência, salvo se a Hotmart retornar menos itens antes desse limite.
 3. No ciclo 2, buscar produtos já persistidos em `/api/v1/mois/hotmart/products`.
 4. Para cada produto do ciclo 2, chamar `GET https://api-affiliation-market.hotmart.com/v1/market/product/{id}/details?userSessionId={session}`.
 5. Persistir novamente no backend para atualizar as referências com foco em `salesPageUrl`.

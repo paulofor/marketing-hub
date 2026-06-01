@@ -13,18 +13,21 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
-import java.time.Instant;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Iterator;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,7 +43,7 @@ public class HotmartCollectorService {
     private static final int LOGIN_SUBMIT_RETRIES = 3;
     private static final int COOKIE_RETRY_ATTEMPTS = 3;
     static final int HOTMART_ROWS_PER_PAGE = 20;
-    static final int HOTMART_MAX_PAGES_PER_RUN = 25;
+    static final int HOTMART_MAX_PAGES_PER_RUN = 20;
     static final int HOTMART_MAX_PRODUCTS_PER_RUN = HOTMART_ROWS_PER_PAGE * HOTMART_MAX_PAGES_PER_RUN;
     private static final String HOTMART_MARKET_API_URL = "https://api-affiliation-market.hotmart.com/v2/market/search";
     private static final String HOTMART_PRODUCT_DETAILS_API_URL = "https://api-affiliation-market.hotmart.com/v1/market/product/%s/details?userSessionId=%s";
@@ -97,10 +100,10 @@ public class HotmartCollectorService {
     }
 
     /**
-     * Executa o ciclo 1 de listagem da Hotmart e marca erro acionável quando a API rejeita o JWT salvo.
+     * Executa o ciclo 1 de listagem da Hotmart, aplica o alvo operacional de 400 produtos e marca erro acionável quando a API rejeita o JWT salvo.
      */
     public HotmartCollectionResponse collectFirstCycle(HotmartCollectionRequest request) {
-        int boundedMax = request.maxProducts() <= 0 ? 10 : Math.min(request.maxProducts(), HOTMART_MAX_PRODUCTS_PER_RUN);
+        int boundedMax = boundedFirstCycleProductLimit(request.maxProducts());
 
         List<HotmartProductSnapshot> products = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
@@ -306,7 +309,7 @@ public class HotmartCollectorService {
      */
     private List<HotmartProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {
         List<HotmartProductSnapshot> products = new ArrayList<>();
-        int boundedMax = maxProducts <= 0 ? 25 : Math.min(maxProducts, 100);
+        int boundedMax = boundedFirstCycleProductLimit(maxProducts);
         String endpoint = backendBaseUrl + "/api/v1/mois/hotmart/products?limit=" + boundedMax;
         try {
             log.info("Ciclo 2: solicitando produtos base do backend. endpoint={}, limit={}", endpoint, boundedMax);
@@ -512,6 +515,43 @@ public class HotmartCollectorService {
     }
 
     /**
+     * Limita a meta do ciclo 1 ao alvo operacional canônico de quatrocentos produtos.
+     */
+    static int boundedFirstCycleProductLimit(int requestedMax) {
+        return requestedMax <= 0 ? HOTMART_MAX_PRODUCTS_PER_RUN : Math.min(requestedMax, HOTMART_MAX_PRODUCTS_PER_RUN);
+    }
+
+    /**
+     * Monta uma chave estável para evitar persistência duplicada do mesmo produto dentro de uma execução do ciclo 1.
+     */
+    static String buildHotmartProductDeduplicationKey(String ucode, String title, String producerName, String url) {
+        String normalizedUcode = normalizeForDeduplication(ucode);
+        if (!normalizedUcode.isBlank()) {
+            return "ucode:" + normalizedUcode;
+        }
+        String normalizedTitle = normalizeForDeduplication(title);
+        String normalizedProducer = normalizeForDeduplication(producerName);
+        if (!normalizedTitle.isBlank()) {
+            return "title:" + normalizedTitle + "|producer:" + normalizedProducer;
+        }
+        String normalizedUrl = normalizeForDeduplication(url);
+        if (!normalizedUrl.isBlank()) {
+            return "url:" + normalizedUrl;
+        }
+        return "";
+    }
+
+    /**
+     * Normaliza textos usados na chave de deduplicação dos produtos Hotmart.
+     */
+    private static String normalizeForDeduplication(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    /**
      * Identifica respostas da Hotmart que exigem ação do usuário para renovar o JWT salvo.
      */
     static boolean isHotmartTokenUpdateRequired(int statusCode, String body) {
@@ -537,12 +577,14 @@ public class HotmartCollectorService {
         try {
             int targetProducts = Math.min(boundedMax, HOTMART_MAX_PRODUCTS_PER_RUN);
             int page = 1;
+            Set<String> seenProductKeys = new HashSet<>();
+            int skippedDuplicates = 0;
             log.info("Hotmart ciclo 1 iniciado. targetProducts={}, rowsPorPagina={}, maxPages={}",
                     targetProducts,
                     HOTMART_ROWS_PER_PAGE,
                     HOTMART_MAX_PAGES_PER_RUN);
             while (products.size() < targetProducts && page <= HOTMART_MAX_PAGES_PER_RUN) {
-                int rows = Math.min(HOTMART_ROWS_PER_PAGE, targetProducts - products.size());
+                int rows = HOTMART_ROWS_PER_PAGE;
                 int collectedBeforePage = products.size();
                 log.info("Hotmart ciclo 1 requisitando página. page={}, rowsSolicitadas={}, coletadosAntesPagina={}, alvo={}",
                         page,
@@ -595,41 +637,56 @@ public class HotmartCollectorService {
                         productsNode.size() > 0 ? previewFieldNames(productsNode.get(0)) : "[]");
                 for (JsonNode item : productsNode) {
                     if (products.size() >= targetProducts) break;
-                String title = extractProductText(item, "name", "productName", "title");
-                String url = extractProductText(item, "checkoutUrl", "productUrl", "url", "link");
-                if (url == null || url.isBlank()) {
-                    url = hotmartMarketUrl;
+                    String title = extractProductText(item, "name", "productName", "title");
+                    String url = extractProductText(item, "checkoutUrl", "productUrl", "url", "link");
+                    if (url == null || url.isBlank()) {
+                        url = hotmartMarketUrl;
+                    }
+                    if (title == null || title.isBlank()) {
+                        log.warn("Item Hotmart sem título mapeável. chavesItem={}, itemPreview={}",
+                                previewFieldNames(item),
+                                truncateForLog(item.toString(), 600));
+                    }
+                    String producerName = firstText(item.path("producer"), "name");
+                    String productKey = buildHotmartProductDeduplicationKey(
+                            extractProductText(item, "ucode"),
+                            title,
+                            producerName,
+                            url);
+                    if (!productKey.isBlank() && !seenProductKeys.add(productKey)) {
+                        skippedDuplicates++;
+                        log.info("Hotmart ciclo 1 ignorou produto duplicado na página. page={}, chaveProduto={}, titulo={}",
+                                page,
+                                productKey,
+                                title);
+                        continue;
+                    }
+                    Double temperature = extractProductNumber(item, "temperature", "temp", "hotness");
+                    HotmartProductSnapshot baseSnapshot = new HotmartProductSnapshot(
+                            extractProductText(item, "ucode"),
+                            title == null || title.isBlank() ? "Produto sem título" : title,
+                            extractProductText(item, "image"),
+                            pickFirstNonBlank(extractProductText(item, "reviewRating"), "N/A"),
+                            extractProductInteger(item, "totalAnswers"),
+                            extractProductNumber(item, "blueprint"),
+                            "N/A",
+                            extractProductNumber(item, "value"),
+                            extractProductText(item, "category"),
+                            extractProductText(item, "format"),
+                            producerName,
+                            url,
+                            temperature,
+                            null,
+                            Instant.now());
+                    products.add(enrichProductWithDetails(accessToken, item, baseSnapshot));
                 }
-                if (title == null || title.isBlank()) {
-                    log.warn("Item Hotmart sem título mapeável. chavesItem={}, itemPreview={}",
-                            previewFieldNames(item),
-                            truncateForLog(item.toString(), 600));
-                }
-                Double temperature = extractProductNumber(item, "temperature", "temp", "hotness");
-                HotmartProductSnapshot baseSnapshot = new HotmartProductSnapshot(
-                        extractProductText(item, "ucode"),
-                        title == null || title.isBlank() ? "Produto sem título" : title,
-                        extractProductText(item, "image"),
-                        pickFirstNonBlank(extractProductText(item, "reviewRating"), "N/A"),
-                        extractProductInteger(item, "totalAnswers"),
-                        extractProductNumber(item, "blueprint"),
-                        "N/A",
-                        extractProductNumber(item, "value"),
-                        extractProductText(item, "category"),
-                        extractProductText(item, "format"),
-                        firstText(item.path("producer"), "name"),
-                        url,
-                        temperature,
-                        null,
-                        Instant.now());
-                products.add(enrichProductWithDetails(accessToken, item, baseSnapshot));
-            }
                 int collectedAfterPage = products.size();
                 int addedInPage = collectedAfterPage - collectedBeforePage;
-                log.info("Hotmart ciclo 1 página concluída. page={}, itensNoArray={}, adicionadosNaPagina={}, coletadosAposPagina={}, alvo={}",
+                log.info("Hotmart ciclo 1 página concluída. page={}, itensNoArray={}, adicionadosNaPagina={}, duplicadosIgnoradosAcumulado={}, coletadosAposPagina={}, alvo={}",
                         page,
                         productsNode.size(),
                         addedInPage,
+                        skippedDuplicates,
                         collectedAfterPage,
                         targetProducts);
                 if (productsNode.size() < rows) {
@@ -645,9 +702,10 @@ public class HotmartCollectorService {
                 log.info("Limite de paginação atingido no ciclo 1 da Hotmart. maxPages={}, produtosColetados={}, alvo={}",
                         HOTMART_MAX_PAGES_PER_RUN, products.size(), targetProducts);
             }
-            log.info("Hotmart ciclo 1 encerrado. paginasPercorridas={}, produtosColetados={}, alvo={}",
+            log.info("Hotmart ciclo 1 encerrado. paginasPercorridas={}, produtosColetados={}, duplicadosIgnorados={}, alvo={}",
                     Math.min(page - 1, HOTMART_MAX_PAGES_PER_RUN),
                     products.size(),
+                    skippedDuplicates,
                     targetProducts);
             return products.size();
         } catch (Exception ex) {

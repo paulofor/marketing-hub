@@ -63,7 +63,7 @@ COLLECTOR_HOTMART_SESSION_COOKIE=
 COLLECTOR_SCHEDULER_ENABLED=true
 COLLECTOR_SCHEDULER_CRON=0 0 * * * *
 COLLECTOR_SCHEDULER_SOURCE=hotmart-market
-COLLECTOR_SCHEDULER_MAX_PRODUCTS=25
+COLLECTOR_SCHEDULER_MAX_PRODUCTS=400
 ```
 
 > Observação: o padrão operacional é execução **agendada** (não manual), de hora em hora.
@@ -86,7 +86,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 - Agendamento automático:
   - `collector.scheduler.enabled=true`
   - `collector.scheduler.cron=0 0 * * * *` (**executa de hora em hora**)
-  - `collector.scheduler.max-products=25`
+  - `collector.scheduler.max-products=400`
 
 ## Variáveis de ambiente suportadas
 
@@ -100,7 +100,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 | `COLLECTOR_SCHEDULER_ENABLED` | Habilita/desabilita execução automática | `true` |
 | `COLLECTOR_SCHEDULER_CRON` | Expressão cron da execução automática | `0 0 * * * *` |
 | `COLLECTOR_SCHEDULER_SOURCE` | Identificador da fonte usada no job agendado | `hotmart-market` |
-| `COLLECTOR_SCHEDULER_MAX_PRODUCTS` | Limite de produtos por execução agendada | `25` |
+| `COLLECTOR_SCHEDULER_MAX_PRODUCTS` | Limite de produtos por execução agendada | `400` |
 
 Exemplo:
 

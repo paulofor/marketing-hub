@@ -53,13 +53,55 @@ class HotmartCollectorServiceTest {
     }
 
     /**
-     * Garante que o ciclo 1 esteja configurado para percorrer vinte e cinco páginas completas da Hotmart.
+     * Garante que o ciclo 1 esteja configurado para percorrer vinte páginas completas da Hotmart.
      */
     @Test
-    void shouldConfigureFirstCycleForTwentyFiveHotmartPages() {
+    void shouldConfigureFirstCycleForTwentyHotmartPages() {
         assertEquals(20, HotmartCollectorService.HOTMART_ROWS_PER_PAGE);
-        assertEquals(25, HotmartCollectorService.HOTMART_MAX_PAGES_PER_RUN);
-        assertEquals(500, HotmartCollectorService.HOTMART_MAX_PRODUCTS_PER_RUN);
+        assertEquals(20, HotmartCollectorService.HOTMART_MAX_PAGES_PER_RUN);
+        assertEquals(400, HotmartCollectorService.HOTMART_MAX_PRODUCTS_PER_RUN);
+    }
+
+    /**
+     * Garante que pedidos sem limite explícito usem o alvo operacional de quatrocentos produtos.
+     */
+    @Test
+    void shouldUseFourHundredProductsWhenRequestLimitIsMissing() {
+        assertEquals(400, HotmartCollectorService.boundedFirstCycleProductLimit(0));
+        assertEquals(400, HotmartCollectorService.boundedFirstCycleProductLimit(-1));
+        assertEquals(400, HotmartCollectorService.boundedFirstCycleProductLimit(500));
+    }
+
+    /**
+     * Garante que a deduplicação priorize o identificador da Hotmart antes do nome comercial.
+     */
+    @Test
+    void shouldBuildStableDeduplicationKeyFromUcode() {
+        assertEquals(
+                "ucode:abc-123",
+                HotmartCollectorService.buildHotmartProductDeduplicationKey(
+                        " ABC-123 ",
+                        "Produto Teste",
+                        "Produtor",
+                        "https://example.com"
+                )
+        );
+    }
+
+    /**
+     * Garante que a deduplicação use nome e produtor quando a Hotmart não enviar ucode.
+     */
+    @Test
+    void shouldBuildStableDeduplicationKeyFromTitleAndProducer() {
+        assertEquals(
+                "title:produto teste|producer:produtor oficial",
+                HotmartCollectorService.buildHotmartProductDeduplicationKey(
+                        "",
+                        " Produto   Teste ",
+                        " Produtor Oficial ",
+                        "https://example.com"
+                )
+        );
     }
 
 }

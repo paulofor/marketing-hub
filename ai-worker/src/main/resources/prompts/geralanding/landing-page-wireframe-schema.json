@@ -616,45 +616,27 @@
           ]
         },
         "posicaoDesejada": {
-          "type": "string",
-          "minLength": 1
+          "type": "string"
         },
         "aspectRatio": {
-          "type": "string",
-          "minLength": 1
+          "type": "string"
         },
         "maxVisualHeight": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "desktop": {
-              "type": "string",
-              "minLength": 1
-            },
-            "mobile": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": [
-            "desktop",
-            "mobile"
-          ]
+          "type": "string"
         },
         "layoutRole": {
           "type": "string",
           "enum": [
-            "prova",
-            "demonstracao-produto",
-            "antes-depois",
-            "mecanismo",
-            "reducao-objecao",
-            "produto"
+            "product",
+            "proof",
+            "demonstration",
+            "before-after",
+            "mechanism",
+            "objection-reducer"
           ]
         },
         "relacaoComCta": {
-          "type": "string",
-          "minLength": 1
+          "type": "string"
         }
       },
       "required": [

@@ -1,18 +1,17 @@
-package com.marketinghub.geralanding.designpreset;
+package com.marketinghub.geralanding.presetdesign.provisorio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-@Component
 /**
  * Monta o HTML provisório da etapa de preset de design a partir dos artefatos canônicos anteriores.
  */
+@Component
 public class DesignPresetProvisionalHtmlAssembler {
 
     private static final Logger log = LoggerFactory.getLogger(DesignPresetProvisionalHtmlAssembler.class);
@@ -20,12 +19,13 @@ public class DesignPresetProvisionalHtmlAssembler {
     private final DesignPresetProvisionalHtmlProcessor processor;
     private final ObjectMapper objectMapper;
 
-    public DesignPresetProvisionalHtmlAssembler(DesignPresetProvisionalHtmlProcessor processor,
-                                                ObjectMapper objectMapper) {
+    /** Inicializa o montador com o processador tokenizado e o mapper JSON usados na consolidação do HTML. */
+    public DesignPresetProvisionalHtmlAssembler(
+            DesignPresetProvisionalHtmlProcessor processor,
+            ObjectMapper objectMapper) {
         this.processor = processor;
         this.objectMapper = objectMapper;
     }
-
 
     /**
      * Monta o HTML provisório da etapa a partir do retorno direto do modelo.

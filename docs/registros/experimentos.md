@@ -2847,3 +2847,13 @@
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/presetdesign/service/BackendPresetDesignService.java
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/designpreset/DesignPresetProvisionalHtmlAssembler.java
   - backend/ads-service/src/test/java/com/marketinghub/geralanding/presetdesign/service/BackendPresetDesignServiceTest.java
+
+## 2026-06-01 — Assembler provisório do PresetDesign no pacote da etapa
+- tarefa: mover o montador provisório do design preset para `geralanding.presetdesign.provisorio` e ajustar a regra arquitetural para permitir que serviços da etapa acessem provisórios da própria etapa.
+- causa-raiz/objetivo: `BackendPresetDesignService` precisava gerar o HTML provisório com o assembler canônico, mas a classe ainda residia em `geralanding.designpreset`, fora da fronteira arquitetural da etapa `presetdesign`, causando violação ArchUnit de dependência entre pacotes.
+- correção aplicada:
+  - movidos `DesignPresetProvisionalHtmlAssembler` e `DesignPresetProvisionalHtmlProcessor` para `com.marketinghub.geralanding.presetdesign.provisorio`;
+  - atualizadas as importações do backend e dos testes para o novo pacote;
+  - ajustada a regra ArchUnit para exigir o assembler em `presetdesign.provisorio` e permitir dependências de `geralanding.<etapa>.service` para `geralanding.<etapa>.provisorio` da mesma etapa;
+  - sincronizados os documentos canônicos de arquitetura e procedimento do experimento.
+- impacto esperado: a etapa `landing-page-design-preset` mantém o HTML provisório dentro da própria fronteira da etapa, reduzindo acoplamento indevido e preservando a montagem necessária para gerar landing pages vendáveis.

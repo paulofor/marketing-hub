@@ -126,6 +126,11 @@ Trecho obrigatório do contrato de seção/elementos (manter):
 
 Regras comerciais e estruturais obrigatórias (mantidas):
 - Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
+- Primeira dobra forte obrigatória: o hero deve abrir com resultado comercial desejado pelo nicho + dor removida + mecanismo plausível, e não com uma descrição operacional da amostra. A amostra/PDF/mini-kit deve aparecer como prova concreta do mecanismo, não como promessa principal.
+- Desktop comercial obrigatório: no desktop, o hero deve ser pensado em duas colunas dentro de um container centralizado; coluna esquerda com headline, subtítulo, 3 bullets de valor e CTA primário; coluna direita com card visual/prova do produto ou card de captura curta. É proibido gerar uma página estreita de coluna única no desktop quando houver espaço para hierarquia visual.
+- Formulário com contexto claro: a seção de captura deve conter rótulos ou microcopy textual visível para `nome` e `email`, além de CTA específico; inputs não podem depender apenas de campos vazios/sem placeholder para o usuário entender o que preencher.
+- Sequência persuasiva mínima obrigatória: depois do hero, estruturar seções que respondam nesta ordem lógica: (1) por que a situação atual custa venda/renovação; (2) como o mecanismo resolve com pouco esforço; (3) o que a pessoa recebe na amostra e no próximo passo; (4) formulário/ação; (5) dúvidas/objeções essenciais.
+- Menos CTAs redundantes: usar CTAs nos pontos de decisão, evitando repetir o mesmo botão após blocos que ainda não agregaram argumento novo.
 - Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada seção deve reduzir carga cognitiva, deixar a mensagem principal evidente em leitura rápida, usar poucos caminhos de decisão, evitar excesso de informações simultâneas e conduzir naturalmente para o próximo CTA.
 - Objetivo comercial obrigatório: estruturar a página para venda com foco na coleta de informação para envio de amostra/prova do produto (ex.: formulário/CTA de captura).
 - Fase wireframe NÃO preenche copy: em TODOS os elementos, `texto.conteudo` deve ser string vazia (`""`) nesta etapa.

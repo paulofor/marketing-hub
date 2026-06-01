@@ -78,6 +78,8 @@ Regras obrigatórias:
 
 Qualidade visual mínima da landing (obrigatório):
 - `body` deve ter `margin: 0`, fonte legível, background consistente e texto com contraste suficiente para leitura imediata.
+- Layout desktop deve parecer landing comercial acabada: usar containers com largura entre 1040px e 1200px, hero em duas colunas quando houver conteúdo visual/card, espaçamento vertical generoso e cards com contraste/sombra leve. Evite aparência de página mobile esticada ou coluna estreita no desktop.
+- Primeira dobra deve destacar uma ação principal, uma prova visual e uma hierarquia clara (headline maior, subtítulo legível, bullets escaneáveis, CTA evidente).
 - Seções e containers principais devem usar `max-width` e centralização com `margin-left: auto` e `margin-right: auto` quando o conteúdo não precisar ocupar toda a largura.
 - Hero deve ficar em layout de duas colunas no desktop e uma coluna no mobile, preservando hierarquia clara entre promessa, prova, CTA e visual.
 - CTA primário deve ter aparência real de botão: `padding`, `background`, `border-radius`, `font-weight`, `display: inline-flex`, estados `:hover` e contraste claro entre texto e fundo.

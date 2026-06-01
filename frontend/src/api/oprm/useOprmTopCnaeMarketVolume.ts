@@ -10,12 +10,23 @@ export interface OprmTopCnaeMarketVolume {
   totalEmpresas: number;
   totalEmpresasMei: number;
   totalEmpresasSimples: number;
+  opportunityScore: number | null;
+  scoreStatus: string | null;
 }
 
-async function fetchTopCnaes(page = 0, size = 50): Promise<OprmTopCnaeMarketVolume[]> {
-  const response = await fetch(buildApiUrl(`/api/oprm/market/import-runs/cnaes/top-volume?page=${page}&size=${size}`));
+async function fetchTopCnaes(
+  page = 0,
+  size = 50,
+): Promise<OprmTopCnaeMarketVolume[]> {
+  const response = await fetch(
+    buildApiUrl(
+      `/api/oprm/market/import-runs/cnaes/top-volume?page=${page}&size=${size}`,
+    ),
+  );
   if (!response.ok) {
-    throw new Error(`Não foi possível carregar os CNAEs por volume (status ${response.status}).`);
+    throw new Error(
+      `Não foi possível carregar os CNAEs por volume (status ${response.status}).`,
+    );
   }
   return (await response.json()) as OprmTopCnaeMarketVolume[];
 }

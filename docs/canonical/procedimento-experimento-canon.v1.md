@@ -103,21 +103,20 @@ Regras:
 ### 5.5 Worker AI — divisão equivalente por etapa (obrigatória)
 
 No `ai-worker`, a mesma divisão por etapa deve ser mantida para evitar acoplamento entre execução,
-prompt e schema. A etapa `landing-page-wireframe` já foi migrada para o núcleo canônico
-`com.marketinghub.worker.openai.core.wireframe`; portanto, o pacote legado
-`com.marketinghub.worker.geralanding.wireframe` está desativado e não deve ser recriado.
+prompt e schema. As etapas `landing-page-wireframe`, `landing-page-copy`,
+`landing-page-image-planning` e `landing-page-design-preset` já foram migradas para o núcleo canônico
+`com.marketinghub.worker.openai.core.<etapa>`; portanto, os pacotes legados equivalentes em
+`com.marketinghub.worker.geralanding` estão desativados e não devem ser recriados.
 
 - Etapas migradas para o novo padrão devem residir em `com.marketinghub.worker.openai.core.<etapa>` e
   usar `StageWorker`, `StageBackendPort`, `StagePromptBuilder`, `StageResponseValidator`,
   `StageResponseHandler` e `OpenAiClientPort`.
 - Etapas ainda não migradas permanecem temporariamente nos pacotes próprios de
-  `com.marketinghub.worker.geralanding`, mantendo isolamento entre `copy`, `imageplanning`,
-  `presetdesign` e `deliverables` até a migração.
-- `com.marketinghub.worker.geralanding.stage.GeraLandingStageDefinition`
-- `com.marketinghub.worker.geralanding.stage.GeraLandingStageSchemaResolver`
+  `com.marketinghub.worker.geralanding`; atualmente apenas `deliverables` continua legado.
+- O antigo pacote `com.marketinghub.worker.geralanding.stage` foi removido junto com as etapas migradas; cada etapa do `openai.core` deve resolver seu próprio prompt/schema por configuração tipada.
 
 Regra operacional: a seleção de schema/prompt por etapa no worker deve ocorrer por definição de etapa
-explícita, sem ifs ad-hoc espalhados no serviço de execução. No futuro, todas as demais etapas do
+explícita, sem ifs ad-hoc espalhados no serviço de execução. No futuro, as etapas ainda legadas do
 GeraLanding devem migrar gradualmente para `openai.core.<etapa>`.
 
 ## 6. Geração e aprovação de anúncios

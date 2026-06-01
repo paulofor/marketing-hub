@@ -12,5 +12,14 @@ services:
       - COLLECTOR_SCHEDULER_CRON=${COLLECTOR_SCHEDULER_CRON:-0 0 * * * *}
       - COLLECTOR_SCHEDULER_SOURCE=${COLLECTOR_SCHEDULER_SOURCE:-hotmart-market}
       - COLLECTOR_SCHEDULER_MAX_PRODUCTS=${COLLECTOR_SCHEDULER_MAX_PRODUCTS:-25}
+      - APP_LOG_FILE=${APP_LOG_FILE:-/app/logs/marketinghub-mois.log}
     ports:
       - "8096:8096"
+    volumes:
+      - ${MOIS_HOTMART_LOG_DIR:-/opt/marketinghub/mois-hotmart-collector/logs}:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8096/api/v1/mois-hotmart/health | grep -q ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

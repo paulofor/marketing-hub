@@ -180,12 +180,9 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 ---
 
-## 9) Regras de agendamento e execução dos ciclos
+## 9) Execução dos ciclos
 
-O coletor executa de hora em hora e decide o ciclo pela hora atual:
-
-- Hora ímpar (`hour % 2 != 0`) → executa `collectFirstCycle(...)`.
-- Hora par (`hour % 2 == 0`) → executa `collectSecondCycleFromBackend(...)`.
+O cânone deste fluxo não fixa cadência horária nem alternância por paridade de hora. A janela de agendamento é operacional e deve ser consultada no scheduler/deploy vigente do `mois-hotmart-collector`.
 
 Sequência operacional consolidada:
 

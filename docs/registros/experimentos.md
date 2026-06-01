@@ -2878,3 +2878,13 @@
   - docs/canonical/openai-informacoes-tratadas-canon.v1.md
   - docs/canonical/procedimento-experimento-canon.v1.md
   - docs/canonical/geralanding-backend-swagger.v1.yaml
+
+## 2026-06-01 — Limpeza dos legados GeraLanding migrados para openai.core
+- tarefa: remover do Worker AI os artefatos obsoletos do pacote `com.marketinghub.worker.geralanding` que já foram migrados para `com.marketinghub.worker.openai.core`.
+- causa-raiz/objetivo: evitar duplicidade operacional entre implementações legadas e o núcleo OpenAI consolidado, preservando no pacote legado apenas a etapa ainda não migrada `deliverables` e o suporte compartilhado mínimo usado por ela.
+- correção aplicada:
+  - removidas as classes raiz legadas de wireframe/orquestração geral (`GeraLandingService`, DTOs e client flex antigo);
+  - removidos os subpacotes legados `imageplanning`, `presetdesign` e `stage` do Worker AI, pois as etapas migradas usam `openai.core`;
+  - removido o teste unitário específico do serviço raiz legado;
+  - atualizado o cânone de arquitetura para declarar `deliverables` como único subpacote legado ainda ativo em `geralanding`.
+- impacto esperado: o Worker AI fica mais simples, reduz risco de scheduler/bean antigo processar etapas já migradas e mantém a execução de geração de landing pages concentrada no fluxo oficial do `openai.core`.

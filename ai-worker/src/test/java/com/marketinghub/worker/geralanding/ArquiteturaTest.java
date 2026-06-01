@@ -50,7 +50,9 @@ class ArquiteturaTest {
             .dependOnClassesThat()
             .resideInAPackage("com.marketinghub..")
             .andShould()
-            .resideOutsideOfPackages("..geralanding.presetdesign..", "..geralanding.comum..");
+            .resideOutsideOfPackages("..geralanding.presetdesign..", "..geralanding.comum..")
+            .allowEmptyShould(true)
+            .because("[ARQUITETURA] a etapa presetdesign legada pode estar ausente quando substituída pelo openai.core");
 
     /** Garante que stage só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
     @ArchTest
@@ -61,7 +63,9 @@ class ArquiteturaTest {
             .dependOnClassesThat()
             .resideInAPackage("com.marketinghub..")
             .andShould()
-            .resideOutsideOfPackages("..geralanding.stage..", "..geralanding.comum..");
+            .resideOutsideOfPackages("..geralanding.stage..", "..geralanding.comum..")
+            .allowEmptyShould(true)
+            .because("[ARQUITETURA] o pacote stage legado foi removido quando as etapas migraram para o openai.core");
 
     /** Garante que deliverables só acesse classes do próprio pacote ou geralanding.comum dentro da aplicação. */
     @ArchTest
@@ -83,7 +87,9 @@ class ArquiteturaTest {
             .dependOnClassesThat()
             .resideInAPackage("com.marketinghub..")
             .andShould()
-            .resideOutsideOfPackages("..geralanding.imageplanning..", "..geralanding.comum..");
+            .resideOutsideOfPackages("..geralanding.imageplanning..", "..geralanding.comum..")
+            .allowEmptyShould(true)
+            .because("[ARQUITETURA] a etapa imageplanning legada pode estar ausente quando substituída pelo openai.core");
 
     /** Garante que geralanding.comum só acesse classes do próprio pacote dentro da aplicação. */
     @ArchTest

@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-01-epm-sprint1-base
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE financial_plan (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  name VARCHAR(191) NOT NULL,
+                  cycle_start_date DATE NOT NULL,
+                  cycle_end_date DATE NOT NULL,
+                  total_budget_cents BIGINT NOT NULL,
+                  default_daily_budget_cents BIGINT NULL,
+                  default_experiment_duration_days INT NULL,
+                  default_experiments_per_hypothesis INT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  notes TEXT NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE financial_plan_niche (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  financial_plan_id BIGINT NOT NULL,
+                  external_niche_id BIGINT NULL,
+                  niche_name VARCHAR(191) NOT NULL,
+                  planned_budget_cents BIGINT NOT NULL,
+                  spend_limit_cents BIGINT NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  notes TEXT NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_financial_plan_niche_plan FOREIGN KEY (financial_plan_id) REFERENCES financial_plan(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE financial_plan_hypothesis (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  financial_plan_niche_id BIGINT NOT NULL,
+                  external_hypothesis_id VARCHAR(36) NULL,
+                  title VARCHAR(191) NOT NULL,
+                  planned_experiments INT NOT NULL,
+                  planned_cost_per_experiment_cents BIGINT NOT NULL,
+                  loss_limit_cents BIGINT NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  notes TEXT NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_financial_plan_hypothesis_niche FOREIGN KEY (financial_plan_niche_id) REFERENCES financial_plan_niche(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE experiment_budget (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  financial_plan_hypothesis_id BIGINT NOT NULL,
+                  external_experiment_id BIGINT NULL,
+                  name VARCHAR(191) NOT NULL,
+                  planned_daily_budget_cents BIGINT NOT NULL,
+                  planned_duration_days INT NOT NULL,
+                  planned_total_budget_cents BIGINT NOT NULL,
+                  start_date DATE NULL,
+                  end_date DATE NULL,
+                  status VARCHAR(32) NOT NULL,
+                  notes TEXT NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_experiment_budget_hypothesis FOREIGN KEY (financial_plan_hypothesis_id) REFERENCES financial_plan_hypothesis(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE experiment_financial_metric (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  experiment_budget_id BIGINT NOT NULL,
+                  measured_at DATETIME(6) NOT NULL,
+                  visitors INT NOT NULL,
+                  leads INT NOT NULL,
+                  checkout_clicks INT NOT NULL,
+                  purchases INT NOT NULL,
+                  ad_spend_cents BIGINT NOT NULL,
+                  revenue_cents BIGINT NOT NULL,
+                  payment_fee_cents BIGINT NOT NULL,
+                  platform_fee_cents BIGINT NOT NULL,
+                  ai_cost_cents BIGINT NOT NULL,
+                  tax_estimate_cents BIGINT NOT NULL,
+                  gross_profit_cents BIGINT NOT NULL,
+                  estimated_net_profit_cents BIGINT NOT NULL,
+                  notes TEXT NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_experiment_financial_metric_budget FOREIGN KEY (experiment_budget_id) REFERENCES experiment_budget(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE experiment_financial_decision (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  experiment_budget_id BIGINT NOT NULL,
+                  decision_type VARCHAR(64) NOT NULL,
+                  reason TEXT NOT NULL,
+                  decided_at DATETIME(6) NOT NULL,
+                  decided_by VARCHAR(191) NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_experiment_financial_decision_budget FOREIGN KEY (experiment_budget_id) REFERENCES experiment_budget(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE product_price_scenario (
+                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  financial_plan_id BIGINT NOT NULL,
+                  name VARCHAR(191) NOT NULL,
+                  price_cents BIGINT NOT NULL,
+                  expected_payment_fee_cents BIGINT NOT NULL,
+                  expected_platform_fee_cents BIGINT NOT NULL,
+                  expected_tax_cents BIGINT NOT NULL,
+                  expected_net_revenue_per_sale_cents BIGINT NOT NULL,
+                  total_budget_cents BIGINT NOT NULL,
+                  break_even_sales INT NOT NULL,
+                  notes TEXT NULL,
+                  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  CONSTRAINT fk_product_price_scenario_plan FOREIGN KEY (financial_plan_id) REFERENCES financial_plan(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE INDEX idx_financial_plan_status ON financial_plan (status);
+              CREATE INDEX idx_financial_plan_niche_plan ON financial_plan_niche (financial_plan_id);
+              CREATE INDEX idx_financial_plan_niche_external ON financial_plan_niche (external_niche_id);
+              CREATE INDEX idx_financial_plan_hypothesis_niche ON financial_plan_hypothesis (financial_plan_niche_id);
+              CREATE INDEX idx_financial_plan_hypothesis_external ON financial_plan_hypothesis (external_hypothesis_id);
+              CREATE INDEX idx_experiment_budget_hypothesis ON experiment_budget (financial_plan_hypothesis_id);
+              CREATE INDEX idx_experiment_budget_external ON experiment_budget (external_experiment_id);
+              CREATE INDEX idx_experiment_financial_metric_budget ON experiment_financial_metric (experiment_budget_id);
+              CREATE INDEX idx_experiment_financial_metric_measured ON experiment_financial_metric (measured_at);
+              CREATE INDEX idx_experiment_financial_decision_budget ON experiment_financial_decision (experiment_budget_id);
+              CREATE INDEX idx_product_price_scenario_plan ON product_price_scenario (financial_plan_id);

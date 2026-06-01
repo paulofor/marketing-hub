@@ -813,3 +813,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-28-oprm-estabelecimento-cnae-raiz-mei-simples.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-01-epm-sprint1-base.yaml
+      relativeToChangelogFile: true

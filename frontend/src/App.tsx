@@ -101,7 +101,6 @@ import PromptDomainListPage from "./pages/promptDomain/PromptDomainListPage";
 import NewPromptDomainPage from "./pages/promptDomain/NewPromptDomainPage";
 import EditPromptDomainPage from "./pages/promptDomain/EditPromptDomainPage";
 import TargetingRecentQueriesPage from "./pages/targeting/TargetingRecentQueriesPage";
-import OprmWorkspacePage from "./pages/oprm/OprmWorkspacePage";
 import OprmRoutinePage from "./pages/oprm/OprmRoutinePage";
 import OprmOfferPage from "./pages/oprm/OprmOfferPage";
 import OprmEvidencePage from "./pages/oprm/OprmEvidencePage";
@@ -274,7 +273,7 @@ export default function App() {
                 path="/targeting/recent-queries"
                 element={<TargetingRecentQueriesPage />}
               />
-              <Route path="/oprm" element={<OprmWorkspacePage />} />
+              <Route path="/oprm" element={<OprmCnaeVolumePage />} />
               <Route path="/mois" element={<MoisWorkspacePage />} />
               <Route path="/mois/references/new" element={<MoisReferenceIntakePage />} />
               <Route path="/mois/research-sources" element={<MoisResearchSourcesPage />} />

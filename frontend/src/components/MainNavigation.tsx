@@ -113,9 +113,10 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Workflow,
         children: [
           {
-            to: "/oprm/cnaes-volume",
+            to: "/oprm",
             label: "CNAEs",
             icon: Workflow,
+            end: true,
           },
         ],
       },

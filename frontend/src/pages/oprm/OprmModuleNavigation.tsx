@@ -4,63 +4,24 @@ interface OprmModuleNavigationProps {
   occupationSeedRef?: string;
 }
 
-interface OprmNavItem {
-  label: string;
-  to?: string;
-}
-
-const baseItems: OprmNavItem[] = [
-  { label: "Workspace", to: "/oprm" },
-  { label: "Catálogo", to: "/oprm/occupations" },
-  { label: "Operações", to: "/oprm/operations" },
-  { label: "CNAEs", to: "/oprm/cnaes-volume" },
-];
+const cnaeItem = { label: "CNAEs", to: "/oprm" };
 
 export default function OprmModuleNavigation({
-  occupationSeedRef,
+  occupationSeedRef: _occupationSeedRef,
 }: OprmModuleNavigationProps) {
-  const scopedItems: OprmNavItem[] = occupationSeedRef
-    ? [
-        {
-          label: "Rotina",
-          to: `/oprm/routine/${encodeURIComponent(occupationSeedRef)}`,
-        },
-        {
-          label: "Oferta",
-          to: `/oprm/offer/${encodeURIComponent(occupationSeedRef)}`,
-        },
-        {
-          label: "Evidências",
-          to: `/oprm/evidence/${encodeURIComponent(occupationSeedRef)}`,
-        },
-        {
-          label: "Feedback",
-          to: `/oprm/feedback/${encodeURIComponent(occupationSeedRef)}`,
-        },
-      ]
-    : [{ label: "Rotina" }, { label: "Oferta" }, { label: "Evidências" }, { label: "Feedback" }];
-
-  const items: OprmNavItem[] = [baseItems[0], ...scopedItems, ...baseItems.slice(1)];
-
   return (
     <nav aria-label="Navegação interna do OPRM">
       <ul className="nav nav-pills gap-2">
-        {items.map((item) => (
-          <li className="nav-item" key={item.label}>
-            {item.to ? (
-              <NavLink
-                to={item.to}
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-              >
-                {item.label}
-              </NavLink>
-            ) : (
-              <span className="nav-link disabled">{item.label}</span>
-            )}
-          </li>
-        ))}
+        <li className="nav-item">
+          <NavLink
+            to={cnaeItem.to}
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            {cnaeItem.label}
+          </NavLink>
+        </li>
       </ul>
     </nav>
   );

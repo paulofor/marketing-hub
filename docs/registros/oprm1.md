@@ -198,3 +198,5 @@
 
 - 2026-05-31: Revisado o documento `docs/novos-modulos/OPRM/oprm-cnae-para-nichos-arquitetura.md` para refletir que o score e o enriquecimento CNAE serão executados por schedulers do módulo OPRM, com ciclos rastreáveis, enquanto o backend ficará restrito a leitura/gravação e persistência. Atualizado o cânone OPRM com a regra de responsabilidade do OPRM no fluxo CNAE → oportunidade.
 - 2026-06-01 00:00:00 (UTC): implementada a primeira versão operacional do fluxo CNAE → score → enriquecimento → candidatos: backend recebeu tabelas, entidades, DTOs e endpoints OPRM apenas para leitura/gravação; `oprm-coletor-mei` recebeu schedulers automáticos `CNAE_SCORE` e `CNAE_ENRICHMENT` com `cycleId`, `cycleType` e `cycleNumber`; frontend `/oprm/cnaes-volume` passou a exibir score e últimos ciclos sem botão de geração manual.
+
+- 2026-05-31 23:12:12 (UTC-3): simplificada a navegação inicial do OPRM no frontend para manter somente a entrada de CNAEs; a rota `/oprm` agora abre diretamente o ranking de CNAEs, removendo da tela inicial os atalhos de workspace, rotina, oferta, evidências, feedback, catálogo e operações para permitir reinício do fluxo OPRM por CNAE.

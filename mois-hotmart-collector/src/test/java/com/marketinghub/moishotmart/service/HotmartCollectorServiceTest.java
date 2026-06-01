@@ -53,13 +53,13 @@ class HotmartCollectorServiceTest {
     }
 
     /**
-     * Garante que o ciclo 1 esteja configurado para percorrer vinte páginas completas da Hotmart.
+     * Garante que o ciclo 1 esteja configurado para percorrer vinte e cinco páginas completas da Hotmart.
      */
     @Test
-    void shouldConfigureFirstCycleForTwentyHotmartPages() {
+    void shouldConfigureFirstCycleForTwentyFiveHotmartPages() {
         assertEquals(20, HotmartCollectorService.HOTMART_ROWS_PER_PAGE);
-        assertEquals(20, HotmartCollectorService.HOTMART_MAX_PAGES_PER_RUN);
-        assertEquals(400, HotmartCollectorService.HOTMART_MAX_PRODUCTS_PER_RUN);
+        assertEquals(25, HotmartCollectorService.HOTMART_MAX_PAGES_PER_RUN);
+        assertEquals(500, HotmartCollectorService.HOTMART_MAX_PRODUCTS_PER_RUN);
     }
 
 }

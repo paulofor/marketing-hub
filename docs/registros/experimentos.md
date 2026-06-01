@@ -2931,3 +2931,11 @@
 - Criada base administrativa para cadastrar pipelines e etapas reutilizáveis, começando pelo Pipeline de Experimento.
 - Seed inicial inclui as etapas Campaign Angle, Ad Copy, Landing Wireframe, Landing Copy, Planejamento de Imagens, Preset Design, GeraLanding HTML, Landing HTML e Landing Page Deliverables.
 - A tela permite criar, editar, ativar/inativar e remover pipelines e etapas, mantendo o fluxo Dor → Resultado → Mecanismo → Prova → Oferta como referência operacional.
+## 2026-06-01 — Atualização de status GeraLanding no frontend
+- tarefa: corrigir a tela do experimento para refletir rapidamente a transição dos jobs GeraLanding de `INICIADO` para `AGUARDANDO_RETORNO_OPENAI` e limpar itens otimistas quando o backend já retornou o job persistido ou concluído.
+- causa-raiz/objetivo: a UI mantinha uma execução otimista local em `INICIADO` quando a lista pendente/histórico ainda não havia sido sincronizada, dando a impressão de que o job não mudava de estado apesar de o backend gravar `AGUARDANDO_RETORNO_OPENAI`/`CONCLUIDO`.
+- correção aplicada:
+  - reduzido o intervalo de atualização das listas não concluídas de GeraLanding para 3 segundos;
+  - ativada atualização periódica do histórico para remover execuções otimistas que já concluíram antes da próxima leitura de pendentes;
+  - centralizada a mesclagem de execução otimista com pendentes/histórico para wireframe, copy, design preset, prompt de imagem e deliverables.
+- impacto esperado: o usuário passa a ver a evolução operacional real do job no frontend, reduzindo falsa percepção de travamento e facilitando decisão sobre próximas etapas da landing.

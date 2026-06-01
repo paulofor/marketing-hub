@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Diagnóstico OPRM</title>
+  <desc id="desc">Wireframe visual da tela Diagnóstico OPRM do módulo OPRM.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style><![CDATA[text{font-family:Inter,Arial,sans-serif}.small{font-size:18px}.tiny{font-size:15px}.title{font-size:34px;font-weight:700}.h2{font-size:24px;font-weight:700}.h3{font-size:19px;font-weight:700}.muted{fill:#6b7280}.label{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}]]></style>
+  </defs>
+  <rect width="1440" height="900" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="250" height="900" fill="#172033"/>
+  <text x="32" y="54" fill="#fff" font-size="26" font-weight="800">Marketing Hub</text>
+  <text x="32" y="92" fill="#93a4bd" font-size="16">OPRM</text>
+  <rect x="18" y="119" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="141" r="6" fill="#64748b"/>
+  <text x="62" y="147" fill="#cbd5e1" font-size="17" font-weight="500">Painel OPRM</text>
+  <rect x="18" y="177" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="199" r="6" fill="#64748b"/>
+  <text x="62" y="205" fill="#cbd5e1" font-size="17" font-weight="500">Ingestão</text>
+  <rect x="18" y="235" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="257" r="6" fill="#64748b"/>
+  <text x="62" y="263" fill="#cbd5e1" font-size="17" font-weight="500">Ciclos CNAE</text>
+  <rect x="18" y="293" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="315" r="6" fill="#64748b"/>
+  <text x="62" y="321" fill="#cbd5e1" font-size="17" font-weight="500">Candidatos</text>
+  <rect x="18" y="351" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="373" r="6" fill="#64748b"/>
+  <text x="62" y="379" fill="#cbd5e1" font-size="17" font-weight="500">Fila decisão</text>
+  <rect x="18" y="409" width="214" height="44" rx="12" fill="#26344f"/>
+  <circle cx="42" cy="431" r="6" fill="#2563eb"/>
+  <text x="62" y="437" fill="#fff" font-size="17" font-weight="700">Diagnóstico</text>
+  <text x="290" y="62" class="title" fill="#111827">Diagnóstico OPRM</text>
+  <text x="290" y="94" class="small muted">Falhas, rastreabilidade e próximos passos de causa-raiz.</text>
+  <rect x="1210" y="40" width="160" height="44" rx="14" fill="#2563eb"/>
+  <text x="1248" y="68" fill="#fff" font-size="16" font-weight="700">Atualizar</text>
+  <rect x="290" y="125" width="1090" height="90" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="163" class="h3" fill="#111827">Busca por identificador</text>
+  <text x="314" y="191" class="tiny muted">runId, fileId, cycleId, cnaeCode, candidateId ou correlationId</text>
+  <rect x="320" y="168" width="760" height="42" rx="12" fill="#f8fafc" stroke="#e5e7eb"/><text x="345" y="195" class="small muted">Ex.: cycle-CNAE_ENRICHMENT-18</text>
+  <rect x="1100" y="168" width="180" height="42" rx="12" fill="#2563eb"/><text x="1150" y="195" fill="#fff" font-size="16" font-weight="800">Buscar</text>
+  <rect x="290" y="255" width="500" height="520" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="293" class="h3" fill="#111827">Falhas recentes</text>
+  <text x="314" y="321" class="tiny muted">Resumo sem parede de logs</text>
+  <rect x="320" y="300" width="420" height="72" rx="16" fill="#f8fafc"/>
+  <text x="345" y="329" class="small" fill="#111827" font-weight="800">Enriquecimento CNAE 7319</text><text x="345" y="357" class="tiny muted">Falha parcial</text>
+  <circle cx="710" cy="330" r="10" fill="#f59e0b"/>
+  <rect x="320" y="395" width="420" height="72" rx="16" fill="#f8fafc"/>
+  <text x="345" y="424" class="small" fill="#111827" font-weight="800">Arquivo Estab2.zip</text><text x="345" y="452" class="tiny muted">Em processamento</text>
+  <circle cx="710" cy="425" r="10" fill="#2563eb"/>
+  <rect x="320" y="490" width="420" height="72" rx="16" fill="#f8fafc"/>
+  <text x="345" y="519" class="small" fill="#111827" font-weight="800">Artefato rejeitado</text><text x="345" y="547" class="tiny muted">Contrato inválido</text>
+  <circle cx="710" cy="520" r="10" fill="#ef4444"/>
+  <rect x="830" y="255" width="550" height="520" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="854" y="293" class="h3" fill="#111827">Rastro de execução</text>
+  <text x="854" y="321" class="tiny muted">Evento inicial → último evento → ação recomendada</text>
+  <circle cx="875" cy="335" r="22" fill="#2563eb"/><text x="875" y="342" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">1</text>
+  <line x1="875" y1="359" x2="875" y2="405" stroke="#e5e7eb" stroke-width="5"/>
+  <text x="920" y="330" class="small" fill="#111827" font-weight="800">Ciclo iniciado</text><text x="920" y="358" class="tiny muted">CNAE_ENRICHMENT #18</text>
+  <circle cx="875" cy="430" r="22" fill="#2563eb"/><text x="875" y="437" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">2</text>
+  <line x1="875" y1="454" x2="875" y2="500" stroke="#e5e7eb" stroke-width="5"/>
+  <text x="920" y="425" class="small" fill="#111827" font-weight="800">CNAE processado</text><text x="920" y="453" class="tiny muted">7319-0/02</text>
+  <circle cx="875" cy="525" r="22" fill="#ef4444"/><text x="875" y="532" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">3</text>
+  <line x1="875" y1="549" x2="875" y2="595" stroke="#e5e7eb" stroke-width="5"/>
+  <text x="920" y="520" class="small" fill="#111827" font-weight="800">Erro capturado</text><text x="920" y="548" class="tiny muted">payload de candidato incompleto</text>
+  <circle cx="875" cy="620" r="22" fill="#2563eb"/><text x="875" y="627" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">4</text>
+  <text x="920" y="615" class="small" fill="#111827" font-weight="800">Próximo passo</text><text x="920" y="643" class="tiny muted">reprocessar após corrigir contrato</text>
+</svg>

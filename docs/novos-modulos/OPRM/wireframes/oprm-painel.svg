@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Painel OPRM</title>
+  <desc id="desc">Wireframe visual da tela Painel OPRM do módulo OPRM.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style><![CDATA[text{font-family:Inter,Arial,sans-serif}.small{font-size:18px}.tiny{font-size:15px}.title{font-size:34px;font-weight:700}.h2{font-size:24px;font-weight:700}.h3{font-size:19px;font-weight:700}.muted{fill:#6b7280}.label{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}]]></style>
+  </defs>
+  <rect width="1440" height="900" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="250" height="900" fill="#172033"/>
+  <text x="32" y="54" fill="#fff" font-size="26" font-weight="800">Marketing Hub</text>
+  <text x="32" y="92" fill="#93a4bd" font-size="16">OPRM</text>
+  <rect x="18" y="119" width="214" height="44" rx="12" fill="#26344f"/>
+  <circle cx="42" cy="141" r="6" fill="#2563eb"/>
+  <text x="62" y="147" fill="#fff" font-size="17" font-weight="700">Painel OPRM</text>
+  <rect x="18" y="177" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="199" r="6" fill="#64748b"/>
+  <text x="62" y="205" fill="#cbd5e1" font-size="17" font-weight="500">Ingestão</text>
+  <rect x="18" y="235" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="257" r="6" fill="#64748b"/>
+  <text x="62" y="263" fill="#cbd5e1" font-size="17" font-weight="500">Ciclos CNAE</text>
+  <rect x="18" y="293" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="315" r="6" fill="#64748b"/>
+  <text x="62" y="321" fill="#cbd5e1" font-size="17" font-weight="500">Candidatos</text>
+  <rect x="18" y="351" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="373" r="6" fill="#64748b"/>
+  <text x="62" y="379" fill="#cbd5e1" font-size="17" font-weight="500">Fila decisão</text>
+  <rect x="18" y="409" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="431" r="6" fill="#64748b"/>
+  <text x="62" y="437" fill="#cbd5e1" font-size="17" font-weight="500">Diagnóstico</text>
+  <text x="290" y="62" class="title" fill="#111827">Painel OPRM</text>
+  <text x="290" y="94" class="small muted">Visão executiva do trabalho atual do OPRM até oportunidade vendável.</text>
+  <rect x="1210" y="40" width="160" height="44" rx="14" fill="#2563eb"/>
+  <text x="1248" y="68" fill="#fff" font-size="16" font-weight="700">Atualizar</text>
+  <rect x="290" y="125" width="250" height="118" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="163" class="h3" fill="#111827">Status geral</text>
+  <text x="314" y="198" fill="#10b981" font-size="28" font-weight="800">Processando agora</text>
+  <rect x="565" y="125" width="250" height="118" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="589" y="163" class="h3" fill="#111827">Ciclo atual</text>
+  <text x="589" y="198" fill="#2563eb" font-size="28" font-weight="800">CNAE_ENRICHMENT #18</text>
+  <rect x="840" y="125" width="250" height="118" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="864" y="163" class="h3" fill="#111827">Pendências humanas</text>
+  <text x="864" y="198" fill="#f59e0b" font-size="28" font-weight="800">27 candidatos</text>
+  <rect x="1115" y="125" width="250" height="118" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="1139" y="163" class="h3" fill="#111827">Falhas bloqueantes</text>
+  <text x="1139" y="198" fill="#10b981" font-size="28" font-weight="800">0 críticas</text>
+  <rect x="290" y="275" width="760" height="210" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="313" class="h3" fill="#111827">Esteira OPRM</text>
+  <text x="314" y="341" class="tiny muted">Dados de mercado até decisão humana</text>
+  <circle cx="335" cy="372" r="28" fill="#10b981"/>
+  <text x="335" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">1</text>
+  <text x="335" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Ingestão</text>
+  <line x1="365" y1="372" x2="407" y2="372" stroke="#e5e7eb" stroke-width="6"/>
+  <circle cx="437" cy="372" r="28" fill="#10b981"/>
+  <text x="437" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">2</text>
+  <text x="437" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Consolidação</text>
+  <line x1="467" y1="372" x2="509" y2="372" stroke="#e5e7eb" stroke-width="6"/>
+  <circle cx="539" cy="372" r="28" fill="#10b981"/>
+  <text x="539" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">3</text>
+  <text x="539" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Score</text>
+  <line x1="569" y1="372" x2="611" y2="372" stroke="#e5e7eb" stroke-width="6"/>
+  <circle cx="641" cy="372" r="28" fill="#10b981"/>
+  <text x="641" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">4</text>
+  <text x="641" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Enriquecimento</text>
+  <line x1="671" y1="372" x2="713" y2="372" stroke="#e5e7eb" stroke-width="6"/>
+  <circle cx="743" cy="372" r="28" fill="#10b981"/>
+  <text x="743" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">5</text>
+  <text x="743" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Candidatos</text>
+  <line x1="773" y1="372" x2="815" y2="372" stroke="#e5e7eb" stroke-width="6"/>
+  <circle cx="845" cy="372" r="28" fill="#f59e0b"/>
+  <text x="845" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">6</text>
+  <text x="845" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Decisão</text>
+  <line x1="875" y1="372" x2="917" y2="372" stroke="#e5e7eb" stroke-width="6"/>
+  <circle cx="947" cy="372" r="28" fill="#94a3b8"/>
+  <text x="947" y="379" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">7</text>
+  <text x="947" y="426" fill="#111827" font-size="15" font-weight="700" text-anchor="middle">Oferta</text>
+  <rect x="1080" y="275" width="300" height="210" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="1104" y="313" class="h3" fill="#111827">Próxima ação</text>
+  <text x="1104" y="341" class="tiny muted">Prioridade para o usuário</text>
+  <rect x="1104" y="352" width="187" height="32" rx="16" fill="#f59e0b" opacity="0.12"/>
+  <text x="1121" y="374" fill="#f59e0b" font-size="15" font-weight="700">Aprovar 12 nichos</text>
+  <rect x="1104" y="398" width="241" height="32" rx="16" fill="#2563eb" opacity="0.12"/>
+  <text x="1121" y="420" fill="#2563eb" font-size="15" font-weight="700">Revisar baixa confiança</text>
+  <rect x="290" y="515" width="520" height="300" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="553" class="h3" fill="#111827">Top CNAEs por Score</text>
+  <text x="314" y="581" class="tiny muted">Ranking de oportunidade</text>
+  <text x="320" y="580" class="small" fill="#111827">9602-5/01</text><text x="445" y="580" class="small muted">Cabeleireiros</text><text x="735" y="580" class="small" fill="#2563eb" font-weight="800">94,2</text>
+  <line x1="315" y1="598" x2="780" y2="598" stroke="#e5e7eb"/>
+  <text x="320" y="635" class="small" fill="#111827">8599-6/04</text><text x="445" y="635" class="small muted">Treinamento</text><text x="735" y="635" class="small" fill="#2563eb" font-weight="800">91,8</text>
+  <line x1="315" y1="653" x2="780" y2="653" stroke="#e5e7eb"/>
+  <text x="320" y="690" class="small" fill="#111827">8211-3/00</text><text x="445" y="690" class="small muted">Apoio administrativo</text><text x="735" y="690" class="small" fill="#2563eb" font-weight="800">88,4</text>
+  <line x1="315" y1="708" x2="780" y2="708" stroke="#e5e7eb"/>
+  <text x="320" y="745" class="small" fill="#111827">7319-0/02</text><text x="445" y="745" class="small muted">Promoção vendas</text><text x="735" y="745" class="small" fill="#2563eb" font-weight="800">85,9</text>
+  <line x1="315" y1="763" x2="780" y2="763" stroke="#e5e7eb"/>
+  <rect x="840" y="515" width="540" height="300" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="864" y="553" class="h3" fill="#111827">Oportunidades recentes</text>
+  <text x="864" y="581" class="tiny muted">Dor → Resultado → Mecanismo → Prova → Oferta</text>
+  <rect x="870" y="562" width="470" height="48" rx="12" fill="#eff6ff"/>
+  <text x="895" y="592" class="small" fill="#111827">Agenda cheia e baixa recorrência</text>
+  <rect x="870" y="626" width="470" height="48" rx="12" fill="#eff6ff"/>
+  <text x="895" y="656" class="small" fill="#111827">Dificuldade de precificar serviço</text>
+  <rect x="870" y="690" width="470" height="48" rx="12" fill="#eff6ff"/>
+  <text x="895" y="720" class="small" fill="#111827">Captação local inconsistente</text>
+</svg>

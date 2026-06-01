@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Candidatos de Nicho</title>
+  <desc id="desc">Wireframe visual da tela Candidatos de Nicho do módulo OPRM.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style><![CDATA[text{font-family:Inter,Arial,sans-serif}.small{font-size:18px}.tiny{font-size:15px}.title{font-size:34px;font-weight:700}.h2{font-size:24px;font-weight:700}.h3{font-size:19px;font-weight:700}.muted{fill:#6b7280}.label{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}]]></style>
+  </defs>
+  <rect width="1440" height="900" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="250" height="900" fill="#172033"/>
+  <text x="32" y="54" fill="#fff" font-size="26" font-weight="800">Marketing Hub</text>
+  <text x="32" y="92" fill="#93a4bd" font-size="16">OPRM</text>
+  <rect x="18" y="119" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="141" r="6" fill="#64748b"/>
+  <text x="62" y="147" fill="#cbd5e1" font-size="17" font-weight="500">Painel OPRM</text>
+  <rect x="18" y="177" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="199" r="6" fill="#64748b"/>
+  <text x="62" y="205" fill="#cbd5e1" font-size="17" font-weight="500">Ingestão</text>
+  <rect x="18" y="235" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="257" r="6" fill="#64748b"/>
+  <text x="62" y="263" fill="#cbd5e1" font-size="17" font-weight="500">Ciclos CNAE</text>
+  <rect x="18" y="293" width="214" height="44" rx="12" fill="#26344f"/>
+  <circle cx="42" cy="315" r="6" fill="#2563eb"/>
+  <text x="62" y="321" fill="#fff" font-size="17" font-weight="700">Candidatos</text>
+  <rect x="18" y="351" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="373" r="6" fill="#64748b"/>
+  <text x="62" y="379" fill="#cbd5e1" font-size="17" font-weight="500">Fila decisão</text>
+  <rect x="18" y="409" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="431" r="6" fill="#64748b"/>
+  <text x="62" y="437" fill="#cbd5e1" font-size="17" font-weight="500">Diagnóstico</text>
+  <text x="290" y="62" class="title" fill="#111827">Candidatos de Nicho</text>
+  <text x="290" y="94" class="small muted">Oportunidades geradas pelo enriquecimento para aprovação humana.</text>
+  <rect x="1210" y="40" width="160" height="44" rx="14" fill="#2563eb"/>
+  <text x="1248" y="68" fill="#fff" font-size="16" font-weight="700">Atualizar</text>
+  <rect x="290" y="125" width="430" height="650" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="163" class="h3" fill="#111827">Lista de candidatos</text>
+  <text x="314" y="191" class="tiny muted">Filtrar por PENDING, APPROVED ou REJECTED</text>
+  <rect x="320" y="169" width="360" height="70" rx="16" fill="#f8fafc"/>
+  <text x="340" y="197" class="small" fill="#111827" font-weight="700">Salões solo com agenda cheia</text>
+  <rect x="340" y="207" width="97" height="32" rx="16" fill="#f59e0b" opacity="0.12"/>
+  <text x="357" y="229" fill="#f59e0b" font-size="15" font-weight="700">PENDING</text>
+  <rect x="320" y="264" width="360" height="70" rx="16" fill="#f8fafc"/>
+  <text x="340" y="292" class="small" fill="#111827" font-weight="700">Cursos rápidos para MEI</text>
+  <rect x="340" y="302" width="97" height="32" rx="16" fill="#f59e0b" opacity="0.12"/>
+  <text x="357" y="324" fill="#f59e0b" font-size="15" font-weight="700">PENDING</text>
+  <rect x="320" y="359" width="360" height="70" rx="16" fill="#f8fafc"/>
+  <text x="340" y="387" class="small" fill="#111827" font-weight="700">Assistente administrativo local</text>
+  <rect x="340" y="397" width="106" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="357" y="419" fill="#10b981" font-size="15" font-weight="700">APPROVED</text>
+  <rect x="320" y="454" width="360" height="70" rx="16" fill="#f8fafc"/>
+  <text x="340" y="482" class="small" fill="#111827" font-weight="700">Promoção porta a porta</text>
+  <rect x="340" y="492" width="106" height="32" rx="16" fill="#ef4444" opacity="0.12"/>
+  <text x="357" y="514" fill="#ef4444" font-size="15" font-weight="700">REJECTED</text>
+  <rect x="760" y="125" width="620" height="650" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="784" y="163" class="h3" fill="#111827">Card de oportunidade</text>
+  <text x="784" y="191" class="tiny muted">Dor → Resultado → Mecanismo → Prova → Oferta</text>
+  <text x="800" y="205" class="label" fill="#2563eb">Dor</text>
+  <rect x="800" y="219" width="520" height="48" rx="12" fill="#f8fafc"/>
+  <text x="820" y="250" class="small" fill="#111827">Cliente some depois do primeiro atendimento</text>
+  <text x="800" y="297" class="label" fill="#2563eb">Resultado</text>
+  <rect x="800" y="311" width="520" height="48" rx="12" fill="#f8fafc"/>
+  <text x="820" y="342" class="small" fill="#111827">Agenda recorrente e previsível</text>
+  <text x="800" y="389" class="label" fill="#2563eb">Mecanismo</text>
+  <rect x="800" y="403" width="520" height="48" rx="12" fill="#f8fafc"/>
+  <text x="820" y="434" class="small" fill="#111827">Sequência de retorno automatizada por IA</text>
+  <text x="800" y="481" class="label" fill="#2563eb">Prova</text>
+  <rect x="800" y="495" width="520" height="48" rx="12" fill="#f8fafc"/>
+  <text x="820" y="526" class="small" fill="#111827">CNAE com alto volume MEI ativo</text>
+  <text x="800" y="573" class="label" fill="#2563eb">Oferta</text>
+  <rect x="800" y="587" width="520" height="48" rx="12" fill="#f8fafc"/>
+  <text x="820" y="618" class="small" fill="#111827">Kit de retenção para profissional de beleza</text>
+  <rect x="800" y="690" width="150" height="48" rx="14" fill="#10b981"/><text x="845" y="721" fill="#fff" font-size="16" font-weight="800">Aprovar</text>
+  <rect x="970" y="690" width="150" height="48" rx="14" fill="#ef4444"/><text x="1016" y="721" fill="#fff" font-size="16" font-weight="800">Rejeitar</text>
+  <rect x="1140" y="690" width="180" height="48" rx="14" fill="#2563eb"/><text x="1182" y="721" fill="#fff" font-size="16" font-weight="800">Criar oferta</text>
+</svg>

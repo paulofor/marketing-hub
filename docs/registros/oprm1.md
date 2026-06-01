@@ -203,3 +203,7 @@
 
 - 2026-06-01 03:25:00 (UTC): implementação do próximo passo de geração de vendas no OPRM CNAE: o enriquecimento automático passou a executar catch-up na subida do coletor para processar scores sem `enriched_at`, registrar falhas críticas sem derrubar a aplicação e usar `OprmCnaeRoutineSignalBuilder` para transformar CNAEs priorizados em sinais concretos de rotina, dor, resultado, mecanismo, prova e oferta por arquétipo operacional. Também foram adicionados testes unitários cobrindo enriquecimento de beleza e serviços técnicos, garantindo ausência de JSON textual nos sinais funcionais.
 - 2026-06-01 00:15:00 (UTC): ajustada a tela `/oprm/cnaes-volume` para ordenar CNAEs por Score OPRM decrescente diretamente no backend, mantendo paginação de 50 registros e exibindo volume de mercado como contexto para decisão comercial. Atualizado o cânone OPRM para refletir a nova regra de ordenação por score.
+
+- 2026-06-01 00:00:00 (UTC): planejadas novas telas de acompanhamento operacional do OPRM para dar visibilidade ao usuário sobre ingestão de mercado, ciclos CNAE, enriquecimento, candidatos de nicho, fila de decisão e diagnóstico, preservando o eixo Dados de mercado → Score → Enriquecimento → Nicho candidato → Decisão humana → Oferta vendável.
+
+- 2026-06-01 00:00:00 (UTC): adicionados wireframes SVG das telas de acompanhamento operacional do OPRM para facilitar validação visual do Painel OPRM, Ingestão de Mercado, Ciclos CNAE, Candidatos de Nicho, Fila de Decisão e Diagnóstico antes da implementação frontend.

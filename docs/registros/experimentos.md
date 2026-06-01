@@ -2978,3 +2978,13 @@
   - sincronizado o cânone de etapas e a lista de CSS para registrar que acabamento visual mínimo pode combinar propriedades estruturais e visuais quando necessário;
   - adicionado teste unitário garantindo que o prompt enviado para `landing-page-design-preset` contém as regras visuais mínimas.
 - impacto esperado: as próximas execuções do design preset tendem a produzir HTML provisório com aparência mais profissional, maior clareza na primeira dobra e CTAs mais fortes para vendas.
+
+## 2026-06-01 — Separação dos cards Gera Prompt Imagem e Gera Imagem
+
+- solicitação: separar na tela de detalhe do experimento o fluxo `Gera Prompt Imagem` do fluxo `Gera Imagem`.
+- causa-raiz/objetivo: o card `3 - Gera Imagem` misturava a criação dos prompts de imagem (`landing-page-image-planning`) com a geração real de imagens (`landing-page-image-generation`), dificultando a leitura operacional do job id, do detalhe e do histórico de cada etapa.
+- foi feito:
+  - o card `3 - Gera Prompt Imagem` passou a ficar exclusivo para jobs e histórico de `landing-page-image-planning`;
+  - criado o card `4 - Gera Imagem` com botão de início, link para detalhe das imagens, job id clicável para a página de detalhe da execução e histórico específico de `landing-page-image-generation`;
+  - ajustado o mapeamento frontend da etapa `landing-page-image-generation` para usar os endpoints canônicos `/geralanding/image-generation/stage-executions`;
+  - renumerados os cards seguintes para manter a sequência visual após a nova etapa dedicada.

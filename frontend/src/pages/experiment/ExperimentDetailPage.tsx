@@ -37,7 +37,6 @@ import {
 } from "../../api/experiment/useGeraLandingStageExecutions";
 import { useFrameworkImageStatuses } from "../../api/experiment/useFrameworkImageStatuses";
 import { useFrameworkImageSummary } from "../../api/experiment/useFrameworkImageSummary";
-import { useGenerateFrameworkImages } from "../../api/experiment/useGenerateFrameworkImages";
 
 type ChecklistItem = {
   id: string;
@@ -207,6 +206,10 @@ export default function ExperimentDetailPage() {
     useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticImagePromptsExecution, setOptimisticImagePromptsExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
+  const [
+    optimisticImageGenerationExecution,
+    setOptimisticImageGenerationExecution,
+  ] = useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticDeliverablesExecution, setOptimisticDeliverablesExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
   const hadRunningGeraLandingExecutionRef = useRef(false);
@@ -256,6 +259,24 @@ export default function ExperimentDetailPage() {
     refetch: refetchCompletedGeraLandingImagePromptsExecutions,
   } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", true);
   const {
+    data: pendingGeraLandingImageGenerationExecutions,
+    isLoading: isLoadingPendingGeraLandingImageGenerationExecutions,
+    refetch: refetchPendingGeraLandingImageGenerationExecutions,
+  } = useGeraLandingStageExecutions(
+    expId,
+    "landing-page-image-generation",
+    false,
+  );
+  const {
+    data: completedGeraLandingImageGenerationExecutions,
+    isLoading: isLoadingCompletedGeraLandingImageGenerationExecutions,
+    refetch: refetchCompletedGeraLandingImageGenerationExecutions,
+  } = useGeraLandingStageExecutions(
+    expId,
+    "landing-page-image-generation",
+    true,
+  );
+  const {
     data: pendingGeraLandingDeliverablesExecutions,
     isLoading: isLoadingPendingGeraLandingDeliverablesExecutions,
     refetch: refetchPendingGeraLandingDeliverablesExecutions,
@@ -270,7 +291,6 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingFrameworkImageStatuses,
   } = useFrameworkImageStatuses(expId);
   const { data: frameworkImageSummary } = useFrameworkImageSummary(expId);
-  const generateFrameworkImages = useGenerateFrameworkImages(expId);
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -586,14 +606,30 @@ export default function ExperimentDetailPage() {
   };
 
   const handleStartImageGeneration = async () => {
-    setIsStartingImageGeneration(true);
     try {
-      await generateFrameworkImages.mutateAsync();
+      setIsStartingImageGeneration(true);
+      const { data: startResponse } = await axios.post<{
+        idJob: string;
+        status: string;
+      }>(`/api/experiments/${expId}/geralanding/image-generation/start`);
+      const localExecutionRequestedAt = new Date().toISOString();
+      setOptimisticImageGenerationExecution({
+        idJob: startResponse.idJob,
+        status: startResponse.status,
+        executionRequestedAt: localExecutionRequestedAt,
+      });
       setResetFrameworkImageCounters(false);
-      toast.success("Gera Imagem iniciado com sucesso.");
+      toast.success(
+        `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
+      );
+      await Promise.all([
+        refetchPendingGeraLandingImageGenerationExecutions(),
+        refetchCompletedGeraLandingImageGenerationExecutions(),
+      ]);
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? ((error.response?.data?.message as string | undefined) ??
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
           "Não foi possível iniciar o Gera Imagem.")
         : "Não foi possível iniciar o Gera Imagem.";
       toast.error(message);
@@ -994,6 +1030,95 @@ export default function ExperimentDetailPage() {
     completedGeraLandingImagePromptsExecutions,
     pendingGeraLandingImagePromptsExecutions,
   ]);
+
+  const mergedPendingGeraLandingImageGenerationExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticImageGenerationExecution,
+        pendingGeraLandingImageGenerationExecutions,
+        completedGeraLandingImageGenerationExecutions,
+      ),
+    [
+      optimisticImageGenerationExecution,
+      pendingGeraLandingImageGenerationExecutions,
+      completedGeraLandingImageGenerationExecutions,
+    ],
+  );
+
+  useEffect(() => {
+    if (!optimisticImageGenerationExecution) {
+      return;
+    }
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingImageGenerationExecutions,
+        optimisticImageGenerationExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingImageGenerationExecutions,
+        optimisticImageGenerationExecution.idJob,
+      );
+    if (persistedExecution) {
+      setOptimisticImageGenerationExecution(null);
+    }
+  }, [
+    optimisticImageGenerationExecution,
+    pendingGeraLandingImageGenerationExecutions,
+    completedGeraLandingImageGenerationExecutions,
+  ]);
+
+  const hasRunningGeraLandingImageGenerationExecution =
+    mergedPendingGeraLandingImageGenerationExecutions.some((execution) =>
+      isRunningExecution(execution.status),
+    );
+  const runningGeraLandingImageGenerationExecutions = useMemo(
+    () =>
+      mergedPendingGeraLandingImageGenerationExecutions.filter((execution) =>
+        isRunningExecution(execution.status),
+      ),
+    [mergedPendingGeraLandingImageGenerationExecutions],
+  );
+  const historyGeraLandingImageGenerationExecutions = useMemo(() => {
+    const completedHistory = (
+      completedGeraLandingImageGenerationExecutions ?? []
+    ).filter(
+      (execution) =>
+        isCompletedExecution(execution.status) ||
+        hasFailedExecution(execution.status),
+    );
+    const failedFromPending = (
+      pendingGeraLandingImageGenerationExecutions ?? []
+    ).filter((execution) => hasFailedExecution(execution.status));
+
+    const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
+      (leftExecution, rightExecution) => {
+        const leftTimestamp = Date.parse(
+          leftExecution.executionRequestedAt ?? "",
+        );
+        const rightTimestamp = Date.parse(
+          rightExecution.executionRequestedAt ?? "",
+        );
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp)
+          ? 0
+          : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp)
+          ? 0
+          : rightTimestamp;
+
+        return normalizedRightTimestamp - normalizedLeftTimestamp;
+      },
+    );
+
+    return sortedExecutions.filter(
+      (execution, index, allExecutions) =>
+        allExecutions.findIndex(
+          (candidate) => candidate.idJob === execution.idJob,
+        ) === index,
+    );
+  }, [
+    completedGeraLandingImageGenerationExecutions,
+    pendingGeraLandingImageGenerationExecutions,
+  ]);
   const mergedPendingGeraLandingDeliverablesExecutions = useMemo(
     () =>
       mergeOptimisticExecution(
@@ -1159,6 +1284,10 @@ export default function ExperimentDetailPage() {
       0,
     ) +
     historyGeraLandingImagePromptsExecutions.reduce(
+      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+      0,
+    ) +
+    historyGeraLandingImageGenerationExecutions.reduce(
       (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
       0,
     );
@@ -2342,25 +2471,20 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">3 - Gera Imagem</h5>
+                    <h5 className="card-title mb-0">3 - Gera Prompt Imagem</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
-                      Pendentes: {frameworkImagePendingCount}
+                      Total execuções:{" "}
+                      {formatCurrencyUsd(
+                        historyGeraLandingImagePromptsExecutions.reduce(
+                          (sum, execution) =>
+                            sum + (resolveExecutionCostUsd(execution) ?? 0),
+                          0,
+                        ),
+                      )}
                     </span>
                   </div>
                   <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
-                    <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                      <h6 className="mb-0">Gera Prompt Imagem</h6>
-                      <span className="badge text-bg-light border fs-6 fw-semibold">
-                        Total execuções:{" "}
-                        {formatCurrencyUsd(
-                          historyGeraLandingImagePromptsExecutions.reduce(
-                            (sum, execution) =>
-                              sum + (resolveExecutionCostUsd(execution) ?? 0),
-                            0,
-                          ),
-                        )}
-                      </span>
-                    </div>
+                    <h6 className="mb-0">Execução dos prompts de imagem</h6>
                     <button
                       type="button"
                       className="btn btn-primary align-self-start"
@@ -2515,38 +2639,163 @@ export default function ExperimentDetailPage() {
                       </div>
                     )}
                   </div>
-                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-2">
-                    <p className="text-muted mb-0">
-                      Esta etapa executa a geração real das imagens em lote na
-                      OpenAI usando os prompts produzidos no Gera Prompt Imagem.
-                    </p>
-                    <div className="d-flex flex-wrap align-items-center gap-2">
-                      <Link
-                        to={`/experiments/${expId}/framework-images`}
-                        className="btn btn-outline-primary btn-sm"
-                      >
-                        Ver detalhes das imagens
-                      </Link>
-                      <button
-                        type="button"
-                        className="btn btn-success align-self-start"
-                        onClick={handleStartImageGeneration}
-                        disabled={
-                          isStartingImageGeneration ||
-                          generateFrameworkImages.isPending
-                        }
-                      >
-                        {isStartingImageGeneration ||
-                        generateFrameworkImages.isPending
-                          ? "Iniciando..."
-                          : "Iniciar"}
-                      </button>
-                      <span className="small text-muted">
-                        Acompanhe a timeline detalhada na aba{" "}
-                        <strong>Conteúdo</strong>, bloco{" "}
-                        <strong>Gerar imagens em lote (AI Worker)</strong>.
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">4 - Gera Imagem</h5>
+                    <div className="d-flex flex-wrap gap-2">
+                      <span className="badge text-bg-light border fs-6 fw-semibold">
+                        Pendentes: {frameworkImagePendingCount}
+                      </span>
+                      <span className="badge text-bg-light border fs-6 fw-semibold">
+                        Total execuções:{" "}
+                        {formatCurrencyUsd(
+                          historyGeraLandingImageGenerationExecutions.reduce(
+                            (sum, execution) =>
+                              sum + (resolveExecutionCostUsd(execution) ?? 0),
+                            0,
+                          ),
+                        )}
                       </span>
                     </div>
+                  </div>
+                  <p className="text-muted mb-0">
+                    Esta etapa executa a geração real das imagens em lote na
+                    OpenAI usando os prompts produzidos no Gera Prompt Imagem.
+                  </p>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <Link
+                      to={`/experiments/${expId}/framework-images`}
+                      className="btn btn-outline-primary btn-sm"
+                    >
+                      Ver detalhes das imagens
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartImageGeneration}
+                      disabled={
+                        isStartingImageGeneration ||
+                        hasRunningGeraLandingImageGenerationExecution
+                      }
+                    >
+                      {isStartingImageGeneration ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
+                    </button>
+                    <span className="small text-muted">
+                      Acompanhe a timeline detalhada na aba{" "}
+                      <strong>Conteúdo</strong>, bloco{" "}
+                      <strong>Gerar imagens em lote (AI Worker)</strong>.
+                    </span>
+                  </div>
+                  {isLoadingPendingGeraLandingImageGenerationExecutions ? (
+                    <p className="text-muted mb-0">
+                      Carregando jobs da etapa...
+                    </p>
+                  ) : runningGeraLandingImageGenerationExecutions.length ===
+                    0 ? (
+                    <p className="text-muted mb-0">
+                      Nenhum job pendente ou em execução.
+                    </p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Job ID</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Data-hora</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {runningGeraLandingImageGenerationExecutions.map(
+                            (execution) => (
+                              <tr key={execution.idJob}>
+                                <td>
+                                  <Link
+                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-image-generation`}
+                                    className="fw-semibold text-decoration-none"
+                                  >
+                                    {execution.idJob}
+                                  </Link>
+                                </td>
+                                <td>{execution.status}</td>
+                                <td>
+                                  {formatDateTimeValue(
+                                    execution.executionRequestedAt,
+                                  )}
+                                </td>
+                              </tr>
+                            ),
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções</h6>
+                    {isLoadingCompletedGeraLandingImageGenerationExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : historyGeraLandingImageGenerationExecutions.length ===
+                      0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhuma execução registrada para esta etapa.
+                      </p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                              <th scope="col" className="text-end">
+                                Custo
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historyGeraLandingImageGenerationExecutions.map(
+                              (execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-image-generation`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                  <td className="text-end">
+                                    {formatCurrencyUsd(
+                                      resolveExecutionCostUsd(execution),
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                   {frameworkImageSummary || resetFrameworkImageCounters ? (
                     <div className="row g-2">
@@ -2613,7 +2862,7 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">4 - Gera Preset Design</h5>
+                    <h5 className="card-title mb-0">5 - Gera Preset Design</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(
@@ -2750,7 +2999,7 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">5 - Gera Entregáveis</h5>
+                    <h5 className="card-title mb-0">6 - Gera Entregáveis</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(

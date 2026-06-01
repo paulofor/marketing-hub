@@ -2940,6 +2940,15 @@
   - centralizada a mesclagem de execução otimista com pendentes/histórico para wireframe, copy, design preset, prompt de imagem e deliverables.
 - impacto esperado: o usuário passa a ver a evolução operacional real do job no frontend, reduzindo falsa percepção de travamento e facilitando decisão sobre próximas etapas da landing.
 
+## 2026-06-01 16:17:07 UTC-3
+- solicitação para corrigir falha de validação Liquibase no changeset `2026-06-01-pipeline-crud.yaml` com erro `Unexpected node: resultado`.
+- causa-raiz identificada: colunas de inserts estavam escritas em YAML flow style com valores textuais contendo vírgulas, fazendo o parser tratar partes do texto como nós adicionais dentro de `column`.
+- correção aplicada: conversão dos inserts de etapas do pipeline para mapeamento YAML em bloco, com valores textuais explicitamente delimitados, preservando o conteúdo funcional das etapas.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-01-pipeline-crud.yaml
 ## 2026-06-01 — Regra comercial de imagens úteis no wireframe da landing
 - tarefa: substituir a exigência rígida de imagem em toda seção do wireframe por uma regra comercial orientada à conversão.
 - causa-raiz/objetivo: a regra anterior incentivava imagens decorativas e blocos visuais desproporcionais, aumentando esforço cognitivo e podendo competir com o CTA em vez de vender a oferta.

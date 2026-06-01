@@ -154,90 +154,216 @@ databaseChangeLog:
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 1 }
-              - column: { name: name, value: Campaign Angle }
-              - column: { name: code, value: campaign-angle }
-              - column: { name: description, value: Define o ângulo central de campanha alinhado à dor, resultado, mecanismo, prova e oferta. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 1
+              - column:
+                  name: name
+                  value: 'Campaign Angle'
+              - column:
+                  name: code
+                  value: 'campaign-angle'
+              - column:
+                  name: description
+                  value: 'Define o ângulo central de campanha alinhado à dor, resultado, mecanismo, prova e oferta.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 2 }
-              - column: { name: name, value: Ad Copy }
-              - column: { name: code, value: ad-copy }
-              - column: { name: description, value: Cria as variações de anúncios para testar promessas, provas e chamadas de ação. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 2
+              - column:
+                  name: name
+                  value: 'Ad Copy'
+              - column:
+                  name: code
+                  value: 'ad-copy'
+              - column:
+                  name: description
+                  value: 'Cria as variações de anúncios para testar promessas, provas e chamadas de ação.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 3 }
-              - column: { name: name, value: Landing Wireframe }
-              - column: { name: code, value: landing-wireframe }
-              - column: { name: description, value: Estrutura a página de captura/vendas antes da copy final e do design. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 3
+              - column:
+                  name: name
+                  value: 'Landing Wireframe'
+              - column:
+                  name: code
+                  value: 'landing-wireframe'
+              - column:
+                  name: description
+                  value: 'Estrutura a página de captura/vendas antes da copy final e do design.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 4 }
-              - column: { name: name, value: Landing Copy }
-              - column: { name: code, value: landing-copy }
-              - column: { name: description, value: Transforma a estrutura em copy persuasiva focada em conversão e clareza da oferta. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 4
+              - column:
+                  name: name
+                  value: 'Landing Copy'
+              - column:
+                  name: code
+                  value: 'landing-copy'
+              - column:
+                  name: description
+                  value: 'Transforma a estrutura em copy persuasiva focada em conversão e clareza da oferta.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 5 }
-              - column: { name: name, value: Planejamento de Imagens }
-              - column: { name: code, value: image-planning }
-              - column: { name: description, value: Planeja imagens e ativos visuais coerentes com o mecanismo, prova e oferta. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 5
+              - column:
+                  name: name
+                  value: 'Planejamento de Imagens'
+              - column:
+                  name: code
+                  value: 'image-planning'
+              - column:
+                  name: description
+                  value: 'Planeja imagens e ativos visuais coerentes com o mecanismo, prova e oferta.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 6 }
-              - column: { name: name, value: Preset Design }
-              - column: { name: code, value: preset-design }
-              - column: { name: description, value: Seleciona uma direção visual simples e eficaz para acelerar a landing. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 6
+              - column:
+                  name: name
+                  value: 'Preset Design'
+              - column:
+                  name: code
+                  value: 'preset-design'
+              - column:
+                  name: description
+                  value: 'Seleciona uma direção visual simples e eficaz para acelerar a landing.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 7 }
-              - column: { name: name, value: GeraLanding HTML }
-              - column: { name: code, value: geralanding-html }
-              - column: { name: description, value: Gera o HTML inicial da landing a partir dos artefatos aprovados. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 7
+              - column:
+                  name: name
+                  value: 'GeraLanding HTML'
+              - column:
+                  name: code
+                  value: 'geralanding-html'
+              - column:
+                  name: description
+                  value: 'Gera o HTML inicial da landing a partir dos artefatos aprovados.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 8 }
-              - column: { name: name, value: Landing HTML }
-              - column: { name: code, value: landing-html }
-              - column: { name: description, value: Consolida o HTML final publicável da landing sem metadados técnicos. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 8
+              - column:
+                  name: name
+                  value: 'Landing HTML'
+              - column:
+                  name: code
+                  value: 'landing-html'
+              - column:
+                  name: description
+                  value: 'Consolida o HTML final publicável da landing sem metadados técnicos.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true
         - insert:
             tableName: pipeline_stage
             columns:
-              - column: { name: pipeline_id, valueNumeric: 1 }
-              - column: { name: position, valueNumeric: 9 }
-              - column: { name: name, value: Landing Page Deliverables }
-              - column: { name: code, value: landing-page-deliverables }
-              - column: { name: description, value: Organiza os entregáveis digitais da oferta para uso no funil e no portal do lead. }
-              - column: { name: required, valueBoolean: true }
-              - column: { name: active, valueBoolean: true }
+              - column:
+                  name: pipeline_id
+                  valueNumeric: 1
+              - column:
+                  name: position
+                  valueNumeric: 9
+              - column:
+                  name: name
+                  value: 'Landing Page Deliverables'
+              - column:
+                  name: code
+                  value: 'landing-page-deliverables'
+              - column:
+                  name: description
+                  value: 'Organiza os entregáveis digitais da oferta para uso no funil e no portal do lead.'
+              - column:
+                  name: required
+                  valueBoolean: true
+              - column:
+                  name: active
+                  valueBoolean: true

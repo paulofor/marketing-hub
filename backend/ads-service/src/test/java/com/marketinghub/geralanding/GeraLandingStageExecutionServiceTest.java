@@ -4,7 +4,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler;
-import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.imageplanning.ImagePlanningProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
 import org.springframework.web.client.RestTemplate;

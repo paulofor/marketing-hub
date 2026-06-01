@@ -1,6 +1,6 @@
 package com.marketinghub.geralanding;
 
-import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlProcessor;
+import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlProcessor;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
 

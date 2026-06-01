@@ -89,7 +89,7 @@ Cada conjunto de montagem de HTML deve atuar **exclusivamente** na sua etapa can
   - `CopyProvisionalHtmlPayloadResolver`
   - `CopyProvisionalHtmlProcessor`
   - `CopyProvisionalHtmlAssembler`
-- `com.marketinghub.geralanding.designpreset` → etapa `LANDING_PAGE_DESIGN_PRESET`
+- `com.marketinghub.geralanding.presetdesign.provisorio` → HTML provisório da etapa `LANDING_PAGE_DESIGN_PRESET`
   - `DesignPresetProvisionalHtmlProcessor`
   - `DesignPresetProvisionalHtmlAssembler`
 - `com.marketinghub.geralanding.imageplanning` → etapa `LANDING_PAGE_IMAGE_PLANNING`

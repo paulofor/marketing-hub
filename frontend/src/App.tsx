@@ -35,6 +35,7 @@ import DifferentiatedTechnologyListPage from "./pages/differentiatedTechnology/D
 import NewDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/NewDifferentiatedTechnologyPage";
 import EditDifferentiatedTechnologyPage from "./pages/differentiatedTechnology/EditDifferentiatedTechnologyPage";
 import MicroserviceExceptionListPage from "./pages/microservice/MicroserviceExceptionListPage";
+import PipelineCrudPage from "./pages/pipeline/PipelineCrudPage";
 import ExperimentListPage from "./pages/experiment/ExperimentListPage";
 import NewExperimentPage from "./pages/experiment/NewExperimentPage";
 import ExperimentDetailPage from "./pages/experiment/ExperimentDetailPage";
@@ -249,6 +250,7 @@ export default function App() {
                 path="/microservices/:id/edit"
                 element={<EditMicroservicePage />}
               />
+              <Route path="/pipelines" element={<PipelineCrudPage />} />
               <Route
                 path="/differentiated-technologies"
                 element={<DifferentiatedTechnologyListPage />}

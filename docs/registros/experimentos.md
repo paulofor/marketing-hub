@@ -2926,6 +2926,11 @@
   - adicionado teste unitário garantindo que o schema de design preset aceita apenas `pagina.corpo` para a estrutura visual.
 - impacto esperado: a resposta da etapa de preset fica mais simples, sem campos duplicados, facilitando leitura na tela, validação do contrato e geração posterior do HTML.
 
+## 2026-06-01 — CRUD de pipelines e etapas
+
+- Criada base administrativa para cadastrar pipelines e etapas reutilizáveis, começando pelo Pipeline de Experimento.
+- Seed inicial inclui as etapas Campaign Angle, Ad Copy, Landing Wireframe, Landing Copy, Planejamento de Imagens, Preset Design, GeraLanding HTML, Landing HTML e Landing Page Deliverables.
+- A tela permite criar, editar, ativar/inativar e remover pipelines e etapas, mantendo o fluxo Dor → Resultado → Mecanismo → Prova → Oferta como referência operacional.
 ## 2026-06-01 — Atualização de status GeraLanding no frontend
 - tarefa: corrigir a tela do experimento para refletir rapidamente a transição dos jobs GeraLanding de `INICIADO` para `AGUARDANDO_RETORNO_OPENAI` e limpar itens otimistas quando o backend já retornou o job persistido ou concluído.
 - causa-raiz/objetivo: a UI mantinha uma execução otimista local em `INICIADO` quando a lista pendente/histórico ainda não havia sido sincronizada, dando a impressão de que o job não mudava de estado apesar de o backend gravar `AGUARDANDO_RETORNO_OPENAI`/`CONCLUIDO`.

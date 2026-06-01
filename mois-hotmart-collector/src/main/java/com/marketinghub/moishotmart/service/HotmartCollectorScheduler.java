@@ -8,10 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-@Component
 /**
  * Responsável por agendar e disparar os ciclos automáticos de coleta Hotmart.
  */
+@Component
 public class HotmartCollectorScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorScheduler.class);
@@ -21,6 +21,9 @@ public class HotmartCollectorScheduler {
     private final String source;
     private final int maxProducts;
 
+    /**
+     * Inicializa o agendador com o serviço de coleta e parâmetros operacionais configurados.
+     */
     public HotmartCollectorScheduler(
             HotmartCollectorService collectorService,
             @Value("${collector.scheduler.enabled:true}") boolean enabled,
@@ -34,17 +37,17 @@ public class HotmartCollectorScheduler {
     }
 
     /**
-     * Executa o ciclo 1 de listagem de produtos às 20:40 no dia 31 de maio, no horário de São Paulo.
+     * Executa o ciclo 1 de listagem de produtos às 04:00 no dia 1 de junho, no horário de São Paulo.
      */
-    @Scheduled(cron = "0 40 20 31 5 *", zone = "America/Sao_Paulo")
-    public void collectFirstCycleAtTwentyFortyOnMayThirtyFirst() {
+    @Scheduled(cron = "0 0 4 1 6 *", zone = "America/Sao_Paulo")
+    public void collectFirstCycleAtFourOnJuneFirst() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
         HotmartCollectionResponse response = collectorService.collectFirstCycle(request);
-        log.info("Hotmart scheduler executado hora=20:40 dia=31/05 timezone=America/Sao_Paulo ciclo={} status={} produtos={} mensagem={}",
+        log.info("Hotmart scheduler executado hora=04:00 dia=01/06 timezone=America/Sao_Paulo ciclo={} status={} produtos={} mensagem={}",
                 "CICLO_1_LISTAGEM",
                 response.status(),
                 response.products().size(),

@@ -34,6 +34,10 @@ export function resolveLandingHtml(
   return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
 }
 
+export function canAttemptLandingApproval(experiment: Pick<Experiment, "id">) {
+  return String(experiment.id ?? "").trim().length > 0;
+}
+
 export default function LandingTab({ experiment }: LandingTabProps) {
   const approveAndPublishLanding = useApproveAndPublishLanding(
     Number(experiment.id),
@@ -48,6 +52,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
     iframeUrl: string | null;
     standaloneUrl: string | null;
   } | null>(null);
+  const canApproveLanding = canAttemptLandingApproval(experiment);
   const selectedDestinationUrl = normalizeUrl(
     publishedUrls?.standaloneUrl ?? experiment.followUpActionUrl,
   );
@@ -105,9 +110,11 @@ export default function LandingTab({ experiment }: LandingTabProps) {
       ) : null}
 
       {!landingHtml ? (
-        <p className="text-muted mb-0">
-          Nenhum HTML de landing encontrado no registro do experimento.
-        </p>
+        <div className="alert alert-warning mb-0" role="alert">
+          A prévia não carregou o HTML no navegador, mas a aprovação consulta o
+          registro atualizado no backend. Se o HTML já existir em
+          <code>html_geralanding</code>, use o botão para publicar a landing.
+        </div>
       ) : (
         <div className="card border-0 shadow-sm">
           <div className="card-body d-flex flex-column gap-3">
@@ -178,7 +185,7 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           type="button"
           className="btn btn-success"
           onClick={() => handleApproveLanding()}
-          disabled={approveAndPublishLanding.isPending || !landingHtml}
+          disabled={approveAndPublishLanding.isPending || !canApproveLanding}
         >
           {approveAndPublishLanding.isPending ? (
             <span className="d-inline-flex align-items-center gap-2">

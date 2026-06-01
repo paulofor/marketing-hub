@@ -3022,3 +3022,14 @@
   - frontend/src/api/experiment/useExperiments.ts
   - frontend/src/api/experiment/useApproveAndPublishLanding.ts
   - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java
+
+## 2026-06-01 21:56:00 UTC — Desbloqueio da aprovação quando a prévia local não carrega
+
+- solicitação: experimento 35 continuava com o botão "Aprovar landing para campanha" desabilitado mesmo tendo HTML salvo em `html_geralanding`.
+- causa-raiz identificada: a verificação operacional via MCP confirmou que o banco possui `html_geralanding` preenchido para o experimento 35, mas a interface ainda podia depender da prévia local carregada no navegador para habilitar a ação; isso criava falso bloqueio de frontend enquanto o endpoint backend já consulta o registro atualizado e consegue validar o HTML no servidor.
+- registro do que foi feito:
+  - a aba Landing passou a habilitar a tentativa de aprovação quando existe `id` do experimento, deixando o backend como fonte de verdade para aceitar ou recusar a publicação;
+  - quando a prévia local não encontra HTML, a tela mostra aviso explicando que a publicação consulta o registro atualizado no backend;
+  - os testes unitários foram ajustados para separar ausência de prévia local da possibilidade de tentar aprovação pelo backend.
+- validações operacionais:
+  - `SELECT id, LENGTH(html_geralanding), LENGTH(landing_page_html), follow_up_action_url, status FROM experiment WHERE id = 35` retornou `html_geralanding` preenchido e `landing_page_html` nulo, confirmando que a landing gerada existe no registro canônico do GeraLanding.

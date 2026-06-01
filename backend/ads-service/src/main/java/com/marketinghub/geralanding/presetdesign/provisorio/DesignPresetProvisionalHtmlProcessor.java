@@ -4,15 +4,19 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -33,6 +37,8 @@ import org.springframework.util.StringUtils;
  */
 @Component
 public class DesignPresetProvisionalHtmlProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger(DesignPresetProvisionalHtmlProcessor.class);
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -78,6 +84,7 @@ public class DesignPresetProvisionalHtmlProcessor {
          */
         applyStructuredPageData(document, wireframeRoot);
         applyStructuredPageData(document, designRoot);
+        applyFallbackButtonTypes(document);
 
         /*
          * Fallbacks externos.
@@ -91,9 +98,12 @@ public class DesignPresetProvisionalHtmlProcessor {
         applyTokenizedPresetStyles(document, designRoot);
         applyTokenizedPresetStyles(document, wireframeRoot);
 
+        validateGeneratedHtml(document, wireframeRoot, designRoot);
+
         return normalizeSerializedHtml(document.outerHtml());
     }
 
+    /** Interpreta um payload JSON de entrada como mapa para processamento estrutural. */
     private Map<String, Object> parseJson(String json) {
         try {
             return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {});
@@ -102,6 +112,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Valida se o preset de design usa o contrato tokenizado esperado para CSS e página. */
     private void validateTokenizedPresetContract(Map<String, Object> designRoot) {
         if (designRoot == null || !designRoot.containsKey("definicoes") || !designRoot.containsKey("pagina")) {
             throw new IllegalArgumentException("JSON de design preset fora do contrato atual: esperado formato tokenizado com `definicoes` e `pagina`");
@@ -172,6 +183,7 @@ public class DesignPresetProvisionalHtmlProcessor {
             applyAsset(element, node);
             applyFieldContract(element, node);
             applyFormContract(element, node);
+            applyButtonType(element, node);
         } catch (RuntimeException ex) {
             throw new IllegalArgumentException("Falha ao processar propriedades do elemento: " + describeNode(node, rawTag), ex);
         }
@@ -219,6 +231,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return "id=" + firstNonBlank(nodeId, "<id-ausente>") + ", tag=" + nodeTag;
     }
 
+    /** Aplica texto inicial do wireframe somente em elementos que podem receber conteúdo sem destruir filhos. */
     private void applyInitialTextFromNode(Element element, Map<String, Object> node) {
         Map<String, Object> texto = asMap(node.get("texto"));
         String conteudo = asString(texto.get("conteudo"));
@@ -241,21 +254,21 @@ public class DesignPresetProvisionalHtmlProcessor {
             return;
         }
 
-        element.text(conteudo.trim());
+        if (element.children().isEmpty()) {
+            element.text(conteudo.trim());
+        }
     }
 
+    /** Aplica ajustes mínimos de HTML válido que independem de contexto visual. */
     private void applyTagDefaults(Element element) {
         String tag = element.tagName().toLowerCase(Locale.ROOT);
 
-        if ("button".equals(tag) && !StringUtils.hasText(element.attr("type"))) {
-            element.attr("type", "button");
-        }
-
-        if ("img".equals(tag) && !StringUtils.hasText(element.attr("alt"))) {
-            element.attr("alt", "");
+        if ("img".equals(tag)) {
+            element.empty();
         }
     }
 
+    /** Normaliza nomes de tag inválidos para evitar HTML quebrado vindo do JSON. */
     private String sanitizeTagName(String tag) {
         if (!StringUtils.hasText(tag)) {
             return "div";
@@ -269,6 +282,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return normalized;
     }
 
+    /** Normaliza todos os ids do documento para o formato HTML usado nos seletores internos. */
     private void normalizeAllHtmlIds(Document document) {
         for (Element element : document.getAllElements()) {
             if (StringUtils.hasText(element.id())) {
@@ -277,6 +291,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Reaplica dados estruturais por id, preservando compatibilidade com wireframe e design enriquecido. */
     private void applyStructuredPageData(Document document, Map<String, Object> root) {
         Map<String, Object> page = asMap(root.get("pagina"));
         if (page.isEmpty()) {
@@ -290,7 +305,6 @@ public class DesignPresetProvisionalHtmlProcessor {
             applyStructuredNodeDataRecursive(document, section);
         }
     }
-
 
     /**
      * Aplica classes declaradas em `pagina.body.classes` ao elemento `<body>`.
@@ -332,6 +346,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return classes;
     }
 
+    /** Aplica dados funcionais e classes de cada nó estrutural encontrado por id. */
     private void applyStructuredNodeDataRecursive(Document document, Map<String, Object> node) {
         String id = asString(node.get("id"));
         Element element = resolveElementById(document, id);
@@ -342,6 +357,7 @@ public class DesignPresetProvisionalHtmlProcessor {
             applyAsset(element, node);
             applyFieldContract(element, node);
             applyFormContract(element, node);
+            applyButtonType(element, node);
         }
 
         for (Map<String, Object> child : asList(node.get("elementosSeccao"))) {
@@ -352,12 +368,32 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Completa tipos de botões sem contrato após a árvore HTML já ter pais de formulário definidos. */
+    private void applyFallbackButtonTypes(Document document) {
+        for (Element button : document.select("button")) {
+            if (StringUtils.hasText(button.attr("type"))) {
+                continue;
+            }
+            if (button.closest("form") != null && normalizeId(button.id()).contains("submit")) {
+                button.attr("type", "submit");
+                continue;
+            }
+            if (button.closest("form") == null) {
+                button.attr("type", "button");
+            }
+        }
+    }
+
+    /** Aplica href funcional em links priorizando o contrato de interacao do nó. */
     private void applyTargetSectionId(Element element, Map<String, Object> node) {
         if (!"a".equalsIgnoreCase(element.tagName())) {
             return;
         }
 
+        Map<String, Object> interaction = asMap(node.get("interacao"));
         String target = firstNonBlank(
+                asString(interaction.get("hrefEsperado")),
+                asString(interaction.get("targetSectionId")),
                 asString(node.get("targetSectionId")),
                 asString(node.get("href")),
                 asString(node.get("url")),
@@ -369,6 +405,62 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Aplica o tipo funcional de botões respeitando contrato explícito e contexto de formulário. */
+    private void applyButtonType(Element element, Map<String, Object> node) {
+        if (!"button".equalsIgnoreCase(element.tagName())) {
+            return;
+        }
+
+        String explicitType = firstNonBlank(
+                asString(node.get("type")),
+                asString(asMap(node.get("contratoBotao")).get("type")),
+                asString(asMap(node.get("buttonContract")).get("type"))
+        );
+        if (StringUtils.hasText(explicitType)) {
+            element.attr("type", explicitType.trim().toLowerCase(Locale.ROOT));
+            return;
+        }
+
+        if (isInsideForm(element) && isSubmitButtonIntent(element, node)) {
+            element.attr("type", "submit");
+            return;
+        }
+
+        if (!isInsideForm(element) && !StringUtils.hasText(element.attr("type"))) {
+            element.attr("type", "button");
+        }
+    }
+
+    /** Verifica se o botão já está inserido dentro de um formulário no DOM montado. */
+    private boolean isInsideForm(Element element) {
+        return element.closest("form") != null;
+    }
+
+    /** Identifica intenção de envio pelo id, pela interação textual ou pelo componente declarado. */
+    private boolean isSubmitButtonIntent(Element element, Map<String, Object> node) {
+        String id = normalizeId(firstNonBlank(element.id(), asString(node.get("id"))));
+        if (id.contains("submit")) {
+            return true;
+        }
+
+        Map<String, Object> interaction = asMap(node.get("interacao"));
+        String actionIntent = normalizeId(asString(interaction.get("intencaoAcao")));
+        if (actionIntent.contains("enviar")
+                || actionIntent.contains("envio")
+                || actionIntent.contains("submit")
+                || actionIntent.contains("gerar")) {
+            return true;
+        }
+
+        String component = firstNonBlank(
+                asString(node.get("componente")),
+                asString(node.get("component")),
+                asString(node.get("tipoComponente"))
+        );
+        return "buttonprimary".equals(normalizeId(component));
+    }
+
+    /** Aplica atributos funcionais de imagem declarados em asset, sem criar placeholder visual. */
     private void applyAsset(Element element, Map<String, Object> node) {
         if (!"img".equalsIgnoreCase(element.tagName())) {
             return;
@@ -403,6 +495,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         applyNumericOrStringAttr(element, "height", asset.get("height"));
     }
 
+    /** Aplica contrato funcional de campos de formulário sem inserir texto em elementos void. */
     private void applyFieldContract(Element element, Map<String, Object> node) {
         String tag = element.tagName().toLowerCase(Locale.ROOT);
         if (!("input".equals(tag) || "textarea".equals(tag) || "select".equals(tag))) {
@@ -442,6 +535,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         applyBooleanAttr(element, "readonly", contract.get("readonly"));
     }
 
+    /** Aplica contrato funcional de formulário declarado no JSON. */
     private void applyFormContract(Element element, Map<String, Object> node) {
         if (!"form".equalsIgnoreCase(element.tagName())) {
             return;
@@ -466,6 +560,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         applyBooleanAttr(element, "novalidate", contract.get("novalidate"));
     }
 
+    /** Aplica atributo textual somente quando o valor existe no contrato. */
     private void applyStringAttr(Element element, String attr, Object value) {
         String str = asString(value);
         if (StringUtils.hasText(str)) {
@@ -473,6 +568,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Aplica atributo numérico ou textual preservando o valor declarado no JSON. */
     private void applyNumericOrStringAttr(Element element, String attr, Object value) {
         if (value == null) {
             return;
@@ -489,12 +585,14 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Aplica atributo booleano HTML quando o contrato declara valor verdadeiro. */
     private void applyBooleanAttr(Element element, String attr, Object value) {
         if (Boolean.TRUE.equals(value)) {
             element.attr(attr, attr);
         }
     }
 
+    /** Aplica copy por id sem sobrescrever containers estruturais com filhos. */
     private void applyCopy(Document document, Map<String, Object> copyRoot) {
         Map<String, String> copyById = collectCopyByItemId(copyRoot);
 
@@ -521,6 +619,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Direciona copy para texto, placeholder ou alt conforme o tipo de elemento. */
     private void applyCopyToElement(Element target, String text) {
         String tag = target.tagName().toLowerCase(Locale.ROOT);
 
@@ -552,6 +651,7 @@ public class DesignPresetProvisionalHtmlProcessor {
          */
     }
 
+    /** Indica quais tags podem ter texto próprio alterado preservando filhos. */
     private boolean canHaveDirectTextBeforeChildren(String tag) {
         return "li".equals(tag)
                 || "summary".equals(tag)
@@ -560,6 +660,7 @@ public class DesignPresetProvisionalHtmlProcessor {
                 || "a".equals(tag);
     }
 
+    /** Substitui somente os nós de texto próprios do elemento e preserva elementos filhos. */
     private void replaceOwnTextBeforeChildren(Element element, String text) {
         List<TextNode> textNodes = new ArrayList<>(element.textNodes());
         for (TextNode node : textNodes) {
@@ -569,6 +670,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         element.insertChildren(0, new TextNode(text + " "));
     }
 
+    /** Coleta textos de copy por id aceitando os formatos legados de seções. */
     @SuppressWarnings("unchecked")
     private Map<String, String> collectCopyByItemId(Map<String, Object> copyRoot) {
         Map<String, String> result = new LinkedHashMap<>();
@@ -620,6 +722,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return result;
     }
 
+    /** Aplica fallback de URLs de CTA apenas quando o link ainda não recebeu href confiável. */
     private void applyCtaUrls(Document document, Map<String, Object> copyRoot) {
         Map<String, String> heuristicUrls = collectCtaUrlsByHeuristic(copyRoot);
         String defaultCtaUrl = collectDefaultCtaUrl(copyRoot);
@@ -649,6 +752,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Coleta URLs de CTA em mapa heurístico compatível com contratos anteriores. */
     private Map<String, String> collectCtaUrlsByHeuristic(Map<String, Object> copyRoot) {
         Map<String, String> result = new LinkedHashMap<>();
 
@@ -685,6 +789,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return result;
     }
 
+    /** Coleta URL padrão de CTA para fallback quando houver mapeamento confiável por tipo. */
     private String collectDefaultCtaUrl(Map<String, Object> copyRoot) {
         Object ctaBlocksObj = copyRoot.get("ctaBlocks");
 
@@ -722,6 +827,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return firstUrl;
     }
 
+    /** Aplica planejamento externo de imagens por elementId, com prioridade sobre asset do wireframe. */
     private void applyImageUrlsByElementId(Document document, String imagePlanningJson) {
         if (!StringUtils.hasText(imagePlanningJson)) {
             return;
@@ -743,7 +849,7 @@ public class DesignPresetProvisionalHtmlProcessor {
                 img.attr("src", spec.url());
             }
 
-            if (StringUtils.hasText(spec.alt()) && !StringUtils.hasText(img.attr("alt"))) {
+            if (StringUtils.hasText(spec.alt())) {
                 img.attr("alt", spec.alt());
             }
 
@@ -757,6 +863,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Coleta especificações de imagem indexadas por elementId, nunca por posição. */
     private Map<String, ImageSpec> collectImagesByElementId(Map<String, Object> planning) {
         Map<String, ImageSpec> result = new LinkedHashMap<>();
 
@@ -823,6 +930,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         applyTokenizedSectionClasses(document, page);
     }
 
+    /** Gera CSS exclusivamente a partir dos tokens declarados em definicoes. */
     private String buildTokenizedCss(Map<String, Object> definitions) {
         StringBuilder css = new StringBuilder();
 
@@ -845,6 +953,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return css.toString();
     }
 
+    /** Acrescenta regras CSS declaradas para um viewport sem adicionar defaults visuais. */
     private void appendTokenizedCssByViewport(StringBuilder css, List<Map<String, Object>> items, String mediaQuery) {
         if (items.isEmpty()) {
             return;
@@ -877,6 +986,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         css.append(mediaQuery).append("{\n").append(block).append("}\n");
     }
 
+    /** Aplica classes tokenizadas nas seções declaradas no preset. */
     private void applyTokenizedSectionClasses(Document document, Map<String, Object> page) {
         Map<String, Object> corpo = asMap(page.get("corpo"));
         for (Map<String, Object> sectionMap : asList(corpo.get("secoes"))) {
@@ -884,6 +994,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Aplica classes tokenizadas recursivamente por id de elemento. */
     private void applyTokenizedNodeClasses(Document document, Map<String, Object> node) {
         String id = asString(node.get("id"));
         Element element = resolveElementById(document, id);
@@ -932,6 +1043,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return classes;
     }
 
+    /** Lê lista textual de classes ignorando valores ausentes ou inválidos. */
     private List<String> readStringList(Object value) {
         List<String> list = new ArrayList<>();
 
@@ -949,6 +1061,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return list;
     }
 
+    /** Acrescenta classes declaradas no JSON sem duplicá-las no elemento. */
     private void appendClasses(Element element, List<String> classes) {
         for (String className : classes) {
             if (StringUtils.hasText(className) && !element.hasClass(className)) {
@@ -957,6 +1070,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
     }
 
+    /** Resolve elemento por id bruto ou normalizado para compatibilidade entre contratos. */
     private Element resolveElementById(Document document, String id) {
         if (!StringUtils.hasText(id)) {
             return null;
@@ -978,16 +1092,198 @@ public class DesignPresetProvisionalHtmlProcessor {
         return null;
     }
 
+    /** Executa validações finais de contrato e registra warnings sem contaminar o HTML final. */
+    private void validateGeneratedHtml(Document document, Map<String, Object> wireframeRoot, Map<String, Object> designRoot) {
+        Set<String> definedTokens = collectDefinedCssTokens(wireframeRoot, designRoot);
+        validateUsedCssTokens(document, definedTokens);
+        validateFunctionalLinks(document, wireframeRoot, designRoot);
+        validateFormControls(document, wireframeRoot, designRoot);
+        validateImages(document);
+        validateContainerChildrenPreserved(document, wireframeRoot, designRoot);
+    }
+
+    /** Coleta tokens CSS declarados em definicoes do wireframe e do preset de design. */
+    private Set<String> collectDefinedCssTokens(Map<String, Object>... roots) {
+        Set<String> tokens = new LinkedHashSet<>();
+        for (Map<String, Object> root : roots) {
+            Map<String, Object> definitions = asMap(root.get("definicoes"));
+            for (Object block : definitions.values()) {
+                collectDefinedCssTokensFromBlock(block, tokens);
+            }
+        }
+        return tokens;
+    }
+
+    /** Coleta tokens CSS recursivamente a partir dos itens que declaram nome, atributoCss e valor. */
+    private void collectDefinedCssTokensFromBlock(Object block, Set<String> tokens) {
+        if (block instanceof Map<?, ?> mapBlock) {
+            String token = asString(mapBlock.get("nome"));
+            if (StringUtils.hasText(token)) {
+                tokens.add(token.trim());
+            }
+            for (Object value : mapBlock.values()) {
+                collectDefinedCssTokensFromBlock(value, tokens);
+            }
+            return;
+        }
+        if (block instanceof List<?> listBlock) {
+            for (Object item : listBlock) {
+                collectDefinedCssTokensFromBlock(item, tokens);
+            }
+        }
+    }
+
+    /** Valida se todas as classes aplicadas correspondem a tokens declarados em definicoes. */
+    private void validateUsedCssTokens(Document document, Set<String> definedTokens) {
+        for (Element element : document.getAllElements()) {
+            for (String className : element.classNames()) {
+                if (!definedTokens.contains(className)) {
+                    log.warn("Token CSS não definido: {}", className);
+                }
+            }
+        }
+    }
+
+    /** Valida links funcionais e destinos internos de âncoras. */
+    private void validateFunctionalLinks(Document document, Map<String, Object> wireframeRoot, Map<String, Object> designRoot) {
+        Map<String, Map<String, Object>> nodesById = collectNodesById(wireframeRoot, designRoot);
+        for (Element link : document.select("a")) {
+            Map<String, Object> node = nodesById.get(normalizeId(link.id()));
+            Map<String, Object> interaction = node == null ? Map.of() : asMap(node.get("interacao"));
+            if (StringUtils.hasText(asString(interaction.get("targetSectionId"))) && !StringUtils.hasText(link.attr("href"))) {
+                log.warn("Link com interacao.targetSectionId sem href: {}", link.id());
+            }
+            if (!StringUtils.hasText(link.attr("href"))) {
+                log.warn("Link sem href funcional: {}", link.id());
+            }
+        }
+
+        for (Element linkedElement : document.select("[href^=#]")) {
+            String targetId = normalizeHtmlId(linkedElement.attr("href"));
+            if (StringUtils.hasText(targetId) && document.getElementById(targetId) == null) {
+                log.warn("Href interno aponta para id inexistente: {}", linkedElement.attr("href"));
+            }
+        }
+    }
+
+    /** Valida botões e campos de formulário contra os contratos funcionais declarados. */
+    private void validateFormControls(Document document, Map<String, Object> wireframeRoot, Map<String, Object> designRoot) {
+        Map<String, Map<String, Object>> nodesById = collectNodesById(wireframeRoot, designRoot);
+        for (Element button : document.select("form button")) {
+            if (normalizeId(button.id()).contains("submit") && !"submit".equalsIgnoreCase(button.attr("type"))) {
+                log.warn("Botão submit dentro de form sem type=submit: {}", button.id());
+            }
+        }
+        for (Element input : document.select("input")) {
+            if (!StringUtils.hasText(input.attr("type"))) {
+                log.warn("Input sem type funcional: {}", input.id());
+            }
+            if (!StringUtils.hasText(input.attr("name"))) {
+                log.warn("Input sem name funcional: {}", input.id());
+            }
+            Map<String, Object> node = nodesById.get(normalizeId(input.id()));
+            Map<String, Object> contract = node == null ? Map.of() : asMap(node.get("contratoCampo"));
+            if (Boolean.TRUE.equals(contract.get("required")) && !input.hasAttr("required")) {
+                log.warn("Input required sem atributo required: {}", input.id());
+            }
+        }
+    }
+
+    /** Valida atributos funcionais obrigatórios de imagens e URLs temporárias de exemplo. */
+    private void validateImages(Document document) {
+        for (Element img : document.select("img")) {
+            if (!StringUtils.hasText(img.attr("src"))) {
+                log.warn("Imagem sem src funcional: {}", img.id());
+            }
+            if (!StringUtils.hasText(img.attr("alt"))) {
+                log.warn("Imagem sem alt funcional: {}", img.id());
+            }
+            if (StringUtils.hasText(img.attr("src")) && img.attr("src").contains("example.com")) {
+                log.warn("Imagem usa src temporário example.com: {}", img.id());
+            }
+            if (!img.childNodes().isEmpty()) {
+                log.warn("Imagem contém conteúdo interno inválido: {}", img.id());
+            }
+        }
+    }
+
+    /** Valida se containers declarados com filhos mantiveram filhos no HTML gerado. */
+    private void validateContainerChildrenPreserved(Document document, Map<String, Object> wireframeRoot, Map<String, Object> designRoot) {
+        for (Map<String, Object> node : collectAllNodes(wireframeRoot, designRoot)) {
+            String tag = sanitizeTagName(firstNonBlank(asString(node.get("tag")), "section"));
+            if (!isContainerTag(tag)) {
+                continue;
+            }
+            int expectedChildren = asList(node.get("elementosSeccao")).size() + asList(node.get("elementosInternos")).size();
+            if (expectedChildren == 0) {
+                continue;
+            }
+            Element element = resolveElementById(document, asString(node.get("id")));
+            if (element != null && element.children().size() < expectedChildren) {
+                log.warn("Container com filhos perdeu estrutura após aplicação de copy: {}", element.id());
+            }
+        }
+    }
+
+    /** Identifica tags de container que não devem receber copy destrutiva quando possuem filhos. */
+    private boolean isContainerTag(String tag) {
+        return "div".equals(tag)
+                || "section".equals(tag)
+                || "ul".equals(tag)
+                || "ol".equals(tag)
+                || "form".equals(tag)
+                || "details".equals(tag);
+    }
+
+    /** Coleta nós estruturais indexados por id normalizado, dando preferência aos dados mais recentes. */
+    private Map<String, Map<String, Object>> collectNodesById(Map<String, Object>... roots) {
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+        for (Map<String, Object> node : collectAllNodes(roots)) {
+            String id = normalizeId(asString(node.get("id")));
+            if (StringUtils.hasText(id)) {
+                result.put(id, node);
+            }
+        }
+        return result;
+    }
+
+    /** Coleta todos os nós estruturais de pagina.corpo.secoes em múltiplas raízes JSON. */
+    private List<Map<String, Object>> collectAllNodes(Map<String, Object>... roots) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> root : roots) {
+            Map<String, Object> page = asMap(root.get("pagina"));
+            Map<String, Object> body = asMap(page.get("corpo"));
+            for (Map<String, Object> section : asList(body.get("secoes"))) {
+                collectAllNodesRecursive(section, result);
+            }
+        }
+        return result;
+    }
+
+    /** Percorre recursivamente filhos estruturais mantendo a ordem declarada no JSON. */
+    private void collectAllNodesRecursive(Map<String, Object> node, List<Map<String, Object>> result) {
+        result.add(node);
+        for (Map<String, Object> child : asList(node.get("elementosSeccao"))) {
+            collectAllNodesRecursive(child, result);
+        }
+        for (Map<String, Object> child : asList(node.get("elementosInternos"))) {
+            collectAllNodesRecursive(child, result);
+        }
+    }
+
+    /** Converte valor JSON em mapa tipado quando o formato é compatível. */
     @SuppressWarnings("unchecked")
     private Map<String, Object> asMap(Object value) {
         return value instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
     }
 
+    /** Converte valor JSON em lista de mapas quando o formato é compatível. */
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> asList(Object value) {
         return value instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
     }
 
+    /** Retorna o primeiro mapa não vazio entre alternativas de contrato. */
     @SafeVarargs
     private final Map<String, Object> firstNonEmptyMap(Map<String, Object>... maps) {
         for (Map<String, Object> map : maps) {
@@ -998,10 +1294,12 @@ public class DesignPresetProvisionalHtmlProcessor {
         return Map.of();
     }
 
+    /** Normaliza ids para comparação independente de cerquilha, espaços e caixa. */
     private String normalizeId(String value) {
         return normalizeHtmlId(value);
     }
 
+    /** Normaliza id para emissão no HTML removendo cerquilha e caracteres separadores inconsistentes. */
     private String normalizeHtmlId(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
@@ -1015,6 +1313,7 @@ public class DesignPresetProvisionalHtmlProcessor {
                 .toLowerCase(Locale.ROOT);
     }
 
+    /** Normaliza href preservando URLs absolutas e convertendo destinos internos em âncoras válidas. */
     private String normalizeHref(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
@@ -1039,6 +1338,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return "#" + normalizeHtmlId(trimmed);
     }
 
+    /** Retorna o primeiro valor não nulo entre alternativas de contrato. */
     private Object firstNonNull(Object... values) {
         for (Object value : values) {
             if (value != null) {
@@ -1049,10 +1349,12 @@ public class DesignPresetProvisionalHtmlProcessor {
         return null;
     }
 
+    /** Converte valor JSON em string apenas quando o tipo original é textual. */
     private String asString(Object value) {
         return value instanceof String str ? str : null;
     }
 
+    /** Converte números ou strings de contrato em representação textual de atributo. */
     private String valueAsString(Object value) {
         if (value == null) {
             return null;
@@ -1063,6 +1365,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return asString(value);
     }
 
+    /** Retorna o primeiro texto com conteúdo útil entre alternativas de contrato. */
     private String firstNonBlank(String... values) {
         for (String value : values) {
             if (StringUtils.hasText(value)) {
@@ -1073,6 +1376,7 @@ public class DesignPresetProvisionalHtmlProcessor {
         return null;
     }
 
+    /** Remove marcadores auxiliares do serializador sem acrescentar metadados técnicos ao HTML final. */
     private String normalizeSerializedHtml(String html) {
         return html
                 .replace("/*<![CDATA[*/", "")
@@ -1080,11 +1384,13 @@ public class DesignPresetProvisionalHtmlProcessor {
                 .replace(" />", "/>");
     }
 
+    /** Valida nomes de propriedades CSS declaradas antes de emitir regras tokenizadas. */
     private boolean isSafeCssPropertyName(String name) {
         return StringUtils.hasText(name)
                 && Pattern.matches("-?[A-Za-z][A-Za-z0-9-]*", name);
     }
 
+    /** Representa atributos funcionais de imagem resolvidos por elementId. */
     private record ImageSpec(String url, String alt, String width, String height) {
     }
 }

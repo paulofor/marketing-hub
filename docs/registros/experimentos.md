@@ -2857,3 +2857,13 @@
   - ajustada a regra ArchUnit para exigir o assembler em `presetdesign.provisorio` e permitir dependências de `geralanding.<etapa>.service` para `geralanding.<etapa>.provisorio` da mesma etapa;
   - sincronizados os documentos canônicos de arquitetura e procedimento do experimento.
 - impacto esperado: a etapa `landing-page-design-preset` mantém o HTML provisório dentro da própria fronteira da etapa, reduzindo acoplamento indevido e preservando a montagem necessária para gerar landing pages vendáveis.
+
+## 2026-06-01 — Schema estrito do PresetDesign para OpenAI Responses
+- tarefa: corrigir o erro HTTP 400 `invalid_json_schema` retornado pela OpenAI na etapa `landing-page-design-preset`.
+- causa-raiz: o schema `landing-page-design-preset-schema.json` ainda permitia objetos flexíveis com `additionalProperties: true`, incompatíveis com Structured Outputs em `strict=true` usado pelo Worker AI core.
+- correção aplicada:
+  - o schema da etapa passou a declarar `additionalProperties: false` em todos os objetos, incluindo `pagina`, `body`, `corpo` e nós internos reutilizados da estrutura de wireframe;
+  - o contrato de `pagina` foi explicitado com `head`, `body` e `corpo`, preservando a hierarquia do wireframe e adicionando o bloco global de estilos do body exigido pelo prompt;
+  - o exemplo do prompt foi sincronizado com o schema estrito;
+  - adicionados testes regressivos para impedir retorno de `additionalProperties` permissivo e palavras-chave rejeitadas no schema da etapa.
+- impacto esperado: novas execuções do PresetDesign deixam de ser recusadas antes da geração pela OpenAI e mantêm a etapa disponível para concluir o Gera Landing com acabamento visual consistente e voltado à conversão.

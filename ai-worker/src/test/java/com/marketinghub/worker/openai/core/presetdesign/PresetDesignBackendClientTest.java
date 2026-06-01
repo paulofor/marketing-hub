@@ -8,15 +8,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.StageExecution;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.math.BigDecimal;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: validar o contrato HTTP do client design-preset do core OpenAI. */
@@ -179,6 +183,124 @@ class PresetDesignBackendClientTest {
         assertThat(body.path("text").path("format").path("name").asText())
                 .isEqualTo("experiment_pipeline_landing_page_design_preset");
         assertThat(body.path("text").path("format").path("strict").asBoolean()).isTrue();
+    }
+
+    /** Deve manter o schema de design-preset compatível com Structured Outputs estrito da OpenAI. */
+    @Test
+    void presetDesignSchemaShouldDeclareAdditionalPropertiesFalseForEveryObject() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        List<String> invalidPaths = new ArrayList<>();
+
+        collectObjectSchemasWithoutStrictAdditionalProperties(schema, "$", invalidPaths);
+
+        assertThat(invalidPaths).isEmpty();
+    }
+
+
+    /** Deve manter required com todas as propriedades para cumprir Structured Outputs estrito. */
+    @Test
+    void presetDesignSchemaShouldRequireEveryDeclaredObjectProperty() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        List<String> invalidPaths = new ArrayList<>();
+
+        collectObjectSchemasWithoutCompleteRequired(schema, "$", invalidPaths);
+
+        assertThat(invalidPaths).isEmpty();
+    }
+
+    /** Deve manter o schema de design-preset sem palavras-chave rejeitadas pela OpenAI Structured Outputs. */
+    @Test
+    void presetDesignSchemaShouldNotContainUnsupportedOpenAiStructuredOutputKeywords() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(schemaJson)
+                .doesNotContain("\"allOf\"")
+                .doesNotContain("\"if\"")
+                .doesNotContain("\"then\"")
+                .doesNotContain("\"not\"");
+    }
+
+    /** Percorre recursivamente o schema e lista objetos que não bloqueiam propriedades extras. */
+    private void collectObjectSchemasWithoutStrictAdditionalProperties(JsonNode node, String path, List<String> invalidPaths) {
+        if (node == null || node.isMissingNode()) {
+            return;
+        }
+        if (node.isObject()) {
+            JsonNode type = node.path("type");
+            if (isObjectSchemaType(type) && !hasExplicitFalseAdditionalProperties(node)) {
+                invalidPaths.add(path);
+            }
+            node.fields().forEachRemaining(entry ->
+                    collectObjectSchemasWithoutStrictAdditionalProperties(
+                            entry.getValue(), path + "." + entry.getKey(), invalidPaths));
+            return;
+        }
+        if (node.isArray()) {
+            for (int index = 0; index < node.size(); index++) {
+                collectObjectSchemasWithoutStrictAdditionalProperties(node.get(index), path + "[" + index + "]", invalidPaths);
+            }
+        }
+    }
+
+
+    /** Percorre recursivamente o schema e lista objetos cujo required não cobre todas as properties. */
+    private void collectObjectSchemasWithoutCompleteRequired(JsonNode node, String path, List<String> invalidPaths) {
+        if (node == null || node.isMissingNode()) {
+            return;
+        }
+        if (node.isObject()) {
+            if (isObjectSchemaType(node.path("type")) && !hasRequiredForEveryProperty(node)) {
+                invalidPaths.add(path);
+            }
+            node.fields().forEachRemaining(entry ->
+                    collectObjectSchemasWithoutCompleteRequired(entry.getValue(), path + "." + entry.getKey(), invalidPaths));
+            return;
+        }
+        if (node.isArray()) {
+            for (int index = 0; index < node.size(); index++) {
+                collectObjectSchemasWithoutCompleteRequired(node.get(index), path + "[" + index + "]", invalidPaths);
+            }
+        }
+    }
+
+    /** Verifica se required contém exatamente todos os nomes de properties do objeto. */
+    private boolean hasRequiredForEveryProperty(JsonNode node) {
+        JsonNode properties = node.path("properties");
+        JsonNode required = node.path("required");
+        if (!properties.isObject() || !required.isArray()) {
+            return false;
+        }
+        List<String> propertyNames = new ArrayList<>();
+        properties.fieldNames().forEachRemaining(propertyNames::add);
+        List<String> requiredNames = new ArrayList<>();
+        required.forEach(item -> requiredNames.add(item.asText()));
+        return requiredNames.containsAll(propertyNames) && propertyNames.containsAll(requiredNames);
+    }
+
+    /** Confirma que objetos declaram additionalProperties explicitamente como false. */
+    private boolean hasExplicitFalseAdditionalProperties(JsonNode node) {
+        JsonNode additionalProperties = node.path("additionalProperties");
+        return additionalProperties.isBoolean() && !additionalProperties.asBoolean();
+    }
+
+    /** Identifica declarações de schema JSON para tipo object em formato textual ou lista de tipos. */
+    private boolean isObjectSchemaType(JsonNode type) {
+        if (type.isTextual()) {
+            return "object".equals(type.asText());
+        }
+        if (type.isArray()) {
+            for (JsonNode candidate : type) {
+                if (candidate.isTextual() && "object".equals(candidate.asText())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 }

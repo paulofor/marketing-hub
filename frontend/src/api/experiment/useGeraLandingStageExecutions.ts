@@ -6,13 +6,13 @@ const STAGE_ENDPOINT_SEGMENT: Record<string, string> = {
   "landing-page-copy": "copy",
   "landing-page-design-preset": "design-preset",
   "landing-page-image-planning": "image-prompts",
+  "landing-page-image-generation": "image-generation",
   "landing-page-deliverables": "deliverables",
 };
 
 function resolveStageExecutionsEndpointSegment(stageCode: string): string {
   return STAGE_ENDPOINT_SEGMENT[stageCode] ?? "wireframe";
 }
-
 
 export interface GeraLandingStageExecutionItem {
   idJob: string;
@@ -49,7 +49,12 @@ export function useGeraLandingStageExecutions(
   includeCompleted = true,
 ) {
   return useQuery({
-    queryKey: ["geralanding-stage-executions", experimentId, stageCode, includeCompleted],
+    queryKey: [
+      "geralanding-stage-executions",
+      experimentId,
+      stageCode,
+      includeCompleted,
+    ],
     enabled: Boolean(experimentId),
     refetchInterval: includeCompleted ? 10000 : 3000,
     queryFn: async () => {
@@ -69,7 +74,12 @@ export function useGeraLandingStageExecutionDetail(
   options?: { enabled?: boolean; refetchInterval?: number | false },
 ) {
   return useQuery({
-    queryKey: ["geralanding-stage-execution-detail", experimentId, jobId, stageCode],
+    queryKey: [
+      "geralanding-stage-execution-detail",
+      experimentId,
+      jobId,
+      stageCode,
+    ],
     enabled: options?.enabled ?? Boolean(experimentId && jobId),
     refetchInterval: options?.refetchInterval,
     queryFn: async () => {

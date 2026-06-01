@@ -2940,6 +2940,15 @@
   - centralizada a mesclagem de execução otimista com pendentes/histórico para wireframe, copy, design preset, prompt de imagem e deliverables.
 - impacto esperado: o usuário passa a ver a evolução operacional real do job no frontend, reduzindo falsa percepção de travamento e facilitando decisão sobre próximas etapas da landing.
 
+## 2026-06-01 — Regra comercial de imagens no wireframe GeraLanding
+- tarefa: substituir a obrigação mecânica de imagens por seção por uma regra comercial de uso visual no prompt/schema de `landing-page-wireframe`.
+- causa-raiz/objetivo: a exigência de pelo menos uma imagem por seção e mínimo fixo de 4 imagens favorecia preenchimento decorativo, hero desproporcional e esforço visual sem relação direta com venda.
+- correção aplicada:
+  - o prompt do wireframe agora limita imagens a funções de prova, demonstração do produto, antes/depois, mecanismo ou redução de objeção;
+  - a faixa padrão passou a ser 2 a 4 imagens úteis, com exceção apenas para nichos que exijam mais prova visual;
+  - a imagem de produto continua obrigatória e o hero passou a exigir imagem controlada em container, com limite visual desktop/mobile;
+  - o schema passou a exigir metadados visuais mínimos por imagem, e o schema de preset design foi sincronizado para preservar compatibilidade downstream.
+- impacto esperado: landings mais simples, focadas em venda e prova real, sem imagens artificiais que prejudiquem CTA, escaneabilidade ou percepção de valor.
 ## 2026-06-01 — Qualidade visual mínima no design preset
 - tarefa: reforçar a etapa `landing-page-design-preset` para orientar o modelo a gerar uma landing com acabamento visual mínimo vendável.
 - causa-raiz/objetivo: o prompt antigo validava contraste e CTA destacado, mas não obrigava requisitos concretos de layout, espaçamento, containers, imagens e formulário; isso podia permitir páginas visualmente frágeis, com texto colado, links padrão ou imagens desproporcionais.

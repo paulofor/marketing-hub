@@ -187,4 +187,73 @@ class WireframeBackendClientTest {
                 .doesNotContain("mistas");
     }
 
+    /** Deve refletir a regra comercial de imagens úteis no prompt de wireframe. */
+    @Test
+    void wireframePromptShouldRequireOnlyUsefulCommercialImages() throws Exception {
+        String prompt = new ClassPathResource("prompts/geralanding/landing-page-wireframe.md")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(prompt)
+                .contains("2 a 4 elementos `img` úteis")
+                .contains("somente quando a imagem cumprir função clara de prova")
+                .contains("demonstração do produto")
+                .contains("antes/depois")
+                .contains("explicação do mecanismo")
+                .contains("redução de objeção")
+                .contains("Imagem de produto obrigatória")
+                .contains("Hero com imagem controlada")
+                .contains("é proibido planejar hero com imagem full-width")
+                .doesNotContain("gerar no mínimo 4 elementos `img`")
+                .doesNotContain("cada seção em `pagina.corpo.secoes[]` deve conter pelo menos um elemento `img`");
+    }
+
+    /** Deve exigir metadados visuais mínimos para cada imagem no schema do wireframe. */
+    @Test
+    void wireframeSchemaShouldRequireVisualMetadataForImages() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-wireframe-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        JsonNode briefingVisual = schema.path("$defs").path("briefingVisual");
+        JsonNode properties = briefingVisual.path("properties");
+
+        assertThat(properties.has("posicaoDesejada")).isTrue();
+        assertThat(properties.has("aspectRatio")).isTrue();
+        assertThat(properties.has("maxVisualHeight")).isTrue();
+        assertThat(properties.path("maxVisualHeight").path("required").toString()).isEqualTo("[\"desktop\",\"mobile\"]");
+        assertThat(properties.has("layoutRole")).isTrue();
+        assertThat(properties.path("layoutRole").path("enum").toString())
+                .contains("prova")
+                .contains("demonstracao-produto")
+                .contains("antes-depois")
+                .contains("mecanismo")
+                .contains("reducao-objecao")
+                .contains("produto");
+        assertThat(properties.has("relacaoComCta")).isTrue();
+        assertThat(briefingVisual.path("required").toString())
+                .contains("posicaoDesejada")
+                .contains("aspectRatio")
+                .contains("maxVisualHeight")
+                .contains("layoutRole")
+                .contains("relacaoComCta");
+    }
+
+    /** Deve manter o schema do preset design compatível com os metadados visuais vindos do wireframe. */
+    @Test
+    void designPresetSchemaShouldAcceptWireframeVisualMetadata() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        JsonNode briefingVisual = schema.path("$defs").path("briefingVisual");
+
+        assertThat(briefingVisual.path("properties").has("aspectRatio")).isTrue();
+        assertThat(briefingVisual.path("properties").has("maxVisualHeight")).isTrue();
+        assertThat(briefingVisual.path("properties").has("layoutRole")).isTrue();
+        assertThat(briefingVisual.path("required").toString())
+                .contains("posicaoDesejada")
+                .contains("aspectRatio")
+                .contains("maxVisualHeight")
+                .contains("layoutRole")
+                .contains("relacaoComCta");
+    }
+
 }

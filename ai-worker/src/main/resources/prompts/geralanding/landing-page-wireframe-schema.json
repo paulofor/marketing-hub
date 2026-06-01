@@ -614,6 +614,47 @@
             "diagrama",
             "print conceitual"
           ]
+        },
+        "posicaoDesejada": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aspectRatio": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maxVisualHeight": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "desktop": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mobile": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "desktop",
+            "mobile"
+          ]
+        },
+        "layoutRole": {
+          "type": "string",
+          "enum": [
+            "prova",
+            "demonstracao-produto",
+            "antes-depois",
+            "mecanismo",
+            "reducao-objecao",
+            "produto"
+          ]
+        },
+        "relacaoComCta": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -621,7 +662,12 @@
         "tipoVisualEsperado",
         "funcaoComercial",
         "objecaoQueRemove",
-        "classificacaoVisual"
+        "classificacaoVisual",
+        "posicaoDesejada",
+        "aspectRatio",
+        "maxVisualHeight",
+        "layoutRole",
+        "relacaoComCta"
       ]
     }
   }

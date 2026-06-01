@@ -137,6 +137,30 @@ function resolveJobNumberFromStageContent(content: string) {
   }
 }
 
+function hasExecutionWithJobId(
+  executions: GeraLandingStageExecutionItem[] | undefined,
+  jobId: string,
+) {
+  return (executions ?? []).some((execution) => execution.idJob === jobId);
+}
+
+function mergeOptimisticExecution(
+  optimisticExecution: GeraLandingStageExecutionItem | null,
+  pendingExecutions: GeraLandingStageExecutionItem[] | undefined,
+  completedExecutions: GeraLandingStageExecutionItem[] | undefined,
+) {
+  if (!optimisticExecution) {
+    return pendingExecutions ?? [];
+  }
+  const persistedExecution =
+    hasExecutionWithJobId(pendingExecutions, optimisticExecution.idJob) ||
+    hasExecutionWithJobId(completedExecutions, optimisticExecution.idJob);
+  if (persistedExecution) {
+    return pendingExecutions ?? [];
+  }
+  return [optimisticExecution, ...(pendingExecutions ?? [])];
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -622,33 +646,41 @@ export default function ExperimentDetailPage() {
       "DONE",
     ].includes(normalizedStatus);
   };
-  const mergedPendingGeraLandingExecutions = useMemo(() => {
-    if (!optimisticWireframeExecution) {
-      return pendingGeraLandingExecutions ?? [];
-    }
-    const alreadyPresent = (pendingGeraLandingExecutions ?? []).some(
-      (execution) => execution.idJob === optimisticWireframeExecution.idJob,
-    );
-    if (alreadyPresent) {
-      return pendingGeraLandingExecutions ?? [];
-    }
-    return [
+  const mergedPendingGeraLandingExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticWireframeExecution,
+        pendingGeraLandingExecutions,
+        completedGeraLandingExecutions,
+      ),
+    [
       optimisticWireframeExecution,
-      ...(pendingGeraLandingExecutions ?? []),
-    ];
-  }, [optimisticWireframeExecution, pendingGeraLandingExecutions]);
+      pendingGeraLandingExecutions,
+      completedGeraLandingExecutions,
+    ],
+  );
 
   useEffect(() => {
     if (!optimisticWireframeExecution) {
       return;
     }
-    const persistedExecution = (pendingGeraLandingExecutions ?? []).some(
-      (execution) => execution.idJob === optimisticWireframeExecution.idJob,
-    );
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingExecutions,
+        optimisticWireframeExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingExecutions,
+        optimisticWireframeExecution.idJob,
+      );
     if (persistedExecution) {
       setOptimisticWireframeExecution(null);
     }
-  }, [optimisticWireframeExecution, pendingGeraLandingExecutions]);
+  }, [
+    optimisticWireframeExecution,
+    pendingGeraLandingExecutions,
+    completedGeraLandingExecutions,
+  ]);
 
   const hasRunningGeraLandingExecution =
     mergedPendingGeraLandingExecutions.some((execution) =>
@@ -702,33 +734,41 @@ export default function ExperimentDetailPage() {
     );
   }, [completedGeraLandingExecutions, pendingGeraLandingExecutions]);
 
-  const mergedPendingGeraLandingCopyExecutions = useMemo(() => {
-    if (!optimisticCopyExecution) {
-      return pendingGeraLandingCopyExecutions ?? [];
-    }
-    const alreadyPresent = (pendingGeraLandingCopyExecutions ?? []).some(
-      (execution) => execution.idJob === optimisticCopyExecution.idJob,
-    );
-    if (alreadyPresent) {
-      return pendingGeraLandingCopyExecutions ?? [];
-    }
-    return [
+  const mergedPendingGeraLandingCopyExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticCopyExecution,
+        pendingGeraLandingCopyExecutions,
+        completedGeraLandingCopyExecutions,
+      ),
+    [
       optimisticCopyExecution,
-      ...(pendingGeraLandingCopyExecutions ?? []),
-    ];
-  }, [optimisticCopyExecution, pendingGeraLandingCopyExecutions]);
+      pendingGeraLandingCopyExecutions,
+      completedGeraLandingCopyExecutions,
+    ],
+  );
 
   useEffect(() => {
     if (!optimisticCopyExecution) {
       return;
     }
-    const persistedExecution = (pendingGeraLandingCopyExecutions ?? []).some(
-      (execution) => execution.idJob === optimisticCopyExecution.idJob,
-    );
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingCopyExecutions,
+        optimisticCopyExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingCopyExecutions,
+        optimisticCopyExecution.idJob,
+      );
     if (persistedExecution) {
       setOptimisticCopyExecution(null);
     }
-  }, [optimisticCopyExecution, pendingGeraLandingCopyExecutions]);
+  }, [
+    optimisticCopyExecution,
+    pendingGeraLandingCopyExecutions,
+    completedGeraLandingCopyExecutions,
+  ]);
 
   const hasRunningGeraLandingCopyExecution =
     mergedPendingGeraLandingCopyExecutions.some((execution) =>
@@ -777,42 +817,40 @@ export default function ExperimentDetailPage() {
         ) === index,
     );
   }, [completedGeraLandingCopyExecutions, pendingGeraLandingCopyExecutions]);
-  const mergedPendingGeraLandingDesignPresetExecutions = useMemo(() => {
-    if (!optimisticDesignPresetExecution) {
-      return pendingGeraLandingDesignPresetExecutions ?? [];
-    }
-    const alreadyPresent = (
-      pendingGeraLandingDesignPresetExecutions ?? []
-    ).some(
-      (execution) => execution.idJob === optimisticDesignPresetExecution.idJob,
-    );
-    if (alreadyPresent) {
-      return pendingGeraLandingDesignPresetExecutions ?? [];
-    }
-    return [
+  const mergedPendingGeraLandingDesignPresetExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticDesignPresetExecution,
+        pendingGeraLandingDesignPresetExecutions,
+        completedGeraLandingDesignPresetExecutions,
+      ),
+    [
       optimisticDesignPresetExecution,
-      ...(pendingGeraLandingDesignPresetExecutions ?? []),
-    ];
-  }, [
-    optimisticDesignPresetExecution,
-    pendingGeraLandingDesignPresetExecutions,
-  ]);
+      pendingGeraLandingDesignPresetExecutions,
+      completedGeraLandingDesignPresetExecutions,
+    ],
+  );
 
   useEffect(() => {
     if (!optimisticDesignPresetExecution) {
       return;
     }
-    const persistedExecution = (
-      pendingGeraLandingDesignPresetExecutions ?? []
-    ).some(
-      (execution) => execution.idJob === optimisticDesignPresetExecution.idJob,
-    );
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingDesignPresetExecutions,
+        optimisticDesignPresetExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingDesignPresetExecutions,
+        optimisticDesignPresetExecution.idJob,
+      );
     if (persistedExecution) {
       setOptimisticDesignPresetExecution(null);
     }
   }, [
     optimisticDesignPresetExecution,
     pendingGeraLandingDesignPresetExecutions,
+    completedGeraLandingDesignPresetExecutions,
   ]);
 
   const hasRunningGeraLandingDesignPresetExecution =
@@ -868,42 +906,40 @@ export default function ExperimentDetailPage() {
     pendingGeraLandingDesignPresetExecutions,
   ]);
 
-  const mergedPendingGeraLandingImagePromptsExecutions = useMemo(() => {
-    if (!optimisticImagePromptsExecution) {
-      return pendingGeraLandingImagePromptsExecutions ?? [];
-    }
-    const alreadyPresent = (
-      pendingGeraLandingImagePromptsExecutions ?? []
-    ).some(
-      (execution) => execution.idJob === optimisticImagePromptsExecution.idJob,
-    );
-    if (alreadyPresent) {
-      return pendingGeraLandingImagePromptsExecutions ?? [];
-    }
-    return [
+  const mergedPendingGeraLandingImagePromptsExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticImagePromptsExecution,
+        pendingGeraLandingImagePromptsExecutions,
+        completedGeraLandingImagePromptsExecutions,
+      ),
+    [
       optimisticImagePromptsExecution,
-      ...(pendingGeraLandingImagePromptsExecutions ?? []),
-    ];
-  }, [
-    optimisticImagePromptsExecution,
-    pendingGeraLandingImagePromptsExecutions,
-  ]);
+      pendingGeraLandingImagePromptsExecutions,
+      completedGeraLandingImagePromptsExecutions,
+    ],
+  );
 
   useEffect(() => {
     if (!optimisticImagePromptsExecution) {
       return;
     }
-    const persistedExecution = (
-      pendingGeraLandingImagePromptsExecutions ?? []
-    ).some(
-      (execution) => execution.idJob === optimisticImagePromptsExecution.idJob,
-    );
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingImagePromptsExecutions,
+        optimisticImagePromptsExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingImagePromptsExecutions,
+        optimisticImagePromptsExecution.idJob,
+      );
     if (persistedExecution) {
       setOptimisticImagePromptsExecution(null);
     }
   }, [
     optimisticImagePromptsExecution,
     pendingGeraLandingImagePromptsExecutions,
+    completedGeraLandingImagePromptsExecutions,
   ]);
 
   const hasRunningGeraLandingImagePromptsExecution =
@@ -958,42 +994,40 @@ export default function ExperimentDetailPage() {
     completedGeraLandingImagePromptsExecutions,
     pendingGeraLandingImagePromptsExecutions,
   ]);
-  const mergedPendingGeraLandingDeliverablesExecutions = useMemo(() => {
-    if (!optimisticDeliverablesExecution) {
-      return pendingGeraLandingDeliverablesExecutions ?? [];
-    }
-    const alreadyPresent = (
-      pendingGeraLandingDeliverablesExecutions ?? []
-    ).some(
-      (execution) => execution.idJob === optimisticDeliverablesExecution.idJob,
-    );
-    if (alreadyPresent) {
-      return pendingGeraLandingDeliverablesExecutions ?? [];
-    }
-    return [
+  const mergedPendingGeraLandingDeliverablesExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticDeliverablesExecution,
+        pendingGeraLandingDeliverablesExecutions,
+        completedGeraLandingDeliverablesExecutions,
+      ),
+    [
       optimisticDeliverablesExecution,
-      ...(pendingGeraLandingDeliverablesExecutions ?? []),
-    ];
-  }, [
-    optimisticDeliverablesExecution,
-    pendingGeraLandingDeliverablesExecutions,
-  ]);
+      pendingGeraLandingDeliverablesExecutions,
+      completedGeraLandingDeliverablesExecutions,
+    ],
+  );
 
   useEffect(() => {
     if (!optimisticDeliverablesExecution) {
       return;
     }
-    const persistedExecution = (
-      pendingGeraLandingDeliverablesExecutions ?? []
-    ).some(
-      (execution) => execution.idJob === optimisticDeliverablesExecution.idJob,
-    );
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingDeliverablesExecutions,
+        optimisticDeliverablesExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingDeliverablesExecutions,
+        optimisticDeliverablesExecution.idJob,
+      );
     if (persistedExecution) {
       setOptimisticDeliverablesExecution(null);
     }
   }, [
     optimisticDeliverablesExecution,
     pendingGeraLandingDeliverablesExecutions,
+    completedGeraLandingDeliverablesExecutions,
   ]);
 
   const hasRunningGeraLandingDeliverablesExecution =

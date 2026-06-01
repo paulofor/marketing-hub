@@ -174,6 +174,17 @@ public class OprmCnaeOpportunityPersistenceService {
     }
 
     /**
+     * Lista os nichos já enriquecidos pelo OPRM para consulta direta no frontend.
+     */
+    @Transactional(readOnly = true)
+    public List<OprmNicheCandidateResponseDto> listEnrichedCandidates(int limit) {
+        return candidateRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, normalizeLimit(limit)))
+                .stream()
+                .map(this::toCandidateResponse)
+                .toList();
+    }
+
+    /**
      * Marca um candidato como aprovado e opcionalmente vincula um nicho oficial já existente.
      */
     @Transactional

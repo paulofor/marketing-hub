@@ -127,6 +127,14 @@ public class OprmCnaeOpportunityController {
     }
 
     /**
+     * Lista nichos já enriquecidos pelo OPRM para acompanhamento direto do usuário.
+     */
+    @GetMapping("/cnae-niche-candidates/enriched")
+    public List<OprmNicheCandidateResponseDto> listEnrichedCandidates(@RequestParam(defaultValue = "100") int limit) {
+        return service.listEnrichedCandidates(limit);
+    }
+
+    /**
      * Aprova candidato de nicho e opcionalmente vincula um nicho oficial já existente.
      */
     @PostMapping("/cnae-niche-candidates/{id}/approve")

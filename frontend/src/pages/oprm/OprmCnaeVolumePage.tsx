@@ -3,6 +3,7 @@ import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useOprmTopCnaeMarketVolume } from "../../api/oprm/useOprmTopCnaeMarketVolume";
 import { useOprmCnaeCatalog } from "../../api/oprm/useOprmCnaeCatalog";
 import { useOprmCnaeCycles } from "../../api/oprm/useOprmCnaeCycles";
+import { useOprmEnrichedNicheCandidates } from "../../api/oprm/useOprmEnrichedNicheCandidates";
 import { useState } from "react";
 
 function formatNumber(value: number) {
@@ -25,10 +26,15 @@ function formatDateTime(value: string | null | undefined) {
 export default function OprmCnaeVolumePage() {
   const pageSize = 50;
   const [currentPage, setCurrentPage] = useState(1);
+  const [showEnrichedNiches, setShowEnrichedNiches] = useState(false);
   const { data, isLoading, isError, refetch, isFetching } =
     useOprmTopCnaeMarketVolume(currentPage - 1, pageSize);
   const cnaeCatalogQuery = useOprmCnaeCatalog();
   const cycleQuery = useOprmCnaeCycles(5);
+  const enrichedNichesQuery = useOprmEnrichedNicheCandidates(
+    100,
+    showEnrichedNiches,
+  );
   const hasVolumeData = (data ?? []).length > 0;
   const hasCatalogData = (cnaeCatalogQuery.data ?? []).length > 0;
   const volumeData = data ?? [];
@@ -56,21 +62,40 @@ export default function OprmCnaeVolumePage() {
               apenas acompanha ciclos, candidatos e decisões.
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            {isFetching ? (
-              <span
-                className="spinner-border spinner-border-sm"
-                aria-hidden="true"
-              />
-            ) : (
-              "Atualizar"
-            )}
-          </button>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => setShowEnrichedNiches((current) => !current)}
+              disabled={enrichedNichesQuery.isFetching}
+            >
+              {enrichedNichesQuery.isFetching ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                />
+              ) : showEnrichedNiches ? (
+                "Ocultar enriquecidos"
+              ) : (
+                "Ver nichos enriquecidos"
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                />
+              ) : (
+                "Atualizar"
+              )}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -148,6 +173,89 @@ export default function OprmCnaeVolumePage() {
           ) : null}
         </div>
       </section>
+
+      {showEnrichedNiches ? (
+        <section className="card border-0 shadow-sm">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+              <div>
+                <h2 className="h5 mb-1">Nichos já enriquecidos</h2>
+                <p className="text-secondary mb-0">
+                  Lista dos candidatos de nicho que já receberam enriquecimento
+                  do OPRM, com dor, resultado e mecanismo para decisão do
+                  usuário.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => enrichedNichesQuery.refetch()}
+                disabled={enrichedNichesQuery.isFetching}
+              >
+                {enrichedNichesQuery.isFetching ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  "Atualizar nichos"
+                )}
+              </button>
+            </div>
+            {enrichedNichesQuery.isError ? (
+              <div className="alert alert-warning mb-0">
+                Não foi possível carregar os nichos enriquecidos.
+              </div>
+            ) : null}
+            {!enrichedNichesQuery.isError ? (
+              <div className="table-responsive">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Nicho</th>
+                      <th>CNAE</th>
+                      <th>Dor</th>
+                      <th>Resultado</th>
+                      <th>Mecanismo</th>
+                      <th>Score</th>
+                      <th>Status</th>
+                      <th>Enriquecido em</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(enrichedNichesQuery.data ?? []).length > 0 ? (
+                      (enrichedNichesQuery.data ?? []).map((candidate) => (
+                        <tr key={candidate.id}>
+                          <td>{candidate.candidateNicheName}</td>
+                          <td>
+                            <strong>{candidate.cnaeCode}</strong>
+                            <br />
+                            <span className="small text-secondary">
+                              {candidate.cnaeDescription}
+                            </span>
+                          </td>
+                          <td>{candidate.painHypothesis ?? "-"}</td>
+                          <td>{candidate.desiredOutcome ?? "-"}</td>
+                          <td>{candidate.mechanismHypothesis ?? "-"}</td>
+                          <td>{formatScore(candidate.opportunityScore)}</td>
+                          <td>{candidate.status}</td>
+                          <td>{formatDateTime(candidate.createdAt)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="text-secondary">
+                          Nenhum nicho enriquecido registrado ainda.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {!isLoading && !isError ? (
         <section className="card border-0 shadow-sm">

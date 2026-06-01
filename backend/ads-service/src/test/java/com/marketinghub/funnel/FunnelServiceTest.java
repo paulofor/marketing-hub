@@ -1,8 +1,12 @@
 package com.marketinghub.funnel;
 
+import com.marketinghub.repository.jpa.funnel.FunnelStepRepository;
+import com.marketinghub.repository.jpa.funnel.LeadResponseRepository;
+import com.marketinghub.repository.jpa.funnel.SalesFunnelRepository;
+import com.marketinghub.repository.jpa.funnel.StepMetricSnapshotRepository;
 import com.marketinghub.model.Lead;
 import com.marketinghub.model.NurtureStage;
-import com.marketinghub.repository.LeadRepository;
+import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.funnel.dto.FunnelStepDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

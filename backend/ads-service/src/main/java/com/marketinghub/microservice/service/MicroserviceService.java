@@ -2,7 +2,7 @@ package com.marketinghub.microservice.service;
 
 import com.marketinghub.microservice.Microservice;
 import com.marketinghub.microservice.dto.CreateMicroserviceRequest;
-import com.marketinghub.microservice.repository.MicroserviceRepository;
+import com.marketinghub.repository.jpa.microservice.MicroserviceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

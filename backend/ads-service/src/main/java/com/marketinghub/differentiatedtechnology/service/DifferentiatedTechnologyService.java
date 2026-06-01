@@ -3,7 +3,7 @@ package com.marketinghub.differentiatedtechnology.service;
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.differentiatedtechnology.dto.CreateDifferentiatedTechnologyRequest;
 import com.marketinghub.differentiatedtechnology.dto.UpdateDifferentiatedTechnologyRequest;
-import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
+import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTechnologyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

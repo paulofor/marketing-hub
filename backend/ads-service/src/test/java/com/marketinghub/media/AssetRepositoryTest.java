@@ -1,6 +1,6 @@
 package com.marketinghub.media;
 
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

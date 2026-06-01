@@ -1,11 +1,11 @@
 package com.marketinghub.successproduct.service;
 
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.successproduct.SuccessProduct;
 import com.marketinghub.successproduct.dto.CreateSuccessProductRequest;
 import com.marketinghub.successproduct.dto.UpdateSuccessProductRequest;
-import com.marketinghub.successproduct.repository.SuccessProductRepository;
+import com.marketinghub.repository.jpa.successproduct.SuccessProductRepository;
 import com.marketinghub.successproduct.SuccessProductPlatform;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

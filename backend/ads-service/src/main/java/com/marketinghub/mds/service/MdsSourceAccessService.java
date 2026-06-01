@@ -3,7 +3,7 @@ package com.marketinghub.mds.service;
 import com.marketinghub.mds.MdsSourceAccessRecord;
 import com.marketinghub.mds.dto.MdsSourceAccessPublishBatchRequest;
 import com.marketinghub.mds.dto.MdsSourceAccessPublishBatchResponse;
-import com.marketinghub.mds.repository.MdsSourceAccessRecordRepository;
+import com.marketinghub.repository.jpa.mds.MdsSourceAccessRecordRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,5 +1,6 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

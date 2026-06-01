@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.repository.OpenAiModelRepository;
+import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

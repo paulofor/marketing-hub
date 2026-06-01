@@ -1,6 +1,6 @@
 package com.marketinghub.experiment.service;
 
-import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
@@ -12,8 +12,8 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

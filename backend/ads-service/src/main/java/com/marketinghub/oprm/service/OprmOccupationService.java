@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprm.OprmOccupation;
 import com.marketinghub.oprm.dto.OprmOccupationResponseDto;
 import com.marketinghub.oprm.dto.OprmOccupationUpsertRequestDto;
-import com.marketinghub.oprm.repository.OprmOccupationRepository;
+import com.marketinghub.repository.jpa.oprm.OprmOccupationRepository;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;

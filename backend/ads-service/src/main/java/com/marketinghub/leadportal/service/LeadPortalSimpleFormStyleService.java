@@ -5,7 +5,7 @@ import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 import com.marketinghub.leadportal.dto.CreateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.dto.LeadPortalSimpleFormStyleGenerationResultRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalSimpleFormStyleRequest;
-import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalSimpleFormStyleRepository;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.data.domain.PageRequest;

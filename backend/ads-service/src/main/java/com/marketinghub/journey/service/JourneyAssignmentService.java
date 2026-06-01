@@ -2,11 +2,11 @@ package com.marketinghub.journey.service;
 
 import com.marketinghub.journey.dto.JourneyAssignmentRequest;
 import com.marketinghub.journey.model.*;
-import com.marketinghub.journey.repository.JourneyAssignmentRepository;
-import com.marketinghub.journey.repository.JourneyRepository;
-import com.marketinghub.journey.repository.JourneyStepRepository;
+import com.marketinghub.repository.jpa.journey.JourneyAssignmentRepository;
+import com.marketinghub.repository.jpa.journey.JourneyRepository;
+import com.marketinghub.repository.jpa.journey.JourneyStepRepository;
 import com.marketinghub.model.Lead;
-import com.marketinghub.repository.LeadRepository;
+import com.marketinghub.repository.jpa.core.LeadRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

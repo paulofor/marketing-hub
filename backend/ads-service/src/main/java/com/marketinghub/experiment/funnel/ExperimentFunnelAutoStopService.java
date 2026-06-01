@@ -6,7 +6,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsRespons
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

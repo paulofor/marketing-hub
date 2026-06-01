@@ -3,7 +3,7 @@ package com.marketinghub.modelos.openai.catalogo.v1.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.modelos.openai.catalogo.v1.dto.OpenAiModelCatalogResponse;
 import com.marketinghub.modelos.openai.catalogo.v1.entity.OpenAiCatalogModelV1;
-import com.marketinghub.modelos.openai.catalogo.v1.repository.OpenAiCatalogModelV1Repository;
+import com.marketinghub.repository.jpa.modelos.openai.catalogo.v1.OpenAiCatalogModelV1Repository;
 import java.time.Instant;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Qualifier;

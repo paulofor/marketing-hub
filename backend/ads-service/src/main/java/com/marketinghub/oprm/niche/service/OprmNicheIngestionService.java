@@ -3,7 +3,7 @@ package com.marketinghub.oprm.niche.service;
 import com.marketinghub.oprm.niche.OprmNicheSnapshot;
 import com.marketinghub.oprm.niche.dto.OprmNicheSnapshotIngestRequestDto;
 import com.marketinghub.oprm.niche.dto.OprmNicheSnapshotIngestResponseDto;
-import com.marketinghub.oprm.niche.repository.OprmNicheSnapshotRepository;
+import com.marketinghub.repository.jpa.oprm.niche.OprmNicheSnapshotRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

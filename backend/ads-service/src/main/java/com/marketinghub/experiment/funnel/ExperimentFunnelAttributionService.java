@@ -1,7 +1,8 @@
 package com.marketinghub.experiment.funnel;
 
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.HashMap;

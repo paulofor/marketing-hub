@@ -1,16 +1,20 @@
 package com.marketinghub.creative.web;
 
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
+import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
+import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
-import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.FixtureUtils;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,13 +58,13 @@ class CreativeControllerTest {
     @Autowired
     FixtureUtils fixtures;
     @Autowired
-    com.marketinghub.creative.label.repository.AngleRepository angleRepository;
+    com.marketinghub.repository.jpa.creative.label.AngleRepository angleRepository;
     @Autowired
-    com.marketinghub.creative.label.repository.VisualProofRepository visualProofRepository;
+    com.marketinghub.repository.jpa.creative.label.VisualProofRepository visualProofRepository;
     @Autowired
-    com.marketinghub.creative.label.repository.EmotionalTriggerRepository emotionalTriggerRepository;
+    com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository emotionalTriggerRepository;
     @Autowired
-    com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
+    com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
 
     Long expId;
 

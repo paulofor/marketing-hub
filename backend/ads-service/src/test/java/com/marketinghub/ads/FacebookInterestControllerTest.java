@@ -1,5 +1,6 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookInterestRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

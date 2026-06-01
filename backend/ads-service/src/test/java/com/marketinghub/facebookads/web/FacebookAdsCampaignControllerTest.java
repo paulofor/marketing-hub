@@ -1,13 +1,14 @@
 package com.marketinghub.facebookads.web;
 
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.ads.FacebookAccount;
-import com.marketinghub.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.journey.model.JourneyTemplate;
@@ -16,18 +17,18 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdCreative;
-import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
-import com.marketinghub.facebookads.FacebookAdsAdRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.creative.CreativeStatus;
-import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
-import com.marketinghub.experiment.repository.AdSetRepository;
+import com.marketinghub.repository.jpa.experiment.AdSetRepository;
 import com.marketinghub.targeting.TargetingCandidateType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +73,7 @@ class FacebookAdsCampaignControllerTest {
     @MockBean
     ExperimentService experimentService;
     @MockBean
-    com.marketinghub.facebookads.FacebookAdsCampaignRepository campaignRepository;
+    com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository campaignRepository;
     @MockBean
     FacebookAccountRepository facebookAccountRepository;
     @MockBean

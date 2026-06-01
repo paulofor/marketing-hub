@@ -1,5 +1,6 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookInterestRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;

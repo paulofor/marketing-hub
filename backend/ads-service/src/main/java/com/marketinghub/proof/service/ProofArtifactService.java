@@ -1,17 +1,17 @@
 package com.marketinghub.proof.service;
 
 import com.marketinghub.creative.label.VisualProof;
-import com.marketinghub.creative.label.repository.VisualProofRepository;
+import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.proof.ProofArtifact;
 import com.marketinghub.proof.ProofStage;
 import com.marketinghub.proof.ProofStatus;
 import com.marketinghub.proof.dto.CreateProofArtifactRequest;
 import com.marketinghub.proof.dto.UpdateProofArtifactRequest;
-import com.marketinghub.proof.repository.ProofArtifactRepository;
+import com.marketinghub.repository.jpa.proof.ProofArtifactRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

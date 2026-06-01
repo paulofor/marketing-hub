@@ -1,5 +1,6 @@
 package com.marketinghub.settings;
 
+import com.marketinghub.repository.jpa.settings.GeneralSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

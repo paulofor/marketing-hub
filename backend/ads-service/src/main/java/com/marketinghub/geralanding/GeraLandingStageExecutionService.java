@@ -1,5 +1,6 @@
 package com.marketinghub.geralanding;
 
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.pipeline.service.LandingPageImageInjector;
 import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler;
@@ -10,7 +11,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -2,7 +2,7 @@ package com.marketinghub.ai.service;
 
 import com.marketinghub.ai.AiService;
 import com.marketinghub.ai.dto.CreateAiServiceRequest;
-import com.marketinghub.ai.repository.AiServiceRepository;
+import com.marketinghub.repository.jpa.ai.AiServiceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

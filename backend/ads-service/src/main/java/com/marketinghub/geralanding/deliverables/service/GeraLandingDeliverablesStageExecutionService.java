@@ -1,8 +1,8 @@
 package com.marketinghub.geralanding.deliverables.service;
 
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
-import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

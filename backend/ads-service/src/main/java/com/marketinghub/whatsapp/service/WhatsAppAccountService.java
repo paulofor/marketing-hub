@@ -2,7 +2,7 @@ package com.marketinghub.whatsapp.service;
 
 import com.marketinghub.whatsapp.WhatsAppAccount;
 import com.marketinghub.whatsapp.dto.WhatsAppAccountRequest;
-import com.marketinghub.whatsapp.repository.WhatsAppAccountRepository;
+import com.marketinghub.repository.jpa.whatsapp.WhatsAppAccountRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

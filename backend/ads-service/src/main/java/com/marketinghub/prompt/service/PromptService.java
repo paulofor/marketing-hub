@@ -3,7 +3,7 @@ package com.marketinghub.prompt.service;
 import com.marketinghub.prompt.Prompt;
 import com.marketinghub.prompt.dto.CreatePromptRequest;
 import com.marketinghub.prompt.dto.UpdatePromptRequest;
-import com.marketinghub.prompt.repository.PromptRepository;
+import com.marketinghub.repository.jpa.prompt.PromptRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

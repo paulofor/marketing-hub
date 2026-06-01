@@ -6,7 +6,7 @@ import com.marketinghub.agent.AgentInternalFunction;
 import com.marketinghub.agent.AgentOutput;
 import com.marketinghub.agent.dto.SaveAgentItemRequest;
 import com.marketinghub.agent.dto.SaveAgentRequest;
-import com.marketinghub.agent.repository.AgentRepository;
+import com.marketinghub.repository.jpa.agent.AgentRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

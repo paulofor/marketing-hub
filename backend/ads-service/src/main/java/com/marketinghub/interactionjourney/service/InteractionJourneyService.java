@@ -6,7 +6,7 @@ import com.marketinghub.interactionjourney.dto.InteractionJourneyStepDto;
 import com.marketinghub.interactionjourney.model.InteractionJourney;
 import com.marketinghub.interactionjourney.model.InteractionJourneyElement;
 import com.marketinghub.interactionjourney.model.InteractionJourneyStep;
-import com.marketinghub.interactionjourney.repository.InteractionJourneyRepository;
+import com.marketinghub.repository.jpa.interactionjourney.InteractionJourneyRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;

@@ -1,12 +1,13 @@
 package com.marketinghub.facebookads.web;
 
+import com.marketinghub.repository.jpa.experiment.AdSetRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
-import com.marketinghub.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
@@ -20,12 +21,12 @@ import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdCreative;
-import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
-import com.marketinghub.facebookads.FacebookAdsAdRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
-import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import org.springframework.http.HttpStatus;
@@ -56,7 +57,7 @@ public class FacebookAdsCampaignController {
     private final FacebookAdsAdSetRepository adSetRepository;
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final FacebookAdsAdRepository adRepository;
-    private final com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository;
+    private final com.marketinghub.repository.jpa.experiment.AdSetRepository experimentAdSetRepository;
     private final ObjectMapper objectMapper;
     private final ExperimentCampaignMetricService campaignMetricService;
     private final com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService;
@@ -70,7 +71,7 @@ public class FacebookAdsCampaignController {
                                          FacebookAdsAdSetRepository adSetRepository,
                                          FacebookAdsAdCreativeRepository adCreativeRepository,
                                          FacebookAdsAdRepository adRepository,
-                                         com.marketinghub.experiment.repository.AdSetRepository experimentAdSetRepository,
+                                         com.marketinghub.repository.jpa.experiment.AdSetRepository experimentAdSetRepository,
                                          ObjectMapper objectMapper,
                                          ExperimentCampaignMetricService campaignMetricService,
                                          com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,

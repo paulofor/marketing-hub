@@ -1,8 +1,8 @@
 package com.marketinghub.facebookads.web;
 
 import com.marketinghub.ads.FacebookAccount;
-import com.marketinghub.ads.FacebookAccountRepository;
-import com.marketinghub.ads.FacebookPageRepository;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.marketinghub.ads.FacebookWorkerValidationError;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;

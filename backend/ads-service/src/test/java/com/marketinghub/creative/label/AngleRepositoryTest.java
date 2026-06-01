@@ -1,6 +1,6 @@
 package com.marketinghub.creative.label;
 
-import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

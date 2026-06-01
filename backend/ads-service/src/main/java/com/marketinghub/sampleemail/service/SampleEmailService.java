@@ -1,10 +1,10 @@
 package com.marketinghub.sampleemail.service;
 
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import com.marketinghub.sampleemail.dto.CreateSampleEmailRequest;
-import com.marketinghub.sampleemail.repository.SampleEmailRepository;
+import com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;

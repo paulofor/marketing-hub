@@ -2,7 +2,7 @@ package com.marketinghub.openai.service;
 
 import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.repository.OpenAiModelRepository;
+import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Locale;

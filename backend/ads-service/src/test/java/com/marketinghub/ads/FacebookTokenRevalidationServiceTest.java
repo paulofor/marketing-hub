@@ -1,5 +1,6 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.web.client.RestTemplateBuilder;

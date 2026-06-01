@@ -1,12 +1,12 @@
 package com.marketinghub.niche;
 
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
-import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.niche.service.MarketNicheService;
 import com.marketinghub.targeting.service.TargetingElementSyncService;
-import com.marketinghub.chat.repository.ChatDialogRepository;
-import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
+import com.marketinghub.repository.jpa.chat.ChatDialogRepository;
+import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTechnologyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

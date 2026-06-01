@@ -2,8 +2,8 @@ package com.marketinghub.service;
 
 import com.marketinghub.model.Lead;
 import com.marketinghub.model.OutboxEvent;
-import com.marketinghub.repository.LeadRepository;
-import com.marketinghub.repository.OutboxRepository;
+import com.marketinghub.repository.jpa.core.LeadRepository;
+import com.marketinghub.repository.jpa.core.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

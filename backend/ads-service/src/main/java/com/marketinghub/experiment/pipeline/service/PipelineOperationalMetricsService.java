@@ -7,7 +7,7 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatu
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.experiment.pipeline.dto.PipelineOperationalMetricsDto;
 import com.marketinghub.experiment.pipeline.dto.PipelineSectionMetricDto;
-import com.marketinghub.experiment.pipeline.repository.ExperimentPipelineGenerationJobRepository;
+import com.marketinghub.repository.jpa.experiment.pipeline.ExperimentPipelineGenerationJobRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

@@ -2,7 +2,7 @@ package com.marketinghub.agent.service;
 
 import com.marketinghub.agent.AgentTheme;
 import com.marketinghub.agent.dto.SaveAgentThemeRequest;
-import com.marketinghub.agent.repository.AgentThemeRepository;
+import com.marketinghub.repository.jpa.agent.AgentThemeRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

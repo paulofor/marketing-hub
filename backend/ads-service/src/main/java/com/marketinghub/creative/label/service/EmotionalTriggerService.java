@@ -3,7 +3,7 @@ package com.marketinghub.creative.label.service;
 import com.marketinghub.creative.label.EmotionalTrigger;
 import com.marketinghub.creative.label.dto.CreateEmotionalTriggerRequest;
 import com.marketinghub.creative.label.dto.EmotionalTriggerDto;
-import com.marketinghub.creative.label.repository.EmotionalTriggerRepository;
+import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

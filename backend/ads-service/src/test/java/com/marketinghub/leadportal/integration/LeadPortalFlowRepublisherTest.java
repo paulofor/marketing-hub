@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
-import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

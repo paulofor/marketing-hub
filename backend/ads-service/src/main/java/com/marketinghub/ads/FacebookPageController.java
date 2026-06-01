@@ -1,5 +1,8 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -13,11 +16,11 @@ import java.util.List;
 public class FacebookPageController {
     private final FacebookAccountRepository accountRepository;
     private final FacebookPageRepository pageRepository;
-    private final com.marketinghub.experiment.repository.ExperimentRepository experimentRepository;
+    private final com.marketinghub.repository.jpa.experiment.ExperimentRepository experimentRepository;
 
     public FacebookPageController(FacebookAccountRepository accountRepository,
                                   FacebookPageRepository pageRepository,
-                                  com.marketinghub.experiment.repository.ExperimentRepository experimentRepository) {
+                                  com.marketinghub.repository.jpa.experiment.ExperimentRepository experimentRepository) {
         this.accountRepository = accountRepository;
         this.pageRepository = pageRepository;
         this.experimentRepository = experimentRepository;

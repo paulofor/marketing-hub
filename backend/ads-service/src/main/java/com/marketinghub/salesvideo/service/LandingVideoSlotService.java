@@ -1,9 +1,9 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.experiment.LandingPage;
-import com.marketinghub.experiment.repository.LandingPageRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.media.Asset;
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.CreateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
@@ -12,9 +12,9 @@ import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
-import com.marketinghub.salesvideo.repository.LandingVideoSlotHistoryRepository;
-import com.marketinghub.salesvideo.repository.LandingVideoSlotRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotHistoryRepository;
+import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

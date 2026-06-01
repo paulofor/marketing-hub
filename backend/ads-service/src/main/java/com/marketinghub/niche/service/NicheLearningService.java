@@ -3,7 +3,7 @@ package com.marketinghub.niche.service;
 import com.marketinghub.experiment.learning.ExperimentLearning;
 import com.marketinghub.experiment.learning.LearningInsightType;
 import com.marketinghub.experiment.learning.mapper.ExperimentLearningMapper;
-import com.marketinghub.experiment.learning.repository.ExperimentLearningRepository;
+import com.marketinghub.repository.jpa.experiment.learning.ExperimentLearningRepository;
 import com.marketinghub.experiment.learning.dto.ExperimentLearningSuggestionDto;
 import com.marketinghub.experiment.learning.dto.LearningInsightDto;
 import com.marketinghub.niche.dto.BacklogRecommendationDto;

@@ -1,16 +1,16 @@
 package com.marketinghub.salesvideo.service;
 
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
-import com.marketinghub.salesvideo.repository.SalesVideoJobEventRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

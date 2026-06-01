@@ -1,13 +1,14 @@
 package com.marketinghub.experiment.funnel;
 
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
-import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.model.Lead;
-import com.marketinghub.repository.LeadRepository;
+import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import lombok.RequiredArgsConstructor;

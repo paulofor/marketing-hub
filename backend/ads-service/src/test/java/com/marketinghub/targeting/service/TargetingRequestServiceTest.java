@@ -1,7 +1,7 @@
 package com.marketinghub.targeting.service;
 
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.targeting.TargetingCandidate;
 import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
@@ -11,9 +11,9 @@ import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
-import com.marketinghub.targeting.repository.TargetingCandidateRepository;
-import com.marketinghub.targeting.repository.TargetingRequestRepository;
-import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingCandidateRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingRequestRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingResolutionJobRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

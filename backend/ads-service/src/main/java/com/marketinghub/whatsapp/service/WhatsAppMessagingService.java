@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.journey.execution.config.WhatsAppProperties;
 import com.marketinghub.whatsapp.*;
-import com.marketinghub.whatsapp.repository.WhatsAppMessageRepository;
+import com.marketinghub.repository.jpa.whatsapp.WhatsAppMessageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;

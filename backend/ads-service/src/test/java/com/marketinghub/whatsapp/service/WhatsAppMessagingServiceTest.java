@@ -3,7 +3,7 @@ package com.marketinghub.whatsapp.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.journey.execution.config.WhatsAppProperties;
 import com.marketinghub.whatsapp.*;
-import com.marketinghub.whatsapp.repository.WhatsAppMessageRepository;
+import com.marketinghub.repository.jpa.whatsapp.WhatsAppMessageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

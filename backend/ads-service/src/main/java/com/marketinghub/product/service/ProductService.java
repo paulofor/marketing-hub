@@ -1,11 +1,11 @@
 package com.marketinghub.product.service;
 
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.dto.CreateProductRequest;
-import com.marketinghub.product.repository.ProductRepository;
-import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.ads.InstagramAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -4,7 +4,7 @@ import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoRetryReason;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.RetrySalesVideoJobRequest;
-import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

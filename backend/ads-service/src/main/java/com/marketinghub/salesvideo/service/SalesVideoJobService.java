@@ -1,16 +1,16 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.media.Asset;
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
-import com.marketinghub.salesvideo.repository.SalesVideoJobEventRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

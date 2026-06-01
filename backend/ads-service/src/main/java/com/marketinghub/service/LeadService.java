@@ -2,8 +2,8 @@ package com.marketinghub.service;
 
 import com.marketinghub.dto.LeadDTO;
 import com.marketinghub.model.*;
-import com.marketinghub.repository.LeadRepository;
-import com.marketinghub.repository.OutboxRepository;
+import com.marketinghub.repository.jpa.core.LeadRepository;
+import com.marketinghub.repository.jpa.core.OutboxRepository;
 import com.marketinghub.experiment.Experiment;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;

@@ -2,9 +2,9 @@ package com.marketinghub.informationsource.service;
 
 import com.marketinghub.informationsource.InformationSource;
 import com.marketinghub.informationsource.dto.CreateInformationSourceRequest;
-import com.marketinghub.informationsource.repository.InformationSourceRepository;
+import com.marketinghub.repository.jpa.informationsource.InformationSourceRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

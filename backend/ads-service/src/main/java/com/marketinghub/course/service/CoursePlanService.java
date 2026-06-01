@@ -3,7 +3,7 @@ package com.marketinghub.course.service;
 import com.marketinghub.course.CoursePlan;
 import com.marketinghub.course.client.KajabiClient;
 import com.marketinghub.course.dto.CreateCoursePlanRequest;
-import com.marketinghub.course.repository.CoursePlanRepository;
+import com.marketinghub.repository.jpa.course.CoursePlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

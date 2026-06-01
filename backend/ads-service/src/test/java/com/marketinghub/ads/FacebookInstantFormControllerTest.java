@@ -1,16 +1,20 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.CampaignRepository;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookInstantFormRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.dto.CreateFacebookInstantFormRequest;
 import com.marketinghub.ads.dto.FacebookInstantFormDto;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.settings.GeneralSetting;
 import com.marketinghub.settings.GeneralSettingKeys;
-import com.marketinghub.settings.GeneralSettingRepository;
+import com.marketinghub.repository.jpa.settings.GeneralSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

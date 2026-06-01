@@ -4,7 +4,7 @@ import com.marketinghub.journey.dto.JourneyTemplateRequest;
 import com.marketinghub.journey.dto.JourneyTemplateUpdateRequest;
 import com.marketinghub.journey.model.JourneyPhase;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;

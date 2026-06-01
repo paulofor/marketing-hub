@@ -5,7 +5,7 @@ import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementSource;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;

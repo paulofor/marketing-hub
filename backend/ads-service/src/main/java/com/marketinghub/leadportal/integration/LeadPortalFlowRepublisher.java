@@ -1,7 +1,7 @@
 package com.marketinghub.leadportal.integration;
 
 import com.marketinghub.leadportal.LeadPortalFlow;
-import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,16 +1,16 @@
 package com.marketinghub.facebookads.service;
 
-import com.marketinghub.experiment.repository.ExperimentCampaignMetricRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAttributionService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.dto.ExperimentFacebookAdFunnelStageDto;
-import com.marketinghub.facebookads.FacebookAdsAdCreativeRepository;
-import com.marketinghub.facebookads.FacebookAdsAdRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
-import com.marketinghub.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.facebookads.dto.ExperimentFacebookAdDto;
 import com.marketinghub.facebookads.dto.ExperimentFacebookAdSetDto;
 import com.marketinghub.facebookads.dto.ExperimentFacebookCampaignDto;

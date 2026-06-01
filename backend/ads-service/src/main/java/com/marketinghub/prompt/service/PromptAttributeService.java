@@ -7,9 +7,9 @@ import com.marketinghub.prompt.dto.CreatePromptAttributeRequest;
 import com.marketinghub.prompt.dto.PromptAttributeDto;
 import com.marketinghub.prompt.dto.UpdatePromptAttributeRequest;
 import com.marketinghub.prompt.mapper.PromptAttributeMapper;
-import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
-import com.marketinghub.prompt.repository.PromptAttributeRepository;
-import com.marketinghub.prompt.repository.PromptEntityRepository;
+import com.marketinghub.repository.jpa.prompt.PromptAttributeDescriptionRepository;
+import com.marketinghub.repository.jpa.prompt.PromptAttributeRepository;
+import com.marketinghub.repository.jpa.prompt.PromptEntityRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 

@@ -6,7 +6,7 @@ import com.marketinghub.whatsapp.WhatsAppMessageType;
 import com.marketinghub.whatsapp.dto.WhatsAppMessageDto;
 import com.marketinghub.whatsapp.dto.WhatsAppSendMessageRequest;
 import com.marketinghub.whatsapp.mapper.WhatsAppMessageMapper;
-import com.marketinghub.whatsapp.repository.WhatsAppMessageRepository;
+import com.marketinghub.repository.jpa.whatsapp.WhatsAppMessageRepository;
 import com.marketinghub.whatsapp.service.WhatsAppMessagingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

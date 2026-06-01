@@ -1,31 +1,33 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookInstantForm;
-import com.marketinghub.ads.FacebookInstantFormRepository;
+import com.marketinghub.repository.jpa.ads.FacebookInstantFormRepository;
 import com.marketinghub.ads.FacebookPage;
-import com.marketinghub.ads.FacebookPageRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
 import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
-import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
-import com.marketinghub.leadportal.repository.LeadPortalFlowRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
-import com.marketinghub.imagegeneration.repository.ImageGenerationModelRepository;
-import com.marketinghub.imagegeneration.repository.ImageGenerationQualityRepository;
+import com.marketinghub.repository.jpa.imagegeneration.ImageGenerationModelRepository;
+import com.marketinghub.repository.jpa.imagegeneration.ImageGenerationQualityRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -45,7 +47,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ExperimentService {
     private final ExperimentRepository repository;
     private final MarketNicheRepository nicheRepository;
-    private final com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
+    private final com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
     private final MetricPresetService metricPresetService;
     private final EntityManager entityManager;
     private final JourneyTemplateRepository journeyTemplateRepository;
@@ -56,12 +58,12 @@ public class ExperimentService {
     private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final ImageGenerationModelRepository imageGenerationModelRepository;
     private final ImageGenerationQualityRepository imageGenerationQualityRepository;
-    private final com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository;
+    private final com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository sampleEmailRepository;
     private final ExperimentFunnelEventRepository experimentFunnelEventRepository;
     private final ObjectMapper objectMapper;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
-                             com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository,
+                             com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository,
                              MetricPresetService metricPresetService,
                              EntityManager entityManager,
                              JourneyTemplateRepository journeyTemplateRepository,
@@ -72,7 +74,7 @@ public class ExperimentService {
                              LeadPortalFlowPublisher leadPortalFlowPublisher,
                              ImageGenerationModelRepository imageGenerationModelRepository,
                              ImageGenerationQualityRepository imageGenerationQualityRepository,
-                             com.marketinghub.sampleemail.repository.SampleEmailRepository sampleEmailRepository,
+                             com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository sampleEmailRepository,
                              ExperimentFunnelEventRepository experimentFunnelEventRepository, ObjectMapper objectMapper) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;

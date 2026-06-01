@@ -1,17 +1,17 @@
 package com.marketinghub.salesvideo.service;
 
-import com.marketinghub.experiment.repository.LandingPageRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.product.Product;
-import com.marketinghub.product.repository.ProductRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
-import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -9,7 +9,7 @@ import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
 import com.marketinghub.leadportal.LeadPortalSimpleFormStyleDefinition;
 import com.marketinghub.leadportal.dto.CreateLeadPortalSimpleFormStyleRequest;
 import com.marketinghub.leadportal.dto.UpdateLeadPortalSimpleFormStyleRequest;
-import com.marketinghub.leadportal.repository.LeadPortalSimpleFormStyleRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalSimpleFormStyleRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

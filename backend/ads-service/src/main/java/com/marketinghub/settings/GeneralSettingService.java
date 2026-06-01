@@ -1,5 +1,6 @@
 package com.marketinghub.settings;
 
+import com.marketinghub.repository.jpa.settings.GeneralSettingRepository;
 import com.marketinghub.settings.dto.GeneralSettingDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

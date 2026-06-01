@@ -1,15 +1,15 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.creative.CreativeStatus;
-import com.marketinghub.creative.repository.CreativeRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingCandidateType;
-import com.marketinghub.experiment.repository.ExperimentTargetingSelectionRepository;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

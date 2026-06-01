@@ -1,5 +1,8 @@
 package com.marketinghub.funnel;
 
+import com.marketinghub.repository.jpa.funnel.FunnelStepRepository;
+import com.marketinghub.repository.jpa.funnel.LeadResponseRepository;
+import com.marketinghub.repository.jpa.funnel.StepMetricSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

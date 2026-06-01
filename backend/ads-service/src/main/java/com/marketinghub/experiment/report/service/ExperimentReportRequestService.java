@@ -6,8 +6,8 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.report.ExperimentReportRequest;
 import com.marketinghub.experiment.report.ExperimentReportStatus;
 import com.marketinghub.experiment.report.dto.UpdateExperimentReportRequest;
-import com.marketinghub.experiment.report.repository.ExperimentReportRequestRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.report.ExperimentReportRequestRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

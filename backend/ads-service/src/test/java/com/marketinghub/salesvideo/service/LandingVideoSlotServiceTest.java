@@ -1,15 +1,15 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.experiment.LandingPage;
-import com.marketinghub.experiment.repository.LandingPageRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.media.Asset;
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.salesvideo.LandingVideoSlot;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.dto.LandingVideoSlotDto;
-import com.marketinghub.salesvideo.repository.LandingVideoSlotRepository;
-import com.marketinghub.salesvideo.repository.LandingVideoSlotHistoryRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
+import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotHistoryRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

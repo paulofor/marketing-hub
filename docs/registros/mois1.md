@@ -727,3 +727,9 @@ Arquivos alterados:
   - mois-hotmart-collector/AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-06-01 — Hotmart ciclo 1 reagendado para 16:15
+- ajuste operacional solicitado para alterar a próxima execução do ciclo 1 Hotmart para **01/06/2026 às 16:15** no timezone `America/Sao_Paulo`.
+- atualizado o `HotmartCollectorScheduler` para disparar o ciclo 1 com cron literal `0 15 16 1 6 *`, com guarda operacional para executar somente no ano de 2026.
+- atualizado o cânone Hotmart para registrar o horário operacional do ciclo 1 e manter rastreabilidade da decisão.
+- mantido o ciclo 2 sem alteração.

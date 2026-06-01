@@ -2,6 +2,8 @@ package com.marketinghub.moishotmart.service;
 
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionResponse;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +17,8 @@ import org.springframework.stereotype.Component;
 public class HotmartCollectorScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorScheduler.class);
+
+    private static final ZoneId SAO_PAULO_ZONE = ZoneId.of("America/Sao_Paulo");
 
     private final HotmartCollectorService collectorService;
     private final boolean enabled;
@@ -37,17 +41,25 @@ public class HotmartCollectorScheduler {
     }
 
     /**
-     * Executa o próximo ciclo 1 de listagem de produtos às 14:00 no dia 1 de junho, no horário de São Paulo.
+     * Executa o ciclo 1 de listagem de produtos às 16:15 em 1 de junho de 2026, no horário de São Paulo.
      */
-    @Scheduled(cron = "0 0 14 1 6 *", zone = "America/Sao_Paulo")
-    public void collectFirstCycleAtFourteenOnJuneFirst() {
+    @Scheduled(cron = "0 15 16 1 6 *", zone = "America/Sao_Paulo")
+    public void collectFirstCycleAtSixteenFifteenOnJuneFirst2026() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
+        int currentYear = ZonedDateTime.now(SAO_PAULO_ZONE).getYear();
+        if (currentYear != 2026) {
+            log.info(
+                    "Hotmart scheduler ciclo 1 ignorado porque o agendamento solicitado é exclusivo de 2026. anoAtual={}",
+                    currentYear);
+            return;
+        }
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
         HotmartCollectionResponse response = collectorService.collectFirstCycle(request);
-        log.info("Hotmart scheduler executado hora=14:00 dia=01/06 timezone=America/Sao_Paulo ciclo={} status={} produtos={} mensagem={}",
+        log.info("Hotmart scheduler executado hora=16:15 dia=01/06 ano=2026 "
+                        + "timezone=America/Sao_Paulo ciclo={} status={} produtos={} mensagem={}",
                 "CICLO_1_LISTAGEM",
                 response.status(),
                 response.products().size(),

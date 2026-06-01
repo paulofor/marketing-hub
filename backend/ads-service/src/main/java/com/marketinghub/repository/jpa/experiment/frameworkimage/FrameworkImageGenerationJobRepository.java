@@ -24,6 +24,9 @@ public interface FrameworkImageGenerationJobRepository extends JpaRepository<Fra
 
     List<FrameworkImageGenerationJob> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
 
+    /** Remove todos os jobs de geração de imagem vinculados ao experimento informado. */
+    long deleteByExperimentId(Long experimentId);
+
     List<FrameworkImageGenerationJob> findByExperimentIdAndPlanningItemKeyInAndStatusOrderByCreatedAtDesc(
             Long experimentId,
             Collection<String> planningItemKeys,

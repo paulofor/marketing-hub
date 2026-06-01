@@ -2906,3 +2906,12 @@
   - o AGENTS do `ai-worker` substituiu a orientação antiga de isolamento de GeraLanding por uma regra de isolamento por etapa no OpenAI core;
   - a orientação de novos serviços no `ai-worker` passou a separar serviços de domínio simples de etapas OpenAI assíncronas.
 - impacto esperado: próximos trabalhos no Worker AI seguem o padrão `openai.core` também pelas instruções operacionais dos agentes, mantendo coerência com os cânones e reduzindo risco de retrabalho.
+
+## 2026-06-01 — Reset das imagens ao reexecutar Gera Prompt Imagem
+- tarefa: garantir que uma nova execução do prompt de imagem zere as imagens geradas anteriormente no experimento.
+- causa-raiz/objetivo: o fluxo permitia iniciar novamente `landing-page-image-planning` mantendo jobs e manifesto de imagens da execução anterior, o que podia deixar a tela de Gera Imagem com contadores/URLs antigos e induzir o usuário a usar imagens incompatíveis com os novos prompts.
+- correção aplicada:
+  - o início manual do Gera Prompt Imagem agora chama a limpeza canônica de imagens antes de registrar o novo job da etapa;
+  - a limpeza remove os jobs `framework_image_generation_job` do experimento e apaga `landingPageImagePlanning` e `landingPageImageAssets`, forçando a próxima geração de imagens a partir do novo planejamento;
+  - adicionados testes unitários para validar o reset ao iniciar a etapa e a limpeza dos artefatos/jobs.
+- impacto esperado: reexecutar o prompt de imagem deixa o bloco de imagens sem resultados antigos, preservando consistência entre prompts, imagens reais e etapas seguintes do Gera Landing.

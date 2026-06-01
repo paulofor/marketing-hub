@@ -7,6 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.presetdesign.service.detailStageExecution.RecordBackendPresetDesignDetalheDto;
 import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.GeraLandingPresetDesignExecutionSummaryResponse;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignExperiment;
@@ -40,15 +41,18 @@ public class BackendPresetDesignService {
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
     private final ObjectMapper objectMapper;
+    private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
 
-    /** Inicializa o serviço com os repositórios necessários para consultar execuções de design preset. */
+    /** Inicializa o serviço com os repositórios e montador necessários para consultar e finalizar execuções de design preset. */
     public BackendPresetDesignService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.objectMapper = objectMapper;
+        this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
     }
 
 
@@ -225,6 +229,25 @@ public class BackendPresetDesignService {
         }
         experiment.setLandingPageDesignPreset(modelResponse);
         experimentRepository.save(experiment);
+
+        String htmlGeraLanding = assembleHtmlGeraLanding(execution, experiment, modelResponse);
+        if (StringUtils.hasText(htmlGeraLanding)) {
+            experiment.setHtmlGeraLanding(htmlGeraLanding);
+            execution.setProvisionalHtml(htmlGeraLanding);
+            executionRepository.save(execution);
+            experimentRepository.save(experiment);
+        }
+    }
+
+
+    /** Monta o HTML final do GeraLanding usando os artefatos canônicos disponíveis no experimento. */
+    private String assembleHtmlGeraLanding(GeraLandingStageExecution execution, Experiment experiment, String modelResponse) {
+        return designPresetProvisionalHtmlAssembler.assemble(
+                experiment.getLandingPageWireframe(),
+                experiment.getLandingPageCopy(),
+                experiment.getLandingPageImagePlanning(),
+                modelResponse,
+                fromDatabaseIdJob(execution.getIdJob()));
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

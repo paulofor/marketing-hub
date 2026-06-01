@@ -1,7 +1,13 @@
-package com.marketinghub.geralanding.designpreset;
+package com.marketinghub.geralanding.presetdesign.provisorio;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,13 +15,6 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Montador completo do HTML provisório final da etapa de design preset.
@@ -37,10 +36,12 @@ public class DesignPresetProvisionalHtmlProcessor {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public String process(String wireframeJson,
-                          String copyJson,
-                          String imagePlanningJson,
-                          String designPresetJson) {
+    /** Processa wireframe, copy, planejamento de imagem e preset tokenizado para gerar o HTML provisório consolidado. */
+    public String process(
+            String wireframeJson,
+            String copyJson,
+            String imagePlanningJson,
+            String designPresetJson) {
         if (!StringUtils.hasText(wireframeJson)) {
             throw new IllegalArgumentException("JSON de wireframe ausente");
         }

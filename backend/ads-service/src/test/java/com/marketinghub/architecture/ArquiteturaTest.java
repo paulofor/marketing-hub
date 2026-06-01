@@ -3,7 +3,7 @@ package com.marketinghub.architecture;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-import com.marketinghub.geralanding.designpreset.DesignPresetProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -322,12 +322,12 @@ class ArquiteturaTest {
             .because("[ARQUITETURA][BACKEND][WireframeProvisionalHtmlAssembler] o assembler de wireframe deve ficar no pacote geralanding.wireframe");
 
     @ArchTest
-    static final ArchRule designPresetAssemblerMustResideInDesignPresetPackage = classes()
+    static final ArchRule designPresetAssemblerMustResideInPresetDesignProvisorioPackage = classes()
             .that()
             .haveSimpleName("DesignPresetProvisionalHtmlAssembler")
             .should()
-            .resideInAPackage("..geralanding.designpreset..")
-            .because("[ARQUITETURA][BACKEND][DesignPresetProvisionalHtmlAssembler] o assembler de design preset deve ficar no pacote geralanding.designpreset");
+            .resideInAPackage("..geralanding.presetdesign.provisorio..")
+            .because("[ARQUITETURA] [BACKEND][DesignPresetProvisionalHtmlAssembler] o assembler de design preset deve ficar no pacote geralanding.presetdesign.provisorio");
 
     @ArchTest
     static final ArchRule wireframePackageMustContainCanonicalAssemblerType = classes()
@@ -678,10 +678,10 @@ class ArquiteturaTest {
     }
 
     /**
-     * Garante que serviços geralanding acessem serviços internos da mesma etapa e classes compartilhadas permitidas.
+     * Garante que serviços geralanding acessem serviços/provisórios internos da mesma etapa e classes compartilhadas permitidas.
      */
     private static ArchCondition<JavaClass> onlyDependOnAllowedMarketingHubClasses() {
-        return new ArchCondition<>("[ARQUITETURA] [BACKEND][GeraLanding] depend only on same-stage service packages and explicit allowed classes") {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][GeraLanding] depend only on same-stage service/provisorio packages and explicit allowed classes") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 item.getDirectDependenciesFromSelf().forEach(dependency -> {
@@ -691,6 +691,7 @@ class ArquiteturaTest {
                         return;
                     }
                     if (isSameStageServiceDependency(item, targetClass)
+                            || isSameStageProvisorioDependency(item, targetClass)
                             || targetName.equals(EXPERIMENT_CLASS)
                             || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
@@ -702,7 +703,7 @@ class ArquiteturaTest {
                             + " possui import/dependência violadora: " + dependency.getDescription()
                             + " (alvo: " + targetName + ")"
                             + " | regra: serviços em geralanding.*.service só podem acessar "
-                            + "pacotes internos geralanding.<etapa>.service.* da mesma etapa, "
+                            + "pacotes internos geralanding.<etapa>.service.* e geralanding.<etapa>.provisorio.* da mesma etapa, "
                             + EXPERIMENT_CLASS + ", "
                             + EXPERIMENT_REPOSITORY_CLASS + ", "
                             + GERALANDING_STAGE_EXECUTION_CLASS + ", "
@@ -722,6 +723,17 @@ class ArquiteturaTest {
         String targetStage = extractGeraLandingStage(targetClass.getPackageName());
         String targetLayer = extractGeraLandingLayer(targetClass.getPackageName());
         return sourceStage != null && sourceStage.equals(targetStage) && "service".equals(targetLayer);
+    }
+
+
+    /**
+     * Verifica se a dependência alvo pertence à árvore provisorio da mesma etapa GeraLanding.
+     */
+    private static boolean isSameStageProvisorioDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceStage = extractGeraLandingStage(sourceClass.getPackageName());
+        String targetStage = extractGeraLandingStage(targetClass.getPackageName());
+        String targetLayer = extractGeraLandingLayer(targetClass.getPackageName());
+        return sourceStage != null && sourceStage.equals(targetStage) && "provisorio".equals(targetLayer);
     }
 
     /**

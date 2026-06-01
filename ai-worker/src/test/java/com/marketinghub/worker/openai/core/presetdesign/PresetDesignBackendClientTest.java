@@ -212,6 +212,24 @@ class PresetDesignBackendClientTest {
         assertThat(invalidPaths).isEmpty();
     }
 
+    /** Deve manter apenas pagina.corpo no contrato de design-preset, sem pagina.body duplicado. */
+    @Test
+    void presetDesignSchemaShouldUseOnlyCorpoAndRejectDuplicatedBodyField() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+        JsonNode pagina = schema.path("properties").path("pagina");
+        JsonNode paginaProperties = pagina.path("properties");
+        JsonNode corpo = paginaProperties.path("corpo");
+
+        assertThat(paginaProperties.has("body")).isFalse();
+        assertThat(pagina.path("required").toString()).isEqualTo("[\"head\",\"corpo\"]");
+        assertThat(corpo.path("required").toString()).isEqualTo("[\"estilos\",\"secoes\"]");
+        assertThat(corpo.path("properties").has("estilos")).isTrue();
+        assertThat(corpo.path("properties").path("estilos").path("items").path("enum").toString())
+                .isEqualTo("[\"bgBody\",\"fontBase\",\"textPrimary\",\"marginReset\"]");
+    }
+
     /** Deve manter o schema de design-preset sem palavras-chave rejeitadas pela OpenAI Structured Outputs. */
     @Test
     void presetDesignSchemaShouldNotContainUnsupportedOpenAiStructuredOutputKeywords() throws Exception {

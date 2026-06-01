@@ -61,9 +61,9 @@ Regras obrigatórias:
 1. Responda somente JSON válido.
 2. Preserve a estrutura de `pagina` recebida no wireframe (mesmos ids, mesma hierarquia, sem inventar seções/elementos).
 3. Aplique variação `desktop/mobile` somente em `definicoes`; em `pagina` use classes diretas sem separar por device.
-4. Em `pagina.body`, incluir obrigatoriamente a lista `estilos` com classes globais do body.
-5. Em cada elemento de `pagina` (`secoes`, `elementosSeccao`, `elementosInternos`), usar `estilos` como lista simples de classes (array de string), sem objetos `desktop/mobile`.
-5.1. Em qualquer `estilos[]` de `pagina` (`body`, `corpo`, `secoes`, `elementosSeccao`, `elementosInternos`), usar exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`.
+4. Em `pagina`, é proibido criar o campo `body`; declare as classes globais do elemento HTML `<body>` somente em `pagina.corpo.estilos`.
+5. Em cada elemento de `pagina` (`corpo`, `secoes`, `elementosSeccao`, `elementosInternos`), usar `estilos` como lista simples de classes (array de string), sem objetos `desktop/mobile`.
+5.1. Em qualquer `estilos[]` de `pagina` (`corpo`, `secoes`, `elementosSeccao`, `elementosInternos`), usar exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`.
 6. Cada item de `definicoes.desktop/mobile` deve seguir exatamente:
    - `nome`: nome da classe utilitária
    - `atributoCss`: propriedade CSS
@@ -77,7 +77,7 @@ Regras obrigatórias:
 
 Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Cores de texto obrigatórias: criar classes para `textPrimary`, `textMuted`, `textSubtle`, `textOnButtonPrimary`, `textOnInput`, `placeholderText`.
-- Body global obrigatório: criar preset `pageRoot` com `bgBody`, `fontBase`, `textPrimary` para herança consistente.
+- Corpo global obrigatório: aplicar `bgBody`, `fontBase`, `textPrimary` e `marginReset` exclusivamente em `pagina.corpo.estilos`, sem `pagina.body` nem preset duplicado `pageRoot`.
 - Tipografia não fragmentada: `h1`, `h2`, `h3` devem herdar `font-family` e cor do body, ou receber classes completas equivalentes.
 - Botão primário completo: além de `bgButtonPrimary`, `radiusButton`, `shadowButton`, incluir classes para `padding`, `display:inline-flex`, `align-items:center`, `justify-content:center`, `font-weight`, `color` (`textOnButtonPrimary`).
 - Input completo: além de `bgInput`, `radiusInput`, `borderSoft`, `caretAccent`, incluir classes para `padding`, `color` (`textOnInput`), `::placeholder` (`placeholderText`), `font` e `min-height`.
@@ -200,7 +200,6 @@ Formato esperado de saída:
   },
   "pagina": {
     "head": { "texto": "" },
-    "body": { "estilos": ["pageRoot", "bgBody", "fontBase", "textPrimary"] },
     "corpo": {
       "estilos": ["bgBody", "fontBase", "textPrimary", "marginReset"],
       "secoes": [

@@ -174,11 +174,11 @@ public class OprmCnaeOpportunityPersistenceService {
     }
 
     /**
-     * Lista os nichos já enriquecidos pelo OPRM para consulta direta no frontend.
+     * Lista os nichos já enriquecidos pelo OPRM priorizando maiores scores para consulta direta no frontend.
      */
     @Transactional(readOnly = true)
     public List<OprmNicheCandidateResponseDto> listEnrichedCandidates(int limit) {
-        return candidateRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, normalizeLimit(limit)))
+        return candidateRepository.findAllByOrderByOpportunityScoreDescCreatedAtDesc(PageRequest.of(0, normalizeLimit(limit)))
                 .stream()
                 .map(this::toCandidateResponse)
                 .toList();

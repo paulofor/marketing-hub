@@ -127,7 +127,7 @@ public class OprmCnaeOpportunityController {
     }
 
     /**
-     * Lista nichos já enriquecidos pelo OPRM para acompanhamento direto do usuário.
+     * Lista nichos já enriquecidos pelo OPRM em ordem decrescente de score para acompanhamento direto do usuário.
      */
     @GetMapping("/cnae-niche-candidates/enriched")
     public List<OprmNicheCandidateResponseDto> listEnrichedCandidates(@RequestParam(defaultValue = "100") int limit) {

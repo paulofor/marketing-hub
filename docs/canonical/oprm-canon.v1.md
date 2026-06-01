@@ -81,6 +81,17 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Ao navegar entre páginas, a ordenação deve permanecer estável por `Score OPRM` decrescente.
 - O texto de apoio na tela deve deixar explícito para o usuário que o ranking está ordenado por Score OPRM e paginado.
 
+## Regra obrigatória — lista de nichos enriquecidos por score
+
+- A lista de nichos enriquecidos exibida na tela de CNAEs por Score OPRM deve priorizar os candidatos com maior `opportunityScore` no começo.
+- A ordenação deve ser aplicada no backend, com `opportunityScore` em ordem decrescente e `createdAt` em ordem decrescente como desempate estável.
+- O frontend deve informar ao usuário que a lista está ordenada pelos maiores scores, mantendo dor, resultado e mecanismo como contexto de decisão.
+
+## Critério de efetividade — nichos enriquecidos por score
+
+- Ao abrir "Nichos já enriquecidos", o primeiro item retornado deve ter score maior ou igual aos demais itens da página.
+- Em caso de scores iguais, candidatos enriquecidos mais recentemente aparecem primeiro para preservar rastreabilidade operacional.
+
 ## Regra obrigatória — responsabilidade do OPRM no fluxo CNAE → oportunidade
 
 - No fluxo CNAE → score → enriquecimento → candidatos de nicho, o **módulo OPRM** é o único responsável por cálculo de score de oportunidade, seleção de CNAEs prioritários para enriquecimento, pesquisa externa, acionamento de MDS/Worker AI e geração de candidatos de nicho.

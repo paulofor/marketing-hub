@@ -15,8 +15,8 @@ public interface OprmNicheCandidateRepository extends JpaRepository<OprmNicheCan
     List<OprmNicheCandidate> findByCnaeCodeOrderByOpportunityScoreDescCreatedAtDesc(String cnaeCode);
 
     /**
-     * Lista candidatos de nicho enriquecidos mais recentes para acompanhamento no frontend.
+     * Lista candidatos de nicho enriquecidos priorizando maiores scores para acompanhamento no frontend.
      */
-    List<OprmNicheCandidate> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    List<OprmNicheCandidate> findAllByOrderByOpportunityScoreDescCreatedAtDesc(Pageable pageable);
 }
 

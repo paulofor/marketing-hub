@@ -15,6 +15,11 @@ public interface OprmCnaeOpportunityScoreRepository extends JpaRepository<OprmCn
     List<OprmCnaeOpportunityScore> findByEnrichedAtIsNullOrderByOpportunityScoreDescCnaeCodeAsc(Pageable pageable);
 
     /**
+     * Lista os melhores scores já enriquecidos para acompanhamento dos nichos prontos.
+     */
+    List<OprmCnaeOpportunityScore> findByEnrichedAtIsNotNullOrderByOpportunityScoreDescCnaeCodeAsc(Pageable pageable);
+
+    /**
      * Lista os melhores scores persistidos para acompanhamento operacional no frontend.
      */
     List<OprmCnaeOpportunityScore> findAllByOrderByOpportunityScoreDescCnaeCodeAsc(Pageable pageable);

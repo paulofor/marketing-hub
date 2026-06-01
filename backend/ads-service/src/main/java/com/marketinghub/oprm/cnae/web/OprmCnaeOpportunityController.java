@@ -55,13 +55,14 @@ public class OprmCnaeOpportunityController {
     }
 
     /**
-     * Lista os melhores scores já calculados para enriquecimento automático pelo OPRM.
+     * Lista os melhores scores já calculados, permitindo filtrar CNAEs já enriquecidos ou pendentes de enriquecimento.
      */
     @GetMapping("/cnaes/opportunity-scores/top")
     public List<OprmCnaeOpportunityScoreResponseDto> listTopScores(
             @RequestParam(defaultValue = "25") int limit,
-            @RequestParam(defaultValue = "false") boolean notEnriched) {
-        return service.listTopScores(limit, notEnriched);
+            @RequestParam(defaultValue = "false") boolean notEnriched,
+            @RequestParam(defaultValue = "false") boolean enriched) {
+        return service.listTopScores(limit, notEnriched, enriched);
     }
 
     /**

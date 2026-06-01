@@ -3,6 +3,8 @@ import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useOprmTopCnaeMarketVolume } from "../../api/oprm/useOprmTopCnaeMarketVolume";
 import { useOprmCnaeCatalog } from "../../api/oprm/useOprmCnaeCatalog";
 import { useOprmCnaeCycles } from "../../api/oprm/useOprmCnaeCycles";
+import { useOprmCnaeOpportunityScores } from "../../api/oprm/useOprmCnaeOpportunityScores";
+import { Link } from "react-router-dom";
 import { useState } from "react";
 
 function formatNumber(value: number) {
@@ -22,13 +24,23 @@ function formatDateTime(value: string | null | undefined) {
   return new Date(value).toLocaleString("pt-BR");
 }
 
-export default function OprmCnaeVolumePage() {
+interface OprmCnaeVolumePageProps {
+  mode?: "ranking" | "enriched";
+}
+
+export default function OprmCnaeVolumePage({
+  mode = "ranking",
+}: OprmCnaeVolumePageProps) {
   const pageSize = 50;
   const [currentPage, setCurrentPage] = useState(1);
+  const isEnrichedMode = mode === "enriched";
   const { data, isLoading, isError, refetch, isFetching } =
     useOprmTopCnaeMarketVolume(currentPage - 1, pageSize);
+  const enrichedQuery = useOprmCnaeOpportunityScores(pageSize, "enriched");
   const cnaeCatalogQuery = useOprmCnaeCatalog();
   const cycleQuery = useOprmCnaeCycles(5);
+  const enrichedData = enrichedQuery.data ?? [];
+  const hasEnrichedData = enrichedData.length > 0;
   const hasVolumeData = (data ?? []).length > 0;
   const hasCatalogData = (cnaeCatalogQuery.data ?? []).length > 0;
   const volumeData = data ?? [];
@@ -37,10 +49,13 @@ export default function OprmCnaeVolumePage() {
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
-        <PageTitle>CNAEs por Score OPRM</PageTitle>
+        <PageTitle>
+          {isEnrichedMode ? "Nichos enriquecidos OPRM" : "CNAEs por Score OPRM"}
+        </PageTitle>
         <p className="text-secondary mb-0">
-          Ranking dos principais CNAEs por Score OPRM no snapshot mais recente
-          da ingestão, com volume de mercado como contexto.
+          {isEnrichedMode
+            ? "CNAEs que já passaram pelo enriquecimento automático e estão prontos para análise de candidatos de nicho."
+            : "Ranking dos principais CNAEs por Score OPRM no snapshot mais recente da ingestão, com volume de mercado como contexto."}
         </p>
       </header>
 
@@ -49,45 +64,68 @@ export default function OprmCnaeVolumePage() {
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex justify-content-between align-items-center">
           <div>
-            <h2 className="h5 mb-1">Top CNAEs por Score OPRM</h2>
+            <h2 className="h5 mb-1">
+              {isEnrichedMode
+                ? "CNAEs com nichos já enriquecidos"
+                : "Top CNAEs por Score OPRM"}
+            </h2>
             <p className="text-secondary mb-0">
-              Exibindo 50 CNAEs por página, ordenados pelo Score OPRM em ordem
-              decrescente. O score é gerado automaticamente pelo OPRM; o usuário
-              apenas acompanha ciclos, candidatos e decisões.
+              {isEnrichedMode
+                ? "Exibindo os CNAEs com enriquecimento concluído, priorizados por Score OPRM para acelerar a decisão sobre nichos vendáveis."
+                : "Exibindo 50 CNAEs por página, ordenados pelo Score OPRM em ordem decrescente. O score é gerado automaticamente pelo OPRM; o usuário apenas acompanha ciclos, candidatos e decisões."}
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline-primary"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            {isFetching ? (
-              <span
-                className="spinner-border spinner-border-sm"
-                aria-hidden="true"
-              />
+          <div className="d-flex gap-2">
+            {!isEnrichedMode ? (
+              <Link className="btn btn-primary" to="/oprm/cnaes-enriched">
+                Ver nichos enriquecidos
+              </Link>
             ) : (
-              "Atualizar"
+              <Link className="btn btn-outline-primary" to="/oprm">
+                Ver ranking geral
+              </Link>
             )}
-          </button>
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() =>
+                isEnrichedMode ? enrichedQuery.refetch() : refetch()
+              }
+              disabled={isEnrichedMode ? enrichedQuery.isFetching : isFetching}
+            >
+              {(isEnrichedMode ? enrichedQuery.isFetching : isFetching) ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                />
+              ) : (
+                "Atualizar"
+              )}
+            </button>
+          </div>
         </div>
       </section>
 
-      {isLoading ? (
+      {(isEnrichedMode ? enrichedQuery.isLoading : isLoading) ? (
         <div
           className="spinner-border text-primary"
           role="status"
           aria-label="Carregando"
         />
       ) : null}
-      {isError ? (
+      {(isEnrichedMode ? enrichedQuery.isError : isError) ? (
         <div className="alert alert-danger">
-          Não foi possível carregar os CNAEs.
+          {isEnrichedMode
+            ? "Não foi possível carregar os nichos enriquecidos."
+            : "Não foi possível carregar os CNAEs."}
         </div>
       ) : null}
 
-      {!isLoading && !isError && !hasVolumeData && hasCatalogData ? (
+      {!isEnrichedMode &&
+      !isLoading &&
+      !isError &&
+      !hasVolumeData &&
+      hasCatalogData ? (
         <div className="alert alert-warning">
           O catálogo de CNAEs já está disponível, mas as métricas de volume
           ainda não foram consolidadas pela ingestão.
@@ -149,7 +187,52 @@ export default function OprmCnaeVolumePage() {
         </div>
       </section>
 
-      {!isLoading && !isError ? (
+      {isEnrichedMode &&
+      !enrichedQuery.isLoading &&
+      !enrichedQuery.isError &&
+      !hasEnrichedData ? (
+        <div className="alert alert-info">
+          Nenhum CNAE enriquecido foi encontrado ainda. Aguarde o ciclo
+          automático de enriquecimento concluir para analisar os nichos prontos.
+        </div>
+      ) : null}
+
+      {isEnrichedMode && !enrichedQuery.isLoading && !enrichedQuery.isError ? (
+        <section className="card border-0 shadow-sm">
+          <div className="table-responsive">
+            <table className="table table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>CNAE</th>
+                  <th>Descrição</th>
+                  <th>Score OPRM ↓</th>
+                  <th>Enriquecido em</th>
+                  <th>Status</th>
+                  <th>Justificativa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enrichedData.map((item, index) => (
+                  <tr key={item.cnaeCode}>
+                    <td>{index + 1}</td>
+                    <td>{item.cnaeCode}</td>
+                    <td>{item.cnaeDescription ?? "-"}</td>
+                    <td>{formatScore(item.opportunityScore)}</td>
+                    <td>{formatDateTime(item.enrichedAt)}</td>
+                    <td>{item.scoreStatus}</td>
+                    <td className="text-secondary">
+                      {item.scoreJustification ?? "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {!isEnrichedMode && !isLoading && !isError ? (
         <section className="card border-0 shadow-sm">
           <div className="table-responsive">
             <table className="table table-striped align-middle mb-0">

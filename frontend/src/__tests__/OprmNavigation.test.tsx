@@ -19,11 +19,9 @@ afterEach(() => {
 });
 
 describe("OPRM navigation", () => {
-  it("renders loading state on /oprm route", async () => {
+  it("renders loading state on /oprm route", () => {
     setup(<App />, ["/oprm"]);
-    expect(
-      await screen.findByText(/carregando ocupações do oprm/i),
-    ).toBeTruthy();
+    expect(screen.getByLabelText("Carregando")).toBeTruthy();
   });
 
   it("has menu link to /oprm", () => {
@@ -33,12 +31,18 @@ describe("OPRM navigation", () => {
     expect(link.getAttribute("href")).toBe("/oprm");
   });
 
-
-  it("has menu link to /oprm/cnaes-volume", () => {
+  it("has menu link to /oprm cnaes", () => {
     setup(<App />, ["/"]);
     const link = screen.getByRole("link", { name: /^cnaes$/i });
     expect(link).toBeTruthy();
-    expect(link.getAttribute("href")).toBe("/oprm/cnaes-volume");
+    expect(link.getAttribute("href")).toBe("/oprm");
+  });
+
+  it("has menu link to /oprm/cnaes-enriched", () => {
+    setup(<App />, ["/"]);
+    const link = screen.getByRole("link", { name: /nichos enriquecidos/i });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe("/oprm/cnaes-enriched");
   });
 
   it("renders loading state on /oprm/operations route", async () => {
@@ -48,6 +52,8 @@ describe("OPRM navigation", () => {
 
   it("renders loading state on /oprm/occupations route", async () => {
     setup(<App />, ["/oprm/occupations"]);
-    expect(await screen.findByText(/carregando catálogo de ocupações/i)).toBeTruthy();
+    expect(
+      await screen.findByText(/carregando catálogo de ocupações/i),
+    ).toBeTruthy();
   });
 });

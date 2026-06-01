@@ -320,6 +320,10 @@ export default function App() {
                 path="/oprm/cnaes-volume"
                 element={<OprmCnaeVolumePage />}
               />
+              <Route
+                path="/oprm/cnaes-enriched"
+                element={<OprmCnaeVolumePage mode="enriched" />}
+              />
               <Route path="/angles" element={<AnglesPage />} />
               <Route path="/visual-proofs" element={<VisualProofsPage />} />
               <Route

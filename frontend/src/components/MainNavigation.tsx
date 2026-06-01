@@ -118,6 +118,11 @@ const NAV_SECTIONS: NavSection[] = [
             icon: Workflow,
             end: true,
           },
+          {
+            to: "/oprm/cnaes-enriched",
+            label: "Nichos enriquecidos",
+            icon: Workflow,
+          },
         ],
       },
       { to: "/mds", label: "MDS", icon: Microscope },

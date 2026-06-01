@@ -83,13 +83,19 @@ public class OprmCnaeOpportunityPersistenceService {
     }
 
     /**
-     * Lista scores já calculados pelo OPRM, com filtro opcional para retornar somente itens ainda não enriquecidos.
+     * Lista scores já calculados pelo OPRM, com filtros opcionais para enriquecidos ou ainda não enriquecidos.
      */
     @Transactional(readOnly = true)
-    public List<OprmCnaeOpportunityScoreResponseDto> listTopScores(int limit, boolean notEnriched) {
-        List<OprmCnaeOpportunityScore> scores = notEnriched
-                ? scoreRepository.findByEnrichedAtIsNullOrderByOpportunityScoreDescCnaeCodeAsc(PageRequest.of(0, normalizeLimit(limit)))
-                : scoreRepository.findAllByOrderByOpportunityScoreDescCnaeCodeAsc(PageRequest.of(0, normalizeLimit(limit)));
+    public List<OprmCnaeOpportunityScoreResponseDto> listTopScores(int limit, boolean notEnriched, boolean enriched) {
+        PageRequest page = PageRequest.of(0, normalizeLimit(limit));
+        List<OprmCnaeOpportunityScore> scores;
+        if (enriched) {
+            scores = scoreRepository.findByEnrichedAtIsNotNullOrderByOpportunityScoreDescCnaeCodeAsc(page);
+        } else if (notEnriched) {
+            scores = scoreRepository.findByEnrichedAtIsNullOrderByOpportunityScoreDescCnaeCodeAsc(page);
+        } else {
+            scores = scoreRepository.findAllByOrderByOpportunityScoreDescCnaeCodeAsc(page);
+        }
         return scores.stream()
                 .map(this::toScoreResponse)
                 .toList();

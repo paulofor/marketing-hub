@@ -17,6 +17,7 @@ import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationIt
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
+import com.marketinghub.geralanding.imageplanning.service.BackendImagePlanningService.ImagePromptRegenerationStartedEvent;
 import com.marketinghub.repository.jpa.experiment.frameworkimage.FrameworkImageGenerationJobRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.time.Instant;
@@ -156,6 +157,43 @@ class FrameworkImageGenerationServiceTest {
         assertThat(experiment.getLandingPageImageAssets()).contains("\"elementId\":\"hero-img\"");
         assertThat(experiment.getLandingPageImageAssets()).contains("\"resolvedUrl\":\"https://cdn/web.jpg\"");
         verify(experimentRepository).save(experiment);
+    }
+
+
+    @Test
+    void resetImagesForPromptRegenerationClearsPlanningAssetsAndJobs() {
+        Experiment experiment = Experiment.builder()
+                .id(88L)
+                .landingPageImagePlanning("{\"images\":[{}]}")
+                .landingPageImageAssets("{\"images\":[{\"resolvedUrl\":\"https://cdn/old.jpg\"}]}")
+                .build();
+        when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.deleteByExperimentId(88L)).thenReturn(3L);
+
+        service.resetImagesForPromptRegeneration(88L);
+
+        assertThat(experiment.getLandingPageImagePlanning()).isNull();
+        assertThat(experiment.getLandingPageImageAssets()).isNull();
+        verify(jobRepository).deleteByExperimentId(88L);
+        verify(experimentRepository).save(experiment);
+    }
+
+
+    @Test
+    void resetImagesWhenPromptRegenerationStartsUsesEventExperimentId() {
+        Experiment experiment = Experiment.builder()
+                .id(89L)
+                .landingPageImagePlanning("{\"images\":[{}]}")
+                .landingPageImageAssets("{\"images\":[{}]}")
+                .build();
+        when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.deleteByExperimentId(89L)).thenReturn(1L);
+
+        service.resetImagesWhenPromptRegenerationStarts(new ImagePromptRegenerationStartedEvent(89L));
+
+        assertThat(experiment.getLandingPageImagePlanning()).isNull();
+        assertThat(experiment.getLandingPageImageAssets()).isNull();
+        verify(jobRepository).deleteByExperimentId(89L);
     }
 
     @Test

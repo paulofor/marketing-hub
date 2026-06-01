@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -40,21 +41,29 @@ public class BackendImagePlanningService {
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Inicializa o serviço com os repositórios e montadores necessários para a etapa image planning. */
     public BackendImagePlanningService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ApplicationEventPublisher eventPublisher) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
     }
 
-    /** Inicia a execução manual da etapa image planning usando o código canônico da etapa. */
+    /** Inicia a execução manual da etapa image planning e publica o reset de imagens antigas antes de gerar novos prompts. */
     @Transactional
     public GeraLandingImagePlanningStartResponse start(Long experimentId) {
+        eventPublisher.publishEvent(new ImagePromptRegenerationStartedEvent(experimentId));
         return registerInitialExecution(experimentId, STAGE_CODE);
+    }
+
+    /** Evento síncrono que sinaliza a necessidade de zerar imagens antes da regeneração dos prompts. */
+    public record ImagePromptRegenerationStartedEvent(Long experimentId) {
     }
 
     /** Registra a execução inicial da etapa convertendo para o DTO local de início. */

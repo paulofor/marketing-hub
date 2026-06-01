@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 /** Valida as consultas de execução específicas da etapa image planning. */
 class BackendImagePlanningServiceTest {
@@ -31,8 +32,12 @@ class BackendImagePlanningServiceTest {
     void startShouldRegisterInitialExecutionForImagePlanningStage() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        BackendImagePlanningService service =
-                new BackendImagePlanningService(experimentRepository, executionRepository, new ObjectMapper());
+        ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+        BackendImagePlanningService service = new BackendImagePlanningService(
+                experimentRepository,
+                executionRepository,
+                new ObjectMapper(),
+                eventPublisher);
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(91L);
         when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
@@ -43,6 +48,7 @@ class BackendImagePlanningServiceTest {
 
         assertNotNull(response.idJob());
         assertEquals("INICIADO", response.status());
+        verify(eventPublisher).publishEvent(new BackendImagePlanningService.ImagePromptRegenerationStartedEvent(91L));
         verify(executionRepository).save(argThat(execution ->
                 execution.getExperimentId().equals(91L)
                         && execution.getExperiment() == experiment
@@ -57,8 +63,11 @@ class BackendImagePlanningServiceTest {
     void listPendingShouldQueryStartedJobsForStage() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        BackendImagePlanningService service =
-                new BackendImagePlanningService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendImagePlanningService service = new BackendImagePlanningService(
+                experimentRepository,
+                executionRepository,
+                new ObjectMapper(),
+                mock(ApplicationEventPublisher.class));
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(77L);
         when(experiment.getName()).thenReturn("Experimento Image Planning");
@@ -93,8 +102,11 @@ class BackendImagePlanningServiceTest {
     void markCompletedFromResponseShouldPersistImagePlanningArtifact() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
-        BackendImagePlanningService service =
-                new BackendImagePlanningService(experimentRepository, executionRepository, new ObjectMapper());
+        BackendImagePlanningService service = new BackendImagePlanningService(
+                experimentRepository,
+                executionRepository,
+                new ObjectMapper(),
+                mock(ApplicationEventPublisher.class));
         Experiment experiment = new Experiment();
         experiment.setId(44L);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()

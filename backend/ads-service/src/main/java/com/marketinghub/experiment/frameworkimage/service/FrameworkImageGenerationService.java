@@ -14,6 +14,7 @@ import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationSu
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
+import com.marketinghub.geralanding.imageplanning.service.BackendImagePlanningService.ImagePromptRegenerationStartedEvent;
 import com.marketinghub.repository.jpa.experiment.frameworkimage.FrameworkImageGenerationJobRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.time.Instant;
@@ -30,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -230,6 +232,27 @@ public class FrameworkImageGenerationService {
                 .filter(item -> StringUtils.hasText(item.prompt()))
                 .map(item -> enqueueJob(experimentId, item.planningItemKey(), null, item.prompt()))
                 .toList();
+    }
+
+
+    /** Recebe o evento de regeneração do prompt de imagem e dispara a limpeza dos artefatos antigos. */
+    @EventListener
+    public void resetImagesWhenPromptRegenerationStarts(ImagePromptRegenerationStartedEvent event) {
+        resetImagesForPromptRegeneration(event.experimentId());
+    }
+
+    /** Remove jobs e artefatos de imagens quando o planejamento de prompts será regenerado. */
+    @Transactional
+    public void resetImagesForPromptRegeneration(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Experimento não encontrado"));
+        long deletedJobs = jobRepository.deleteByExperimentId(experimentId);
+        experiment.setLandingPageImagePlanning(null);
+        experiment.setLandingPageImageAssets(null);
+        experimentRepository.save(experiment);
+        log.info("framework-image-reset-for-prompt-regeneration experimentId={} deletedJobs={}",
+                experimentId,
+                deletedJobs);
     }
 
     @Transactional(readOnly = true)

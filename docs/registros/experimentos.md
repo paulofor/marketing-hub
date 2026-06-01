@@ -2888,3 +2888,21 @@
   - removido o teste unitário específico do serviço raiz legado;
   - atualizado o cânone de arquitetura para declarar `deliverables` como único subpacote legado ainda ativo em `geralanding`.
 - impacto esperado: o Worker AI fica mais simples, reduz risco de scheduler/bean antigo processar etapas já migradas e mantém a execução de geração de landing pages concentrada no fluxo oficial do `openai.core`.
+
+## 2026-06-01 — Revisão dos cânones para migração Worker AI openai.core
+- tarefa: revisar os documentos canônicos para remover a arquitetura canônica ativa do antigo namespace Java de landing no Worker AI e reforçar o padrão `openai.core.<etapa>`.
+- causa-raiz/objetivo: a migração para `openai.core` usa uma arquitetura diferente da implementação antiga do Worker AI, então os cânones não podem orientar novas etapas a partir do modelo legado.
+- correção aplicada:
+  - removida a seção de Worker AI legado do cânone de arquitetura do GeraLanding;
+  - ajustado o procedimento canônico de experimento para declarar `openai.core.<etapa>` como único padrão arquitetural vigente para etapas de landing no Worker AI;
+  - generalizada a referência de prompts/schemas no cânone por etapas para evitar amarrar o namespace Java do Worker AI ao domínio GeraLanding.
+- impacto esperado: novas mudanças no Worker AI devem seguir diretamente a arquitetura `openai.core`, reduzindo risco de recriação de componentes legados e preservando uma integração OpenAI mais simples, rastreável e vendável.
+
+## 2026-06-01 — Alinhamento dos AGENTS ao Worker AI openai.core
+- tarefa: revisar os arquivos AGENTS.md após a limpeza dos cânones para verificar se ainda havia orientação operacional apontando para o modelo antigo de landing no Worker AI.
+- causa-raiz/objetivo: impedir que instruções operacionais locais contradigam os documentos canônicos e induzam novas implementações a recriar namespaces legados no Worker AI.
+- correção aplicada:
+  - o AGENTS raiz passou a mencionar `com.marketinghub.worker.openai.core.<etapa>` como padrão para etapas assíncronas por fila/callback do Worker AI;
+  - o AGENTS do `ai-worker` substituiu a orientação antiga de isolamento de GeraLanding por uma regra de isolamento por etapa no OpenAI core;
+  - a orientação de novos serviços no `ai-worker` passou a separar serviços de domínio simples de etapas OpenAI assíncronas.
+- impacto esperado: próximos trabalhos no Worker AI seguem o padrão `openai.core` também pelas instruções operacionais dos agentes, mantendo coerência com os cânones e reduzindo risco de retrabalho.

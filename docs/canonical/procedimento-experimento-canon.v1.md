@@ -43,7 +43,7 @@ Os prompts do pipeline ficam versionados no repositório, em `resources` do Work
 
 Local canônico vigente:
 - pipeline de experimento (núcleo inicial): `ai-worker/src/main/resources/prompts/experiment`;
-- pipeline Gera Landing (núcleo da landing): `ai-worker/src/main/resources/prompts/geralanding`.
+- pipeline de landing no Worker AI: prompts e schemas devem ser resolvidos por configuração tipada da etapa em `openai.core.<etapa>`; o caminho físico em `resources/prompts/<dominio>` é detalhe de recurso versionado e não define namespace Java do Worker AI.
 
 ## 5. Pipeline Gera Landing (núcleo da landing)
 
@@ -103,21 +103,25 @@ Regras:
 ### 5.5 Worker AI — divisão equivalente por etapa (obrigatória)
 
 No `ai-worker`, a mesma divisão por etapa deve ser mantida para evitar acoplamento entre execução,
-prompt e schema. As etapas `landing-page-wireframe`, `landing-page-copy`,
-`landing-page-image-planning` e `landing-page-design-preset` já foram migradas para o núcleo canônico
-`com.marketinghub.worker.openai.core.<etapa>`; portanto, os pacotes legados equivalentes em
-`com.marketinghub.worker.geralanding` estão desativados e não devem ser recriados.
+prompt e schema. A arquitetura canônica vigente para qualquer etapa de landing no Worker AI é o núcleo
+`com.marketinghub.worker.openai.core.<etapa>`. Não existe modelo canônico ativo em namespace Java
+específico de GeraLanding dentro do Worker AI.
 
-- Etapas migradas para o novo padrão devem residir em `com.marketinghub.worker.openai.core.<etapa>` e
-  usar `StageWorker`, `StageBackendPort`, `StagePromptBuilder`, `StageResponseValidator`,
-  `StageResponseHandler` e `OpenAiClientPort`.
-- Etapas ainda não migradas permanecem temporariamente nos pacotes próprios de
-  `com.marketinghub.worker.geralanding`; atualmente apenas `deliverables` continua legado.
-- O antigo pacote `com.marketinghub.worker.geralanding.stage` foi removido junto com as etapas migradas; cada etapa do `openai.core` deve resolver seu próprio prompt/schema por configuração tipada.
+- Cada etapa deve residir em `com.marketinghub.worker.openai.core.<etapa>` e usar `StageWorker`,
+  `StageBackendPort`, `StagePromptBuilder`, `StageResponseValidator`, `StageResponseHandler` e
+  `OpenAiClientPort`.
+- Scheduler, propriedades, adapters de backend, prompt builder, validador e handler devem ser beans
+  declarados pela configuração explícita da própria etapa, sem depender de services genéricos do antigo
+  fluxo de landing.
+- O antigo namespace Java de landing do Worker AI é legado, não deve receber novas classes e não
+  deve ser usado como referência arquitetural; qualquer remanescente deve ser tratado como débito de
+  migração para `openai.core.<etapa>`.
+- Cada etapa do `openai.core` deve resolver seu próprio prompt/schema por configuração tipada e por
+  contratos de input/output próprios.
 
 Regra operacional: a seleção de schema/prompt por etapa no worker deve ocorrer por definição de etapa
-explícita, sem ifs ad-hoc espalhados no serviço de execução. No futuro, as etapas ainda legadas do
-GeraLanding devem migrar gradualmente para `openai.core.<etapa>`.
+explícita, sem ifs ad-hoc espalhados no serviço de execução. Etapas novas ou remanescentes devem entrar
+diretamente no padrão `openai.core.<etapa>`.
 
 ## 6. Geração e aprovação de anúncios
 

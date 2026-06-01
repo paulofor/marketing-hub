@@ -111,8 +111,9 @@ padrão canônico deve seguir o núcleo `com.marketinghub.worker.openai.core`:
 No exemplo de wireframe, o fluxo canônico agora é: `WireframeExecutionScheduler` chama
 `StageWorker.processPending`, o `WireframeBackendClient` consulta o endpoint `pending` e transforma a
 unidade de trabalho em `StageExecution<WireframeInput>`, o `WireframePromptBuilder` monta o prompt e o
-request usando `prompts/geralanding/landing-page-wireframe.md` e
-`prompts/geralanding/landing-page-wireframe-schema.json`, o `ResponsesApiOpenAiClient` adiciona
+request usando os recursos de prompt/schema configurados para a etapa no padrão
+`prompts/<dominio>/landing-page-wireframe.md` e
+`prompts/<dominio>/landing-page-wireframe-schema.json`, o `ResponsesApiOpenAiClient` adiciona
 `service_tier=flex` e envia para `POST /responses`, o `WireframeResponseValidator` valida a resposta, e
 o `WireframeBackendClient` registra prompt, resposta, conclusão ou falha nos callbacks do backend.
 

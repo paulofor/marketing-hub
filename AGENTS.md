@@ -138,7 +138,7 @@ Ao alterar qualquer módulo, preserve esse eixo como referência principal de de
 
 - **MarketingHub Backend / Frontend**: camada administrativa e UI principal do sistema.
 - **Facebook Ads Worker**: integração com a API da Meta para campanhas e públicos.
-- **Worker AI**: integrações com modelos OpenAI para geração e otimização de ativos.
+- **Worker AI**: integrações com modelos OpenAI para geração e otimização de ativos; etapas assíncronas por fila/callback devem seguir o núcleo `com.marketinghub.worker.openai.core.<etapa>`.
 - **Lead Portal (backend/frontend)**: experiência dedicada aos leads após anúncios.
 - **Lead Portal Payments Service**: pagamentos via Mercado Pago.
 - **Email Service**: envio transacional integrado ao Amazon SES.

@@ -207,3 +207,5 @@
 - 2026-06-01 00:00:00 (UTC): planejadas novas telas de acompanhamento operacional do OPRM para dar visibilidade ao usuário sobre ingestão de mercado, ciclos CNAE, enriquecimento, candidatos de nicho, fila de decisão e diagnóstico, preservando o eixo Dados de mercado → Score → Enriquecimento → Nicho candidato → Decisão humana → Oferta vendável.
 
 - 2026-06-01 00:00:00 (UTC): adicionados wireframes SVG das telas de acompanhamento operacional do OPRM para facilitar validação visual do Painel OPRM, Ingestão de Mercado, Ciclos CNAE, Candidatos de Nicho, Fila de Decisão e Diagnóstico antes da implementação frontend.
+
+- 2026-06-01 00:00:00 (UTC): adicionado botão na tela `/oprm/cnaes-volume` para o usuário consultar diretamente os nichos já enriquecidos pelo OPRM; backend recebeu endpoint de leitura dos candidatos enriquecidos mais recentes e frontend passou a exibir tabela com nicho, CNAE, dor, resultado, mecanismo, score, status e data de enriquecimento.

@@ -187,7 +187,7 @@ O cânone deste fluxo não fixa cadência horária nem alternância por paridade
 Sequência operacional consolidada:
 
 1. Obter token JWT da Hotmart via configuração geral no backend.
-2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base.
+2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base, percorrendo até 20 páginas de 20 itens por execução (alvo operacional padrão de 400 produtos), salvo se a Hotmart retornar menos itens antes desse limite.
 3. No ciclo 2, buscar produtos já persistidos em `/api/v1/mois/hotmart/products`.
 4. Para cada produto do ciclo 2, chamar `GET https://api-affiliation-market.hotmart.com/v1/market/product/{id}/details?userSessionId={session}`.
 5. Persistir novamente no backend para atualizar as referências com foco em `salesPageUrl`.

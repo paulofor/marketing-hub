@@ -51,4 +51,15 @@ class HotmartCollectorServiceTest {
                 HotmartCollectorService.buildHotmartApiFailureMessage(401, body)
         );
     }
+
+    /**
+     * Garante que o ciclo 1 esteja configurado para percorrer vinte páginas completas da Hotmart.
+     */
+    @Test
+    void shouldConfigureFirstCycleForTwentyHotmartPages() {
+        assertEquals(20, HotmartCollectorService.HOTMART_ROWS_PER_PAGE);
+        assertEquals(20, HotmartCollectorService.HOTMART_MAX_PAGES_PER_RUN);
+        assertEquals(400, HotmartCollectorService.HOTMART_MAX_PRODUCTS_PER_RUN);
+    }
+
 }

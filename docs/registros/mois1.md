@@ -708,3 +708,12 @@ Arquivos alterados:
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - mois-hotmart-collector/AGENTS.md
   - docs/registros/mois1.md
+
+## 2026-06-01 — Hotmart ciclo 1 configurado para 20 páginas
+- Ajustado o `mois-hotmart-collector` para o ciclo 1 buscar até 20 páginas completas da API de busca Hotmart.
+- Causa-raiz: a execução anterior parou na página 2 porque o alvo operacional estava configurado para 25 produtos; com 20 itens por página, isso encerrava a coleta após 20 + 5 itens.
+- Alterações realizadas:
+  - limite de páginas do ciclo 1 definido para 20;
+  - alvo máximo por execução derivado de 20 páginas x 20 itens = 400 produtos;
+  - valor padrão de `collector.scheduler.max-products` atualizado para 400;
+  - cânone Hotmart atualizado para documentar o alvo operacional padrão de 20 páginas.

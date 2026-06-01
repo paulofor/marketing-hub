@@ -40,6 +40,9 @@ Objetivo principal desta etapa:
 
 Regra central de contrato:
 - O wireframe é a única fonte de verdade estrutural.
+- Qualidade comercial obrigatória: a copy deve vender a transformação antes de explicar o formato da amostra. Evite abrir com frases como “gere uma amostra/PDF”; abra com o resultado que o público quer e o problema que ele quer remover, usando a amostra como prova concreta e sem risco.
+- Clareza de formulário obrigatória: se o wireframe trouxer labels, placeholders, microcopy ou botão do formulário, escreva textos explícitos para `nome`, `email` e CTA, para que o usuário não veja campos vazios sem orientação.
+- Prova de valor rápida: em listas e cards, prefira frases que conectem item entregue → benefício prático → redução de esforço/dor, sem depender de termos genéricos como “mini-kit”, “amostra” ou “material” isoladamente.
 - A etapa copy não decide estrutura, não adiciona seções, não adiciona blocos e não cria metadados.
 - A etapa copy apenas escreve o valor `texto` para ids textuais existentes no wireframe.
 - Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada texto deve ser claro em leitura rápida, reduzir carga cognitiva, evitar explicação longa sem necessidade e conduzir naturalmente para o próximo CTA ou próximo passo definido pelo wireframe.

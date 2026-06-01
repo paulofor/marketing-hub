@@ -2995,3 +2995,13 @@
 - Endpoints cobertos: planos financeiros, nichos, hipóteses, experimentos, métricas manuais, decisões financeiras, cenários de preço e resumo do plano.
 - Cálculos mínimos adicionados: orçamento planejado, orçamento restante, lucro bruto, lucro líquido estimado, CTR, CPC, CPL, CPA, ROAS, conversão da landing, conversão de compra e vendas para ponto de equilíbrio.
 - Documentação Swagger do módulo adicionada em `backend/ads-service/docs/epm-swagger.yaml`.
+
+## 2026-06-01 — Reforço comercial da landing do experimento 35
+
+- solicitação: melhorar a página gerada para o experimento 35, considerada fraca na primeira avaliação visual.
+- causa-raiz/objetivo: a geração aceitava uma landing muito centrada no formato da amostra (“PDF/mini-kit”) antes de vender a transformação, com aparência de coluna estreita no desktop, CTAs repetidos e formulário pouco orientado.
+- foi feito:
+  - reforçado o prompt de wireframe para exigir primeira dobra com resultado comercial, dor removida, mecanismo plausível, hero desktop em duas colunas, sequência persuasiva mínima, formulário com contexto visível e menos CTAs redundantes;
+  - reforçado o prompt de copy para vender transformação antes do formato da amostra, orientar nome/e-mail quando houver labels/placeholders/microcopy e conectar entregável a benefício prático;
+  - reforçado o prompt de preset design para evitar aparência de página mobile esticada, usando containers comerciais, duas colunas no hero e hierarquia visual mais clara.
+- impacto esperado: próximas regenerações da landing devem produzir páginas mais fortes para venda, com primeira dobra mais convincente, formulário mais claro e percepção de valor maior antes do pedido de lead.

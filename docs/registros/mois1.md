@@ -718,9 +718,9 @@ Arquivos alterados:
   - valor padrão de `collector.scheduler.max-products` atualizado para 400;
   - cânone Hotmart atualizado para documentar o alvo operacional padrão de 20 páginas.
 
-## 2026-06-01 — Hotmart ciclo 1 reagendado para 13:30
-- ajuste operacional solicitado para agendar a próxima execução do ciclo 1 Hotmart para 01/06 às 13:30 no timezone `America/Sao_Paulo`.
-- atualizado o `HotmartCollectorScheduler` para disparar o ciclo 1 com cron literal `0 30 13 1 6 *`, mantendo a regra de `@Scheduled` com string direta e sem alterar o ciclo 2.
+## 2026-06-01 — Hotmart ciclo 1 reagendado para 14:00
+- ajuste operacional solicitado para agendar a próxima execução do ciclo 1 Hotmart para 01/06 às 14:00 no timezone `America/Sao_Paulo`.
+- atualizado o `HotmartCollectorScheduler` para disparar o ciclo 1 com cron literal `0 0 14 1 6 *`, mantendo a regra de `@Scheduled` com string direta e sem alterar o ciclo 2.
 - mantido o foco operacional do ciclo 1 em listagem/search Hotmart para alimentar a base MOIS com snapshots comerciais úteis.
 - documentos lidos para tratar a situação:
   - AGENTS.md

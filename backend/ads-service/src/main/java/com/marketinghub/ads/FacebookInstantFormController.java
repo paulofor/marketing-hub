@@ -1,5 +1,7 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookInstantFormRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.marketinghub.ads.dto.CreateFacebookInstantFormRequest;
 import com.marketinghub.ads.dto.FacebookInstantFormDto;
 import com.marketinghub.ads.dto.FacebookInstantFormPublicationDto;
@@ -7,8 +9,8 @@ import com.marketinghub.ads.dto.UpdateFacebookInstantFormApprovalRequest;
 import com.marketinghub.ads.dto.UpdateFacebookInstantFormPublicationRequest;
 import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.settings.GeneralSettingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;

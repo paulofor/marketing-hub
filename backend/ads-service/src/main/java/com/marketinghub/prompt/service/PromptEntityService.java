@@ -5,7 +5,7 @@ import com.marketinghub.prompt.dto.CreatePromptEntityRequest;
 import com.marketinghub.prompt.dto.PromptEntityDto;
 import com.marketinghub.prompt.dto.UpdatePromptEntityRequest;
 import com.marketinghub.prompt.mapper.PromptEntityMapper;
-import com.marketinghub.prompt.repository.PromptEntityRepository;
+import com.marketinghub.repository.jpa.prompt.PromptEntityRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 

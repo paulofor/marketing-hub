@@ -1,13 +1,13 @@
 package com.marketinghub.targeting.service;
 
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
 import com.marketinghub.targeting.dto.UpdateTargetingElementRequest;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;

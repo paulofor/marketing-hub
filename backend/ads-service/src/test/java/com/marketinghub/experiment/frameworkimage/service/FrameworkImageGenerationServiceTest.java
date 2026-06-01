@@ -17,8 +17,8 @@ import com.marketinghub.experiment.frameworkimage.dto.FrameworkImageGenerationIt
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobCompletionRequest;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
-import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.frameworkimage.FrameworkImageGenerationJobRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

@@ -1,7 +1,8 @@
 package com.marketinghub.ads.post;
 
+import com.marketinghub.repository.jpa.ads.post.InstagramPostRepository;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

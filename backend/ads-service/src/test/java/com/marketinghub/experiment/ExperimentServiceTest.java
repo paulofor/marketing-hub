@@ -1,20 +1,24 @@
 package com.marketinghub.experiment;
 
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
+import com.marketinghub.repository.jpa.experiment.MetricPresetRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
-import com.marketinghub.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,11 +45,11 @@ class ExperimentServiceTest {
     @Autowired
     MarketNicheRepository nicheRepository;
     @Autowired
-    com.marketinghub.hypothesis.repository.HypothesisRepository hypothesisRepository;
+    com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
     @Autowired
-    com.marketinghub.creative.label.repository.AngleRepository angleRepository;
+    com.marketinghub.repository.jpa.creative.label.AngleRepository angleRepository;
     @Autowired
-    com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
+    com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
     @Autowired
     ExperimentRepository experimentRepository;
     @Autowired
@@ -55,7 +59,7 @@ class ExperimentServiceTest {
     @Autowired
     InstagramAccountRepository instagramAccountRepository;
     @Autowired
-    com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
+    com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
     @Autowired
     ExperimentFunnelEventRepository experimentFunnelEventRepository;
 

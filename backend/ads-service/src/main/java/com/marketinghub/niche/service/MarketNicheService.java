@@ -1,14 +1,14 @@
 package com.marketinghub.niche.service;
 
 import com.marketinghub.chat.ChatDialog;
-import com.marketinghub.chat.repository.ChatDialogRepository;
+import com.marketinghub.repository.jpa.chat.ChatDialogRepository;
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
-import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
+import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTechnologyRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.description.NicheDetailedDescription;
-import com.marketinghub.niche.description.repository.NicheDetailedDescriptionRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.targeting.service.TargetingElementSyncService;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;

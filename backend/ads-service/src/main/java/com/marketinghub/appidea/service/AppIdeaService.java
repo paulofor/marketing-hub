@@ -2,9 +2,9 @@ package com.marketinghub.appidea.service;
 
 import com.marketinghub.appidea.AppIdea;
 import com.marketinghub.appidea.dto.CreateAppIdeaRequest;
-import com.marketinghub.appidea.repository.AppIdeaRepository;
+import com.marketinghub.repository.jpa.appidea.AppIdeaRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;

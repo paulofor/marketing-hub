@@ -3,7 +3,7 @@ package com.marketinghub.targeting.service;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.dto.TargetingMetaAdsPendingElementDto;
 import com.marketinghub.targeting.dto.UpdateTargetingMetaAdsDataRequest;
-import com.marketinghub.targeting.repository.TargetingElementRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,8 +1,8 @@
 package com.marketinghub.niche;
 
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
-import com.marketinghub.differentiatedtechnology.repository.DifferentiatedTechnologyRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTechnologyRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

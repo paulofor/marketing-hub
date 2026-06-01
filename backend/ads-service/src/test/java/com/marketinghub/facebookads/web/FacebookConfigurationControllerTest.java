@@ -2,9 +2,9 @@ package com.marketinghub.facebookads.web;
 
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.ads.FacebookAccount;
-import com.marketinghub.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.ads.FacebookPage;
-import com.marketinghub.ads.FacebookPageRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

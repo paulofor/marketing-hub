@@ -1,18 +1,18 @@
 package com.marketinghub.hypothesis.service;
 
 import com.marketinghub.creative.label.Angle;
-import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.deliverable.DeliverablePackage;
-import com.marketinghub.deliverable.repository.DeliverablePackageRepository;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.prompt.PromptAttributeDescription;
-import com.marketinghub.prompt.repository.PromptAttributeDescriptionRepository;
+import com.marketinghub.repository.jpa.prompt.PromptAttributeDescriptionRepository;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.finance.CurrencyConversionService;
 import java.math.BigDecimal;

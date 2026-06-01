@@ -7,7 +7,7 @@ import com.marketinghub.experiment.learning.ExperimentLearningRequest;
 import com.marketinghub.experiment.learning.dto.ExperimentLearningDto;
 import com.marketinghub.experiment.learning.dto.ExperimentLearningPayloadDto;
 import com.marketinghub.experiment.learning.mapper.ExperimentLearningMapper;
-import com.marketinghub.experiment.learning.repository.ExperimentLearningRepository;
+import com.marketinghub.repository.jpa.experiment.learning.ExperimentLearningRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.List;

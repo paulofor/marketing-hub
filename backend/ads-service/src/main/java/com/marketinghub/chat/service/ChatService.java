@@ -4,8 +4,8 @@ import com.marketinghub.chat.ChatMessage;
 import com.marketinghub.chat.ChatSession;
 import com.marketinghub.chat.dto.CreateChatMessageRequest;
 import com.marketinghub.chat.dto.CreateChatSessionRequest;
-import com.marketinghub.chat.repository.ChatMessageRepository;
-import com.marketinghub.chat.repository.ChatSessionRepository;
+import com.marketinghub.repository.jpa.chat.ChatMessageRepository;
+import com.marketinghub.repository.jpa.chat.ChatSessionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

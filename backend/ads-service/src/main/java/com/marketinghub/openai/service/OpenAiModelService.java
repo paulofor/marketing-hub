@@ -2,7 +2,7 @@ package com.marketinghub.openai.service;
 
 import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.openai.dto.CreateOpenAiModelRequest;
-import com.marketinghub.openai.repository.OpenAiModelRepository;
+import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;

@@ -3,7 +3,7 @@ package com.marketinghub.creative.label.service;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.creative.label.dto.AngleDto;
 import com.marketinghub.creative.label.dto.CreateAngleRequest;
-import com.marketinghub.creative.label.repository.AngleRepository;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

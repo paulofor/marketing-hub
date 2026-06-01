@@ -4,7 +4,7 @@ import com.marketinghub.media.*;
 import com.marketinghub.media.client.*;
 import com.marketinghub.media.dto.CreateAudioRequest;
 import com.marketinghub.media.dto.CreateVideoRequest;
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

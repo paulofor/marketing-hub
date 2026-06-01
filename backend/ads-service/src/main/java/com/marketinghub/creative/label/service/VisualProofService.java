@@ -2,7 +2,7 @@ package com.marketinghub.creative.label.service;
 
 import com.marketinghub.creative.label.VisualProof;
 import com.marketinghub.creative.label.dto.CreateVisualProofRequest;
-import com.marketinghub.creative.label.repository.VisualProofRepository;
+import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

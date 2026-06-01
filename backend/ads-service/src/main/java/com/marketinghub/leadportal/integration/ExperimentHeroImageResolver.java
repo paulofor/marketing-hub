@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStatus;
-import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
+import com.marketinghub.repository.jpa.experiment.frameworkimage.FrameworkImageGenerationJobRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;

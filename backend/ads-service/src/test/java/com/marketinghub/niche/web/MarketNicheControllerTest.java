@@ -2,7 +2,7 @@ package com.marketinghub.niche.web;
 
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.FixtureUtils;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

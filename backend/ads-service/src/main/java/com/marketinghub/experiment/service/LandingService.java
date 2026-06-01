@@ -1,8 +1,8 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.*;
-import com.marketinghub.experiment.repository.LandingPageRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

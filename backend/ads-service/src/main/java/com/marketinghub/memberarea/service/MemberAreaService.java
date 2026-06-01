@@ -2,9 +2,9 @@ package com.marketinghub.memberarea.service;
 
 import com.marketinghub.memberarea.MemberArea;
 import com.marketinghub.memberarea.dto.CreateMemberAreaRequest;
-import com.marketinghub.memberarea.repository.MemberAreaRepository;
+import com.marketinghub.repository.jpa.memberarea.MemberAreaRepository;
 import com.marketinghub.product.Product;
-import com.marketinghub.product.repository.ProductRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

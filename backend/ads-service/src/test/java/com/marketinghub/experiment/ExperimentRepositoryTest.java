@@ -1,13 +1,13 @@
 package com.marketinghub.experiment;
 
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;

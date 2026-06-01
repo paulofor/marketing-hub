@@ -2,10 +2,10 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
-import com.marketinghub.experiment.repository.ExperimentCampaignMetricRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.cost.CostAttributionService;
-import com.marketinghub.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,11 +1,11 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.journey.model.*;
-import com.marketinghub.journey.repository.JourneyAssignmentRepository;
-import com.marketinghub.journey.repository.JourneyRepository;
-import com.marketinghub.journey.repository.JourneyStepRepository;
+import com.marketinghub.repository.jpa.journey.JourneyAssignmentRepository;
+import com.marketinghub.repository.jpa.journey.JourneyRepository;
+import com.marketinghub.repository.jpa.journey.JourneyStepRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

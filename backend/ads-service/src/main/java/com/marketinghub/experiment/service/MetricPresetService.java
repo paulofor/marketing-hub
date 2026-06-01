@@ -1,7 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.MetricPreset;
-import com.marketinghub.experiment.repository.MetricPresetRepository;
+import com.marketinghub.repository.jpa.experiment.MetricPresetRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

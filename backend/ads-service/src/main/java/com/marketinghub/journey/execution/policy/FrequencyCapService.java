@@ -3,7 +3,7 @@ package com.marketinghub.journey.execution.policy;
 import com.marketinghub.journey.execution.JourneyExecutionProperties;
 import com.marketinghub.journey.model.JourneyAssignment;
 import com.marketinghub.journey.model.JourneyEventType;
-import com.marketinghub.journey.repository.EventLogRepository;
+import com.marketinghub.repository.jpa.journey.EventLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

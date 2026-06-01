@@ -2,8 +2,8 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.dto.CreateCreativeRequest;
-import com.marketinghub.experiment.repository.CreativeVariantRepository;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.CreativeVariantRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

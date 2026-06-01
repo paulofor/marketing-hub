@@ -1,5 +1,7 @@
 package com.marketinghub.architecture;
 
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -38,10 +40,10 @@ class ArquiteturaTest {
 
     private static final String MOIS_SALES_LIBRARY_PACKAGE = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
     private static final String EXPERIMENT_CLASS = "com.marketinghub.experiment.Experiment";
-    private static final String EXPERIMENT_REPOSITORY_CLASS = "com.marketinghub.experiment.repository.ExperimentRepository";
+    private static final String EXPERIMENT_REPOSITORY_CLASS = "com.marketinghub.repository.jpa.experiment.ExperimentRepository";
     private static final String GERALANDING_STAGE_EXECUTION_CLASS = "com.marketinghub.geralanding.GeraLandingStageExecution";
     private static final String GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS =
-            "com.marketinghub.geralanding.GeraLandingStageExecutionRepository";
+            "com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository";
     private static final String GERALANDING_STAGE_EXECUTION_BUILDER_CLASS =
             "com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder";
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
@@ -62,7 +64,8 @@ class ArquiteturaTest {
             .that()
             .resideInAPackage("com.marketinghub.mois..")
             .should()
-            .dependOnClassesThat(otherMarketingHubPackagesExcept("com.marketinghub.mois"))
+            .dependOnClassesThat(otherMarketingHubPackagesExcept(
+                    "com.marketinghub.mois", "com.marketinghub.repository.jpa.mois"))
             .because("[ARQUITETURA][MOIS] o módulo MOIS não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
@@ -70,7 +73,8 @@ class ArquiteturaTest {
             .that()
             .resideInAPackage("com.marketinghub.oprm..")
             .should()
-            .dependOnClassesThat(otherMarketingHubPackagesExcept("com.marketinghub.oprm"))
+            .dependOnClassesThat(otherMarketingHubPackagesExcept(
+                    "com.marketinghub.oprm", "com.marketinghub.repository.jpa.oprm"))
             .because("[ARQUITETURA][OPRM] o módulo OPRM não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
@@ -78,7 +82,8 @@ class ArquiteturaTest {
             .that()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
             .should()
-            .dependOnClassesThat(otherMarketingHubPackagesExcept(MOIS_SALES_LIBRARY_PACKAGE))
+            .dependOnClassesThat(otherMarketingHubPackagesExcept(
+                    MOIS_SALES_LIBRARY_PACKAGE, "com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1"))
             .because("[ARQUITETURA][MOIS] o pacote de biblioteca de páginas de vendas do MOIS deve ficar isolado dos demais pacotes internos");
 
     @ArchTest
@@ -430,14 +435,22 @@ class ArquiteturaTest {
     }
 
     /**
-     * Retorna predicado que identifica classes internas fora do pacote permitido.
+     * Retorna predicado que identifica classes internas fora dos pacotes permitidos.
      */
-    private static DescribedPredicate<JavaClass> otherMarketingHubPackagesExcept(String allowedPackagePrefix) {
-        return new DescribedPredicate<>("other com.marketinghub packages except " + allowedPackagePrefix) {
+    private static DescribedPredicate<JavaClass> otherMarketingHubPackagesExcept(String... allowedPackagePrefixes) {
+        return new DescribedPredicate<>("other com.marketinghub packages except allowed prefixes") {
             @Override
             public boolean test(JavaClass input) {
                 String packageName = input.getPackageName();
-                return packageName.startsWith("com.marketinghub") && !packageName.startsWith(allowedPackagePrefix);
+                if (!packageName.startsWith("com.marketinghub")) {
+                    return false;
+                }
+                for (String allowedPackagePrefix : allowedPackagePrefixes) {
+                    if (packageName.startsWith(allowedPackagePrefix)) {
+                        return false;
+                    }
+                }
+                return true;
             }
         };
     }

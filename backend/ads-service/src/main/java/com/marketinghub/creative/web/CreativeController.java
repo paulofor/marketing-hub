@@ -7,7 +7,7 @@ import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
 import com.marketinghub.media.Asset;
-import com.marketinghub.media.repository.AssetRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;

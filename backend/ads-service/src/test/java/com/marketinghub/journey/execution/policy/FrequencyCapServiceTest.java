@@ -2,7 +2,7 @@ package com.marketinghub.journey.execution.policy;
 
 import com.marketinghub.journey.execution.JourneyExecutionProperties;
 import com.marketinghub.journey.model.JourneyAssignment;
-import com.marketinghub.journey.repository.EventLogRepository;
+import com.marketinghub.repository.jpa.journey.EventLogRepository;
 import com.marketinghub.model.Lead;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

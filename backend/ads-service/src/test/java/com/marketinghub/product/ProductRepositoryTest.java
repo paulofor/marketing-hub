@@ -1,6 +1,6 @@
 package com.marketinghub.product;
 
-import com.marketinghub.product.repository.ProductRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

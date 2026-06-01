@@ -3,7 +3,7 @@ package com.marketinghub.hypothesis.service;
 import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumMap;

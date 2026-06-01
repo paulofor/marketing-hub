@@ -17,8 +17,8 @@ import com.marketinghub.hypothesis.dto.internal.HypothesisFrameworkGenerationJob
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkSection;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
-import com.marketinghub.hypothesis.repository.HypothesisFrameworkGenerationJobRepository;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisFrameworkGenerationJobRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.openai.OpenAiResponse;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import java.io.IOException;

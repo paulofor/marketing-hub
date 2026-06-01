@@ -2,7 +2,7 @@ package com.marketinghub.ai.generation.service;
 
 import com.marketinghub.ai.generation.AiWorkerGeneration;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
-import com.marketinghub.ai.generation.repository.AiWorkerGenerationRepository;
+import com.marketinghub.repository.jpa.ai.generation.AiWorkerGenerationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

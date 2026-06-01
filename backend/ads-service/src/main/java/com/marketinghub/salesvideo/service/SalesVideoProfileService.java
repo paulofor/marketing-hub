@@ -1,18 +1,18 @@
 package com.marketinghub.salesvideo.service;
 
 import com.marketinghub.experiment.LandingPage;
-import com.marketinghub.experiment.repository.LandingPageRepository;
+import com.marketinghub.repository.jpa.experiment.LandingPageRepository;
 import com.marketinghub.product.Product;
-import com.marketinghub.product.repository.ProductRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
-import com.marketinghub.salesvideo.repository.SalesVideoJobRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoProfileRepository;
-import com.marketinghub.salesvideo.repository.SalesVideoScriptRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;

@@ -1,10 +1,14 @@
 package com.marketinghub.salesvideo.service;
 
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoCommercialPlaybookRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoConversionEventRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
-import com.marketinghub.salesvideo.repository.*;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

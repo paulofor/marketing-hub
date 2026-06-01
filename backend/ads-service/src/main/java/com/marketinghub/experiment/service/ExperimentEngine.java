@@ -2,7 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import java.math.BigDecimal;
 import org.springframework.scheduling.annotation.Scheduled;

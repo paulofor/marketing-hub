@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
-import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframePending;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;

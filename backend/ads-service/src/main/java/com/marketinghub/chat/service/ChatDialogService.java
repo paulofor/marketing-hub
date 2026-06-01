@@ -3,7 +3,7 @@ package com.marketinghub.chat.service;
 import com.marketinghub.chat.ChatDialog;
 import com.marketinghub.chat.dto.CreateChatDialogRequest;
 import com.marketinghub.chat.dto.UpdateChatDialogRequest;
-import com.marketinghub.chat.repository.ChatDialogRepository;
+import com.marketinghub.repository.jpa.chat.ChatDialogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

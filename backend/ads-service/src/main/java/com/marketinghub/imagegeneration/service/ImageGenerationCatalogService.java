@@ -6,7 +6,7 @@ import com.marketinghub.imagegeneration.ImageGenerationQuality;
 import com.marketinghub.imagegeneration.dto.ImageGenerationModelDto;
 import com.marketinghub.imagegeneration.dto.ImageGenerationPriceDto;
 import com.marketinghub.imagegeneration.dto.ImageGenerationQualityDto;
-import com.marketinghub.imagegeneration.repository.ImageGenerationModelRepository;
+import com.marketinghub.repository.jpa.imagegeneration.ImageGenerationModelRepository;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;

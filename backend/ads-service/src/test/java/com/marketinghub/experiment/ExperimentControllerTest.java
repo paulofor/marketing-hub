@@ -1,14 +1,16 @@
 package com.marketinghub.experiment;
 
+import com.marketinghub.repository.jpa.experiment.MetricPresetRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.MetricPreset;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
-import com.marketinghub.creative.label.repository.AngleRepository;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.creative.label.AngleRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -45,11 +47,11 @@ class ExperimentControllerTest {
     @Autowired
     HypothesisRepository hypothesisRepository;
     @Autowired
-    com.marketinghub.experiment.repository.MetricPresetRepository metricPresetRepository;
+    com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
     @Autowired
     JourneyTemplateRepository journeyTemplateRepository;
     @Autowired
-    com.marketinghub.leadportal.repository.LeadPortalFlowRepository leadPortalFlowRepository;
+    com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
 
     private Long createLeadPortalFlow(MarketNiche niche) {
         String slug = "flow-" + UUID.randomUUID();

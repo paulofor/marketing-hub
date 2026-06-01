@@ -1,17 +1,17 @@
 package com.marketinghub.journey.service;
 
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.journey.dto.JourneyMetricsResponse;
 import com.marketinghub.journey.dto.JourneyRequest;
 import com.marketinghub.journey.dto.JourneyUpdateRequest;
 import com.marketinghub.journey.model.Journey;
 import com.marketinghub.journey.model.JourneyStatus;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyRepository;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

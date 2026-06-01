@@ -4,7 +4,7 @@ import com.marketinghub.targeting.TargetingCandidate;
 import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.TargetingRequest;
-import com.marketinghub.targeting.repository.TargetingResolutionJobRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingResolutionJobRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;

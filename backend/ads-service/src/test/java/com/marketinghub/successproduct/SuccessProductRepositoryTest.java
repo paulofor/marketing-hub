@@ -1,6 +1,6 @@
 package com.marketinghub.successproduct;
 
-import com.marketinghub.successproduct.repository.SuccessProductRepository;
+import com.marketinghub.repository.jpa.successproduct.SuccessProductRepository;
 import com.marketinghub.successproduct.SuccessProductPlatform;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

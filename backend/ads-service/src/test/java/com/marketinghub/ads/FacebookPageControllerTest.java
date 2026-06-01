@@ -1,5 +1,7 @@
 package com.marketinghub.ads;
 
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,16 +15,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.repository.ExperimentRepository;
-import com.marketinghub.ads.CampaignRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.ads.CampaignRepository;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.repository.HypothesisRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.ads.InstagramAccount;
-import com.marketinghub.ads.InstagramAccountRepository;
+import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
-import com.marketinghub.journey.repository.JourneyTemplateRepository;
+import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 
 import java.math.BigDecimal;
 

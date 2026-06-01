@@ -4,8 +4,8 @@ import com.marketinghub.prompt.PromptEntity;
 import com.marketinghub.prompt.PromptEntityDescription;
 import com.marketinghub.prompt.dto.PromptEntityDescriptionDto;
 import com.marketinghub.prompt.dto.UpdatePromptEntityDescriptionRequest;
-import com.marketinghub.prompt.repository.PromptEntityDescriptionRepository;
-import com.marketinghub.prompt.repository.PromptEntityRepository;
+import com.marketinghub.repository.jpa.prompt.PromptEntityDescriptionRepository;
+import com.marketinghub.repository.jpa.prompt.PromptEntityRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 

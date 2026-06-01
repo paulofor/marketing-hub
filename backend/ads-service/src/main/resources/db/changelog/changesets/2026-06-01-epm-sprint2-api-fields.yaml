@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-01-epm-sprint2-api-fields-budget
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: experiment_budget
+                columnName: spend_limit_cents
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_budget
+                ADD COLUMN spend_limit_cents BIGINT NULL AFTER planned_total_budget_cents,
+                ADD COLUMN actual_spend_cents BIGINT NULL AFTER spend_limit_cents,
+                ADD COLUMN remaining_budget_cents BIGINT NULL AFTER actual_spend_cents;
+
+              UPDATE experiment_budget
+                 SET spend_limit_cents = planned_total_budget_cents,
+                     actual_spend_cents = 0,
+                     remaining_budget_cents = planned_total_budget_cents
+               WHERE spend_limit_cents IS NULL;
+
+  - changeSet:
+      id: 2026-06-01-epm-sprint2-api-fields-metric
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: experiment_financial_metric
+                columnName: impressions
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_financial_metric
+                ADD COLUMN impressions BIGINT NOT NULL DEFAULT 0 AFTER measured_at,
+                ADD COLUMN clicks BIGINT NOT NULL DEFAULT 0 AFTER impressions,
+                ADD COLUMN sample_requests INT NOT NULL DEFAULT 0 AFTER leads,
+                ADD COLUMN ctr_decimal DECIMAL(10,6) NULL AFTER estimated_net_profit_cents,
+                ADD COLUMN cpc_cents BIGINT NULL AFTER ctr_decimal,
+                ADD COLUMN cpl_cents BIGINT NULL AFTER cpc_cents,
+                ADD COLUMN cpa_cents BIGINT NULL AFTER cpl_cents,
+                ADD COLUMN roas_decimal DECIMAL(10,4) NULL AFTER cpa_cents,
+                ADD COLUMN landing_conversion_decimal DECIMAL(10,6) NULL AFTER roas_decimal,
+                ADD COLUMN purchase_conversion_decimal DECIMAL(10,6) NULL AFTER landing_conversion_decimal;

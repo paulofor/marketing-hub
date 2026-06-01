@@ -817,3 +817,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-01-epm-sprint1-base.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-01-epm-sprint2-api-fields.yaml
+      relativeToChangelogFile: true
+

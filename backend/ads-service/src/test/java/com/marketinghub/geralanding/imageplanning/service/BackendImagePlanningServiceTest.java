@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
@@ -31,10 +32,14 @@ class BackendImagePlanningServiceTest {
     void startShouldRegisterInitialExecutionForImagePlanningStage() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        FrameworkImageGenerationJobRepository jobRepository = mock(FrameworkImageGenerationJobRepository.class);
         BackendImagePlanningService service =
-                new BackendImagePlanningService(experimentRepository, executionRepository, new ObjectMapper());
-        Experiment experiment = mock(Experiment.class);
-        when(experiment.getId()).thenReturn(91L);
+                new BackendImagePlanningService(
+                        experimentRepository, executionRepository, jobRepository, new ObjectMapper());
+        Experiment experiment = new Experiment();
+        experiment.setId(91L);
+        experiment.setLandingPageImagePlanning("{\"images\":[{\"imageUrl\":\"old\"}]}");
+        experiment.setLandingPageImageAssets("{\"images\":[{\"resolvedUrl\":\"old\"}]}");
         when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
         when(executionRepository.save(any(GeraLandingStageExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -50,6 +55,10 @@ class BackendImagePlanningServiceTest {
                         && execution.getStatus().equals("INICIADO")
                         && execution.getPromptTemplateId().equals("manual/start")
                         && execution.getIdJob() != null));
+        assertEquals(null, experiment.getLandingPageImagePlanning());
+        assertEquals(null, experiment.getLandingPageImageAssets());
+        verify(jobRepository).deleteByExperimentId(91L);
+        verify(experimentRepository).save(experiment);
     }
 
     /** Deve buscar somente jobs iniciados da etapa image planning para o endpoint interno pending. */
@@ -58,7 +67,11 @@ class BackendImagePlanningServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendImagePlanningService service =
-                new BackendImagePlanningService(experimentRepository, executionRepository, new ObjectMapper());
+                new BackendImagePlanningService(
+                        experimentRepository,
+                        executionRepository,
+                        mock(FrameworkImageGenerationJobRepository.class),
+                        new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(77L);
         when(experiment.getName()).thenReturn("Experimento Image Planning");
@@ -94,7 +107,11 @@ class BackendImagePlanningServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendImagePlanningService service =
-                new BackendImagePlanningService(experimentRepository, executionRepository, new ObjectMapper());
+                new BackendImagePlanningService(
+                        experimentRepository,
+                        executionRepository,
+                        mock(FrameworkImageGenerationJobRepository.class),
+                        new ObjectMapper());
         Experiment experiment = new Experiment();
         experiment.setId(44L);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()

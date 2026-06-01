@@ -311,7 +311,8 @@ A tabela `experiment` armazena o experimento e os artefatos funcionais consolida
 - `experiment` não é a tabela de auditoria completa das chamadas à IA.
 - Auditoria de chamada, request, resposta bruta, tokens e custo por etapa ficam em `experiment_pipeline_generation_job`.
 - Jobs de imagem por item planejado ficam em `framework_image_generation_job`.
-- O manifesto consolidado consumível pelas etapas seguintes fica em `experiment.landing_page_image_assets`, sem sobrescrever o planejamento/prompt original em `experiment.landing_page_image_planning`.
+- Ao reiniciar manualmente a etapa de planejamento de imagens da landing, os jobs antigos de `framework_image_generation_job` daquele experimento devem ser removidos para evitar reutilização de imagens obsoletas.
+- O manifesto consolidado consumível pelas etapas seguintes fica em `experiment.landing_page_image_assets`, sem sobrescrever o planejamento/prompt original em `experiment.landing_page_image_planning` durante a geração de imagens; quando o próprio planejamento é reexecutado, o planejamento e o manifesto anteriores devem ser zerados antes do novo processamento.
 
 ## 7. Tabela `experiment_pipeline_generation_job`
 

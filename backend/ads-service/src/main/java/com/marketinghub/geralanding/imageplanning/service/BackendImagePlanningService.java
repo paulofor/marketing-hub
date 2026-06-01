@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.frameworkimage.repository.FrameworkImageGenerationJobRepository;
 import com.marketinghub.experiment.repository.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecutionRepository;
@@ -39,15 +40,18 @@ public class BackendImagePlanningService {
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
+    private final FrameworkImageGenerationJobRepository frameworkImageGenerationJobRepository;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios e montadores necessários para a etapa image planning. */
     public BackendImagePlanningService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
+            FrameworkImageGenerationJobRepository frameworkImageGenerationJobRepository,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
+        this.frameworkImageGenerationJobRepository = frameworkImageGenerationJobRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -62,6 +66,7 @@ public class BackendImagePlanningService {
         Instant now = Instant.now();
         var experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+        resetImageArtifactsForNewPlanning(experiment);
 
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(experiment.getId())
@@ -76,6 +81,14 @@ public class BackendImagePlanningService {
                 .build();
         GeraLandingStageExecution saved = executionRepository.save(execution);
         return new GeraLandingImagePlanningStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+    }
+
+    /** Limpa o planejamento anterior, manifesto e jobs reais de imagem antes de gerar novos prompts. */
+    private void resetImageArtifactsForNewPlanning(Experiment experiment) {
+        experiment.setLandingPageImagePlanning(null);
+        experiment.setLandingPageImageAssets(null);
+        frameworkImageGenerationJobRepository.deleteByExperimentId(experiment.getId());
+        experimentRepository.save(experiment);
     }
 
     /** Lista execuções da etapa convertendo para o DTO local da etapa. */

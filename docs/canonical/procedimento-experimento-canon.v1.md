@@ -51,6 +51,7 @@ No fluxo atual, a geração da landing segue as etapas:
 1. gerar wireframe (`LANDING_PAGE_WIREFRAME`);
 2. gerar copy (`LANDING_PAGE_COPY`);
 3. gerar planejamento/prompt de imagens (`LANDING_PAGE_IMAGE_PLANNING`) e gerar imagens, materializando `experiment.landing_page_image_assets` com as URLs finais;
+   - ao reexecutar manualmente `LANDING_PAGE_IMAGE_PLANNING`, o backend deve zerar o planejamento anterior, o manifesto `experiment.landing_page_image_assets` e os jobs de imagem já associados ao experimento antes de registrar o novo job;
 4. gerar preset de design (`LANDING_PAGE_DESIGN_PRESET`);
 5. gerar entregável HTML da landing (`LANDING_PAGE_HTML`).
 

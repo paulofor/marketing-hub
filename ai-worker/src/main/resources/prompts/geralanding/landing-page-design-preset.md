@@ -75,6 +75,22 @@ Regras obrigatórias:
 11. Garantir estados interativos reais (ex.: `:hover`) por combinação consistente de tokens base + tokens de hover.
 12. É proibido criar em `definicoes` qualquer classe (`nome`) que já exista no `landingPageWireframe.definicoes`; os nomes do preset de design devem ser sempre inéditos em relação ao wireframe.
 
+
+Qualidade visual mínima da landing (obrigatório):
+- `body` deve ter `margin: 0`, fonte legível, background consistente e texto com contraste suficiente para leitura imediata.
+- Seções e containers principais devem usar `max-width` e centralização com `margin-left: auto` e `margin-right: auto` quando o conteúdo não precisar ocupar toda a largura.
+- Hero deve ficar em layout de duas colunas no desktop e uma coluna no mobile, preservando hierarquia clara entre promessa, prova, CTA e visual.
+- CTA primário deve ter aparência real de botão: `padding`, `background`, `border-radius`, `font-weight`, `display: inline-flex`, estados `:hover` e contraste claro entre texto e fundo.
+- Imagens devem usar `max-width: 100%`, altura controlada, `object-fit`, `border-radius` e nunca ocupar a dobra inteira sem contexto textual, CTA ou container de suporte.
+- Listas e bullets devem ter espaçamento controlado (`margin`, `padding`, `gap` ou `line-height`) para leitura escaneável sem amontoar textos.
+- Formulário deve aparecer em card visual separado, com campos e botão claros, espaçamento interno, borda/sombra/contraste e hierarquia de ação evidente.
+
+Critérios negativos obrigatórios (não aceitar no JSON):
+- Não gerar texto colado na borda da tela.
+- Não deixar link com aparência padrão de navegador; todo link/CTA acionável deve receber classes visuais intencionais.
+- Não permitir imagem gigante sem container.
+- Não usar título que quebre a primeira dobra de forma agressiva.
+
 Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Cores de texto obrigatórias: criar classes para `textPrimary`, `textMuted`, `textSubtle`, `textOnButtonPrimary`, `textOnInput`, `placeholderText`.
 - Corpo global obrigatório: aplicar `bgBody`, `fontBase`, `textPrimary` e `marginReset` exclusivamente em `pagina.corpo.estilos`, sem `pagina.body` nem preset duplicado `pageRoot`.
@@ -85,7 +101,62 @@ Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Opacidade: não usar `opacityMuted` para resolver cor de texto; preferir `color` com valores RGBA/HEX com contraste controlado.
 - Contraste obrigatório em tema escuro: assegurar WCAG mínimo de 4.5:1 para texto normal e 3:1 para texto grande.
 
-Estrutura obrigatória de `definicoes` (substitui a lista anterior):
+Estrutura obrigatória de `definicoes` (substitui a lista anterior; inclua os grupos de layout/estrutura necessários para largura máxima, grid, flex, espaçamento e imagens):
+
+- `estrutura-layout`
+  - display
+  - width
+  - height
+  - min-width
+  - min-height
+  - max-width
+  - max-height
+  - box-sizing
+  - overflow
+  - overflow-x
+  - overflow-y
+  - grid
+  - grid-template
+  - grid-template-columns
+  - grid-template-rows
+  - grid-template-areas
+  - grid-column
+  - grid-column-start
+  - grid-column-end
+  - grid-row
+  - grid-row-start
+  - grid-row-end
+  - grid-area
+  - flex
+  - flex-direction
+  - flex-wrap
+  - flex-flow
+  - justify-content
+  - align-items
+  - align-content
+  - align-self
+  - place-items
+  - place-content
+  - justify-items
+  - gap
+  - row-gap
+  - column-gap
+  - order
+  - flex-grow
+  - flex-shrink
+  - flex-basis
+
+- `espacamento`
+  - margin
+  - margin-top
+  - margin-right
+  - margin-bottom
+  - margin-left
+  - padding
+  - padding-top
+  - padding-right
+  - padding-bottom
+  - padding-left
 
 - `cores-fundo`
   - color
@@ -185,6 +256,8 @@ Estrutura obrigatória de `definicoes` (substitui a lista anterior):
 Formato esperado de saída:
 {
   "definicoes": {
+    "estrutura-layout": { "desktop": [{ "nome": "string", "atributoCss": "display", "valor": "grid" }], "mobile": [] },
+    "espacamento": { "desktop": [{ "nome": "string", "atributoCss": "padding", "valor": "24px" }], "mobile": [] },
     "cores-fundo": { "desktop": [{ "nome": "string", "atributoCss": "background-color", "valor": "#FFFFFF" }], "mobile": [] },
     "tipografia": { "desktop": [], "mobile": [] },
     "texto": { "desktop": [], "mobile": [] },

@@ -2949,3 +2949,22 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
   - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-01-pipeline-crud.yaml
+## 2026-06-01 — Regra comercial de imagens no wireframe GeraLanding
+- tarefa: substituir a obrigação mecânica de imagens por seção por uma regra comercial de uso visual no prompt/schema de `landing-page-wireframe`.
+- causa-raiz/objetivo: a exigência de pelo menos uma imagem por seção e mínimo fixo de 4 imagens favorecia preenchimento decorativo, hero desproporcional e esforço visual sem relação direta com venda.
+- correção aplicada:
+  - o prompt do wireframe agora limita imagens a funções de prova, demonstração do produto, antes/depois, mecanismo ou redução de objeção;
+  - a faixa padrão passou a ser 2 a 4 imagens úteis, com exceção apenas para nichos que exijam mais prova visual;
+  - a imagem de produto continua obrigatória e o hero passou a exigir imagem controlada em container, com limite visual desktop/mobile;
+  - o schema passou a exigir metadados visuais mínimos por imagem, e o schema de preset design foi sincronizado para preservar compatibilidade downstream.
+- impacto esperado: landings mais simples, focadas em venda e prova real, sem imagens artificiais que prejudiquem CTA, escaneabilidade ou percepção de valor.
+## 2026-06-01 — Qualidade visual mínima no design preset
+- tarefa: reforçar a etapa `landing-page-design-preset` para orientar o modelo a gerar uma landing com acabamento visual mínimo vendável.
+- causa-raiz/objetivo: o prompt antigo validava contraste e CTA destacado, mas não obrigava requisitos concretos de layout, espaçamento, containers, imagens e formulário; isso podia permitir páginas visualmente frágeis, com texto colado, links padrão ou imagens desproporcionais.
+- correção aplicada:
+  - adicionada seção obrigatória de qualidade visual mínima ao prompt do preset design, cobrindo `body`, containers, hero responsivo, CTA real, imagens controladas, listas e formulário em card;
+  - adicionados critérios negativos explícitos contra texto colado na borda, link padrão de navegador, imagem gigante sem container e título que quebra agressivamente a primeira dobra;
+  - ampliado o schema do preset para aceitar grupos/tokens de estrutura e espaçamento necessários para largura máxima, grid, flex, centralização, padding/margin e controle de imagem;
+  - sincronizado o cânone de etapas e a lista de CSS para registrar que acabamento visual mínimo pode combinar propriedades estruturais e visuais quando necessário;
+  - adicionado teste unitário garantindo que o prompt enviado para `landing-page-design-preset` contém as regras visuais mínimas.
+- impacto esperado: as próximas execuções do design preset tendem a produzir HTML provisório com aparência mais profissional, maior clareza na primeira dobra e CTAs mais fortes para vendas.

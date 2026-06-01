@@ -92,7 +92,12 @@ Trecho obrigatório do contrato de seção/elementos (manter):
   - `tipoVisualEsperado`;
   - `funcaoComercial`;
   - `objecaoQueRemove`;
-  - `classificacaoVisual` em: `mockup`, `foto`, `ilustração`, `diagrama`, `print conceitual`.
+  - `classificacaoVisual` em: `mockup`, `foto`, `ilustração`, `diagrama`, `print conceitual`;
+  - `posicaoDesejada`: posição visual desejada dentro da seção, citando se fica antes/depois do texto, dentro de card, ao lado do CTA ou abaixo dele;
+  - `aspectRatio`: proporção aproximada esperada (ex.: `1:1`, `4:3`, `3:2`, `16:9`, `9:16`);
+  - `maxVisualHeight`: objeto com limites de altura para `desktop` e `mobile` (ex.: `360px` e `240px`), evitando imagens desproporcionais;
+  - `layoutRole`: papel de layout/comercial da imagem em: `prova`, `demonstracao-produto`, `antes-depois`, `mecanismo`, `reducao-objecao`, `produto`;
+  - `relacaoComCta`: como o visual apoia, aproxima, prepara ou reforça o CTA da seção.
 - `briefingVisual` é exclusivo de `img`: para outras tags, manter `briefingVisual: null` (não preencher objeto).
 - `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
 - Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
@@ -116,7 +121,8 @@ Trecho obrigatório do contrato de seção/elementos (manter):
   - qual tipo de visual é esperado;
   - qual função comercial o visual cumpre;
   - qual objeção o visual ajuda a remover;
-  - classificar o visual como: `mockup`, `foto`, `ilustração`, `diagrama` ou `print conceitual`.
+  - classificar o visual como: `mockup`, `foto`, `ilustração`, `diagrama` ou `print conceitual`;
+  - declarar metadados visuais mínimos no próprio `briefingVisual`: `posicaoDesejada`, `aspectRatio`, `maxVisualHeight.desktop`, `maxVisualHeight.mobile`, `layoutRole` e `relacaoComCta`.
 
 Regras comerciais e estruturais obrigatórias (mantidas):
 - Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
@@ -128,10 +134,11 @@ Regras comerciais e estruturais obrigatórias (mantidas):
 - Hero obrigatório com âncora primária: na primeira dobra (hero), incluir CTA com link âncora direto para a seção do formulário.
 - Âncoras obrigatórias adicionais: incluir mais duas âncoras internas para pontos estratégicos distintos da página (ex.: mecanismo, prova social, oferta), além da âncora do hero para o formulário.
 - Quantidade mínima de seções obrigatória: gerar no mínimo 4 seções em `pagina.corpo.secoes`.
-- Quantidade mínima de imagens obrigatória: gerar no mínimo 4 elementos `img` no total da página.
-- Regra mandatória para cumprir o mínimo de imagens: cada seção em `pagina.corpo.secoes[]` deve conter pelo menos um elemento `img` em `elementosSeccao` (direto ou em `elementosInternos`).
+- Quantidade de imagens orientada pela estrutura: planejar normalmente de 2 a 4 elementos `img` úteis no total da página; só exceder 4 quando o nicho exigir mais prova visual concreta (ex.: antes/depois, evidência de resultado, demonstração de produto ou prints conceituais indispensáveis).
+- Regra comercial para uso de imagens: incluir `img` somente quando a imagem cumprir função clara de prova, demonstração do produto, antes/depois, explicação do mecanismo ou redução de objeção; não criar imagem decorativa nem inserir `img` apenas para cumprir seção.
 - Imagem de produto obrigatória: garantir que pelo menos uma `img` represente visualmente a ideia do produto/entrega que o cliente está comprando (ex.: mockup da solução, amostra do conteúdo, kit/resultado final esperado).
-- Balanceamento visual obrigatório: intercalar blocos de texto e imagem ao longo da página para reduzir paredes de texto e melhorar escaneabilidade.
+- Hero com imagem controlada: quando o hero usar imagem, permitir no máximo uma `img`, sempre dentro de um container/coluna/card com limite explícito em `maxVisualHeight.desktop` e `maxVisualHeight.mobile`; é proibido planejar hero com imagem full-width, desproporcional ou dominante a ponto de empurrar CTA e promessa para fora da primeira dobra.
+- Balanceamento visual obrigatório: intercalar blocos de texto e imagens úteis ao longo da página para reduzir paredes de texto e melhorar escaneabilidade, sem sacrificar foco no CTA.
 
 Heurísticas de composição (inspiração, não regra rígida):
 - Hero bullets: preferir ~3 itens.

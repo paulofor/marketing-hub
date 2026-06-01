@@ -2925,3 +2925,9 @@
   - atualizado o cânone de etapas para explicitar que wireframe e design preset seguem a mesma regra;
   - adicionado teste unitário garantindo que o schema de design preset aceita apenas `pagina.corpo` para a estrutura visual.
 - impacto esperado: a resposta da etapa de preset fica mais simples, sem campos duplicados, facilitando leitura na tela, validação do contrato e geração posterior do HTML.
+
+## 2026-06-01 — CRUD de pipelines e etapas
+
+- Criada base administrativa para cadastrar pipelines e etapas reutilizáveis, começando pelo Pipeline de Experimento.
+- Seed inicial inclui as etapas Campaign Angle, Ad Copy, Landing Wireframe, Landing Copy, Planejamento de Imagens, Preset Design, GeraLanding HTML, Landing HTML e Landing Page Deliverables.
+- A tela permite criar, editar, ativar/inativar e remover pipelines e etapas, mantendo o fluxo Dor → Resultado → Mecanismo → Prova → Oferta como referência operacional.

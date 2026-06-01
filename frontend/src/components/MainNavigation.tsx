@@ -134,6 +134,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/agent-themes", label: "Temas de agente", icon: Layers },
       { to: "/differentiated-technologies", label: "Tecnologias diferenciadas", icon: Cpu },
       { to: "/microservices", label: "Microserviços", icon: Server },
+      { to: "/pipelines", label: "Pipelines", icon: Workflow },
       { to: "/microservices/errors", label: "Erros de microserviço", icon: AlertTriangle },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },

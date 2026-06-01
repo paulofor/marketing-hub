@@ -663,3 +663,13 @@ Conteúdo sugerido:
 - estados de loading/erro/vazio
 - ações por tela
 - integração frontend ↔ backend
+
+---
+
+## 15. Complemento — telas de acompanhamento operacional do OPRM
+
+Para a evolução do OPRM como módulo operável pelo usuário, a especificação de telas deve ser complementada pelo plano dedicado em:
+
+- `docs/novos-modulos/OPRM/oprm-telas-acompanhamento-operacional.md`
+
+Esse complemento detalha as novas telas de **Painel OPRM**, **Ingestão de Mercado**, **Ciclos CNAE**, **Candidatos de Nicho**, **Fila de Decisão** e **Diagnóstico**, com foco em permitir que o usuário acompanhe o que o OPRM está fazendo em cada etapa até gerar oportunidade comercial validável.

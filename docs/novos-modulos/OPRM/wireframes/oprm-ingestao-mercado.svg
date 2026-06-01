@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Ingestão de Mercado</title>
+  <desc id="desc">Wireframe visual da tela Ingestão de Mercado do módulo OPRM.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style><![CDATA[text{font-family:Inter,Arial,sans-serif}.small{font-size:18px}.tiny{font-size:15px}.title{font-size:34px;font-weight:700}.h2{font-size:24px;font-weight:700}.h3{font-size:19px;font-weight:700}.muted{fill:#6b7280}.label{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}]]></style>
+  </defs>
+  <rect width="1440" height="900" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="250" height="900" fill="#172033"/>
+  <text x="32" y="54" fill="#fff" font-size="26" font-weight="800">Marketing Hub</text>
+  <text x="32" y="92" fill="#93a4bd" font-size="16">OPRM</text>
+  <rect x="18" y="119" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="141" r="6" fill="#64748b"/>
+  <text x="62" y="147" fill="#cbd5e1" font-size="17" font-weight="500">Painel OPRM</text>
+  <rect x="18" y="177" width="214" height="44" rx="12" fill="#26344f"/>
+  <circle cx="42" cy="199" r="6" fill="#2563eb"/>
+  <text x="62" y="205" fill="#fff" font-size="17" font-weight="700">Ingestão</text>
+  <rect x="18" y="235" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="257" r="6" fill="#64748b"/>
+  <text x="62" y="263" fill="#cbd5e1" font-size="17" font-weight="500">Ciclos CNAE</text>
+  <rect x="18" y="293" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="315" r="6" fill="#64748b"/>
+  <text x="62" y="321" fill="#cbd5e1" font-size="17" font-weight="500">Candidatos</text>
+  <rect x="18" y="351" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="373" r="6" fill="#64748b"/>
+  <text x="62" y="379" fill="#cbd5e1" font-size="17" font-weight="500">Fila decisão</text>
+  <rect x="18" y="409" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="431" r="6" fill="#64748b"/>
+  <text x="62" y="437" fill="#cbd5e1" font-size="17" font-weight="500">Diagnóstico</text>
+  <text x="290" y="62" class="title" fill="#111827">Ingestão de Mercado</text>
+  <text x="290" y="94" class="small muted">Acompanhamento de snapshot, runs e arquivos CNPJ/CNAE.</text>
+  <rect x="1210" y="40" width="160" height="44" rx="14" fill="#2563eb"/>
+  <text x="1248" y="68" fill="#fff" font-size="16" font-weight="700">Atualizar</text>
+  <rect x="290" y="125" width="520" height="145" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="163" class="h3" fill="#111827">Snapshot canônico</text>
+  <text x="314" y="191" class="tiny muted">Base oficial usada para market size</text>
+  <text x="320" y="210" fill="#2563eb" font-size="38" font-weight="800">2026-05-10</text>
+  <rect x="620" y="178" width="205" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="637" y="200" fill="#10b981" font-size="15" font-weight="700">Arquivos mínimos OK</text>
+  <rect x="840" y="125" width="540" height="145" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="864" y="163" class="h3" fill="#111827">Alertas canônicos</text>
+  <text x="864" y="191" class="tiny muted">Bloqueios que impedem fechamento prematuro</text>
+  <rect x="870" y="183" width="295" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="887" y="205" fill="#10b981" font-size="15" font-weight="700">0 ESTABELECIMENTOS em STARTED</text>
+  <rect x="870" y="225" width="250" height="32" rx="16" fill="#2563eb" opacity="0.12"/>
+  <text x="887" y="247" fill="#2563eb" font-size="15" font-weight="700">Resumo final obrigatório</text>
+  <rect x="290" y="305" width="500" height="470" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="343" class="h3" fill="#111827">Runs de importação</text>
+  <text x="314" y="371" class="tiny muted">Status resumido por execução</text>
+  <rect x="320" y="352" width="430" height="58" rx="14" fill="#f8fafc"/>
+  <text x="345" y="380" class="small" fill="#111827" font-weight="800">#184</text>
+  <rect x="405" y="358" width="97" height="32" rx="16" fill="#f59e0b" opacity="0.12"/>
+  <text x="422" y="380" fill="#f59e0b" font-size="15" font-weight="700">STARTED</text>
+  <text x="560" y="380" class="tiny muted">2.8M linhas • Em andamento</text>
+  <rect x="320" y="434" width="430" height="58" rx="14" fill="#f8fafc"/>
+  <text x="345" y="462" class="small" fill="#111827" font-weight="800">#183</text>
+  <rect x="405" y="440" width="115" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="422" y="462" fill="#10b981" font-size="15" font-weight="700">COMPLETED</text>
+  <text x="560" y="462" class="tiny muted">48.2M linhas • Finalizada</text>
+  <rect x="320" y="516" width="430" height="58" rx="14" fill="#f8fafc"/>
+  <text x="345" y="544" class="small" fill="#111827" font-weight="800">#182</text>
+  <rect x="405" y="522" width="88" height="32" rx="16" fill="#ef4444" opacity="0.12"/>
+  <text x="422" y="544" fill="#ef4444" font-size="15" font-weight="700">FAILED</text>
+  <text x="560" y="544" class="tiny muted">13.1M linhas • Erro arquivo 7</text>
+  <rect x="820" y="305" width="560" height="470" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="844" y="343" class="h3" fill="#111827">Arquivos da run #184</text>
+  <text x="844" y="371" class="tiny muted">Progresso por dataset</text>
+  <text x="850" y="380" class="small" fill="#111827">Estabelecimentos0.zip</text>
+  <rect x="850" y="394" width="360" height="12" rx="6" fill="#e5e7eb"/><rect x="850" y="394" width="360.0" height="12" rx="6" fill="#10b981"/>
+  <text x="1235" y="404" class="tiny" fill="#10b981" font-weight="800">COMPLETED</text>
+  <text x="850" y="460" class="small" fill="#111827">Estabelecimentos1.zip</text>
+  <rect x="850" y="474" width="360" height="12" rx="6" fill="#e5e7eb"/><rect x="850" y="474" width="360.0" height="12" rx="6" fill="#10b981"/>
+  <text x="1235" y="484" class="tiny" fill="#10b981" font-weight="800">COMPLETED</text>
+  <text x="850" y="540" class="small" fill="#111827">Estabelecimentos2.zip</text>
+  <rect x="850" y="554" width="360" height="12" rx="6" fill="#e5e7eb"/><rect x="850" y="554" width="223.20000000000002" height="12" rx="6" fill="#f59e0b"/>
+  <text x="1235" y="564" class="tiny" fill="#f59e0b" font-weight="800">STARTED</text>
+  <text x="850" y="620" class="small" fill="#111827">Simples.zip</text>
+  <rect x="850" y="634" width="360" height="12" rx="6" fill="#e5e7eb"/><rect x="850" y="634" width="0.0" height="12" rx="6" fill="#94a3b8"/>
+  <text x="1235" y="644" class="tiny" fill="#94a3b8" font-weight="800">PENDING</text>
+</svg>

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Ciclos CNAE</title>
+  <desc id="desc">Wireframe visual da tela Ciclos CNAE do módulo OPRM.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style><![CDATA[text{font-family:Inter,Arial,sans-serif}.small{font-size:18px}.tiny{font-size:15px}.title{font-size:34px;font-weight:700}.h2{font-size:24px;font-weight:700}.h3{font-size:19px;font-weight:700}.muted{fill:#6b7280}.label{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}]]></style>
+  </defs>
+  <rect width="1440" height="900" fill="#f5f7fb"/>
+  <rect x="0" y="0" width="250" height="900" fill="#172033"/>
+  <text x="32" y="54" fill="#fff" font-size="26" font-weight="800">Marketing Hub</text>
+  <text x="32" y="92" fill="#93a4bd" font-size="16">OPRM</text>
+  <rect x="18" y="119" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="141" r="6" fill="#64748b"/>
+  <text x="62" y="147" fill="#cbd5e1" font-size="17" font-weight="500">Painel OPRM</text>
+  <rect x="18" y="177" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="199" r="6" fill="#64748b"/>
+  <text x="62" y="205" fill="#cbd5e1" font-size="17" font-weight="500">Ingestão</text>
+  <rect x="18" y="235" width="214" height="44" rx="12" fill="#26344f"/>
+  <circle cx="42" cy="257" r="6" fill="#2563eb"/>
+  <text x="62" y="263" fill="#fff" font-size="17" font-weight="700">Ciclos CNAE</text>
+  <rect x="18" y="293" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="315" r="6" fill="#64748b"/>
+  <text x="62" y="321" fill="#cbd5e1" font-size="17" font-weight="500">Candidatos</text>
+  <rect x="18" y="351" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="373" r="6" fill="#64748b"/>
+  <text x="62" y="379" fill="#cbd5e1" font-size="17" font-weight="500">Fila decisão</text>
+  <rect x="18" y="409" width="214" height="44" rx="12" fill="transparent"/>
+  <circle cx="42" cy="431" r="6" fill="#64748b"/>
+  <text x="62" y="437" fill="#cbd5e1" font-size="17" font-weight="500">Diagnóstico</text>
+  <text x="290" y="62" class="title" fill="#111827">Ciclos CNAE</text>
+  <text x="290" y="94" class="small muted">Timeline de ciclos automáticos de score e enriquecimento CNAE.</text>
+  <rect x="1210" y="40" width="160" height="44" rx="14" fill="#2563eb"/>
+  <text x="1248" y="68" fill="#fff" font-size="16" font-weight="700">Atualizar</text>
+  <rect x="290" y="125" width="1090" height="170" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="163" class="h3" fill="#111827">Ciclos automáticos recentes</text>
+  <text x="314" y="191" class="tiny muted">Sem botão manual: o usuário acompanha score e enriquecimento</text>
+  <rect x="320" y="185" width="320" height="82" rx="16" fill="#f8fafc"/>
+  <text x="340" y="218" class="small" fill="#111827" font-weight="800">CNAE_ENRICHMENT #18</text>
+  <text x="340" y="248" class="tiny muted">35 processados • 2 falhas</text>
+  <rect x="518" y="205" width="97" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="535" y="227" fill="#10b981" font-size="15" font-weight="700">RUNNING</text>
+  <rect x="665" y="185" width="320" height="82" rx="16" fill="#f8fafc"/>
+  <text x="685" y="218" class="small" fill="#111827" font-weight="800">CNAE_SCORE #42</text>
+  <text x="685" y="248" class="tiny muted">50 processados • 0 falhas</text>
+  <rect x="863" y="205" width="115" height="32" rx="16" fill="#2563eb" opacity="0.12"/>
+  <text x="880" y="227" fill="#2563eb" font-size="15" font-weight="700">COMPLETED</text>
+  <rect x="1010" y="185" width="320" height="82" rx="16" fill="#f8fafc"/>
+  <text x="1030" y="218" class="small" fill="#111827" font-weight="800">CNAE_ENRICHMENT #17</text>
+  <text x="1030" y="248" class="tiny muted">25 processados • 1 falha</text>
+  <rect x="1208" y="205" width="115" height="32" rx="16" fill="#2563eb" opacity="0.12"/>
+  <text x="1225" y="227" fill="#2563eb" font-size="15" font-weight="700">COMPLETED</text>
+  <rect x="290" y="330" width="650" height="430" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="314" y="368" class="h3" fill="#111827">Ranking operacional</text>
+  <text x="314" y="396" class="tiny muted">CNAEs priorizados por Score OPRM</text>
+  <text x="325" y="400" class="small" fill="#111827" font-weight="700">9602-5/01</text><text x="520" y="400" class="small" fill="#2563eb" font-weight="800">94,2</text>
+  <rect x="650" y="376" width="133" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="667" y="398" fill="#10b981" font-size="15" font-weight="700">Enriquecido</text>
+  <line x1="320" y1="422" x2="900" y2="422" stroke="#e5e7eb"/>
+  <text x="325" y="474" class="small" fill="#111827" font-weight="700">8599-6/04</text><text x="520" y="474" class="small" fill="#2563eb" font-weight="800">91,8</text>
+  <rect x="650" y="450" width="106" height="32" rx="16" fill="#f59e0b" opacity="0.12"/>
+  <text x="667" y="472" fill="#f59e0b" font-size="15" font-weight="700">Pendente</text>
+  <line x1="320" y1="496" x2="900" y2="496" stroke="#e5e7eb"/>
+  <text x="325" y="548" class="small" fill="#111827" font-weight="700">8211-3/00</text><text x="520" y="548" class="small" fill="#2563eb" font-weight="800">88,4</text>
+  <rect x="650" y="524" width="133" height="32" rx="16" fill="#10b981" opacity="0.12"/>
+  <text x="667" y="546" fill="#10b981" font-size="15" font-weight="700">Enriquecido</text>
+  <line x1="320" y1="570" x2="900" y2="570" stroke="#e5e7eb"/>
+  <text x="325" y="622" class="small" fill="#111827" font-weight="700">7319-0/02</text><text x="520" y="622" class="small" fill="#2563eb" font-weight="800">85,9</text>
+  <rect x="650" y="598" width="106" height="32" rx="16" fill="#f59e0b" opacity="0.12"/>
+  <text x="667" y="620" fill="#f59e0b" font-size="15" font-weight="700">Pendente</text>
+  <line x1="320" y1="644" x2="900" y2="644" stroke="#e5e7eb"/>
+  <rect x="980" y="330" width="400" height="430" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+  <text x="1004" y="368" class="h3" fill="#111827">Sinal de valor comercial</text>
+  <text x="1004" y="396" class="tiny muted">Resumo do ciclo selecionado</text>
+  <rect x="1010" y="395" width="320" height="48" rx="12" fill="#ecfdf5"/>
+  <text x="1030" y="425" class="small" fill="#111827">Dor: agenda e recorrência</text>
+  <rect x="1010" y="467" width="320" height="48" rx="12" fill="#ecfdf5"/>
+  <text x="1030" y="497" class="small" fill="#111827">Resultado: previsibilidade mensal</text>
+  <rect x="1010" y="539" width="320" height="48" rx="12" fill="#ecfdf5"/>
+  <text x="1030" y="569" class="small" fill="#111827">Mecanismo: rotina guiada por IA</text>
+  <rect x="1010" y="611" width="320" height="48" rx="12" fill="#ecfdf5"/>
+  <text x="1030" y="641" class="small" fill="#111827">Prova: alto volume MEI ativo</text>
+</svg>

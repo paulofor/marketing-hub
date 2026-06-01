@@ -182,7 +182,11 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 ## 9) Execução dos ciclos
 
-O cânone deste fluxo não fixa cadência horária nem alternância por paridade de hora. A janela de agendamento é operacional e deve ser consultada no scheduler/deploy vigente do `mois-hotmart-collector`.
+Agendamento operacional vigente no `mois-hotmart-collector`:
+
+- **Ciclo 1 (listagem):** execução pontual em **1 de junho de 2026 às 16:15**, no fuso `America/Sao_Paulo`.
+- **Ciclo 2 (detalhes):** execução diária às **17:00**, conforme scheduler vigente do coletor.
+- O cron do ciclo 1 fica hardcoded no `HotmartCollectorScheduler` para manter rastreabilidade operacional do horário combinado.
 
 Sequência operacional consolidada:
 

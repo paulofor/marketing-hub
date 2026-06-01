@@ -699,3 +699,12 @@ Arquivos alterados:
   - mois-hotmart-collector/AGENTS.md
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - docs/registros/mois1.md
+
+## 2026-06-01 00:07:55 UTC-3
+- ajuste operacional solicitado para agendar a próxima execução do ciclo 1 Hotmart para 01/06 às 04:00 no timezone `America/Sao_Paulo`.
+- o agendamento do ciclo 1 é definido no código do `mois-hotmart-collector` por cron literal em `@Scheduled`, então a solução foi atualizar a expressão pontual do ciclo 1 em vez de criar configuração paralela.
+- mantido o ciclo 2 sem alteração.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md

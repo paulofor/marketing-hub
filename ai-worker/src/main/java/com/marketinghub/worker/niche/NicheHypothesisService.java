@@ -5,7 +5,7 @@ import com.marketinghub.hypothesis.OfferType;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.service.HypothesisService;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.repository.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.worker.prompt.PromptTemplateException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

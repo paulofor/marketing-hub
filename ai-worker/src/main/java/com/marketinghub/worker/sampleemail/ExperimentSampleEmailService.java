@@ -1,7 +1,7 @@
 package com.marketinghub.worker.sampleemail;
 
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import com.marketinghub.sampleemail.dto.CreateSampleEmailRequest;
 import com.marketinghub.sampleemail.service.SampleEmailService;

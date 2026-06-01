@@ -1,13 +1,13 @@
 package com.marketinghub.worker.email;
 
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.repository.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.worker.experiment.ExperimentGenerationRepository;
 import com.marketinghub.journey.model.Journey;
 import com.marketinghub.journey.model.JourneyStep;
 import com.marketinghub.journey.model.JourneyStimulusType;
-import com.marketinghub.journey.repository.JourneyRepository;
-import com.marketinghub.journey.repository.JourneyStepRepository;
+import com.marketinghub.repository.jpa.journey.JourneyRepository;
+import com.marketinghub.repository.jpa.journey.JourneyStepRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

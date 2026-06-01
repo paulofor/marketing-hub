@@ -65,41 +65,74 @@
     },
     "pagina": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
-        "body": {
+        "head": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": false,
           "properties": {
-            "estilos": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "minLength": 1
-              }
+            "texto": {
+              "type": "string"
             }
-          }
+          },
+          "required": [
+            "texto"
+          ]
         },
         "corpo": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": false,
           "properties": {
             "estilos": {
               "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
               "items": {
                 "type": "string",
-                "minLength": 1
+                "enum": [
+                  "bgBody",
+                  "fontBase",
+                  "textPrimary",
+                  "marginReset"
+                ]
               }
             },
             "secoes": {
               "type": "array",
+              "minItems": 4,
               "items": {
-                "$ref": "#/$defs/paginaNode"
+                "$ref": "#/$defs/secao"
               }
             }
-          }
+          },
+          "required": [
+            "estilos",
+            "secoes"
+          ]
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "estilos": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "estilos"
+          ]
         }
-      }
+      },
+      "required": [
+        "head",
+        "body",
+        "corpo"
+      ]
     }
   },
   "$defs": {
@@ -220,30 +253,288 @@
         }
       }
     },
-    "paginaNode": {
+    "secao": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
-        "estilos": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
+        "nome": {
+          "type": "string"
+        },
+        "objetivo": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
         },
         "elementosSeccao": {
           "type": "array",
+          "minItems": 1,
           "items": {
-            "$ref": "#/$defs/paginaNode"
+            "$ref": "#/$defs/elementoSecao"
           }
+        },
+        "oQueQuerProvocarNoUsuario": {
+          "type": "string"
+        },
+        "papelComercial": {
+          "type": "string"
+        },
+        "fasePersuasao": {
+          "type": "string"
+        },
+        "objeçãoQueRemove": {
+          "type": "string"
+        },
+        "prioridadeConversao": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "acaoEsperada": {
+          "type": "string"
+        },
+        "fonteContexto": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "estilos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "nome",
+        "objetivo",
+        "oQueQuerProvocarNoUsuario",
+        "papelComercial",
+        "fasePersuasao",
+        "objeçãoQueRemove",
+        "prioridadeConversao",
+        "acaoEsperada",
+        "fonteContexto",
+        "id",
+        "estilos",
+        "elementosSeccao"
+      ]
+    },
+    "textoElemento": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tamMaximo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tamMinimo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "conteudo": {
+          "type": "string",
+          "maxLength": 0
+        }
+      },
+      "required": [
+        "tamMaximo",
+        "tamMinimo",
+        "conteudo"
+      ]
+    },
+    "elementoSecao": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "texto": {
+          "$ref": "#/$defs/textoElemento"
         },
         "elementosInternos": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/paginaNode"
+            "$ref": "#/$defs/elementoSecao"
           }
+        },
+        "estilos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "briefingVisual": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/briefingVisual"
+            }
+          ]
+        },
+        "componente": {
+          "type": "string",
+          "enum": [
+            "none",
+            "buttonPrimary",
+            "buttonSecondary",
+            "formInput",
+            "card"
+          ]
+        },
+        "interacao": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "intencaoAcao": {
+              "type": "string"
+            },
+            "targetSectionId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^#"
+            },
+            "hrefEsperado": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "intencaoAcao",
+            "targetSectionId",
+            "hrefEsperado"
+          ]
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "src": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "alt": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "src",
+                "alt",
+                "width",
+                "height"
+              ]
+            }
+          ]
+        },
+        "contratoCampo": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "autocomplete": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "placeholder": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "name",
+                "autocomplete",
+                "required",
+                "placeholder"
+              ]
+            }
+          ]
         }
-      }
+      },
+      "required": [
+        "id",
+        "tag",
+        "texto",
+        "estilos",
+        "briefingVisual",
+        "elementosInternos",
+        "interacao",
+        "asset",
+        "contratoCampo",
+        "componente"
+      ]
+    },
+    "briefingVisual": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ondeEntraNoVisual": {
+          "type": "string"
+        },
+        "tipoVisualEsperado": {
+          "type": "string"
+        },
+        "funcaoComercial": {
+          "type": "string"
+        },
+        "objecaoQueRemove": {
+          "type": "string"
+        },
+        "classificacaoVisual": {
+          "type": "string",
+          "enum": [
+            "mockup",
+            "foto",
+            "ilustração",
+            "diagrama",
+            "print conceitual"
+          ]
+        }
+      },
+      "required": [
+        "ondeEntraNoVisual",
+        "tipoVisualEsperado",
+        "funcaoComercial",
+        "objecaoQueRemove",
+        "classificacaoVisual"
+      ]
     }
   }
 }

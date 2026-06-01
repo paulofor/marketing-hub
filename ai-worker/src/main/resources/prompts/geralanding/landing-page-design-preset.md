@@ -199,7 +199,39 @@ Formato esperado de saída:
     "animações": { "desktop": [], "mobile": [] }
   },
   "pagina": {
+    "head": { "texto": "" },
     "body": { "estilos": ["pageRoot", "bgBody", "fontBase", "textPrimary"] },
-    "corpo": { "secoes": [ { "id": "sec-hero", "estilos": ["sectionHero", "surfaceBand"], "elementosSeccao": [] } ] }
+    "corpo": {
+      "estilos": ["bgBody", "fontBase", "textPrimary", "marginReset"],
+      "secoes": [
+        {
+          "nome": "Hero",
+          "objetivo": "Apresentar a promessa central",
+          "oQueQuerProvocarNoUsuario": "percepção de valor imediato",
+          "papelComercial": "atração",
+          "fasePersuasao": "atenção",
+          "objeçãoQueRemove": "falta de clareza",
+          "prioridadeConversao": 10,
+          "acaoEsperada": "avançar para o CTA",
+          "fonteContexto": ["landingPageWireframe"],
+          "id": "sec-hero",
+          "estilos": ["sectionHero", "surfaceBand"],
+          "elementosSeccao": [
+            {
+              "id": "hero-title",
+              "tag": "h1",
+              "texto": { "tamMaximo": 90, "tamMinimo": 45, "conteudo": "" },
+              "estilos": ["headlineHero", "textPrimary"],
+              "briefingVisual": null,
+              "elementosInternos": [],
+              "interacao": { "intencaoAcao": "", "targetSectionId": null, "hrefEsperado": null },
+              "asset": null,
+              "contratoCampo": null,
+              "componente": "none"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

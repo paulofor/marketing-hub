@@ -31,7 +31,7 @@ printf '==> Push da imagem %s\n' "$IMAGE"
 docker push "$IMAGE"
 
 printf '==> Preparando diretório remoto %s:%s\n' "$DEPLOY_HOST" "$REMOTE_DIR"
-ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p '$REMOTE_DIR'"
+ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p '$REMOTE_DIR' '$REMOTE_DIR/logs'"
 
 printf '==> Enviando compose de deploy\n'
 scp $SSH_OPTS ./mois-hotmart-collector/docker-compose.deploy.yml "$DEPLOY_HOST:$REMOTE_DIR/docker-compose.yml"

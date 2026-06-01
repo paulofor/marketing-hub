@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdrm2 \
     fonts-liberation \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/target/mois-hotmart-collector.jar /app/app.jar

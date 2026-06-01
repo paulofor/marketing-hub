@@ -109,14 +109,25 @@ public class HotmartCollectorService {
         boolean hasCredentials = hotmartUsername != null && !hotmartUsername.isBlank()
                 && hotmartPassword != null && !hotmartPassword.isBlank();
 
+        log.info(
+                "Hotmart ciclo 1: início da execução. source={}, maxProductsSolicitado={}, maxProductsAplicado={}, workspaceId={}, backendBaseUrl={}, hasSessionCookie={}, hasCredentials={}",
+                request.source(),
+                request.maxProducts(),
+                boundedMax,
+                workspaceId,
+                backendBaseUrl,
+                hasSessionCookie,
+                hasCredentials
+        );
         String hotmartAccessToken = fetchHotmartJwtFromGeneralSettings();
         if (hotmartAccessToken.isBlank()) {
-            log.warn("Coleta Hotmart ignorada: token JWT não encontrado em configurações gerais.");
-            return new HotmartCollectionResponse(
-                    "COLLECTION_SKIPPED",
-                    "Token JWT da Hotmart ausente. Configure a chave '" + hotmartJwtSettingKey + "' em /api/settings/{name}.",
-                    products
-            );
+            status = "COLLECTION_SKIPPED";
+            message = "Token JWT da Hotmart ausente. Configure a chave '" + hotmartJwtSettingKey + "' em /api/settings/{name}.";
+            log.warn("Hotmart ciclo 1 ignorado: token JWT não encontrado em configurações gerais. settingKey={}, workspaceId={}",
+                    hotmartJwtSettingKey,
+                    workspaceId);
+            persistCollectedProductsOnBackend(request, status, message, products);
+            return new HotmartCollectionResponse(status, message, products);
         }
 
         log.info(
@@ -133,10 +144,19 @@ public class HotmartCollectorService {
         boolean[] tokenUpdateRequired = new boolean[] {false};
         try (Playwright ignored = Playwright.create()) {
             int apiCollected = collectProductsViaMarketApi(hotmartAccessToken, boundedMax, products, apiFailureMessage, tokenUpdateRequired);
-            log.info("Coleta API Hotmart finalizada. produtosColetadosViaApi={}", apiCollected);
+            log.info("Coleta API Hotmart finalizada. produtosColetadosViaApi={}, produtosNaLista={}", apiCollected, products.size());
             if (apiFailureMessage.isEmpty()) {
-                status = "COLLECTION_EXECUTED";
-                message = "Coleta executada via API da Hotmart usando JWT salvo em configurações gerais.";
+                if (products.isEmpty()) {
+                    status = "COLLECTION_SKIPPED";
+                    message = "Ciclo 1 não retornou produtos da Hotmart. Verifique token, payload da API e disponibilidade da fonte antes de considerar a coleta concluída.";
+                    log.warn("Hotmart ciclo 1 sem produtos coletados. statusPersistido={}, maxProductsAplicado={}, workspaceId={}",
+                            status,
+                            boundedMax,
+                            workspaceId);
+                } else {
+                    status = "COLLECTION_EXECUTED";
+                    message = "Coleta executada via API da Hotmart usando JWT salvo em configurações gerais.";
+                }
             } else {
                 status = "COLLECTION_ERROR";
                 message = apiFailureMessage.toString();
@@ -147,9 +167,14 @@ public class HotmartCollectorService {
         } catch (Exception ex) {
             status = "COLLECTION_ERROR";
             message = "Falha na coleta API: " + ex.getMessage();
-            log.error("Erro na coleta Hotmart via API JWT.", ex);
+            log.error("Erro na coleta Hotmart via API JWT. workspaceId={}, source={}, maxProductsAplicado={}",
+                    workspaceId,
+                    request.source(),
+                    boundedMax,
+                    ex);
         }
-        persistCollectedProductsOnBackend(request, status, products);
+        persistCollectedProductsOnBackend(request, status, message, products);
+        log.info("Hotmart ciclo 1: execução encerrada. status={}, produtos={}, mensagem={}", status, products.size(), message);
         return new HotmartCollectionResponse(status, message, products);
     }
 
@@ -160,15 +185,33 @@ public class HotmartCollectorService {
         List<HotmartProductSnapshot> enrichedProducts = new ArrayList<>();
         String status = "COLLECTION_EXECUTED";
         String message = "Ciclo 2 executado a partir dos produtos persistidos no backend.";
+        log.info("Hotmart ciclo 2: início da execução. source={}, maxProductsSolicitado={}, workspaceId={}, backendBaseUrl={}",
+                request.source(),
+                request.maxProducts(),
+                workspaceId,
+                backendBaseUrl);
         String hotmartAccessToken = fetchHotmartJwtFromGeneralSettings();
         if (hotmartAccessToken.isBlank()) {
-            return new HotmartCollectionResponse(
-                    "COLLECTION_SKIPPED",
-                    "Token JWT da Hotmart ausente para execução do ciclo 2.",
-                    enrichedProducts
-            );
+            status = "COLLECTION_SKIPPED";
+            message = "Token JWT da Hotmart ausente para execução do ciclo 2.";
+            log.warn("Hotmart ciclo 2 ignorado: token JWT ausente. settingKey={}, workspaceId={}",
+                    hotmartJwtSettingKey,
+                    workspaceId);
+            persistCollectedProductsOnBackend(request, status, message, enrichedProducts);
+            return new HotmartCollectionResponse(status, message, enrichedProducts);
         }
+        logTokenDiagnostics(hotmartAccessToken);
         List<HotmartProductSnapshot> baseProducts = fetchFirstCycleProductsFromBackend(request.maxProducts());
+        log.info("Hotmart ciclo 2: produtos base carregados do backend. totalBase={}, maxProductsSolicitado={}",
+                baseProducts.size(),
+                request.maxProducts());
+        if (baseProducts.isEmpty()) {
+            status = "COLLECTION_SKIPPED";
+            message = "Ciclo 2 ignorado porque não há produtos Hotmart do ciclo 1 disponíveis no backend.";
+            log.warn("Hotmart ciclo 2 sem produtos base. statusPersistido={}, workspaceId={}", status, workspaceId);
+            persistCollectedProductsOnBackend(request, status, message, enrichedProducts);
+            return new HotmartCollectionResponse(status, message, enrichedProducts);
+        }
         for (HotmartProductSnapshot base : baseProducts) {
             if (enrichedProducts.size() >= request.maxProducts() && request.maxProducts() > 0) {
                 break;
@@ -177,13 +220,31 @@ public class HotmartCollectorService {
                     .put("id", pickFirstNonBlank(base.ucode(), ""))
                     .put("ucode", pickFirstNonBlank(base.ucode(), ""))
                     .put("userSessionId", "");
+            log.info("Hotmart ciclo 2: enriquecendo produto. posicao={}, ucode={}, titulo='{}'",
+                    enrichedProducts.size() + 1,
+                    base.ucode(),
+                    truncateForLog(base.title(), 180));
             enrichedProducts.add(enrichProductWithDetails(hotmartAccessToken, listItem, base));
         }
-        persistCollectedProductsOnBackend(request, status, enrichedProducts);
+        if (enrichedProducts.isEmpty()) {
+            status = "COLLECTION_SKIPPED";
+            message = "Ciclo 2 não gerou produtos enriquecidos a partir da base disponível.";
+            log.warn("Hotmart ciclo 2 finalizou sem produtos enriquecidos. baseProdutos={}, workspaceId={}",
+                    baseProducts.size(),
+                    workspaceId);
+        }
+        persistCollectedProductsOnBackend(request, status, message, enrichedProducts);
         publishSalesPagesToLibrary(enrichedProducts);
+        log.info("Hotmart ciclo 2: execução encerrada. status={}, produtosEnriquecidos={}, mensagem={}",
+                status,
+                enrichedProducts.size(),
+                message);
         return new HotmartCollectionResponse(status, message, enrichedProducts);
     }
 
+    /**
+     * Publica URLs de páginas de venda coletadas no ciclo 2 para a biblioteca de sales pages do MOIS.
+     */
     private void publishSalesPagesToLibrary(List<HotmartProductSnapshot> products) {
         if (products == null || products.isEmpty()) {
             log.info("Ciclo 2: publishSalesPagesToLibrary ignorado porque lista de produtos está vazia.");
@@ -240,17 +301,25 @@ public class HotmartCollectorService {
         }
     }
 
+    /**
+     * Busca no backend os produtos persistidos pelo ciclo 1 para alimentar o enriquecimento do ciclo 2.
+     */
     private List<HotmartProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {
         List<HotmartProductSnapshot> products = new ArrayList<>();
         int boundedMax = maxProducts <= 0 ? 25 : Math.min(maxProducts, 100);
         String endpoint = backendBaseUrl + "/api/v1/mois/hotmart/products?limit=" + boundedMax;
         try {
+            log.info("Ciclo 2: solicitando produtos base do backend. endpoint={}, limit={}", endpoint, boundedMax);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .header("accept", "application/json")
                     .GET()
                     .build();
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            log.info("Ciclo 2: resposta de produtos base recebida. endpoint={}, status={}, bodyPreview='{}'",
+                    endpoint,
+                    response.statusCode(),
+                    truncateForLog(response.body(), 1200));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.warn("Ciclo 2: falha ao obter produtos base do backend. status={}, endpoint={}", response.statusCode(), endpoint);
                 return products;
@@ -258,8 +327,14 @@ public class HotmartCollectorService {
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode items = firstArray(root, "items", "products", "content", "results");
             if (items == null || !items.isArray()) {
+                log.warn("Ciclo 2: backend não retornou array de produtos base. endpoint={}, keysRaiz={}",
+                        endpoint,
+                        previewFieldNames(root));
                 return products;
             }
+            log.info("Ciclo 2: array de produtos base identificado. totalItens={}, chavesPrimeiroItem={}",
+                    items.size(),
+                    items.size() > 0 ? previewFieldNames(items.get(0)) : "[]");
             for (JsonNode item : items) {
                 products.add(new HotmartProductSnapshot(
                         extractProductText(item, "ucode", "productUcode"),
@@ -275,61 +350,88 @@ public class HotmartCollectorService {
                         extractProductText(item, "producerName"),
                         pickFirstNonBlank(extractProductText(item, "detailsUrl", "productUrl", "url"), hotmartMarketUrl),
                         extractProductNumber(item, "temperature", "hotmartTemperature"),
-                        null,
+                        pickFirstNonBlank(extractProductText(item, "salesPageUrl", "pageSalesLink"), extractProductText(item, "detailsUrl", "productUrl", "url")),
                         Instant.now()
                 ));
             }
+            log.info("Ciclo 2: produtos base mapeados com sucesso. totalMapeado={}", products.size());
         } catch (Exception ex) {
-            log.warn("Ciclo 2: erro ao obter produtos do backend.", ex);
+            log.warn("Ciclo 2: erro ao buscar produtos base do backend. endpoint={}", endpoint, ex);
         }
         return products;
     }
 
+    /**
+     * Persiste o resultado operacional da coleta no backend, incluindo jobs sem produtos e mensagem diagnóstica.
+     */
     private void persistCollectedProductsOnBackend(
             HotmartCollectionRequest request,
             String status,
+            String message,
             List<HotmartProductSnapshot> products
     ) {
         String jobId = "hotmart-" + Instant.now().toEpochMilli() + "-" + UUID.randomUUID().toString().substring(0, 8);
         String endpoint = backendBaseUrl + "/api/v1/mois/persistence/collection-jobs/" + jobId;
         try {
+            List<Map<String, Object>> references = toCollectedReferences(jobId, request.source(), products);
+            Map<String, Object> job = new HashMap<>();
+            job.put("jobId", jobId);
+            job.put("workspaceId", workspaceId);
+            job.put("niche", defaultNiche);
+            job.put("marketTheme", defaultMarketTheme);
+            job.put("status", status);
+            job.put("timeWindow", "LAST_7_DAYS");
+            job.put("limitPerSource", Math.max(products.size(), request.maxProducts()));
+            job.put("minSuccessScore", 0);
+            job.put("sources", List.of("HOTMART"));
+            job.put("createdAt", Instant.now().toString());
+            job.put("message", message);
+
             Map<String, Object> payload = new HashMap<>();
-            payload.put("job", Map.of(
-                    "jobId", jobId,
-                    "workspaceId", workspaceId,
-                    "niche", defaultNiche,
-                    "marketTheme", defaultMarketTheme,
-                    "status", status,
-                    "timeWindow", "LAST_7_DAYS",
-                    "limitPerSource", Math.max(products.size(), request.maxProducts()),
-                    "minSuccessScore", 0,
-                    "sources", List.of("HOTMART"),
-                    "createdAt", Instant.now().toString()
-            ));
-            payload.put("references", toCollectedReferences(jobId, request.source(), products));
+            payload.put("job", job);
+            payload.put("references", references);
             payload.put("lineageByReferenceId", Map.of());
             payload.put("runtime", Map.of("retries", 0, "latencyMs", 0, "finishedAt", Instant.now().toString()));
             payload.put("sourceOps", List.of());
 
+            String payloadJson = objectMapper.writeValueAsString(payload);
+            log.info("Persistindo coleta Hotmart no backend. endpoint={}, jobId={}, status={}, produtos={}, referencias={}, mensagem={}",
+                    endpoint,
+                    jobId,
+                    status,
+                    products.size(),
+                    references.size(),
+                    message);
+            log.info("Payload de persistência Hotmart preparado. jobId={}, payloadPreview='{}'",
+                    jobId,
+                    truncateForLog(payloadJson, 4000));
             HttpRequest persistenceRequest = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .header("accept", "application/json")
                     .header("content-type", "application/json")
-                    .PUT(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
+                    .PUT(HttpRequest.BodyPublishers.ofString(payloadJson))
                     .build();
             HttpResponse<String> response = HttpClient.newHttpClient().send(persistenceRequest, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("Falha ao persistir coleta Hotmart no backend. status={}, endpoint={}, body={}",
-                        response.statusCode(), endpoint, truncateForLog(response.body(), 600));
+                log.warn("Falha ao persistir coleta Hotmart no backend. status={}, endpoint={}, jobId={}, body={}",
+                        response.statusCode(), endpoint, jobId, truncateForLog(response.body(), 600));
                 return;
             }
-            log.info("Coleta Hotmart persistida no backend com sucesso. endpoint={}, jobId={}, produtos={}",
-                    endpoint, jobId, products.size());
+            log.info("Coleta Hotmart persistida no backend com sucesso. endpoint={}, jobId={}, status={}, produtos={}, responseStatus={}",
+                    endpoint, jobId, status, products.size(), response.statusCode());
         } catch (Exception ex) {
-            log.warn("Falha ao persistir produtos coletados no backend.", ex);
+            log.warn("Falha ao persistir produtos coletados no backend. endpoint={}, status={}, source={}, produtos={}",
+                    endpoint,
+                    status,
+                    request.source(),
+                    products.size(),
+                    ex);
         }
     }
 
+    /**
+     * Converte snapshots Hotmart em referências no contrato de persistência do backend MOIS.
+     */
     private List<Map<String, Object>> toCollectedReferences(String jobId, String source, List<HotmartProductSnapshot> products) {
         List<Map<String, Object>> references = new ArrayList<>();
         int position = 1;

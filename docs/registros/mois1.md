@@ -682,3 +682,20 @@ Arquivos alterados:
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - mois-hotmart-collector/AGENTS.md
   - docs/registros/mois1.md
+
+## 2026-06-01 — Hotmart: persistência de logs, healthcheck e jobs vazios diagnósticos
+- Implementada correção operacional para evitar perda de logs do `mois-hotmart-collector` após reinício/recriação do container.
+- Causa-raiz tratada: o arquivo exposto por `/ops-monitor/mois-hotmart-log` ficava dentro de `/app/logs` sem volume persistente no compose de deploy, e jobs sem produtos podiam ser persistidos como `COLLECTION_EXECUTED` sem mensagem diagnóstica suficiente.
+- Correções aplicadas:
+  - adicionado volume persistente para `/app/logs` no compose local e no compose de deploy;
+  - adicionado `healthcheck` HTTP para `/api/v1/mois-hotmart/health` no compose local e de deploy;
+  - adicionado `curl` à imagem runtime para suportar o healthcheck;
+  - ajustado o script de deploy para criar também o diretório remoto de logs;
+  - ajustado o coletor para persistir jobs sem produtos como `COLLECTION_SKIPPED` com mensagem operacional explícita;
+  - adicionados logs de início/fim, token, busca de base do ciclo 2, enriquecimento, payload de persistência e resposta do backend;
+  - removida do cânone a regra desatualizada de alternância por hora ímpar/par.
+- Documentos lidos para execução:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - docs/registros/mois1.md

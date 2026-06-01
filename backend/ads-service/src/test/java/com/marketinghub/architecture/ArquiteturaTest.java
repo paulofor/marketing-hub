@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -96,6 +97,13 @@ class ArquiteturaTest {
             .dependOnClassesThat()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
             .because("[ARQUITETURA][MOIS] nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
+
+    @ArchTest
+    static final ArchRule springDataJpaRepositoriesMustResideInRepositoryJpaSubpackages = classes()
+            .that()
+            .areAssignableTo(JpaRepository.class)
+            .should(resideInRepositoryJpaSubpackage())
+            .because("[ARQUITETURA] [BACKEND][Repository] todo repository Spring Data JPA deve ficar em subpacote de com.marketinghub.repository.jpa");
 
     @ArchTest
     static final ArchRule geralandingWebPackagesShouldOnlyDependOnWebOrServiceInSameStage =
@@ -625,6 +633,25 @@ class ArquiteturaTest {
         }
         String actualTypeName = typeArguments[0].getTypeName();
         return actualTypeName.endsWith("." + expectedRecordName);
+    }
+
+    /**
+     * Garante que repositories Spring Data JPA residam em subpacotes da raiz canônica de JPA.
+     */
+    private static ArchCondition<JavaClass> resideInRepositoryJpaSubpackage() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][Repository] reside in com.marketinghub.repository.jpa subpackage") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.getPackageName().startsWith("com.marketinghub.repository.jpa.")) {
+                    return;
+                }
+                String message = "[ARQUITETURA] [BACKEND][Repository] classe=" + item.getName()
+                        + " acessa JPA via Spring Data JpaRepository e deve ficar em algum subpacote dentro de "
+                        + "com.marketinghub.repository.jpa";
+                events.add(SimpleConditionEvent.violated(item, message));
+            }
+        };
     }
 
     /**

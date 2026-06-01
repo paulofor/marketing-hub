@@ -40,7 +40,7 @@ public class HotmartCollectorService {
     private static final int LOGIN_SUBMIT_RETRIES = 3;
     private static final int COOKIE_RETRY_ATTEMPTS = 3;
     static final int HOTMART_ROWS_PER_PAGE = 20;
-    static final int HOTMART_MAX_PAGES_PER_RUN = 20;
+    static final int HOTMART_MAX_PAGES_PER_RUN = 25;
     static final int HOTMART_MAX_PRODUCTS_PER_RUN = HOTMART_ROWS_PER_PAGE * HOTMART_MAX_PAGES_PER_RUN;
     private static final String HOTMART_MARKET_API_URL = "https://api-affiliation-market.hotmart.com/v2/market/search";
     private static final String HOTMART_PRODUCT_DETAILS_API_URL = "https://api-affiliation-market.hotmart.com/v1/market/product/%s/details?userSessionId=%s";

@@ -2988,3 +2988,10 @@
   - criado o card `4 - Gera Imagem` com botão de início, link para detalhe das imagens, job id clicável para a página de detalhe da execução e histórico específico de `landing-page-image-generation`;
   - ajustado o mapeamento frontend da etapa `landing-page-image-generation` para usar os endpoints canônicos `/geralanding/image-generation/stage-executions`;
   - renumerados os cards seguintes para manter a sequência visual após a nova etapa dedicada.
+
+## 2026-06-01 — EPM Sprint 2 API operacional
+
+- Implementada a API operacional manual do Experiment Profit Manager no backend principal.
+- Endpoints cobertos: planos financeiros, nichos, hipóteses, experimentos, métricas manuais, decisões financeiras, cenários de preço e resumo do plano.
+- Cálculos mínimos adicionados: orçamento planejado, orçamento restante, lucro bruto, lucro líquido estimado, CTR, CPC, CPL, CPA, ROAS, conversão da landing, conversão de compra e vendas para ponto de equilíbrio.
+- Documentação Swagger do módulo adicionada em `backend/ads-service/docs/epm-swagger.yaml`.

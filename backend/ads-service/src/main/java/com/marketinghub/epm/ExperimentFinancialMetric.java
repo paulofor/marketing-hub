@@ -31,8 +31,20 @@ public class ExperimentFinancialMetric {
     @Column(nullable = false)
     private Integer visitors;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Long impressions = 0L;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Long clicks = 0L;
+
     @Column(nullable = false)
     private Integer leads;
+
+    @Builder.Default
+    @Column(name = "sample_requests", nullable = false)
+    private Integer sampleRequests = 0;
 
     @Column(name = "checkout_clicks", nullable = false)
     private Integer checkoutClicks;
@@ -63,6 +75,27 @@ public class ExperimentFinancialMetric {
 
     @Column(name = "estimated_net_profit_cents", nullable = false)
     private Long estimatedNetProfitCents;
+
+    @Column(name = "ctr_decimal", precision = 10, scale = 6)
+    private java.math.BigDecimal ctrDecimal;
+
+    @Column(name = "cpc_cents")
+    private Long cpcCents;
+
+    @Column(name = "cpl_cents")
+    private Long cplCents;
+
+    @Column(name = "cpa_cents")
+    private Long cpaCents;
+
+    @Column(name = "roas_decimal", precision = 10, scale = 4)
+    private java.math.BigDecimal roasDecimal;
+
+    @Column(name = "landing_conversion_decimal", precision = 10, scale = 6)
+    private java.math.BigDecimal landingConversionDecimal;
+
+    @Column(name = "purchase_conversion_decimal", precision = 10, scale = 6)
+    private java.math.BigDecimal purchaseConversionDecimal;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

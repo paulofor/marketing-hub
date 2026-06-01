@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  title: EPM - Experiment Profit Manager API
+  version: 0.2.0
+  description: API operacional manual do EPM para planos financeiros, nichos, hipóteses, experimentos, métricas, decisões e cenários de preço.
+paths:
+  /api/epm/plans:
+    post:
+      summary: Cria plano financeiro
+      responses: { '201': { description: Plano criado } }
+    get:
+      summary: Lista planos financeiros
+      responses: { '200': { description: Lista de planos } }
+  /api/epm/plans/{planId}:
+    get:
+      summary: Busca plano financeiro
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Plano encontrado }, '404': { description: Plano inexistente } }
+    put:
+      summary: Atualiza plano financeiro
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Plano atualizado } }
+  /api/epm/plans/{planId}/niches:
+    post:
+      summary: Cria nicho financeiro no plano
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '201': { description: Nicho criado } }
+    get:
+      summary: Lista nichos financeiros do plano
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Lista de nichos } }
+  /api/epm/niches/{planNicheId}:
+    get:
+      summary: Busca nicho financeiro
+      parameters: [ { name: planNicheId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Nicho encontrado } }
+  /api/epm/niches/{planNicheId}/hypotheses:
+    post:
+      summary: Cria hipótese financeira no nicho
+      parameters: [ { name: planNicheId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '201': { description: Hipótese criada } }
+    get:
+      summary: Lista hipóteses financeiras do nicho
+      parameters: [ { name: planNicheId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Lista de hipóteses } }
+  /api/epm/hypotheses/{planHypothesisId}:
+    get:
+      summary: Busca hipótese financeira
+      parameters: [ { name: planHypothesisId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Hipótese encontrada } }
+  /api/epm/hypotheses/{planHypothesisId}/experiments:
+    post:
+      summary: Cria orçamento de experimento
+      parameters: [ { name: planHypothesisId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '201': { description: Experimento criado } }
+    get:
+      summary: Lista orçamentos de experimento da hipótese
+      parameters: [ { name: planHypothesisId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Lista de experimentos } }
+  /api/epm/experiments/{experimentBudgetId}:
+    get:
+      summary: Busca orçamento de experimento
+      parameters: [ { name: experimentBudgetId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Experimento encontrado } }
+    put:
+      summary: Atualiza orçamento e gasto do experimento
+      parameters: [ { name: experimentBudgetId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Experimento atualizado } }
+  /api/epm/experiments/{experimentBudgetId}/metrics:
+    post:
+      summary: Registra métricas manuais e calcula lucro, ROAS, CPL, CPA e conversões
+      parameters: [ { name: experimentBudgetId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '201': { description: Métrica registrada } }
+  /api/epm/experiments/{experimentBudgetId}/metrics/latest:
+    get:
+      summary: Busca métrica manual mais recente
+      parameters: [ { name: experimentBudgetId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Métrica encontrada }, '404': { description: Métrica inexistente } }
+  /api/epm/experiments/{experimentBudgetId}/decisions:
+    post:
+      summary: Registra decisão financeira
+      parameters: [ { name: experimentBudgetId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '201': { description: Decisão criada } }
+    get:
+      summary: Lista decisões financeiras do experimento
+      parameters: [ { name: experimentBudgetId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Lista de decisões } }
+  /api/epm/plans/{planId}/price-scenarios:
+    post:
+      summary: Cria cenário de preço e calcula vendas para empatar
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '201': { description: Cenário criado } }
+    get:
+      summary: Lista cenários de preço do plano
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Lista de cenários } }
+  /api/epm/plans/{planId}/summary:
+    get:
+      summary: Consolida resumo financeiro do plano
+      parameters: [ { name: planId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Resumo do plano } }

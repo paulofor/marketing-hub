@@ -41,6 +41,16 @@ public class ExperimentBudget {
     @Column(name = "planned_total_budget_cents", nullable = false)
     private Long plannedTotalBudgetCents;
 
+    @Column(name = "spend_limit_cents")
+    private Long spendLimitCents;
+
+    @Builder.Default
+    @Column(name = "actual_spend_cents")
+    private Long actualSpendCents = 0L;
+
+    @Column(name = "remaining_budget_cents")
+    private Long remainingBudgetCents;
+
     @Column(name = "start_date")
     private LocalDate startDate;
 

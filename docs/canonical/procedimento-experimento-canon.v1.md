@@ -269,3 +269,14 @@ A etapa `landing-page-copy` deve aplicar o princípio de pouco esforço em todos
 
 Essa regra não autoriza criar novos blocos, seções, FAQs, CTAs ou metadados: o wireframe permanece a única fonte de verdade estrutural, e o princípio de pouco esforço deve ser aplicado somente dentro dos textos que o wireframe já solicitou.
 
+
+### 15.7 Regra visual comercial do wireframe de landing
+
+A etapa `landing-page-wireframe` deve planejar imagens por função comercial, não por preenchimento visual obrigatório por seção.
+
+Regras vigentes:
+- imagens devem existir somente quando cumprem função clara de prova, demonstração do produto, antes/depois, explicação do mecanismo ou redução de objeção;
+- o wireframe deve planejar normalmente de 2 a 4 imagens úteis no total da página, salvo quando o nicho exigir mais prova visual concreta;
+- pelo menos uma imagem de produto/entrega permanece obrigatória para materializar o que o cliente está comprando;
+- quando houver imagem no hero, ela deve ser no máximo uma imagem controlada dentro de container/coluna/card, com limite de altura em desktop e mobile, nunca um bloco full-width desproporcional que prejudique promessa e CTA na primeira dobra;
+- toda imagem do wireframe deve declarar metadados visuais mínimos: posição desejada, proporção aproximada, limite de altura desktop/mobile, papel de layout/comercial e relação com o CTA.

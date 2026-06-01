@@ -2,9 +2,8 @@ import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useOprmTopCnaeMarketVolume } from "../../api/oprm/useOprmTopCnaeMarketVolume";
 import { useOprmCnaeCatalog } from "../../api/oprm/useOprmCnaeCatalog";
-import { useOprmCnaeOpportunityScores } from "../../api/oprm/useOprmCnaeOpportunityScores";
 import { useOprmCnaeCycles } from "../../api/oprm/useOprmCnaeCycles";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 function formatNumber(value: number) {
   return value.toLocaleString("pt-BR");
@@ -29,13 +28,7 @@ export default function OprmCnaeVolumePage() {
   const { data, isLoading, isError, refetch, isFetching } =
     useOprmTopCnaeMarketVolume(currentPage - 1, pageSize);
   const cnaeCatalogQuery = useOprmCnaeCatalog();
-  const scoreQuery = useOprmCnaeOpportunityScores(500);
   const cycleQuery = useOprmCnaeCycles(5);
-  const scoreByCnae = useMemo(() => {
-    return new Map(
-      (scoreQuery.data ?? []).map((score) => [score.cnaeCode, score]),
-    );
-  }, [scoreQuery.data]);
   const hasVolumeData = (data ?? []).length > 0;
   const hasCatalogData = (cnaeCatalogQuery.data ?? []).length > 0;
   const volumeData = data ?? [];
@@ -44,10 +37,10 @@ export default function OprmCnaeVolumePage() {
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
-        <PageTitle>CNAEs com maior volume</PageTitle>
+        <PageTitle>CNAEs por Score OPRM</PageTitle>
         <p className="text-secondary mb-0">
-          Ranking dos principais CNAEs por volume de empresas no snapshot mais
-          recente da ingestão.
+          Ranking dos principais CNAEs por Score OPRM no snapshot mais recente
+          da ingestão, com volume de mercado como contexto.
         </p>
       </header>
 
@@ -56,11 +49,11 @@ export default function OprmCnaeVolumePage() {
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex justify-content-between align-items-center">
           <div>
-            <h2 className="h5 mb-1">Top CNAEs por volume</h2>
+            <h2 className="h5 mb-1">Top CNAEs por Score OPRM</h2>
             <p className="text-secondary mb-0">
-              Exibindo 50 CNAEs por página, ordenados da maior quantidade de
-              empresas MEI para a menor. O score é gerado automaticamente pelo
-              OPRM; o usuário apenas acompanha ciclos, candidatos e decisões.
+              Exibindo 50 CNAEs por página, ordenados pelo Score OPRM em ordem
+              decrescente. O score é gerado automaticamente pelo OPRM; o usuário
+              apenas acompanha ciclos, candidatos e decisões.
             </p>
           </div>
           <button
@@ -167,12 +160,12 @@ export default function OprmCnaeVolumePage() {
                   <th>Descrição</th>
                   {hasVolumeData ? (
                     <>
-                      <th>Empresas MEI ↓</th>
+                      <th>Score OPRM ↓</th>
                       <th>Estab. total</th>
                       <th>Empresas</th>
                       <th>Empresas Simples</th>
                       <th>Estab. ativos</th>
-                      <th>Score OPRM</th>
+                      <th>Empresas MEI</th>
                       <th>Status score</th>
                     </>
                   ) : (
@@ -187,22 +180,17 @@ export default function OprmCnaeVolumePage() {
                         <td>{(currentPage - 1) * pageSize + index + 1}</td>
                         <td>{item.cnaeCode}</td>
                         <td>{item.cnaeDescription ?? "-"}</td>
-                        <td>{formatNumber(item.totalEmpresasMei)}</td>
+                        <td>
+                          {formatScore(item.opportunityScore ?? undefined)}
+                        </td>
                         <td>{formatNumber(item.totalEstabelecimentos)}</td>
                         <td>{formatNumber(item.totalEmpresas)}</td>
                         <td>{formatNumber(item.totalEmpresasSimples)}</td>
                         <td>
                           {formatNumber(item.totalEstabelecimentosAtivos)}
                         </td>
-                        <td>
-                          {formatScore(
-                            scoreByCnae.get(item.cnaeCode)?.opportunityScore,
-                          )}
-                        </td>
-                        <td>
-                          {scoreByCnae.get(item.cnaeCode)?.scoreStatus ??
-                            "Aguardando scheduler"}
-                        </td>
+                        <td>{formatNumber(item.totalEmpresasMei)}</td>
+                        <td>{item.scoreStatus ?? "Aguardando scheduler"}</td>
                       </tr>
                     ))
                   : (cnaeCatalogQuery.data ?? [])

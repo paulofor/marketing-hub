@@ -2915,3 +2915,13 @@
   - a limpeza remove os jobs `framework_image_generation_job` do experimento e apaga `landingPageImagePlanning` e `landingPageImageAssets`, forçando a próxima geração de imagens a partir do novo planejamento;
   - adicionados testes unitários para validar o reset ao iniciar a etapa e a limpeza dos artefatos/jobs.
 - impacto esperado: reexecutar o prompt de imagem deixa o bloco de imagens sem resultados antigos, preservando consistência entre prompts, imagens reais e etapas seguintes do Gera Landing.
+
+## 2026-06-01 — Design preset limitado a pagina.corpo
+- tarefa: corrigir a etapa `landing-page-design-preset` para não gerar simultaneamente `pagina.body` e `pagina.corpo`.
+- causa-raiz/objetivo: o contrato do wireframe já concentra as classes globais do elemento HTML `<body>` em `pagina.corpo.estilos`; o prompt/schema do design preset ainda exigia `pagina.body`, criando duplicidade semântica e ruído visual na resposta do modelo.
+- correção aplicada:
+  - removido `pagina.body` do schema estrito do design preset;
+  - atualizado o prompt do design preset para declarar classes globais somente em `pagina.corpo.estilos` e proibir `pagina.body`;
+  - atualizado o cânone de etapas para explicitar que wireframe e design preset seguem a mesma regra;
+  - adicionado teste unitário garantindo que o schema de design preset aceita apenas `pagina.corpo` para a estrutura visual.
+- impacto esperado: a resposta da etapa de preset fica mais simples, sem campos duplicados, facilitando leitura na tela, validação do contrato e geração posterior do HTML.

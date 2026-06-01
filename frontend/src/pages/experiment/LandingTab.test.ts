@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveLandingHtml } from "./LandingTab";
+import { canAttemptLandingApproval, resolveLandingHtml } from "./LandingTab";
 
 describe("LandingTab", () => {
   it("usa htmlGeraLanding como HTML suficiente para liberar a aprovação", () => {
@@ -20,9 +20,17 @@ describe("LandingTab", () => {
     ).toBe("<html><body>Landing legado</body></html>");
   });
 
-  it("bloqueia aprovação quando ambos os campos de HTML estão vazios", () => {
+  it("não encontra prévia quando ambos os campos de HTML estão vazios", () => {
     expect(
       resolveLandingHtml({ htmlGeraLanding: "   ", landingPageHtml: null }),
     ).toBeNull();
+  });
+
+  it("permite tentar aprovação pelo backend mesmo sem prévia local", () => {
+    expect(canAttemptLandingApproval({ id: "35" })).toBe(true);
+  });
+
+  it("bloqueia aprovação apenas quando o experimento não tem id", () => {
+    expect(canAttemptLandingApproval({ id: "" })).toBe(false);
   });
 });

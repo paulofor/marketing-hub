@@ -2,6 +2,19 @@
 
 - Todo o modelo de dados deve estar definido aqui no projeto **backend**.
 
+
+## Estrutura obrigatória de pacotes por módulo backend
+
+Use o módulo `com.marketinghub.geralanding.wireframe` como referência de organização por método, mas aplique a padronização abaixo para novos módulos e para refatorações planejadas:
+
+- **Raiz do módulo:** cada módulo funcional deve ficar em uma raiz própria `com.marketinghub.<modulo>` ou `com.marketinghub.<dominio>.<modulo>`, sem misturar responsabilidades de outros módulos.
+- **Controller único:** cada módulo deve ter exatamente um pacote `.controller` e um único controller responsável por responder todos os endpoints públicos daquele módulo. Não criar múltiplos controllers para o mesmo módulo; agrupe os métodos HTTP no controller único mantendo clareza de rotas e documentação.
+- **Service único:** cada módulo deve ter exatamente um pacote `.service` e um único service responsável por orquestrar as operações do módulo. Extrações internas só devem existir quando forem auxiliares sem expor contrato do módulo; não crie services paralelos para cada endpoint.
+- **DTOs dentro de service:** os DTOs de entrada e saída devem ficar dentro de `.service`, organizados em subpacotes por método/operação, seguindo o padrão observado em `geralanding.wireframe.service.<metodo>` (ex.: `.service.recebePrompt`, `.service.recebeResposta`, `.service.listStageExecutions`). Evite DTOs soltos em pacote genérico quando eles pertencem a uma operação específica.
+- **Nome do subpacote por método:** o subpacote do DTO deve representar o método/operação de negócio atendido pelo controller e pelo service, usando nome simples, estável e aderente ao contrato da API.
+- **Swagger/OpenAPI em docs:** todo módulo com endpoints deve gerar e manter documentação Swagger/OpenAPI em `docs` com arquivo nomeado pelo módulo (ex.: `docs/<modulo>-swagger.yaml` ou caminho equivalente já existente no projeto). Ao criar ou alterar endpoints, atualize a documentação do módulo no mesmo PR.
+- **Contratos antes de implementação:** antes de criar nova rota, verifique se o contrato já existe no controller único e na documentação Swagger do módulo; se não existir, defina o contrato no backend, documente em `docs` e adicione/ajuste testes.
+
 ## Estrutura obrigatória de repositories
 
 > **DESTAQUE — regra obrigatória de acesso ao banco:** todas as classes que conectam diretamente com banco de dados devem ficar exclusivamente dentro do pacote `com.marketinghub.repository`. Não crie repositories, DAOs, gateways JDBC/JPA ou qualquer classe com acesso direto ao banco dentro dos pacotes funcionais dos módulos.

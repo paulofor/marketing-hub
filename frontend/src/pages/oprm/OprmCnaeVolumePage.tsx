@@ -182,8 +182,8 @@ export default function OprmCnaeVolumePage() {
                 <h2 className="h5 mb-1">Nichos já enriquecidos</h2>
                 <p className="text-secondary mb-0">
                   Lista dos candidatos de nicho que já receberam enriquecimento
-                  do OPRM, com dor, resultado e mecanismo para decisão do
-                  usuário.
+                  do OPRM, ordenada pelos maiores scores, com dor, resultado e
+                  mecanismo para decisão do usuário.
                 </p>
               </div>
               <button

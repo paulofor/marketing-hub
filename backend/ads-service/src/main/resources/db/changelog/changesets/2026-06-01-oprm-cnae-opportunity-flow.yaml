@@ -1,0 +1,353 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-01-01-oprm-cnae-processing-cycle
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_cnae_processing_cycle
+      changes:
+        - createTable:
+            tableName: oprm_cnae_processing_cycle
+            columns:
+              - column:
+                  name: cycle_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_cnae_processing_cycle
+              - column:
+                  name: cycle_type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cycle_number
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: selection_criteria
+                  type: VARCHAR(1000)
+              - column:
+                  name: processed_count
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: failed_count
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: finished_at
+                  type: DATETIME
+              - column:
+                  name: summary
+                  type: LONGTEXT
+              - column:
+                  name: error_message
+                  type: LONGTEXT
+        - createIndex:
+            tableName: oprm_cnae_processing_cycle
+            indexName: idx_oprm_cnae_cycle_type_number
+            columns:
+              - column:
+                  name: cycle_type
+              - column:
+                  name: cycle_number
+        - createIndex:
+            tableName: oprm_cnae_processing_cycle
+            indexName: idx_oprm_cnae_cycle_started_at
+            columns:
+              - column:
+                  name: started_at
+
+  - changeSet:
+      id: 2026-06-01-02-oprm-cnae-opportunity-score
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_cnae_opportunity_score
+      changes:
+        - createTable:
+            tableName: oprm_cnae_opportunity_score
+            columns:
+              - column:
+                  name: cnae_code
+                  type: VARCHAR(7)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_cnae_opportunity_score
+              - column:
+                  name: cnae_description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: opportunity_score
+                  type: DECIMAL(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: market_volume_score
+                  type: DECIMAL(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mei_density_score
+                  type: DECIMAL(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: digital_fit_score
+                  type: DECIMAL(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pain_clarity_score
+                  type: DECIMAL(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: score_justification
+                  type: LONGTEXT
+              - column:
+                  name: algorithm_version
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cycle_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scored_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: score_status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enriched_at
+                  type: DATETIME
+        - createIndex:
+            tableName: oprm_cnae_opportunity_score
+            indexName: idx_oprm_cnae_score_rank
+            columns:
+              - column:
+                  name: enriched_at
+              - column:
+                  name: opportunity_score
+              - column:
+                  name: cnae_code
+        - createIndex:
+            tableName: oprm_cnae_opportunity_score
+            indexName: idx_oprm_cnae_score_cycle
+            columns:
+              - column:
+                  name: cycle_id
+
+  - changeSet:
+      id: 2026-06-01-03-oprm-cnae-enrichment-artifact
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_cnae_enrichment_artifact
+      changes:
+        - createTable:
+            tableName: oprm_cnae_enrichment_artifact
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_cnae_enrichment_artifact
+              - column:
+                  name: cnae_code
+                  type: VARCHAR(7)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enrichment_cycle_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: routine_signals
+                  type: LONGTEXT
+              - column:
+                  name: pain_signals
+                  type: LONGTEXT
+              - column:
+                  name: mechanism_signals
+                  type: LONGTEXT
+              - column:
+                  name: proof_signals
+                  type: LONGTEXT
+              - column:
+                  name: offer_signals
+                  type: LONGTEXT
+              - column:
+                  name: source_summary
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: oprm_cnae_enrichment_artifact
+            indexName: idx_oprm_cnae_artifact_cnae_cycle
+            columns:
+              - column:
+                  name: cnae_code
+              - column:
+                  name: enrichment_cycle_id
+
+  - changeSet:
+      id: 2026-06-01-04-oprm-niche-candidate
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_niche_candidate
+      changes:
+        - createTable:
+            tableName: oprm_niche_candidate
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_niche_candidate
+              - column:
+                  name: cnae_code
+                  type: VARCHAR(7)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cnae_description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: candidate_niche_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: persona
+                  type: LONGTEXT
+              - column:
+                  name: pain_hypothesis
+                  type: LONGTEXT
+              - column:
+                  name: desired_outcome
+                  type: LONGTEXT
+              - column:
+                  name: mechanism_hypothesis
+                  type: LONGTEXT
+              - column:
+                  name: proof_direction
+                  type: LONGTEXT
+              - column:
+                  name: offer_idea
+                  type: LONGTEXT
+              - column:
+                  name: market_volume_signals
+                  type: LONGTEXT
+              - column:
+                  name: opportunity_score
+                  type: DECIMAL(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: score_cycle_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enrichment_cycle_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_artifacts
+                  type: LONGTEXT
+              - column:
+                  name: market_niche_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: oprm_niche_candidate
+            indexName: idx_oprm_niche_candidate_cnae_status
+            columns:
+              - column:
+                  name: cnae_code
+              - column:
+                  name: status
+        - createIndex:
+            tableName: oprm_niche_candidate
+            indexName: idx_oprm_niche_candidate_score
+            columns:
+              - column:
+                  name: opportunity_score
+              - column:
+                  name: created_at

@@ -343,7 +343,7 @@ public class OprmMarketImportService {
     }
 
     /**
-     * Retorna os principais CNAEs por volume de mercado no snapshot mais recente.
+     * Retorna os CNAEs paginados do snapshot mais recente ordenados por score OPRM decrescente.
      */
     @Transactional(readOnly = true)
     public List<OprmTopCnaeMarketVolumeDto> listTopCnaesByMarketVolume(int page, int size) {

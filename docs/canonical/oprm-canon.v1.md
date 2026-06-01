@@ -68,18 +68,18 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - A base de download deve ser explicitamente `https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-05-10/` enquanto essa regra estiver vigente.
 - Antes de iniciar a execução agendada/manual, deve haver validação de acesso HTTP (ex.: `HEAD`) para os arquivos de referência do snapshot (mínimo: `Cnaes.zip`, `Empresas1.zip`, `Estabelecimentos1.zip`) com retorno `200`.
 
-## Regra obrigatória — ranking de CNAEs por empresas MEI com paginação
+## Regra obrigatória — ranking de CNAEs por score OPRM com paginação
 
-- A listagem de ranking de CNAEs por volume (`/oprm/cnaes-volume`) deve ser sempre ordenada por **Empresas MEI** em ordem decrescente (maior para menor).
+- A listagem de ranking de CNAEs por volume (`/oprm/cnaes-volume`) deve ser sempre ordenada por **Score OPRM** em ordem decrescente (maior para menor), mantendo os dados de volume como contexto operacional da oportunidade.
 - O endpoint de leitura do ranking deve suportar paginação explícita (parâmetros de página e tamanho), evitando retorno massivo em uma única resposta.
 - O tamanho padrão por página para essa visão operacional deve ser de **50 registros por página**.
-- A ordenação por Empresas MEI deve ser aplicada no backend (SQL/consulta), não no frontend por pós-processamento em memória.
+- A ordenação por Score OPRM deve ser aplicada no backend (SQL/consulta), não no frontend por pós-processamento em memória.
 
 ## Critério de efetividade — ranking paginado
 
-- A primeira página precisa trazer os CNAEs com maior quantidade de `Empresas MEI` no snapshot vigente da ingestão.
-- Ao navegar entre páginas, a ordenação deve permanecer estável por `Empresas MEI` decrescente.
-- O texto de apoio na tela deve deixar explícito para o usuário que o ranking está ordenado por Empresas MEI e paginado.
+- A primeira página precisa trazer os CNAEs com maior `Score OPRM` no snapshot vigente da ingestão.
+- Ao navegar entre páginas, a ordenação deve permanecer estável por `Score OPRM` decrescente.
+- O texto de apoio na tela deve deixar explícito para o usuário que o ranking está ordenado por Score OPRM e paginado.
 
 ## Regra obrigatória — responsabilidade do OPRM no fluxo CNAE → oportunidade
 

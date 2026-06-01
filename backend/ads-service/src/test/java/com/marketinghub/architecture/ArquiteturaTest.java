@@ -55,8 +55,32 @@ class ArquiteturaTest {
             Pattern.compile("^com\\.marketinghub\\.geralanding\\.[a-zA-Z0-9_]+\\.service$");
     private static final Pattern BACKEND_CONTROLLER_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Controller$");
     private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
+    private static final Pattern EPM_CONTROLLER_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.controller$");
+    private static final Pattern EPM_SERVICE_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.service$");
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
+    private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
+            "createExperimentBudget",
+            "createExperimentDecision",
+            "createExperimentMetric",
+            "createFinancialPlan",
+            "createPlanHypothesis",
+            "createPlanNiche",
+            "createProductPriceScenario",
+            "getExperimentBudget",
+            "getFinancialPlan",
+            "getFinancialPlanSummary",
+            "getLatestExperimentMetric",
+            "getPlanHypothesis",
+            "getPlanNiche",
+            "listExperimentBudgets",
+            "listExperimentDecisions",
+            "listFinancialPlans",
+            "listPlanHypotheses",
+            "listPlanNiches",
+            "listProductPriceScenarios",
+            "updateExperimentBudget",
+            "updateFinancialPlan");
     private static final List<String> REQUIRED_BACKEND_CONTROLLER_METHODS = List.of(
             "start", "listStageExecutions", "pending", "recebePrompt", "recebeResposta", "detailStageExecution");
 
@@ -77,6 +101,15 @@ class ArquiteturaTest {
             .dependOnClassesThat(otherMarketingHubPackagesExcept(
                     "com.marketinghub.oprm", "com.marketinghub.repository.jpa.oprm"))
             .because("[ARQUITETURA][OPRM] o módulo OPRM não deve depender de outros pacotes internos do sistema");
+
+    @ArchTest
+    static final ArchRule epmMustNotDependOnOtherMarketingHubPackages = noClasses()
+            .that()
+            .resideInAPackage("com.marketinghub.epm..")
+            .should()
+            .dependOnClassesThat(otherMarketingHubPackagesExcept(
+                    "com.marketinghub.epm", "com.marketinghub.repository.jpa.epm"))
+            .because("[ARQUITETURA] [EPM] o módulo EPM não deve depender de outros pacotes internos além dos seus repositories canônicos");
 
     @ArchTest
     static final ArchRule moisSalesLibraryPackageMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -122,6 +155,18 @@ class ArquiteturaTest {
             classes().that().resideInAPackage("com.marketinghub.geralanding..service..")
                     .should(onlyDependOnAllowedMarketingHubClasses())
                     .because("[ARQUITETURA] [BACKEND][GeraLanding] serviços em geralanding.*.service só podem acessar classes permitidas dentro de com.marketinghub");
+
+    @ArchTest
+    static final ArchRule epmControllerPackagesShouldOnlyDependOnControllerOrService =
+            classes().that().resideInAPackage("com.marketinghub.epm.controller..")
+                    .should(onlyDependOnEpmControllerOrService())
+                    .because("[ARQUITETURA] [BACKEND][EPM] controller em epm.controller só pode acessar epm.controller e epm.service");
+
+    @ArchTest
+    static final ArchRule epmServicePackagesShouldOnlyAccessAllowedMarketingHubClasses =
+            classes().that().resideInAPackage("com.marketinghub.epm..service..")
+                    .should(onlyDependOnAllowedEpmMarketingHubClasses())
+                    .because("[ARQUITETURA] [BACKEND][EPM] service em epm.service só pode acessar domínio EPM, subpacotes service e repositories EPM");
 
     @ArchTest
     static final ArchRule backendStageControllersMustExposePendingMethod =
@@ -238,6 +283,95 @@ class ArquiteturaTest {
                                             + " está no subpacote obrigatório " + requiredSubpackage
                                             + " e deve ser declarada como record"));
                 }));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que o pacote controller do EPM tenha somente o controller canônico anotado.
+     */
+    @ArchTest
+    static void epmControllerPackageMustHaveSingleAnnotatedController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> controllerPackageClasses = epmControllerPackageClasses(importedClasses);
+        List<JavaClass> controllers = controllerPackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("EpmController"))
+                .toList();
+        if (controllerPackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][EPM] pacote=com.marketinghub.epm.controller "
+                    + "deve conter apenas EpmController; classes=" + simpleNames(controllerPackageClasses));
+        }
+        if (controllers.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][EPM] pacote=com.marketinghub.epm.controller "
+                    + "deve conter exatamente uma classe EpmController; controllers=" + simpleNames(controllers));
+        } else {
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][EPM] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+            if (!hasRequestMapping(controller, "/api/epm")) {
+                violations.add("[ARQUITETURA] [BACKEND][EPM] classe=" + controller.getName()
+                        + " deve possuir @RequestMapping(\"/api/epm\")");
+            }
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que o pacote service do EPM tenha somente o service canônico e os subpacotes por operação.
+     */
+    @ArchTest
+    static void epmServicePackageMustHaveCanonicalServiceAndOperationSubpackages(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> servicePackageClasses = epmServicePackageClasses(importedClasses);
+        List<JavaClass> services = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("EpmService"))
+                .toList();
+        if (servicePackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][EPM] pacote=com.marketinghub.epm.service "
+                    + "deve conter apenas EpmService na raiz; classes=" + simpleNames(servicePackageClasses));
+        }
+        if (services.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][EPM] pacote=com.marketinghub.epm.service "
+                    + "deve conter exatamente uma classe EpmService; services=" + simpleNames(services));
+        } else if (!services.get(0).isAnnotatedWith(Service.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][EPM] classe=" + services.get(0).getName()
+                    + " deve possuir @Service");
+        }
+        REQUIRED_EPM_SERVICE_SUBPACKAGES.forEach(requiredSubpackage -> {
+            String requiredPackage = "com.marketinghub.epm.service." + requiredSubpackage;
+            boolean exists = importedClasses.stream()
+                    .filter(ArquiteturaTest::isProductionTopLevelClass)
+                    .anyMatch(candidate -> candidate.getPackageName().equals(requiredPackage));
+            if (!exists) {
+                violations.add("[ARQUITETURA] [BACKEND][EPM] pacote=com.marketinghub.epm.service "
+                        + "deve possuir subpacote de operação " + requiredSubpackage);
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que os subpacotes de operação do service EPM contenham apenas records e nomes canônicos.
+     */
+    @ArchTest
+    static void epmServiceOperationSubpackagesMustBeCanonicalAndContainOnlyRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(candidate -> candidate.getPackageName().startsWith("com.marketinghub.epm.service."))
+                .forEach(candidate -> {
+                    String subpackage = extractDirectSubpackage(candidate.getPackageName(), "com.marketinghub.epm.service.");
+                    if (!REQUIRED_EPM_SERVICE_SUBPACKAGES.contains(subpackage)) {
+                        violations.add("[ARQUITETURA] [BACKEND][EPM] classe=" + candidate.getName()
+                                + " está em subpacote de service não canônico " + subpackage
+                                + "; use um dos subpacotes por operação " + REQUIRED_EPM_SERVICE_SUBPACKAGES);
+                    }
+                    if (!candidate.reflect().isRecord()) {
+                        violations.add("[ARQUITETURA] [BACKEND][EPM] classe=" + candidate.getName()
+                                + " está em subpacote de operação do service EPM e deve ser declarada como record");
+                    }
+                });
         failWithArchitectureViolations(violations);
     }
 
@@ -382,6 +516,28 @@ class ArquiteturaTest {
     }
 
     /**
+     * Lista classes diretas de produção no pacote controller do EPM.
+     */
+    private static List<JavaClass> epmControllerPackageClasses(JavaClasses importedClasses) {
+        return importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> EPM_CONTROLLER_PACKAGE_PATTERN.matcher(javaClass.getPackageName()).matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .toList();
+    }
+
+    /**
+     * Lista classes diretas de produção no pacote service do EPM.
+     */
+    private static List<JavaClass> epmServicePackageClasses(JavaClasses importedClasses) {
+        return importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> EPM_SERVICE_PACKAGE_PATTERN.matcher(javaClass.getPackageName()).matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .toList();
+    }
+
+    /**
      * Identifica classes de produção top-level, removendo testes e classes internas importadas pelo ArchUnit.
      */
     private static boolean isProductionTopLevelClass(JavaClass javaClass) {
@@ -416,10 +572,29 @@ class ArquiteturaTest {
     }
 
     /**
+     * Verifica se o controller usa @RequestMapping com valor ou path exatamente igual ao mapeamento esperado.
+     */
+    private static boolean hasRequestMapping(JavaClass javaClass, String expectedMapping) {
+        RequestMapping requestMapping = javaClass.reflect().getAnnotation(RequestMapping.class);
+        if (requestMapping == null) {
+            return false;
+        }
+        return containsOnlyMapping(requestMapping.value(), expectedMapping)
+                || containsOnlyMapping(requestMapping.path(), expectedMapping);
+    }
+
+    /**
      * Verifica se o atributo da anotação possui somente o mapeamento /api.
      */
     private static boolean containsOnlyApi(String[] mappings) {
         return mappings.length == 1 && "/api".equals(mappings[0]);
+    }
+
+    /**
+     * Verifica se o atributo da anotação possui somente o mapeamento esperado.
+     */
+    private static boolean containsOnlyMapping(String[] mappings, String expectedMapping) {
+        return mappings.length == 1 && expectedMapping.equals(mappings[0]);
     }
 
     /**
@@ -652,6 +827,73 @@ class ArquiteturaTest {
                 events.add(SimpleConditionEvent.violated(item, message));
             }
         };
+    }
+
+    /**
+     * Garante que controllers EPM dependam somente do próprio pacote e da árvore service do EPM.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnEpmControllerOrService() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][EPM] controller only depends on EPM controller/service") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.epm.")) {
+                        return;
+                    }
+                    boolean valid = targetClass.getPackageName().startsWith("com.marketinghub.epm.controller")
+                            || targetClass.getPackageName().startsWith("com.marketinghub.epm.service");
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][EPM] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: epm.controller só pode acessar epm.controller e epm.service";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que services EPM acessem domínio EPM, DTOs por operação e repositories EPM.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedEpmMarketingHubClasses() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][EPM] service only depends on EPM domain/service/repository") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals("com.marketinghub.epm")
+                            || targetPackage.startsWith("com.marketinghub.epm.service")
+                            || targetPackage.startsWith("com.marketinghub.repository.jpa.epm");
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][EPM] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: epm.service só pode acessar domínio com.marketinghub.epm, "
+                                + "subpacotes com.marketinghub.epm.service.* e repositories "
+                                + "com.marketinghub.repository.jpa.epm";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Extrai o primeiro subpacote abaixo de uma raiz de pacote.
+     */
+    private static String extractDirectSubpackage(String packageName, String packagePrefix) {
+        String remainder = packageName.substring(packagePrefix.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : remainder;
     }
 
     /**

@@ -4,6 +4,18 @@ Este documento consolida as regras canônicas de arquitetura por etapa que são 
 `ArquiteturaTest` do backend e do Worker AI. Toda alteração estrutural deve preservar estas regras ou alterar
 primeiro este cânone e, em seguida, sincronizar os testes de arquitetura correspondentes.
 
+## Regra global — persistência JPA do backend
+
+Todo acesso Spring Data JPA ao banco de dados do backend deve ficar centralizado em algum subpacote de
+`com.marketinghub.repository.jpa`. Interfaces que estendem `JpaRepository` não podem ser criadas em
+pacotes funcionais como `service`, `web`, `oprm`, `mois`, `mds`, `geralanding` ou similares. Quando uma
+funcionalidade precisar de persistência JPA, ela deve consumir o repository canônico nessa raiz de
+persistência, preservando o backend como fonte única do modelo de dados e evitando gateways locais por
+módulo.
+
+Essa regra é protegida pelo `ArquiteturaTest`: qualquer novo repository Spring Data JPA fora de um
+subpacote de `com.marketinghub.repository.jpa` deve falhar com mensagem prefixada por `[ARQUITETURA]`.
+
 ## Backend por etapa
 
 Todo controller interno de backend criado para uma etapa operacional deve ficar no pacote direto

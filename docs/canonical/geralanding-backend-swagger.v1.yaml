@@ -406,6 +406,8 @@ components:
           $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageImagePlanning:
           $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageImageAssets:
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageDesignPreset:
           $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageDeliverables:

@@ -156,10 +156,12 @@ class BackendPresetDesignServiceTest {
         when(experiment.getLandingPageWireframe()).thenReturn("{\"landingPageWireframe\":{}}");
         when(experiment.getLandingPageCopy()).thenReturn("{\"landingPageCopy\":{}}");
         when(experiment.getLandingPageImagePlanning()).thenReturn("{\"landingPageImagePlanning\":{}}");
+        when(experiment.getLandingPageImageAssets()).thenReturn("{\"images\":[]}");
         when(htmlAssembler.assemble(
                 "{\"landingPageWireframe\":{}}",
                 "{\"landingPageCopy\":{}}",
                 "{\"landingPageImagePlanning\":{}}",
+                "{\"images\":[]}",
                 "{\"landingPageDesignPreset\":{}}",
                 "job-design-preset"))
                 .thenReturn("<html>GeraLanding Design Preset</html>");
@@ -183,6 +185,7 @@ class BackendPresetDesignServiceTest {
                 "{\"landingPageWireframe\":{}}",
                 "{\"landingPageCopy\":{}}",
                 "{\"landingPageImagePlanning\":{}}",
+                "{\"images\":[]}",
                 "{\"landingPageDesignPreset\":{}}",
                 "job-design-preset");
         verify(experiment).setHtmlGeraLanding("<html>GeraLanding Design Preset</html>");

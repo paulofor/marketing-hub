@@ -246,6 +246,7 @@ public class BackendPresetDesignService {
                 experiment.getLandingPageWireframe(),
                 experiment.getLandingPageCopy(),
                 experiment.getLandingPageImagePlanning(),
+                experiment.getLandingPageImageAssets(),
                 modelResponse,
                 fromDatabaseIdJob(execution.getIdJob()));
     }

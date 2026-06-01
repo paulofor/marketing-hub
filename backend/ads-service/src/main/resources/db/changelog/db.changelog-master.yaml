@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-01-experiment-landing-image-assets.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-06-01-oprm-cnae-opportunity-flow.yaml
       relativeToChangelogFile: true
 

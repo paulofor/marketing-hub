@@ -34,6 +34,7 @@ public class ExperimentDto {
     private String landingPageCopy;
     private String landingPageWireframe;
     private String landingPageImagePlanning;
+    private String landingPageImageAssets;
     private String landingPageDesignPreset;
     private String htmlGeraLanding;
     private String landingPageDeliverables;

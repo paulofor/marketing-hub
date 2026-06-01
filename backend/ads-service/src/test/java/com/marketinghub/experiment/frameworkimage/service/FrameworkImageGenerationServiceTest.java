@@ -121,6 +121,43 @@ class FrameworkImageGenerationServiceTest {
         assertThat(job.getErrorMessage()).isNull();
     }
 
+
+    @Test
+    void completeJobPersistsLandingPageImageAssetsManifest() {
+        UUID jobId = UUID.randomUUID();
+        Experiment experiment = Experiment.builder()
+                .id(56L)
+                .landingPageImagePlanning("""
+                        {"images":[{"sectionId":"sec-hero","sectionName":"Hero","elementId":"hero-img","imagePrompt":"Prompt Hero"}]}
+                        """)
+                .build();
+        FrameworkImageGenerationJob job = FrameworkImageGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .planningItemKey("sec-hero")
+                .status(FrameworkImageGenerationJobStatus.PROCESSING)
+                .stage(FrameworkImageGenerationJobStage.WAITING_OPENAI_BATCH)
+                .createdAt(Instant.parse("2026-06-01T10:00:00Z"))
+                .build();
+
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(jobRepository.findByExperimentIdOrderByCreatedAtDesc(56L)).thenReturn(List.of(job));
+
+        service.completeJob(jobId, new FrameworkImageGenerationJobCompletionRequest(
+                FrameworkImageGenerationJobStage.NOTIFIED_BACKEND,
+                "gpt-image-1",
+                "Prompt Hero final",
+                "batch_1",
+                99L,
+                "https://cdn/source.jpg",
+                "https://cdn/web.jpg"));
+
+        assertThat(experiment.getLandingPageImageAssets()).contains("\"planningItemKey\":\"sec-hero\"");
+        assertThat(experiment.getLandingPageImageAssets()).contains("\"elementId\":\"hero-img\"");
+        assertThat(experiment.getLandingPageImageAssets()).contains("\"resolvedUrl\":\"https://cdn/web.jpg\"");
+        verify(experimentRepository).save(experiment);
+    }
+
     @Test
     void claimJobRejectsNonPendingJob() {
         UUID jobId = UUID.randomUUID();

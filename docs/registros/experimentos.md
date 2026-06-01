@@ -2867,3 +2867,14 @@
   - o exemplo do prompt foi sincronizado com o schema estrito;
   - adicionados testes regressivos para impedir retorno de `additionalProperties` permissivo e palavras-chave rejeitadas no schema da etapa.
 - impacto esperado: novas execuções do PresetDesign deixam de ser recusadas antes da geração pela OpenAI e mantêm a etapa disponível para concluir o Gera Landing com acabamento visual consistente e voltado à conversão.
+
+## 2026-05-31 23:55:25 UTC-3
+- solicitação: criar um campo consolidado no experimento para armazenar o JSON com URLs finais das imagens geradas e fazer o preset design consumir esse JSON.
+- raciocínio: manter `landing_page_image_planning` como planejamento/prompt e separar a saída final das imagens em um manifesto próprio evita misturar entrada e resultado, além de permitir que o HTML consolidado use URLs reais sem depender de placeholders do modelo.
+- registro do que foi feito: adicionado o contrato de `landing_page_image_assets`, atualização do fluxo canônico de geração de imagens e consumo do manifesto pelo preset design.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/canonical/openai-informacoes-tratadas-canon.v1.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/canonical/geralanding-backend-swagger.v1.yaml

@@ -11,6 +11,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "estrutura-layout",
+        "espacamento",
         "cores-fundo",
         "tipografia",
         "texto",
@@ -25,6 +27,12 @@
         "animações"
       ],
       "properties": {
+        "estrutura-layout": {
+          "$ref": "#/$defs/grupo"
+        },
+        "espacamento": {
+          "$ref": "#/$defs/grupo"
+        },
         "cores-fundo": {
           "$ref": "#/$defs/grupo"
         },
@@ -156,6 +164,57 @@
         "atributoCss": {
           "type": "string",
           "enum": [
+            "display",
+            "width",
+            "height",
+            "min-width",
+            "min-height",
+            "max-width",
+            "max-height",
+            "box-sizing",
+            "overflow",
+            "overflow-x",
+            "overflow-y",
+            "grid",
+            "grid-template",
+            "grid-template-columns",
+            "grid-template-rows",
+            "grid-template-areas",
+            "grid-column",
+            "grid-column-start",
+            "grid-column-end",
+            "grid-row",
+            "grid-row-start",
+            "grid-row-end",
+            "grid-area",
+            "flex",
+            "flex-direction",
+            "flex-wrap",
+            "flex-flow",
+            "justify-content",
+            "align-items",
+            "align-content",
+            "align-self",
+            "place-items",
+            "place-content",
+            "justify-items",
+            "gap",
+            "row-gap",
+            "column-gap",
+            "order",
+            "flex-grow",
+            "flex-shrink",
+            "flex-basis",
+            "margin",
+            "margin-top",
+            "margin-right",
+            "margin-bottom",
+            "margin-left",
+            "padding",
+            "padding-top",
+            "padding-right",
+            "padding-bottom",
+            "padding-left",
             "color",
             "background",
             "background-color",
@@ -508,6 +567,47 @@
             "diagrama",
             "print conceitual"
           ]
+        },
+        "posicaoDesejada": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aspectRatio": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maxVisualHeight": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "desktop": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mobile": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "desktop",
+            "mobile"
+          ]
+        },
+        "layoutRole": {
+          "type": "string",
+          "enum": [
+            "prova",
+            "demonstracao-produto",
+            "antes-depois",
+            "mecanismo",
+            "reducao-objecao",
+            "produto"
+          ]
+        },
+        "relacaoComCta": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -515,7 +615,12 @@
         "tipoVisualEsperado",
         "funcaoComercial",
         "objecaoQueRemove",
-        "classificacaoVisual"
+        "classificacaoVisual",
+        "posicaoDesejada",
+        "aspectRatio",
+        "maxVisualHeight",
+        "layoutRole",
+        "relacaoComCta"
       ]
     }
   }

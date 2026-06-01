@@ -5,7 +5,7 @@ Este arquivo separa propriedades CSS em duas ideias práticas:
 - **Estrutura / posição / layout**: controla onde o elemento fica, quanto espaço ocupa e como se organiza na tela.
 - **Acabamento / apresentação visual**: controla como o elemento aparece visualmente, como cor, fonte, borda, sombra e efeitos.
 
-> Observação: essa divisão é didática. Algumas propriedades podem afetar tanto a estrutura quanto o visual, como `padding`, `border`, `box-sizing`, `transform` e `visibility`.
+> Observação: essa divisão é didática. Algumas propriedades podem afetar tanto a estrutura quanto o visual, como `padding`, `border`, `box-sizing`, `transform` e `visibility`. Em etapas de acabamento que precisam garantir qualidade visual mínima de landing, é permitido combinar propriedades de estrutura e apresentação quando elas forem necessárias para legibilidade, responsividade, CTA real, containers, formulários e imagens controladas.
 
 ---
 

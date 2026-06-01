@@ -1,7 +1,10 @@
 package com.marketinghub.experiment.frameworkimage.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJob;
 import com.marketinghub.experiment.frameworkimage.FrameworkImageGenerationJobStage;
@@ -21,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
@@ -31,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Gerencia a fila de geração de imagens da landing e materializa o manifesto consolidado de assets do experimento.
+ */
 @Service
 public class FrameworkImageGenerationService {
     private static final Logger log = LoggerFactory.getLogger(FrameworkImageGenerationService.class);
@@ -40,6 +47,7 @@ public class FrameworkImageGenerationService {
     private final boolean rolloutEnabled;
     private final int rolloutPercentage;
 
+    /** Inicializa o serviço com repositórios, mapper JSON e configuração de rollout da geração de imagens. */
     public FrameworkImageGenerationService(FrameworkImageGenerationJobRepository jobRepository,
                                            ExperimentRepository experimentRepository,
                                            ObjectMapper objectMapper,
@@ -104,6 +112,7 @@ public class FrameworkImageGenerationService {
         job.setStage(stage != null ? stage : job.getStage());
     }
 
+    /** Finaliza um job de imagem e atualiza o manifesto consolidado de assets do experimento. */
     @Transactional
     public void completeJob(UUID jobId, FrameworkImageGenerationJobCompletionRequest request) {
         FrameworkImageGenerationJob job = findJob(jobId);
@@ -128,8 +137,10 @@ public class FrameworkImageGenerationService {
         log.info("framework-image-job-completed jobId={} experimentId={} stage={} workerId={} assetId={} batchId={} model={}",
                 job.getId(), job.getExperiment().getId(), job.getStage(), job.getWorkerId(),
                 job.getAssetId(), job.getBatchId(), job.getModel());
+        refreshLandingPageImageAssets(job.getExperiment());
     }
 
+    /** Marca um job de imagem como falho e atualiza o manifesto consolidado com o erro operacional. */
     @Transactional
     public void failJob(UUID jobId, String errorMessage) {
         FrameworkImageGenerationJob job = findJob(jobId);
@@ -144,8 +155,10 @@ public class FrameworkImageGenerationService {
         log.warn("framework-image-job-failed jobId={} experimentId={} stage={} workerId={} assetId={} batchId={} error={}",
                 job.getId(), job.getExperiment().getId(), job.getStage(), job.getWorkerId(),
                 job.getAssetId(), job.getBatchId(), job.getErrorMessage());
+        refreshLandingPageImageAssets(job.getExperiment());
     }
 
+    /** Registra a URL web definitiva de um asset e atualiza o manifesto consolidado do experimento. */
     @Transactional
     public void markAssetAsWebReady(Long assetId, String webUrl) {
         FrameworkImageGenerationJob job = jobRepository.findFirstByAssetIdOrderByCreatedAtDesc(assetId)
@@ -153,6 +166,7 @@ public class FrameworkImageGenerationService {
         String normalizedWebUrl = normalizeRequired(webUrl, "webUrl é obrigatório");
 
         if (normalizedWebUrl.equals(job.getWebUrl()) && job.getStage() == FrameworkImageGenerationJobStage.WEB_READY) {
+            refreshLandingPageImageAssets(job.getExperiment());
             return;
         }
 
@@ -167,6 +181,7 @@ public class FrameworkImageGenerationService {
         job.setErrorMessage(null);
         log.info("framework-image-asset-web-ready jobId={} experimentId={} stage={} assetId={} webUrl={}",
                 job.getId(), job.getExperiment().getId(), job.getStage(), job.getAssetId(), job.getWebUrl());
+        refreshLandingPageImageAssets(job.getExperiment());
     }
 
     @Transactional
@@ -302,6 +317,8 @@ public class FrameworkImageGenerationService {
             response.add(toItemStatusDto(new PlanningItem(
                             remainingJob.getPlanningItemKey(),
                             null,
+                            null,
+                            null,
                             remainingJob.getPrompt()),
                     remainingJob));
         }
@@ -381,6 +398,113 @@ public class FrameworkImageGenerationService {
         return bucket < rolloutPercentage;
     }
 
+    /** Recria e persiste o manifesto consolidado de URLs de imagens da landing para consumo das etapas seguintes. */
+    private void refreshLandingPageImageAssets(Experiment experiment) {
+        if (experiment == null || experiment.getId() == null) {
+            return;
+        }
+        List<PlanningItem> planningItems = parsePlanningItems(experiment);
+        List<FrameworkImageGenerationJob> jobs = jobRepository.findByExperimentIdOrderByCreatedAtDesc(experiment.getId());
+        String manifest = buildLandingPageImageAssetsManifest(experiment.getId(), planningItems, jobs);
+        experiment.setLandingPageImageAssets(manifest);
+        experimentRepository.save(experiment);
+    }
+
+    /** Monta o JSON versionado com o último job conhecido de cada item planejado de imagem. */
+    private String buildLandingPageImageAssetsManifest(Long experimentId,
+                                                       List<PlanningItem> planningItems,
+                                                       List<FrameworkImageGenerationJob> jobs) {
+        Map<String, FrameworkImageGenerationJob> latestByItem = jobs.stream()
+                .filter(job -> job != null && StringUtils.hasText(job.getPlanningItemKey()))
+                .collect(Collectors.toMap(
+                        FrameworkImageGenerationJob::getPlanningItemKey,
+                        job -> job,
+                        (first, ignored) -> first,
+                        LinkedHashMap::new));
+
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("version", 1);
+        root.put("experimentId", experimentId);
+        root.put("generatedAt", Instant.now().toString());
+        ArrayNode images = root.putArray("images");
+
+        for (PlanningItem item : planningItems) {
+            FrameworkImageGenerationJob job = latestByItem.remove(item.planningItemKey());
+            images.add(toManifestImageNode(item, job));
+        }
+        for (FrameworkImageGenerationJob job : latestByItem.values()) {
+            images.add(toManifestImageNode(new PlanningItem(job.getPlanningItemKey(), null, null, null, null), job));
+        }
+
+        try {
+            return objectMapper.writeValueAsString(root);
+        } catch (JsonProcessingException ex) {
+            log.error("Erro ao serializar manifesto de imagens da landing (experimentId={}, imageCount={})",
+                    experimentId,
+                    images.size(),
+                    ex);
+            throw new IllegalStateException("Falha ao serializar manifesto de imagens da landing", ex);
+        }
+    }
+
+    /** Converte item planejado e último job em um nó do manifesto consolidado de imagens. */
+    private ObjectNode toManifestImageNode(PlanningItem item, FrameworkImageGenerationJob job) {
+        ObjectNode image = objectMapper.createObjectNode();
+        image.put("planningItemKey", item.planningItemKey());
+        putIfPresent(image, "sectionId", item.sectionId());
+        putIfPresent(image, "sectionName", item.sectionName());
+        putIfPresent(image, "elementId", item.elementId());
+        putIfPresent(image, "prompt", item.prompt());
+        if (job != null) {
+            if (job.getId() != null) {
+                image.put("jobId", job.getId().toString());
+            }
+            if (job.getStatus() != null) {
+                image.put("status", job.getStatus().name());
+            }
+            if (job.getStage() != null) {
+                image.put("stage", job.getStage().name());
+            }
+            putIfPresent(image, "model", job.getModel());
+            if (job.getAssetId() != null) {
+                image.put("assetId", job.getAssetId());
+            }
+            putIfPresent(image, "sourceUrl", job.getSourceUrl());
+            putIfPresent(image, "webUrl", job.getWebUrl());
+            putIfPresent(image, "resolvedUrl", firstNonBlank(job.getWebUrl(), job.getSourceUrl()));
+            putIfPresent(image, "errorMessage", job.getErrorMessage());
+            putIfPresent(image, "createdAt", instantToString(job.getCreatedAt()));
+            putIfPresent(image, "startedAt", instantToString(job.getStartedAt()));
+            putIfPresent(image, "finishedAt", instantToString(job.getFinishedAt()));
+        } else {
+            image.put("status", "PLANNED");
+        }
+        return image;
+    }
+
+    /** Adiciona um campo textual ao JSON somente quando houver valor útil. */
+    private void putIfPresent(ObjectNode node, String fieldName, String value) {
+        if (StringUtils.hasText(value)) {
+            node.put(fieldName, value.trim());
+        }
+    }
+
+    /** Converte Instant para texto ISO-8601 mantendo nulo quando não há data. */
+    private String instantToString(Instant value) {
+        return value != null ? value.toString() : null;
+    }
+
+    /** Retorna o primeiro texto preenchido entre os candidatos informados. */
+    private String firstNonBlank(String primary, String fallback) {
+        if (StringUtils.hasText(primary)) {
+            return primary.trim();
+        }
+        if (StringUtils.hasText(fallback)) {
+            return fallback.trim();
+        }
+        return null;
+    }
+
     private FrameworkImageGenerationJobDto toDto(FrameworkImageGenerationJob job) {
         return FrameworkImageGenerationJobDto.builder()
                 .id(job.getId())
@@ -440,10 +564,13 @@ public class FrameworkImageGenerationService {
                 if (imageNode == null || !imageNode.isObject()) {
                     continue;
                 }
-                String planningItemKey = normalizePlanningItemKey(imageNode.path("sectionId").asText(null), index);
+                String sectionId = normalize(imageNode.path("sectionId").asText(null));
+                String planningItemKey = normalizePlanningItemKey(sectionId, index);
                 items.add(new PlanningItem(
                         planningItemKey,
+                        sectionId,
                         normalize(imageNode.path("sectionName").asText(null)),
+                        normalize(imageNode.path("elementId").asText(null)),
                         normalize(promptFrom(imageNode))));
             }
             return deduplicatePlanningItems(items);
@@ -645,7 +772,9 @@ public class FrameworkImageGenerationService {
             }
             normalizedItems.add(new PlanningItem(
                     item.planningItemKey() + "-" + occurrence,
+                    item.sectionId(),
                     item.sectionName(),
+                    item.elementId(),
                     item.prompt()));
         }
         return normalizedItems;
@@ -659,7 +788,8 @@ public class FrameworkImageGenerationService {
         return "item-" + (index + 1);
     }
 
-    private record PlanningItem(String planningItemKey, String sectionName, String prompt) {
+    /** Representa um item planejado de imagem normalizado para filas e manifesto consolidado. */
+    private record PlanningItem(String planningItemKey, String sectionId, String sectionName, String elementId, String prompt) {
         private PlanningItem {
             Objects.requireNonNull(planningItemKey);
         }

@@ -209,6 +209,9 @@ public class Experiment {
     @Column(name = "landing_page_image_planning", columnDefinition = "LONGTEXT")
     private String landingPageImagePlanning;
 
+    @Column(name = "landing_page_image_assets", columnDefinition = "LONGTEXT")
+    private String landingPageImageAssets;
+
     @Column(name = "landing_page_design_preset", columnDefinition = "LONGTEXT")
     private String landingPageDesignPreset;
 

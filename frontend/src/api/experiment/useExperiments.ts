@@ -76,6 +76,7 @@ export interface Experiment {
   landingPageCopy?: string | null;
   landingPageWireframe?: string | null;
   landingPageImagePlanning?: string | null;
+  landingPageImageAssets?: string | null;
   landingPageDesignPreset?: string | null;
   landingPageDeliverables?: string | null;
   landingPageHtml?: string | null;

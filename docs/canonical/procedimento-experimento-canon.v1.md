@@ -50,7 +50,7 @@ Local canônico vigente:
 No fluxo atual, a geração da landing segue as etapas:
 1. gerar wireframe (`LANDING_PAGE_WIREFRAME`);
 2. gerar copy (`LANDING_PAGE_COPY`);
-3. gerar planejamento/prompt de imagens (`LANDING_PAGE_IMAGE_PLANNING`) e gerar imagens;
+3. gerar planejamento/prompt de imagens (`LANDING_PAGE_IMAGE_PLANNING`) e gerar imagens, materializando `experiment.landing_page_image_assets` com as URLs finais;
 4. gerar preset de design (`LANDING_PAGE_DESIGN_PRESET`);
 5. gerar entregável HTML da landing (`LANDING_PAGE_HTML`).
 
@@ -98,6 +98,7 @@ Cada conjunto de montagem de HTML deve atuar **exclusivamente** na sua etapa can
 Regras:
 1. Um conjunto de etapa não pode consolidar regras de outra etapa.
 2. Enriquecimentos transversais (ex.: injeção de URLs finais de imagem) devem ocorrer em serviço auxiliar dedicado e orquestrados pelo serviço da etapa, sem transferir a responsabilidade de etapa entre processadores.
+3. A etapa de geração de imagens deve persistir o manifesto consolidado `experiment.landing_page_image_assets`; a etapa de preset design deve consumir esse manifesto para substituir placeholders/URLs provisórias por URLs finais antes de persistir o HTML.
 
 ### 5.5 Worker AI — divisão equivalente por etapa (obrigatória)
 
@@ -226,7 +227,7 @@ Para a etapa `landing-page-design-preset`, o HTML provisório **deve** ser gerad
 Persistência esperada na conclusão da etapa:
 - `gera_landing_stage_execution.provisional_html` recebe o HTML provisório da etapa;
 - `experiment.landing_page_design_preset` recebe o JSON de resposta da etapa;
-- `experiment.html_geralanding` recebe o HTML consolidado da etapa (com injeções aplicáveis).
+- `experiment.html_geralanding` recebe o HTML consolidado da etapa com imagens resolvidas a partir de `experiment.landing_page_image_assets` quando disponível.
 
 `experiment.landing_page_html` permanece reservado para fluxo de aprovação/publicação final.
 

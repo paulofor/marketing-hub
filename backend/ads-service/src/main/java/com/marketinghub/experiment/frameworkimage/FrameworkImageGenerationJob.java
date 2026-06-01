@@ -20,6 +20,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+/**
+ * Representa um job de geração de imagem ligado a um item planejado do experimento.
+ */
 @Entity
 @Data
 @Builder

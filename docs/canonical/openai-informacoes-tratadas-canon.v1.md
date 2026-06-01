@@ -283,6 +283,7 @@ A tabela `experiment` armazena o experimento e os artefatos funcionais consolida
 | `landing_page_copy` | `LONGTEXT` | artefato funcional | Copy consolidada da landing page. |
 | `landing_page_copy_job_id` | `BINARY(36)` | vínculo técnico | Job que originou/atualizou a copy. |
 | `landing_page_image_planning` | `LONGTEXT` | artefato funcional | Planejamento de imagens da landing page. |
+| `landing_page_image_assets` | `LONGTEXT` | artefato funcional consolidado | Manifesto JSON com URLs finais das imagens da landing por item planejado, materializado a partir de `framework_image_generation_job`. |
 | `landing_page_design_preset` | `LONGTEXT` | artefato funcional estruturado | Preset de design da landing page. |
 | `html_geralanding` | `LONGTEXT` | artefato funcional | HTML operacional consolidado do Gera Landing. |
 | `landing_page_deliverables` | `LONGTEXT` | artefato funcional | Entregáveis associados à landing/produto. |
@@ -310,6 +311,7 @@ A tabela `experiment` armazena o experimento e os artefatos funcionais consolida
 - `experiment` não é a tabela de auditoria completa das chamadas à IA.
 - Auditoria de chamada, request, resposta bruta, tokens e custo por etapa ficam em `experiment_pipeline_generation_job`.
 - Jobs de imagem por item planejado ficam em `framework_image_generation_job`.
+- O manifesto consolidado consumível pelas etapas seguintes fica em `experiment.landing_page_image_assets`, sem sobrescrever o planejamento/prompt original em `experiment.landing_page_image_planning`.
 
 ## 7. Tabela `experiment_pipeline_generation_job`
 
@@ -445,7 +447,7 @@ A tabela `ai_worker_generation` armazena registros genéricos de geração por I
 2. **Histórico de geração/refinamento de framework da hipótese** fica em `hypothesis_framework_generation_job`.
 3. **Experimento e artefatos consolidados do pipeline** ficam em `experiment`.
 4. **Histórico de chamadas textuais/estruturais do pipeline do experimento** fica em `experiment_pipeline_generation_job`.
-5. **Jobs de imagem por item planejado** ficam em `framework_image_generation_job`.
+5. **Jobs de imagem por item planejado** ficam em `framework_image_generation_job`; o snapshot consolidado de URLs finais fica em `experiment.landing_page_image_assets`.
 6. **Gerações genéricas não cobertas por filas especializadas** ficam em `ai_worker_generation`.
 7. **Resposta bruta do modelo** deve ficar em coluna `raw_response` de tabela de job/auditoria, não em coluna de artefato consolidado.
 8. **Conteúdo normalizado de uma chamada** deve ficar em `response_content` quando existir tabela de job especializada.

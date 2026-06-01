@@ -168,6 +168,7 @@ Fluxo obrigatório executado após a aprovação:
 6. resolver URLs finais de publicação (`iframe` e `standalone`) e persistir no experimento a `follow_up_action_url`.
 
 Regras adicionais:
+- a aba Landing do frontend deve usar o mesmo critério de disponibilidade do backend: `experiment.html_geralanding` preenchido é suficiente para exibir a prévia e habilitar o botão de aprovação/publicação; `experiment.landing_page_html` fica apenas como fallback legado;
 - a injeção de tracking deve ser idempotente (não duplicar quando já existir no HTML);
 - falhas de contrato na publicação para Lead Portal devem ser tratadas pela exception canônica de violação de contrato do GeraLanding.
 

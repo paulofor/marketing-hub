@@ -3005,3 +3005,20 @@
   - reforçado o prompt de copy para vender transformação antes do formato da amostra, orientar nome/e-mail quando houver labels/placeholders/microcopy e conectar entregável a benefício prático;
   - reforçado o prompt de preset design para evitar aparência de página mobile esticada, usando containers comerciais, duas colunas no hero e hierarquia visual mais clara.
 - impacto esperado: próximas regenerações da landing devem produzir páginas mais fortes para venda, com primeira dobra mais convincente, formulário mais claro e percepção de valor maior antes do pedido de lead.
+
+## 2026-06-01 18:37:14 UTC-3
+- solicitação: corrigir a aba Landing do experimento para exigir apenas `htmlGeraLanding` preenchido antes de liberar a aprovação/publicação.
+- causa-raiz identificada: o frontend bloqueava a prévia e o botão usando somente `experiment.landingPageHtml`, enquanto o fluxo canônico/backend já prioriza `experiment.html_geralanding` e usa `landing_page_html` apenas como fallback legado.
+- registro do que foi feito:
+  - a aba Landing passou a resolver o HTML por `htmlGeraLanding` com fallback para `landingPageHtml`;
+  - foi adicionado teste unitário para garantir que `htmlGeraLanding` é suficiente, `landingPageHtml` continua como fallback e ambos vazios bloqueiam a aprovação;
+  - o procedimento canônico de Experimentos foi atualizado para declarar a mesma regra de disponibilidade na interface.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/experiment/LandingTab.tsx
+  - frontend/src/api/experiment/useExperiments.ts
+  - frontend/src/api/experiment/useApproveAndPublishLanding.ts
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/GeraLandingStageExecutionService.java

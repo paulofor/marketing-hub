@@ -43,7 +43,7 @@ Briefing das Imagens dos Anuncios:
 
 
 template_id: landing-wireframe
-template_version: v4
+template_version: v5
 artifact_target: landingPageWireframe
 
 Regras fixas da etapa (Gera Landing, contrato v3):
@@ -159,11 +159,20 @@ Regras comerciais e estruturais obrigatórias (mantidas):
 - Hero com imagem controlada: quando a imagem de produto ou outro visual entrar no hero, ela deve ficar dentro de container controlado, com proporção e altura máximas declaradas em `briefingVisual`, sem bloco full-width desproporcional e sem competir com o CTA principal.
 - Balanceamento visual obrigatório: intercalar blocos de texto e imagem quando isso reduzir paredes de texto e melhorar escaneabilidade, sem forçar imagem em toda seção.
 
+Regras obrigatórias para navegação e CTAs:
+- Todo `targetSectionId` de navegação interna deve começar com exatamente um `#`, nunca com `##` e nunca sem `#`. Exemplo válido: `#sec-form`. Exemplos inválidos: `##sec-form`, `sec-form`, `/#sec-form`.
+- `targetSectionId` deve apontar para um `id` real de seção existente em `pagina.corpo.secoes[]`.
+- O CTA primário do hero deve ter `componente: "buttonPrimary"`, `targetSectionId: "#sec-form"` e texto curto o bastante para caber como botão.
+- CTAs secundários com função de navegação devem ter `componente: "buttonSecondary"` quando precisam parecer botão. Use `componente: "none"` somente para links discretos de baixa prioridade.
+- Não crie mais de 2 ações visíveis no hero antes da microcopy. Se houver terceira âncora estratégica, ela deve ser discreta e não competir com o CTA principal.
+- O formulário deve ter um botão `button` de submit com texto curto e direto; ele será tratado como o CTA mais forte da seção pelo preset design.
+
 Quality gate interno antes de responder:
 - Releia o wireframe gerado e rejeite mentalmente se ele parecer uma página técnica, estreita, sem prova visual, sem contraste narrativo ou com hero centrado no formato da entrega.
 - A landing deve ser capaz de receber um preset premium sem depender de copy longa para parecer boa.
 - O primeiro CTA deve estar visível cedo, mas a página deve criar desejo antes de pedir o formulário.
 - Se a página ficaria fraca sem as imagens, melhore a distribuição de prova, cards e mecanismo; se ficaria confusa sem ler tudo, simplifique a sequência.
+- Confira todos os `targetSectionId`: nenhum pode ter `##`; todos precisam apontar para seções reais.
 
 Heurísticas de composição (inspiração, não regra rígida):
 - Hero bullets: preferir ~3 itens.

@@ -230,3 +230,4 @@
 - Atualizada a documentação Swagger OPRM nichocnae com os contratos backend esperados para pending, complete, fail e detail da etapa dois.
 
 - 2026-06-02 00:00:00 (UTC): evoluído o backend do OPRM `oprm/nichocnae` com a etapa 2 `oprmNicheResearchSeedBuilder`, incluindo persistência das tabelas `oprm_niche_research_seed` e `oprm_research_query`, endpoints internos de pending/complete/fail, endpoint de detalhe operacional, validação de 1 a 15 queries com objetivos permitidos e atualização do Swagger `docs/swagger/oprm-nichocnae-swagger.yaml`.
+- 2026-06-02 00:00:00 (UTC): ajustada a tela `/oprm/pipeline` para remover os cards de ingestão/score/enriquecimento CNAE e apresentar os cards corretos do pipeline NichoCNAE: orquestrador de pesquisa, ciclo de pesquisa de rotina, seed de pesquisa, busca/coleta de fontes, extração de sinais, síntese da rotina e gate de qualidade.

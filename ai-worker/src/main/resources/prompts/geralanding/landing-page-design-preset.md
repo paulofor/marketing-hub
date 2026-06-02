@@ -48,9 +48,9 @@ Wireframe da landing:
 
 Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto raiz contendo `definicoes` e `pagina`.
 
-Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere somente `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável e visualmente menos monótona.
+Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere somente `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável, responsiva e visualmente menos monótona.
 
-O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Portanto, se um botão precisa de altura, padding, alinhamento ou largura, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
+O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Se um botão, grid, card, imagem ou container precisa de altura, padding, alinhamento, largura, coluna ou quebra mobile, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
 
 # Regras obrigatórias
 
@@ -66,7 +66,7 @@ O assembler final é determinístico e não inventa estilos. Tudo que a página 
 10. Não crie classes com nomes já existentes em `landingPageWireframe.definicoes`; os nomes de preset devem ser inéditos em relação ao wireframe.
 11. Não use opacidade para simular cor de texto. Crie tokens de cor dedicados.
 12. Não dependa de hover para legibilidade. Hover pode existir, mas a aparência base precisa funcionar sozinha.
-13. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso quando uma classe semântica precisar reunir display, padding, min-height, typography, borda e sombra.
+13. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso para classes semânticas como botões, cards, grids e overrides mobile.
 
 # Grupos obrigatórios em `definicoes`
 
@@ -87,25 +87,42 @@ Use exatamente estes grupos:
 - `transições`
 - `animações`
 
-Cada grupo deve ter:
-
-```json
-{
-  "desktop": [{ "nome": "classe", "atributoCss": "display", "valor": "grid" }],
-  "mobile": []
-}
-```
-
-Cada item deve ter exatamente:
-- `nome`
-- `atributoCss`
-- `valor`
+Cada item deve ter exatamente `nome`, `atributoCss`, `valor`.
 
 # Propriedades CSS permitidas
 
 Use somente estas propriedades:
 
 `display`, `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`, `overflow`, `overflow-x`, `overflow-y`, `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `place-items`, `place-content`, `justify-items`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`, `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`, `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`, `color`, `background`, `background-color`, `background-image`, `background-size`, `background-position`, `background-repeat`, `background-attachment`, `background-clip`, `background-origin`, `font`, `font-family`, `font-size`, `font-weight`, `font-style`, `font-variant`, `line-height`, `letter-spacing`, `word-spacing`, `text-align`, `text-decoration`, `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-transform`, `text-shadow`, `white-space`, `border`, `border-width`, `border-style`, `border-color`, `border-top`, `border-right`, `border-bottom`, `border-left`, `border-radius`, `outline`, `outline-width`, `outline-style`, `outline-color`, `outline-offset`, `box-shadow`, `opacity`, `filter`, `backdrop-filter`, `mix-blend-mode`, `isolation`, `cursor`, `appearance`, `caret-color`, `accent-color`, `list-style`, `list-style-type`, `list-style-position`, `list-style-image`, `object-fit`, `object-position`, `transition`, `transition-property`, `transition-duration`, `transition-timing-function`, `transition-delay`, `animation`, `animation-name`, `animation-duration`, `animation-timing-function`, `animation-delay`, `animation-iteration-count`, `animation-direction`, `animation-fill-mode`, `animation-play-state`.
+
+# Regra crítica de cascade e responsividade mobile
+
+O HTML final emite o CSS do preset e também o CSS do wireframe. Como o CSS do wireframe pode aparecer depois, o preset precisa blindar o mobile contra classes antigas/agressivas do wireframe.
+
+Obrigatório:
+- Todo elemento que receber layout desktop em colunas (`gridDesktopTwo`, `gridDesktopThree`, `gridDesktopTwoEqual`, `heroDesktopGrid`, `cardsDesktopGrid`, ou equivalente) DEVE receber também uma classe mobile com override forte para uma coluna.
+- Crie e aplique classes mobile específicas com valores `!important` quando necessário para vencer CSS posterior do wireframe.
+- Use `!important` apenas em overrides mobile críticos de layout/largura: `display`, `grid-template-columns`, `flex-direction`, `width`, `max-width`, `box-sizing`, `overflow`, `padding` quando necessário.
+- No mobile, todo grid principal deve virar uma coluna: `grid-template-columns: 1fr !important`.
+- No mobile, toda linha de CTA deve virar coluna: `flex-direction: column !important`.
+- No mobile, todo card deve ocupar a largura disponível: `width: 100% !important`, `max-width: 100% !important`, `box-sizing: border-box !important`.
+- No mobile, imagens e mockups nunca podem criar coluna estreita: `width: 100% !important`, `max-width: 100% !important`, `height: auto` e `object-fit: contain`.
+
+Crie e aplique estas classes quando houver layout equivalente:
+- `mobileOneColumn`: em `mobile`, `display:grid !important` e `grid-template-columns:1fr !important`.
+- `mobileStack`: em `mobile`, `flex-direction:column !important`.
+- `mobileFullWidth`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`.
+- `mobileSafeCard`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`, `overflow:hidden`.
+- `mobileSafeMedia`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `height:auto`, `object-fit:contain`.
+- `mobileReadablePad`: em `mobile`, padding lateral confortável e nunca inferior a `16px` para seções/containers.
+
+Rejeite qualquer saída onde no mobile:
+- cards apareçam em colunas estreitas lado a lado;
+- imagem vire uma faixa estreita ou muito alta por causa de grid desktop;
+- seção hero fique em duas colunas;
+- cards de mecanismo/entregáveis/FAQ fiquem com largura menor que o container;
+- formulário fique espremido;
+- CTA principal não ocupe largura confortável.
 
 # Direção de arte
 
@@ -124,36 +141,13 @@ Use profundidade e acabamento com:
 
 Evite o sistema visual repetitivo: fundo escuro + card azul + botão verde em todas as seções.
 
-# Mapa obrigatório de contraste entre seções
-
-Antes de montar o JSON final, atribua uma função visual para cada seção usando `id`, `nome`, `papelComercial`, `fasePersuasao`, `objetivo` e `prioridadeConversao`.
-
-Cada função visual deve gerar combinação própria de:
-- superfície/background;
-- grid/container;
-- card/frame;
-- espaçamento;
-- tratamento de imagem;
-- tratamento de CTA.
-
-Use pelo menos cinco tratamentos visuais diferentes quando a página tiver seções suficientes:
-
-1. `hero`: impacto, promessa principal, visual forte, CTA evidente.
-2. `dor/problema/antes-depois`: tensão e identificação, com contraste emocional entre antes e depois.
-3. `preview/prova/entregáveis`: demonstração tangível do produto, com moldura visual mais forte.
-4. `como-funciona/mecanismo`: clareza, processo, passos numerados ou cards organizados e leves.
-5. `formulario/captura`: bloco de conversão destacado, com maior percepção de segurança e ação.
-6. `faq/objeções`: bloco mais calmo, legível e organizado, sem competir com o formulário.
-
-Se houver duas seções consecutivas com o mesmo tipo de superfície, diferencie pelo menos dois aspectos: padding, card, borda, imagem, grid, CTA, sombra ou acento.
-
 # Tratamento visual por seção
 
 ## Hero
 - Background de alto impacto, gradiente ou brilho sutil.
 - Container centralizado.
 - Desktop com duas colunas quando houver visual.
-- Mobile em uma coluna.
+- Mobile sempre em uma coluna, com `mobileOneColumn` e `mobileFullWidth` nos blocos principais.
 - Headline dominante.
 - CTA primário com aparência de botão real.
 - Mockup com moldura, sombra e tamanho controlado.
@@ -161,64 +155,32 @@ Se houver duas seções consecutivas com o mesmo tipo de superfície, diferencie
 ## Dor / Problema / Antes e Depois
 - Contraste claro em relação ao Hero.
 - Cards de antes e depois não devem parecer idênticos.
-- Antes pode usar superfície mais densa/fria/alerta.
-- Depois pode usar acento positivo ou borda accent.
+- Desktop pode usar duas colunas, mas mobile obrigatoriamente uma coluna.
 
 ## Preview / Prova / Entregáveis
 - Deve parecer vitrine do produto.
 - Mockups com frame premium.
 - Listas de entregáveis escaneáveis.
-- Pode usar borda accent, sombra mais forte ou superfície iluminada.
+- Mobile nunca pode renderizar mockup em coluna estreita; use `mobileSafeMedia`.
 
 ## Como Funciona / Mecanismo
 - Deve parecer organizado e didático.
 - Use cards ou steps com espaçamento consistente.
-- Não deve competir visualmente com Hero ou Formulário.
+- Desktop pode usar 3 colunas, mas mobile obrigatoriamente 1 coluna.
 
 ## Formulário / Captura
 - Deve ser o bloco de conversão mais evidente.
 - Use superfície própria, padding maior, borda/sombra e hierarquia clara.
 - Campos full-width, confortáveis e legíveis.
 - Botão submit mais forte que botões secundários.
-- Não invente script, endpoint, mensagem de sucesso ou comportamento.
 
 ## FAQ
 - Deve ser calmo, organizado e leve.
-- Pode usar cards menores, linhas ou superfície menos intensa.
-- CTA final visível, mas não mais forte que o formulário.
-
-# Regras obrigatórias de desktop/mobile
-
-Todo container principal deve ter classes mobile e desktop quando aplicável:
-- largura mobile;
-- largura desktop ou wide;
-- centralização;
-- padding mobile;
-- padding desktop.
-
-Todo grid principal deve ter classes mobile e desktop quando aplicável:
-- mobile: uma coluna;
-- desktop: duas ou três colunas quando houver visual/cards;
-- gap mobile;
-- gap desktop;
-- alinhamento vertical quando necessário.
-
-Todo CTA deve ter classes para:
-- `display: inline-flex` ou `display: flex`;
-- `align-items: center`;
-- `justify-content: center`;
-- padding mobile e desktop;
-- radius;
-- font-weight;
-- color;
-- background;
-- cursor;
-- `text-decoration: none`;
-- largura full no mobile quando for CTA primário de conversão.
+- Mobile deve ser uma coluna, com cards legíveis e largura total.
 
 # Regras rígidas de qualidade para botões e CTAs
 
-Os botões são elementos críticos da landing. Eles não podem parecer links finos, barras azuis pequenas ou componentes improvisados.
+Os botões são elementos críticos da landing. Eles não podem parecer links finos, barras pequenas ou componentes improvisados.
 
 O erro mais comum a evitar: aplicar apenas `rowInline`, `rowAlignCenter`, `ctaPrimaryBg`, `radiusMd` e `shadowMd`. Isso NÃO é um botão completo. Sem padding + min-height + justify-content + tipografia de CTA, o resultado é uma barra ruim.
 
@@ -226,10 +188,10 @@ O erro mais comum a evitar: aplicar apenas `rowInline`, `rowAlignCenter`, `ctaPr
 
 Para todo elemento `a` ou `button`:
 
-- Se `componente = buttonPrimary`, o elemento DEVE receber estas classes em `estilos[]`: `buttonPrimaryPremium`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`, `textNoUnderline`.
-- Se `componente = buttonSecondary`, o elemento DEVE receber estas classes em `estilos[]`: `buttonSecondaryGhost`, `buttonMinTouch`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`.
-- Se o elemento for o submit do formulário (`tag = button`, `type = submit` ou id contendo `submit`), ele DEVE receber: `buttonFormSubmit`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`.
-- Se `interacao.intencaoAcao` estiver preenchida, mas `componente = none`, aplique ao menos `buttonTertiaryLink`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`, para que não vire link padrão.
+- Se `componente = buttonPrimary`, o elemento DEVE receber: `buttonPrimaryPremium`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`, `textNoUnderline`.
+- Se `componente = buttonSecondary`, o elemento DEVE receber: `buttonSecondaryGhost`, `buttonMinTouch`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`.
+- Se o elemento for submit do formulário (`tag = button`, `type = submit` ou id contendo `submit`), ele DEVE receber: `buttonFormSubmit`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`.
+- Se `interacao.intencaoAcao` estiver preenchida, mas `componente = none`, aplique ao menos `buttonTertiaryLink`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`.
 - Se o CTA principal estiver no hero, prova, entregáveis, FAQ final ou formulário, aplique também `buttonFullMobile`.
 
 ## Definições mínimas obrigatórias de botão
@@ -239,49 +201,10 @@ Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propried
 - `buttonPrimaryPremium`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:14px 22px`, `min-height:48px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`, `text-decoration:none`, `box-shadow:0 14px 32px rgba(37,99,235,0.24)`.
 - `buttonSecondaryGhost`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:13px 20px`, `min-height:46px`, `border-radius:14px`, `font-size:15px`, `font-weight:750`, `line-height:1.2`, `text-decoration:none`, `background-color:#FFFFFF`, `border:1px solid #DCE6F7`.
 - `buttonTertiaryLink`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:10px 12px`, `min-height:42px`, `border-radius:999px`, `font-size:14px`, `font-weight:700`, `line-height:1.2`, `text-decoration:none`.
-- `buttonFullMobile`: em `mobile`, `width:100%`.
+- `buttonFullMobile`: em `mobile`, `width:100% !important`.
 - `buttonMinTouch`: `min-height:48px`.
 - `buttonTextStrong`: `font-size:16px`, `font-weight:800`, `line-height:1.2`.
 - `buttonFormSubmit`: `display:flex`, `align-items:center`, `justify-content:center`, `width:100%`, `padding:15px 22px`, `min-height:50px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`.
-
-Para todo elemento `a` ou `button` com `componente` igual a `buttonPrimary`, `buttonSecondary` ou com `interacao.intencaoAcao` preenchida:
-- aplique classe visual de botão, nunca apenas cor de fundo;
-- use `min-height` de pelo menos `48px` no mobile e `46px` no desktop;
-- use padding confortável: no mínimo `14px 18px` no mobile e `14px 22px` no desktop;
-- use `font-size` entre `15px` e `17px`, `font-weight` entre `700` e `800`, `line-height` entre `1.15` e `1.25`;
-- use `border-radius` entre `12px` e `999px`, escolhendo pill ou botão arredondado consistente com o visual da página;
-- use `box-shadow` ou borda sutil no CTA primário para dar presença, mas sem exagero;
-- no mobile, CTA primário de hero, prova, formulário e fechamento deve ter `width: 100%` quando estiver em coluna estreita;
-- no desktop, CTA primário pode ser `inline-flex`, mas deve ter largura mínima visual suficiente; não pode ficar como uma etiqueta estreita;
-- o botão submit do formulário deve ser o CTA mais forte da seção, com largura full, altura confortável e contraste alto;
-- CTA secundário deve parecer ghost button/pill/link-card, com borda e padding; nunca link azul sublinhado padrão.
-
-Rejeite qualquer CTA que pareça:
-- barra fina com pouco padding;
-- texto pequeno demais;
-- link padrão de navegador;
-- botão full-width com altura baixa;
-- cor forte sem hierarquia tipográfica;
-- CTA primário visualmente mais fraco que um card comum;
-- vários CTAs idênticos competindo entre si.
-
-Crie e aplique, quando fizer sentido, classes específicas para qualidade de botão:
-- `buttonPrimaryPremium`: botão primário forte, alto contraste, altura confortável e sombra controlada;
-- `buttonSecondaryGhost`: botão secundário com borda, fundo discreto, padding real e boa área de toque;
-- `buttonTertiaryLink`: link de ação discreto com área clicável, sem parecer link padrão;
-- `buttonFullMobile`: `width: 100%` no mobile para CTAs principais;
-- `buttonMinTouch`: garante `min-height` confortável;
-- `buttonTextStrong`: define peso, tamanho e line-height do texto do botão;
-- `buttonFormSubmit`: variação mais forte para submit do formulário.
-
-Toda imagem de produto/prova deve ter classes para:
-- `width: 100%`;
-- `max-width: 100%`;
-- `height: auto` ou altura máxima controlada;
-- `object-fit`;
-- `object-position`;
-- radius;
-- border/sombra/moldura quando for mockup.
 
 # Classes obrigatórias globais mínimas
 
@@ -300,6 +223,11 @@ Crie e aplique, quando apropriado:
 - `gridMobileOne`
 - `gridDesktopTwo`
 - `gridDesktopThree`
+- `mobileOneColumn`
+- `mobileStack`
+- `mobileFullWidth`
+- `mobileSafeCard`
+- `mobileSafeMedia`
 - `imgFluid`
 - `buttonPrimaryPremium`
 - `buttonSecondaryGhost`
@@ -320,7 +248,6 @@ Rejeite e gere novamente se o JSON produzir:
 - título que quebra a primeira dobra agressivamente;
 - todos os cards parecidos;
 - formulário mais fraco que cards informativos;
-- apenas fundo escuro + card azul + botão verde;
 - desktop com largura de mobile;
 - seções consecutivas sem contraste;
 - Hero sem prova visual forte;
@@ -329,12 +256,13 @@ Rejeite e gere novamente se o JSON produzir:
 - CTA com menos de 44px de altura visual;
 - botão primário parecendo uma barra fina;
 - botão submit menor ou mais fraco que CTAs secundários;
-- texto de botão com tamanho visual menor que o corpo da página;
-- CTA secundário renderizado como link comum;
 - elemento com `componente = buttonPrimary` sem a classe `buttonPrimaryPremium`;
 - elemento com `componente = buttonSecondary` sem a classe `buttonSecondaryGhost`;
 - botão submit sem a classe `buttonFormSubmit`;
-- CTA com `rowInline`/`rowAlignCenter` mas sem classe semântica de botão.
+- CTA com `rowInline`/`rowAlignCenter` mas sem classe semântica de botão;
+- qualquer bloco principal mobile com duas ou três colunas;
+- cards mobile estreitos lado a lado;
+- imagem mobile espremida em coluna estreita.
 
 # Quality gate interno
 
@@ -342,15 +270,13 @@ Antes de responder, revise o JSON como se fosse renderizado.
 
 Garanta que:
 - desktop use largura comercial e colunas quando possível;
+- mobile tenha uma coluna real em todos os grids principais;
 - mobile tenha padding suficiente, botões grandes e imagens controladas;
-- cada seção tenha papel visual coerente com sua função comercial;
+- todos os cards no mobile tenham largura total e `box-sizing:border-box`;
 - Hero, Prova e Formulário não usem o mesmo tratamento visual;
 - Formulário seja o bloco mais acionável;
 - Preview pareça uma vitrine do produto;
 - FAQ seja legível e mais calmo;
-- todos os CTAs tenham área de toque confortável, contraste alto e aparência de botão real;
-- o botão principal da primeira dobra seja imediatamente reconhecível como a próxima ação;
-- o botão do formulário seja visualmente mais forte que qualquer link ou botão secundário da mesma seção;
 - nenhum CTA dependa apenas de `background`, `border-radius` e `shadow` para parecer botão.
 
 # Formato esperado de saída

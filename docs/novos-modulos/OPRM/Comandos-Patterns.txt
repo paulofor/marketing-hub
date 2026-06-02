@@ -139,7 +139,7 @@ Leia para seguir e manter os canônicos de artefatos: docs/oprm_canonico_artefat
 
 Atue no backend que fornece endpoints para o modulo OPRM
 
-Verifique se estão corretos todos os itens do swagger : docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml
+Verifique se estão corretos todos os itens do swagger : docs/swagger/oprm-backend-required-endpoints.swagger.yaml
 
 Mantenha registros conforme : docs/novos-modulos/OPRM/protocolo-historico-implantacao-codex.md
 

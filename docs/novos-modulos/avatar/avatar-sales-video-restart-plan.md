@@ -106,7 +106,7 @@ Substituir a dependência exclusiva do provider `stub` por um **adapter real de 
 
 ### Arquivos alterados
 - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
-- `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+- `docs/swagger/avatar-sales-video-integration-swagger.yaml`
 - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/provider/RealVideoProvider.java`
 - `video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobProcessor.java`
@@ -372,7 +372,7 @@ Fechar os pré-requisitos mínimos de governança para uso produtivo de avatar f
 
 ### Evidências/testes executados
 - testes unitários do módulo backend (`SalesVideoJobServiceTest`, `LandingVideoSlotServiceTest`) com build local do `ads-service`.
-- revisão de contrato OpenAPI (`avatar-sales-video-integration-swagger.yaml`) alinhando novos campos e endpoint de compliance.
+- revisão de contrato OpenAPI (`docs/swagger/avatar-sales-video-integration-swagger.yaml`) alinhando novos campos e endpoint de compliance.
 
 ---
 
@@ -518,7 +518,7 @@ Liberar o módulo de forma gradual, com controle por tenant/flag e monitoramento
 
 ### Evidências/testes executados
 - `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoProfileServiceTest`
-- revisão de contrato OpenAPI em `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml` com novos endpoints de rollout.
+- revisão de contrato OpenAPI em `docs/swagger/avatar-sales-video-integration-swagger.yaml` com novos endpoints de rollout.
 
 ---
 
@@ -579,7 +579,7 @@ Iniciar a transição do módulo de “pipeline técnico funcional” para “pi
 
 ### Evidências/testes executados
 - `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoCommercialInsightsServiceTest`
-- revisão de contrato OpenAPI em `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml` para novos endpoints de Sprint V7.
+- revisão de contrato OpenAPI em `docs/swagger/avatar-sales-video-integration-swagger.yaml` para novos endpoints de Sprint V7.
 
 ---
 

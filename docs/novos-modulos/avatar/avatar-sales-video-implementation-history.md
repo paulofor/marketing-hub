@@ -66,7 +66,7 @@ Cada entrada descreve:
   - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/repository/SalesVideoConversionEventRepository.java`
   - `backend/ads-service/src/main/resources/db/changelog/changesets/2037-04-17-sales-video-commercial-insights.yaml`
   - `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
-  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/swagger/avatar-sales-video-integration-swagger.yaml`
   - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
   - `docs/modelo-dados-experimento.md`
   - `docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md`
@@ -84,7 +84,7 @@ Cada entrada descreve:
 
 ### Testes e validações executados
 - `cd backend/ads-service && mvn -s ../settings.xml test -Dtest=SalesVideoCommercialInsightsServiceTest`.
-- revisão de consistência do contrato OpenAPI em `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`.
+- revisão de consistência do contrato OpenAPI em `docs/swagger/avatar-sales-video-integration-swagger.yaml`.
 
 ### Limitações e pendências
 - painel administrativo no frontend para operar playbooks e leitura do resumo comercial ainda não foi implementado.
@@ -177,7 +177,7 @@ Cada entrada descreve:
   - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/exception/VideoModuleErrorCode.java`
   - `backend/ads-service/src/main/resources/application.properties`
   - `backend/ads-service/src/test/java/com/marketinghub/salesvideo/service/SalesVideoProfileServiceTest.java`
-  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/swagger/avatar-sales-video-integration-swagger.yaml`
   - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
   - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 - Módulos:
@@ -306,7 +306,7 @@ Cada entrada descreve:
   - `backend/ads-service/src/main/java/com/marketinghub/salesvideo/web/SalesVideoProfileController.java`
   - `backend/ads-service/src/main/resources/db/changelog/changesets/2037-04-17-sales-video-compliance-governance.yaml`
   - `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
-  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/swagger/avatar-sales-video-integration-swagger.yaml`
   - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
   - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 - Módulos:
@@ -431,7 +431,7 @@ Cada entrada descreve:
   - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoJobProcessorTest.java`
   - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/VideoAssetUploaderTest.java`
   - `video-management-service/src/test/java/com/marketinghub/videomanagement/service/provider/StubVideoProviderTest.java`
-  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/swagger/avatar-sales-video-integration-swagger.yaml`
   - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
   - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 - Módulos:
@@ -485,7 +485,7 @@ Cada entrada descreve:
 ### O que foi alterado
 - Arquivos:
   - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
-  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/swagger/avatar-sales-video-integration-swagger.yaml`
   - `docs/novos-modulos/avatar/avatar-sales-video-implementation-history.md`
 - Módulos:
   - Documentação canônica do módulo Avatar Sales Video.
@@ -523,7 +523,7 @@ Cada entrada descreve:
 - O que não deve ser refeito: contrato de integração backend ↔ módulo de vídeo já consolidado neste ciclo.
 - Riscos abertos: drift de estado entre provider externo e backend; backlog por falhas intermitentes sem auto-recuperação.
 - Dependências externas: credenciais/provider real e ambiente de staging com conectividade validada.
-- Onde continuar: `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md` e `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`.
+- Onde continuar: `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md` e `docs/swagger/avatar-sales-video-integration-swagger.yaml`.
 
 ## 2026-04-16 — Sprint V1 (implementação do adapter real e integração backend)
 
@@ -561,7 +561,7 @@ Cada entrada descreve:
   - `video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java`
   - `video-management-service/src/main/resources/application.yml`
   - `video-management-service/README.md`
-  - `docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml`
+  - `docs/swagger/avatar-sales-video-integration-swagger.yaml`
   - `docs/novos-modulos/avatar/avatar-sales-video-restart-plan.md`
 - Módulos:
   - `video-management-service`

@@ -70,7 +70,7 @@ Regras arquiteturais refletidas (ArchUnit):
 
 ## 3) Contrato HTTP canônico
 
-- O Swagger/OpenAPI canônico dos endpoints HTTP do backend GeraLanding por etapa fica em `docs/canonical/geralanding-backend-swagger.v1.yaml`.
+- O Swagger/OpenAPI canônico dos endpoints HTTP do backend GeraLanding por etapa fica em `docs/swagger/geralanding-backend-swagger.v1.yaml`.
 - Qualquer criação, remoção ou mudança de endpoint em `com.marketinghub.geralanding.*.web` deve manter esse Swagger sincronizado no mesmo PR.
 
 ## 4) Regras de integração

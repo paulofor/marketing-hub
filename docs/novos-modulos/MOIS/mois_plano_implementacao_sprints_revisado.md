@@ -162,7 +162,7 @@ A sprint termina quando o módulo existir de forma clara no repositório, conseg
 - `docs/novos-modulos/MOIS/ini.md`
 
 **Contratos, endpoints ou artefatos afetados:**
-- Contrato HTTP inicial do módulo MOIS conforme `openapi_mois_backend_stub.yaml`.
+- Contrato HTTP inicial do módulo MOIS conforme `docs/swagger/openapi_mois_backend_stub.yaml`.
 - Endpoints de stub disponibilizados em `/api/v1/mois/*` para discovery, offers, insight-reports e artifacts.
 - Artefatos canônicos ainda em modo representacional (stub), sem persistência de banco nesta sprint.
 

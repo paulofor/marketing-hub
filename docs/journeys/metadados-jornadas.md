@@ -1,7 +1,7 @@
 # Metadados das jornadas
 
 ## Por que os metadados importam?
-Metadados são campos chave-valor que complementam templates, passos e instâncias de jornada. Eles permitem parametrizar integrações, preservar contexto estratégico e enriquecer telemetria sem exigir alterações estruturais no modelo relacional. Todos os recursos da API expõem esse espaço flexível, garantindo que novas necessidades possam ser atendidas apenas configurando chaves adicionais.【F:docs/openapi.yaml†L1082-L1358】
+Metadados são campos chave-valor que complementam templates, passos e instâncias de jornada. Eles permitem parametrizar integrações, preservar contexto estratégico e enriquecer telemetria sem exigir alterações estruturais no modelo relacional. Todos os recursos da API expõem esse espaço flexível, garantindo que novas necessidades possam ser atendidas apenas configurando chaves adicionais.【F:docs/swagger/openapi.yaml†L1082-L1358】
 
 ### Camadas que armazenam metadados
 | Camada | Onde vive | Para que serve |
@@ -47,7 +47,7 @@ Exemplo de configuração:
 ```
 
 ### 3. Jornadas com experimentos e segmentação externa
-A própria jornada pode armazenar metadados como `segment.source`, `campaignCode` ou `experiment.variant`. Esses dados são normalizados pelo serviço ao criar/atualizar, mantendo ordem previsível para logs e auditoria.【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/JourneyService.java†L80-L175】 Eles também ficam disponíveis para leitura via API e podem alimentar dashboards ou filtros internos.【F:docs/openapi.yaml†L1267-L1358】
+A própria jornada pode armazenar metadados como `segment.source`, `campaignCode` ou `experiment.variant`. Esses dados são normalizados pelo serviço ao criar/atualizar, mantendo ordem previsível para logs e auditoria.【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/JourneyService.java†L80-L175】 Eles também ficam disponíveis para leitura via API e podem alimentar dashboards ou filtros internos.【F:docs/swagger/openapi.yaml†L1267-L1358】
 
 ### 4. Telemetria customizada por canal
 Passos que disparam anúncios ou mensagens podem setar `pixelEvent` e `ga4Event` para substituir os nomes padrão enviados às plataformas de analytics. O serviço de telemetria consulta esses metadados antes de postar eventos no Meta Pixel e no GA4, garantindo alinhamento com a taxonomia analítica de cada squad.【F:backend/ads-service/src/main/java/com/marketinghub/journey/execution/TelemetryService.java†L49-L185】

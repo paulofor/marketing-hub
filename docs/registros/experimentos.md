@@ -1,11 +1,23 @@
 
+## 2026-06-02 00:00:00 UTC — Pasta centralizada `docs/swagger`
+- solicitação: criar uma pasta `docs/swagger` para concentrar todos os contratos Swagger/OpenAPI e atualizar a documentação necessária para apontar esse novo padrão.
+- foi feito: todos os arquivos Swagger/OpenAPI versionados foram movidos para `docs/swagger`, incluindo GeraLanding, API geral, EPM, OPRM, MDS, MOIS e Avatar Sales Video.
+- documentação: a regra operacional do backend, o template canônico de endpoints, o cânone de arquitetura do GeraLanding e as referências documentais aos contratos movidos foram atualizados para o novo caminho centralizado.
+- validação: foi confirmado que não restaram arquivos `*swagger*` ou `*openapi*` fora de `docs/swagger` nas áreas `docs` e `backend`, e os YAMLs movidos foram carregados com parser local.
+- arquivos principais alterados:
+  - backend/AGENTS.md
+  - docs/canonical/backend-endpoints-template.md
+  - docs/canonical/geralanding-arquitetura-canon.v1.md
+  - docs/swagger/README.md
+  - docs/swagger/geralanding-backend-swagger.v1.yaml
+
 ## 2026-06-02 00:00:00 UTC — Swagger canônico GeraLanding consolidado
 - solicitação: verificar qual Swagger do GeraLanding estava compatível com a implementação atual, excluir a versão incompatível e manter o contrato atualizado no local correto.
-- causa-raiz identificada: havia dois contratos para GeraLanding; `docs/canonical/geralanding-backend-swagger.v1.yaml` era o local canônico definido pelo cânone, mas estava limitado ao wireframe, enquanto `docs/gera-landing/swagger-gera-landing-etapas.yaml` continha endpoints recentes de publicação e também endpoints genéricos legados não implementados.
-- foi feito: `docs/canonical/geralanding-backend-swagger.v1.yaml` foi consolidado para os 46 endpoints expostos pelos controllers atuais de GeraLanding (`wireframe`, `copy`, `image-prompts`, `image-generation`, `design-preset`, `deliverables` e `landing`) e o Swagger operacional duplicado/desatualizado `docs/gera-landing/swagger-gera-landing-etapas.yaml` foi removido.
+- causa-raiz identificada: havia dois contratos para GeraLanding; `docs/swagger/geralanding-backend-swagger.v1.yaml` era o local canônico definido pelo cânone, mas estava limitado ao wireframe, enquanto `docs/gera-landing/swagger-gera-landing-etapas.yaml` continha endpoints recentes de publicação e também endpoints genéricos legados não implementados.
+- foi feito: `docs/swagger/geralanding-backend-swagger.v1.yaml` foi consolidado para os 46 endpoints expostos pelos controllers atuais de GeraLanding (`wireframe`, `copy`, `image-prompts`, `image-generation`, `design-preset`, `deliverables` e `landing`) e o Swagger operacional duplicado/desatualizado `docs/gera-landing/swagger-gera-landing-etapas.yaml` foi removido.
 - validação: comparação programática entre mappings dos controllers `com.marketinghub.geralanding.*.web` e os paths do Swagger canônico não apontou diferenças, e o YAML foi carregado com parser local.
 - arquivos alterados:
-  - docs/canonical/geralanding-backend-swagger.v1.yaml
+  - docs/swagger/geralanding-backend-swagger.v1.yaml
   - docs/gera-landing/swagger-gera-landing-etapas.yaml
   - docs/registros/experimentos.md
 
@@ -2191,7 +2203,7 @@
 ## 2026-05-28 14:08:18 UTC-3
 - solicitação para criar um Swagger canônico com os endpoints existentes no backend do GeraLanding organizados por etapa.
 - raciocínio aplicado: verificar diretamente os controllers do pacote `com.marketinghub.geralanding` para documentar apenas contratos realmente expostos pelo backend e evitar inventar endpoints inexistentes.
-- registro do que foi feito: criado o OpenAPI canônico `docs/canonical/geralanding-backend-swagger.v1.yaml` com endpoints de start, listagem e detalhe das etapas wireframe, copy, image planning, design preset e deliverables; também foi adicionada referência ao Swagger no cânone de arquitetura do GeraLanding.
+- registro do que foi feito: criado o OpenAPI canônico `docs/swagger/geralanding-backend-swagger.v1.yaml` com endpoints de start, listagem e detalhe das etapas wireframe, copy, image planning, design preset e deliverables; também foi adicionada referência ao Swagger no cânone de arquitetura do GeraLanding.
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - backend/AGENTS.md
@@ -2210,7 +2222,7 @@
   - acessos compatíveis: consultas de detalhe por etapa em `/api/experiments/{experimentId}/geralanding/<etapa>/stage-executions/{idJob}`;
   - acessos não declarados no Swagger canônico: `/api/internal/geralanding/<etapa>/stage-executions/pending`, `/receive-result`, `/receive-dispatch`, `/receive-prompt`, `/api/experiments/{experimentId}`, `/api/niches/{nicheId}` e `/api/niches/{nicheId}/hypotheses`.
 - validação executada:
-  - `find docs/canonical -type f` para confirmar que o único Swagger canônico YAML é `docs/canonical/geralanding-backend-swagger.v1.yaml`;
+  - `find docs/canonical -type f` para confirmar que o único Swagger canônico YAML é `docs/swagger/geralanding-backend-swagger.v1.yaml`;
   - `rg`/script Python sobre `ai-worker/src/main/java/com/marketinghub/worker/geralanding` para enumerar chamadas HTTP montadas com `UrlUtils.joinPath` e `.uri(...)`;
   - `rg` nos controllers do backend em `backend/ads-service/src/main/java/com/marketinghub/geralanding` para comparar os endpoints expostos pelo pacote `com.marketinghub.geralanding` com o Swagger.
 
@@ -2366,7 +2378,7 @@
 
 - Solicitação: retirar do Swagger canônico todos os endpoints, deixando apenas a fila `pending` e o callback `enviado-para-ia` da etapa `landing-page-wireframe`.
 - Correção aplicada:
-  - `docs/canonical/geralanding-backend-swagger.v1.yaml` passou a documentar somente `GET /api/internal/geralanding/wireframe/stage-executions/pending` e `POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia`;
+  - `docs/swagger/geralanding-backend-swagger.v1.yaml` passou a documentar somente `GET /api/internal/geralanding/wireframe/stage-executions/pending` e `POST /api/internal/geralanding/wireframe/stage-executions/{idJob}/enviado-para-ia`;
   - foram removidas do Swagger as entradas públicas de start/list/detail das etapas e as tags/componentes que ficaram sem uso no contrato reduzido.
 
 ## 2026-05-29 — Callback recebePrompt do wireframe com payload OpenAI
@@ -2502,7 +2514,7 @@
 - Solicitação: verificar o `BackendWireframeController` e atualizar o Swagger se necessário.
 - Correção aplicada:
   - revisado o controller `BackendWireframeController`, que expõe endpoints públicos de start, listagem e detalhe da etapa wireframe, além dos endpoints internos `pending`, `recebe-prompt` e `recebe-resposta`;
-  - `docs/canonical/geralanding-backend-swagger.v1.yaml` passou a documentar também os três endpoints públicos do controller;
+  - `docs/swagger/geralanding-backend-swagger.v1.yaml` passou a documentar também os três endpoints públicos do controller;
   - adicionados no Swagger canônico o parâmetro `ExperimentId`, os schemas `WireframeStartResponse`, `WireframeStageExecutionSummary` e `WireframeStageExecutionDetail`, e a tag separada `landing-page-wireframe-internal` para diferenciar contratos internos consumidos pelo Worker AI.
 
 ## 2026-05-29 — Falha do wireframe registrada pelo recebe-resposta
@@ -2901,7 +2913,7 @@
   - backend/AGENTS.md
   - docs/canonical/openai-informacoes-tratadas-canon.v1.md
   - docs/canonical/procedimento-experimento-canon.v1.md
-  - docs/canonical/geralanding-backend-swagger.v1.yaml
+  - docs/swagger/geralanding-backend-swagger.v1.yaml
 
 ## 2026-06-01 — Limpeza dos legados GeraLanding migrados para openai.core
 - tarefa: remover do Worker AI os artefatos obsoletos do pacote `com.marketinghub.worker.geralanding` que já foram migrados para `com.marketinghub.worker.openai.core`.
@@ -3018,7 +3030,7 @@
 - Implementada a API operacional manual do Experiment Profit Manager no backend principal.
 - Endpoints cobertos: planos financeiros, nichos, hipóteses, experimentos, métricas manuais, decisões financeiras, cenários de preço e resumo do plano.
 - Cálculos mínimos adicionados: orçamento planejado, orçamento restante, lucro bruto, lucro líquido estimado, CTR, CPC, CPL, CPA, ROAS, conversão da landing, conversão de compra e vendas para ponto de equilíbrio.
-- Documentação Swagger do módulo adicionada em `backend/ads-service/docs/epm-swagger.yaml`.
+- Documentação Swagger do módulo adicionada em `docs/swagger/epm-swagger.yaml`.
 
 ## 2026-06-01 — Reforço comercial da landing do experimento 35
 

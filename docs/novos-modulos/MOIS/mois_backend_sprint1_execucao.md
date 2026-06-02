@@ -8,7 +8,7 @@ Registrar a implementação técnica mínima da Sprint 1 do MOIS no `backend/ads
 
 - criação do pacote backend `com.marketinghub.mois` com separação em `dto`, `service` e `web`;
 - criação do controller REST base `MoisController` com endpoints de contrato inicial;
-- criação de DTOs iniciais de request/response alinhados ao `openapi_mois_backend_stub.yaml`;
+- criação de DTOs iniciais de request/response alinhados ao `docs/swagger/openapi_mois_backend_stub.yaml`;
 - criação de serviço stub (`MoisApiStubService`) para respostas controladas e previsíveis;
 - criação de testes de contrato web (`MoisControllerContractTest`) para validações essenciais de Sprint 1.
 

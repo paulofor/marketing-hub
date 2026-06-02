@@ -12,7 +12,7 @@ Leia para seguir e manter os canônicos de regras: docs/canonical/system-governa
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
-Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/swagger/avatar-sales-video-integration-swagger.yaml
 
 Obs: IP do backend: 191.252.181.168
 
@@ -37,7 +37,7 @@ Leia para seguir e manter os canônicos de regras: docs/canonical/system-governa
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
-Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/swagger/avatar-sales-video-integration-swagger.yaml
 
 Obs: IP do backend: 191.252.181.168
 
@@ -62,7 +62,7 @@ Leia para seguir e manter os canônicos de regras: docs/canonical/system-governa
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
-Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/swagger/avatar-sales-video-integration-swagger.yaml
 
 Obs: IP do backend: 191.252.181.168
 
@@ -81,5 +81,5 @@ Leia para seguir e manter os canônicos de regras: docs/canonical/system-governa
 
 Leia para seguir e manter os canônicos de artefatos: docs/novos-modulos/avatar/avatar-sales-video-canonical-artifacts-initial.md
 
-Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/novos-modulos/avatar/avatar-sales-video-integration-swagger.yaml
+Leia e atualize a integração do modulo com a base de dados que deve ser feita pelo backend com endpoints especificados no Swagger: docs/swagger/avatar-sales-video-integration-swagger.yaml
 

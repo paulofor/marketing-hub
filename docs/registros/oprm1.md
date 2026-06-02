@@ -219,3 +219,11 @@
 - 2026-06-02 14:25:00 (UTC-3): documentada na metodologia de pipeline por etapas a necessidade obrigatória de etapas concretas plugáveis e removíveis, explicitando que etapas podem depender do núcleo/infra compartilhada permitida, mas não de outras etapas concretas, para permitir inclusão, remoção e substituição sem dano colateral.
 
 - 2026-06-02 00:00:00 (UTC): implementada no coletor OPRM MEI a etapa 1 `oprmRoutineResearchCycle` no pacote `com.marketinghub.nichocnae`, com cliente backend, processor pelo `PipelineWorker`, endpoints manuais de acompanhamento/processamento e testes unitários sem agendamento automático.
+
+
+## 2026-06-02 — OPRM nichocnae etapa 2 seed builder no coletor MEI
+
+- Implementada no `oprm-coletor-mei` a etapa `oprmNicheResearchSeedBuilder` no pacote `com.marketinghub.nichocnae.nicheresearchseedbuilder`, seguindo o padrão de etapa plugável do motor `pipeline`.
+- A etapa lista ciclos pendentes no backend, chama a OpenAI Responses API com schema JSON estrito, valida seed e 12 a 15 queries específicas, persiste a conclusão no backend e registra falha operacional quando necessário.
+- Expostos endpoints manuais do coletor em `/api/oprm-mei/nichocnae/niche-research-seed-builder` para listar pendências, detalhar ciclo e processar pendentes.
+- Atualizada a documentação Swagger OPRM nichocnae com os contratos backend esperados para pending, complete, fail e detail da etapa dois.

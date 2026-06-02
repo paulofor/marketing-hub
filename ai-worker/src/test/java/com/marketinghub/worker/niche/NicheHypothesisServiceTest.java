@@ -103,6 +103,7 @@ class NicheHypothesisServiceTest {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
         registry.add("openai.base-url", () -> mockWebServer.url("/").toString());
+        registry.add("openai.allow-local-base-url", () -> "true");
         registry.add("openai.api-key", () -> "test-key");
     }
 

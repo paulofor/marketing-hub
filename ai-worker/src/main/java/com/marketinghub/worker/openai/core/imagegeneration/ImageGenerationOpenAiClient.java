@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
+import com.marketinghub.worker.openai.core.openai.OpenAiBaseUrlGuard;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
@@ -43,13 +44,22 @@ public class ImageGenerationOpenAiClient implements OpenAiClientPort {
             ImageGenerationWorkerProperties properties,
             String apiKey,
             String baseUrl,
+            boolean allowLocalBaseUrl,
             int maxInMemorySizeBytes
     ) {
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.enabled = StringUtils.hasText(apiKey);
+        String effectiveBaseUrl = OpenAiBaseUrlGuard.resolve(baseUrl, allowLocalBaseUrl);
+        if (!effectiveBaseUrl.equals(baseUrl)) {
+            log.warn(
+                    "OpenAI Images API base URL local rejeitada; usando endpoint oficial [configuredBaseUrl={}, effectiveBaseUrl={}]",
+                    baseUrl,
+                    effectiveBaseUrl
+            );
+        }
         WebClient.Builder builder = webClientBuilder.clone()
-                .baseUrl(baseUrl)
+                .baseUrl(effectiveBaseUrl)
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(Math.max(1, maxInMemorySizeBytes)));
         if (enabled) {
             builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);

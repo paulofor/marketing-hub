@@ -3081,3 +3081,14 @@
   - o backend persiste o manifesto recebido em `landingPageImageAssets`, permitindo que o preset design use as URLs geradas nas próximas etapas;
   - testes unitários foram ajustados para proteger o consumo do endpoint novo, o payload auditável de prompts e a resposta consolidada de imagens.
 - impacto esperado: jobs de `landing-page-image-generation` iniciados pela tela de experimento passam a sair de `INICIADO`, registrar prompt/request/resposta no detalhe do GeraLanding e fornecer manifesto de imagens para o HTML final.
+
+## 2026-06-02 — Bloqueio de base OpenAI local acidental no Worker AI
+
+- solicitação: investigar por que a etapa `landing-page-image-generation` tentou acessar `localhost/127.0.0.1:34303` no experimento 36.
+- causa-raiz identificada: o registro `gera_landing_stage_execution` do job `1b16da07-5926-406e-bc06-e1d02750cd07` falhou com `finishConnect(..) failed: Connection refused: localhost/127.0.0.1:34303`, indicando que a base URL efetiva do cliente OpenAI Images API foi contaminada por configuração local em vez de usar `https://api.openai.com/v1`.
+- correção aplicada:
+  - criado um guardião de base URL OpenAI no Worker AI para substituir automaticamente URLs locais (`localhost`, `127.0.0.1`, `0.0.0.0`, `::1`) pelo endpoint oficial quando `openai.allow-local-base-url=false`;
+  - a mesma proteção passou a valer para o client textual de Responses API e para o client de Images API usado no GeraLanding;
+  - adicionado `OPENAI_ALLOW_LOCAL_BASE_URL` apenas como escape explícito para testes/desenvolvimento controlado;
+  - testes unitários cobrem a substituição de localhost, a preservação quando explicitamente permitido e a preservação da URL oficial.
+- impacto esperado: execuções produtivas do GeraLanding não devem mais tentar chamar portas locais acidentais para gerar imagens; se uma configuração local escapar para produção, o Worker AI usa a OpenAI oficial em vez de quebrar o job com conexão recusada em localhost.

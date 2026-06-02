@@ -210,3 +210,5 @@
 
 - 2026-06-01 00:00:00 (UTC): adicionado botão na tela `/oprm/cnaes-volume` para o usuário consultar diretamente os nichos já enriquecidos pelo OPRM; backend recebeu endpoint de leitura dos candidatos enriquecidos mais recentes e frontend passou a exibir tabela com nicho, CNAE, dor, resultado, mecanismo, score, status e data de enriquecimento.
 - 2026-06-01 18:52:03 (UTC-3): ajuste na tela de CNAEs por Score OPRM para que a lista "Nichos já enriquecidos" seja carregada pelo backend em ordem decrescente de `opportunityScore`, com `createdAt` como desempate, deixando os maiores scores no começo para priorizar decisões com maior potencial de venda.
+
+- 2026-06-02 00:00:00 (UTC): criado no backend o novo pacote `com.marketinghub.oprm.nichocnae` para o pipeline OPRM de pesquisa de rotina por nicho CNAE, com a primeira etapa `routineresearchcycle` estruturada no padrão canônico por etapa (`web`, `service`, `pending`, `listStageExecutions`, `detailStageExecution`, `recebePrompt`, `recebeResposta`) para preparar a evolução até o `oprm_niche_routine_card`.

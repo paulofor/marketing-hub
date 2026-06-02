@@ -22,10 +22,41 @@ class ImageGenerationResponseValidatorTest {
 
         ImageGenerationOutput output = validator.validateAndParse(response);
 
-        assertThat(output.model()).isEqualTo("gpt-image-1.5");
-        assertThat(output.prompt()).isEqualTo("hero");
-        assertThat(output.imageContent()).isEqualTo("fake-image".getBytes(StandardCharsets.UTF_8));
-        assertThat(output.imageUrl()).isNull();
+        assertThat(output.images()).singleElement().satisfies(image -> {
+            assertThat(image.model()).isEqualTo("gpt-image-1.5");
+            assertThat(image.prompt()).isEqualTo("hero");
+            assertThat(image.imageContent()).isEqualTo("fake-image".getBytes(StandardCharsets.UTF_8));
+            assertThat(image.imageUrl()).isNull();
+        });
+    }
+
+    /** Deve converter resposta consolidada com metadados de planejamento em imagens geradas. */
+    @Test
+    void validateAndParseShouldDecodeConsolidatedGeraLandingResponse() {
+        String payload = Base64.getEncoder().encodeToString("hero-image".getBytes(StandardCharsets.UTF_8));
+        String response = """
+                {
+                  "model": "gpt-image-1.5",
+                  "images": [
+                    {
+                      "planningItemKey": "hero-img",
+                      "sectionId": "hero",
+                      "elementId": "hero-img",
+                      "prompt": "hero",
+                      "rawResponse": {"data":[{"b64_json":"%s"}]}
+                    }
+                  ]
+                }
+                """.formatted(payload);
+
+        ImageGenerationOutput output = validator.validateAndParse(response);
+
+        assertThat(output.images()).singleElement().satisfies(image -> {
+            assertThat(image.planningItemKey()).isEqualTo("hero-img");
+            assertThat(image.sectionId()).isEqualTo("hero");
+            assertThat(image.elementId()).isEqualTo("hero-img");
+            assertThat(image.imageContent()).isEqualTo("hero-image".getBytes(StandardCharsets.UTF_8));
+        });
     }
 
     /** Deve rejeitar resposta sem bytes ou URL para bloquear publicação sem imagem final. */

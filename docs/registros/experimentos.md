@@ -3069,3 +3069,15 @@
   - os testes unitários foram ajustados para separar ausência de prévia local da possibilidade de tentar aprovação pelo backend.
 - validações operacionais:
   - `SELECT id, LENGTH(html_geralanding), LENGTH(landing_page_html), follow_up_action_url, status FROM experiment WHERE id = 35` retornou `html_geralanding` preenchido e `landing_page_html` nulo, confirmando que a landing gerada existe no registro canônico do GeraLanding.
+
+## 2026-06-02 — GeraLanding ImageGeneration consumindo endpoint novo
+
+- solicitação: alterar o Worker AI para usar o endpoint novo do GeraLanding na etapa `landing-page-image-generation`.
+- causa-raiz/objetivo: jobs iniciados pelo card `4 - Gera Imagem` ficavam presos em `INICIADO` na tabela `gera_landing_stage_execution`, porque o worker de `imagegeneration` ainda consultava a fila antiga `/internal/framework-image/jobs/pending` em vez de `/internal/geralanding/image-generation/stage-executions/pending`.
+- correção aplicada:
+  - o adapter `ImageGenerationBackendClient` passou a consumir pendências, `recebe-prompt` e `recebe-resposta` diretamente pelos endpoints internos novos do GeraLanding;
+  - o client de OpenAI Images API agora prepara o despacho, deixa o backend marcar o job como aguardando retorno e só então executa as chamadas de imagem, evitando reprocessamento enquanto a chamada síncrona está em andamento;
+  - a etapa gera manifesto de imagens com URLs publicáveis, preservando `planningItemKey`, `sectionId`, `elementId`, prompt, modelo e `openAiJobId`;
+  - o backend persiste o manifesto recebido em `landingPageImageAssets`, permitindo que o preset design use as URLs geradas nas próximas etapas;
+  - testes unitários foram ajustados para proteger o consumo do endpoint novo, o payload auditável de prompts e a resposta consolidada de imagens.
+- impacto esperado: jobs de `landing-page-image-generation` iniciados pela tela de experimento passam a sair de `INICIADO`, registrar prompt/request/resposta no detalhe do GeraLanding e fornecer manifesto de imagens para o HTML final.

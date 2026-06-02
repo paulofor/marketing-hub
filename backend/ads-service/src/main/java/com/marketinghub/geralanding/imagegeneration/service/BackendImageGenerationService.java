@@ -175,6 +175,7 @@ public class BackendImageGenerationService {
             execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
 
             executionRepository.save(execution);
+            persistImageAssetsArtifactOnExperiment(execution, modelResponse, normalizedErrorMessage);
         } catch (RuntimeException ex) {
             log.error(
                     "Erro ao concluir resposta image generation (idJob={}, experimentId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
@@ -187,6 +188,24 @@ public class BackendImageGenerationService {
                     ex);
             throw ex;
         }
+    }
+
+    /** Persiste o manifesto de imagens gerado no experimento para consumo das etapas seguintes do GeraLanding. */
+    private void persistImageAssetsArtifactOnExperiment(
+            GeraLandingStageExecution execution,
+            String modelResponse,
+            String normalizedErrorMessage) {
+        if (!StringUtils.hasText(modelResponse) || normalizedErrorMessage != null) {
+            return;
+        }
+        Experiment experiment = execution.getExperiment();
+        if (experiment == null) {
+            experiment = experimentRepository.findById(execution.getExperimentId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Experiment not found: " + execution.getExperimentId()));
+        }
+        experiment.setLandingPageImageAssets(modelResponse);
+        experimentRepository.save(experiment);
     }
 
     /** Normaliza a mensagem de erro e garante status FALHA quando o callback traz apenas detalhe técnico. */

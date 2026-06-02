@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-02-05-oprm-niche-research-seed
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_niche_research_seed
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_niche_research_seed (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                research_cycle_id BIGINT NOT NULL,
+                cnae_code VARCHAR(7) NOT NULL,
+                cnae_description VARCHAR(255) NOT NULL,
+                niche_name VARCHAR(255) NOT NULL,
+                business_type VARCHAR(255) NOT NULL,
+                operation_type LONGTEXT NOT NULL,
+                customer_type LONGTEXT NOT NULL,
+                commercial_objects LONGTEXT NOT NULL,
+                initial_assumptions LONGTEXT NOT NULL,
+                confidence_level VARCHAR(64) NOT NULL,
+                created_by VARCHAR(32) NOT NULL,
+                created_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_niche_research_seed PRIMARY KEY (id),
+                CONSTRAINT uk_oprm_niche_research_seed_cycle UNIQUE (research_cycle_id)
+              );
+              CREATE INDEX idx_oprm_niche_research_seed_cnae ON oprm_niche_research_seed (cnae_code);
+
+  - changeSet:
+      id: 2026-06-02-06-oprm-research-query
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_research_query
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_research_query (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                research_cycle_id BIGINT NOT NULL,
+                niche_research_seed_id BIGINT NOT NULL,
+                query_text VARCHAR(500) NOT NULL,
+                query_goal VARCHAR(64) NOT NULL,
+                source_group VARCHAR(64) NULL,
+                priority INT NOT NULL DEFAULT 100,
+                status VARCHAR(32) NOT NULL,
+                result_count INT NOT NULL DEFAULT 0,
+                error_message LONGTEXT NULL,
+                created_by VARCHAR(32) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_research_query PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_oprm_research_query_cycle_priority ON oprm_research_query (research_cycle_id, priority, id);
+              CREATE INDEX idx_oprm_research_query_status_priority ON oprm_research_query (status, priority, id);
+              CREATE INDEX idx_oprm_research_query_seed ON oprm_research_query (niche_research_seed_id);

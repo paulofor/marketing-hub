@@ -1,4 +1,18 @@
 
+## 2026-06-02 00:00:00 UTC
+- solicitação: criar endpoint de aprovação/publicação da landing final no pacote `geralanding.publiclanding.web`, com controller `BackendPublicLandingController` e operação `approve-end-publish`.
+- foi feito: criado `BackendPublicLandingController` com `POST /api/experiments/{experimentId}/geralanding/landing/approve-end-publish` e alias de compatibilidade `approve-and-publish`, além de `BackendPublicLandingService` com lógica semelhante ao fluxo deprecated para publicar no Lead Portal, injetar tracking/controles/pixel e persistir `follow_up_action_url`.
+- frontend: hook de aprovação/publicação da landing atualizado para chamar `approve-end-publish`.
+- documentação: Swagger do Gera Landing atualizado com o novo endpoint de landing pública.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/publiclanding/web/BackendPublicLandingController.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/publiclanding/service/BackendPublicLandingService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/publiclanding/service/approveEndPublish/PublicLandingPublicationResponse.java
+  - frontend/src/api/experiment/useApproveAndPublishLanding.ts
+  - docs/gera-landing/swagger-gera-landing-etapas.yaml
+  - docs/registros/experimentos.md
+
+
 ## 2026-05-23 00:00:00 UTC
 - solicitação para corrigir falha de typecheck no frontend em `ExperimentDetailPage` por ausência do campo `htmlGeraLanding` no tipo `Experiment`.
 - causa-raiz identificada: o componente já consome `experiment.htmlGeraLanding`, porém a interface TypeScript compartilhada em `useExperiments.ts` não declarava esse atributo.

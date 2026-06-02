@@ -26,7 +26,7 @@ export function useApproveAndPublishLanding(experimentId: number) {
   return useMutation({
     mutationFn: async () => {
       const { data } = await axios.post<LandingPublicationResult>(
-        `/api/experiments/${experimentId}/geralanding/landing/approve-and-publish`,
+        `/api/experiments/${experimentId}/geralanding/landing/approve-end-publish`,
       );
       return data;
     },

@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-02-oprm-nichocnae-source-searcher.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-02-oprm-nichocnae-routine-research-cycle.yaml
       relativeToChangelogFile: true
   - include:

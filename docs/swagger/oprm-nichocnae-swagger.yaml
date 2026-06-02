@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: OPRM Nicho CNAE Pipeline API
-  version: 0.2.0
+  version: 0.3.0
   description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
 paths:
   /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
@@ -114,10 +114,86 @@ paths:
                 $ref: '#/components/schemas/NicheResearchSeedBuilderDetailResponse'
         '404':
           description: Ciclo de pesquisa não encontrado.
+
+  /api/internal/oprm/nichocnae/source-searcher/stage-executions/pending:
+    get:
+      summary: Lista frases de pesquisa pendentes para a etapa três de busca de fontes.
+      tags: [OPRM Nicho CNAE]
+      responses:
+        '200':
+          description: Frases pendentes para execução em provedor de busca configurável.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceSearcherPending'
+  /api/internal/oprm/nichocnae/source-searcher/stage-executions/{researchQueryId}/complete:
+    post:
+      summary: Persiste os resultados da busca pública para uma frase de pesquisa da etapa três.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchQueryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteSourceSearcherRequest'
+      responses:
+        '200':
+          description: Fontes candidatas gravadas e query marcada como concluída.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteSourceSearcherResponse'
+        '400':
+          description: Payload inválido, posição inválida, URL duplicada ou mais de 20 resultados.
+        '404':
+          description: Frase de pesquisa não encontrada.
+  /api/internal/oprm/nichocnae/source-searcher/stage-executions/{researchQueryId}/fail:
+    post:
+      summary: Registra falha operacional da etapa três para uma frase de pesquisa.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchQueryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailSourceSearcherRequest'
+      responses:
+        '204':
+          description: Falha registrada na frase de pesquisa.
+        '404':
+          description: Frase de pesquisa não encontrada.
+  /api/oprm/nichocnae/source-searcher/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha as fontes candidatas encontradas para um ciclo de pesquisa.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Fontes candidatas do ciclo de pesquisa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceSearcherDetailResponse'
+        '404':
+          description: Ciclo de pesquisa não encontrado.
 components:
   parameters:
     ResearchCycleId:
       name: researchCycleId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ResearchQueryId:
+      name: researchQueryId
       in: path
       required: true
       schema:
@@ -326,3 +402,159 @@ components:
           allOf:
             - $ref: '#/components/schemas/CompleteNicheResearchSeedBuilderResponse'
           nullable: true
+
+
+    SourceSearcherPending:
+      type: object
+      properties:
+        researchQueryId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        nicheResearchSeedId:
+          type: integer
+          format: int64
+        queryText:
+          type: string
+          example: como lotar agenda de manicure
+        queryGoal:
+          type: string
+          example: SALES_PAIN_DISCOVERY
+        sourceGroup:
+          type: string
+          nullable: true
+        priority:
+          type: integer
+        status:
+          type: string
+          example: PENDING
+        resultCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CompleteSourceSearcherRequest:
+      type: object
+      required: [searchProvider, results]
+      properties:
+        searchProvider:
+          type: string
+          example: BRAVE_SEARCH
+        results:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/SourceCandidateRequest'
+    SourceCandidateRequest:
+      type: object
+      required: [sourceUrl, sourceTitle, sourceDomain, searchPosition]
+      properties:
+        sourceUrl:
+          type: string
+          format: uri
+          example: https://exemplo.com/clientes-manicure
+        sourceTitle:
+          type: string
+          example: Como conseguir mais clientes para manicure
+        sourceSnippet:
+          type: string
+          nullable: true
+          example: Veja formas de divulgar serviços, fidelizar clientes e preencher horários.
+        sourceDomain:
+          type: string
+          example: exemplo.com
+        sourceGroup:
+          type: string
+          default: PUBLIC_CONTENT
+        searchPosition:
+          type: integer
+          minimum: 1
+          example: 1
+        status:
+          type: string
+          default: FOUND
+    CompleteSourceSearcherResponse:
+      type: object
+      properties:
+        researchQueryId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        queryText:
+          type: string
+        queryStatus:
+          type: string
+          example: COMPLETED
+        resultCount:
+          type: integer
+        cycleTotalSourceCandidates:
+          type: integer
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceCandidateResponse'
+    SourceCandidateResponse:
+      type: object
+      properties:
+        sourceCandidateId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        researchQueryId:
+          type: integer
+          format: int64
+        sourceUrl:
+          type: string
+        sourceTitle:
+          type: string
+        sourceSnippet:
+          type: string
+          nullable: true
+        sourceDomain:
+          type: string
+        sourceGroup:
+          type: string
+        searchProvider:
+          type: string
+        searchPosition:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FailSourceSearcherRequest:
+      type: object
+      required: [errorMessage]
+      properties:
+        errorMessage:
+          type: string
+          example: Provedor de busca retornou erro temporário.
+    SourceSearcherDetailResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        cycleTotalQueries:
+          type: integer
+        cycleTotalSourceCandidates:
+          type: integer
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceCandidateResponse'

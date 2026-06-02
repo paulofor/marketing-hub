@@ -198,6 +198,52 @@ paths:
                 items:
                   $ref: "#/components/schemas/GeraLandingPendingExecutionResponse"
 
+  /api/experiments/{experimentId}/geralanding/landing/approve-end-publish:
+    post:
+      tags:
+        - Gera Landing Public Landing
+      summary: Aprova e publica a landing pública do GeraLanding
+      description: |
+        Publica o HTML final do GeraLanding no Lead Portal, injeta telemetria/controles/pixel e grava a URL standalone como destino oficial de campanha.
+      parameters:
+        - $ref: "#/components/parameters/ExperimentIdPath"
+      responses:
+        "200":
+          description: Landing aprovada e publicada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicLandingPublicationResponse"
+        "404":
+          description: Experimento não encontrado.
+        "409":
+          description: HTML da landing ainda não foi gerado.
+        "502":
+          description: Lead Portal indisponível ou base URL não configurada.
+
+  /api/experiments/{experimentId}/geralanding/landing/approve-and-publish:
+    post:
+      tags:
+        - Gera Landing Public Landing
+      summary: Alias compatível para aprovação e publicação da landing pública
+      description: |
+        Alias temporário de compatibilidade para o contrato anterior com `and`; executa a mesma operação de `approve-end-publish`.
+      parameters:
+        - $ref: "#/components/parameters/ExperimentIdPath"
+      responses:
+        "200":
+          description: Landing aprovada e publicada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicLandingPublicationResponse"
+        "404":
+          description: Experimento não encontrado.
+        "409":
+          description: HTML da landing ainda não foi gerado.
+        "502":
+          description: Lead Portal indisponível ou base URL não configurada.
+
 components:
   parameters:
     ExperimentIdPath:
@@ -217,6 +263,31 @@ components:
         type: string
 
   schemas:
+
+    PublicLandingPublicationResponse:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+          description: ID do experimento publicado.
+        flowId:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID do flow quando disponível no contrato de publicação.
+        iframeUrl:
+          type: string
+          nullable: true
+          description: URL pública para renderização iframe da landing.
+        standaloneUrl:
+          type: string
+          nullable: true
+          description: URL standalone gravada como destino oficial da campanha.
+        message:
+          type: string
+          description: Mensagem operacional da publicação.
+
     GeraLandingWireframeStartResponse:
       type: object
       properties:

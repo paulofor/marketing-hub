@@ -122,6 +122,50 @@ pipeline.scraping   -> não pode depender de pipeline.wireframe
 pipeline.copy       -> não pode depender de pipeline.assembler
 ```
 
+### Necessidade obrigatória: etapas concretas plugáveis e removíveis
+
+Cada etapa concreta precisa ser tratada como um **plugin operacional independente**: ela pode ser criada, desativada, substituída ou removida sem obrigar alteração nas demais etapas concretas.
+
+Essa necessidade existe porque o pipeline do Marketing Hub evolui por experimentação. Novas etapas podem surgir para scraping, IA, captura de documentos, validação, enriquecimento, montagem determinística ou integrações externas. Se uma etapa concreta depender diretamente de outra, a evolução deixa de ser plugável: remover uma etapa passa a quebrar código não relacionado, trocar uma tecnologia passa a exigir refatoração em cascata e o dano arquitetural só aparece tarde, durante execução ou deploy.
+
+Portanto, a regra operacional é:
+
+```text
+etapa concreta -> pode depender do núcleo pipeline
+etapa concreta -> pode depender de infraestrutura compartilhada permitida
+etapa concreta -> não pode depender de outra etapa concreta
+núcleo pipeline -> não pode depender de etapa concreta
+```
+
+Exemplo correto:
+
+```text
+pipeline.wireframe -> pipeline
+pipeline.scraping  -> pipeline
+pipeline.copy      -> pipeline
+```
+
+Exemplo proibido:
+
+```text
+pipeline.wireframe -> pipeline.scraping
+pipeline.copy      -> pipeline.wireframe
+pipeline.assembler -> pipeline.copy
+```
+
+Quando uma etapa precisa consumir dado produzido por outra, ela deve consumir o **contrato persistido da execução** ou um **artefato auditável** (`StageArtifact`, storage key, DTO persistido no backend, evento de fila ou outro contrato oficial), nunca importar a classe concreta da etapa anterior. O encadeamento deve acontecer por dados e contratos, não por chamada direta entre implementações.
+
+Consequência esperada:
+
+```text
+adicionar etapa nova   -> não exige mudar etapas existentes
+remover etapa existente -> não quebra outras etapas concretas
+substituir tecnologia   -> fica restrito ao pacote da própria etapa
+reordenar pipeline      -> muda orquestração/contratos, não acoplamento entre classes de etapas
+```
+
+A proteção por ArchUnit deve validar essa necessidade explicitamente. Não basta testar apenas que o núcleo não conhece etapas concretas; também é obrigatório testar que uma etapa concreta não conhece outra etapa concreta.
+
 ---
 
 ## Diagrama conceitual

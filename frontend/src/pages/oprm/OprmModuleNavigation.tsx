@@ -4,7 +4,10 @@ interface OprmModuleNavigationProps {
   occupationSeedRef?: string;
 }
 
-const cnaeItem = { label: "CNAEs", to: "/oprm" };
+const navigationItems = [
+  { label: "CNAEs", to: "/oprm" },
+  { label: "Pipeline", to: "/oprm/pipeline" },
+];
 
 export default function OprmModuleNavigation({
   occupationSeedRef: _occupationSeedRef,
@@ -12,16 +15,18 @@ export default function OprmModuleNavigation({
   return (
     <nav aria-label="Navegação interna do OPRM">
       <ul className="nav nav-pills gap-2">
-        <li className="nav-item">
-          <NavLink
-            to={cnaeItem.to}
-            className={({ isActive }) =>
-              isActive ? "nav-link active" : "nav-link"
-            }
-          >
-            {cnaeItem.label}
-          </NavLink>
-        </li>
+        {navigationItems.map((item) => (
+          <li className="nav-item" key={item.to}>
+            <NavLink
+              to={item.to}
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
+              {item.label}
+            </NavLink>
+          </li>
+        ))}
       </ul>
     </nav>
   );

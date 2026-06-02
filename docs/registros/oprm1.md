@@ -220,6 +220,7 @@
 
 - 2026-06-02 00:00:00 (UTC): implementada no coletor OPRM MEI a etapa 1 `oprmRoutineResearchCycle` no pacote `com.marketinghub.nichocnae`, com cliente backend, processor pelo `PipelineWorker`, endpoints manuais de acompanhamento/processamento e testes unitários sem agendamento automático.
 
+- 2026-06-02 00:00:00 (UTC): adicionada navegação frontend do OPRM com botão `Pipeline` ao lado de `CNAEs` e criada a tela estática `/oprm/pipeline` com três cards iniciais das etapas Ingestão de Mercado, Score OPRM e Enriquecimento Comercial para preparar a evolução visual do pipeline sem acionar novos endpoints.
 
 ## 2026-06-02 — OPRM nichocnae etapa 2 seed builder no coletor MEI
 

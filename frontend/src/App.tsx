@@ -109,6 +109,7 @@ import OprmFeedbackPage from "./pages/oprm/OprmFeedbackPage";
 import OprmOperationsPage from "./pages/oprm/OprmOperationsPage";
 import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
 import OprmCnaeVolumePage from "./pages/oprm/OprmCnaeVolumePage";
+import OprmPipelinePage from "./pages/oprm/OprmPipelinePage";
 import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
 import MoisReferenceIntakePage from "./pages/mois/MoisReferenceIntakePage";
 import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
@@ -314,6 +315,7 @@ export default function App() {
                 path="/oprm/operations"
                 element={<OprmOperationsPage />}
               />
+              <Route path="/oprm/pipeline" element={<OprmPipelinePage />} />
               <Route
                 path="/oprm/occupations"
                 element={<OprmOccupationCatalogPage />}

@@ -50,7 +50,7 @@ Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto ra
 
 Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere somente `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável e visualmente menos monótona.
 
-O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON.
+O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Portanto, se um botão precisa de altura, padding, alinhamento ou largura, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
 
 # Regras obrigatórias
 
@@ -66,6 +66,7 @@ O assembler final é determinístico e não inventa estilos. Tudo que a página 
 10. Não crie classes com nomes já existentes em `landingPageWireframe.definicoes`; os nomes de preset devem ser inéditos em relação ao wireframe.
 11. Não use opacidade para simular cor de texto. Crie tokens de cor dedicados.
 12. Não dependa de hover para legibilidade. Hover pode existir, mas a aparência base precisa funcionar sozinha.
+13. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso quando uma classe semântica precisar reunir display, padding, min-height, typography, borda e sombra.
 
 # Grupos obrigatórios em `definicoes`
 
@@ -219,6 +220,30 @@ Todo CTA deve ter classes para:
 
 Os botões são elementos críticos da landing. Eles não podem parecer links finos, barras azuis pequenas ou componentes improvisados.
 
+O erro mais comum a evitar: aplicar apenas `rowInline`, `rowAlignCenter`, `ctaPrimaryBg`, `radiusMd` e `shadowMd`. Isso NÃO é um botão completo. Sem padding + min-height + justify-content + tipografia de CTA, o resultado é uma barra ruim.
+
+## Mapeamento obrigatório por componente
+
+Para todo elemento `a` ou `button`:
+
+- Se `componente = buttonPrimary`, o elemento DEVE receber estas classes em `estilos[]`: `buttonPrimaryPremium`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`, `textNoUnderline`.
+- Se `componente = buttonSecondary`, o elemento DEVE receber estas classes em `estilos[]`: `buttonSecondaryGhost`, `buttonMinTouch`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`.
+- Se o elemento for o submit do formulário (`tag = button`, `type = submit` ou id contendo `submit`), ele DEVE receber: `buttonFormSubmit`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`.
+- Se `interacao.intencaoAcao` estiver preenchida, mas `componente = none`, aplique ao menos `buttonTertiaryLink`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`, para que não vire link padrão.
+- Se o CTA principal estiver no hero, prova, entregáveis, FAQ final ou formulário, aplique também `buttonFullMobile`.
+
+## Definições mínimas obrigatórias de botão
+
+Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propriedades quando necessário usando o mesmo `nome` repetido:
+
+- `buttonPrimaryPremium`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:14px 22px`, `min-height:48px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`, `text-decoration:none`, `box-shadow:0 14px 32px rgba(37,99,235,0.24)`.
+- `buttonSecondaryGhost`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:13px 20px`, `min-height:46px`, `border-radius:14px`, `font-size:15px`, `font-weight:750`, `line-height:1.2`, `text-decoration:none`, `background-color:#FFFFFF`, `border:1px solid #DCE6F7`.
+- `buttonTertiaryLink`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:10px 12px`, `min-height:42px`, `border-radius:999px`, `font-size:14px`, `font-weight:700`, `line-height:1.2`, `text-decoration:none`.
+- `buttonFullMobile`: em `mobile`, `width:100%`.
+- `buttonMinTouch`: `min-height:48px`.
+- `buttonTextStrong`: `font-size:16px`, `font-weight:800`, `line-height:1.2`.
+- `buttonFormSubmit`: `display:flex`, `align-items:center`, `justify-content:center`, `width:100%`, `padding:15px 22px`, `min-height:50px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`.
+
 Para todo elemento `a` ou `button` com `componente` igual a `buttonPrimary`, `buttonSecondary` ou com `interacao.intencaoAcao` preenchida:
 - aplique classe visual de botão, nunca apenas cor de fundo;
 - use `min-height` de pelo menos `48px` no mobile e `46px` no desktop;
@@ -243,6 +268,7 @@ Rejeite qualquer CTA que pareça:
 Crie e aplique, quando fizer sentido, classes específicas para qualidade de botão:
 - `buttonPrimaryPremium`: botão primário forte, alto contraste, altura confortável e sombra controlada;
 - `buttonSecondaryGhost`: botão secundário com borda, fundo discreto, padding real e boa área de toque;
+- `buttonTertiaryLink`: link de ação discreto com área clicável, sem parecer link padrão;
 - `buttonFullMobile`: `width: 100%` no mobile para CTAs principais;
 - `buttonMinTouch`: garante `min-height` confortável;
 - `buttonTextStrong`: define peso, tamanho e line-height do texto do botão;
@@ -277,6 +303,7 @@ Crie e aplique, quando apropriado:
 - `imgFluid`
 - `buttonPrimaryPremium`
 - `buttonSecondaryGhost`
+- `buttonTertiaryLink`
 - `buttonFullMobile`
 - `buttonMinTouch`
 - `buttonTextStrong`
@@ -303,7 +330,11 @@ Rejeite e gere novamente se o JSON produzir:
 - botão primário parecendo uma barra fina;
 - botão submit menor ou mais fraco que CTAs secundários;
 - texto de botão com tamanho visual menor que o corpo da página;
-- CTA secundário renderizado como link comum.
+- CTA secundário renderizado como link comum;
+- elemento com `componente = buttonPrimary` sem a classe `buttonPrimaryPremium`;
+- elemento com `componente = buttonSecondary` sem a classe `buttonSecondaryGhost`;
+- botão submit sem a classe `buttonFormSubmit`;
+- CTA com `rowInline`/`rowAlignCenter` mas sem classe semântica de botão.
 
 # Quality gate interno
 
@@ -319,7 +350,8 @@ Garanta que:
 - FAQ seja legível e mais calmo;
 - todos os CTAs tenham área de toque confortável, contraste alto e aparência de botão real;
 - o botão principal da primeira dobra seja imediatamente reconhecível como a próxima ação;
-- o botão do formulário seja visualmente mais forte que qualquer link ou botão secundário da mesma seção.
+- o botão do formulário seja visualmente mais forte que qualquer link ou botão secundário da mesma seção;
+- nenhum CTA dependa apenas de `background`, `border-radius` e `shadow` para parecer botão.
 
 # Formato esperado de saída
 

@@ -228,3 +228,4 @@
 - A etapa lista ciclos pendentes no backend, chama a OpenAI Responses API com schema JSON estrito, valida seed e 12 a 15 queries específicas, persiste a conclusão no backend e registra falha operacional quando necessário.
 - Expostos endpoints manuais do coletor em `/api/oprm-mei/nichocnae/niche-research-seed-builder` para listar pendências, detalhar ciclo e processar pendentes.
 - Atualizada a documentação Swagger OPRM nichocnae com os contratos backend esperados para pending, complete, fail e detail da etapa dois.
+- 2026-06-02 00:00:00 (UTC): ajustada a tela `/oprm/pipeline` para remover os cards de ingestão/score/enriquecimento CNAE e apresentar os cards corretos do pipeline NichoCNAE: orquestrador de pesquisa, ciclo de pesquisa de rotina, seed de pesquisa, busca/coleta de fontes, extração de sinais, síntese da rotina e gate de qualidade.

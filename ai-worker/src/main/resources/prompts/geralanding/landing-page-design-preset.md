@@ -50,7 +50,7 @@ Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto ra
 
 Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere somente `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável, responsiva e visualmente menos monótona.
 
-O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Se um botão, grid, card, imagem ou container precisa de altura, padding, alinhamento, largura, coluna ou quebra mobile, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
+O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Se um botão, input, label, grid, card, imagem ou container precisa de altura, padding, alinhamento, largura, coluna ou quebra mobile, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
 
 # Regras obrigatórias
 
@@ -65,8 +65,8 @@ O assembler final é determinístico e não inventa estilos. Tudo que a página 
 9. Não use JSON serializado em string.
 10. Não crie classes com nomes já existentes em `landingPageWireframe.definicoes`; os nomes de preset devem ser inéditos em relação ao wireframe.
 11. Não use opacidade para simular cor de texto. Crie tokens de cor dedicados.
-12. Não dependa de hover para legibilidade. Hover pode existir, mas a aparência base precisa funcionar sozinha.
-13. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso para classes semânticas como botões, cards, grids e overrides mobile.
+12. Não dependa de hover ou focus para legibilidade. Estados podem existir, mas a aparência base precisa funcionar sozinha.
+13. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso para classes semânticas como botões, inputs, labels, cards, grids e overrides mobile.
 
 # Grupos obrigatórios em `definicoes`
 
@@ -106,6 +106,7 @@ Obrigatório:
 - No mobile, todo grid principal deve virar uma coluna: `grid-template-columns: 1fr !important`.
 - No mobile, toda linha de CTA deve virar coluna: `flex-direction: column !important`.
 - No mobile, todo card deve ocupar a largura disponível: `width: 100% !important`, `max-width: 100% !important`, `box-sizing: border-box !important`.
+- No mobile, todo input deve ocupar a largura disponível: `width: 100% !important`, `max-width: 100% !important`, `box-sizing: border-box !important`.
 - No mobile, imagens e mockups nunca podem criar coluna estreita: `width: 100% !important`, `max-width: 100% !important`, `height: auto` e `object-fit: contain`.
 
 Crie e aplique estas classes quando houver layout equivalente:
@@ -114,6 +115,7 @@ Crie e aplique estas classes quando houver layout equivalente:
 - `mobileFullWidth`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`.
 - `mobileSafeCard`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`, `overflow:hidden`.
 - `mobileSafeMedia`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `height:auto`, `object-fit:contain`.
+- `mobileSafeInput`: em `mobile`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`, `min-height:48px`.
 - `mobileReadablePad`: em `mobile`, padding lateral confortável e nunca inferior a `16px` para seções/containers.
 
 Rejeite qualquer saída onde no mobile:
@@ -122,6 +124,7 @@ Rejeite qualquer saída onde no mobile:
 - seção hero fique em duas colunas;
 - cards de mecanismo/entregáveis/FAQ fiquem com largura menor que o container;
 - formulário fique espremido;
+- inputs fiquem pequenos, sem padding, sem borda clara ou com aparência de campo padrão do navegador;
 - CTA principal não ocupe largura confortável.
 
 # Direção de arte
@@ -137,7 +140,8 @@ Use profundidade e acabamento com:
 - containers centralizados;
 - respiro generoso;
 - CTA evidente;
-- formulário mais forte que cards informativos.
+- formulário mais forte que cards informativos;
+- inputs premium, claros e confiáveis.
 
 Evite o sistema visual repetitivo: fundo escuro + card azul + botão verde em todas as seções.
 
@@ -172,11 +176,58 @@ Evite o sistema visual repetitivo: fundo escuro + card azul + botão verde em to
 - Deve ser o bloco de conversão mais evidente.
 - Use superfície própria, padding maior, borda/sombra e hierarquia clara.
 - Campos full-width, confortáveis e legíveis.
+- Labels visíveis precisam parecer labels de formulário, não parágrafos soltos.
+- Inputs devem parecer campos premium: altura confortável, borda clara, fundo limpo, sombra sutil, padding real, texto legível e largura total.
 - Botão submit mais forte que botões secundários.
+- Não invente script, endpoint, mensagem de sucesso ou comportamento.
 
 ## FAQ
 - Deve ser calmo, organizado e leve.
 - Mobile deve ser uma coluna, com cards legíveis e largura total.
+
+# Regras rígidas de qualidade para inputs e formulário
+
+Os inputs são elementos críticos de confiança. Não podem parecer campos pequenos, padrão do navegador, colados, desalinhados ou sem respiro.
+
+## Mapeamento obrigatório para inputs
+
+Para todo elemento `input`, `textarea` ou `select`, especialmente quando `componente = formInput`:
+- aplique `formInputPremium`, `inputFullWidth`, `inputTextReadable`, `inputBg`, `textOnInput`, `borderStrong`, `radiusSm`, `inputShadowSoft`, `mobileSafeInput`.
+- se o input estiver dentro de `form`, ele deve ter largura total e `box-sizing:border-box`.
+- não use apenas `inputBg`, `borderSoft` e `bodyText`; isso deixa o campo fraco.
+
+Para todo label visual de campo (`tag = label`, ou `p` cujo id contenha `label`, `field-nome-label`, `field-email-label`):
+- aplique `fieldLabel`, `textMuted` e espaçamento inferior curto.
+- labels não devem parecer parágrafos comuns; devem ter peso 700, tamanho 14px e alinhamento claro.
+
+Para todo formulário (`tag = form`) e card de formulário:
+- aplique classes de stack vertical e gap real (`formStack`, `fieldGap`, `mobileFullWidth` quando apropriado).
+- o card do formulário deve aplicar `formShell`, `cardSurface`, `borderStrong`, `radiusLg`, `mobileSafeCard`.
+
+## Definições mínimas obrigatórias de input
+
+Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propriedades quando necessário usando o mesmo `nome` repetido:
+
+- `formInputPremium`: `display:block`, `width:100%`, `max-width:100%`, `box-sizing:border-box`, `min-height:50px`, `padding:13px 14px`, `border-radius:12px`, `font-size:16px`, `font-weight:500`, `line-height:1.3`, `appearance:none`.
+- `inputFullWidth`: `width:100%`, `max-width:100%`, `box-sizing:border-box`.
+- `inputTextReadable`: `font-size:16px`, `line-height:1.3`, `font-weight:500`.
+- `inputShadowSoft`: `box-shadow:0 8px 18px rgba(15,23,42,0.06)`.
+- `fieldLabel`: `display:block`, `font-size:14px`, `font-weight:700`, `line-height:1.2`, `margin-bottom:6px`.
+- `formStack`: `display:flex`, `flex-direction:column`.
+- `fieldGap`: `gap:8px` ou `row-gap:8px`.
+- `formGap`: `gap:14px` ou `row-gap:14px`.
+
+Observação: não dependa de `placeholderText` para estilo do placeholder, porque o tokenizador atual não gera pseudo-seletor `::placeholder`. O campo precisa ficar bom mesmo sem estilizar placeholder. Use labels visíveis e input base forte.
+
+Rejeite qualquer input que pareça:
+- pequeno demais;
+- sem padding;
+- sem borda clara;
+- sem largura total;
+- desalinhado em relação ao botão;
+- com altura menor que 44px;
+- com label parecendo texto solto;
+- com aparência de campo nativo sem acabamento.
 
 # Regras rígidas de qualidade para botões e CTAs
 
@@ -228,7 +279,16 @@ Crie e aplique, quando apropriado:
 - `mobileFullWidth`
 - `mobileSafeCard`
 - `mobileSafeMedia`
+- `mobileSafeInput`
 - `imgFluid`
+- `formInputPremium`
+- `inputFullWidth`
+- `inputTextReadable`
+- `inputShadowSoft`
+- `fieldLabel`
+- `formStack`
+- `fieldGap`
+- `formGap`
 - `buttonPrimaryPremium`
 - `buttonSecondaryGhost`
 - `buttonTertiaryLink`
@@ -259,7 +319,9 @@ Rejeite e gere novamente se o JSON produzir:
 - elemento com `componente = buttonPrimary` sem a classe `buttonPrimaryPremium`;
 - elemento com `componente = buttonSecondary` sem a classe `buttonSecondaryGhost`;
 - botão submit sem a classe `buttonFormSubmit`;
-- CTA com `rowInline`/`rowAlignCenter` mas sem classe semântica de botão;
+- input com `componente = formInput` sem a classe `formInputPremium`;
+- input sem `width:100%`, `box-sizing:border-box`, `min-height` e padding real;
+- label de campo sem classe `fieldLabel`;
 - qualquer bloco principal mobile com duas ou três colunas;
 - cards mobile estreitos lado a lado;
 - imagem mobile espremida em coluna estreita.
@@ -273,6 +335,7 @@ Garanta que:
 - mobile tenha uma coluna real em todos os grids principais;
 - mobile tenha padding suficiente, botões grandes e imagens controladas;
 - todos os cards no mobile tenham largura total e `box-sizing:border-box`;
+- todos os inputs tenham aparência premium, largura total, altura confortável e labels visíveis;
 - Hero, Prova e Formulário não usem o mesmo tratamento visual;
 - Formulário seja o bloco mais acionável;
 - Preview pareça uma vitrine do produto;

@@ -16,6 +16,12 @@ management:
         enabled: true
 
 oprm:
+  nichocnae:
+    seed-builder:
+      openai:
+        base-url: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_BASE_URL:https://api.openai.com/v1}
+        api-key: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_API_KEY:${OPENAI_API_KEY:}}
+        model: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_MODEL:gpt-4.1-mini}
   market-import:
     collector:
       backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168:8000}

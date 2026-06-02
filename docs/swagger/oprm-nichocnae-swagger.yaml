@@ -60,3 +60,57 @@ paths:
       responses:
         '200':
           description: Detalhe do ciclo.
+
+  /api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/pending:
+    get:
+      summary: Lista ciclos pendentes para geração do seed e queries da etapa dois.
+      tags:
+        - OPRM Nicho CNAE
+      responses:
+        '200':
+          description: Ciclos em execução sem seed de pesquisa gerado.
+  /api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/complete:
+    post:
+      summary: Persiste a saída validada da etapa dois com seed e queries.
+      tags:
+        - OPRM Nicho CNAE
+      parameters:
+        - name: researchCycleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Seed e queries gravados para o ciclo.
+  /api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/fail:
+    post:
+      summary: Registra falha operacional da etapa dois.
+      tags:
+        - OPRM Nicho CNAE
+      parameters:
+        - name: researchCycleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Falha registrada.
+  /api/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha o seed e as queries gerados na etapa dois.
+      tags:
+        - OPRM Nicho CNAE
+      parameters:
+        - name: researchCycleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Seed e queries do ciclo.

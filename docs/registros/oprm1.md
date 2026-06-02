@@ -221,3 +221,10 @@
 - 2026-06-02 00:00:00 (UTC): implementada no coletor OPRM MEI a etapa 1 `oprmRoutineResearchCycle` no pacote `com.marketinghub.nichocnae`, com cliente backend, processor pelo `PipelineWorker`, endpoints manuais de acompanhamento/processamento e testes unitários sem agendamento automático.
 
 - 2026-06-02 00:00:00 (UTC): adicionada navegação frontend do OPRM com botão `Pipeline` ao lado de `CNAEs` e criada a tela estática `/oprm/pipeline` com três cards iniciais das etapas Ingestão de Mercado, Score OPRM e Enriquecimento Comercial para preparar a evolução visual do pipeline sem acionar novos endpoints.
+
+## 2026-06-02 — OPRM nichocnae etapa 2 seed builder no coletor MEI
+
+- Implementada no `oprm-coletor-mei` a etapa `oprmNicheResearchSeedBuilder` no pacote `com.marketinghub.nichocnae.nicheresearchseedbuilder`, seguindo o padrão de etapa plugável do motor `pipeline`.
+- A etapa lista ciclos pendentes no backend, chama a OpenAI Responses API com schema JSON estrito, valida seed e 12 a 15 queries específicas, persiste a conclusão no backend e registra falha operacional quando necessário.
+- Expostos endpoints manuais do coletor em `/api/oprm-mei/nichocnae/niche-research-seed-builder` para listar pendências, detalhar ciclo e processar pendentes.
+- Atualizada a documentação Swagger OPRM nichocnae com os contratos backend esperados para pending, complete, fail e detail da etapa dois.

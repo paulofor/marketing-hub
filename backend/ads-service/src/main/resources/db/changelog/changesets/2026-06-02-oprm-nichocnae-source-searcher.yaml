@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-02-07-oprm-source-candidate
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_source_candidate
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_source_candidate (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                research_cycle_id BIGINT NOT NULL,
+                research_query_id BIGINT NOT NULL,
+                source_url VARCHAR(1000) NOT NULL,
+                source_title VARCHAR(500) NOT NULL,
+                source_snippet LONGTEXT NULL,
+                source_domain VARCHAR(255) NOT NULL,
+                source_group VARCHAR(64) NOT NULL,
+                search_provider VARCHAR(64) NOT NULL,
+                search_position INT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_source_candidate PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_oprm_source_candidate_cycle_query_position ON oprm_source_candidate (research_cycle_id, research_query_id, search_position);
+              CREATE INDEX idx_oprm_source_candidate_query_url ON oprm_source_candidate (research_query_id, source_url(191));
+              CREATE INDEX idx_oprm_source_candidate_domain ON oprm_source_candidate (source_domain);

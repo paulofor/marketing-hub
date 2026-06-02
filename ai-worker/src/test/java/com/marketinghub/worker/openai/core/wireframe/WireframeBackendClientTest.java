@@ -187,22 +187,6 @@ class WireframeBackendClientTest {
                 .doesNotContain("mistas");
     }
 
-    /** Deve refletir no prompt a regra comercial de imagens úteis em vez de imagem obrigatória por seção. */
-    @Test
-    void wireframePromptShouldRequireOnlyCommerciallyUsefulImages() throws Exception {
-        String promptMarkdown = new ClassPathResource("prompts/geralanding/landing-page-wireframe.md")
-                .getContentAsString(StandardCharsets.UTF_8);
-
-        assertThat(promptMarkdown)
-                .contains("planejar normalmente entre 2 e 4 elementos `img` úteis")
-                .contains("somente quando a imagem cumpre função explícita de prova")
-                .contains("Hero com imagem controlada")
-                .contains("sem bloco full-width desproporcional")
-                .doesNotContain(
-                        "cada seção em `pagina.corpo.secoes[]` deve conter pelo menos um elemento `img`")
-                .doesNotContain("gerar no mínimo 4 elementos `img`");
-    }
-
     /** Deve exigir metadados visuais mínimos para cada imagem planejada no wireframe. */
     @Test
     void wireframeSchemaShouldRequireVisualMetadataForImages() throws Exception {

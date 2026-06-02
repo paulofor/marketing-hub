@@ -215,6 +215,39 @@ Todo CTA deve ter classes para:
 - `text-decoration: none`;
 - largura full no mobile quando for CTA primário de conversão.
 
+# Regras rígidas de qualidade para botões e CTAs
+
+Os botões são elementos críticos da landing. Eles não podem parecer links finos, barras azuis pequenas ou componentes improvisados.
+
+Para todo elemento `a` ou `button` com `componente` igual a `buttonPrimary`, `buttonSecondary` ou com `interacao.intencaoAcao` preenchida:
+- aplique classe visual de botão, nunca apenas cor de fundo;
+- use `min-height` de pelo menos `48px` no mobile e `46px` no desktop;
+- use padding confortável: no mínimo `14px 18px` no mobile e `14px 22px` no desktop;
+- use `font-size` entre `15px` e `17px`, `font-weight` entre `700` e `800`, `line-height` entre `1.15` e `1.25`;
+- use `border-radius` entre `12px` e `999px`, escolhendo pill ou botão arredondado consistente com o visual da página;
+- use `box-shadow` ou borda sutil no CTA primário para dar presença, mas sem exagero;
+- no mobile, CTA primário de hero, prova, formulário e fechamento deve ter `width: 100%` quando estiver em coluna estreita;
+- no desktop, CTA primário pode ser `inline-flex`, mas deve ter largura mínima visual suficiente; não pode ficar como uma etiqueta estreita;
+- o botão submit do formulário deve ser o CTA mais forte da seção, com largura full, altura confortável e contraste alto;
+- CTA secundário deve parecer ghost button/pill/link-card, com borda e padding; nunca link azul sublinhado padrão.
+
+Rejeite qualquer CTA que pareça:
+- barra fina com pouco padding;
+- texto pequeno demais;
+- link padrão de navegador;
+- botão full-width com altura baixa;
+- cor forte sem hierarquia tipográfica;
+- CTA primário visualmente mais fraco que um card comum;
+- vários CTAs idênticos competindo entre si.
+
+Crie e aplique, quando fizer sentido, classes específicas para qualidade de botão:
+- `buttonPrimaryPremium`: botão primário forte, alto contraste, altura confortável e sombra controlada;
+- `buttonSecondaryGhost`: botão secundário com borda, fundo discreto, padding real e boa área de toque;
+- `buttonFullMobile`: `width: 100%` no mobile para CTAs principais;
+- `buttonMinTouch`: garante `min-height` confortável;
+- `buttonTextStrong`: define peso, tamanho e line-height do texto do botão;
+- `buttonFormSubmit`: variação mais forte para submit do formulário.
+
 Toda imagem de produto/prova deve ter classes para:
 - `width: 100%`;
 - `max-width: 100%`;
@@ -244,6 +277,10 @@ Crie e aplique, quando apropriado:
 - `imgFluid`
 - `buttonPrimaryPremium`
 - `buttonSecondaryGhost`
+- `buttonFullMobile`
+- `buttonMinTouch`
+- `buttonTextStrong`
+- `buttonFormSubmit`
 - `formShell`
 - `mediaFrame`
 
@@ -261,7 +298,12 @@ Rejeite e gere novamente se o JSON produzir:
 - seções consecutivas sem contraste;
 - Hero sem prova visual forte;
 - Preview/prova sem força de produto;
-- CTA primário sem aparência de botão.
+- CTA primário sem aparência de botão;
+- CTA com menos de 44px de altura visual;
+- botão primário parecendo uma barra fina;
+- botão submit menor ou mais fraco que CTAs secundários;
+- texto de botão com tamanho visual menor que o corpo da página;
+- CTA secundário renderizado como link comum.
 
 # Quality gate interno
 
@@ -274,7 +316,10 @@ Garanta que:
 - Hero, Prova e Formulário não usem o mesmo tratamento visual;
 - Formulário seja o bloco mais acionável;
 - Preview pareça uma vitrine do produto;
-- FAQ seja legível e mais calmo.
+- FAQ seja legível e mais calmo;
+- todos os CTAs tenham área de toque confortável, contraste alto e aparência de botão real;
+- o botão principal da primeira dobra seja imediatamente reconhecível como a próxima ação;
+- o botão do formulário seja visualmente mais forte que qualquer link ou botão secundário da mesma seção.
 
 # Formato esperado de saída
 

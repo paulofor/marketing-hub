@@ -44,10 +44,11 @@ describe("OPRM navigation", () => {
 
   it("renders Pipeline page on /oprm/pipeline route", () => {
     setup(<App />, ["/oprm/pipeline"]);
-    expect(screen.getByText(/^Pipeline OPRM$/)).toBeTruthy();
-    expect(screen.getByText(/^Ingestão de Mercado$/)).toBeTruthy();
-    expect(screen.getByText(/^Score OPRM$/)).toBeTruthy();
-    expect(screen.getByText(/^Enriquecimento Comercial$/)).toBeTruthy();
+    expect(screen.getByText(/^Pipeline NichoCNAE$/)).toBeTruthy();
+    expect(screen.getByText(/^Orquestrador de Pesquisa$/)).toBeTruthy();
+    expect(screen.getByText(/^Ciclo de Pesquisa de Rotina$/)).toBeTruthy();
+    expect(screen.getByText(/^Seed de Pesquisa do Nicho$/)).toBeTruthy();
+    expect(screen.getByText(/^Gate de Qualidade$/)).toBeTruthy();
   });
 
   it("renders loading state on /oprm/operations route", async () => {

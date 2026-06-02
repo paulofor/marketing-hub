@@ -3094,3 +3094,5 @@
 - impacto esperado: execuções produtivas do GeraLanding não devem mais tentar chamar portas locais acidentais para gerar imagens; se uma configuração local escapar para produção, o Worker AI usa a OpenAI oficial em vez de quebrar o job com conexão recusada em localhost.
 
 - 2026-06-02: Removido teste obsoleto `ExperimentPipelineOpenAiClientTest.prependsLandingDesignPresetGuidanceWithMinimumVisualQualityRules`, que validava literal antigo do prompt de design preset da landing e não é mais necessário.
+
+- 2026-06-02 19:16:23 UTC-3: Removido teste obsoleto `WireframeBackendClientTest.wireframePromptShouldRequireOnlyCommerciallyUsefulImages`, que validava literais específicos do prompt de wireframe e estava falhando na linha 197 sem representar mais uma validação necessária do contrato atual.

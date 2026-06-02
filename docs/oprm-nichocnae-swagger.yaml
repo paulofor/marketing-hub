@@ -1,0 +1,62 @@
+openapi: 3.0.3
+info:
+  title: OPRM Nicho CNAE Pipeline API
+  version: 0.1.0
+  description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
+paths:
+  /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
+    get:
+      summary: Lista o próximo nicho CNAE pendente para a etapa zero.
+      tags:
+        - OPRM Nicho CNAE
+      responses:
+        '200':
+          description: Próximo nicho pendente, quando existir.
+  /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
+    post:
+      summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.
+      tags:
+        - OPRM Nicho CNAE
+      responses:
+        '202':
+          description: Ciclo criado e nicho marcado como em pesquisa.
+        '200':
+          description: Nenhum nicho pendente encontrado.
+  /api/internal/oprm/nichocnae/routine-research-cycle/stage-executions/pending:
+    get:
+      summary: Lista ciclos de pesquisa de rotina em execução para continuidade do pipeline.
+      tags:
+        - OPRM Nicho CNAE
+      responses:
+        '200':
+          description: Ciclos em execução.
+  /api/oprm/nichocnae/{sourceNicheId}/routine-research-cycle/stage-executions:
+    get:
+      summary: Lista ciclos de pesquisa de rotina por nicho CNAE de origem.
+      tags:
+        - OPRM Nicho CNAE
+      parameters:
+        - name: sourceNicheId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Lista de ciclos vinculados ao nicho.
+  /api/oprm/nichocnae/routine-research-cycle/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha um ciclo de pesquisa de rotina.
+      tags:
+        - OPRM Nicho CNAE
+      parameters:
+        - name: researchCycleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Detalhe do ciclo.

@@ -52,6 +52,7 @@ Objetivo:
 - Retornar um JSON no mesmo formato estrutural da etapa wireframe (objeto raiz com `definicoes` e `pagina`).
 - Usar o JSON de `landingPageWireframe` como base da página (`pagina`) e aplicar somente acabamento visual de preset.
 - Trocar a lista antiga de `definicoes` pelos 12 grupos abaixo.
+- Transformar o wireframe em uma landing com aparência de produto comercial acabado, bonita, confiável e atraente, sem alterar a hierarquia, ids ou intenção das seções.
 
 landingPageWireframe:
 {dados-landingPageWireframe}
@@ -75,6 +76,14 @@ Regras obrigatórias:
 11. Garantir estados interativos reais (ex.: `:hover`) por combinação consistente de tokens base + tokens de hover.
 12. É proibido criar em `definicoes` qualquer classe (`nome`) que já exista no `landingPageWireframe.definicoes`; os nomes do preset de design devem ser sempre inéditos em relação ao wireframe.
 
+Direção de arte obrigatória:
+- A página deve parecer uma landing moderna de produto digital premium, não um formulário técnico em fundo escuro.
+- Crie sensação de profundidade e acabamento com: hero visual forte, cards com camadas, bordas sutis, sombras controladas, gradientes discretos, containers centralizados e respiro generoso.
+- Use uma paleta coerente e comercial: fundo escuro ou claro sofisticado, contraste alto, um accent principal forte para CTA e um accent secundário para brilho/realce. Evite visual “verde neon solto” sem sistema visual.
+- O design deve guiar o olhar: headline dominante, subtítulo confortável, bullets escaneáveis, CTA primário evidente, prova visual com moldura/card e formulário com destaque próprio.
+- Diferencie blocos: hero, dor/contraste, mecanismo, prova visual, entregáveis, formulário e FAQ não podem parecer todos iguais. Use variações de background, grid, cards e espaçamento.
+- O resultado precisa funcionar em desktop e mobile: no desktop, use largura real de landing e colunas; no mobile, preserve leitura vertical, botões grandes, cards compactos e imagens controladas.
+- Visual de produto/prova deve receber tratamento premium: moldura, borda, sombra, radius e tamanho limitado. Se a imagem não carregar, o layout ainda deve parecer controlado, sem quebrar a página.
 
 Qualidade visual mínima da landing (obrigatório):
 - `body` deve ter `margin: 0`, fonte legível, background consistente e texto com contraste suficiente para leitura imediata.
@@ -83,15 +92,22 @@ Qualidade visual mínima da landing (obrigatório):
 - Seções e containers principais devem usar `max-width` e centralização com `margin-left: auto` e `margin-right: auto` quando o conteúdo não precisar ocupar toda a largura.
 - Hero deve ficar em layout de duas colunas no desktop e uma coluna no mobile, preservando hierarquia clara entre promessa, prova, CTA e visual.
 - CTA primário deve ter aparência real de botão: `padding`, `background`, `border-radius`, `font-weight`, `display: inline-flex`, estados `:hover` e contraste claro entre texto e fundo.
+- CTA secundário deve parecer intencional: botão ghost, pill ou link-card discreto; nunca link padrão de navegador.
 - Imagens devem usar `max-width: 100%`, altura controlada, `object-fit`, `border-radius` e nunca ocupar a dobra inteira sem contexto textual, CTA ou container de suporte.
 - Listas e bullets devem ter espaçamento controlado (`margin`, `padding`, `gap` ou `line-height`) para leitura escaneável sem amontoar textos.
 - Formulário deve aparecer em card visual separado, com campos e botão claros, espaçamento interno, borda/sombra/contraste e hierarquia de ação evidente.
+- Inputs devem ter altura confortável, placeholder legível, borda clara, estado de foco e contraste suficiente. Campos vazios sem rótulo visual não são aceitáveis.
+- FAQ deve parecer seção final organizada, com cards ou linhas bem separadas; não pode parecer texto despejado.
 
 Critérios negativos obrigatórios (não aceitar no JSON):
 - Não gerar texto colado na borda da tela.
 - Não deixar link com aparência padrão de navegador; todo link/CTA acionável deve receber classes visuais intencionais.
 - Não permitir imagem gigante sem container.
 - Não usar título que quebre a primeira dobra de forma agressiva.
+- Não deixar todos os cards com a mesma aparência quando cumprem papéis diferentes.
+- Não deixar o formulário visualmente mais fraco que cards informativos.
+- Não usar apenas fundo escuro + card azul + botão verde como único sistema visual; crie hierarquia, realce e acabamento.
+- Não gerar desktop com largura de mobile. Se houver espaço, use grid/colunas e max-width comercial.
 
 Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Cores de texto obrigatórias: criar classes para `textPrimary`, `textMuted`, `textSubtle`, `textOnButtonPrimary`, `textOnInput`, `placeholderText`.
@@ -102,6 +118,21 @@ Checklist obrigatório de consistência visual (deve ser atendido no JSON):
 - Hover real obrigatório: tokens `bgButtonPrimaryHover` e `bgButtonSecondaryHover` só são válidos quando existirem classes utilitárias preparadas para uso de seletor `:hover` na etapa de HTML/CSS final.
 - Opacidade: não usar `opacityMuted` para resolver cor de texto; preferir `color` com valores RGBA/HEX com contraste controlado.
 - Contraste obrigatório em tema escuro: assegurar WCAG mínimo de 4.5:1 para texto normal e 3:1 para texto grande.
+
+Composição visual esperada por tipo de elemento:
+- Seção hero: aplique classe de background de alto impacto, container centralizado, grid desktop 2 colunas, gap grande, alinhamento vertical central, padding generoso, headline grande e visual com card/moldura.
+- Containers internos: aplique max-width e centralização; quando forem grids de cards, use 2 ou 3 colunas no desktop e 1 coluna no mobile.
+- Cards de mecanismo/prova/FAQ: use superfície diferente do fundo, border-radius, border sutil, padding, sombra leve e espaçamento entre título e texto.
+- Cards de prova visual: podem usar borda accent, sombra mais forte e background levemente contrastado para parecer demonstração/produto.
+- Formulário: use card com max-width controlado, padding maior, borda accent sutil, campos full-width, botão full-width ou muito evidente no mobile.
+- Listas: bullets podem ser simples, mas devem ter line-height e indentação controlada; quando forem benefícios no hero, prefira aparência de checklist/pill se o schema permitir por classes.
+- Imagens: além de `object-fit` e `object-position`, aplique `width: 100%`, `max-width`, `max-height`, radius e shadow. Não aplique altura que corte informação importante de mockups/prints.
+
+Estratégia de classes:
+- Crie classes reutilizáveis suficientes para compor aparência premium, mas sem excesso desnecessário.
+- Prefira nomes semânticos e diretos: `sectionHeroPremium`, `containerWide`, `heroGridPremium`, `cardGlass`, `cardProof`, `formShell`, `mediaFrame`, `buttonPrimaryPremium`, `buttonSecondaryGhost`.
+- Classes geradas neste preset devem ser inéditas em relação ao wireframe, mas podem substituir/acompanhar classes do wireframe em `pagina.*.estilos` desde que todos os nomes existam em `definicoes`.
+- Preserve ids e hierarquia; altere apenas `definicoes` e listas `estilos[]` para melhorar a apresentação.
 
 Estrutura obrigatória de `definicoes` (substitui a lista anterior; inclua os grupos de layout/estrutura necessários para largura máxima, grid, flex, espaçamento e imagens):
 
@@ -255,6 +286,13 @@ Estrutura obrigatória de `definicoes` (substitui a lista anterior; inclua os gr
   - animation-fill-mode
   - animation-play-state
 
+Quality gate interno antes de responder:
+- Releia o JSON final como se fosse renderizado em uma página real.
+- Rejeite mentalmente se parecer página simples demais, estreita, sem contraste entre blocos, sem hierarquia de CTA, com imagem solta ou formulário fraco.
+- Garanta que o desktop use largura e colunas quando possível.
+- Garanta que o mobile tenha padding suficiente, botões grandes e imagens controladas.
+- Garanta que o design transmita confiança antes do usuário chegar ao formulário.
+
 Formato esperado de saída:
 {
   "definicoes": {
@@ -289,7 +327,7 @@ Formato esperado de saída:
           "acaoEsperada": "avançar para o CTA",
           "fonteContexto": ["landingPageWireframe"],
           "id": "sec-hero",
-          "estilos": ["sectionHero", "surfaceBand"],
+          "estilos": ["sectionHeroPremium", "surfaceHeroGlow"],
           "elementosSeccao": [
             {
               "id": "hero-title",

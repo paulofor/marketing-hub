@@ -29,7 +29,7 @@ Ele não substitui o OPRM nem o MDS:
    - separa infraestrutura de pesquisa de domínio de ofertas
    - evita duplicação prematura de capacidades já existentes
 
-4. `openapi_mois_backend_stub.yaml`
+4. `docs/swagger/openapi_mois_backend_stub.yaml`
    - stub OpenAPI inicial
    - contrato-base para o backend e consumidores internos
    - serve como ponto de partida para implementação pelo Codex

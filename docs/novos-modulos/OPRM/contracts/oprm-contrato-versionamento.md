@@ -8,7 +8,7 @@ Definir a estratégia mínima de versionamento do contrato HTTP entre backend pr
 
 - Série inicial: **v1**
 - Valor de contrato no payload: `contractVersion: "1.0"`
-- Documento canônico OpenAPI da série: `docs/novos-modulos/OPRM/contracts/oprm-backend-integration-openapi.v1.yaml`
+- Documento canônico OpenAPI da série: `docs/swagger/oprm-backend-integration-openapi.v1.yaml`
 
 ## 3. Regras de compatibilidade
 

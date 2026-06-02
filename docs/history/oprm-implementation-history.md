@@ -264,7 +264,7 @@ Foi concluída a preparação de finalização operacional do OPRM para publica�
 **Status:** concluído
 
 **Resumo:**  
-Foi realizado o alinhamento dos endpoints OPRM do backend principal para aderir ao contrato de `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`, padronizando códigos HTTP de erro para payload inválido, resposta de conflito no claim de job e retorno `404` em workspaces sem artefatos.
+Foi realizado o alinhamento dos endpoints OPRM do backend principal para aderir ao contrato de `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`, padronizando códigos HTTP de erro para payload inválido, resposta de conflito no claim de job e retorno `404` em workspaces sem artefatos.
 
 **O que foi implementado:**  
 - ajuste do fluxo de claim para retornar conflito explícito (`409`) quando houver disputa de lock no job pendente
@@ -281,7 +281,7 @@ Foi realizado o alinhamento dos endpoints OPRM do backend principal para aderir 
 - `backend/ads-service/src/main/java/com/marketinghub/oprm/repository/OprmArtifactRepository.java`
 
 **Contratos / artefatos afetados:**  
-- endpoints do contrato `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`:
+- endpoints do contrato `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`:
   - `POST /api/oprm/jobs/claim`
   - `GET /api/oprm/workspace/routine/{occupationSeedRef}`
   - `GET /api/oprm/workspace/insights/{occupationSeedRef}`
@@ -348,7 +348,7 @@ Foi consolidado o contrato oficial de integração da Sprint 1 entre backend pri
 - atualização do README do módulo com links oficiais de contrato da Sprint 1
 
 **Arquivos principais alterados:**
-- `docs/novos-modulos/OPRM/contracts/oprm-backend-integration-openapi.v1.yaml`
+- `docs/swagger/oprm-backend-integration-openapi.v1.yaml`
 - `docs/novos-modulos/OPRM/contracts/oprm-contrato-versionamento.md`
 - `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmContractVersion.java`
 - `oprm/src/main/java/com/marketinghub/oprm/integration/contract/OprmJobClaimRequest.java`
@@ -868,22 +868,22 @@ Foi criado um Swagger consolidado em `docs/novos-modulos/OPRM` com todos os endp
 - padronização de schemas de enum (`OprmJobType`, `OprmJobStatus`, `OprmArtifactStatus`) alinhados ao backend
 
 **Arquivos principais alterados:**
-- `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`
 - `docs/history/oprm-implementation-history.md`
 
 **Contratos / artefatos afetados:**
-- contrato OpenAPI consolidado: `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- contrato OpenAPI consolidado: `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`
 - endpoints `POST /api/oprm/jobs`, `POST /api/oprm/jobs/claim`, `GET /api/oprm/jobs/workspace/occupations`, `GET /api/oprm/jobs/{jobId}`, `POST /api/oprm/jobs/{jobId}/status`
 - endpoints `POST /api/oprm/artifacts`, `GET /api/oprm/artifacts`
 - endpoints `GET /api/oprm/workspace/routine/{occupationSeedRef}`, `GET /api/oprm/workspace/insights/{occupationSeedRef}`
 - endpoints `POST /api/oprm/feedback`, `GET /api/oprm/feedback/history`, `POST /api/oprm/heartbeat`
 
 **Testes executados:**
-- `ruby -e "require 'yaml'; YAML.safe_load_file('docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml')"` — **passou**
+- `ruby -e "require 'yaml'; YAML.safe_load_file('docs/swagger/oprm-backend-required-endpoints.swagger.yaml')"` — **passou**
 - `git diff --check` — **passou**
 
 **Limitações ou pendências:**
-- o novo Swagger consolidado não substitui automaticamente o contrato Sprint 1 em `docs/novos-modulos/OPRM/contracts/oprm-backend-integration-openapi.v1.yaml`; a estratégia de unificação/versionamento deve ser decidida
+- o novo Swagger consolidado não substitui automaticamente o contrato Sprint 1 em `docs/swagger/oprm-backend-integration-openapi.v1.yaml`; a estratégia de unificação/versionamento deve ser decidida
 - validação semântica completa contra consumidores reais (worker/frontend) depende de teste de contrato em pipeline CI
 
 **Próximo passo sugerido:**
@@ -935,11 +935,11 @@ Foi atualizada a documentação OpenAPI de endpoints obrigatórios do backend OP
 - atualização de exemplos de versão de contrato (`1.1.0`) e campo de persona com exemplo em português
 
 **Arquivos principais alterados:**
-- `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`
 - `docs/history/oprm-implementation-history.md`
 
 **Contratos / artefatos afetados:**
-- contrato OpenAPI: `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- contrato OpenAPI: `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`
 - nenhum endpoint novo; apenas adaptação textual e de documentação
 
 **Testes executados:**
@@ -984,7 +984,7 @@ Foi implementado o gerenciamento completo de ocupações do OPRM com CRUD no bac
 - `frontend/src/App.tsx`
 - `frontend/src/__tests__/OprmNavigation.test.tsx`
 - `docs/modelo-dados-experimento.md`
-- `docs/novos-modulos/OPRM/oprm-backend-required-endpoints.swagger.yaml`
+- `docs/swagger/oprm-backend-required-endpoints.swagger.yaml`
 
 **Contratos / artefatos afetados:**
 - endpoints novos: `GET /api/oprm/occupations`, `POST /api/oprm/occupations`, `PUT /api/oprm/occupations/{occupationId}`, `DELETE /api/oprm/occupations/{occupationId}`

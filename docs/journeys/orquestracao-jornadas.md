@@ -3,9 +3,9 @@
 ## Visão geral
 O Marketing Hub modela jornadas em três camadas complementares:
 
-1. **Blueprint** — Templates descrevem fases, passos e preferências de canal que orientam a estratégia.【F:docs/openapi.yaml†L377-L480】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyTemplate.java†L11-L72】
-2. **Instância operacional** — Jornadas materializam um template para um segmento específico com janela de execução e metadados de segmentação.【F:docs/openapi.yaml†L604-L724】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/Journey.java†L13-L79】
-3. **Vínculo com o público** — Atribuições conectam leads ou segmentos às jornadas e guardam o contexto usado para disparar estímulos.【F:docs/openapi.yaml†L725-L806】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignment.java†L12-L82】
+1. **Blueprint** — Templates descrevem fases, passos e preferências de canal que orientam a estratégia.【F:docs/swagger/openapi.yaml†L377-L480】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyTemplate.java†L11-L72】
+2. **Instância operacional** — Jornadas materializam um template para um segmento específico com janela de execução e metadados de segmentação.【F:docs/swagger/openapi.yaml†L604-L724】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/Journey.java†L13-L79】
+3. **Vínculo com o público** — Atribuições conectam leads ou segmentos às jornadas e guardam o contexto usado para disparar estímulos.【F:docs/swagger/openapi.yaml†L725-L806】【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyAssignment.java†L12-L82】
 
 Sobre esses modelos atua um motor de execução que avalia condições, respeita limites de frequência e despacha estímulos canalizados, registrando telemetria e eventos canônicos para monitorar respostas.【F:backend/ads-service/src/main/java/com/marketinghub/journey/execution/JourneyExecutionService.java†L28-L347】【F:backend/ads-service/src/main/java/com/marketinghub/journey/execution/TelemetryService.java†L26-L198】
 
@@ -28,10 +28,10 @@ Sobre esses modelos atua um motor de execução que avalia condições, respeita
 * Valores monetários e carimbo de ocorrência permitem reconciliar respostas (conversões, compras) com estímulos disparados.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/EventLog.java†L31-L44】
 
 ## APIs expostas
-* **Templates de jornada** — CRUD completo em `/api/journey-templates` para blueprinting e manutenção de passos.【F:docs/openapi.yaml†L377-L606】
-* **Jornadas operacionais** — CRUD em `/api/journeys`, filtragem por template/status, métricas agregadas em `/api/journeys/metrics` e vinculação a nichos/experimentos.【F:docs/openapi.yaml†L604-L724】【F:docs/openapi.yaml†L724-L732】
-* **Atribuições** — Paginação e criação em lote de vínculos via `/api/journeys/{id}/assignments`, aceitando leads, segmentos e contexto serializado.【F:docs/openapi.yaml†L725-L806】【F:backend/ads-service/src/main/java/com/marketinghub/journey/dto/JourneyAssignmentRequest.java†L11-L18】
-* **Eventos multicanal** — Ingestão unificada em `/api/events`, validando jornada/passo e persistindo com `occurredAt` customizável.【F:docs/openapi.yaml†L808-L836】【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/EventLogService.java†L40-L84】
+* **Templates de jornada** — CRUD completo em `/api/journey-templates` para blueprinting e manutenção de passos.【F:docs/swagger/openapi.yaml†L377-L606】
+* **Jornadas operacionais** — CRUD em `/api/journeys`, filtragem por template/status, métricas agregadas em `/api/journeys/metrics` e vinculação a nichos/experimentos.【F:docs/swagger/openapi.yaml†L604-L724】【F:docs/swagger/openapi.yaml†L724-L732】
+* **Atribuições** — Paginação e criação em lote de vínculos via `/api/journeys/{id}/assignments`, aceitando leads, segmentos e contexto serializado.【F:docs/swagger/openapi.yaml†L725-L806】【F:backend/ads-service/src/main/java/com/marketinghub/journey/dto/JourneyAssignmentRequest.java†L11-L18】
+* **Eventos multicanal** — Ingestão unificada em `/api/events`, validando jornada/passo e persistindo com `occurredAt` customizável.【F:docs/swagger/openapi.yaml†L808-L836】【F:backend/ads-service/src/main/java/com/marketinghub/journey/service/EventLogService.java†L40-L84】
 
 ## Experiência no Marketing Hub
 * A nova navegação lateral traz o item "Jornadas" com acesso direto à visão geral, criação rápida e templates, reforçando a descoberta das funcionalidades de orquestração.【F:frontend/src/components/MainNavigation.tsx†L34-L118】
@@ -86,7 +86,7 @@ O formulário reutilizável é dividido em seções para nome/template, janela e
 ## Tipos de estímulo e eventos canônicos
 * Estímulos suportados: anúncios pagos, email, WhatsApp, landing pages, instant forms, fluxos de lead portal com envio de imagem, vitrines de imagem e páginas de pagamento.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyStimulusType.java†L3-L15】
 * Eventos emitidos pelo motor: disparo, falha, pulo por condição, bloqueio por frequência e conclusão da jornada.【F:backend/ads-service/src/main/java/com/marketinghub/journey/model/JourneyEventType.java†L4-L20】
-* A API de eventos permite registrar respostas correlatas (ex.: conversões) usando `eventType` customizado e `value` monetário quando aplicável.【F:backend/ads-service/src/main/java/com/marketinghub/journey/dto/EventLogRequest.java†L11-L20】【F:docs/openapi.yaml†L808-L824】
+* A API de eventos permite registrar respostas correlatas (ex.: conversões) usando `eventType` customizado e `value` monetário quando aplicável.【F:backend/ads-service/src/main/java/com/marketinghub/journey/dto/EventLogRequest.java†L11-L20】【F:docs/swagger/openapi.yaml†L808-L824】
 
 ## Configuração operacional
 * Propriedades ajustáveis permitem calibrar cadência (`pollInterval`), throughput (`batchSize`) e limites de exposição (`perDay`, `perWeek`, `cooldown`).【F:backend/ads-service/src/main/java/com/marketinghub/journey/execution/JourneyExecutionProperties.java†L23-L47】

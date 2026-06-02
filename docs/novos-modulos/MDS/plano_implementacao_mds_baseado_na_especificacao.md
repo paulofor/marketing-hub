@@ -380,7 +380,7 @@ Preparar o backend para ser o centro de persistência e orquestração do MDS.
 - Implementar testes de contrato backend ↔ módulo MDS em execução ponta a ponta.
 
 **Riscos / observações:**
-- O contrato OpenAPI de stub em `openapi_mds_backend_stub.yaml` descreve rotas do serviço MDS, enquanto Sprint 1 focou rotas internas no backend para orquestração e persistência.
+- O contrato OpenAPI de stub em `docs/swagger/openapi_mds_backend_stub.yaml` descreve rotas do serviço MDS, enquanto Sprint 1 focou rotas internas no backend para orquestração e persistência.
 - A tabela `source_access_record` foi criada para aderência ao artefato canônico, mas o preenchimento operacional ficará para as sprints com busca em fontes externas.
 
 **Arquivos alterados/criados:**

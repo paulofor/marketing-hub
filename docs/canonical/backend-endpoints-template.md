@@ -2,6 +2,12 @@
 
 > Objetivo: documentar somente o essencial de cada endpoint.
 
+## Local do contrato Swagger/OpenAPI
+
+- Todo arquivo Swagger/OpenAPI deve ser criado e mantido em `docs/swagger`.
+- Use nome do módulo ou integração no arquivo, por exemplo `docs/swagger/<modulo>-swagger.yaml`.
+- Este template textual pode orientar a escrita, mas o contrato versionado deve ficar na pasta centralizada.
+
 ## Informações da API
 
 - **Módulo**: `<MOIS | OPRM | MDS | CORE | ...>`

@@ -24,7 +24,7 @@
 | `avatar-sales-video-implementation-plan-v2.md` | Médio | Manter fora | Planejamento incremental, não especificação funcional final. |
 | `avatar-sales-video-implementation-plan-v3.md` | Médio | Manter fora | Planejamento incremental, não especificação funcional final. |
 | `avatar-sales-video-implementation-plan.md` | Médio | Manter fora | Planejamento incremental, não especificação funcional final. |
-| `avatar-sales-video-integration-swagger.yaml` | Médio | Manter fora | Contratos de integração úteis, mas menos direto para personagem/conteúdo. |
+| `docs/swagger/avatar-sales-video-integration-swagger.yaml` | Médio | Manter fora | Contratos de integração úteis, mas menos direto para personagem/conteúdo. |
 | `avatar-sales-video-restart-plan.md` | Médio | Manter fora | Foco em retomada de execução por sprint. |
 | `avatar-scene-composition-spec.md` | Alto | **Movido para `melhores`** | Define como o avatar aparece/fala visualmente com qualidade técnica. |
 | `ini.md` | Baixo | Manter fora | Sem conteúdo útil. |

@@ -1,0 +1,1156 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Backend - GeraLanding API
+  version: v1.2.0
+  description: |
+    Contrato canônico dos endpoints HTTP implementados no backend `ads-service`
+    para o módulo GeraLanding.
+
+    Fonte de verdade revisada em código em 2026-06-02:
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/web/GeraLandingCopyController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/imagegeneration/web/BackendImageGenerationController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/presetdesign/web/BackendPresetDesignController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/publiclanding/web/BackendPublicLandingController.java`
+
+    Este arquivo é o Swagger/OpenAPI canônico do GeraLanding. Arquivos operacionais
+    duplicados fora de `docs/canonical` devem ser considerados obsoletos quando divergirem
+    deste contrato.
+servers:
+  - url: http://191.252.181.168
+    description: Backend principal para acessos executados pelo Codex
+  - url: http://191.252.181.168:8000
+    description: Backend principal documentado para operação externa
+tags:
+  - name: landing-page-wireframe
+    description: Etapa de geração do wireframe da landing.
+  - name: landing-page-copy
+    description: Etapa de geração da copy da landing.
+  - name: landing-page-image-planning
+    description: Etapa de planejamento dos prompts de imagem.
+  - name: landing-page-image-generation
+    description: Etapa de geração dos assets de imagem.
+  - name: landing-page-design-preset
+    description: Etapa de preset visual da landing.
+  - name: landing-page-deliverables
+    description: Etapa de empacotamento dos entregáveis da landing.
+  - name: landing-page-publication
+    description: Aprovação e publicação da landing final.
+paths:
+  /api/experiments/{experimentId}/geralanding/wireframe/start:
+    post:
+      tags: [landing-page-wireframe]
+      summary: Inicia manualmente a etapa landing-page-wireframe.
+      operationId: startGeraLandingWireframeExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução inicial registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/wireframe/stage-executions:
+    get:
+      tags: [landing-page-wireframe]
+      summary: Lista execuções da etapa landing-page-wireframe.
+      operationId: listGeraLandingWireframeExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/wireframe/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-wireframe]
+      summary: Detalha uma execução da etapa landing-page-wireframe.
+      operationId: detailGeraLandingWireframeExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
+  /api/internal/geralanding/wireframe/stage-executions/pending:
+    get:
+      tags: [landing-page-wireframe]
+      summary: Lista jobs pendentes da etapa landing-page-wireframe.
+      operationId: pendingGeraLandingWireframeExecutions
+      responses:
+        '200':
+          $ref: '#/components/responses/PendingStageExecutionList'
+  /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-wireframe]
+      summary: Recebe prompt, schema e request bruto enviados para IA na etapa wireframe.
+      operationId: recebePromptGeraLandingWireframeExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiPromptDispatch'
+      responses:
+        '202':
+          description: Prompt recebido e execução marcada como aguardando retorno da OpenAI.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/wireframe/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-wireframe]
+      summary: Recebe resposta da IA para a etapa wireframe.
+      operationId: recebeRespostaGeraLandingWireframeExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resposta recebida e execução concluída ou marcada como falha.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
+  /api/experiments/{experimentId}/geralanding/copy/start:
+    post:
+      tags: [landing-page-copy]
+      summary: Inicia manualmente a etapa landing-page-copy.
+      operationId: startGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução inicial registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/copy/stage-executions:
+    get:
+      tags: [landing-page-copy]
+      summary: Lista execuções da etapa landing-page-copy.
+      operationId: listGeraLandingCopyExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/copy/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-copy]
+      summary: Detalha uma execução da etapa landing-page-copy.
+      operationId: detailGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
+  /api/internal/geralanding/copy/stage-executions/pending:
+    get:
+      tags: [landing-page-copy]
+      summary: Lista jobs pendentes da etapa landing-page-copy.
+      operationId: pendingGeraLandingCopyExecutions
+      responses:
+        '200':
+          $ref: '#/components/responses/PendingStageExecutionList'
+  /api/internal/geralanding/copy/stage-executions/{idJob}/receive-prompt:
+    post:
+      tags: [landing-page-copy]
+      summary: Alias legado que recebe prompt da IA para a etapa copy.
+      operationId: receivePromptGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/PromptReceiveDirect'
+      responses:
+        '202':
+          description: Prompt recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/copy/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-copy]
+      summary: Recebe prompt, schema e request bruto enviados para IA na etapa copy.
+      operationId: recebePromptGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiPromptDispatchWithExperiment'
+      responses:
+        '202':
+          description: Prompt recebido e execução marcada como aguardando retorno da OpenAI.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/copy/stage-executions/{idJob}/receive-dispatch:
+    post:
+      tags: [landing-page-copy]
+      summary: Alias legado que marca dispatch OpenAI para a etapa copy.
+      operationId: receiveDispatchGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiDispatchMarker'
+      responses:
+        '202':
+          description: Dispatch recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/copy/stage-executions/{idJob}/receive-result:
+    post:
+      tags: [landing-page-copy]
+      summary: Alias legado que recebe resultado da IA para a etapa copy.
+      operationId: receiveResultGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resultado recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/copy/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-copy]
+      summary: Recebe resposta da IA para a etapa copy.
+      operationId: recebeRespostaGeraLandingCopyExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resposta recebida e execução concluída ou marcada como falha.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
+  /api/experiments/{experimentId}/geralanding/image-prompts/start:
+    post:
+      tags: [landing-page-image-planning]
+      summary: Inicia manualmente a etapa landing-page-image-planning.
+      operationId: startGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução inicial registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/image-prompts/stage-executions:
+    get:
+      tags: [landing-page-image-planning]
+      summary: Lista execuções da etapa landing-page-image-planning.
+      operationId: listGeraLandingImagePlanningExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/image-prompts/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-image-planning]
+      summary: Detalha uma execução da etapa landing-page-image-planning.
+      operationId: detailGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
+  /api/internal/geralanding/image-prompts/stage-executions/pending:
+    get:
+      tags: [landing-page-image-planning]
+      summary: Lista jobs pendentes da etapa landing-page-image-planning.
+      operationId: pendingGeraLandingImagePlanningExecutions
+      responses:
+        '200':
+          $ref: '#/components/responses/PendingStageExecutionList'
+  /api/internal/geralanding/image-prompts/stage-executions/{idJob}/receive-prompt:
+    post:
+      tags: [landing-page-image-planning]
+      summary: Alias legado que recebe prompt da IA para planejamento de imagem.
+      operationId: receivePromptGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/PromptReceiveDirect'
+      responses:
+        '202':
+          description: Prompt recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/image-prompts/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-image-planning]
+      summary: Recebe prompt, schema e request bruto enviados para IA no planejamento de imagem.
+      operationId: recebePromptGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiPromptDispatchWithExperiment'
+      responses:
+        '202':
+          description: Prompt recebido e execução marcada como aguardando retorno da OpenAI.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/image-prompts/stage-executions/{idJob}/receive-dispatch:
+    post:
+      tags: [landing-page-image-planning]
+      summary: Alias legado que marca dispatch OpenAI para planejamento de imagem.
+      operationId: receiveDispatchGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiDispatchMarker'
+      responses:
+        '202':
+          description: Dispatch recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/image-prompts/stage-executions/{idJob}/receive-result:
+    post:
+      tags: [landing-page-image-planning]
+      summary: Alias legado que recebe resultado da IA para planejamento de imagem.
+      operationId: receiveResultGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResultWithProvisionalHtml'
+      responses:
+        '202':
+          description: Resultado recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/image-prompts/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-image-planning]
+      summary: Recebe resposta da IA para planejamento de imagem.
+      operationId: recebeRespostaGeraLandingImagePlanningExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResultWithProvisionalHtml'
+      responses:
+        '202':
+          description: Resposta recebida e execução concluída ou marcada como falha.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
+  /api/experiments/{experimentId}/geralanding/image-generation/start:
+    post:
+      tags: [landing-page-image-generation]
+      summary: Inicia manualmente a etapa landing-page-image-generation.
+      operationId: startGeraLandingImageGenerationExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução inicial registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/image-generation/stage-executions:
+    get:
+      tags: [landing-page-image-generation]
+      summary: Lista execuções da etapa landing-page-image-generation.
+      operationId: listGeraLandingImageGenerationExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/image-generation/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-image-generation]
+      summary: Detalha uma execução da etapa landing-page-image-generation.
+      operationId: detailGeraLandingImageGenerationExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
+  /api/internal/geralanding/image-generation/stage-executions/pending:
+    get:
+      tags: [landing-page-image-generation]
+      summary: Lista jobs pendentes da etapa landing-page-image-generation.
+      operationId: pendingGeraLandingImageGenerationExecutions
+      responses:
+        '200':
+          $ref: '#/components/responses/PendingStageExecutionList'
+  /api/internal/geralanding/image-generation/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-image-generation]
+      summary: Recebe prompt, schema e request bruto enviados para IA na geração de imagem.
+      operationId: recebePromptGeraLandingImageGenerationExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiPromptDispatch'
+      responses:
+        '202':
+          description: Prompt recebido e execução marcada como aguardando retorno da OpenAI.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/image-generation/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-image-generation]
+      summary: Recebe resposta da IA para geração de imagem.
+      operationId: recebeRespostaGeraLandingImageGenerationExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resposta recebida e execução concluída ou marcada como falha.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
+  /api/experiments/{experimentId}/geralanding/design-preset/start:
+    post:
+      tags: [landing-page-design-preset]
+      summary: Inicia manualmente a etapa landing-page-design-preset.
+      operationId: startGeraLandingDesignPresetExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução inicial registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/design-preset/stage-executions:
+    get:
+      tags: [landing-page-design-preset]
+      summary: Lista execuções da etapa landing-page-design-preset.
+      operationId: listGeraLandingDesignPresetExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/design-preset/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-design-preset]
+      summary: Detalha uma execução da etapa landing-page-design-preset.
+      operationId: detailGeraLandingDesignPresetExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
+  /api/internal/geralanding/design-preset/stage-executions/pending:
+    get:
+      tags: [landing-page-design-preset]
+      summary: Lista jobs pendentes da etapa landing-page-design-preset.
+      operationId: pendingGeraLandingDesignPresetExecutions
+      responses:
+        '200':
+          $ref: '#/components/responses/PendingStageExecutionList'
+  /api/internal/geralanding/design-preset/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-design-preset]
+      summary: Recebe prompt, schema e request bruto enviados para IA no preset de design.
+      operationId: recebePromptGeraLandingDesignPresetExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiPromptDispatch'
+      responses:
+        '202':
+          description: Prompt recebido e execução marcada como aguardando retorno da OpenAI.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/design-preset/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-design-preset]
+      summary: Recebe resposta da IA para preset de design.
+      operationId: recebeRespostaGeraLandingDesignPresetExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resposta recebida e execução concluída ou marcada como falha.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
+  /api/experiments/{experimentId}/geralanding/deliverables/start:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Inicia manualmente a etapa landing-page-deliverables.
+      operationId: startGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Execução inicial registrada para processamento assíncrono.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/deliverables/stage-executions:
+    get:
+      tags: [landing-page-deliverables]
+      summary: Lista execuções da etapa landing-page-deliverables.
+      operationId: listGeraLandingDeliverablesExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/deliverables/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-deliverables]
+      summary: Detalha uma execução da etapa landing-page-deliverables.
+      operationId: detailGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
+
+  /api/experiments/{experimentId}/geralanding/landing/approve-end-publish:
+    post:
+      tags: [landing-page-publication]
+      summary: Aprova e publica a landing pública do GeraLanding.
+      operationId: approveEndPublishGeraLandingPublicLanding
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          $ref: '#/components/responses/PublicLandingPublication'
+        '404':
+          description: Experimento não encontrado.
+        '409':
+          description: HTML da landing ainda não foi gerado.
+        '502':
+          description: Lead Portal indisponível ou base URL não configurada.
+  /api/experiments/{experimentId}/geralanding/landing/approve-and-publish:
+    post:
+      tags: [landing-page-publication]
+      summary: Alias legado compatível para aprovar e publicar a landing pública.
+      operationId: approveAndPublishGeraLandingPublicLanding
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          $ref: '#/components/responses/PublicLandingPublication'
+        '404':
+          description: Experimento não encontrado.
+        '409':
+          description: HTML da landing ainda não foi gerado.
+        '502':
+          description: Lead Portal indisponível ou base URL não configurada.
+  /api/experiments/{experimentId}/geralanding/landing/stage-executions:
+    get:
+      tags: [landing-page-publication]
+      summary: Rota canônica de listagem da landing pública.
+      description: Implementada para manter a matriz de endpoints por etapa; responde 410 porque a publicação é síncrona e não possui fila própria.
+      operationId: listGeraLandingPublicLandingExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '410':
+          description: Landing pública não possui stage-executions próprias.
+  /api/experiments/{experimentId}/geralanding/landing/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-publication]
+      summary: Rota canônica de detalhe da landing pública.
+      description: Implementada para manter a matriz de endpoints por etapa; responde 410 porque a publicação é síncrona e não possui job próprio.
+      operationId: detailGeraLandingPublicLandingExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '410':
+          description: Landing pública não possui detalhe de execução próprio.
+  /api/internal/geralanding/landing/stage-executions/pending:
+    get:
+      tags: [landing-page-publication]
+      summary: Lista pendências internas da landing pública.
+      description: Retorna lista vazia porque a publicação da landing pública é síncrona.
+      operationId: pendingGeraLandingPublicLandingExecutions
+      responses:
+        '200':
+          description: Lista vazia de pendências da landing pública.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicLandingPending'
+  /api/internal/geralanding/landing/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-publication]
+      summary: Rota canônica interna de prompt da landing pública.
+      description: Implementada para manter a matriz de endpoints por etapa; responde 410 porque a publicação não aciona IA diretamente.
+      operationId: recebePromptGeraLandingPublicLandingExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {}
+      responses:
+        '410':
+          description: Landing pública não recebe prompt de IA.
+  /api/internal/geralanding/landing/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-publication]
+      summary: Rota canônica interna de resposta da landing pública.
+      description: Implementada para manter a matriz de endpoints por etapa; responde 410 porque a publicação não aciona IA diretamente.
+      operationId: recebeRespostaGeraLandingPublicLandingExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {}
+      responses:
+        '410':
+          description: Landing pública não recebe resposta de IA.
+components:
+  parameters:
+    ExperimentId:
+      name: experimentId
+      in: path
+      required: true
+      description: ID numérico interno do experimento.
+      schema:
+        type: integer
+        format: int64
+    IdJob:
+      name: idJob
+      in: path
+      required: true
+      description: Identificador do job da execução.
+      schema:
+        type: string
+    IncludeCompleted:
+      name: includeCompleted
+      in: query
+      required: false
+      description: Quando false, omite execuções concluídas.
+      schema:
+        type: boolean
+        default: true
+  requestBodies:
+    OpenAiPromptDispatch:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OpenAiPromptDispatchRequest'
+    OpenAiPromptDispatchWithExperiment:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OpenAiPromptDispatchWithExperimentRequest'
+    PromptReceiveDirect:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PromptReceiveDirectRequest'
+    OpenAiDispatchMarker:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OpenAiDispatchMarkerRequest'
+    OpenAiStageResult:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OpenAiStageResultRequest'
+    OpenAiStageResultWithProvisionalHtml:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OpenAiStageResultWithProvisionalHtmlRequest'
+  responses:
+    StageExecutionSummaryList:
+      description: Lista de execuções da etapa.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/StageExecutionSummary'
+    StageExecutionDetail:
+      description: Detalhe da execução da etapa.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StageExecutionDetail'
+    PendingStageExecutionList:
+      description: Lista de jobs pendentes da etapa.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/PendingStageExecution'
+    PublicLandingPublication:
+      description: Landing aprovada e publicada com sucesso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PublicLandingPublicationResponse'
+  schemas:
+    StageStartResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        idJob:
+          type: string
+        status:
+          type: string
+      required:
+        - idJob
+        - status
+    StageExecutionSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        idJob:
+          type: string
+        status:
+          type: string
+        executionRequestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+      required:
+        - idJob
+        - status
+    StageExecutionDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        idJob:
+          type: string
+        experimentId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+        executionRequestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        processingStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        promptTemplateId:
+          type: string
+          nullable: true
+        promptContent:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        openAiRequestBody:
+          type: string
+          nullable: true
+        openAiModel:
+          type: string
+          nullable: true
+        schemaJson:
+          type: string
+          nullable: true
+        promptMarkdownContent:
+          type: string
+          nullable: true
+        status:
+          type: string
+        openAiJobId:
+          type: string
+          nullable: true
+        modelResponse:
+          type: string
+          nullable: true
+        provisionalHtml:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        errorDetail:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+      required:
+        - idJob
+        - experimentId
+        - stageCode
+        - status
+    PendingStageExecution:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        jobid:
+          type: string
+        idJob:
+          type: string
+          nullable: true
+        stageCode:
+          type: string
+        status:
+          type: string
+          nullable: true
+        experiment:
+          $ref: '#/components/schemas/PendingStageExperiment'
+        hypothesis:
+          $ref: '#/components/schemas/PendingStageHypothesis'
+      required:
+        - experimentId
+        - jobid
+        - stageCode
+    PendingStageExperiment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+        hypothesis:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        stage:
+          type: string
+          nullable: true
+        creativeTextPrompt:
+          type: string
+          nullable: true
+        creativeImagePrompt:
+          type: string
+          nullable: true
+        campaignAngle:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        adCopy:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        adImageBriefing:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageCopy:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageWireframe:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageImagePlanning:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageImageAssets:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageDesignPreset:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageDeliverables:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        htmlGeraLanding:
+          type: string
+          nullable: true
+      required:
+        - id
+    PendingStageHypothesis:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        framework:
+          type: object
+          nullable: true
+          additionalProperties: true
+    JsonBackedArtifact:
+      nullable: true
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: array
+          items: {}
+        - type: string
+    OpenAiPromptDispatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+        promptMarkdownContent:
+          type: string
+          nullable: true
+        schemaJson:
+          type: string
+          minLength: 1
+        requestBodyJson:
+          type: string
+          minLength: 1
+          description: Campo canônico aceito pelos controllers pt-BR.
+        openAiRequestBody:
+          type: string
+          minLength: 1
+          description: Alias aceito por alguns DTOs via JsonAlias.
+        openAiModel:
+          type: string
+          nullable: true
+        jobidopenai:
+          type: string
+          minLength: 1
+        openAiJobId:
+          type: string
+          minLength: 1
+          description: Alias aceito por alguns DTOs via JsonAlias.
+      required:
+        - prompt
+        - schemaJson
+        - requestBodyJson
+        - jobidopenai
+    OpenAiPromptDispatchWithExperimentRequest:
+      allOf:
+        - $ref: '#/components/schemas/OpenAiPromptDispatchRequest'
+        - type: object
+          properties:
+            experimentId:
+              type: integer
+              format: int64
+              nullable: true
+            stageCode:
+              type: string
+              nullable: true
+    PromptReceiveDirectRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+        prompt:
+          type: string
+          minLength: 1
+      required:
+        - experimentId
+        - stageCode
+        - prompt
+    OpenAiDispatchMarkerRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+        openAiJobId:
+          type: string
+      required:
+        - experimentId
+        - stageCode
+    OpenAiStageResultRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+          minLength: 1
+        modelResponse:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        costUsd:
+          type: number
+          format: double
+          nullable: true
+        openAiJobId:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        errorDetail:
+          type: string
+          nullable: true
+      required:
+        - experimentId
+        - stageCode
+    OpenAiStageResultWithProvisionalHtmlRequest:
+      allOf:
+        - $ref: '#/components/schemas/OpenAiStageResultRequest'
+        - type: object
+          properties:
+            provisionalHtml:
+              type: string
+              nullable: true
+    PublicLandingPublicationResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        flowId:
+          type: integer
+          format: int64
+          nullable: true
+        iframeUrl:
+          type: string
+          nullable: true
+        standaloneUrl:
+          type: string
+          nullable: true
+        message:
+          type: string
+      required:
+        - experimentId
+        - message
+    PublicLandingPending:
+      type: object
+      additionalProperties: false
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+          nullable: true
+        idJob:
+          type: string
+          nullable: true
+        stageCode:
+          type: string
+          nullable: true

@@ -20,3 +20,12 @@ Esta pasta é o local único para contratos Swagger/OpenAPI do Marketing Hub.
 - `docs/swagger/oprm-backend-integration-openapi.v1.yaml` — integração OPRM ↔ backend.
 - `docs/swagger/oprm-backend-required-endpoints.swagger.yaml` — endpoints obrigatórios do backend para OPRM.
 - `docs/swagger/oprm-nichocnae-swagger.yaml` — pipeline OPRM Nicho CNAE.
+
+## Publicação dinâmica pelo backend Spring Boot
+
+O backend principal também publica a documentação dinâmica gerada pelo Springdoc no próprio serviço Spring Boot:
+
+- Swagger UI: `http://191.252.181.168/swagger-ui.html` ou, em ambiente local, `http://localhost:8000/swagger-ui.html`.
+- OpenAPI JSON: `http://191.252.181.168/v3/api-docs/marketing-hub-backend` ou, em ambiente local, `http://localhost:8000/v3/api-docs/marketing-hub-backend`.
+
+Essa publicação dinâmica facilita inspeção operacional dos endpoints efetivamente carregados pela aplicação, sem substituir os contratos versionados desta pasta.

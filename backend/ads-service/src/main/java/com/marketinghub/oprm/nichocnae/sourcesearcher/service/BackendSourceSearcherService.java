@@ -184,6 +184,9 @@ public class BackendSourceSearcherService {
     candidate.setSourceGroup(defaultText(result.sourceGroup(), DEFAULT_SOURCE_GROUP));
     candidate.setSearchProvider(requiredText(searchProvider, "searchProvider"));
     candidate.setSearchPosition(result.searchPosition());
+    candidate.setRelevanceScore(null);
+    candidate.setSelectedForFetch(false);
+    candidate.setRejectionReason(null);
     candidate.setStatus(defaultText(result.status(), CANDIDATE_STATUS_FOUND));
     candidate.setCreatedAt(now);
     candidate.setUpdatedAt(now);

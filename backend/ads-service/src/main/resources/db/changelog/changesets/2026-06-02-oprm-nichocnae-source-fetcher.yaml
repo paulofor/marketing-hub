@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-02-08-oprm-source-candidate-fetch-fields
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_source_candidate
+              columnName: selected_for_fetch
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_source_candidate
+                ADD COLUMN relevance_score INT NULL,
+                ADD COLUMN selected_for_fetch TINYINT(1) NOT NULL DEFAULT 0,
+                ADD COLUMN rejection_reason VARCHAR(500) NULL;
+              CREATE INDEX idx_oprm_source_candidate_fetch_pending
+                ON oprm_source_candidate (status, selected_for_fetch, research_cycle_id, research_query_id, search_position);
+
+  - changeSet:
+      id: 2026-06-02-09-oprm-source-snapshot
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_source_snapshot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_source_snapshot (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                research_cycle_id BIGINT NOT NULL,
+                source_candidate_id BIGINT NOT NULL,
+                source_url VARCHAR(1000) NOT NULL,
+                source_domain VARCHAR(255) NOT NULL,
+                source_title VARCHAR(500) NOT NULL,
+                source_type VARCHAR(64) NOT NULL,
+                snippet LONGTEXT NULL,
+                short_excerpt LONGTEXT NOT NULL,
+                fetched_at DATETIME NOT NULL,
+                fetch_status VARCHAR(32) NOT NULL,
+                http_status INT NULL,
+                storage_policy VARCHAR(64) NOT NULL,
+                license_state VARCHAR(64) NULL,
+                error_message LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_source_snapshot PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_oprm_source_snapshot_cycle ON oprm_source_snapshot (research_cycle_id, id);
+              CREATE INDEX idx_oprm_source_snapshot_candidate ON oprm_source_snapshot (source_candidate_id);
+              CREATE INDEX idx_oprm_source_snapshot_domain ON oprm_source_snapshot (source_domain);

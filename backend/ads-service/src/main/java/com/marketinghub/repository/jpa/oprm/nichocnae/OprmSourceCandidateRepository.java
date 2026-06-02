@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.oprm.nichocnae;
 
 import com.marketinghub.oprm.nichocnae.OprmSourceCandidate;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -13,4 +14,8 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
 
     /** Verifica se uma URL já foi salva para uma query de pesquisa específica. */
     boolean existsByResearchQueryIdAndSourceUrl(Long researchQueryId, String sourceUrl);
+
+    /** Lista fontes candidatas encontradas ainda não selecionadas para fetch na ordem operacional. */
+    List<OprmSourceCandidate> findByStatusAndSelectedForFetchFalseOrderByResearchCycleIdAscResearchQueryIdAscSearchPositionAscIdAsc(
+        String status, Pageable pageable);
 }

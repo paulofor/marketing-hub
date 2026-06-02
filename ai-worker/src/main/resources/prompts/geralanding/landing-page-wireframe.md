@@ -22,13 +22,13 @@ Estamos Trabalhando nesse contexto:
 		</experimento>
 	</hipotese>
 </nicho>
+```
 
 Nicho: {{NICHE_NAME}}
 
 Dor: {{PAIN_JSON}}
 
 Resultado: {{RESULT_JSON}}
-
 
 {{prompt-regras-globais}}
 
@@ -43,159 +43,143 @@ Briefing das Imagens dos Anuncios:
 
 
 template_id: landing-wireframe
-template_version: v5
+template_version: v6
 artifact_target: landingPageWireframe
 
-Regras fixas da etapa (Gera Landing, contrato v3):
+# Objetivo da etapa
+
+Gerar somente o wireframe estrutural da landing em JSON válido, aderente ao schema `landing-page-wireframe-schema.json`.
+
+O wireframe define seções, hierarquia, elementos, intenção comercial, assets esperados, formulário e navegação. O acabamento visual responsivo final é responsabilidade da etapa `landing-page-design-preset`.
+
+# Contrato obrigatório
+
 - Entregar somente JSON válido com raiz obrigatória: `definicoes` e `pagina`.
 - `definicoes` deve conter exatamente: `estrutura`, `posicao`, `layout`, `mistas`.
 - Cada categoria de `definicoes` deve conter `desktop[]` e `mobile[]`.
 - Cada item de definição deve conter somente: `nome`, `atributoCss`, `valor`.
-- Em `pagina`/`secoes` e elementos internos, toda classe aplicada deve aparecer SOMENTE no campo `estilos[]`.
-- É proibido criar campos de classe por categoria (`estrutura`, `posicao`, `layout`, `mistas`) dentro de `pagina`, `pagina.corpo`, `pagina.corpo.secoes[]`, `elementosSeccao[]` ou `elementosInternos[]`; essas categorias existem apenas em `definicoes`.
-- Em `estilos[]` (`pagina.corpo`, seção e elementos internos), use exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`; qualquer nome fora disso viola contrato.
-- É proibido repetir `atributoCss`/`valor` fora de `definicoes`.
+- Em `pagina` e em todos os elementos, toda classe aplicada deve aparecer somente em `estilos[]`.
+- Em `estilos[]`, use exclusivamente nomes existentes em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`.
 - Não invente campos fora do schema.
 - Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos.
-- Evite JSON dentro de strings; mantenha cada informação no campo próprio.
+- `pagina.corpo.estilos` obrigatório: `bgBody`, `fontBase`, `textPrimary`, `marginReset`.
+- Em toda `img`, declarar `asset`: `src`, `alt`, `width`, `height`.
+- Em todo `input`, declarar `contratoCampo`: `type`, `name`, `autocomplete`, `required`, `placeholder`.
+- Em todo elemento interativo, declarar `interacao` completa.
+- `texto.conteudo` deve ser sempre `""` nesta etapa.
 
+# Matriz oficial de grupos CSS do wireframe
 
-- `pagina.corpo.estilos` obrigatório: declarar classes base aplicadas ao elemento HTML `<body>` usando apenas `bgBody`, `fontBase`, `textPrimary`, `marginReset`; não criar o campo `pagina.body`.
-- Em TODO elemento interativo (`a`, `button`), declarar `intencaoAcao` e, quando for navegação interna, `targetSectionId` apontando para `id` real de seção (ex.: `#sec-prova`); quando for link externo, declarar `hrefEsperado`.
-- Em toda `img`, declarar contrato de asset em `asset`: `src`, `alt`, `width`, `height` (wireframe deve especificar esses campos mesmo com `src` provisório).
-- Em todo campo de formulário (`input`), declarar `contratoCampo`: `type`, `name`, `autocomplete`, `required`, `placeholder`.
-- Em elementos de ação/entrada, usar componentes semânticos via `componente`: `buttonPrimary`, `buttonSecondary`, `formInput`, `card` (quando aplicável), evitando depender de combinação manual de tokens.
-- `texto.conteudo: ""` significa literalmente “não renderizar texto”; é proibido substituir por placeholder nesta etapa.
+Use apenas os atributos permitidos por grupo:
 
-Direção comercial obrigatória desta etapa:
+- `definicoes.posicao`: `position`, `top`, `right`, `bottom`, `left`, `z-index`.
+- `definicoes.layout`: `display`, `float`, `clear`, `visibility`, `overflow`, `overflow-x`, `overflow-y`, `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`, `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `justify-items`, `place-items`, `place-content`.
+- `definicoes.estrutura`: `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`, `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`, `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`.
+- `definicoes.mistas`: `transform`, `translate`, `scale`, `rotate`, `transform-origin`.
+
+# Regra crítica de responsividade
+
+O HTML final recebe CSS do wireframe e do preset. Portanto, o wireframe NÃO deve criar/aplicar classes desktop agressivas que possam quebrar o mobile antes do preset responder.
+
+Regras obrigatórias:
+- Não aplique em `pagina.*.estilos[]` classes de `grid-template-columns` desktop como `heroTwoCol`, `gridTwoCol`, `gridThreeCol`, `grid2col`, `grid3col`, `grid2colHero`, `gridDesktopTwo`, `gridDesktopThree` ou equivalentes.
+- Não aplique em `pagina.*.estilos[]` classes de `flex-direction: row` para blocos principais da página.
+- No wireframe, prefira classes neutras e mobile-safe: container, padding, `display`, `gap`, `flex-direction: column`, `grid-template-columns: 1fr`, `width: 100%`, `max-width`, `position`, `z-index`.
+- O desktop em duas/três colunas deve ser apenas descrito no `objetivo`, `papelComercial`, `posicaoDesejada` e `briefingVisual`, para o preset design aplicar depois.
+- O wireframe pode declarar classes desktop em `definicoes`, mas evite aplicá-las nos elementos quando elas puderem forçar colunas no mobile.
+- Se precisar aplicar layout no wireframe, use sempre uma versão mobile-first: uma coluna por padrão. Nunca dependa de uma classe desktop para depois ser corrigida no mobile.
+- Cards, hero, prova, entregáveis e FAQ precisam renderizar aceitavelmente em uma coluna mesmo antes do preset.
+
+# Direção comercial obrigatória
+
 - Gere uma landing de venda/captura com percepção de produto real, não uma página técnica de gerador de arquivo.
 - A página precisa parecer desejável antes de parecer operacional: venda a transformação, mostre prova visual e só depois explique formato, PDF, amostra, marca d’água ou entrega.
-- A promessa principal deve ser baseada em `pain`, `result`, `mecanismo` e `campaignAngle`; a amostra/PDF/mini-kit é prova ou redução de risco, nunca o centro da primeira dobra.
-- O usuário deve entender em poucos segundos: “qual problema isso resolve”, “por que isso é diferente”, “o que verei antes de comprar” e “qual é o próximo passo”.
+- A promessa principal deve ser baseada em `pain`, `result`, `mecanismo` e `campaignAngle`; amostra/PDF/mini-kit é prova ou redução de risco, nunca o centro da primeira dobra.
+- O usuário deve entender em poucos segundos: qual problema resolve, por que é diferente, o que verá antes de comprar e qual é o próximo passo.
 - Priorize seções com contraste narrativo: antes/depois, dor concreta, mecanismo simples, prova visual da entrega, captura com baixo risco e FAQ de objeções.
-- Evite página com aparência de formulário solto, documentação ou dashboard. O wireframe deve criar oportunidade para o design gerar uma landing bonita: hero com prova visual forte, cards bem distribuídos, blocos de demonstração e formulário em card.
 
-Matriz oficial de grupos e atributos CSS (explícita):
-- Grupo `posicionamento` (categoria `definicoes.posicao`): `position`, `top`, `right`, `bottom`, `left`, `z-index`.
-- Grupo `exibicaoFluxo` (categoria `definicoes.layout`): `display`, `float`, `clear`, `visibility`, `overflow`, `overflow-x`, `overflow-y`.
-- Grupo `tamanho` (categoria `definicoes.estrutura`): `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`.
-- Grupo `espacamentoExterno` (categoria `definicoes.estrutura`): `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`.
-- Grupo `espacamentoInterno` (categoria `definicoes.estrutura`): `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`.
-- Grupo `flexbox` (categoria `definicoes.layout`): `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`.
-- Grupo `grid` (categoria `definicoes.layout`): `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `justify-items`, `align-items`, `place-items`, `justify-content`, `align-content`, `place-content`, `gap`, `row-gap`, `column-gap`.
-- Grupo `transformacoes` (categoria `definicoes.mistas`): `transform`, `translate`, `scale`, `rotate`, `transform-origin`.
+# Estrutura comercial mínima
 
-Regra de conformidade dos grupos:
-- `definicoes.posicao` só pode usar atributos do grupo `posicionamento`.
-- `definicoes.layout` só pode usar atributos dos grupos `exibicaoFluxo`, `flexbox` e `grid`.
-- `definicoes.estrutura` só pode usar atributos dos grupos `tamanho`, `espacamentoExterno` e `espacamentoInterno`.
-- `definicoes.mistas` só pode usar atributos do grupo `transformacoes`.
+Gerar no mínimo 5 seções quando houver dados suficientes:
 
+1. Hero: promessa + prova visual + CTA primário para formulário.
+2. Contraste/dor: antes/depois ou problema/novo caminho.
+3. Mecanismo: 3 passos/cards com `h3` + `p`.
+4. Prova/preview: imagem ou print conceitual demonstrando a entrega.
+5. Entregáveis/recebe: lista de 3 a 5 itens concretos.
+6. Formulário: nome + email + submit.
+7. FAQ: 4 a 6 dúvidas essenciais.
 
-Trecho obrigatório do contrato de seção/elementos (manter):
-- Cada seção deve conter: `nome`, `objetivo`, `oQueQuerProvocarNoUsuario`, `papelComercial`, `fasePersuasao`, `objeçãoQueRemove`, `prioridadeConversao`, `acaoEsperada`, `fonteContexto[]`, `id`, `estilos[]`, `elementosSeccao[]`; não deve conter `estrutura`, `posicao`, `layout` ou `mistas`.
-- Cada item de `elementosSeccao[]` deve conter: `id`, `tag`, `texto`, `estilos[]`, `elementosInternos[]`.
-- Quando `tag = "img"`, o elemento deve conter também `briefingVisual` com:
-  - `ondeEntraNoVisual`;
-  - `tipoVisualEsperado`;
-  - `funcaoComercial`;
-  - `objecaoQueRemove`;
-  - `classificacaoVisual` em: `mockup`, `foto`, `ilustração`, `diagrama`, `print conceitual`;
-  - `posicaoDesejada`: posição narrativa/layout desejada na seção (ex.: hero lado direito dentro do card, abaixo do bloco de prova, antes do CTA secundário);
-  - `aspectRatio`: proporção aproximada esperada (ex.: `1:1`, `4:3`, `16:9`, `3:4`);
-  - `maxVisualHeight`: limite de altura recomendado para desktop e mobile, em texto curto com unidade CSS (ex.: `desktop: 420px; mobile: 280px`);
-  - `layoutRole`: papel visual no layout, em: `product`, `proof`, `demonstration`, `before-after`, `mechanism`, `objection-reducer`;
-  - `relacaoComCta`: explicar se o visual prepara, reforça ou não compete com o CTA da seção.
-- `briefingVisual` é exclusivo de `img`: para outras tags, manter `briefingVisual: null` (não preencher objeto).
-- `elementosInternos[]` representa hierarquia de filhos e deve suportar recursão (filho pode conter netos e assim por diante), sempre com o mesmo contrato do elemento pai.
-- Campo `texto` de cada elemento deve conter exatamente: `tamMaximo`, `tamMinimo`, `conteudo`.
-- `tamMinimo` e `tamMaximo` não são números aleatórios: eles são o contrato de espaço textual para a próxima etapa de copy e devem ser definidos pela função do texto no layout, pela intenção comercial do bloco e pelo esforço cognitivo aceitável no mobile.
-- Defina `tamMinimo`/`tamMaximo` por tipo de texto e contexto de tela:
-  - Títulos principais (`h1`) e chamadas de primeira dobra: curtos, fortes e escaneáveis; use faixa pequena/média para caber bem no hero sem empurrar CTA e imagem para baixo.
-  - Subtítulos (`h2`, `h3`) e títulos de cards: ainda menores que blocos explicativos; devem nomear a ideia, a dor, o resultado ou a objeção com clareza, sem virar parágrafo.
-  - Botões e links de ação (`button`, `a`): faixas muito curtas; texto direto de ação, sem explicação embutida.
-  - Bullets, `li`, badges e microcopy auxiliar: faixas curtas; cada item deve comunicar uma ideia só, facilitando leitura rápida.
-  - Parágrafos explicativos (`p`) e descrições de mecanismo/prova/oferta: faixas maiores que títulos, mas controladas; permitir contexto suficiente para explicar por que aquilo importa, sem cansar o usuário.
-  - FAQ, prova, como funciona e objeções: podem ter faixa média quando precisam remover dúvida real, mas divida em blocos pequenos em vez de liberar textos longos em um único elemento.
-  - Labels/placeholders de formulário: faixas curtas e funcionais; não usar como área de persuasão.
-- Em geral, `tamMinimo` deve representar o menor texto ainda útil para cumprir a função comercial do elemento; `tamMaximo` deve representar o maior texto que cabe naquele espaço sem quebrar escaneabilidade, hierarquia visual ou avanço para o CTA.
-- Quanto mais alto o elemento estiver na página e quanto mais próximo estiver do CTA principal, menor deve ser o limite de copy; explicações mais longas devem ficar em seções posteriores, onde o usuário já aceitou entender mecanismo, prova ou oferta.
-- Preserve a hierarquia: título orienta, subtítulo enquadra, parágrafo explica, bullet facilita decisão, CTA move para ação. Não dê a um título limite de parágrafo nem a um parágrafo limite tão curto que impeça explicar o mecanismo.
-- `elementosInternos` pode ser lista vazia, mas sempre deve existir.
+# Regras de hero e H1
 
+- Primeira dobra forte obrigatória: abrir com resultado comercial desejado + dor removida + mecanismo plausível.
+- Critério eliminatório do H1: não começar com “Gere uma amostra”, “Baixe um PDF”, “Receba um material”, “Crie seu mini-kit”, “Preencha um briefing” ou variações.
+- O H1 deve vender dor removida + resultado desejado.
+- PDF/amostra só aparece no subtítulo, bullets, legenda visual, seção de prova ou formulário.
+- Hero deve conter H1, subtítulo, 3 bullets, CTA primário e prova visual.
+- O desktop de hero em duas colunas deve ser descrito, mas não aplicado com classe desktop agressiva no wireframe.
 
-- Para cada visual (`img`) planejado no wireframe, explicitar no `objetivo`/metadados da seção:
-  - onde o visual entra na narrativa da página (posição e contexto comercial);
-  - qual tipo de visual é esperado;
-  - qual função comercial o visual cumpre;
-  - qual objeção o visual ajuda a remover;
-  - classificar o visual como: `mockup`, `foto`, `ilustração`, `diagrama` ou `print conceitual`;
-  - posição desejada no layout, proporção aproximada, limite de altura no desktop/mobile e relação com o CTA.
+# Regras para CTAs e navegação
 
-Regras comerciais e estruturais obrigatórias (mantidas):
-- Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
-- Primeira dobra forte obrigatória: o hero deve abrir com resultado comercial desejado pelo nicho + dor removida + mecanismo plausível, e não com uma descrição operacional da amostra. A amostra/PDF/mini-kit deve aparecer como prova concreta do mecanismo, não como promessa principal.
-- Critério eliminatório do H1: é inválido começar a headline principal com formato, arquivo ou operação. Não comece com “Gere uma amostra”, “Baixe um PDF”, “Receba um material”, “Crie seu mini-kit”, “Preencha um briefing” ou variações. O H1 deve vender dor removida + resultado desejado; PDF/amostra só aparece no subtítulo, bullets, legenda visual ou formulário.
-- Hero obrigatório com valor percebido: incluir, além do H1/sub/CTA, um elemento curto de pré-headline/badge ou microcopy de credibilidade quando o schema permitir (`p`, `span` ou `div` textual), e uma prova visual de produto/resultado no lado direito do desktop.
-- Desktop comercial obrigatório: no desktop, o hero deve ser pensado em duas colunas dentro de um container centralizado; coluna esquerda com headline, subtítulo, 3 bullets de valor e CTA primário; coluna direita com card visual/prova do produto ou card de captura curta. É proibido gerar uma página estreita de coluna única no desktop quando houver espaço para hierarquia visual.
-- Formulário com contexto claro: a seção de captura deve conter rótulos ou microcopy textual visível para `nome` e `email`, além de CTA específico; inputs não podem depender apenas de campos vazios/sem placeholder para o usuário entender o que preencher.
-- Sequência persuasiva mínima obrigatória: depois do hero, estruturar seções que respondam nesta ordem lógica: (1) por que a situação atual custa venda/renovação; (2) como o mecanismo resolve com pouco esforço; (3) prova visual/demonstração do que aparece; (4) o que a pessoa recebe na amostra e no próximo passo; (5) formulário/ação; (6) dúvidas/objeções essenciais.
-- Seção de prova visual obrigatória: incluir pelo menos uma seção com imagem ou print conceitual que demonstre concretamente a entrega. Não basta listar entregáveis; o usuário precisa “ver” a transformação ou o produto antes de agir.
-- Seção de mecanismo obrigatória: explicar o mecanismo em 3 partes ou 3 passos, cada uma em card com `h3` + `p`, conectando item entregue ao benefício comercial. Evite termos internos como “anti-preço” sem explicação simples no texto posterior.
-- Seção de contraste obrigatória quando fizer sentido pelo contexto: usar estrutura antes/depois ou problema/novo caminho para tornar a dor mais visual e emocional, sem exagero e sem promessas fora do envelope do produto.
-- Menos CTAs redundantes: usar CTAs nos pontos de decisão, evitando repetir o mesmo botão após blocos que ainda não agregaram argumento novo.
-- Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada seção deve reduzir carga cognitiva, deixar a mensagem principal evidente em leitura rápida, usar poucos caminhos de decisão, evitar excesso de informações simultâneas e conduzir naturalmente para o próximo CTA.
-- Objetivo comercial obrigatório: estruturar a página para venda com foco na coleta de informação para envio de amostra/prova do produto (ex.: formulário/CTA de captura).
-- Fase wireframe NÃO preenche copy: em TODOS os elementos, `texto.conteudo` deve ser string vazia (`""`) nesta etapa.
-- Para tags de lista (`ul`), sempre declarar os `li` internos explicitamente.
-- Formulário obrigatório da landing: incluir seção/formulário de captura contendo somente os campos `nome` e `email` (não incluir telefone, WhatsApp, CPF, empresa ou outros campos).
-- Hero obrigatório com âncora primária: na primeira dobra (hero), incluir CTA com link âncora direto para a seção do formulário.
-- Âncoras obrigatórias adicionais: incluir mais duas âncoras internas para pontos estratégicos distintos da página (ex.: mecanismo, prova social, oferta), além da âncora do hero para o formulário.
-- Quantidade mínima de seções obrigatória: gerar no mínimo 5 seções em `pagina.corpo.secoes` quando houver dados suficientes; 4 é permitido apenas se a hipótese for extremamente simples.
-- Quantidade de imagens orientada por função comercial: planejar normalmente entre 2 e 4 elementos `img` úteis no total da página; exceder esse intervalo somente quando o nicho exigir mais prova visual concreta para vender com clareza.
-- Regra comercial para uso de imagens: inserir `img` somente quando a imagem cumpre função explícita de prova, demonstração do produto, antes/depois, explicação do mecanismo ou redução de objeção; é proibido adicionar imagem apenas para preencher seção ou decorar a página.
-- Imagem de produto obrigatória: garantir que pelo menos uma `img` represente visualmente a ideia do produto/entrega que o cliente está comprando (ex.: mockup da solução, amostra do conteúdo, kit/resultado final esperado).
-- Imagens de prova devem ter briefingVisual específico: peça mockups/prints conceituais de tela ou páginas com elementos legíveis e úteis; não peça imagens abstratas, banco de imagem genérico ou ilustração decorativa quando a objeção é “não sei o que vou receber”.
-- Hero com imagem controlada: quando a imagem de produto ou outro visual entrar no hero, ela deve ficar dentro de container controlado, com proporção e altura máximas declaradas em `briefingVisual`, sem bloco full-width desproporcional e sem competir com o CTA principal.
-- Balanceamento visual obrigatório: intercalar blocos de texto e imagem quando isso reduzir paredes de texto e melhorar escaneabilidade, sem forçar imagem em toda seção.
+- CTAs de navegação interna devem ser `tag: "a"`, não `button`.
+- Use `tag: "button"` somente para submit real dentro de formulário.
+- Todo `targetSectionId` deve começar com exatamente um `#`, nunca `##` e nunca sem `#`.
+- `targetSectionId` deve apontar para id real de seção existente.
+- CTA primário do hero: `tag: "a"`, `componente: "buttonPrimary"`, `targetSectionId: "#sec-form"`.
+- CTA secundário relevante: `tag: "a"`, `componente: "buttonSecondary"`.
+- Links discretos de baixa prioridade podem usar `componente: "none"`.
+- Não crie mais de 2 ações visíveis no hero antes da microcopy.
+- O formulário deve ter um botão `button` de submit com texto curto e direto.
 
-Regras obrigatórias para navegação e CTAs:
-- Todo `targetSectionId` de navegação interna deve começar com exatamente um `#`, nunca com `##` e nunca sem `#`. Exemplo válido: `#sec-form`. Exemplos inválidos: `##sec-form`, `sec-form`, `/#sec-form`.
-- `targetSectionId` deve apontar para um `id` real de seção existente em `pagina.corpo.secoes[]`.
-- O CTA primário do hero deve ter `componente: "buttonPrimary"`, `targetSectionId: "#sec-form"` e texto curto o bastante para caber como botão.
-- CTAs secundários com função de navegação devem ter `componente: "buttonSecondary"` quando precisam parecer botão. Use `componente: "none"` somente para links discretos de baixa prioridade.
-- Não crie mais de 2 ações visíveis no hero antes da microcopy. Se houver terceira âncora estratégica, ela deve ser discreta e não competir com o CTA principal.
-- O formulário deve ter um botão `button` de submit com texto curto e direto; ele será tratado como o CTA mais forte da seção pelo preset design.
+# Regras para imagens
 
-Quality gate interno antes de responder:
-- Releia o wireframe gerado e rejeite mentalmente se ele parecer uma página técnica, estreita, sem prova visual, sem contraste narrativo ou com hero centrado no formato da entrega.
-- A landing deve ser capaz de receber um preset premium sem depender de copy longa para parecer boa.
-- O primeiro CTA deve estar visível cedo, mas a página deve criar desejo antes de pedir o formulário.
-- Se a página ficaria fraca sem as imagens, melhore a distribuição de prova, cards e mecanismo; se ficaria confusa sem ler tudo, simplifique a sequência.
-- Confira todos os `targetSectionId`: nenhum pode ter `##`; todos precisam apontar para seções reais.
+- Planejar normalmente entre 2 e 4 elementos `img` úteis no total da página.
+- Inserir `img` somente quando cumpre função explícita de prova, demonstração do produto, antes/depois, explicação do mecanismo ou redução de objeção.
+- Pelo menos uma imagem deve representar visualmente a entrega que a pessoa receberá.
+- Para cada `img`, preencher `briefingVisual` completo.
+- Não usar imagem decorativa genérica.
+- Imagens de prova devem pedir mockups/prints conceituais de tela ou páginas com elementos legíveis e úteis.
+- Hero com imagem controlada: declarar proporção e altura máxima, sem bloco full-width desproporcional.
 
-Heurísticas de composição (inspiração, não regra rígida):
-- Hero bullets: preferir ~3 itens.
-- Lista de entregáveis: preferir entre 3 e 5 itens.
-- Antes/depois: preferir 3 itens de "antes" e 3 itens de "depois".
-- Como funciona: preferir 3 passos.
-- FAQ: preferir entre 4 e 6 perguntas.
+# Formulário obrigatório
 
-Heurística para listas longas no mobile (inspiração contextual):
+- Incluir seção/formulário de captura com somente os campos `nome` e `email`.
+- Não incluir telefone, WhatsApp, CPF, empresa ou outros campos.
+- Campos devem ter rótulos ou microcopy visível.
+- Inputs não podem depender apenas de campos vazios para o usuário entender.
+
+# Heurísticas de composição
+
+- Hero bullets: ~3 itens.
+- Lista de entregáveis: 3 a 5 itens.
+- Antes/depois: 3 itens de antes e 3 de depois.
+- Como funciona: 3 passos.
+- FAQ: 4 a 6 perguntas.
 - Evitar listas grandes no início da página.
 - Evitar mais de 5 itens visíveis por bloco quando a pessoa ainda não entendeu a oferta.
-- Evitar misturar no mesmo bloco: benefícios, recursos e explicações extensas.
-- Evitar estruturas que aumentem sensação de esforço, prejudiquem foco no CTA ou alonguem demais o mobile sem avanço de persuasão.
+- Evitar misturar benefícios, recursos e explicações extensas no mesmo bloco.
 
-Ajuste de intenção por seção (referência do esboço):
-- `papelComercial`: descreva a função comercial da seção no funil da landing (ex.: primeira dobra de conversão, remoção de risco, fechamento).
-- `fasePersuasao`: explicite a fase predominante (ex.: dor-promessa-prova-acao).
-- `objeçãoQueRemove`: declare a principal objeção que a seção resolve.
-- `prioridadeConversao`: inteiro de 1 a 10 (10 = mais crítico para conversão).
-- `acaoEsperada`: qual ação concreta o usuário deve tomar após consumir a seção.
-- `fonteContexto[]`: liste de onde a seção foi derivada (ex.: `PAIN_JSON.surface`, `campaignAngle.primaryPromise`).
-- `objetivo`: declarar a função comercial central da seção.
-- `nome` e `id`: manter coerência com a etapa do funil e com a navegação por âncoras.
+# Quality gate interno antes de responder
+
+Releia o wireframe gerado e rejeite mentalmente se:
+- parecer página técnica, estreita ou sem prova visual;
+- o hero estiver centrado no formato da entrega;
+- houver classe desktop de colunas aplicada diretamente em elementos principais;
+- o mobile depender do preset para não quebrar;
+- houver `targetSectionId` com `##`;
+- CTA interno for `button` em vez de `a`;
+- a página ficar fraca sem as imagens.
+
+# Ajuste de intenção por seção
+
+- `papelComercial`: função comercial da seção no funil.
+- `fasePersuasao`: fase predominante.
+- `objeçãoQueRemove`: principal objeção que resolve.
+- `prioridadeConversao`: inteiro de 1 a 10.
+- `acaoEsperada`: ação concreta esperada após consumir a seção.
+- `fonteContexto[]`: liste de onde a seção foi derivada.
+- `objetivo`: função comercial central.
+- `nome` e `id`: coerentes com funil e navegação.
 
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao schema `landing-page-wireframe-schema.json` da etapa Gera Landing.

@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import java.math.BigDecimal;
 import java.time.Duration;
 
+/** Responsabilidade: centralizar credenciais, modelo, custo e URL efetiva dos clientes OpenAI. */
 @Validated
 @ConfigurationProperties(prefix = "openai")
 public record OpenAiClientProperties(
@@ -25,12 +26,13 @@ public record OpenAiClientProperties(
 
         BigDecimal inputUsdPerMillionTokens,
 
-        BigDecimal outputUsdPerMillionTokens
+        BigDecimal outputUsdPerMillionTokens,
+
+        boolean allowLocalBaseUrl
 ) {
+    /** Normaliza valores opcionais e bloqueia base URL local salvo permissão explícita. */
     public OpenAiClientProperties {
-        if (baseUrl == null || baseUrl.isBlank()) {
-            baseUrl = "https://api.openai.com/v1";
-        }
+        baseUrl = OpenAiBaseUrlGuard.resolve(baseUrl, allowLocalBaseUrl);
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);
         }

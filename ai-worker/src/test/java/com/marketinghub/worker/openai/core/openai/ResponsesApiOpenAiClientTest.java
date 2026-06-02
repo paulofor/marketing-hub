@@ -68,7 +68,8 @@ class ResponsesApiOpenAiClientTest {
                         "gpt-test",
                         Duration.ofSeconds(5),
                         BigDecimal.ZERO,
-                        BigDecimal.ZERO));
+                        BigDecimal.ZERO,
+                        true));
         String requestBodyJson = "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}";
         OpenAiRequest request = new OpenAiRequest(
                 "gpt-test",
@@ -131,7 +132,8 @@ class ResponsesApiOpenAiClientTest {
                         "gpt-test",
                         Duration.ofSeconds(5),
                         BigDecimal.ZERO,
-                        BigDecimal.ZERO));
+                        BigDecimal.ZERO,
+                        true));
         OpenAiRequest request = new OpenAiRequest(
                 "gpt-test",
                 "Prompt",

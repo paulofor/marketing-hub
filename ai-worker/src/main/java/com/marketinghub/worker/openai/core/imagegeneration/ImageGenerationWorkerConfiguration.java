@@ -67,6 +67,7 @@ public class ImageGenerationWorkerConfiguration {
             ImageGenerationWorkerProperties properties,
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
+            @Value("${openai.allow-local-base-url:false}") boolean allowLocalBaseUrl,
             @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes
     ) {
         ImageGenerationOpenAiClient openAiClient = new ImageGenerationOpenAiClient(
@@ -75,6 +76,7 @@ public class ImageGenerationWorkerConfiguration {
                 properties,
                 apiKey,
                 baseUrl,
+                allowLocalBaseUrl,
                 maxInMemorySizeBytes
         );
         return new StageWorker<>(backendClient, promptBuilder, openAiClient, responseValidator, responseHandler);

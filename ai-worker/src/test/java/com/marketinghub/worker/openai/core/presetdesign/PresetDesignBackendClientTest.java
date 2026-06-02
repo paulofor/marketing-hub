@@ -156,7 +156,8 @@ class PresetDesignBackendClientTest {
                 "gpt-test",
                 Duration.ofMinutes(30),
                 BigDecimal.ZERO,
-                BigDecimal.ZERO);
+                BigDecimal.ZERO,
+                true);
         PresetDesignPromptBuilder builder = new PresetDesignPromptBuilder(objectMapper, openAiProperties, properties);
         StageExecution<PresetDesignInput> execution = new StageExecution<>(
                 "job-ia-1",

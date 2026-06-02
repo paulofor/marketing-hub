@@ -1,4 +1,14 @@
 
+## 2026-06-02 00:00:00 UTC — Swagger canônico GeraLanding consolidado
+- solicitação: verificar qual Swagger do GeraLanding estava compatível com a implementação atual, excluir a versão incompatível e manter o contrato atualizado no local correto.
+- causa-raiz identificada: havia dois contratos para GeraLanding; `docs/canonical/geralanding-backend-swagger.v1.yaml` era o local canônico definido pelo cânone, mas estava limitado ao wireframe, enquanto `docs/gera-landing/swagger-gera-landing-etapas.yaml` continha endpoints recentes de publicação e também endpoints genéricos legados não implementados.
+- foi feito: `docs/canonical/geralanding-backend-swagger.v1.yaml` foi consolidado para os 46 endpoints expostos pelos controllers atuais de GeraLanding (`wireframe`, `copy`, `image-prompts`, `image-generation`, `design-preset`, `deliverables` e `landing`) e o Swagger operacional duplicado/desatualizado `docs/gera-landing/swagger-gera-landing-etapas.yaml` foi removido.
+- validação: comparação programática entre mappings dos controllers `com.marketinghub.geralanding.*.web` e os paths do Swagger canônico não apontou diferenças, e o YAML foi carregado com parser local.
+- arquivos alterados:
+  - docs/canonical/geralanding-backend-swagger.v1.yaml
+  - docs/gera-landing/swagger-gera-landing-etapas.yaml
+  - docs/registros/experimentos.md
+
 ## 2026-06-02 00:00:00 UTC
 - solicitação: criar endpoint de aprovação/publicação da landing final no pacote `geralanding.publiclanding.web`, com controller `BackendPublicLandingController` e operação `approve-end-publish`.
 - foi feito: criado `BackendPublicLandingController` com `POST /api/experiments/{experimentId}/geralanding/landing/approve-end-publish` e alias de compatibilidade `approve-and-publish`, além de `BackendPublicLandingService` com lógica semelhante ao fluxo deprecated para publicar no Lead Portal, injetar tracking/controles/pixel e persistir `follow_up_action_url`.

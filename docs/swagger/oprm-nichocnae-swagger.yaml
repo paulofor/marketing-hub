@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: OPRM Nicho CNAE Pipeline API
-  version: 0.3.0
+  version: 0.4.0
   description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
 paths:
   /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
@@ -183,6 +183,75 @@ paths:
                 $ref: '#/components/schemas/SourceSearcherDetailResponse'
         '404':
           description: Ciclo de pesquisa não encontrado.
+
+  /api/internal/oprm/nichocnae/source-fetcher/stage-executions/pending:
+    get:
+      summary: Lista fontes candidatas pendentes para a etapa quatro de coleta curta.
+      tags: [OPRM Nicho CNAE]
+      responses:
+        '200':
+          description: Fontes candidatas encontradas e ainda não selecionadas para fetch.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceFetcherPending'
+  /api/internal/oprm/nichocnae/source-fetcher/stage-executions/{sourceCandidateId}/complete:
+    post:
+      summary: Persiste metadados e trecho curto coletados para uma fonte candidata da etapa quatro.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/SourceCandidateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteSourceFetcherRequest'
+      responses:
+        '200':
+          description: Snapshot curto gravado e fonte candidata marcada como coletada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteSourceFetcherResponse'
+        '400':
+          description: Payload inválido, trecho curto muito longo ou fonte já coletada.
+        '404':
+          description: Fonte candidata não encontrada.
+  /api/internal/oprm/nichocnae/source-fetcher/stage-executions/{sourceCandidateId}/fail:
+    post:
+      summary: Registra rejeição ou falha operacional da etapa quatro para uma fonte candidata.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/SourceCandidateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailSourceFetcherRequest'
+      responses:
+        '204':
+          description: Rejeição ou falha registrada na fonte candidata.
+        '404':
+          description: Fonte candidata não encontrada.
+  /api/oprm/nichocnae/source-fetcher/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha os snapshots curtos coletados para um ciclo de pesquisa.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Snapshots curtos do ciclo de pesquisa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceFetcherDetailResponse'
+        '404':
+          description: Ciclo de pesquisa não encontrado.
 components:
   parameters:
     ResearchCycleId:
@@ -194,6 +263,14 @@ components:
         format: int64
     ResearchQueryId:
       name: researchQueryId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    SourceCandidateId:
+      name: sourceCandidateId
       in: path
       required: true
       schema:
@@ -558,3 +635,173 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SourceCandidateResponse'
+
+    SourceFetcherPending:
+      type: object
+      properties:
+        sourceCandidateId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        researchQueryId:
+          type: integer
+          format: int64
+        sourceUrl:
+          type: string
+        sourceTitle:
+          type: string
+        sourceSnippet:
+          type: string
+          nullable: true
+        sourceDomain:
+          type: string
+        sourceGroup:
+          type: string
+        searchProvider:
+          type: string
+        searchPosition:
+          type: integer
+        status:
+          type: string
+          example: FOUND
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CompleteSourceFetcherRequest:
+      type: object
+      required: [sourceUrl, sourceDomain, sourceTitle, sourceType, shortExcerpt, fetchStatus, storagePolicy]
+      properties:
+        sourceUrl:
+          type: string
+          format: uri
+          example: https://exemplo.com/clientes-manicure
+        sourceDomain:
+          type: string
+          example: exemplo.com
+        sourceTitle:
+          type: string
+          example: Como conseguir mais clientes para manicure
+        sourceType:
+          type: string
+          enum: [BUSINESS_SITE, JOB_PAGE, ARTICLE, PUBLIC_CONTENT, OFFICIAL_SOURCE, INTERNAL_SOURCE, OTHER]
+          example: PUBLIC_CONTENT
+        snippet:
+          type: string
+          nullable: true
+          example: Veja formas de divulgar serviços e preencher horários.
+        shortExcerpt:
+          type: string
+          maxLength: 1200
+          example: Manicures podem atrair mais clientes usando indicação, redes sociais, WhatsApp, pacotes mensais e lembretes de retorno.
+        fetchStatus:
+          type: string
+          example: COMPLETED
+        httpStatus:
+          type: integer
+          nullable: true
+          example: 200
+        storagePolicy:
+          type: string
+          enum: [METADATA_ONLY, SNIPPET_ONLY, SHORT_EXCERPT_ALLOWED, LINK_ONLY]
+          example: SHORT_EXCERPT_ALLOWED
+        licenseState:
+          type: string
+          nullable: true
+          example: PUBLIC_PAGE
+        relevanceScore:
+          type: integer
+          nullable: true
+          example: 88
+    CompleteSourceFetcherResponse:
+      type: object
+      properties:
+        sourceCandidateId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        selectedForFetch:
+          type: boolean
+        relevanceScore:
+          type: integer
+        cycleTotalSourceSnapshots:
+          type: integer
+        snapshot:
+          $ref: '#/components/schemas/SourceSnapshotResponse'
+    SourceSnapshotResponse:
+      type: object
+      properties:
+        sourceSnapshotId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceCandidateId:
+          type: integer
+          format: int64
+        sourceUrl:
+          type: string
+        sourceDomain:
+          type: string
+        sourceTitle:
+          type: string
+        sourceType:
+          type: string
+        snippet:
+          type: string
+          nullable: true
+        shortExcerpt:
+          type: string
+        fetchedAt:
+          type: string
+          format: date-time
+        fetchStatus:
+          type: string
+        httpStatus:
+          type: integer
+          nullable: true
+        storagePolicy:
+          type: string
+        licenseState:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    FailSourceFetcherRequest:
+      type: object
+      required: [rejectionReason]
+      properties:
+        rejectionReason:
+          type: string
+          example: Domínio bloqueado ou URL inacessível.
+        relevanceScore:
+          type: integer
+          nullable: true
+          example: 10
+    SourceFetcherDetailResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        cycleTotalSourceCandidates:
+          type: integer
+        cycleTotalSourceSnapshots:
+          type: integer
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceSnapshotResponse'

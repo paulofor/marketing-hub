@@ -47,6 +47,15 @@ public class OprmSourceCandidate {
     @Column(name = "search_position", nullable = false)
     private Integer searchPosition;
 
+    @Column(name = "relevance_score")
+    private Integer relevanceScore;
+
+    @Column(name = "selected_for_fetch", nullable = false)
+    private Boolean selectedForFetch;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
     @Column(name = "status", nullable = false, length = 32)
     private String status;
 

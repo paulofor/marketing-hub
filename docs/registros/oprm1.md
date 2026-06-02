@@ -219,3 +219,5 @@
 - 2026-06-02 14:25:00 (UTC-3): documentada na metodologia de pipeline por etapas a necessidade obrigatória de etapas concretas plugáveis e removíveis, explicitando que etapas podem depender do núcleo/infra compartilhada permitida, mas não de outras etapas concretas, para permitir inclusão, remoção e substituição sem dano colateral.
 
 - 2026-06-02 00:00:00 (UTC): implementada no coletor OPRM MEI a etapa 1 `oprmRoutineResearchCycle` no pacote `com.marketinghub.nichocnae`, com cliente backend, processor pelo `PipelineWorker`, endpoints manuais de acompanhamento/processamento e testes unitários sem agendamento automático.
+
+- 2026-06-02 00:00:00 (UTC): adicionada navegação frontend do OPRM com botão `Pipeline` ao lado de `CNAEs` e criada a tela estática `/oprm/pipeline` com três cards iniciais das etapas Ingestão de Mercado, Score OPRM e Enriquecimento Comercial para preparar a evolução visual do pipeline sem acionar novos endpoints.

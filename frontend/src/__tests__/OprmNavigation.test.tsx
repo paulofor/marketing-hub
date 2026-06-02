@@ -25,6 +25,7 @@ describe("OPRM navigation", () => {
     expect(
       screen.getByRole("button", { name: /ver nichos enriquecidos/i }),
     ).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^pipeline$/i })).toBeTruthy();
   });
 
   it("has menu link to /oprm", () => {
@@ -39,6 +40,14 @@ describe("OPRM navigation", () => {
     const link = screen.getByRole("link", { name: /^cnaes$/i });
     expect(link).toBeTruthy();
     expect(link.getAttribute("href")).toBe("/oprm");
+  });
+
+  it("renders Pipeline page on /oprm/pipeline route", () => {
+    setup(<App />, ["/oprm/pipeline"]);
+    expect(screen.getByText(/^Pipeline OPRM$/)).toBeTruthy();
+    expect(screen.getByText(/^Ingestão de Mercado$/)).toBeTruthy();
+    expect(screen.getByText(/^Score OPRM$/)).toBeTruthy();
+    expect(screen.getByText(/^Enriquecimento Comercial$/)).toBeTruthy();
   });
 
   it("renders loading state on /oprm/operations route", async () => {

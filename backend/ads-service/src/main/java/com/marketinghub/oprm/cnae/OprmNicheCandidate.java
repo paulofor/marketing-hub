@@ -69,6 +69,12 @@ public class OprmNicheCandidate {
     @Column(name = "market_niche_id")
     private Long marketNicheId;
 
+    @Column(name = "routine_research_status", nullable = false, length = 32)
+    private String routineResearchStatus;
+
+    @Column(name = "last_routine_research_cycle_id")
+    private Long lastRoutineResearchCycleId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

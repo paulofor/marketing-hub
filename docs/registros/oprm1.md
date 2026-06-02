@@ -212,3 +212,5 @@
 - 2026-06-01 18:52:03 (UTC-3): ajuste na tela de CNAEs por Score OPRM para que a lista "Nichos já enriquecidos" seja carregada pelo backend em ordem decrescente de `opportunityScore`, com `createdAt` como desempate, deixando os maiores scores no começo para priorizar decisões com maior potencial de venda.
 
 - 2026-06-02 00:00:00 (UTC): criado no backend o novo pacote `com.marketinghub.oprm.nichocnae` para o pipeline OPRM de pesquisa de rotina por nicho CNAE, com a primeira etapa `routineresearchcycle` estruturada no padrão canônico por etapa (`web`, `service`, `pending`, `listStageExecutions`, `detailStageExecution`, `recebePrompt`, `recebeResposta`) para preparar a evolução até o `oprm_niche_routine_card`.
+
+- 2026-06-02 00:00:00 (UTC): implementada a etapa 0 do novo pipeline OPRM `com.marketinghub.oprm.nichocnae`, com orquestrador backend para selecionar o próximo candidato de nicho CNAE pendente por maior score, criar `oprm_routine_research_cycle`, marcar o candidato como `RESEARCH_RUNNING` e expor contratos internos para acompanhamento e início do ciclo.

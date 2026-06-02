@@ -1,0 +1,99 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-02-01-oprm-routine-research-cycle
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_routine_research_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_routine_research_cycle (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                source_niche_id BIGINT NOT NULL,
+                cnae_code VARCHAR(7) NOT NULL,
+                cnae_description VARCHAR(255) NOT NULL,
+                niche_name VARCHAR(255) NOT NULL,
+                source_score DECIMAL(5,2) NOT NULL,
+                trigger_source VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                total_queries INT NOT NULL DEFAULT 0,
+                total_source_candidates INT NOT NULL DEFAULT 0,
+                total_source_snapshots INT NOT NULL DEFAULT 0,
+                total_extracted_signals INT NOT NULL DEFAULT 0,
+                started_at DATETIME NOT NULL,
+                finished_at DATETIME NULL,
+                error_message LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_routine_research_cycle PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_oprm_routine_cycle_source_niche ON oprm_routine_research_cycle (source_niche_id, started_at);
+              CREATE INDEX idx_oprm_routine_cycle_status_started ON oprm_routine_research_cycle (status, started_at);
+
+  - changeSet:
+      id: 2026-06-02-02-oprm-niche-candidate-routine-status
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_niche_candidate
+              columnName: routine_research_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_candidate
+                ADD COLUMN routine_research_status VARCHAR(32) NOT NULL DEFAULT 'PENDING';
+
+  - changeSet:
+      id: 2026-06-02-03-oprm-niche-candidate-last-routine-cycle
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_niche_candidate
+              columnName: last_routine_research_cycle_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_candidate
+                ADD COLUMN last_routine_research_cycle_id BIGINT NULL;
+
+  - changeSet:
+      id: 2026-06-02-04-oprm-niche-candidate-routine-rank-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            indexExists:
+              tableName: oprm_niche_candidate
+              indexName: idx_oprm_niche_candidate_routine_rank
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE INDEX idx_oprm_niche_candidate_routine_rank
+                ON oprm_niche_candidate (routine_research_status, opportunity_score, created_at);

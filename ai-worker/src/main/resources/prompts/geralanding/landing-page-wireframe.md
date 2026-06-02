@@ -43,7 +43,7 @@ Briefing das Imagens dos Anuncios:
 
 
 template_id: landing-wireframe
-template_version: v3
+template_version: v4
 artifact_target: landingPageWireframe
 
 Regras fixas da etapa (Gera Landing, contrato v3):
@@ -66,6 +66,14 @@ Regras fixas da etapa (Gera Landing, contrato v3):
 - Em todo campo de formulário (`input`), declarar `contratoCampo`: `type`, `name`, `autocomplete`, `required`, `placeholder`.
 - Em elementos de ação/entrada, usar componentes semânticos via `componente`: `buttonPrimary`, `buttonSecondary`, `formInput`, `card` (quando aplicável), evitando depender de combinação manual de tokens.
 - `texto.conteudo: ""` significa literalmente “não renderizar texto”; é proibido substituir por placeholder nesta etapa.
+
+Direção comercial obrigatória desta etapa:
+- Gere uma landing de venda/captura com percepção de produto real, não uma página técnica de gerador de arquivo.
+- A página precisa parecer desejável antes de parecer operacional: venda a transformação, mostre prova visual e só depois explique formato, PDF, amostra, marca d’água ou entrega.
+- A promessa principal deve ser baseada em `pain`, `result`, `mecanismo` e `campaignAngle`; a amostra/PDF/mini-kit é prova ou redução de risco, nunca o centro da primeira dobra.
+- O usuário deve entender em poucos segundos: “qual problema isso resolve”, “por que isso é diferente”, “o que verei antes de comprar” e “qual é o próximo passo”.
+- Priorize seções com contraste narrativo: antes/depois, dor concreta, mecanismo simples, prova visual da entrega, captura com baixo risco e FAQ de objeções.
+- Evite página com aparência de formulário solto, documentação ou dashboard. O wireframe deve criar oportunidade para o design gerar uma landing bonita: hero com prova visual forte, cards bem distribuídos, blocos de demonstração e formulário em card.
 
 Matriz oficial de grupos e atributos CSS (explícita):
 - Grupo `posicionamento` (categoria `definicoes.posicao`): `position`, `top`, `right`, `bottom`, `left`, `z-index`.
@@ -127,9 +135,14 @@ Trecho obrigatório do contrato de seção/elementos (manter):
 Regras comerciais e estruturais obrigatórias (mantidas):
 - Mobile-first obrigatório: priorize leitura vertical e CTA claro nas primeiras seções.
 - Primeira dobra forte obrigatória: o hero deve abrir com resultado comercial desejado pelo nicho + dor removida + mecanismo plausível, e não com uma descrição operacional da amostra. A amostra/PDF/mini-kit deve aparecer como prova concreta do mecanismo, não como promessa principal.
+- Critério eliminatório do H1: é inválido começar a headline principal com formato, arquivo ou operação. Não comece com “Gere uma amostra”, “Baixe um PDF”, “Receba um material”, “Crie seu mini-kit”, “Preencha um briefing” ou variações. O H1 deve vender dor removida + resultado desejado; PDF/amostra só aparece no subtítulo, bullets, legenda visual ou formulário.
+- Hero obrigatório com valor percebido: incluir, além do H1/sub/CTA, um elemento curto de pré-headline/badge ou microcopy de credibilidade quando o schema permitir (`p`, `span` ou `div` textual), e uma prova visual de produto/resultado no lado direito do desktop.
 - Desktop comercial obrigatório: no desktop, o hero deve ser pensado em duas colunas dentro de um container centralizado; coluna esquerda com headline, subtítulo, 3 bullets de valor e CTA primário; coluna direita com card visual/prova do produto ou card de captura curta. É proibido gerar uma página estreita de coluna única no desktop quando houver espaço para hierarquia visual.
 - Formulário com contexto claro: a seção de captura deve conter rótulos ou microcopy textual visível para `nome` e `email`, além de CTA específico; inputs não podem depender apenas de campos vazios/sem placeholder para o usuário entender o que preencher.
-- Sequência persuasiva mínima obrigatória: depois do hero, estruturar seções que respondam nesta ordem lógica: (1) por que a situação atual custa venda/renovação; (2) como o mecanismo resolve com pouco esforço; (3) o que a pessoa recebe na amostra e no próximo passo; (4) formulário/ação; (5) dúvidas/objeções essenciais.
+- Sequência persuasiva mínima obrigatória: depois do hero, estruturar seções que respondam nesta ordem lógica: (1) por que a situação atual custa venda/renovação; (2) como o mecanismo resolve com pouco esforço; (3) prova visual/demonstração do que aparece; (4) o que a pessoa recebe na amostra e no próximo passo; (5) formulário/ação; (6) dúvidas/objeções essenciais.
+- Seção de prova visual obrigatória: incluir pelo menos uma seção com imagem ou print conceitual que demonstre concretamente a entrega. Não basta listar entregáveis; o usuário precisa “ver” a transformação ou o produto antes de agir.
+- Seção de mecanismo obrigatória: explicar o mecanismo em 3 partes ou 3 passos, cada uma em card com `h3` + `p`, conectando item entregue ao benefício comercial. Evite termos internos como “anti-preço” sem explicação simples no texto posterior.
+- Seção de contraste obrigatória quando fizer sentido pelo contexto: usar estrutura antes/depois ou problema/novo caminho para tornar a dor mais visual e emocional, sem exagero e sem promessas fora do envelope do produto.
 - Menos CTAs redundantes: usar CTAs nos pontos de decisão, evitando repetir o mesmo botão após blocos que ainda não agregaram argumento novo.
 - Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada seção deve reduzir carga cognitiva, deixar a mensagem principal evidente em leitura rápida, usar poucos caminhos de decisão, evitar excesso de informações simultâneas e conduzir naturalmente para o próximo CTA.
 - Objetivo comercial obrigatório: estruturar a página para venda com foco na coleta de informação para envio de amostra/prova do produto (ex.: formulário/CTA de captura).
@@ -138,12 +151,19 @@ Regras comerciais e estruturais obrigatórias (mantidas):
 - Formulário obrigatório da landing: incluir seção/formulário de captura contendo somente os campos `nome` e `email` (não incluir telefone, WhatsApp, CPF, empresa ou outros campos).
 - Hero obrigatório com âncora primária: na primeira dobra (hero), incluir CTA com link âncora direto para a seção do formulário.
 - Âncoras obrigatórias adicionais: incluir mais duas âncoras internas para pontos estratégicos distintos da página (ex.: mecanismo, prova social, oferta), além da âncora do hero para o formulário.
-- Quantidade mínima de seções obrigatória: gerar no mínimo 4 seções em `pagina.corpo.secoes`.
+- Quantidade mínima de seções obrigatória: gerar no mínimo 5 seções em `pagina.corpo.secoes` quando houver dados suficientes; 4 é permitido apenas se a hipótese for extremamente simples.
 - Quantidade de imagens orientada por função comercial: planejar normalmente entre 2 e 4 elementos `img` úteis no total da página; exceder esse intervalo somente quando o nicho exigir mais prova visual concreta para vender com clareza.
 - Regra comercial para uso de imagens: inserir `img` somente quando a imagem cumpre função explícita de prova, demonstração do produto, antes/depois, explicação do mecanismo ou redução de objeção; é proibido adicionar imagem apenas para preencher seção ou decorar a página.
 - Imagem de produto obrigatória: garantir que pelo menos uma `img` represente visualmente a ideia do produto/entrega que o cliente está comprando (ex.: mockup da solução, amostra do conteúdo, kit/resultado final esperado).
+- Imagens de prova devem ter briefingVisual específico: peça mockups/prints conceituais de tela ou páginas com elementos legíveis e úteis; não peça imagens abstratas, banco de imagem genérico ou ilustração decorativa quando a objeção é “não sei o que vou receber”.
 - Hero com imagem controlada: quando a imagem de produto ou outro visual entrar no hero, ela deve ficar dentro de container controlado, com proporção e altura máximas declaradas em `briefingVisual`, sem bloco full-width desproporcional e sem competir com o CTA principal.
 - Balanceamento visual obrigatório: intercalar blocos de texto e imagem quando isso reduzir paredes de texto e melhorar escaneabilidade, sem forçar imagem em toda seção.
+
+Quality gate interno antes de responder:
+- Releia o wireframe gerado e rejeite mentalmente se ele parecer uma página técnica, estreita, sem prova visual, sem contraste narrativo ou com hero centrado no formato da entrega.
+- A landing deve ser capaz de receber um preset premium sem depender de copy longa para parecer boa.
+- O primeiro CTA deve estar visível cedo, mas a página deve criar desejo antes de pedir o formulário.
+- Se a página ficaria fraca sem as imagens, melhore a distribuição de prova, cards e mecanismo; se ficaria confusa sem ler tudo, simplifique a sequência.
 
 Heurísticas de composição (inspiração, não regra rígida):
 - Hero bullets: preferir ~3 itens.

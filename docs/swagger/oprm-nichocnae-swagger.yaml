@@ -1,22 +1,20 @@
 openapi: 3.0.3
 info:
   title: OPRM Nicho CNAE Pipeline API
-  version: 0.1.0
+  version: 0.2.0
   description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
 paths:
   /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
     get:
       summary: Lista o próximo nicho CNAE pendente para a etapa zero.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       responses:
         '200':
           description: Próximo nicho pendente, quando existir.
   /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
     post:
       summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       responses:
         '202':
           description: Ciclo criado e nicho marcado como em pesquisa.
@@ -25,38 +23,25 @@ paths:
   /api/internal/oprm/nichocnae/routine-research-cycle/stage-executions/pending:
     get:
       summary: Lista ciclos de pesquisa de rotina em execução para continuidade do pipeline.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       responses:
         '200':
           description: Ciclos em execução.
   /api/oprm/nichocnae/{sourceNicheId}/routine-research-cycle/stage-executions:
     get:
       summary: Lista ciclos de pesquisa de rotina por nicho CNAE de origem.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       parameters:
-        - name: sourceNicheId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/SourceNicheId'
       responses:
         '200':
           description: Lista de ciclos vinculados ao nicho.
   /api/oprm/nichocnae/routine-research-cycle/stage-executions/{researchCycleId}:
     get:
       summary: Detalha um ciclo de pesquisa de rotina.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       parameters:
-        - name: researchCycleId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/ResearchCycleId'
       responses:
         '200':
           description: Detalhe do ciclo.
@@ -64,53 +49,280 @@ paths:
   /api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/pending:
     get:
       summary: Lista ciclos pendentes para geração do seed e queries da etapa dois.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       responses:
         '200':
           description: Ciclos em execução sem seed de pesquisa gerado.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NicheResearchSeedBuilderPending'
   /api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/complete:
     post:
       summary: Persiste a saída validada da etapa dois com seed e queries.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       parameters:
-        - name: researchCycleId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteNicheResearchSeedBuilderRequest'
       responses:
         '200':
           description: Seed e queries gravados para o ciclo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteNicheResearchSeedBuilderResponse'
+        '400':
+          description: Payload inválido, query duplicada, objetivo não suportado ou mais de 15 queries.
+        '404':
+          description: Ciclo de pesquisa não encontrado.
   /api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}/fail:
     post:
       summary: Registra falha operacional da etapa dois.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       parameters:
-        - name: researchCycleId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailNicheResearchSeedBuilderRequest'
       responses:
         '204':
           description: Falha registrada.
+        '404':
+          description: Ciclo de pesquisa não encontrado.
   /api/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}:
     get:
       summary: Detalha o seed e as queries gerados na etapa dois.
-      tags:
-        - OPRM Nicho CNAE
+      tags: [OPRM Nicho CNAE]
       parameters:
-        - name: researchCycleId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/ResearchCycleId'
       responses:
         '200':
           description: Seed e queries do ciclo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NicheResearchSeedBuilderDetailResponse'
+        '404':
+          description: Ciclo de pesquisa não encontrado.
+components:
+  parameters:
+    ResearchCycleId:
+      name: researchCycleId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    SourceNicheId:
+      name: sourceNicheId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    NicheResearchSeedBuilderPending:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+          example: '9602501'
+        cnaeDescription:
+          type: string
+          example: Cabeleireiros, manicure e pedicure
+        nicheName:
+          type: string
+          example: Cabeleireiros, manicures e pedicures
+        sourceScore:
+          type: number
+          format: double
+        status:
+          type: string
+          example: RUNNING
+        startedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    CompleteNicheResearchSeedBuilderRequest:
+      type: object
+      required:
+        - nicheName
+        - businessType
+        - operationType
+        - customerType
+        - commercialObjects
+        - initialAssumptions
+        - confidenceLevel
+        - queries
+      properties:
+        nicheName:
+          type: string
+          example: Cabeleireiros, manicures e pedicures
+        businessType:
+          type: string
+          example: serviço local de beleza
+        operationType:
+          type: string
+          example: atendimento com agenda, recorrência, indicação e relacionamento por WhatsApp
+        customerType:
+          type: string
+          example: consumidor final, principalmente clientes recorrentes
+        commercialObjects:
+          type: string
+          example: corte de cabelo, escova, manicure, pedicure, unhas em gel, pacotes de beleza
+        initialAssumptions:
+          type: string
+          example: O nicho depende de agenda cheia, recorrência, indicação e retenção de clientes.
+        confidenceLevel:
+          type: string
+          example: INFERRED_FROM_CNAE
+        createdBy:
+          type: string
+          default: AI
+        queries:
+          type: array
+          minItems: 1
+          maxItems: 15
+          items:
+            $ref: '#/components/schemas/NicheResearchQueryRequest'
+    NicheResearchQueryRequest:
+      type: object
+      required: [queryText, queryGoal]
+      properties:
+        queryText:
+          type: string
+          example: como lotar agenda de manicure
+        queryGoal:
+          type: string
+          enum:
+            - ROUTINE_DISCOVERY
+            - NICHE_OWNER_QUESTION_DISCOVERY
+            - FINAL_CUSTOMER_QUESTION_DISCOVERY
+            - SALES_PAIN_DISCOVERY
+            - PRODUCT_SERVICE_DISCOVERY
+            - OFFER_PATTERN_DISCOVERY
+            - LANGUAGE_DISCOVERY
+            - WORKAROUND_DISCOVERY
+            - MECHANISM_DISCOVERY
+        sourceGroup:
+          type: string
+          nullable: true
+          example: web_search
+        priority:
+          type: integer
+          default: 100
+    CompleteNicheResearchSeedBuilderResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        nicheResearchSeedId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        cnaeDescription:
+          type: string
+        nicheName:
+          type: string
+        businessType:
+          type: string
+        operationType:
+          type: string
+        customerType:
+          type: string
+        commercialObjects:
+          type: string
+        initialAssumptions:
+          type: string
+        confidenceLevel:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        totalQueries:
+          type: integer
+        queries:
+          type: array
+          items:
+            $ref: '#/components/schemas/NicheResearchQueryResponse'
+    NicheResearchQueryResponse:
+      type: object
+      properties:
+        queryId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        nicheResearchSeedId:
+          type: integer
+          format: int64
+        queryText:
+          type: string
+        queryGoal:
+          type: string
+        sourceGroup:
+          type: string
+          nullable: true
+        priority:
+          type: integer
+        status:
+          type: string
+          example: PENDING
+        resultCount:
+          type: integer
+          example: 0
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FailNicheResearchSeedBuilderRequest:
+      type: object
+      required: [errorMessage]
+      properties:
+        errorMessage:
+          type: string
+          example: IA retornou queries genéricas e fora do contrato da etapa dois.
+    NicheResearchSeedBuilderDetailResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        cycleTotalQueries:
+          type: integer
+        cycleErrorMessage:
+          type: string
+          nullable: true
+        seed:
+          allOf:
+            - $ref: '#/components/schemas/CompleteNicheResearchSeedBuilderResponse'
+          nullable: true

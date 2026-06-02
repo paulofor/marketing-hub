@@ -3092,3 +3092,5 @@
   - adicionado `OPENAI_ALLOW_LOCAL_BASE_URL` apenas como escape explícito para testes/desenvolvimento controlado;
   - testes unitários cobrem a substituição de localhost, a preservação quando explicitamente permitido e a preservação da URL oficial.
 - impacto esperado: execuções produtivas do GeraLanding não devem mais tentar chamar portas locais acidentais para gerar imagens; se uma configuração local escapar para produção, o Worker AI usa a OpenAI oficial em vez de quebrar o job com conexão recusada em localhost.
+
+- 2026-06-02: Removido teste obsoleto `ExperimentPipelineOpenAiClientTest.prependsLandingDesignPresetGuidanceWithMinimumVisualQualityRules`, que validava literal antigo do prompt de design preset da landing e não é mais necessário.

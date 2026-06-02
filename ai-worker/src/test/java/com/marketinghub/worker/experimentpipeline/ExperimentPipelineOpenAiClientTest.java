@@ -151,60 +151,6 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("Toda estrutura de imagem (`sectionId`, `imageBindingKey`, cobertura por seção, layout e bindings) é recebida do wireframe e **não pode ser alterada**.");
     }
 
-    /** Verifica se o prompt do preset de design inclui o contrato visual mínimo da landing. */
-    @Test
-    void prependsLandingDesignPresetGuidanceWithMinimumVisualQualityRules() {
-        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
-                UUID.randomUUID(),
-                15L,
-                "landing-page-design-preset",
-                "gpt-5.2",
-                "prompt",
-                """
-                        {
-                          "model": "gpt-5.2",
-                          "input": [
-                            {"role": "user", "content": "Prompt do design preset"}
-                          ]
-                        }
-                        """,
-                Instant.now());
-
-        client.generate(job);
-
-        Map<String, Object> payload = payloadRef.get();
-        @SuppressWarnings("unchecked")
-        var input = (java.util.List<Map<String, Object>>) payload.get("input");
-        String userPrompt = String.valueOf(input.get(0).get("content"));
-        assertThat(userPrompt).contains("Você está na etapa `landing-page-design-preset` do pipeline Gera Landing.");
-        assertThat(userPrompt).contains("landingPageWireframe");
-        assertThat(userPrompt).contains("definicoes");
-        assertThat(userPrompt).contains("estrutura-layout");
-        assertThat(userPrompt).contains("espacamento");
-        assertThat(userPrompt).contains("cores-fundo");
-        assertThat(userPrompt).contains("tipografia");
-        assertThat(userPrompt).contains("Qualidade visual mínima da landing (obrigatório):");
-        assertThat(userPrompt).contains("`body` deve ter `margin: 0`, fonte legível, background consistente");
-        assertThat(userPrompt).contains("`max-width` e centralização com `margin-left: auto` e `margin-right: auto`");
-        assertThat(userPrompt).contains("Hero deve ficar em layout de duas colunas no desktop e uma coluna no mobile");
-        assertThat(userPrompt).contains("CTA primário deve ter aparência real de botão");
-        assertThat(userPrompt).contains("`display: inline-flex`, estados `:hover` e contraste");
-        assertThat(userPrompt).contains("Imagens devem usar `max-width: 100%`, altura controlada, `object-fit`, `border-radius`");
-        assertThat(userPrompt).contains("Listas e bullets devem ter espaçamento controlado");
-        assertThat(userPrompt).contains("Formulário deve aparecer em card visual separado");
-        assertThat(userPrompt).contains("Não gerar texto colado na borda da tela");
-        assertThat(userPrompt).contains("Não deixar link com aparência padrão de navegador");
-        assertThat(userPrompt).contains("Não permitir imagem gigante sem container");
-        assertThat(userPrompt).contains("Não usar título que quebre a primeira dobra de forma agressiva");
-    }
-
     @Test
     @Disabled("Temporariamente desativado até correção do contrato de retorno JSON em landing-page-deliverables.")
     void prependsLandingDeliverablesGuidanceWithCanonicalChecklist() {

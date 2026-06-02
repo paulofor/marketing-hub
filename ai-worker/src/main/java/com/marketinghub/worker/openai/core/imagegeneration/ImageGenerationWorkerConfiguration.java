@@ -2,7 +2,6 @@ package com.marketinghub.worker.openai.core.imagegeneration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.creative.CreativeImageOptimizer;
-import com.marketinghub.worker.frameworkimage.FrameworkImageBackendClient;
 import com.marketinghub.worker.frameworkimage.FrameworkImageStorageClient;
 import com.marketinghub.worker.openai.core.StageWorker;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,13 +25,13 @@ public class ImageGenerationWorkerConfiguration {
     /** Cria o adapter HTTP/storage da etapa imagegeneration para consultar, atualizar e publicar imagens. */
     @Bean
     public ImageGenerationBackendClient imageGenerationBackendClient(
-            FrameworkImageBackendClient backendClient,
             FrameworkImageStorageClient storageClient,
             CreativeImageOptimizer imageOptimizer,
             WebClient.Builder webClientBuilder,
+            ObjectMapper objectMapper,
             ImageGenerationWorkerProperties properties
     ) {
-        return new ImageGenerationBackendClient(backendClient, storageClient, imageOptimizer, webClientBuilder, properties);
+        return new ImageGenerationBackendClient(storageClient, imageOptimizer, webClientBuilder, objectMapper, properties);
     }
 
     /** Cria o builder responsável por montar o request de imagem da OpenAI para a etapa imagegeneration. */

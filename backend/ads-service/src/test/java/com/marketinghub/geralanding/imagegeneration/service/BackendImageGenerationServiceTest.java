@@ -176,9 +176,9 @@ class BackendImageGenerationServiceTest {
         verify(executionRepository).save(execution);
     }
 
-    /** Deve concluir a execução e manter a resposta da geração de imagens na auditoria da execução. */
+    /** Deve concluir a execução e gravar o manifesto de imagens no experimento para as próximas etapas. */
     @Test
-    void markCompletedFromResponseShouldPersistExecutionAuditOnly() {
+    void markCompletedFromResponseShouldPersistImageAssetsManifestOnExperiment() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendImageGenerationService service =
@@ -191,7 +191,7 @@ class BackendImageGenerationServiceTest {
                 .idJob("job-ia-1".getBytes(StandardCharsets.UTF_8))
                 .status("AGUARDANDO_RETORNO_OPENAI")
                 .build();
-        String modelResponse = "{\"landingPageWireframe\":{\"sectionOrder\":[\"hero\"]}}";
+        String modelResponse = "{\"images\":[{\"planningItemKey\":\"hero-img\",\"resolvedUrl\":\"https://cdn/hero.jpg\"}]}";
         when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(any(byte[].class)))
                 .thenReturn(Optional.of(execution));
 
@@ -215,8 +215,9 @@ class BackendImageGenerationServiceTest {
         assertNotNull(execution.getCompletedAt());
         assertEquals("CONCLUIDO", execution.getStatus());
         verify(executionRepository).save(execution);
+        verify(experiment).setLandingPageImageAssets(modelResponse);
         verify(experiment, never()).setLandingPageWireframe(any());
-        verify(experimentRepository, never()).save(experiment);
+        verify(experimentRepository).save(experiment);
         verify(experimentRepository, never()).findById(88L);
     }
 

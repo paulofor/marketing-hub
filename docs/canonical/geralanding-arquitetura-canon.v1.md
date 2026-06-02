@@ -71,6 +71,7 @@ Regras arquiteturais refletidas (ArchUnit):
 ## 3) Contrato HTTP canônico
 
 - O Swagger/OpenAPI canônico dos endpoints HTTP do backend GeraLanding por etapa fica em `docs/canonical/geralanding-backend-swagger.v1.yaml`.
+- A etapa `landing-page-image-generation` deve ser consumida pelo Worker AI exclusivamente pelos endpoints internos do próprio GeraLanding: `/api/internal/geralanding/image-generation/stage-executions/pending`, `/api/internal/geralanding/image-generation/stage-executions/{idJob}/recebe-prompt` e `/api/internal/geralanding/image-generation/stage-executions/{idJob}/recebe-resposta`; não usar a fila legada `/api/internal/framework-image/jobs/pending` para jobs iniciados pelo card GeraLanding.
 - Qualquer criação, remoção ou mudança de endpoint em `com.marketinghub.geralanding.*.web` deve manter esse Swagger sincronizado no mesmo PR.
 
 ## 4) Regras de integração

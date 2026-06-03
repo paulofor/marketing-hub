@@ -832,3 +832,15 @@ Arquivos alterados:
 - implementada a etapa `htmlcapture` no `mois-sales-library-worker` seguindo o padrão de núcleo genérico `pipeline` + etapa concreta `pipeline.htmlcapture`, com `StageProcessor`, `StageResult`, `StageArtifact`, `PipelineWorker` e proteção ArchUnit contra acoplamento entre etapas.
 - criados endpoints backend `POST /api/mois/sales-library/html-captures:claim`, `POST /api/mois/sales-library/html-captures/{snapshotId}:complete` e `POST /api/mois/sales-library/html-captures/{snapshotId}:fail` para reservar URLs normalizadas da biblioteca e persistir HTML bruto versionado em `mois_sales_library_page_snapshot` + `mois_sales_library_snapshot_artifact`.
 - a etapa registra hash SHA-256, tamanho, status HTTP, content type, URL final e data da captura, preservando falhas de acesso/bloqueio/timeout como snapshots `FAILED` para auditoria e reprocessamento.
+
+## 2026-06-03 — Pipeline de páginas de vendas com execução manual da etapa 1
+- Corrigida a causa-raiz da tela `/mois/sales-pages-library/pipeline` aparentar não executar: ela ainda estava como placeholder visual, embora o backend já possuísse contrato operacional de captura de snapshots.
+- A tela agora consome `POST /api/mois/sales-library/snapshots:capture`, permite executar a etapa **Obtenção dos HTML**, exibe contadores da execução e lista o resultado por URL com status, HTTP, tamanho do HTML e detalhe/hash.
+- Atualizado o contrato Swagger da Biblioteca de Páginas de Vendas para documentar o endpoint de captura manual utilizado pelo frontend.
+
+Arquivos alterados:
+- `frontend/src/api/mois/types.ts`
+- `frontend/src/api/mois/useMoisSalesLibrary.ts`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

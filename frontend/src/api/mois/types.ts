@@ -213,7 +213,6 @@ export interface MoisCollectedReferenceLineageResponse {
   updatedAt: string;
 }
 
-
 export interface MoisSalesLibraryEntry {
   id: number;
   workspaceId: string;
@@ -233,7 +232,6 @@ export interface MoisSalesLibraryEntryPageResponse {
   total: number;
   items: MoisSalesLibraryEntry[];
 }
-
 
 export interface MoisSalesLibraryJob {
   id: number;
@@ -294,6 +292,28 @@ export interface MoisSalesLibraryPageAnalysis {
   updatedAt: string;
 }
 
+export interface MoisSalesLibrarySnapshotCaptureItem {
+  pageId: number;
+  snapshotId?: number;
+  urlCanonical: string;
+  status: string;
+  snapshotHash?: string;
+  httpStatus?: number;
+  rawHtmlBytes: number;
+  screenshotBytes: number;
+  errorMessage?: string;
+}
+
+export interface MoisSalesLibrarySnapshotCaptureResponse {
+  workspaceId: string;
+  requestedLimit: number;
+  force: boolean;
+  processed: number;
+  captured: number;
+  failed: number;
+  items: MoisSalesLibrarySnapshotCaptureItem[];
+  capturedAt: string;
+}
 
 export interface MoisSalesLibraryPageSnapshot {
   snapshotId: number;

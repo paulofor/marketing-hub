@@ -23,8 +23,8 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
 
     private static final Logger log = LoggerFactory.getLogger(PlaywrightQualityReviewScreenshotService.class);
     private static final List<ViewportSpec> VIEWPORTS = List.of(
-            new ViewportSpec("desktop", 1440, 1200),
-            new ViewportSpec("mobile", 390, 1200)
+            new ViewportSpec("mobile", 390, 1200, true),
+            new ViewportSpec("desktop", 1440, 1200, false)
     );
 
     private final FrameworkImageStorageClient storageClient;
@@ -39,7 +39,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
         this.properties = properties;
     }
 
-    /** Renderiza o HTML final em viewports desktop e mobile e publica os screenshots no storage. */
+    /** Renderiza o HTML final priorizando mobile e publica os screenshots disponíveis no storage. */
     @Override
     public List<String> renderScreenshots(QualityReviewInput input) {
         if (input == null || !StringUtils.hasText(input.landingHtml())) {
@@ -48,7 +48,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
         try (Playwright playwright = Playwright.create(); Browser browser = launchBrowser(playwright)) {
             List<String> screenshotUrls = new ArrayList<>();
             for (ViewportSpec viewport : VIEWPORTS) {
-                screenshotUrls.add(renderAndUpload(browser, input, viewport));
+                renderAndUploadPrioritized(browser, input, viewport, screenshotUrls);
             }
             return List.copyOf(screenshotUrls);
         } catch (RuntimeException error) {
@@ -59,6 +59,34 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     input != null && input.landingHtml() != null ? input.landingHtml().length() : 0,
                     error);
             throw error;
+        }
+    }
+
+    /** Informa a ordem operacional de captura para testes e auditoria da prioridade mobile. */
+    static List<String> capturePriorityViewportNames() {
+        return VIEWPORTS.stream().map(ViewportSpec::name).toList();
+    }
+
+    /** Executa a captura da viewport e mantém o fluxo com mobile quando uma viewport secundária falha. */
+    private void renderAndUploadPrioritized(
+            Browser browser,
+            QualityReviewInput input,
+            ViewportSpec viewport,
+            List<String> screenshotUrls
+    ) {
+        try {
+            screenshotUrls.add(renderAndUpload(browser, input, viewport));
+        } catch (RuntimeException error) {
+            if (viewport.required() || screenshotUrls.isEmpty()) {
+                throw error;
+            }
+            log.warn(
+                    "Viewport secundária do Quality Review falhou; prosseguindo com screenshots prioritários [jobId={}, experimentId={}, viewport={}, screenshotsDisponiveis={}]",
+                    input.idJob(),
+                    input.experimentId(),
+                    viewport.name(),
+                    screenshotUrls.size(),
+                    error);
         }
     }
 
@@ -74,7 +102,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
         return playwright.chromium().launch(options);
     }
 
-    /** Renderiza uma viewport específica, captura JPEG full-page e publica no storage. */
+    /** Renderiza uma viewport específica, captura JPEG full-page sem recortar a landing e publica no storage. */
     private String renderAndUpload(Browser browser, QualityReviewInput input, ViewportSpec viewport) {
         Page page = browser.newPage(new Browser.NewPageOptions()
                 .setViewportSize(viewport.width(), viewport.height())
@@ -86,16 +114,18 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
             waitForNetworkIdle(page, input, viewport);
             byte[] screenshot = page.screenshot(new Page.ScreenshotOptions()
                     .setFullPage(true)
+                    .setTimeout(properties.screenshotTimeout().toMillis())
                     .setType(ScreenshotType.JPEG)
                     .setQuality(82));
             FrameworkImageStorageClient.UploadedFrameworkImage uploaded = storageClient.upload(
                     screenshot,
                     buildScreenshotFilename(input, viewport));
             log.info(
-                    "Screenshot do Quality Review publicado [jobId={}, experimentId={}, viewport={}, publicUrl={}, bytes={}]",
+                    "Screenshot full-page do Quality Review publicado [jobId={}, experimentId={}, viewport={}, screenshotTimeoutMs={}, publicUrl={}, bytes={}]",
                     input.idJob(),
                     input.experimentId(),
                     viewport.name(),
+                    properties.screenshotTimeout().toMillis(),
                     uploaded.publicUrl(),
                     screenshot.length);
             return uploaded.publicUrl();
@@ -123,9 +153,9 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
         return jobId + "-quality-review-" + viewport.name() + ".jpg";
     }
 
-    /** Responsabilidade: representar uma viewport de screenshot da landing. */
-    private record ViewportSpec(String name, int width, int height) {
-        /** Preserva nome e dimensões da viewport para renderização do browser. */
+    /** Responsabilidade: representar uma viewport de screenshot da landing e sua prioridade operacional. */
+    private record ViewportSpec(String name, int width, int height, boolean required) {
+        /** Preserva nome, dimensões e obrigatoriedade da viewport para renderização do browser. */
         private ViewportSpec {
         }
     }

@@ -48,7 +48,7 @@ public record QualityReviewWorkerProperties(
             chromiumExecutablePath = "/usr/bin/chromium";
         }
         if (screenshotTimeout == null || screenshotTimeout.isNegative() || screenshotTimeout.isZero()) {
-            screenshotTimeout = Duration.ofSeconds(30);
+            screenshotTimeout = Duration.ofMinutes(2);
         }
     }
 }

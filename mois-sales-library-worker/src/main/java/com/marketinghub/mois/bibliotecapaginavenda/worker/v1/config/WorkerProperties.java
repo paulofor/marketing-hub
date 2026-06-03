@@ -15,4 +15,7 @@ public record WorkerProperties(
         String rawHtmlSources,
         long pollIntervalMs,
         long rawHtmlPollIntervalMs,
+        long htmlCapturePollIntervalMs,
+        Integer htmlCaptureLimit,
+        Boolean htmlCaptureForce,
         int requestTimeoutMs) {}

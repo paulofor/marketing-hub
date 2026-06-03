@@ -4,6 +4,9 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.client.BackendClien
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.config.WorkerProperties;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.*;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai.OpenAiSalesPageAnalyzer;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.PipelineWorker;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.htmlcapture.HtmlCaptureInput;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.htmlcapture.HtmlCaptureOutput;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai.SalesPageAnalysisResult;
 import java.time.Instant;
 import java.util.Arrays;
@@ -27,8 +30,21 @@ public class PipelineRunner {
     private final BackendClient backendClient;
     private final WorkerProperties properties;
     private final OpenAiSalesPageAnalyzer openAiSalesPageAnalyzer;
+    private final PipelineWorker<HtmlCaptureInput, HtmlCaptureOutput> htmlCapturePipelineWorker;
     private final AtomicInteger sourceCursor = new AtomicInteger(0);
     private final AtomicInteger rawHtmlSourceCursor = new AtomicInteger(0);
+
+
+    /**
+     * Executa a primeira etapa do pipeline da biblioteca: obter HTML bruto versionado para URLs normalizadas.
+     */
+    @Scheduled(fixedDelayString = "${worker.html-capture-poll-interval-ms:20000}")
+    public void runHtmlCapturePipelineCycle() {
+        log.info("MOIS htmlcapture pipeline cycle started. workspaceId={}, limit={}, force={}, pollIntervalMs={}",
+                properties.workspaceId(), properties.htmlCaptureLimit(), properties.htmlCaptureForce(), properties.htmlCapturePollIntervalMs());
+        boolean processed = htmlCapturePipelineWorker.processNext();
+        log.info("MOIS htmlcapture pipeline cycle finished. workspaceId={}, processed={}", properties.workspaceId(), processed);
+    }
 
     /**
      * Executa um ciclo da primeira etapa: reservar URL coletada, buscar HTML completo na internet e persistir no backend.

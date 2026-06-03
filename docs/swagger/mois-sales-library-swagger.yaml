@@ -61,6 +61,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CollectedReferenceHtmlPersistResponse'
+  /snapshots:capture:
+    post:
+      summary: Executa captura de snapshots HTML para páginas sem captura recente
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesLibrarySnapshotCaptureRequest'
+      responses:
+        '202':
+          description: Captura executada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesLibrarySnapshotCaptureResponse'
 components:
   parameters:
     CaptureId:
@@ -139,3 +156,70 @@ components:
           format: int64
         status:
           type: string
+    SalesLibrarySnapshotCaptureRequest:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+          example: workspace-001
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 5
+        force:
+          type: boolean
+          description: Quando verdadeiro, recaptura páginas mesmo que já possuam snapshot CAPTURED ou FETCHING.
+    SalesLibrarySnapshotCaptureItem:
+      type: object
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        snapshotId:
+          type: integer
+          format: int64
+          nullable: true
+        urlCanonical:
+          type: string
+        status:
+          type: string
+          enum: [CAPTURED, DUPLICATE, FAILED]
+        snapshotHash:
+          type: string
+          nullable: true
+        httpStatus:
+          type: integer
+          nullable: true
+        rawHtmlBytes:
+          type: integer
+          format: int64
+        screenshotBytes:
+          type: integer
+          format: int64
+        errorMessage:
+          type: string
+          nullable: true
+    SalesLibrarySnapshotCaptureResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        requestedLimit:
+          type: integer
+        force:
+          type: boolean
+        processed:
+          type: integer
+        captured:
+          type: integer
+        failed:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesLibrarySnapshotCaptureItem'
+        capturedAt:
+          type: string
+          format: date-time

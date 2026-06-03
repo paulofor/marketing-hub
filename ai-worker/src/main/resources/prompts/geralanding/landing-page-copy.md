@@ -45,7 +45,9 @@ Regra central de contrato:
 - Especificidade obrigatória: todo texto deve parecer feito para o nicho e para a dor recebidos no contexto; evite frases que serviriam para qualquer mercado.
 - Mecanismo plausível: em passos/cards explicativos, mostre por que a solução funciona de forma simples, sem promessa mágica e sem jargão interno.
 - CTA orientado ao benefício: botões e links devem prometer avanço prático do usuário, como ver plano, gerar versão personalizada, receber diagnóstico ou montar roteiro; não use CTA centrado apenas em “baixar PDF”, “preencher formulário” ou “gerar material”.
+- Coerência entre CTA e formulário obrigatória: se o formulário pede somente `nome` e `email`, não prometa que a página vai “mostrar personalização a partir do briefing”, “montar diagnóstico completo agora” ou qualquer ação que exija dados que a tela não coleta. Nesse caso, prometa uma entrega compatível com baixo esforço, como receber uma prévia, checklist, roteiro inicial, amostra guiada ou próximo passo por e-mail.
 - Clareza de formulário obrigatória: se o wireframe trouxer labels, placeholders, microcopy ou botão do formulário, escreva textos explícitos para `nome`, `email` e CTA, para que o usuário não veja campos vazios sem orientação.
+- CTA visualmente curto e forte: textos de botão devem ser curtos, específicos e com verbo de ação; evite frases longas que quebrem o layout, pareçam link comum ou reduzam a percepção de botão premium.
 - Prova de valor rápida: em listas e cards, prefira frases que conectem item entregue → benefício prático → redução de esforço/dor, sem depender de termos genéricos como “mini-kit”, “amostra” ou “material” isoladamente.
 - A etapa copy não decide estrutura, não adiciona seções, não adiciona blocos e não cria metadados.
 - A etapa copy apenas escreve o valor `texto` para ids textuais existentes no wireframe.
@@ -85,9 +87,11 @@ Regras obrigatórias:
 9. Se o wireframe não definiu uma área para determinado conteúdo, esse conteúdo não deve aparecer na resposta.
 10. Respeite `texto.tamMaximo`; quando houver dúvida, prefira texto mais curto, claro e vendável.
 11. Não vazar termos técnicos/metainstruções no texto final exibido ao usuário.
-12. Manter continuidade com promessa e CTA do anúncio somente dentro dos campos textuais que o wireframe já pediu.
-13. Se houver conflito entre contexto e wireframe, priorize sempre o wireframe.
-14. Responder somente com JSON válido aderente ao schema da etapa.
+12. Para botão submit de formulário, use CTA compatível com o que o formulário realmente coleta; com apenas nome/e-mail, nunca sugira personalização profunda, briefing completo ou diagnóstico detalhado imediato.
+13. Manter continuidade com promessa e CTA do anúncio somente dentro dos campos textuais que o wireframe já pediu.
+14. Antes de responder, revise se H1, subtítulo, CTA do hero e submit contam a mesma história: dor removida, resultado prometido, mecanismo plausível, prova/entrega e ação de baixo esforço.
+15. Se houver conflito entre contexto e wireframe, priorize sempre o wireframe.
+16. Responder somente com JSON válido aderente ao schema da etapa.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

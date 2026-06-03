@@ -3245,3 +3245,32 @@
   - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/QualityReviewWorkerProperties.java
   - ai-worker/src/main/resources/application.properties
   - docs/registros/experimentos.md
+
+## 2026-06-03 — Ajuste do prompt do índice de qualidade do GeraLanding
+
+- solicitação: melhorar o prompt da etapa `landing-page-quality-review` após resposta do índice de qualidade apontar CTA quebrado, layout desktop fraco, aparência provisória e metadado técnico visível.
+- causa-raiz tratada: o prompt anterior avaliava critérios corretos, mas não orientava com precisão a calibração de nota, o formato acionável dos bloqueios e o mapeamento de cada problema para a etapa de regeneração que corrige a causa-raiz.
+- correção aplicada: o prompt passou a exigir avaliação visual baseada nos screenshots, rubrica explícita de pontuação, checklist de CTA/layout/prova/artefato final, formato recomendado para `blockingIssues` e matriz de decisão para `recommendedRegeneration`; o cânone de arquitetura do GeraLanding foi sincronizado com a regra operacional do Quality Review.
+- resultado esperado: diagnósticos mais objetivos, notas mais consistentes e recomendações de regeneração focadas em causa-raiz, especialmente para problemas de HTML/CSS, design preset, copy e metadados técnicos.
+- arquivos alterados:
+  - `ai-worker/src/main/resources/prompts/geralanding/landing-page-quality-review.md`
+  - `docs/canonical/geralanding-arquitetura-canon.v1.md`
+  - `docs/registros/experimentos.md`
+
+## 2026-06-03 — Reforço dos prompts upstream após Quality Review
+
+- solicitação: melhorar os prompts das outras etapas do GeraLanding onde o índice de qualidade mostrou fraquezas, especialmente CTA quebrado, layout desktop fraco, conflito visual de classes, copy contraditória com formulário e título técnico provisório no HTML.
+- causa-raiz tratada: o Quality Review estava apontando sintomas de qualidade final que nascem antes da revisão, principalmente em wireframe, copy, design preset e montagem determinística do HTML final.
+- correção aplicada:
+  - prompt de wireframe reforçado para separar texto/CTAs/prova visual no hero, exigir componente explícito em ações principais e criar container de CTAs para o preset aplicar layout correto;
+  - prompt de copy reforçado para manter coerência entre CTA e formulário com apenas nome/e-mail, usar botões curtos e alinhar H1/subtítulo/CTA/submit na mesma promessa;
+  - prompt de design preset reforçado para gerar título publicável, corrigir fraquezas apontadas pelo Quality Review, blindar CTAs contra aparência de link/barra fina, tratar navegação/topo e aplicar container de CTA com gap real;
+  - processor de HTML do preset ajustado para não emitir `Wireframe provisório` como `<title>` do HTML final, usando título publicável quando informado ou fallback neutro.
+- resultado esperado: as etapas geradoras passam a prevenir as fraquezas antes do Quality Gate, reduzindo regenerações por CTA visualmente quebrado, primeira dobra desalinhada, copy incompatível com o formulário e contaminação técnica no HTML final.
+- arquivos alterados:
+  - `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md`
+  - `ai-worker/src/main/resources/prompts/geralanding/landing-page-copy.md`
+  - `ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md`
+  - `backend/ads-service/src/main/java/com/marketinghub/geralanding/presetdesign/provisorio/DesignPresetProvisionalHtmlProcessor.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlProcessorTest.java`
+  - `docs/registros/experimentos.md`

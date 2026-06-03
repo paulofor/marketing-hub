@@ -57,16 +57,17 @@ O assembler final é determinístico e não inventa estilos. Tudo que a página 
 1. Responda somente JSON válido.
 2. Não crie, remova ou renomeie seções e elementos.
 3. Não altere `id`, `tag`, `texto`, `briefingVisual`, `interacao`, `asset`, `contratoCampo` ou `componente`, exceto para preservar exatamente o que veio do wireframe.
-4. Em `pagina`, é proibido criar o campo `body`. Classes globais do `<body>` ficam somente em `pagina.corpo.estilos`.
-5. Em `pagina.corpo.estilos`, use exatamente: `["bgBody", "fontBase", "textPrimary", "marginReset"]`.
-6. Em todos os elementos, `estilos` deve ser uma lista simples de strings.
-7. Todo nome usado em qualquer `estilos[]` precisa existir em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`.
-8. A variação desktop/mobile deve existir somente em `definicoes.desktop` e `definicoes.mobile`.
-9. Não use JSON serializado em string.
-10. Não crie classes com nomes já existentes em `landingPageWireframe.definicoes`; os nomes de preset devem ser inéditos em relação ao wireframe.
-11. Não use opacidade para simular cor de texto. Crie tokens de cor dedicados.
-12. Não dependa de hover ou focus para legibilidade. Estados podem existir, mas a aparência base precisa funcionar sozinha.
-13. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso para classes semânticas como botões, inputs, labels, cards, grids e overrides mobile.
+4. Em `pagina.head.texto`, gere um título final publicável, curto e comercial para a landing; é proibido devolver “Wireframe provisório”, “HTML provisório”, “rascunho”, “debug” ou qualquer marcador técnico.
+5. Em `pagina`, é proibido criar o campo `body`. Classes globais do `<body>` ficam somente em `pagina.corpo.estilos`.
+6. Em `pagina.corpo.estilos`, use exatamente: `["bgBody", "fontBase", "textPrimary", "marginReset"]`.
+7. Em todos os elementos, `estilos` deve ser uma lista simples de strings.
+8. Todo nome usado em qualquer `estilos[]` precisa existir em `definicoes.*.desktop[].nome` ou `definicoes.*.mobile[].nome`.
+9. A variação desktop/mobile deve existir somente em `definicoes.desktop` e `definicoes.mobile`.
+10. Não use JSON serializado em string.
+11. Não crie classes com nomes já existentes em `landingPageWireframe.definicoes`; os nomes de preset devem ser inéditos em relação ao wireframe.
+12. Não use opacidade para simular cor de texto. Crie tokens de cor dedicados.
+13. Não dependa de hover ou focus para legibilidade. Estados podem existir, mas a aparência base precisa funcionar sozinha.
+14. É permitido repetir o mesmo `nome` em vários itens de `definicoes` para compor uma classe com múltiplas propriedades CSS. Use isso para classes semânticas como botões, inputs, labels, cards, grids e overrides mobile.
 
 # Grupos obrigatórios em `definicoes`
 
@@ -94,6 +95,18 @@ Cada item deve ter exatamente `nome`, `atributoCss`, `valor`.
 Use somente estas propriedades:
 
 `display`, `width`, `height`, `min-width`, `min-height`, `max-width`, `max-height`, `box-sizing`, `overflow`, `overflow-x`, `overflow-y`, `grid`, `grid-template`, `grid-template-columns`, `grid-template-rows`, `grid-template-areas`, `grid-column`, `grid-column-start`, `grid-column-end`, `grid-row`, `grid-row-start`, `grid-row-end`, `grid-area`, `flex`, `flex-direction`, `flex-wrap`, `flex-flow`, `justify-content`, `align-items`, `align-content`, `align-self`, `place-items`, `place-content`, `justify-items`, `gap`, `row-gap`, `column-gap`, `order`, `flex-grow`, `flex-shrink`, `flex-basis`, `margin`, `margin-top`, `margin-right`, `margin-bottom`, `margin-left`, `padding`, `padding-top`, `padding-right`, `padding-bottom`, `padding-left`, `color`, `background`, `background-color`, `background-image`, `background-size`, `background-position`, `background-repeat`, `background-attachment`, `background-clip`, `background-origin`, `font`, `font-family`, `font-size`, `font-weight`, `font-style`, `font-variant`, `line-height`, `letter-spacing`, `word-spacing`, `text-align`, `text-decoration`, `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-transform`, `text-shadow`, `white-space`, `border`, `border-width`, `border-style`, `border-color`, `border-top`, `border-right`, `border-bottom`, `border-left`, `border-radius`, `outline`, `outline-width`, `outline-style`, `outline-color`, `outline-offset`, `box-shadow`, `opacity`, `filter`, `backdrop-filter`, `mix-blend-mode`, `isolation`, `cursor`, `appearance`, `caret-color`, `accent-color`, `list-style`, `list-style-type`, `list-style-position`, `list-style-image`, `object-fit`, `object-position`, `transition`, `transition-property`, `transition-duration`, `transition-timing-function`, `transition-delay`, `animation`, `animation-name`, `animation-duration`, `animation-timing-function`, `animation-delay`, `animation-iteration-count`, `animation-direction`, `animation-fill-mode`, `animation-play-state`.
+
+
+# Correção obrigatória das fraquezas apontadas pelo Quality Review
+
+A etapa de qualidade penaliza fortemente CTA quebrado, layout desktop sem primeira dobra forte, conflito de classes, navegação empilhada e aparência de wireframe. Portanto, antes de responder:
+
+- Reforce o hero desktop como composição premium: container amplo, grid/colunas comerciais apenas no desktop, coluna textual com promessa + bullets + CTAs, coluna visual com prova/mockup em moldura.
+- Aplique em todo CTA principal classes completas de botão; nunca deixe `a` ou `button` com aparência de link padrão, barra fina, seleção de texto ou área de clique pequena.
+- Trate navegação/topo como elemento secundário e profissional: centralizada ou alinhada em container, com espaçamento consistente, sem competir com o CTA principal e sem parecer lista empilhada.
+- Evite conflito visual entre classes do wireframe e do preset: quando aplicar classe de preset para botão, card, grid, input ou container, aplique também classes de reset/override suficientes para vencer estilos antigos que causem link azul, padding ausente, largura errada ou layout estreito.
+- Se o wireframe trouxer `componente = buttonPrimary` ou `buttonSecondary`, a saída é inválida se o elemento não receber a classe premium correspondente e todos os tokens mínimos definidos neste prompt.
+- Se o formulário existir, o card do formulário deve ser visualmente mais forte que cards informativos e o submit deve parecer a ação mais segura e óbvia da página.
 
 # Regra crítica de cascade e responsividade mobile
 
@@ -254,6 +267,7 @@ Para todo elemento `a` ou `button`:
 - Se o elemento for submit do formulário (`tag = button`, `type = submit` ou id contendo `submit`), ele DEVE receber: `buttonFormSubmit`, `buttonMinTouch`, `buttonTextStrong`, `textOnButtonPrimary`, `ctaPrimaryBg`, `cursorPointer`.
 - Se `interacao.intencaoAcao` estiver preenchida, mas `componente = none`, aplique ao menos `buttonTertiaryLink`, `buttonTextStrong`, `cursorPointer`, `textNoUnderline`.
 - Se o CTA principal estiver no hero, prova, entregáveis, FAQ final ou formulário, aplique também `buttonFullMobile`.
+- Se houver container de CTAs, aplique classes de layout com gap real (`ctaRowPremium`, `mobileStack`, `mobileFullWidth`) para impedir CTAs colados, barras finas ou links soltos.
 
 ## Definições mínimas obrigatórias de botão
 
@@ -266,6 +280,7 @@ Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propried
 - `buttonMinTouch`: `min-height:48px`.
 - `buttonTextStrong`: `font-size:16px`, `font-weight:800`, `line-height:1.2`.
 - `buttonFormSubmit`: `display:flex`, `align-items:center`, `justify-content:center`, `width:100%`, `padding:15px 22px`, `min-height:50px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`.
+- `ctaRowPremium`: `display:flex`, `align-items:center`, `gap:12px`, `flex-wrap:wrap`.
 
 # Classes obrigatórias globais mínimas
 
@@ -308,6 +323,7 @@ Crie e aplique, quando apropriado:
 - `buttonFormSubmit`
 - `formShell`
 - `mediaFrame`
+- `ctaRowPremium`
 
 # Critérios negativos
 
@@ -326,6 +342,9 @@ Rejeite e gere novamente se o JSON produzir:
 - CTA com menos de 44px de altura visual;
 - botão primário parecendo uma barra fina;
 - botão submit menor ou mais fraco que CTAs secundários;
+- container de CTA sem gap real ou com links soltos visualmente;
+- navegação/topo empilhado como lista improvisada;
+- título/head contendo “Wireframe provisório”, “HTML provisório” ou marcador técnico;
 - elemento com `componente = buttonPrimary` sem a classe `buttonPrimaryPremium`;
 - elemento com `componente = buttonSecondary` sem a classe `buttonSecondaryGhost`;
 - botão submit sem a classe `buttonFormSubmit`;
@@ -350,7 +369,8 @@ Garanta que:
 - Formulário seja o bloco mais acionável;
 - Preview pareça uma vitrine do produto;
 - FAQ seja legível e mais calmo;
-- nenhum CTA dependa apenas de `background`, `border-radius` e `shadow` para parecer botão.
+- nenhum CTA dependa apenas de `background`, `border-radius` e `shadow` para parecer botão;
+- nenhum artefato técnico/provisório apareça em `pagina.head.texto` ou em texto visível.
 
 # Formato esperado de saída
 

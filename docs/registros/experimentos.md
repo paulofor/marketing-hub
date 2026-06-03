@@ -3207,3 +3207,41 @@
   - o request multimodal da etapa passou a preencher o campo `model` com o modelo visual dedicado e a aplicar o nível de detalhe configurado em cada `input_image`;
   - o cânone do GeraLanding passou a exigir modelo de visão dedicado para `landing-page-quality-review`.
 - impacto esperado: novas execuções do Quality Review deixam de depender de modelo textual global e passam a enviar screenshots renderizados para um modelo multimodal/visão configurado explicitamente.
+
+## 2026-06-03 14:17:15 UTC-3
+- solicitação para corrigir timeout do Playwright ao gerar screenshot da etapa visual `landing-page-quality-review`.
+- causa-raiz identificada: o serviço usava captura `fullPage` sem limite operacional, o que deixa o Chromium tentar rasterizar landings muito longas ou expandidas e pode estourar o timeout padrão de 30s durante `Page.screenshot`.
+- correção aplicada: a captura passou a medir a altura renderizada, limitar a área relevante do screenshot e usar explicitamente o timeout configurado da etapa, reduzindo risco de travamento sem remover a evidência visual desktop/mobile para o modelo de visão.
+- validação automatizada adicionada para garantir o limite máximo de captura e a preservação mínima da altura da viewport.
+- documentos/arquivos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/PlaywrightQualityReviewScreenshotService.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/QualityReviewPromptBuilder.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/QualityReviewWorkerProperties.java
+  - docs/registros/experimentos.md
+
+## 2026-06-03 14:25:52 UTC-3
+- solicitação para ajustar a captura do Quality Review priorizando mobile.
+- causa-raiz/objetivo: a experiência mobile é a evidência visual mais crítica para tráfego pago e deve ser capturada antes da desktop, evitando que falhas de uma viewport secundária impeçam o envio da evidência principal ao modelo de visão.
+- correção aplicada: a ordem operacional de screenshots passou a ser mobile antes de desktop, com mobile como viewport obrigatória e desktop como complementar; se a desktop falhar após o mobile, o fluxo prossegue com o screenshot prioritário disponível e registra log de aviso com contexto.
+- validação automatizada adicionada para garantir explicitamente a ordem de prioridade mobile/desktop.
+- documentos/arquivos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/PlaywrightQualityReviewScreenshotService.java
+  - ai-worker/src/test/java/com/marketinghub/worker/openai/core/qualityreview/PlaywrightQualityReviewScreenshotServiceTest.java
+  - docs/registros/experimentos.md
+
+## 2026-06-03 14:36:31 UTC-3
+- solicitação para remover a limitação de tamanho da imagem no screenshot do Quality Review e, se necessário, aumentar o timeout.
+- causa-raiz/objetivo: recortar a captura compromete a evidência visual completa da landing; o problema operacional correto é tempo insuficiente para screenshot full-page, não tamanho da imagem.
+- correção aplicada: a captura voltou a usar `fullPage(true)` sem `clip` e sem limite de altura, mantendo prioridade mobile antes de desktop; o timeout padrão de screenshot foi aumentado para 2 minutos e continua configurável por `QUALITYREVIEW_WORKER_SCREENSHOT_TIMEOUT`.
+- validação automatizada ajustada para remover testes de limite de altura e adicionar teste do timeout padrão de 2 minutos.
+- documentos/arquivos lidos para tratar a situação:
+  - AGENTS.md
+  - ai-worker/AGENTS.md
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/PlaywrightQualityReviewScreenshotService.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/qualityreview/QualityReviewWorkerProperties.java
+  - ai-worker/src/main/resources/application.properties
+  - docs/registros/experimentos.md

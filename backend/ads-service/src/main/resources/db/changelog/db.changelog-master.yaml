@@ -836,3 +836,6 @@ databaseChangeLog:
       file: changesets/2026-06-01-epm-sprint2-api-fields.yaml
       relativeToChangelogFile: true
 
+  - include:
+      file: changesets/2026-06-03-mois-collected-reference-html-capture.yaml
+      relativeToChangelogFile: true

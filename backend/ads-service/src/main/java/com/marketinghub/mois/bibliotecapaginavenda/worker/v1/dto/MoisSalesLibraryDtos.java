@@ -61,6 +61,52 @@ public final class MoisSalesLibraryDtos {
     private MoisSalesLibraryDtos() {
     }
 
+
+    public record CollectedReferenceHtmlClaimRequest(
+            @NotBlank String workspaceId,
+            @NotBlank String source
+    ) {
+    }
+
+    public record CollectedReferenceHtmlCaptureJob(
+            long captureId,
+            long collectedReferenceId,
+            String collectionJobId,
+            String referenceId,
+            String source,
+            String title,
+            String url,
+            String urlSource
+    ) {
+    }
+
+    public record CollectedReferenceHtmlClaimResponse(
+            boolean claimed,
+            CollectedReferenceHtmlCaptureJob job
+    ) {
+    }
+
+    public record CollectedReferenceHtmlCompleteRequest(
+            @NotBlank String rawHtml,
+            String finalUrl,
+            Integer httpStatus,
+            String contentType,
+            Instant fetchedAt
+    ) {
+    }
+
+    public record CollectedReferenceHtmlFailRequest(
+            String errorCategory,
+            String errorMessage
+    ) {
+    }
+
+    public record CollectedReferenceHtmlPersistResponse(
+            long captureId,
+            String status
+    ) {
+    }
+
     public record SalesLibraryIngestRequest(
             @NotBlank String workspaceId,
             @NotBlank String source,

@@ -462,3 +462,19 @@ Fonte externa] -->|Coleta de produtos/URLs| CC[mois-clickbank-collector\npackage
 ### 12.6 Diagrama de arquitetura por módulo/pacote — Gera Landing (movido)
 
 Este diagrama foi movido para o cânone de experimento em `docs/canonical/procedimento-experimento-canon.v1.md`, seção **15.4**, para centralizar as regras canônicas do fluxo Gera Landing em um único documento.
+
+### 13.7 Pipeline de captura de HTML bruto a partir de referências coletadas
+
+A primeira etapa do pipeline de páginas de venda deve separar responsabilidades:
+
+1. **Backend**: lê `mois_collected_reference`, reserva a próxima URL elegível e persiste o resultado bruto em `mois_collected_reference_html_capture`.
+2. **Worker MOIS**: executa o processamento externo, buscando na internet o HTML completo da URL recebida e devolvendo o payload bruto ao backend.
+3. A seleção da URL segue a prioridade `sales_page_url`, depois `product_url`, depois `url`.
+4. O HTML bruto persistido em `mois_collected_reference_html_capture.raw_html` é a entrada canônica para uma etapa posterior de parsing/análise, sem obrigar o worker a acessar diretamente o banco.
+5. A tabela `mois_collected_reference` permanece como fonte de produtos coletados; ela não deve armazenar o HTML bruto capturado.
+
+Contratos operacionais do backend:
+
+- `POST /api/mois/sales-library/collected-reference-html:claim` reserva uma referência coletada para captura.
+- `POST /api/mois/sales-library/collected-reference-html/{captureId}:complete` persiste HTML bruto, URL final, status HTTP, content type, hash e tamanho.
+- `POST /api/mois/sales-library/collected-reference-html/{captureId}:fail` registra falha de captura para auditoria e reprocessamento futuro.

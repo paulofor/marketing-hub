@@ -64,7 +64,7 @@ public class DesignPresetProvisionalHtmlProcessor {
 
         validateTokenizedPresetContract(designRoot);
 
-        Document document = generateBaseHtmlFromWireframe(wireframeRoot);
+        Document document = generateBaseHtmlFromWireframe(wireframeRoot, designRoot);
         document.outputSettings()
                 .prettyPrint(false)
                 .charset("utf-8")
@@ -122,14 +122,15 @@ public class DesignPresetProvisionalHtmlProcessor {
     /**
      * Gera o HTML base diretamente do wireframe.
      */
-    private Document generateBaseHtmlFromWireframe(Map<String, Object> wireframeRoot) {
+    private Document generateBaseHtmlFromWireframe(Map<String, Object> wireframeRoot, Map<String, Object> designRoot) {
         String skeleton = "<!doctype html><html lang=\"pt-BR\"><head>"
                 + "<meta charset=\"UTF-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-                + "<title>Wireframe provisório</title>"
+                + "<title>Landing Page</title>"
                 + "</head><body></body></html>";
 
         Document document = Jsoup.parse(skeleton, "", Parser.htmlParser());
+        document.title(resolvePublicTitle(wireframeRoot, designRoot));
 
         Map<String, Object> page = asMap(wireframeRoot.get("pagina"));
         Map<String, Object> corpo = asMap(page.get("corpo"));
@@ -148,6 +149,33 @@ public class DesignPresetProvisionalHtmlProcessor {
         }
 
         return document;
+    }
+
+    /** Resolve um título publicável para o HTML final sem carregar marcadores provisórios para a página. */
+    private String resolvePublicTitle(Map<String, Object> wireframeRoot, Map<String, Object> designRoot) {
+        String title = firstNonBlank(pageHeadText(designRoot), pageHeadText(wireframeRoot));
+        if (!StringUtils.hasText(title) || containsProvisionalMarker(title)) {
+            return "Landing Page";
+        }
+        return title.trim();
+    }
+
+    /** Lê `pagina.head.texto` quando o artefato da etapa declara um título de página. */
+    private String pageHeadText(Map<String, Object> root) {
+        Map<String, Object> page = asMap(root.get("pagina"));
+        Map<String, Object> head = asMap(page.get("head"));
+        return asString(head.get("texto"));
+    }
+
+    /** Identifica títulos internos que não podem aparecer no artefato HTML publicável. */
+    private boolean containsProvisionalMarker(String title) {
+        String normalized = title.toLowerCase(Locale.ROOT);
+        return normalized.contains("wireframe")
+                || normalized.contains("provisório")
+                || normalized.contains("provisorio")
+                || normalized.contains("html provis")
+                || normalized.contains("rascunho")
+                || normalized.contains("debug");
     }
 
     /**

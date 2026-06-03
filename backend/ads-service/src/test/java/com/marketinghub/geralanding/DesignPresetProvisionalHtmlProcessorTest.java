@@ -76,6 +76,32 @@ class DesignPresetProvisionalHtmlProcessorTest {
         assertThat(html).contains("id=\"hero-title\"").contains("class=\"h1-size\"");
     }
 
+
+    /**
+     * Garante que o HTML final usa título publicável e bloqueia marcador técnico provisório.
+     */
+    @Test
+    void shouldUsePublicTitleAndBlockProvisionalTitleMarker() {
+        DesignPresetProvisionalHtmlProcessor processor = new DesignPresetProvisionalHtmlProcessor();
+
+        String wireframe = """
+                {"pagina":{"head":{"texto":"Wireframe provisório"},"corpo":{"secoes":[]}}}
+                """;
+        String designWithPublicTitle = """
+                {"definicoes":{},"pagina":{"head":{"texto":"Plano prático para reduzir esforço"},"corpo":{"secoes":[]}}}
+                """;
+        String designWithProvisionalTitle = """
+                {"definicoes":{},"pagina":{"head":{"texto":"Wireframe provisório"},"corpo":{"secoes":[]}}}
+                """;
+
+        String publicHtml = processor.process(wireframe, "{\"bodySections\":[]}", "{}", designWithPublicTitle);
+        String fallbackHtml = processor.process(wireframe, "{\"bodySections\":[]}", "{}", designWithProvisionalTitle);
+
+        assertThat(Jsoup.parse(publicHtml).title()).isEqualTo("Plano prático para reduzir esforço");
+        assertThat(Jsoup.parse(fallbackHtml).title()).isEqualTo("Landing Page");
+        assertThat(fallbackHtml).doesNotContain("Wireframe provisório");
+    }
+
     @Test
     void shouldRejectDeprecatedCanonicalPresetFormat() {
         DesignPresetProvisionalHtmlProcessor processor = new DesignPresetProvisionalHtmlProcessor();

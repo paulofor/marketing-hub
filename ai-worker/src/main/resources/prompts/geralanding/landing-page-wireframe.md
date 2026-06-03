@@ -133,7 +133,9 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - O H1 deve vender dor removida + resultado desejado.
 - PDF/amostra só aparece no subtítulo, bullets, legenda visual, seção de prova ou formulário.
 - Hero deve conter H1, subtítulo, 3 bullets, CTA primário e prova visual.
-- O desktop de hero em duas colunas deve ser descrito, mas não aplicado com classe desktop agressiva no wireframe.
+- O desktop de hero em duas colunas deve ser descrito no `objetivo`, `papelComercial`, `posicaoDesejada` e `briefingVisual`, mas não aplicado com classe desktop agressiva no wireframe.
+- A prova visual do hero deve ficar em container próprio, separado do bloco textual e dos CTAs, para evitar que a renderização final desloque a imagem para baixo sem hierarquia de primeira dobra.
+- O hero precisa ter uma intenção clara de composição: coluna textual com promessa/CTA e coluna visual com prova/mockup; se não houver imagem útil, explique no briefing visual que o preset deve manter uma primeira dobra forte sem espaço vazio.
 
 # Regras para CTAs e navegação
 
@@ -143,7 +145,9 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - `targetSectionId` deve apontar para id real de seção existente.
 - CTA primário do hero: `tag: "a"`, `componente: "buttonPrimary"`, `targetSectionId: "#sec-form"`.
 - CTA secundário relevante: `tag: "a"`, `componente: "buttonSecondary"`.
-- Links discretos de baixa prioridade podem usar `componente: "none"`.
+- Links discretos de baixa prioridade podem usar `componente: "none"`, mas nunca para a ação principal de conversão.
+- Toda ação principal de hero, prova, entregáveis e formulário deve ter `componente` explícito (`buttonPrimary` ou `buttonSecondary`) para o preset design conseguir aplicar aparência real de botão.
+- Agrupe CTAs do hero em um container próprio com objetivo/briefing de linha de ações, para que o preset consiga aplicar espaçamento, alinhamento e quebra mobile sem transformar os CTAs em barras soltas.
 - Não crie mais de 2 ações visíveis no hero antes da microcopy.
 - O formulário deve ter um botão `button` de submit com texto curto e direto.
 
@@ -184,6 +188,8 @@ Releia o wireframe gerado e rejeite mentalmente se:
 - o mobile depender do preset para não quebrar;
 - houver `targetSectionId` com `##`;
 - CTA interno for `button` em vez de `a`;
+- CTA principal estiver com `componente = none` ou sem container de ações;
+- hero não tiver separação clara entre texto, CTAs e prova visual;
 - a página ficar fraca sem as imagens.
 
 # Ajuste de intenção por seção

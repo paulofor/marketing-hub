@@ -281,3 +281,26 @@ Critérios mínimos:
 3. o hero pode conter imagem somente em container controlado, com proporção e altura máximas declaradas, sem bloco full-width desproporcional e sem competir com o CTA principal;
 4. cada imagem planejada no wireframe deve trazer metadados visuais mínimos: posição desejada, proporção aproximada, limite de altura no desktop/mobile, papel de layout e relação com o CTA;
 5. é proibido exigir imagem em toda seção apenas para cumprir quantidade mínima, pois isso aumenta ruído cognitivo e pode reduzir conversão.
+
+
+### 15.8 Regra mandatória — padrão universal de qualidade comercial da landing
+
+Toda landing gerada pelo Gera Landing deve ser avaliada como página de venda de produto digital, independentemente do nicho, produto, formato de isca ou experimento específico. Casos concretos, como um experimento isolado, podem servir como evidência de melhoria, mas não podem virar regra rígida do pipeline.
+
+A narrativa comercial mínima da landing deve seguir o eixo:
+
+> **Dor → Resultado → Mecanismo → Prova → Oferta → Ação**
+
+Critérios universais obrigatórios:
+1. **Clareza da promessa**: a primeira dobra deve comunicar dor removida e resultado desejado em poucos segundos;
+2. **Especificidade do nicho**: o texto deve parecer escrito para o público real do experimento, evitando linguagem genérica que serviria para qualquer mercado;
+3. **Mecanismo plausível**: a landing deve explicar por que o produto digital, método, diagnóstico, roteiro, template, plano, biblioteca ou ferramenta consegue gerar o resultado prometido;
+4. **Prova concreta**: a página deve conter demonstração, preview, exemplo aplicado, antes/depois, amostra visual ou evidência funcional adequada ao tipo de produto;
+5. **Oferta percebida**: os entregáveis devem ser descritos pelo benefício prático que geram, e não apenas pelo formato do arquivo ou material;
+6. **CTA orientado ao benefício**: a ação principal deve vender um avanço desejável para o usuário, não apenas uma ação técnica como preencher formulário, baixar PDF ou gerar material;
+7. **Hierarquia visual e mobile**: o design deve facilitar leitura rápida, destacar hero/prova/formulário e transmitir confiança suficiente para conversão;
+8. **Coerência experimental**: a landing deve estar vinculada a hipótese, variável principal e métrica mensurável sempre que for usada para decisão de publicação ou aprendizado comercial.
+
+Amostras, PDFs, mini-kits, roteiros, diagnósticos e materiais gratuitos são permitidos, mas devem funcionar como prova de valor, redução de risco ou primeiro passo da transformação. A landing não deve centralizar a promessa no formato do material quando o valor real está na melhoria prática que o produto digital entrega.
+
+Antes de avançar para ajustes de prompt, Quality Gate ou publicação, qualquer melhoria de qualidade deve preservar esse padrão como regra universal do Marketing Hub para comercialização de produtos digitais.

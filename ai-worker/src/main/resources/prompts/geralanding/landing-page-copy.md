@@ -1,5 +1,5 @@
 template_id: landing-page-copy
-template_version: v4
+template_version: v5
 artifact_target: landingPageCopy
 
 Estamos Trabalhando nesse contexto:
@@ -41,6 +41,10 @@ Objetivo principal desta etapa:
 Regra central de contrato:
 - O wireframe é a única fonte de verdade estrutural.
 - Qualidade comercial obrigatória: a copy deve vender a transformação antes de explicar o formato da amostra. Evite abrir com frases como “gere uma amostra/PDF”; abra com o resultado que o público quer e o problema que ele quer remover, usando a amostra como prova concreta e sem risco.
+- Narrativa universal obrigatória: quando o wireframe pedir textos de promessa, dor, mecanismo, prova, oferta e ação, escreva seguindo **Dor → Resultado → Mecanismo → Prova → Oferta → Ação**.
+- Especificidade obrigatória: todo texto deve parecer feito para o nicho e para a dor recebidos no contexto; evite frases que serviriam para qualquer mercado.
+- Mecanismo plausível: em passos/cards explicativos, mostre por que a solução funciona de forma simples, sem promessa mágica e sem jargão interno.
+- CTA orientado ao benefício: botões e links devem prometer avanço prático do usuário, como ver plano, gerar versão personalizada, receber diagnóstico ou montar roteiro; não use CTA centrado apenas em “baixar PDF”, “preencher formulário” ou “gerar material”.
 - Clareza de formulário obrigatória: se o wireframe trouxer labels, placeholders, microcopy ou botão do formulário, escreva textos explícitos para `nome`, `email` e CTA, para que o usuário não veja campos vazios sem orientação.
 - Prova de valor rápida: em listas e cards, prefira frases que conectem item entregue → benefício prático → redução de esforço/dor, sem depender de termos genéricos como “mini-kit”, “amostra” ou “material” isoladamente.
 - A etapa copy não decide estrutura, não adiciona seções, não adiciona blocos e não cria metadados.

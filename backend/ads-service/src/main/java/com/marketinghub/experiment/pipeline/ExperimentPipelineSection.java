@@ -2,6 +2,7 @@ package com.marketinghub.experiment.pipeline;
 
 import org.springframework.util.StringUtils;
 
+/** Define as seções canônicas e a precedência operacional do pipeline de experimento. */
 public enum ExperimentPipelineSection {
     CAMPAIGN_ANGLE("campaign-angle", null),
     AD_COPY("ad-copy", CAMPAIGN_ANGLE),
@@ -20,14 +21,17 @@ public enum ExperimentPipelineSection {
         this.predecessor = predecessor;
     }
 
+    /** Retorna o path canônico usado em rotas, prompts e persistência da seção. */
     public String path() {
         return path;
     }
 
+    /** Retorna a seção que deve estar concluída antes da seção atual. */
     public ExperimentPipelineSection predecessor() {
         return predecessor;
     }
 
+    /** Retorna a primeira seção sucessora direta quando existir. */
     public ExperimentPipelineSection successor() {
         for (ExperimentPipelineSection section : values()) {
             if (section.predecessor == this) {
@@ -37,6 +41,7 @@ public enum ExperimentPipelineSection {
         return null;
     }
 
+    /** Converte o path recebido pela API para a seção canônica correspondente. */
     public static ExperimentPipelineSection fromPath(String raw) {
         if (!StringUtils.hasText(raw)) {
             throw new IllegalArgumentException("Section is required");

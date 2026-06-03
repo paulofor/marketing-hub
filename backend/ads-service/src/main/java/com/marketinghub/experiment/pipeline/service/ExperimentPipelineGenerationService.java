@@ -868,6 +868,7 @@ public class ExperimentPipelineGenerationService {
         }
     }
 
+    /** Valida se a seção anterior obrigatória está preenchida antes de iniciar a próxima etapa. */
     private void validatePredecessor(Experiment experiment, ExperimentPipelineSection section) {
         ExperimentPipelineSection predecessor = section.predecessor();
         if (predecessor == null) {
@@ -1348,6 +1349,7 @@ public class ExperimentPipelineGenerationService {
         return firstNonBlank(completedJob.getResponseContent(), completedJob.getRawResponse());
     }
 
+    /** Persiste o conteúdo normalizado da seção atual no campo canônico correspondente do experimento. */
     private void applySectionContent(Experiment experiment,
                                      ExperimentPipelineSection section,
                                      String content) {
@@ -2725,6 +2727,7 @@ public class ExperimentPipelineGenerationService {
         }
     }
 
+    /** Retorna o schema JSON usado para validar a resposta estruturada da seção solicitada. */
     private Map<String, Object> sectionSchema(ExperimentPipelineSection section) {
         Map<String, Object> metadataSchema = experimentMetadataSchema();
         return switch (section) {

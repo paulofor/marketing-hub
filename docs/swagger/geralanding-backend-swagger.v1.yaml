@@ -1,17 +1,18 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub Backend - GeraLanding API
-  version: v1.2.0
+  version: v1.3.0
   description: |
     Contrato canônico dos endpoints HTTP implementados no backend `ads-service`
     para o módulo GeraLanding.
 
-    Fonte de verdade revisada em código em 2026-06-02:
+    Fonte de verdade revisada em código em 2026-06-03:
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/wireframe/web/BackendWireframeController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/web/GeraLandingCopyController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/imageplanning/web/GeraLandingImagePlanningController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/imagegeneration/web/BackendImageGenerationController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/presetdesign/web/BackendPresetDesignController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/qualityreview/controller/BackendQualityReviewController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/publiclanding/web/BackendPublicLandingController.java`
 
@@ -34,6 +35,8 @@ tags:
     description: Etapa de geração dos assets de imagem.
   - name: landing-page-design-preset
     description: Etapa de preset visual da landing.
+  - name: landing-page-quality-review
+    description: Quality Gate comercial da landing gerada.
   - name: landing-page-deliverables
     description: Etapa de empacotamento dos entregáveis da landing.
   - name: landing-page-publication
@@ -609,6 +612,48 @@ paths:
           description: HTML da landing ainda não foi gerado.
         '502':
           description: Lead Portal indisponível ou base URL não configurada.
+  /api/experiments/{experimentId}/geralanding/quality-review/start:
+    post:
+      tags: [landing-page-quality-review]
+      summary: Executa manualmente o Quality Gate comercial da landing atual.
+      operationId: startGeraLandingQualityReviewExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '202':
+          description: Revisão de qualidade executada e persistida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityReviewStartResponse'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/quality-review/stage-executions:
+    get:
+      tags: [landing-page-quality-review]
+      summary: Lista execuções da etapa landing-page-quality-review.
+      operationId: listGeraLandingQualityReviewExecutions
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IncludeCompleted'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionSummaryList'
+        '404':
+          description: Experimento não encontrado.
+  /api/experiments/{experimentId}/geralanding/quality-review/stage-executions/{idJob}:
+    get:
+      tags: [landing-page-quality-review]
+      summary: Detalha uma execução da etapa landing-page-quality-review.
+      operationId: detailGeraLandingQualityReviewExecution
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '200':
+          $ref: '#/components/responses/StageExecutionDetail'
+        '404':
+          description: Experimento ou execução não encontrada.
   /api/experiments/{experimentId}/geralanding/landing/approve-and-publish:
     post:
       tags: [landing-page-publication]
@@ -798,6 +843,17 @@ components:
       required:
         - idJob
         - status
+    QualityReviewStartResponse:
+      allOf:
+        - $ref: '#/components/schemas/StageStartResponse'
+        - type: object
+          additionalProperties: false
+          properties:
+            qualityReview:
+              type: string
+              description: JSON serializado com score, bloqueios e recomendações de regeneração.
+          required:
+            - qualityReview
     StageExecutionSummary:
       type: object
       additionalProperties: false

@@ -3104,3 +3104,13 @@
 - registro do que foi feito:
   - criado `docs/gera-landing/melhorias-qualidade-pagina-venda-experimento-36.md` com diagnóstico, causa-raiz provável, melhorias específicas para a landing e melhorias sistêmicas para o Marketing Hub;
   - documentados os próximos passos: ajustar experimento, atualizar prompts do GeraLanding, criar Quality Gate, regenerar a landing do experimento 36, publicar somente após revisão e medir resultado real.
+
+## 2026-06-03 — Generalização do plano de qualidade de landing para produtos digitais
+
+- solicitação: corrigir o plano de melhoria para não ficar preso ao Experimento 36, pois o Marketing Hub deve gerar produtos digitais e capacidade de comercialização para qualquer nicho/produto validado.
+- causa-raiz/objetivo: o documento anterior usava o Experimento 36 como eixo principal do plano, quando ele deveria ser apenas um caso de referência para uma melhoria sistêmica do GeraLanding.
+- registro do que foi feito:
+  - substituído o documento específico do Experimento 36 por `docs/gera-landing/melhorias-qualidade-paginas-venda-produtos-digitais.md`;
+  - generalizados os critérios de qualidade para páginas de venda de qualquer produto digital, mantendo o eixo Dor → Resultado → Mecanismo → Prova → Oferta → Ação;
+  - documentado o Passo 1 como generalização do padrão de qualidade, antes de ajustes de prompt, Quality Gate, interface, publicação e medição;
+  - mantido o Experimento 36 apenas como caso de referência, sem limitar o desenho do sistema.

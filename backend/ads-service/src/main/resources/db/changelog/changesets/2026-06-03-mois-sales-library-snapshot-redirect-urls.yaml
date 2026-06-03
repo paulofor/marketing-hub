@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-03-mois-sales-library-snapshot-redirect-urls-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_library_page_snapshot
+        - not:
+            columnExists:
+              tableName: mois_sales_library_page_snapshot
+              columnName: redirect_destination_url
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_library_page_snapshot
+                ADD COLUMN redirect_destination_url VARCHAR(1024) NULL AFTER content_type,
+                ADD COLUMN redirect_root_url VARCHAR(1024) NULL AFTER redirect_destination_url;

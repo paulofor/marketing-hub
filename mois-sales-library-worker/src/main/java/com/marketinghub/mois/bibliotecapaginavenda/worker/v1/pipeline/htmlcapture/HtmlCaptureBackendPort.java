@@ -39,12 +39,21 @@ public class HtmlCaptureBackendPort implements StageBackendPort<HtmlCaptureInput
     public void markCompleted(StageExecution<HtmlCaptureInput> execution, StageResult<HtmlCaptureOutput> result) {
         HtmlCaptureOutput output = result.output();
         backendClient.completeHtmlCapture(execution.idJob(), new HtmlCaptureCompleteRequest(
-                output.rawHtml(), output.finalUrl(), output.httpStatus(), output.contentType(), output.sha256(), output.sizeBytes(), output.capturedAt()));
+                output.rawHtml(), output.finalUrl(), output.redirectDestinationUrl(), output.redirectRootUrl(), output.httpStatus(), output.contentType(), output.sha256(), output.sizeBytes(), output.capturedAt()));
     }
 
     /** Envia ao backend a falha terminal da captura da URL reservada. */
     @Override
     public void markFailed(StageExecution<HtmlCaptureInput> execution, Exception error) {
-        backendClient.failHtmlCapture(execution.idJob(), new HtmlCaptureFailRequest("HTML_CAPTURE_ERROR", error.getMessage()));
+        if (error instanceof HtmlCaptureFailureException captureError) {
+            backendClient.failHtmlCapture(execution.idJob(), new HtmlCaptureFailRequest(
+                    "HTML_CAPTURE_ERROR",
+                    captureError.getMessage(),
+                    captureError.redirectDestinationUrl(),
+                    captureError.redirectRootUrl(),
+                    captureError.httpStatus()));
+            return;
+        }
+        backendClient.failHtmlCapture(execution.idJob(), new HtmlCaptureFailRequest("HTML_CAPTURE_ERROR", error.getMessage(), null, null, null));
     }
 }

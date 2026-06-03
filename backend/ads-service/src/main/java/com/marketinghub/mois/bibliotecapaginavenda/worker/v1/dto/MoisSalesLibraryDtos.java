@@ -269,6 +269,8 @@ public final class MoisSalesLibraryDtos {
             long pageId,
             Long snapshotId,
             String urlCanonical,
+            String redirectDestinationUrl,
+            String redirectRootUrl,
             String status,
             String snapshotHash,
             Integer httpStatus,
@@ -297,6 +299,8 @@ public final class MoisSalesLibraryDtos {
             String status,
             Integer httpStatus,
             String contentType,
+            String redirectDestinationUrl,
+            String redirectRootUrl,
             long rawHtmlBytes,
             long screenshotBytes,
             Instant capturedAt,
@@ -328,6 +332,8 @@ public final class MoisSalesLibraryDtos {
     public record HtmlCaptureCompleteRequest(
             @NotBlank String rawHtml,
             String finalUrl,
+            String redirectDestinationUrl,
+            String redirectRootUrl,
             Integer httpStatus,
             String contentType,
             String sha256,
@@ -338,7 +344,10 @@ public final class MoisSalesLibraryDtos {
 
     public record HtmlCaptureFailRequest(
             String errorCategory,
-            String errorMessage
+            String errorMessage,
+            String redirectDestinationUrl,
+            String redirectRootUrl,
+            Integer httpStatus
     ) {
     }
 

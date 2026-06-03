@@ -296,6 +296,8 @@ export interface MoisSalesLibrarySnapshotCaptureItem {
   pageId: number;
   snapshotId?: number;
   urlCanonical: string;
+  redirectDestinationUrl?: string;
+  redirectRootUrl?: string;
   status: string;
   snapshotHash?: string;
   httpStatus?: number;
@@ -322,6 +324,8 @@ export interface MoisSalesLibraryPageSnapshot {
   status: string;
   httpStatus?: number;
   contentType?: string;
+  redirectDestinationUrl?: string;
+  redirectRootUrl?: string;
   rawHtmlBytes: number;
   screenshotBytes: number;
   capturedAt?: string;

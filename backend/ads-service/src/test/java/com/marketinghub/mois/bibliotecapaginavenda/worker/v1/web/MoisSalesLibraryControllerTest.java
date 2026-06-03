@@ -50,6 +50,8 @@ class MoisSalesLibraryControllerTest {
                                 10L,
                                 20L,
                                 "https://example.test/sales",
+                                "https://example.test/sales",
+                                "https://example.test",
                                 "CAPTURED",
                                 "abc123",
                                 200,
@@ -73,6 +75,8 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$.workspaceId").value("workspace-001"))
                 .andExpect(jsonPath("$.captured").value(1))
                 .andExpect(jsonPath("$.items[0].status").value("CAPTURED"))
+                .andExpect(jsonPath("$.items[0].redirectDestinationUrl").value("https://example.test/sales"))
+                .andExpect(jsonPath("$.items[0].redirectRootUrl").value("https://example.test"))
                 .andExpect(jsonPath("$.items[0].rawHtmlBytes").value(512))
                 .andExpect(jsonPath("$.items[0].screenshotBytes").value(1024));
     }
@@ -87,6 +91,8 @@ class MoisSalesLibraryControllerTest {
                         "CAPTURED",
                         200,
                         "text/html; charset=UTF-8",
+                        "https://example.test/sales",
+                        "https://example.test",
                         512L,
                         1024L,
                         Instant.parse("2026-05-18T22:00:00Z"),

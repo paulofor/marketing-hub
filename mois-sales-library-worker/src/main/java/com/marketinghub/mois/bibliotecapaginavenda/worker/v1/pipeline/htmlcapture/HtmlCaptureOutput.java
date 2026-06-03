@@ -6,6 +6,8 @@ import java.time.Instant;
 public record HtmlCaptureOutput(
         String rawHtml,
         String finalUrl,
+        String redirectDestinationUrl,
+        String redirectRootUrl,
         Integer httpStatus,
         String contentType,
         String sha256,

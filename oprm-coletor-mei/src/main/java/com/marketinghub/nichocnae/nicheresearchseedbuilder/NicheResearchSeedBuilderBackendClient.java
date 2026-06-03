@@ -71,23 +71,17 @@ public class NicheResearchSeedBuilderBackendClient {
     public NicheResearchSeedBuilderOutput completeStageExecution(OpenAiSeedBuilderResult result) {
         Long researchCycleId = result.output().researchCycleId();
         String url = collectorProperties.backendBaseUrl() + COMPLETE_PATH_PREFIX + researchCycleId + COMPLETE_PATH_SUFFIX;
-        NicheResearchSeedBuilderCompletionRequest request = new NicheResearchSeedBuilderCompletionRequest(
-                result.output(),
-                result.model(),
-                result.rawModelResponse(),
-                result.inputTokens(),
-                result.outputTokens(),
-                result.openAiResponseId());
+        NicheResearchSeedBuilderBackendCompletionRequest request = toBackendCompletionRequest(result.output());
         try {
-            NicheResearchSeedBuilderOutput response = restClient.post()
+            NicheResearchSeedBuilderBackendCompletionResponse response = restClient.post()
                     .uri(url)
                     .body(request)
                     .retrieve()
-                    .body(NicheResearchSeedBuilderOutput.class);
+                    .body(NicheResearchSeedBuilderBackendCompletionResponse.class);
             if (response == null) {
                 throw new IllegalStateException("Backend OPRM nichocnae retornou corpo vazio ao concluir etapa dois.");
             }
-            return response;
+            return toOutput(response);
         } catch (RestClientException | IllegalStateException ex) {
             log.error(
                     "Erro ao concluir etapa dois OPRM nichocnae no backend (endpoint={}, researchCycleId={}, queryCount={})",
@@ -97,6 +91,53 @@ public class NicheResearchSeedBuilderBackendClient {
                     ex);
             throw ex;
         }
+    }
+
+    /** Converte a saída validada da IA para o DTO achatado esperado pelo backend. */
+    NicheResearchSeedBuilderBackendCompletionRequest toBackendCompletionRequest(NicheResearchSeedBuilderOutput output) {
+        if (output == null || output.seed() == null) {
+            throw new IllegalArgumentException("Seed builder output is required to complete stage two.");
+        }
+        NicheResearchSeed seed = output.seed();
+        return new NicheResearchSeedBuilderBackendCompletionRequest(
+                seed.nicheName(),
+                seed.businessType(),
+                seed.operationType(),
+                seed.customerType(),
+                seed.commercialObjects(),
+                seed.initialAssumptions(),
+                seed.confidenceLevel(),
+                seed.createdBy(),
+                output.queries());
+    }
+
+    /** Converte a resposta achatada do backend para a saída interna do worker da etapa dois. */
+    NicheResearchSeedBuilderOutput toOutput(NicheResearchSeedBuilderBackendCompletionResponse response) {
+        NicheResearchSeed seed = new NicheResearchSeed(
+                response.researchCycleId(),
+                response.cnaeCode(),
+                response.cnaeDescription(),
+                response.nicheName(),
+                response.businessType(),
+                response.operationType(),
+                response.customerType(),
+                response.commercialObjects(),
+                response.initialAssumptions(),
+                response.confidenceLevel(),
+                response.createdBy());
+        List<ResearchQuery> queries = response.queries() == null
+                ? List.of()
+                : response.queries().stream()
+                        .map(query -> new ResearchQuery(
+                                query.researchCycleId(),
+                                query.queryText(),
+                                query.queryGoal(),
+                                query.sourceGroup(),
+                                query.priority(),
+                                query.status(),
+                                query.createdBy()))
+                        .toList();
+        return new NicheResearchSeedBuilderOutput(response.researchCycleId(), seed, queries);
     }
 
     /** Notifica o backend que a etapa dois falhou para preservar rastreabilidade do ciclo. */

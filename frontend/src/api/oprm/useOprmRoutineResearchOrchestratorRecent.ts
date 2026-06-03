@@ -11,6 +11,8 @@ export interface OprmRoutineResearchOrchestratorRecent {
   triggerSource: string;
   cycleStatus: string;
   processedAt: string;
+  finishedAt?: string | null;
+  errorMessage?: string | null;
 }
 
 async function fetchRecentProcessed(

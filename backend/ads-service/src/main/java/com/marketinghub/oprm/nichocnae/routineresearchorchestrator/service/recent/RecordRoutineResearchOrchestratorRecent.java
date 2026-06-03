@@ -13,4 +13,6 @@ public record RecordRoutineResearchOrchestratorRecent(
         BigDecimal sourceScore,
         String triggerSource,
         String cycleStatus,
-        Instant processedAt) {}
+        Instant processedAt,
+        Instant finishedAt,
+        String errorMessage) {}

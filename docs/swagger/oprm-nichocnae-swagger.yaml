@@ -337,6 +337,14 @@ components:
         processedAt:
           type: string
           format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+          example: '500 Internal Server Error: nicheName is required'
     NicheResearchSeedBuilderPending:
       type: object
       properties:

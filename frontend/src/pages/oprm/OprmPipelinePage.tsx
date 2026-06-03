@@ -75,6 +75,23 @@ function formatProcessedAt(value: string) {
   }).format(date);
 }
 
+function buildStatusBadgeClass(status: string) {
+  if (status === "FAILED") {
+    return "badge text-bg-danger-subtle border border-danger-subtle text-danger";
+  }
+  if (status === "RUNNING") {
+    return "badge text-bg-primary-subtle border border-primary-subtle text-primary";
+  }
+  return "badge text-bg-light border text-secondary";
+}
+
+function buildFailureMessage(errorMessage?: string | null) {
+  if (!errorMessage?.trim()) {
+    return "Falha sem mensagem registrada. Verifique os logs do backend/coletor.";
+  }
+  return errorMessage.trim();
+}
+
 export default function OprmPipelinePage() {
   const {
     data: recentProcessed = [],
@@ -183,9 +200,22 @@ export default function OprmPipelinePage() {
                         })}
                       </td>
                       <td>
-                        <span className="badge text-bg-light border text-secondary">
+                        <span
+                          className={buildStatusBadgeClass(item.cycleStatus)}
+                        >
                           {item.cycleStatus}
                         </span>
+                        {item.cycleStatus === "FAILED" ? (
+                          <div className="text-danger small mt-1">
+                            <span className="fw-semibold">Detalhe:</span>{" "}
+                            {buildFailureMessage(item.errorMessage)}
+                          </div>
+                        ) : null}
+                        {item.finishedAt ? (
+                          <div className="text-secondary small mt-1">
+                            Finalizado em {formatProcessedAt(item.finishedAt)}
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   ))}

@@ -170,7 +170,7 @@ components:
           example: 5
         force:
           type: boolean
-          description: Quando verdadeiro, recaptura páginas mesmo que já possuam snapshot CAPTURED ou FETCHING.
+          description: Quando verdadeiro, recaptura páginas mesmo que já possuam snapshot CAPTURED/FETCHING ou estejam em cooldown por falha recente/recorrente.
     SalesLibrarySnapshotCaptureItem:
       type: object
       properties:
@@ -201,6 +201,7 @@ components:
         errorMessage:
           type: string
           nullable: true
+          description: Categoria e detalhe operacional da falha, por exemplo HTTP_404, DESTINATION_DNS_FAILURE, REDIRECT_WITHOUT_HTML, TIMEOUT ou FINAL_URL_UNAVAILABLE.
     SalesLibrarySnapshotCaptureResponse:
       type: object
       properties:

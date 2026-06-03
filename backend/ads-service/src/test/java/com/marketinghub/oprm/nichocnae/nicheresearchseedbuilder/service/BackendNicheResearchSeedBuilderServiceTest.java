@@ -39,11 +39,16 @@ class BackendNicheResearchSeedBuilderServiceTest {
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
 
-  /** Deve listar apenas ciclos em execução que ainda não possuem seed gerado para a etapa dois. */
+  /** Deve listar ciclos em execução e falhas retryáveis sem seed para a etapa dois. */
   @Test
   void listPendingUsesSeedBuilderRepositoryFilter() {
     OprmRoutineResearchCycle cycle = cycle();
-    when(routineResearchCycleRepository.findSeedBuilderPendingByStatus(eq("RUNNING"), any(Pageable.class)))
+    when(routineResearchCycleRepository.findSeedBuilderPendingOrRetryable(
+            eq("RUNNING"),
+            eq("FAILED"),
+            eq("nicheName is required"),
+            eq("niche-research-seed-builder/stage-executions"),
+            any(Pageable.class)))
         .thenReturn(List.of(cycle));
 
     var result = service.listPending();
@@ -84,6 +89,31 @@ class BackendNicheResearchSeedBuilderServiceTest {
 
     ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
     verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+    assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(2);
+  }
+
+  /** Deve reabrir automaticamente ciclo falho retryável quando a conclusão da etapa dois passa a funcionar. */
+  @Test
+  void completeReactivatesRetryableFailedCycleAfterSuccess() {
+    OprmRoutineResearchCycle cycle = failedCycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
+        .thenAnswer(invocation -> {
+          OprmNicheResearchSeed seed = invocation.getArgument(0);
+          seed.setId(44L);
+          return seed;
+        });
+    when(researchQueryRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    service.complete(1001L, validRequest());
+
+    ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+    verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+    assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
+    assertThat(cycleCaptor.getValue().getFinishedAt()).isNull();
+    assertThat(cycleCaptor.getValue().getErrorMessage()).isNull();
     assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(2);
   }
 
@@ -142,6 +172,16 @@ class BackendNicheResearchSeedBuilderServiceTest {
         List.of(
             new NicheResearchQueryRequest("manicure responsabilidades rotina", "ROUTINE_DISCOVERY", "web", 1),
             new NicheResearchQueryRequest("como lotar agenda de manicure", "SALES_PAIN_DISCOVERY", "web", 2)));
+  }
+
+  /** Monta um ciclo falho pelo contrato legado para validar recuperação automática da etapa dois. */
+  private OprmRoutineResearchCycle failedCycle() {
+    OprmRoutineResearchCycle cycle = cycle();
+    cycle.setStatus("FAILED");
+    cycle.setFinishedAt(Instant.parse("2026-06-03T11:15:13Z"));
+    cycle.setErrorMessage(
+        "500 Internal Server Error: nicheName is required path=/api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/1/complete");
+    return cycle;
   }
 
   /** Monta um ciclo de pesquisa em execução usado pelos cenários da etapa dois. */

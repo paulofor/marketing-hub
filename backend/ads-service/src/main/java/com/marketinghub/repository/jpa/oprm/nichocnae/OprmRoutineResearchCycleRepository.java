@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repositório responsável por persistir e consultar ciclos de pesquisa de rotina de nicho CNAE.
@@ -19,17 +20,35 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
     /** Lista os ciclos de pesquisa de rotina mais recentes para acompanhamento operacional. */
     List<OprmRoutineResearchCycle> findAllByOrderByStartedAtDesc(Pageable pageable);
 
-    /** Lista ciclos em execução que ainda não possuem seed de pesquisa de nicho gravado. */
+    /** Lista ciclos aptos à etapa de seed, incluindo falhas retryáveis sem artefatos persistidos. */
     @Query("""
             select cycle
             from OprmRoutineResearchCycle cycle
-            where cycle.status = :status
-              and not exists (
+            where not exists (
                   select 1
                   from OprmNicheResearchSeed seed
                   where seed.researchCycleId = cycle.id
               )
-            order by cycle.startedAt asc
+              and not exists (
+                  select 1
+                  from OprmResearchQuery researchQuery
+                  where researchQuery.researchCycleId = cycle.id
+              )
+              and (
+                  cycle.status = :runningStatus
+                  or (
+                      cycle.status = :failedStatus
+                      and cycle.errorMessage is not null
+                      and lower(cycle.errorMessage) like lower(concat('%', :retryableErrorFragment, '%'))
+                      and lower(cycle.errorMessage) like lower(concat('%', :completePathFragment, '%'))
+                  )
+              )
+            order by case when cycle.status = :failedStatus then 0 else 1 end, cycle.startedAt asc
             """)
-    List<OprmRoutineResearchCycle> findSeedBuilderPendingByStatus(String status, Pageable pageable);
+    List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
+            @Param("runningStatus") String runningStatus,
+            @Param("failedStatus") String failedStatus,
+            @Param("retryableErrorFragment") String retryableErrorFragment,
+            @Param("completePathFragment") String completePathFragment,
+            Pageable pageable);
 }

@@ -193,6 +193,9 @@ Saída sugerida:
 - Definir critérios de avaliação independentes de nicho.
 - Tratar casos específicos apenas como exemplos, nunca como regra fixa do pipeline.
 - Garantir que a landing sempre venda transformação antes de vender formato de material.
+
+### Passo 2 — Atualizar prompts do GeraLanding
+
 - Registrar o padrão universal no cânone de procedimento de experimento/Gera Landing, para que ele seja fonte de verdade antes dos próximos passos de prompt, Quality Gate, interface e publicação.
 
 Entregável do Passo 1:

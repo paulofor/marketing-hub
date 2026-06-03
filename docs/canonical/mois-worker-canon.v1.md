@@ -315,7 +315,8 @@ erDiagram
 #### 13.3.4 `mois_sales_library_page_snapshot`
 - **Papel no fluxo**: guardar snapshots/versionamento da página capturada para comparação temporal.
 - **Função operacional**: registrar mudanças de conteúdo entre capturas e apoiar trilha de auditoria.
-- **Campos de destaque**: `id`, `url_ingest_id`, `snapshot_hash`, `status`, `http_status`, `content_type`, `raw_html_bytes`, `screenshot_bytes`, `captured_at`, `updated_at`.
+- **Campos de destaque**: `id`, `url_ingest_id`, `snapshot_hash`, `status`, `http_status`, `content_type`, `redirect_destination_url`, `redirect_root_url`, `raw_html_bytes`, `screenshot_bytes`, `captured_at`, `updated_at`.
+- **Regra de fallback por redirecionamento**: quando a URL canônica redirecionar para um caminho que não entrega HTML capturável (ex.: 404/5xx/corpo vazio), a captura deve registrar `redirect_destination_url` com o destino final observado e `redirect_root_url` com a raiz `scheme://host[:port]`; em seguida, deve tentar capturar essa raiz antes de persistir falha terminal.
 
 #### 13.3.5 `mois_sales_library_snapshot_artifact`
 - **Papel no fluxo**: armazenar artefatos derivados por snapshot (ex.: sumários ou classificações por tipo).

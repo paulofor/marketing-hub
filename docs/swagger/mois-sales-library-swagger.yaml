@@ -183,6 +183,14 @@ components:
           nullable: true
         urlCanonical:
           type: string
+        redirectDestinationUrl:
+          type: string
+          nullable: true
+          description: URL final após redirecionamentos da URL canônica original.
+        redirectRootUrl:
+          type: string
+          nullable: true
+          description: Raiz scheme://host[:port] derivada do destino redirecionado e usada como fallback quando o caminho final não entrega HTML capturável.
         status:
           type: string
           enum: [CAPTURED, DUPLICATE, FAILED]

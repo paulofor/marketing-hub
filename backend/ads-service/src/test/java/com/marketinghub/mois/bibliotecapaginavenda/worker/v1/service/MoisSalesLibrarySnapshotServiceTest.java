@@ -54,6 +54,23 @@ public class MoisSalesLibrarySnapshotServiceTest {
             exchange.getResponseBody().write(body);
             exchange.close();
         });
+        server.createContext("/redirect-to-missing", exchange -> {
+            exchange.getResponseHeaders().add("Location", "/missing");
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        server.createContext("/", exchange -> {
+            byte[] body = """
+                    <html>
+                      <head><title>Oferta Raiz</title></head>
+                      <body><h1>Oferta Raiz</h1><p>Fallback comercial disponível na raiz.</p></body>
+                    </html>
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "text/html; charset=UTF-8");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
         server.start();
     }
 
@@ -190,6 +207,33 @@ public class MoisSalesLibrarySnapshotServiceTest {
         assertThat(response.items().getFirst().status()).isEqualTo("CAPTURED");
     }
 
+
+    /** Garante que o pipeline registre o destino redirecionado e capture a raiz quando o caminho final falha. */
+    @Test
+    void shouldTryRedirectRootWhenRedirectDestinationIsNotCapturable() {
+        String baseUrl = "http://localhost:" + server.getAddress().getPort();
+        String url = baseUrl + "/redirect-to-missing";
+        insertPage(8L, url);
+
+        var response = service.captureSnapshots(
+                new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureRequest("workspace-001", 5, false));
+
+        assertThat(response.processed()).isEqualTo(1);
+        assertThat(response.captured()).isEqualTo(1);
+        assertThat(response.failed()).isZero();
+        assertThat(response.items().getFirst().status()).isEqualTo("CAPTURED");
+        assertThat(response.items().getFirst().redirectDestinationUrl()).isEqualTo(baseUrl + "/missing");
+        assertThat(response.items().getFirst().redirectRootUrl()).isEqualTo(baseUrl);
+        String capturedHtml = jdbcTemplate.queryForObject(
+                "SELECT content_text FROM mois_sales_library_snapshot_artifact WHERE artifact_type = 'RAW_HTML'",
+                String.class);
+        assertThat(capturedHtml).contains("Oferta Raiz");
+        var storedUrls = jdbcTemplate.queryForMap(
+                "SELECT redirect_destination_url, redirect_root_url FROM mois_sales_library_page_snapshot WHERE url_ingest_id = 8");
+        assertThat(storedUrls.get("redirect_destination_url")).isEqualTo(baseUrl + "/missing");
+        assertThat(storedUrls.get("redirect_root_url")).isEqualTo(baseUrl);
+    }
+
     /** Fornece timestamp UTC compatível com a função usada no SQL MySQL dos testes. */
     public static Timestamp utcTimestamp() {
         return Timestamp.from(Instant.now());
@@ -241,6 +285,8 @@ public class MoisSalesLibrarySnapshotServiceTest {
                   status VARCHAR(32) NOT NULL,
                   http_status INT,
                   content_type VARCHAR(255),
+                  redirect_destination_url VARCHAR(1024),
+                  redirect_root_url VARCHAR(1024),
                   error_message VARCHAR(1000),
                   captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -857,3 +857,15 @@ Arquivos alterados:
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/canonical/mois-worker-canon.v1.md`
 - `docs/registros/mois1.md`
+
+## 2026-06-03 — Fallback pela raiz do redirecionamento na etapa 1 da Biblioteca Sales Pages
+- Adicionada inteligência operacional na etapa **Obtenção dos HTML** para registrar, em `mois_sales_library_page_snapshot`, a URL final após redirecionamento (`redirect_destination_url`) e a raiz do destino (`redirect_root_url`).
+- Quando o destino redirecionado não entrega HTML capturável, o pipeline tenta a raiz do domínio antes de registrar falha terminal, permitindo aproveitar casos como `/secarapido` indisponível mas domínio raiz ativo.
+- Atualizados DTOs, Swagger, testes e cânone MOIS para preservar a rastreabilidade do redirecionamento e reduzir descarte indevido de páginas de vendas potencialmente úteis.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-03-mois-sales-library-snapshot-redirect-urls.yaml`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotService.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/pipeline/htmlcapture/HtmlCaptureProcessor.java`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/canonical/mois-worker-canon.v1.md`

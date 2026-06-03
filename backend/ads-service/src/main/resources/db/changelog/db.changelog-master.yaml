@@ -812,6 +812,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-05-18-mois-sales-library-page-snapshot.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-03-mois-sales-library-snapshot-redirect-urls.yaml
+      relativeToChangelogFile: true
 
   - include:
       file: changesets/2026-05-17-experiment-create-simplification-columns.yaml

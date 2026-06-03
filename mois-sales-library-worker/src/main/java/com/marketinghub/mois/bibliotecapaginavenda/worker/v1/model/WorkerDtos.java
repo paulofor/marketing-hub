@@ -28,7 +28,7 @@ public final class WorkerDtos {
     public record HtmlCaptureClaimRequest(String workspaceId, Integer limit, Boolean force) {}
     public record HtmlCaptureJob(Long snapshotId, Long pageId, String urlCanonical, String title) {}
     public record HtmlCaptureClaimResponse(boolean claimed, HtmlCaptureJob job) {}
-    public record HtmlCaptureCompleteRequest(String rawHtml, String finalUrl, Integer httpStatus, String contentType, String sha256, Long sizeBytes, Instant capturedAt) {}
-    public record HtmlCaptureFailRequest(String errorCategory, String errorMessage) {}
+    public record HtmlCaptureCompleteRequest(String rawHtml, String finalUrl, String redirectDestinationUrl, String redirectRootUrl, Integer httpStatus, String contentType, String sha256, Long sizeBytes, Instant capturedAt) {}
+    public record HtmlCaptureFailRequest(String errorCategory, String errorMessage, String redirectDestinationUrl, String redirectRootUrl, Integer httpStatus) {}
     public record HtmlCapturePersistResponse(Long snapshotId, String status) {}
 }

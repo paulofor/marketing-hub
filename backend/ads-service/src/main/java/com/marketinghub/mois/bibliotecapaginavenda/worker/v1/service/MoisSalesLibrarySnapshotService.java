@@ -74,6 +74,7 @@ public class MoisSalesLibrarySnapshotService {
     public List<MoisSalesLibraryDtos.SalesLibraryPageSnapshotResponse> listSnapshots(long pageId) {
         return jdbcTemplate.query("""
                 SELECT s.id, s.url_ingest_id, s.snapshot_hash, s.status, s.http_status, s.content_type,
+                       s.redirect_destination_url, s.redirect_root_url,
                        COALESCE(raw.size_bytes, 0) AS raw_html_bytes,
                        COALESCE(png.size_bytes, 0) AS screenshot_bytes,
                        s.captured_at, s.updated_at
@@ -92,6 +93,8 @@ public class MoisSalesLibrarySnapshotService {
                 rs.getString("status"),
                 (Integer) rs.getObject("http_status"),
                 rs.getString("content_type"),
+                rs.getString("redirect_destination_url"),
+                rs.getString("redirect_root_url"),
                 rs.getLong("raw_html_bytes"),
                 rs.getLong("screenshot_bytes"),
                 toInstant(rs.getTimestamp("captured_at")),
@@ -135,19 +138,19 @@ public class MoisSalesLibrarySnapshotService {
         if (duplicateSnapshotId != null) {
             jdbcTemplate.update("""
                     UPDATE mois_sales_library_page_snapshot
-                    SET status = 'DUPLICATE', http_status = ?, content_type = ?, error_message = ?, captured_at = ?, updated_at = UTC_TIMESTAMP()
+                    SET status = 'DUPLICATE', http_status = ?, content_type = ?, redirect_destination_url = ?, redirect_root_url = ?, error_message = ?, captured_at = ?, updated_at = UTC_TIMESTAMP()
                     WHERE id = ?
-                    """, request.httpStatus(), truncate(request.contentType(), 255),
-                    "HTML idêntico ao snapshot " + duplicateSnapshotId,
+                    """, request.httpStatus(), truncate(request.contentType(), 255), truncate(request.redirectDestinationUrl(), 1024),
+                    truncate(request.redirectRootUrl(), 1024), "HTML idêntico ao snapshot " + duplicateSnapshotId,
                     Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
             return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "DUPLICATE");
         }
         jdbcTemplate.update("""
                 UPDATE mois_sales_library_page_snapshot
-                SET snapshot_hash = ?, status = 'CAPTURED', http_status = ?, content_type = ?, error_message = NULL, captured_at = ?, updated_at = UTC_TIMESTAMP()
+                SET snapshot_hash = ?, status = 'CAPTURED', http_status = ?, content_type = ?, redirect_destination_url = ?, redirect_root_url = ?, error_message = NULL, captured_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
-                """, hash, request.httpStatus(), truncate(request.contentType(), 255),
-                Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
+                """, hash, request.httpStatus(), truncate(request.contentType(), 255), truncate(request.redirectDestinationUrl(), 1024),
+                truncate(request.redirectRootUrl(), 1024), Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
         insertTextArtifact(snapshotId, ARTIFACT_RAW_HTML, request.contentType() == null ? "text/html" : request.contentType(), rawHtml, rawHtmlBytes.length);
         return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "CAPTURED");
     }
@@ -165,9 +168,10 @@ public class MoisSalesLibrarySnapshotService {
                 : request.errorMessage();
         jdbcTemplate.update("""
                 UPDATE mois_sales_library_page_snapshot
-                SET status = 'FAILED', error_message = ?, captured_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
+                SET status = 'FAILED', http_status = ?, redirect_destination_url = ?, redirect_root_url = ?, error_message = ?, captured_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
-                """, truncate(message, 1000), snapshotId);
+                """, request.httpStatus(), truncate(request.redirectDestinationUrl(), 1024), truncate(request.redirectRootUrl(), 1024),
+                truncate(message, 1000), snapshotId);
         return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "FAILED");
     }
 
@@ -227,85 +231,93 @@ public class MoisSalesLibrarySnapshotService {
             String errorMessage = categorizeExceptionFailure(ex);
             log.warn("Falha ao capturar snapshot bruto da sales page MOIS. pageId={}, url={}, categoria={}",
                     page.pageId(), page.urlCanonical(), errorMessage, ex);
-            Long snapshotId = persistFailedSnapshot(page, errorMessage, null, null);
+            Long snapshotId = persistFailedSnapshot(page, errorMessage, null, null, null, null);
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
-                    page.pageId(), snapshotId, page.urlCanonical(), "FAILED", null, null, 0L, 0L, errorMessage);
+                    page.pageId(), snapshotId, page.urlCanonical(), null, null, "FAILED", null, null, 0L, 0L, errorMessage);
         }
     }
 
-    /** Busca a URL canônica, valida o HTML recebido e persiste os artefatos de snapshot quando a captura é útil. */
+    /** Busca a URL canônica, tenta fallback pela raiz do redirecionamento e persiste os artefatos quando a captura é útil. */
     private MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem captureOne(PageToCapture page) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(page.urlCanonical()))
-                .timeout(Duration.ofSeconds(30))
-                .header("User-Agent", "MarketingHub-MOIS-SalesLibrarySnapshot/1.0")
-                .GET()
-                .build();
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        String rawHtml = response.body() == null ? "" : response.body();
-        String contentType = response.headers().firstValue("content-type").orElse("text/html");
-        log.info("MOIS sales-library snapshot payload bruto recebido. pageId={}, url={}, httpStatus={}, contentType={}, htmlPreview={}",
-                page.pageId(), page.urlCanonical(), response.statusCode(), contentType, truncate(rawHtml, 4000));
+        CaptureResponse primary = fetchUrl(page.urlCanonical());
+        String redirectDestinationUrl = primary.finalUrl();
+        String redirectRootUrl = rootUrl(redirectDestinationUrl);
+        CaptureResponse effective = primary;
+        if (!primary.isCapturable() && shouldTryRedirectRoot(page.urlCanonical(), redirectDestinationUrl, redirectRootUrl)) {
+            log.info("MOIS sales-library snapshot tentando raiz do redirecionamento. pageId={}, urlCanonical={}, redirectDestinationUrl={}, redirectRootUrl={}",
+                    page.pageId(), page.urlCanonical(), redirectDestinationUrl, redirectRootUrl);
+            effective = fetchUrl(redirectRootUrl);
+        }
 
-        if (response.statusCode() < 200 || response.statusCode() >= 400 || rawHtml.isBlank()) {
-            String errorMessage = categorizeHttpFailure(response.statusCode(), rawHtml);
-            Long snapshotId = persistFailedSnapshot(page, errorMessage, response.statusCode(), contentType);
+        log.info("MOIS sales-library snapshot payload bruto recebido. pageId={}, url={}, redirectDestinationUrl={}, redirectRootUrl={}, effectiveUrl={}, httpStatus={}, contentType={}, htmlPreview={}",
+                page.pageId(), page.urlCanonical(), redirectDestinationUrl, redirectRootUrl, effective.finalUrl(), effective.statusCode(),
+                effective.contentType(), truncate(effective.rawHtml(), 4000));
+
+        if (!effective.isCapturable()) {
+            String errorMessage = categorizeHttpFailure(effective.statusCode(), effective.rawHtml());
+            Long snapshotId = persistFailedSnapshot(page, errorMessage, effective.statusCode(), effective.contentType(), redirectDestinationUrl, redirectRootUrl);
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
-                    page.pageId(), snapshotId, page.urlCanonical(), "FAILED", null, response.statusCode(), 0L, 0L,
+                    page.pageId(), snapshotId, page.urlCanonical(), redirectDestinationUrl, redirectRootUrl, "FAILED", null, effective.statusCode(), 0L, 0L,
                     errorMessage);
         }
 
+        String rawHtml = effective.rawHtml();
         String hash = sha256(rawHtml);
         Long existingSnapshotId = findExistingSnapshot(page.pageId(), hash);
         if (existingSnapshotId != null) {
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
-                    page.pageId(), existingSnapshotId, page.urlCanonical(), "DUPLICATE", hash, response.statusCode(), rawHtml.getBytes(StandardCharsets.UTF_8).length, 0L, null);
+                    page.pageId(), existingSnapshotId, page.urlCanonical(), redirectDestinationUrl, redirectRootUrl, "DUPLICATE", hash,
+                    effective.statusCode(), rawHtml.getBytes(StandardCharsets.UTF_8).length, 0L, null);
         }
 
-        long snapshotId = insertSnapshot(page, hash, response.statusCode(), contentType);
+        long snapshotId = insertSnapshot(page, hash, effective.statusCode(), effective.contentType(), redirectDestinationUrl, redirectRootUrl);
         byte[] rawHtmlBytes = rawHtml.getBytes(StandardCharsets.UTF_8);
         insertTextArtifact(snapshotId, ARTIFACT_RAW_HTML, "text/html; charset=UTF-8", rawHtml, rawHtmlBytes.length);
-        byte[] screenshot = renderBasicScreenshot(rawHtml, page.urlCanonical());
+        byte[] screenshot = renderBasicScreenshot(rawHtml, effective.finalUrl());
         insertBinaryArtifact(snapshotId, ARTIFACT_SCREENSHOT_PNG, "image/png", screenshot);
         return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
-                page.pageId(), snapshotId, page.urlCanonical(), "CAPTURED", hash, response.statusCode(), rawHtmlBytes.length, screenshot.length, null);
+                page.pageId(), snapshotId, page.urlCanonical(), redirectDestinationUrl, redirectRootUrl, "CAPTURED", hash,
+                effective.statusCode(), rawHtmlBytes.length, screenshot.length, null);
     }
 
-    /** Persiste uma falha de captura preservando categoria, HTTP e tipo de conteúdo quando disponíveis. */
-    private Long persistFailedSnapshot(PageToCapture page, String errorMessage, Integer httpStatus, String contentType) {
+    /** Persiste uma falha de captura preservando URLs de redirecionamento, categoria, HTTP e tipo de conteúdo quando disponíveis. */
+    private Long persistFailedSnapshot(PageToCapture page, String errorMessage, Integer httpStatus, String contentType, String redirectDestinationUrl, String redirectRootUrl) {
         try {
-            return insertFailedSnapshot(page, truncate(errorMessage, 1000), httpStatus, contentType);
+            return insertFailedSnapshot(page, truncate(errorMessage, 1000), httpStatus, contentType, redirectDestinationUrl, redirectRootUrl);
         } catch (Exception persistEx) {
             log.warn("Falha ao persistir snapshot FAILED da sales page MOIS. pageId={}", page.pageId(), persistEx);
             return null;
         }
     }
 
-    /** Insere os metadados principais de um snapshot capturado com sucesso. */
-    private long insertSnapshot(PageToCapture page, String hash, int httpStatus, String contentType) {
+    /** Insere os metadados principais de um snapshot capturado com sucesso, incluindo URLs de redirecionamento. */
+    private long insertSnapshot(PageToCapture page, String hash, int httpStatus, String contentType, String redirectDestinationUrl, String redirectRootUrl) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement("""
                     INSERT INTO mois_sales_library_page_snapshot
-                    (url_ingest_id, snapshot_hash, status, http_status, content_type, captured_at, created_at, updated_at)
-                    VALUES (?, ?, 'CAPTURED', ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                    (url_ingest_id, snapshot_hash, status, http_status, content_type, redirect_destination_url, redirect_root_url, captured_at, created_at, updated_at)
+                    VALUES (?, ?, 'CAPTURED', ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, page.pageId());
             ps.setString(2, hash);
             ps.setInt(3, httpStatus);
             ps.setString(4, truncate(contentType, 255));
+            ps.setString(5, truncate(redirectDestinationUrl, 1024));
+            ps.setString(6, truncate(redirectRootUrl, 1024));
             return ps;
         }, keyHolder);
         return generatedId(keyHolder);
     }
 
-    /** Insere um snapshot FAILED com metadados suficientes para auditoria e cooldown de reprocessamento. */
-    private long insertFailedSnapshot(PageToCapture page, String errorMessage, Integer httpStatus, String contentType) {
+    /** Insere um snapshot FAILED com URLs de redirecionamento e metadados suficientes para auditoria. */
+    private long insertFailedSnapshot(PageToCapture page, String errorMessage, Integer httpStatus, String contentType, String redirectDestinationUrl, String redirectRootUrl) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement("""
                     INSERT INTO mois_sales_library_page_snapshot
-                    (url_ingest_id, status, http_status, content_type, error_message, captured_at, created_at, updated_at)
-                    VALUES (?, 'FAILED', ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                    (url_ingest_id, status, http_status, content_type, redirect_destination_url, redirect_root_url, error_message, captured_at, created_at, updated_at)
+                    VALUES (?, 'FAILED', ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, page.pageId());
             if (httpStatus == null) {
@@ -314,7 +326,9 @@ public class MoisSalesLibrarySnapshotService {
                 ps.setInt(2, httpStatus);
             }
             ps.setString(3, truncate(contentType, 255));
-            ps.setString(4, errorMessage);
+            ps.setString(4, truncate(redirectDestinationUrl, 1024));
+            ps.setString(5, truncate(redirectRootUrl, 1024));
+            ps.setString(6, errorMessage);
             return ps;
         }, keyHolder);
         return generatedId(keyHolder);
@@ -418,6 +432,49 @@ public class MoisSalesLibrarySnapshotService {
         return Math.max(1, Math.min(limit, MAX_LIMIT));
     }
 
+
+    /** Executa GET com redirecionamentos e encapsula HTML, URL final, HTTP status e content type. */
+    private CaptureResponse fetchUrl(String url) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .timeout(Duration.ofSeconds(30))
+                .header("User-Agent", "MarketingHub-MOIS-SalesLibrarySnapshot/1.0")
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        String rawHtml = response.body() == null ? "" : response.body();
+        String contentType = response.headers().firstValue("content-type").orElse("text/html");
+        String finalUrl = response.uri() == null ? url : response.uri().toString();
+        return new CaptureResponse(rawHtml, finalUrl, response.statusCode(), contentType);
+    }
+
+    /** Decide se vale tentar a raiz do domínio de destino quando a URL redirecionada falha. */
+    private boolean shouldTryRedirectRoot(String originalUrl, String redirectDestinationUrl, String redirectRootUrl) {
+        return redirectDestinationUrl != null
+                && redirectRootUrl != null
+                && !redirectDestinationUrl.equals(originalUrl)
+                && !redirectRootUrl.equals(redirectDestinationUrl)
+                && !redirectRootUrl.equals(originalUrl);
+    }
+
+    /** Extrai a raiz scheme://host[:port] da URL final de redirecionamento. */
+    private String rootUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(url);
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return null;
+            }
+            String port = uri.getPort() < 0 ? "" : ":" + uri.getPort();
+            return uri.getScheme() + "://" + uri.getHost() + port;
+        } catch (IllegalArgumentException ex) {
+            log.warn("Falha ao extrair raiz da URL redirecionada MOIS. url={}, erroClasse={}, erro={}",
+                    url, ex.getClass().getName(), ex.getMessage(), ex);
+            return null;
+        }
+    }
+
     /** Classifica falhas HTTP para impedir que URLs indisponíveis sejam tratadas como pendência normal. */
     private String categorizeHttpFailure(int httpStatus, String rawHtml) {
         String preview = truncate(rawHtml == null ? "" : rawHtml.strip(), 200);
@@ -479,5 +536,13 @@ public class MoisSalesLibrarySnapshotService {
     }
 
     private record PageToCapture(long pageId, String urlCanonical, String title) {
+    }
+
+    private record CaptureResponse(String rawHtml, String finalUrl, int statusCode, String contentType) {
+
+        /** Informa se a resposta capturada possui corpo aproveitável para análise. */
+        private boolean isCapturable() {
+            return statusCode >= 200 && statusCode < 400 && rawHtml != null && !rawHtml.isBlank();
+        }
     }
 }

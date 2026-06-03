@@ -46,13 +46,20 @@ function getSnapshotStatusBadgeClass(status: string) {
 }
 
 function getResultMessage(item: MoisSalesLibrarySnapshotCaptureItem) {
+  const redirectInfo = item.redirectDestinationUrl
+    ? `Destino: ${item.redirectDestinationUrl}${
+        item.redirectRootUrl ? ` · Raiz: ${item.redirectRootUrl}` : ""
+      }`
+    : "";
   if (item.errorMessage) {
-    return item.errorMessage;
+    return [item.errorMessage, redirectInfo].filter(Boolean).join(" · ");
   }
   if (item.snapshotHash) {
-    return `hash ${item.snapshotHash.slice(0, 12)}...`;
+    return [`hash ${item.snapshotHash.slice(0, 12)}...`, redirectInfo]
+      .filter(Boolean)
+      .join(" · ");
   }
-  return "Sem detalhe adicional";
+  return redirectInfo || "Sem detalhe adicional";
 }
 
 export default function MoisSalesPagesPipelinePage() {
@@ -230,7 +237,14 @@ export default function MoisSalesPagesPipelinePage() {
                     })
                   }
                 >
-                  {isRunning ? "Executando..." : "Executar etapa 1"}
+                  {isRunning ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+                      Executando...
+                    </>
+                  ) : (
+                    "Executar etapa 1"
+                  )}
                 </button>
               </div>
             </div>

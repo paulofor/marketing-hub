@@ -799,3 +799,14 @@ Arquivos alterados:
 - `mois-hotmart-collector/src/main/java/com/marketinghub/moishotmart/service/HotmartCollectorScheduler.java`
 - `mois-hotmart-collector/src/test/java/com/marketinghub/moishotmart/service/HotmartCollectorSchedulerTest.java`
 - `docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md`
+
+## 2026-06-03 — Atalho Pipeline na biblioteca de páginas de vendas
+
+- Adicionado botão **Pipeline** no cabeçalho da Biblioteca de Páginas de Vendas do MOIS.
+- Criada rota inicial `/mois/sales-pages-library/pipeline` com tela placeholder para direcionar o usuário à visão de pipeline que será construída na próxima etapa.
+- Mantido o fluxo simples e sem novo contrato de backend, pois a alteração atual é apenas navegação/placeholder sem consumo de dados.
+
+Arquivos alterados:
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `frontend/src/App.tsx`

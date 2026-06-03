@@ -159,7 +159,9 @@ public class BackendRoutineResearchOrchestratorService {
                 cycle.getSourceScore(),
                 cycle.getTriggerSource(),
                 cycle.getStatus(),
-                cycle.getStartedAt());
+                cycle.getStartedAt(),
+                cycle.getFinishedAt(),
+                cycle.getErrorMessage());
     }
 
     /** Converte o candidato selecionável para o contrato de pendência da etapa zero. */

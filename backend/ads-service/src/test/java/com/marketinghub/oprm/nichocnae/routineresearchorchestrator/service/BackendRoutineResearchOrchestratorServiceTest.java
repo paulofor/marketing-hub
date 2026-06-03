@@ -69,6 +69,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.getFirst().nicheName()).isEqualTo("Cabeleireiros e manicures");
         assertThat(result.getFirst().sourceScore()).isEqualByComparingTo("92.50");
         assertThat(result.getFirst().processedAt()).isEqualTo(Instant.parse("2026-06-03T01:00:00Z"));
+        assertThat(result.getFirst().finishedAt()).isEqualTo(Instant.parse("2026-06-03T02:00:00Z"));
+        assertThat(result.getFirst().errorMessage()).isEqualTo("nicheName is required");
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(routineResearchCycleRepository).findAllByOrderByStartedAtDesc(pageableCaptor.capture());
@@ -144,6 +146,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         cycle.setTotalSourceSnapshots(0);
         cycle.setTotalExtractedSignals(0);
         cycle.setStartedAt(Instant.parse(startedAt));
+        cycle.setFinishedAt(Instant.parse("2026-06-03T02:00:00Z"));
+        cycle.setErrorMessage("nicheName is required");
         cycle.setCreatedAt(Instant.parse(startedAt));
         cycle.setUpdatedAt(Instant.parse(startedAt));
         return cycle;

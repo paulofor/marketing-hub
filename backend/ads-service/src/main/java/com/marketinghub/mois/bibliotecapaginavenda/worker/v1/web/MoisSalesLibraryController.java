@@ -32,6 +32,39 @@ public class MoisSalesLibraryController {
     private final MoisSalesLibraryService service;
     private final MoisSalesLibrarySnapshotService snapshotService;
 
+
+    /**
+     * Reserva a próxima URL de referência coletada para captura de HTML bruto pelo worker MOIS.
+     */
+    @PostMapping("/collected-reference-html:claim")
+    public MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse claimCollectedReferenceHtml(
+            @Valid @RequestBody MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest request
+    ) {
+        return service.claimCollectedReferenceHtml(request);
+    }
+
+    /**
+     * Recebe o HTML bruto capturado pelo worker MOIS para a referência reservada.
+     */
+    @PostMapping("/collected-reference-html/{captureId}:complete")
+    public MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse completeCollectedReferenceHtml(
+            @PathVariable long captureId,
+            @Valid @RequestBody MoisSalesLibraryDtos.CollectedReferenceHtmlCompleteRequest request
+    ) {
+        return service.completeCollectedReferenceHtml(captureId, request);
+    }
+
+    /**
+     * Registra falha na captura de HTML bruto de uma referência reservada.
+     */
+    @PostMapping("/collected-reference-html/{captureId}:fail")
+    public MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse failCollectedReferenceHtml(
+            @PathVariable long captureId,
+            @RequestBody MoisSalesLibraryDtos.CollectedReferenceHtmlFailRequest request
+    ) {
+        return service.failCollectedReferenceHtml(captureId, request);
+    }
+
     /**
      * Lista entradas de URLs ingeridas pela biblioteca.
      */

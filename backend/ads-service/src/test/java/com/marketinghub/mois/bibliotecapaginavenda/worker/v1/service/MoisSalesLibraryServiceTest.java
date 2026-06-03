@@ -110,6 +110,68 @@ class MoisSalesLibraryServiceTest {
     }
 
     /**
+     * Garante que o claim de HTML bruto lê a tabela de referências coletadas e retorna a URL reservada.
+     */
+    @Test
+    void shouldClaimCollectedReferenceHtmlFromCollectedReferenceTable() throws Exception {
+        MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest request =
+                new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest("workspace-001", "hotmart");
+
+        given(jdbcTemplate.update(contains("INSERT INTO mois_collected_reference_html_capture"), any(), eq("workspace-001"), eq("HOTMART")))
+                .willReturn(1);
+        given(jdbcTemplate.query(contains("FROM mois_collected_reference_html_capture"), isA(RowMapper.class), any()))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    ResultSet row = htmlCaptureRow();
+                    return List.of(mapper.mapRow(row, 0));
+                });
+
+        MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse response = service.claimCollectedReferenceHtml(request);
+
+        org.assertj.core.api.Assertions.assertThat(response.claimed()).isTrue();
+        org.assertj.core.api.Assertions.assertThat(response.job().url()).isEqualTo("https://go.hotmart.com/A1");
+        org.assertj.core.api.Assertions.assertThat(response.job().urlSource()).isEqualTo("SALES_PAGE_URL");
+    }
+
+    /**
+     * Garante persistência de HTML bruto capturado com status final CAPTURED.
+     */
+    @Test
+    void shouldCompleteCollectedReferenceHtmlCapture() {
+        MoisSalesLibraryDtos.CollectedReferenceHtmlCompleteRequest request =
+                new MoisSalesLibraryDtos.CollectedReferenceHtmlCompleteRequest(
+                        "<html><body>Oferta</body></html>",
+                        "https://final.example/oferta",
+                        200,
+                        "text/html",
+                        Instant.parse("2026-06-03T10:00:00Z"));
+
+        MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse response = service.completeCollectedReferenceHtml(10L, request);
+
+        verify(jdbcTemplate).update(contains("UPDATE mois_collected_reference_html_capture"),
+                eq("https://final.example/oferta"), eq(200), eq("text/html"), eq("<html><body>Oferta</body></html>"),
+                any(), eq(32), any(), eq(10L));
+        org.assertj.core.api.Assertions.assertThat(response.status()).isEqualTo("CAPTURED");
+    }
+
+
+    /**
+     * Monta uma linha simulada de captura de HTML bruto reservada.
+     */
+    private ResultSet htmlCaptureRow() throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("id")).willReturn(10L);
+        given(resultSet.getLong("collected_reference_id")).willReturn(20L);
+        given(resultSet.getString("collection_job_id")).willReturn("hotmart-job-400");
+        given(resultSet.getString("reference_id")).willReturn("ref-1");
+        given(resultSet.getString("source")).willReturn("HOTMART");
+        given(resultSet.getString("title")).willReturn("Produto");
+        given(resultSet.getString("url_original")).willReturn("https://go.hotmart.com/A1");
+        given(resultSet.getString("url_source")).willReturn("SALES_PAGE_URL");
+        return resultSet;
+    }
+
+    /**
      * Monta uma linha simulada de produto Hotmart coletado para o mapper JDBC.
      */
     private ResultSet collectedReferenceRow(

@@ -810,3 +810,8 @@ Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `frontend/src/App.tsx`
+
+## 2026-06-03 — Pipeline de captura de HTML bruto a partir de `mois_collected_reference`
+- criado backend como dono da leitura/persistência da primeira etapa do novo pipeline, com endpoints `POST /api/mois/sales-library/collected-reference-html:claim`, `POST /api/mois/sales-library/collected-reference-html/{captureId}:complete` e `POST /api/mois/sales-library/collected-reference-html/{captureId}:fail`.
+- adicionada tabela `mois_collected_reference_html_capture` para reservar URLs de `mois_collected_reference`, guardar URL original/final, status, HTTP status, content type, hash, tamanho e HTML bruto completo.
+- ajustado o `mois-sales-library-worker` para executar a captura na internet: reserva uma referência no backend, faz GET da URL priorizada (`sales_page_url`, fallback `product_url`, fallback `url`) e devolve o HTML bruto ao backend para a próxima etapa.

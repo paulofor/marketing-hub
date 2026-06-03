@@ -6,7 +6,10 @@ worker:
   workspace-id: ${MOIS_WORKSPACE_ID:workspace-001}
   source: ${MOIS_SOURCE:CLICKBANK}
   sources: ${MOIS_SOURCES:}
+  raw-html-source: ${MOIS_RAW_HTML_SOURCE:HOTMART}
+  raw-html-sources: ${MOIS_RAW_HTML_SOURCES:}
   poll-interval-ms: ${MOIS_POLL_INTERVAL_MS:15000}
+  raw-html-poll-interval-ms: ${MOIS_RAW_HTML_POLL_INTERVAL_MS:30000}
   request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:30000}
 
 openai:

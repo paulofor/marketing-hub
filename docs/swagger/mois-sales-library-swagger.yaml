@@ -1,0 +1,141 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - MOIS Sales Library
+  version: 0.2.0
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS.
+servers:
+  - url: /api/mois/sales-library
+paths:
+  /collected-reference-html:claim:
+    post:
+      summary: Reserva uma referência coletada para captura de HTML bruto
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectedReferenceHtmlClaimRequest'
+      responses:
+        '200':
+          description: Resultado da reserva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectedReferenceHtmlClaimResponse'
+  /collected-reference-html/{captureId}:complete:
+    post:
+      summary: Persiste HTML bruto capturado para a referência reservada
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/CaptureId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectedReferenceHtmlCompleteRequest'
+      responses:
+        '200':
+          description: Captura persistida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectedReferenceHtmlPersistResponse'
+  /collected-reference-html/{captureId}:fail:
+    post:
+      summary: Registra falha de captura de HTML bruto
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/CaptureId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectedReferenceHtmlFailRequest'
+      responses:
+        '200':
+          description: Falha persistida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectedReferenceHtmlPersistResponse'
+components:
+  parameters:
+    CaptureId:
+      in: path
+      name: captureId
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    CollectedReferenceHtmlClaimRequest:
+      type: object
+      required: [workspaceId, source]
+      properties:
+        workspaceId:
+          type: string
+          example: workspace-001
+        source:
+          type: string
+          example: HOTMART
+    CollectedReferenceHtmlCaptureJob:
+      type: object
+      properties:
+        captureId:
+          type: integer
+          format: int64
+        collectedReferenceId:
+          type: integer
+          format: int64
+        collectionJobId:
+          type: string
+        referenceId:
+          type: string
+        source:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+        urlSource:
+          type: string
+    CollectedReferenceHtmlClaimResponse:
+      type: object
+      properties:
+        claimed:
+          type: boolean
+        job:
+          $ref: '#/components/schemas/CollectedReferenceHtmlCaptureJob'
+    CollectedReferenceHtmlCompleteRequest:
+      type: object
+      required: [rawHtml]
+      properties:
+        rawHtml:
+          type: string
+        finalUrl:
+          type: string
+        httpStatus:
+          type: integer
+        contentType:
+          type: string
+        fetchedAt:
+          type: string
+          format: date-time
+    CollectedReferenceHtmlFailRequest:
+      type: object
+      properties:
+        errorCategory:
+          type: string
+        errorMessage:
+          type: string
+    CollectedReferenceHtmlPersistResponse:
+      type: object
+      properties:
+        captureId:
+          type: integer
+          format: int64
+        status:
+          type: string

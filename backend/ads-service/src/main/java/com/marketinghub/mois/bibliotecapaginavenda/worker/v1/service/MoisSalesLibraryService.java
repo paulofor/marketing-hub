@@ -2,6 +2,9 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,9 +14,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HexFormat;
 import java.util.Locale;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,6 +139,116 @@ public class MoisSalesLibraryService {
                 counters.jobsCreated(),
                 skippedWithoutUrl + counters.skippedWithoutUrl()
         );
+    }
+
+    /**
+     * Reserva uma referência coletada para a primeira etapa do pipeline de captura de HTML bruto.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse claimCollectedReferenceHtml(
+            MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest request
+    ) {
+        String normalizedSource = request.source().trim().toUpperCase(Locale.ROOT);
+        String claimedBy = UUID.randomUUID().toString();
+        try {
+            int inserted = jdbcTemplate.update(
+                    """
+                            INSERT INTO mois_collected_reference_html_capture
+                              (collected_reference_id, workspace_id, source, collection_job_id, reference_id, title,
+                               url_source, url_original, status, claimed_by, claimed_at, created_at, updated_at)
+                            SELECT r.id, r.workspace_id, r.source, r.job_id, r.reference_id,
+                                   COALESCE(NULLIF(r.product_name, ''), NULLIF(r.title, ''), r.reference_id),
+                                   CASE
+                                     WHEN r.sales_page_url IS NOT NULL AND r.sales_page_url <> '' THEN 'SALES_PAGE_URL'
+                                     WHEN r.product_url IS NOT NULL AND r.product_url <> '' THEN 'PRODUCT_URL'
+                                     ELSE 'URL'
+                                   END,
+                                   COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')),
+                                   'CLAIMED', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP()
+                            FROM mois_collected_reference r
+                            WHERE r.workspace_id = ?
+                              AND r.source = ?
+                              AND COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')) IS NOT NULL
+                              AND NOT EXISTS (
+                                SELECT 1 FROM mois_collected_reference_html_capture c
+                                WHERE c.collected_reference_id = r.id
+                              )
+                            ORDER BY r.collected_at ASC, r.id ASC
+                            LIMIT 1
+                            """,
+                    claimedBy,
+                    request.workspaceId(),
+                    normalizedSource);
+            if (inserted == 0) {
+                return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null);
+            }
+            return findClaimedCollectedReferenceHtml(claimedBy)
+                    .map(job -> new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(true, job))
+                    .orElseGet(() -> new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null));
+        } catch (DataAccessException ex) {
+            log.warn("Falha ao reservar HTML bruto de referência coletada. operacao=claimCollectedReferenceHtml, workspaceId={}, source={}, claimedBy={}, erroClasse={}, erro={}",
+                    request.workspaceId(), normalizedSource, claimedBy, ex.getClass().getName(), ex.getMessage(), ex);
+            return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null);
+        }
+    }
+
+    /**
+     * Persiste o HTML bruto capturado pelo worker MOIS para uma referência coletada.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse completeCollectedReferenceHtml(
+            long captureId,
+            MoisSalesLibraryDtos.CollectedReferenceHtmlCompleteRequest request
+    ) {
+        String rawHtml = request.rawHtml() == null ? "" : request.rawHtml();
+        byte[] rawHtmlBytes = rawHtml.getBytes(StandardCharsets.UTF_8);
+        jdbcTemplate.update(
+                """
+                        UPDATE mois_collected_reference_html_capture
+                        SET status = 'CAPTURED',
+                            url_final = ?,
+                            http_status = ?,
+                            content_type = ?,
+                            raw_html = ?,
+                            raw_html_sha256 = ?,
+                            raw_html_bytes = ?,
+                            error_message = NULL,
+                            fetched_at = ?,
+                            updated_at = UTC_TIMESTAMP()
+                        WHERE id = ?
+                        """,
+                truncate(request.finalUrl(), 1024),
+                request.httpStatus(),
+                truncate(request.contentType(), 255),
+                rawHtml,
+                sha256(rawHtml),
+                rawHtmlBytes.length,
+                Timestamp.from(request.fetchedAt() == null ? Instant.now() : request.fetchedAt()),
+                captureId);
+        return new MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse(captureId, "CAPTURED");
+    }
+
+    /**
+     * Registra falha terminal da captura de HTML bruto de uma referência coletada.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse failCollectedReferenceHtml(
+            long captureId,
+            MoisSalesLibraryDtos.CollectedReferenceHtmlFailRequest request
+    ) {
+        String message = coalesceNotBlank(request.errorMessage(), request.errorCategory(), "Falha sem detalhe");
+        jdbcTemplate.update(
+                """
+                        UPDATE mois_collected_reference_html_capture
+                        SET status = 'FAILED',
+                            error_message = ?,
+                            fetched_at = UTC_TIMESTAMP(),
+                            updated_at = UTC_TIMESTAMP()
+                        WHERE id = ?
+                        """,
+                truncate(message, 1000),
+                captureId);
+        return new MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse(captureId, "FAILED");
     }
 
     /**
@@ -381,6 +497,56 @@ public class MoisSalesLibraryService {
             persisted++;
         }
         return new IngestCounters(persisted, inserted, updated, jobsCreated, skippedWithoutUrl);
+    }
+
+
+    /**
+     * Localiza o item recém-reservado pelo token de claim do worker.
+     */
+    private java.util.Optional<MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob> findClaimedCollectedReferenceHtml(String claimedBy) {
+        return jdbcTemplate.query(
+                """
+                        SELECT id, collected_reference_id, collection_job_id, reference_id, source, title, url_original, url_source
+                        FROM mois_collected_reference_html_capture
+                        WHERE claimed_by = ?
+                          AND status = 'CLAIMED'
+                        ORDER BY claimed_at DESC, id DESC
+                        LIMIT 1
+                        """,
+                (rs, rowNum) -> new MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob(
+                        rs.getLong("id"),
+                        rs.getLong("collected_reference_id"),
+                        rs.getString("collection_job_id"),
+                        rs.getString("reference_id"),
+                        rs.getString("source"),
+                        rs.getString("title"),
+                        rs.getString("url_original"),
+                        rs.getString("url_source")),
+                claimedBy)
+                .stream()
+                .findFirst();
+    }
+
+    /**
+     * Calcula SHA-256 do HTML bruto para deduplicação e auditoria.
+     */
+    private String sha256(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 indisponível", ex);
+        }
+    }
+
+    /**
+     * Limita textos persistidos em colunas de tamanho fixo.
+     */
+    private String truncate(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 
     /**

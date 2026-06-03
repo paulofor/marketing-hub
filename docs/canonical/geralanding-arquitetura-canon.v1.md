@@ -41,6 +41,13 @@ Regras arquiteturais refletidas (ArchUnit):
 - Cada pacote direto `geralanding.<etapa>.service` de backend deve possuir os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`.
 - Os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta` devem conter somente tipos Java declarados como `record`, preservando DTOs contratuais imutáveis para as bordas de cada etapa.
 
+## Quality Review visual
+
+- A etapa `landing-page-quality-review` é o Quality Gate comercial final do GeraLanding e deve usar modelo de visão da OpenAI como avaliador principal da experiência renderizada.
+- O backend deve produzir ou disponibilizar screenshots desktop e mobile da landing após a montagem do `htmlGeraLanding`, mantendo validações determinísticas apenas como pré-check técnico de HTML, renderização e ausência de metadados proibidos.
+- O Worker AI deve processar a etapa pelo contrato canônico `pending` → `recebePrompt` → `recebeResposta`, enviando ao modelo de visão os screenshots e contexto textual mínimo dos artefatos canônicos para avaliar Dor → Resultado → Mecanismo → Prova → Oferta.
+- A resposta da etapa deve permanecer estruturada com `score`, `targetAudienceSpecificity`, `blockingIssues`, `recommendedRegeneration` e `approvalRecommendation`, indicando explicitamente as etapas que precisam ser reexecutadas.
+
 ## 2) Worker AI — núcleo OpenAI (`ai-worker / com.marketinghub.worker.openai.core`)
 
 ```mermaid

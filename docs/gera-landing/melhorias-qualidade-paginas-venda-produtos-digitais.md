@@ -225,17 +225,21 @@ Entregável do Passo 2:
 **Status: executado em 2026-06-03.**
 
 - Definir schema de avaliação da landing.
-- Implementar a etapa `LANDING_PAGE_QUALITY_REVIEW` ou validação equivalente.
+- Implementar a etapa `LANDING_PAGE_QUALITY_REVIEW` como etapa de validação com modelo de visão da OpenAI, usando imagem renderizada da landing como evidência principal da experiência real do usuário.
+- Manter uma pré-validação determinística apenas como barreira técnica para existência do HTML, renderização da página, ausência de metadados técnicos proibidos e geração correta dos screenshots.
+- Enviar ao modelo de visão screenshots desktop e mobile da landing, combinados com contexto textual mínimo dos artefatos canônicos, para avaliar hierarquia visual, clareza comercial, CTA, formulário, prova, percepção premium e aderência ao eixo Dor → Resultado → Mecanismo → Prova → Oferta.
 - Persistir score, diagnóstico, bloqueios e recomendações.
 - Recomendar explicitamente quais etapas devem ser reexecutadas.
 
 Entregável do Passo 3:
 
-- criada a validação equivalente `landing-page-quality-review` dentro do módulo backend `geralanding.qualityreview`, como Quality Gate comercial após o HTML final;
+- decisão de evolução: o Quality Gate principal deve usar modelo de visão da OpenAI analisando screenshots renderizados da landing, porque a qualidade comercial depende da experiência visual real percebida pelo usuário;
+- a validação determinística atual fica limitada a pré-check técnico e não deve ser considerada suficiente para aprovação comercial final;
+- a etapa `landing-page-quality-review` deve seguir o contrato operacional do GeraLanding com `pending`, `recebePrompt` e `recebeResposta`, permitindo processamento pelo Worker AI e retorno estruturado da avaliação visual;
 - persistência adicionada em `experiment.landing_page_quality_review` e nas execuções da etapa em `gera_landing_stage_execution`;
 - saída padronizada com `score`, `targetAudienceSpecificity`, `blockingIssues`, `recommendedRegeneration` e `approvalRecommendation`;
 - execução automática após a montagem do `htmlGeraLanding` e endpoint manual próprio do GeraLanding para reavaliar a landing;
-- recomendações de regeneração passaram a apontar explicitamente `LANDING_PAGE_COPY`, `LANDING_PAGE_IMAGE_PLANNING`, `LANDING_PAGE_DESIGN_PRESET`, `LANDING_PAGE_HTML` ou etapas correlatas conforme o bloqueio encontrado.
+- recomendações de regeneração devem apontar explicitamente `LANDING_PAGE_COPY`, `LANDING_PAGE_IMAGE_PLANNING`, `LANDING_PAGE_DESIGN_PRESET`, `LANDING_PAGE_HTML` ou etapas correlatas conforme o bloqueio encontrado.
 
 ### Passo 4 — Exibir diagnóstico na interface administrativa
 

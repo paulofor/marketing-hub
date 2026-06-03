@@ -1,4 +1,10 @@
 
+## 2026-06-03 — Decisão de Quality Gate visual do GeraLanding
+- solicitação: registrar no plano que a validação de qualidade da landing deve usar um modelo de visão.
+- causa-raiz/objetivo: a validação determinística por texto não avalia suficientemente a experiência visual real de conversão percebida pelo usuário.
+- decisão registrada: o Quality Gate principal do GeraLanding deve enviar screenshots renderizados desktop/mobile para modelo de visão da OpenAI, mantendo a validação determinística somente como pré-check técnico.
+- impacto arquitetural: a etapa `landing-page-quality-review` deve seguir o contrato operacional do GeraLanding com `pending`, `recebePrompt` e `recebeResposta`, permitindo processamento pelo Worker AI e retorno estruturado da avaliação visual.
+
 ## 2026-06-02 00:00:00 UTC — Pasta centralizada `docs/swagger`
 - solicitação: criar uma pasta `docs/swagger` para concentrar todos os contratos Swagger/OpenAPI e atualizar a documentação necessária para apontar esse novo padrão.
 - foi feito: todos os arquivos Swagger/OpenAPI versionados foram movidos para `docs/swagger`, incluindo GeraLanding, API geral, EPM, OPRM, MDS, MOIS e Avatar Sales Video.

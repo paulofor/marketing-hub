@@ -3157,3 +3157,9 @@
 - integração: o Quality Gate passou a ser executado automaticamente após a montagem do `htmlGeraLanding` na conclusão do design preset, além de expor endpoint manual em `/api/experiments/{experimentId}/geralanding/quality-review/start`.
 - governança: a etapa ficou isolada no pacote backend `geralanding.qualityreview`, sem acoplar a revisão ao pipeline legado de experimento; o contrato público foi documentado no Swagger do GeraLanding.
 - testes: adicionados testes unitários cobrindo aprovação, bloqueio com recomendações de regeneração e consulta de detalhe da execução.
+
+## 2026-06-03 — Implementação assíncrona do Quality Review visual do GeraLanding
+- solicitação: implementar o `quality-review` do GeraLanding usando modelo de visão e corrigir a falha arquitetural de subpacotes obrigatórios da etapa.
+- foi feito: a etapa `landing-page-quality-review` passou a criar jobs `INICIADO`, expor `pending`, receber `recebe-prompt` e `recebe-resposta`, persistindo o diagnóstico final somente após callback do Worker AI.
+- Worker AI: criado pacote isolado `openai.core.qualityreview` com scheduler, backend client, prompt builder multimodal, validador e handler, enviando imagens públicas extraídas dos artefatos/HTML como entradas `input_image` da Responses API junto do contexto Dor → Resultado → Mecanismo → Prova → Oferta.
+- documentação: Swagger do GeraLanding atualizado com os endpoints internos da revisão visual.

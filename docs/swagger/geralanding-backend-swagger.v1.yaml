@@ -621,7 +621,7 @@ paths:
         - $ref: '#/components/parameters/ExperimentId'
       responses:
         '202':
-          description: Revisão de qualidade executada e persistida.
+          description: Revisão visual de qualidade agendada para processamento pelo Worker AI.
           content:
             application/json:
               schema:
@@ -654,6 +654,34 @@ paths:
           $ref: '#/components/responses/StageExecutionDetail'
         '404':
           description: Experimento ou execução não encontrada.
+  /api/internal/geralanding/quality-review/stage-executions/pending:
+    get:
+      tags: [landing-page-quality-review]
+      summary: Lista jobs pendentes da revisão visual para o Worker AI.
+      operationId: listPendingGeraLandingQualityReviewExecutions
+      responses:
+        '200':
+          description: Jobs pendentes retornados.
+  /api/internal/geralanding/quality-review/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-quality-review]
+      summary: Recebe prompt, schema e request multimodal enviados à OpenAI.
+      operationId: receivePromptGeraLandingQualityReviewExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '202':
+          description: Execução marcada como aguardando retorno da OpenAI.
+  /api/internal/geralanding/quality-review/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-quality-review]
+      summary: Recebe diagnóstico visual da OpenAI e conclui ou falha a execução.
+      operationId: receiveResponseGeraLandingQualityReviewExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      responses:
+        '202':
+          description: Resposta da revisão visual processada.
   /api/experiments/{experimentId}/geralanding/landing/approve-and-publish:
     post:
       tags: [landing-page-publication]

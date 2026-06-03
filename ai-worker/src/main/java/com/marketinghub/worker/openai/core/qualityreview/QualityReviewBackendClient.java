@@ -1,0 +1,261 @@
+package com.marketinghub.worker.openai.core.qualityreview;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
+import com.marketinghub.worker.openai.core.model.OpenAiResult;
+import com.marketinghub.worker.openai.core.model.StageExecution;
+import com.marketinghub.worker.openai.core.port.StageBackendPort;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.reactive.function.client.WebClient;
+
+/** Responsabilidade: integrar a revisão visual do core OpenAI aos endpoints internos do backend. */
+public class QualityReviewBackendClient implements StageBackendPort<QualityReviewInput, QualityReviewOutput> {
+
+    private static final String STATUS_STARTED = "INICIADO";
+
+    private final WebClient webClient;
+    private final QualityReviewWorkerProperties properties;
+    private final ObjectMapper objectMapper;
+
+    /** Inicializa o cliente com WebClient, propriedades da revisão visual e ObjectMapper para normalizar artefatos. */
+    public QualityReviewBackendClient(WebClient.Builder builder, QualityReviewWorkerProperties properties, ObjectMapper objectMapper) {
+        this.webClient = builder.build();
+        this.properties = properties;
+        this.objectMapper = objectMapper;
+    }
+
+    /** Busca no backend os jobs de revisão visual iniciados e aptos para processamento pela OpenAI. */
+    @Override
+    public List<StageExecution<QualityReviewInput>> listPending(int limit) {
+        List<Map<String, Object>> payload = webClient.get()
+                .uri(stageExecutionBaseUrl() + "/pending")
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                .block(properties.timeout());
+        if (payload == null || payload.isEmpty()) {
+            return List.of();
+        }
+        return payload.stream()
+                .map(this::toStageExecution)
+                .filter(item -> item.aggregateId() != null && item.idJob() != null)
+                .limit(Math.max(1, limit))
+                .toList();
+    }
+
+    /** Envia ao backend o prompt renderizado, o schema e o request multimodal despachados para a OpenAI. */
+    @Override
+    public void markDispatched(StageExecution<QualityReviewInput> execution, OpenAiDispatch dispatch) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("prompt", dispatch.prompt());
+        body.put("promptMarkdownContent", dispatch.promptMarkdownContent());
+        body.put("schemaJson", dispatch.schemaJson());
+        body.put("requestBodyJson", dispatch.requestBodyJson());
+        body.put("jobidopenai", dispatch.openAiJobId());
+        webClient.post()
+                .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-prompt", execution.idJob())
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block(properties.timeout());
+    }
+
+    /** Envia ao backend a resposta validada da OpenAI para concluir a revisão visual. */
+    @Override
+    public void markCompleted(StageExecution<QualityReviewInput> execution, OpenAiResult<QualityReviewOutput> result) {
+        postResponse(execution, result.modelResponse(), result.inputTokens(), result.outputTokens(), result.costUsd(), result.openAiJobId(), null, null);
+    }
+
+    /** Envia ao backend os dados de falha quando a revisão visual não é concluída. */
+    @Override
+    public void markFailed(StageExecution<QualityReviewInput> execution, Throwable error) {
+        postResponse(execution, null, null, null, null, null, error != null ? error.getMessage() : "Unknown error", error != null ? stackTraceSummary(error) : null);
+    }
+
+    /** Converte o payload pendente do backend para o modelo interno de execução da etapa. */
+    private StageExecution<QualityReviewInput> toStageExecution(Map<String, Object> item) {
+        Long experimentId = asLong(item.get("experimentId"));
+        String stageCode = asString(item.get("stageCode"));
+        String idJob = asString(item.get("jobid"));
+        Map<String, Object> promptData = buildPromptDataFromPending(item);
+        QualityReviewInput input = new QualityReviewInput(experimentId, stageCode, idJob, promptData, extractImageUrls(promptData));
+        return new StageExecution<>(idJob, experimentId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input);
+    }
+
+    /** Monta os dados do prompt com artefatos canônicos e HTML final disponíveis no backend. */
+    private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
+        Map<String, Object> experiment = asMap(pending.get("experiment"));
+        Map<String, Object> hypothesis = asMap(pending.get("hypothesis"));
+        Map<String, Object> framework = asMap(hypothesis.get("framework"));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("experiment", experiment);
+        payload.put("framework", framework);
+        payload.put("htmlGeraLanding", experiment.get("htmlGeraLanding"));
+        payload.put("landingPageHtml", experiment.get("landingPageHtml"));
+        payload.put("landingPageImageAssets", experiment.get("landingPageImageAssets"));
+        payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(experiment, framework));
+        return payload;
+    }
+
+    /** Monta o bloco textual de contexto estratégico exigido pelo prompt da revisão visual. */
+    private String buildCaseDataBlock(Map<String, Object> experiment, Map<String, Object> framework) {
+        StringBuilder builder = new StringBuilder("[CASE_DATA_BEGIN]\n");
+        appendCaseData(builder, "framework", framework);
+        appendCaseData(builder, "campaignAngle", experiment.get("campaignAngle"));
+        appendCaseData(builder, "adCopy", experiment.get("adCopy"));
+        appendCaseData(builder, "landingPageCopy", experiment.get("landingPageCopy"));
+        appendCaseData(builder, "landingPageWireframe", experiment.get("landingPageWireframe"));
+        appendCaseData(builder, "landingPageDesignPreset", experiment.get("landingPageDesignPreset"));
+        appendCaseData(builder, "landingPageImagePlanning", experiment.get("landingPageImagePlanning"));
+        appendCaseData(builder, "landingPageImageAssets", experiment.get("landingPageImageAssets"));
+        appendCaseData(builder, "htmlGeraLanding", experiment.get("htmlGeraLanding"));
+        builder.append("[CASE_DATA_END]");
+        return builder.toString();
+    }
+
+    /** Extrai URLs de imagens públicas dos artefatos da landing para entrada visual do modelo. */
+    private List<String> extractImageUrls(Map<String, Object> promptData) {
+        List<String> urls = new ArrayList<>();
+        collectUrls(promptData.get("landingPageImageAssets"), urls);
+        collectUrls(promptData.get("htmlGeraLanding"), urls);
+        collectUrls(promptData.get("landingPageHtml"), urls);
+        return urls.stream().distinct().limit(12).toList();
+    }
+
+    /** Coleta URLs http(s) de strings, listas e mapas aninhados. */
+    private void collectUrls(Object value, List<String> urls) {
+        if (value instanceof String text) {
+            if (text.trim().startsWith("{") || text.trim().startsWith("[")) {
+                try {
+                    collectUrls(objectMapper.readValue(text, Object.class), urls);
+                    return;
+                } catch (Exception ignored) {
+                    // continua com extração textual simples abaixo
+                }
+            }
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("https?://[^\\s\\\"'<>]+", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(text);
+            while (matcher.find()) {
+                urls.add(matcher.group());
+            }
+            return;
+        }
+        if (value instanceof Map<?, ?> map) {
+            map.values().forEach(child -> collectUrls(child, urls));
+            return;
+        }
+        if (value instanceof Iterable<?> iterable) {
+            iterable.forEach(child -> collectUrls(child, urls));
+        }
+    }
+
+    /** Envia o callback de resposta ou falha da revisão visual ao backend. */
+    private void postResponse(StageExecution<QualityReviewInput> execution, String modelResponse, Integer inputTokens, Integer outputTokens, Object costUsd, String openAiJobId, String errorMessage, String errorDetail) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("experimentId", execution.aggregateId());
+        body.put("stageCode", execution.stageCode());
+        body.put("modelResponse", modelResponse);
+        body.put("inputTokens", inputTokens);
+        body.put("outputTokens", outputTokens);
+        body.put("costUsd", costUsd);
+        body.put("openAiJobId", openAiJobId);
+        body.put("errorMessage", errorMessage);
+        body.put("errorDetail", errorDetail);
+        webClient.post()
+                .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-resposta", execution.idJob())
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block(properties.timeout());
+    }
+
+    /** Acrescenta uma chave do contexto no bloco CASE_DATA com renderização segura. */
+    private void appendCaseData(StringBuilder builder, String key, Object value) {
+        builder.append(key).append(": ").append(toJsonOrText(value).trim()).append('\n');
+    }
+
+    /** Renderiza objetos estruturados como JSON formatado e preserva textos simples. */
+    private String toJsonOrText(Object value) {
+        if (value == null) {
+            return "";
+        }
+        if (value instanceof String text) {
+            return text;
+        }
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
+        } catch (Exception error) {
+            return value.toString();
+        }
+    }
+
+    /** Extrai um mapa tipado quando o valor recebido é um objeto JSON. */
+    private Map<String, Object> asMap(Object value) {
+        if (value instanceof Map<?, ?> rawMap) {
+            Map<String, Object> converted = new LinkedHashMap<>();
+            rawMap.forEach((key, rawValue) -> {
+                if (key != null) {
+                    converted.put(String.valueOf(key), rawValue);
+                }
+            });
+            return converted;
+        }
+        return Map.of();
+    }
+
+    /** Converte um valor genérico para Long quando possível. */
+    private Long asLong(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            return Long.parseLong(text);
+        }
+        return null;
+    }
+
+    /** Converte um valor genérico para String preservando nulos. */
+    private String asString(Object value) {
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    /** Converte timestamps textuais ISO-8601 para Instant quando presentes. */
+    private Instant asInstant(Object value) {
+        if (value instanceof String text && !text.isBlank()) {
+            return Instant.parse(text);
+        }
+        return null;
+    }
+
+    /** Resolve a URL base dos endpoints internos da etapa quality-review. */
+    private String stageExecutionBaseUrl() {
+        return joinPath(properties.backendBaseUrl(), properties.apiPrefix(), "/internal/geralanding/quality-review/stage-executions");
+    }
+
+    /** Une partes de URL sem duplicar barras entre segmentos. */
+    private String joinPath(String base, String prefix, String path) {
+        return trimRight(base) + "/" + trimSlashes(prefix) + "/" + trimSlashes(path);
+    }
+
+    /** Remove barras finais de um trecho de URL. */
+    private String trimRight(String value) {
+        return value == null ? "" : value.replaceAll("/+$", "");
+    }
+
+    /** Remove barras iniciais e finais de um trecho de URL. */
+    private String trimSlashes(String value) {
+        return value == null ? "" : value.replaceAll("^/+|/+$", "");
+    }
+
+    /** Resume o stack trace para persistência no backend sem perder o ponto da falha. */
+    private String stackTraceSummary(Throwable error) {
+        StringWriter writer = new StringWriter();
+        error.printStackTrace(new PrintWriter(writer));
+        return writer.toString();
+    }
+}

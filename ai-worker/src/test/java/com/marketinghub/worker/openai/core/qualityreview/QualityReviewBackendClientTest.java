@@ -46,6 +46,8 @@ class QualityReviewBackendClientTest {
                             "executionRequestedAt": "2026-06-03T03:30:00Z",
                             "hypothesis": {"framework": {"pain": {}}},
                             "experiment": {
+                              "id": 36,
+                              "name": "Experimento visual",
                               "htmlGeraLanding": "<!doctype html><html><body><h1>Landing final</h1></body></html>",
                               "landingPageHtml": "<html><body>Fallback antigo</body></html>",
                               "landingPageImageAssets": {"images": [{"sourceUrl": "https://cdn.example.com/hero.jpg"}]}
@@ -64,8 +66,9 @@ class QualityReviewBackendClientTest {
         assertThat(pending.getFirst().input().landingHtml())
                 .isEqualTo("<!doctype html><html><body><h1>Landing final</h1></body></html>");
         assertThat(pending.getFirst().input().promptData())
-                .containsKey("CASE_DATA_BLOCK")
-                .containsEntry("landingPageImageAssets", java.util.Map.of("images", List.of(java.util.Map.of("sourceUrl", "https://cdn.example.com/hero.jpg"))));
+                .containsEntry("experimentId", 36)
+                .containsEntry("experimentName", "Experimento visual")
+                .doesNotContainKeys("CASE_DATA_BLOCK", "landingPageImageAssets");
     }
 
     /** Monta propriedades mínimas para o client quality-review usado no teste. */

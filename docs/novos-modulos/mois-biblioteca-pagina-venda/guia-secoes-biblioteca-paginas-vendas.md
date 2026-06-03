@@ -93,3 +93,16 @@ A página permite:
 3. acompanhar score/status por página;
 4. reprocessar rapidamente itens com problema;
 5. inspecionar os artefatos JSON gerados na análise.
+
+## Tela de pipeline da biblioteca
+
+### 1) Primeira etapa — Obtenção dos HTML
+Objetivo: orientar a operação sobre a primeira camada necessária para qualquer análise confiável da biblioteca: capturar o HTML bruto das URLs ingeridas.
+
+Informações exibidas no card:
+- entrada esperada: URLs normalizadas da biblioteca;
+- saída esperada: HTML bruto versionado em snapshot;
+- critério de qualidade: conteúdo útil para análise, sem marcador técnico interno;
+- itens de acompanhamento: URLs pendentes, snapshots salvos, falhas de acesso, hash, tamanho e data da última captura.
+
+Resultado prático: a equipe consegue enxergar que a análise de copy, estrutura, prova, oferta e visual depende primeiro da existência de snapshots brutos rastreáveis.

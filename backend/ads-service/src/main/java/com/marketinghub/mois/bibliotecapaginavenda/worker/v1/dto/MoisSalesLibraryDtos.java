@@ -304,4 +304,48 @@ public final class MoisSalesLibraryDtos {
     ) {
     }
 
+    public record HtmlCaptureClaimRequest(
+            @NotBlank String workspaceId,
+            Integer limit,
+            Boolean force
+    ) {
+    }
+
+    public record HtmlCaptureJobResponse(
+            long snapshotId,
+            long pageId,
+            String urlCanonical,
+            String title
+    ) {
+    }
+
+    public record HtmlCaptureClaimResponse(
+            boolean claimed,
+            HtmlCaptureJobResponse job
+    ) {
+    }
+
+    public record HtmlCaptureCompleteRequest(
+            @NotBlank String rawHtml,
+            String finalUrl,
+            Integer httpStatus,
+            String contentType,
+            String sha256,
+            Long sizeBytes,
+            Instant capturedAt
+    ) {
+    }
+
+    public record HtmlCaptureFailRequest(
+            String errorCategory,
+            String errorMessage
+    ) {
+    }
+
+    public record HtmlCapturePersistResponse(
+            long snapshotId,
+            String status
+    ) {
+    }
+
 }

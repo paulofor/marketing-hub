@@ -173,6 +173,39 @@ public class MoisSalesLibraryController {
         }
     }
 
+
+    /**
+     * Reserva a próxima URL normalizada da biblioteca para obtenção de HTML bruto pelo worker.
+     */
+    @PostMapping("/html-captures:claim")
+    public MoisSalesLibraryDtos.HtmlCaptureClaimResponse claimHtmlCapture(
+            @Valid @RequestBody MoisSalesLibraryDtos.HtmlCaptureClaimRequest request
+    ) {
+        return snapshotService.claimHtmlCapture(request);
+    }
+
+    /**
+     * Recebe o HTML bruto versionado capturado pelo worker para uma página da biblioteca.
+     */
+    @PostMapping("/html-captures/{snapshotId}:complete")
+    public MoisSalesLibraryDtos.HtmlCapturePersistResponse completeHtmlCapture(
+            @PathVariable long snapshotId,
+            @Valid @RequestBody MoisSalesLibraryDtos.HtmlCaptureCompleteRequest request
+    ) {
+        return snapshotService.completeHtmlCapture(snapshotId, request);
+    }
+
+    /**
+     * Registra falha terminal na obtenção de HTML bruto de uma página da biblioteca.
+     */
+    @PostMapping("/html-captures/{snapshotId}:fail")
+    public MoisSalesLibraryDtos.HtmlCapturePersistResponse failHtmlCapture(
+            @PathVariable long snapshotId,
+            @RequestBody MoisSalesLibraryDtos.HtmlCaptureFailRequest request
+    ) {
+        return snapshotService.failHtmlCapture(snapshotId, request);
+    }
+
     /**
      * Solicita captura de snapshots para páginas sem captura recente.
      */

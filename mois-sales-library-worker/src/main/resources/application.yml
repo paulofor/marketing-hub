@@ -10,6 +10,9 @@ worker:
   raw-html-sources: ${MOIS_RAW_HTML_SOURCES:}
   poll-interval-ms: ${MOIS_POLL_INTERVAL_MS:15000}
   raw-html-poll-interval-ms: ${MOIS_RAW_HTML_POLL_INTERVAL_MS:30000}
+  html-capture-poll-interval-ms: ${MOIS_HTML_CAPTURE_POLL_INTERVAL_MS:20000}
+  html-capture-limit: ${MOIS_HTML_CAPTURE_LIMIT:1}
+  html-capture-force: ${MOIS_HTML_CAPTURE_FORCE:false}
   request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:30000}
 
 openai:

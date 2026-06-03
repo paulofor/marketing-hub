@@ -827,3 +827,8 @@ Arquivos alterados:
   - frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx
   - docs/novos-modulos/mois-biblioteca-pagina-venda/guia-secoes-biblioteca-paginas-vendas.md
   - docs/registros/mois1.md
+
+## 2026-06-03 — Primeira etapa do pipeline de páginas de venda: obtenção de HTML bruto
+- implementada a etapa `htmlcapture` no `mois-sales-library-worker` seguindo o padrão de núcleo genérico `pipeline` + etapa concreta `pipeline.htmlcapture`, com `StageProcessor`, `StageResult`, `StageArtifact`, `PipelineWorker` e proteção ArchUnit contra acoplamento entre etapas.
+- criados endpoints backend `POST /api/mois/sales-library/html-captures:claim`, `POST /api/mois/sales-library/html-captures/{snapshotId}:complete` e `POST /api/mois/sales-library/html-captures/{snapshotId}:fail` para reservar URLs normalizadas da biblioteca e persistir HTML bruto versionado em `mois_sales_library_page_snapshot` + `mois_sales_library_snapshot_artifact`.
+- a etapa registra hash SHA-256, tamanho, status HTTP, content type, URL final e data da captura, preservando falhas de acesso/bloqueio/timeout como snapshots `FAILED` para auditoria e reprocessamento.

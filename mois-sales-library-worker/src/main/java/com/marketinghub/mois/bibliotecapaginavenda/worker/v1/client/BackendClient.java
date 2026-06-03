@@ -86,6 +86,54 @@ public class BackendClient {
     }
 
     /**
+     * Reserva no backend uma URL normalizada da biblioteca para captura de HTML bruto versionado.
+     */
+    public HtmlCaptureClaimResponse claimHtmlCapture(HtmlCaptureClaimRequest request) {
+        log.info("MOIS htmlcapture worker calling backend claim endpoint. workspaceId={}, limit={}, force={}",
+                request.workspaceId(), request.limit(), request.force());
+        HtmlCaptureClaimResponse response = restClient.post()
+                .uri("/api/mois/sales-library/html-captures:claim")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(HtmlCaptureClaimResponse.class);
+        log.info("MOIS htmlcapture worker claim response received. claimed={}, hasJob={}",
+                response != null && response.claimed(),
+                response != null && response.job() != null);
+        return response;
+    }
+
+    /**
+     * Persiste no backend o HTML bruto versionado capturado para uma página da biblioteca.
+     */
+    public void completeHtmlCapture(long snapshotId, HtmlCaptureCompleteRequest request) {
+        log.info("MOIS htmlcapture worker calling backend complete endpoint. snapshotId={}, httpStatus={}, bytes={}, sha256={}",
+                snapshotId, request.httpStatus(), request.sizeBytes(), request.sha256());
+        var entity = restClient.post()
+                .uri("/api/mois/sales-library/html-captures/{snapshotId}:complete", snapshotId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+        log.info("MOIS htmlcapture worker complete response received. snapshotId={}, status={}", snapshotId, entity.getStatusCode());
+    }
+
+    /**
+     * Registra no backend uma falha de captura de HTML bruto para uma página da biblioteca.
+     */
+    public void failHtmlCapture(long snapshotId, HtmlCaptureFailRequest request) {
+        log.warn("MOIS htmlcapture worker calling backend fail endpoint. snapshotId={}, errorCategory={}, errorMessage={}",
+                snapshotId, request.errorCategory(), request.errorMessage());
+        var entity = restClient.post()
+                .uri("/api/mois/sales-library/html-captures/{snapshotId}:fail", snapshotId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+        log.info("MOIS htmlcapture worker fail response received. snapshotId={}, status={}", snapshotId, entity.getStatusCode());
+    }
+
+    /**
      * Persiste no backend o resultado final de análise de um job.
      */
     public void complete(long jobId, CompleteRequest request) {

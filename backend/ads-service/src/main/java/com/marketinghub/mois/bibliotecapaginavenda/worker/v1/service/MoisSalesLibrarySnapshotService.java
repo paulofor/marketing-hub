@@ -27,7 +27,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Gerencia snapshots HTML das páginas de venda canônicas da biblioteca MOIS.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,6 +48,9 @@ public class MoisSalesLibrarySnapshotService {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
+    /**
+     * Captura snapshots diretamente pelo backend para acionamentos manuais ou legados.
+     */
     public MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureResponse captureSnapshots(
             MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureRequest request
     ) {
@@ -59,6 +66,9 @@ public class MoisSalesLibrarySnapshotService {
                 request.workspaceId(), limit, force, items.size(), captured, failed, items, Instant.now());
     }
 
+    /**
+     * Lista os snapshots já persistidos para uma página da biblioteca.
+     */
     public List<MoisSalesLibraryDtos.SalesLibraryPageSnapshotResponse> listSnapshots(long pageId) {
         return jdbcTemplate.query("""
                 SELECT s.id, s.url_ingest_id, s.snapshot_hash, s.status, s.http_status, s.content_type,
@@ -87,21 +97,94 @@ public class MoisSalesLibrarySnapshotService {
         ), pageId);
     }
 
+
+    /**
+     * Reserva a próxima URL normalizada da biblioteca para a etapa worker de obtenção de HTML bruto.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.HtmlCaptureClaimResponse claimHtmlCapture(
+            MoisSalesLibraryDtos.HtmlCaptureClaimRequest request
+    ) {
+        int limit = normalizeLimit(request.limit());
+        boolean force = Boolean.TRUE.equals(request.force());
+        List<PageToCapture> pages = findPagesToCapture(request.workspaceId(), limit, force);
+        if (pages.isEmpty()) {
+            return new MoisSalesLibraryDtos.HtmlCaptureClaimResponse(false, null);
+        }
+        PageToCapture page = pages.get(0);
+        Long snapshotId = insertFetchingSnapshot(page);
+        return new MoisSalesLibraryDtos.HtmlCaptureClaimResponse(
+                true,
+                new MoisSalesLibraryDtos.HtmlCaptureJobResponse(snapshotId, page.pageId(), page.urlCanonical(), page.title()));
+    }
+
+    /**
+     * Persiste o HTML bruto capturado pelo worker como artefato RAW_HTML versionado.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.HtmlCapturePersistResponse completeHtmlCapture(
+            long snapshotId,
+            MoisSalesLibraryDtos.HtmlCaptureCompleteRequest request
+    ) {
+        String rawHtml = request.rawHtml() == null ? "" : request.rawHtml();
+        byte[] rawHtmlBytes = rawHtml.getBytes(StandardCharsets.UTF_8);
+        String hash = request.sha256() == null || request.sha256().isBlank() ? sha256(rawHtml) : request.sha256();
+        Long duplicateSnapshotId = findDuplicateSnapshot(snapshotId, hash);
+        if (duplicateSnapshotId != null) {
+            jdbcTemplate.update("""
+                    UPDATE mois_sales_library_page_snapshot
+                    SET status = 'DUPLICATE', http_status = ?, content_type = ?, error_message = ?, captured_at = ?, updated_at = UTC_TIMESTAMP()
+                    WHERE id = ?
+                    """, request.httpStatus(), truncate(request.contentType(), 255),
+                    "HTML idêntico ao snapshot " + duplicateSnapshotId,
+                    Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
+            return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "DUPLICATE");
+        }
+        jdbcTemplate.update("""
+                UPDATE mois_sales_library_page_snapshot
+                SET snapshot_hash = ?, status = 'CAPTURED', http_status = ?, content_type = ?, error_message = NULL, captured_at = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, hash, request.httpStatus(), truncate(request.contentType(), 255),
+                Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
+        insertTextArtifact(snapshotId, ARTIFACT_RAW_HTML, request.contentType() == null ? "text/html" : request.contentType(), rawHtml, rawHtmlBytes.length);
+        return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "CAPTURED");
+    }
+
+    /**
+     * Registra falha da etapa worker de obtenção de HTML bruto preservando contexto de auditoria.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.HtmlCapturePersistResponse failHtmlCapture(
+            long snapshotId,
+            MoisSalesLibraryDtos.HtmlCaptureFailRequest request
+    ) {
+        String message = request.errorMessage() == null || request.errorMessage().isBlank()
+                ? request.errorCategory()
+                : request.errorMessage();
+        jdbcTemplate.update("""
+                UPDATE mois_sales_library_page_snapshot
+                SET status = 'FAILED', error_message = ?, captured_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, truncate(message, 1000), snapshotId);
+        return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "FAILED");
+    }
+
+    /** Seleciona páginas da biblioteca elegíveis para captura de HTML bruto. */
     private List<PageToCapture> findPagesToCapture(String workspaceId, int limit, boolean force) {
         String forceClause = force ? "" : """
                 AND NOT EXISTS (
                     SELECT 1 FROM mois_sales_library_page_snapshot s
-                    WHERE s.url_ingest_id = i.id AND s.status = 'CAPTURED'
+                    WHERE s.url_ingest_id = i.id AND s.status IN ('CAPTURED', 'FETCHING')
                 )
                 """;
         return jdbcTemplate.query("""
-                SELECT i.id, i.url_canonical
+                SELECT i.id, i.url_canonical, i.title
                 FROM mois_sales_library_url_ingest i
                 WHERE i.workspace_id = ?
                 """ + forceClause + """
                 ORDER BY i.updated_at DESC, i.id DESC
                 LIMIT ?
-                """, (rs, rowNum) -> new PageToCapture(rs.getLong("id"), rs.getString("url_canonical")), workspaceId, limit);
+                """, (rs, rowNum) -> new PageToCapture(rs.getLong("id"), rs.getString("url_canonical"), rs.getString("title")), workspaceId, limit);
     }
 
     private MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem captureOneSafely(PageToCapture page) {
@@ -191,6 +274,36 @@ public class MoisSalesLibrarySnapshotService {
         return generatedId(keyHolder);
     }
 
+    /** Cria o registro de snapshot reservado para evitar reprocessamento concorrente. */
+    private Long insertFetchingSnapshot(PageToCapture page) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement("""
+                    INSERT INTO mois_sales_library_page_snapshot
+                    (url_ingest_id, status, captured_at, created_at, updated_at)
+                    VALUES (?, 'FETCHING', UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                    """, Statement.RETURN_GENERATED_KEYS);
+            ps.setLong(1, page.pageId());
+            return ps;
+        }, keyHolder);
+        return generatedId(keyHolder);
+    }
+
+    /** Localiza snapshot anterior da mesma página com hash idêntico ao capturado. */
+    private Long findDuplicateSnapshot(long snapshotId, String hash) {
+        List<Long> rows = jdbcTemplate.query("""
+                SELECT existing.id
+                FROM mois_sales_library_page_snapshot current
+                JOIN mois_sales_library_page_snapshot existing
+                  ON existing.url_ingest_id = current.url_ingest_id
+                 AND existing.snapshot_hash = ?
+                 AND existing.id <> current.id
+                WHERE current.id = ?
+                LIMIT 1
+                """, (rs, rowNum) -> rs.getLong("id"), hash, snapshotId);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
     private Long findExistingSnapshot(long pageId, String hash) {
         List<Long> rows = jdbcTemplate.query("""
                 SELECT id FROM mois_sales_library_page_snapshot
@@ -253,9 +366,15 @@ public class MoisSalesLibrarySnapshotService {
         return Math.max(1, Math.min(limit, MAX_LIMIT));
     }
 
-    private String sha256(String value) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+    private String sha256(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception ex) {
+            log.warn("Falha ao calcular hash de snapshot HTML MOIS. operacao=sha256, erroClasse={}, erro={}",
+                    ex.getClass().getName(), ex.getMessage(), ex);
+            throw new IllegalStateException("Falha ao calcular hash de snapshot HTML", ex);
+        }
     }
 
     private String truncate(String value, int maxLength) {
@@ -267,6 +386,6 @@ public class MoisSalesLibrarySnapshotService {
         return timestamp == null ? null : timestamp.toInstant();
     }
 
-    private record PageToCapture(long pageId, String urlCanonical) {
+    private record PageToCapture(long pageId, String urlCanonical, String title) {
     }
 }

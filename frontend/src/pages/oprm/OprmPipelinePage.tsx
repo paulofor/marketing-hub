@@ -1,3 +1,4 @@
+import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -92,12 +93,42 @@ function buildFailureMessage(errorMessage?: string | null) {
   return errorMessage.trim();
 }
 
+function getStageCardClass(stageNumber: string, hasContinuationError: boolean) {
+  if (stageNumber === "1" && hasContinuationError) {
+    return "card border border-warning-subtle shadow-sm h-100";
+  }
+  return "card border-0 shadow-sm h-100";
+}
+
+function formatErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return "Erro operacional sem mensagem detalhada. Verifique logs do backend/coletor OPRM.";
+}
+
 export default function OprmPipelinePage() {
   const {
     data: recentProcessed = [],
     isError,
     isLoading,
   } = useOprmRoutineResearchOrchestratorRecent(10);
+  const latestRunningCycle = recentProcessed.find(
+    (item) => item.cycleStatus === "RUNNING",
+  );
+  const {
+    data: seedBuilderPending = [],
+    error: seedBuilderPendingError,
+    isError: isSeedBuilderPendingError,
+    isFetching: isSeedBuilderPendingFetching,
+  } = useOprmNicheResearchSeedBuilderPending(Boolean(latestRunningCycle));
+  const hasStageOneContinuationError =
+    Boolean(latestRunningCycle) && isSeedBuilderPendingError;
+  const stageOnePendingSeed = latestRunningCycle
+    ? seedBuilderPending.find(
+        (item) => item.researchCycleId === latestRunningCycle.researchCycleId,
+      )
+    : undefined;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -229,7 +260,12 @@ export default function OprmPipelinePage() {
       <section className="row g-3" aria-label="Etapas do pipeline NichoCNAE">
         {pipelineStages.map((stage) => (
           <div className="col-12 col-lg-3" key={stage.number}>
-            <article className="card border-0 shadow-sm h-100">
+            <article
+              className={getStageCardClass(
+                stage.number,
+                hasStageOneContinuationError,
+              )}
+            >
               <div className="card-body d-flex flex-column gap-3">
                 <div className="d-flex align-items-start justify-content-between gap-3">
                   <div
@@ -252,6 +288,43 @@ export default function OprmPipelinePage() {
                     </span>
                     <p className="mb-0 small">{stage.output}</p>
                   </div>
+                  {stage.number === "1" && latestRunningCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Continuidade
+                      </span>
+                      {hasStageOneContinuationError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          <span className="fw-semibold d-block">
+                            Etapa seguinte não inicializou para o ciclo #
+                            {latestRunningCycle.researchCycleId}.
+                          </span>
+                          <span className="d-block">
+                            A consulta da fila do seed retornou erro:{" "}
+                            {formatErrorMessage(seedBuilderPendingError)}
+                          </span>
+                        </div>
+                      ) : isSeedBuilderPendingFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Validando fila da etapa 2 para o ciclo #
+                          {latestRunningCycle.researchCycleId}...
+                        </p>
+                      ) : stageOnePendingSeed ? (
+                        <p className="text-primary small mb-0">
+                          Ciclo #{latestRunningCycle.researchCycleId} disponível
+                          para a etapa 2 gerar o seed de pesquisa.
+                        </p>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestRunningCycle.researchCycleId} em
+                          execução; sem erro detectado na consulta da etapa 2.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </article>

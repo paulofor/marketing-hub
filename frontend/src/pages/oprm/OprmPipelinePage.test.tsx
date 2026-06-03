@@ -1,0 +1,93 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import OprmPipelinePage from "./OprmPipelinePage";
+
+function renderPage() {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/oprm/pipeline"]}>
+        <OprmPipelinePage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("OprmPipelinePage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("mostra erro de continuidade no card da etapa 1 quando a fila da etapa 2 falha", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url.includes("routine-research-orchestrator/recent-processed")) {
+        return new Response(
+          JSON.stringify([
+            {
+              researchCycleId: 1,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              nicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              sourceScore: 90,
+              triggerSource: "AUTO_SCORE_QUEUE",
+              cycleStatus: "RUNNING",
+              processedAt: "2026-06-03T06:59:59Z",
+              finishedAt: null,
+              errorMessage: null,
+            },
+          ]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (
+        url.includes("niche-research-seed-builder/stage-executions/pending")
+      ) {
+        return new Response("upstream timeout", { status: 503 });
+      }
+
+      return new Response("[]", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole("alert");
+      expect(
+        alerts.some((alert) =>
+          alert.textContent?.includes("Etapa seguinte não inicializou"),
+        ),
+      ).toBe(true);
+      expect(
+        alerts.some((alert) =>
+          alert.textContent?.includes(
+            "Não foi possível validar a fila da etapa seguinte",
+          ),
+        ),
+      ).toBe(true);
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "niche-research-seed-builder/stage-executions/pending",
+        ),
+      );
+    });
+  });
+});

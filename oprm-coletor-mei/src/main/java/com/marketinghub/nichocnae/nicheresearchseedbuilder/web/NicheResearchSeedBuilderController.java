@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Expõe acionamento manual da etapa dois nichocnae no coletor OPRM, sem agendamento automático. */
+/** Expõe acionamento manual complementar da etapa dois nichocnae no coletor OPRM. */
 @RestController
 @RequestMapping("/api/oprm-mei/nichocnae/niche-research-seed-builder")
 public class NicheResearchSeedBuilderController {

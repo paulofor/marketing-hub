@@ -6,3 +6,7 @@ services:
       - "8094:8094"
     environment:
       - SPRING_PROFILES_ACTIVE=default
+      - OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_API_KEY_FILE=${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
+      - OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_MODEL=${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_MODEL:-gpt-4.1-mini}
+    volumes:
+      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro

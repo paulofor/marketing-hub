@@ -3163,3 +3163,13 @@
 - foi feito: a etapa `landing-page-quality-review` passou a criar jobs `INICIADO`, expor `pending`, receber `recebe-prompt` e `recebe-resposta`, persistindo o diagnóstico final somente após callback do Worker AI.
 - Worker AI: criado pacote isolado `openai.core.qualityreview` com scheduler, backend client, prompt builder multimodal, validador e handler, enviando imagens públicas extraídas dos artefatos/HTML como entradas `input_image` da Responses API junto do contexto Dor → Resultado → Mecanismo → Prova → Oferta.
 - documentação: Swagger do GeraLanding atualizado com os endpoints internos da revisão visual.
+
+## 2026-06-03 — Card Quality Review na sequência do GeraLanding
+
+- solicitação: incluir o card do Quality Review na tela de detalhes do experimento entre `Gera Preset Design` e `Gera Entregáveis`.
+- causa-raiz/objetivo: a etapa `landing-page-quality-review` já possui contrato backend, mas não estava exposta na sequência operacional da aba de geração, deixando o usuário sem comando direto para executar o Quality Gate comercial antes dos entregáveis.
+- registro do que foi feito:
+  - adicionado suporte frontend ao segmento `quality-review` para listagem e detalhe de execuções do GeraLanding;
+  - incluído o card `6 - Quality Review` entre `5 - Gera Preset Design` e `7 - Gera Entregáveis`, com botão de início, estado de carregamento, jobs em execução, histórico e custo total;
+  - o total consolidado das etapas do GeraLanding passou a considerar também o custo das execuções de Quality Review.
+- impacto esperado: o usuário consegue executar e auditar o Quality Gate comercial visual na ordem correta antes de gerar os entregáveis finais.

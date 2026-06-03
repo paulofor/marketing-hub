@@ -7,6 +7,7 @@ const STAGE_ENDPOINT_SEGMENT: Record<string, string> = {
   "landing-page-design-preset": "design-preset",
   "landing-page-image-planning": "image-prompts",
   "landing-page-image-generation": "image-generation",
+  "landing-page-quality-review": "quality-review",
   "landing-page-deliverables": "deliverables",
 };
 

@@ -192,6 +192,7 @@ export default function ExperimentDetailPage() {
   const [isStartingCopy, setIsStartingCopy] = useState(false);
   const [isStartingDesignPreset, setIsStartingDesignPreset] = useState(false);
   const [isStartingImagePrompts, setIsStartingImagePrompts] = useState(false);
+  const [isStartingQualityReview, setIsStartingQualityReview] = useState(false);
   const [isStartingDeliverables, setIsStartingDeliverables] = useState(false);
   const [isStartingImageGeneration, setIsStartingImageGeneration] =
     useState(false);
@@ -209,6 +210,10 @@ export default function ExperimentDetailPage() {
   const [
     optimisticImageGenerationExecution,
     setOptimisticImageGenerationExecution,
+  ] = useState<GeraLandingStageExecutionItem | null>(null);
+  const [
+    optimisticQualityReviewExecution,
+    setOptimisticQualityReviewExecution,
   ] = useState<GeraLandingStageExecutionItem | null>(null);
   const [optimisticDeliverablesExecution, setOptimisticDeliverablesExecution] =
     useState<GeraLandingStageExecutionItem | null>(null);
@@ -276,6 +281,20 @@ export default function ExperimentDetailPage() {
     "landing-page-image-generation",
     true,
   );
+  const {
+    data: pendingGeraLandingQualityReviewExecutions,
+    isLoading: isLoadingPendingGeraLandingQualityReviewExecutions,
+    refetch: refetchPendingGeraLandingQualityReviewExecutions,
+  } = useGeraLandingStageExecutions(
+    expId,
+    "landing-page-quality-review",
+    false,
+  );
+  const {
+    data: completedGeraLandingQualityReviewExecutions,
+    isLoading: isLoadingCompletedGeraLandingQualityReviewExecutions,
+    refetch: refetchCompletedGeraLandingQualityReviewExecutions,
+  } = useGeraLandingStageExecutions(expId, "landing-page-quality-review", true);
   const {
     data: pendingGeraLandingDeliverablesExecutions,
     isLoading: isLoadingPendingGeraLandingDeliverablesExecutions,
@@ -570,6 +589,38 @@ export default function ExperimentDetailPage() {
       toast.error(message);
     } finally {
       setIsStartingImagePrompts(false);
+    }
+  };
+
+  const handleStartQualityReview = async () => {
+    try {
+      setIsStartingQualityReview(true);
+      const { data: startResponse } = await axios.post<{
+        idJob: string;
+        status: string;
+      }>(`/api/experiments/${expId}/geralanding/quality-review/start`);
+      const localExecutionRequestedAt = new Date().toISOString();
+      setOptimisticQualityReviewExecution({
+        idJob: startResponse.idJob,
+        status: startResponse.status,
+        executionRequestedAt: localExecutionRequestedAt,
+      });
+      toast.success(
+        `Solicitação registrada. Código: ${startResponse.idJob} | Status: ${startResponse.status}`,
+      );
+      await Promise.all([
+        refetchPendingGeraLandingQualityReviewExecutions(),
+        refetchCompletedGeraLandingQualityReviewExecutions(),
+      ]);
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível iniciar o Quality Review.")
+        : "Não foi possível iniciar o Quality Review.";
+      toast.error(message);
+    } finally {
+      setIsStartingQualityReview(false);
     }
   };
 
@@ -1119,6 +1170,95 @@ export default function ExperimentDetailPage() {
     completedGeraLandingImageGenerationExecutions,
     pendingGeraLandingImageGenerationExecutions,
   ]);
+  const mergedPendingGeraLandingQualityReviewExecutions = useMemo(
+    () =>
+      mergeOptimisticExecution(
+        optimisticQualityReviewExecution,
+        pendingGeraLandingQualityReviewExecutions,
+        completedGeraLandingQualityReviewExecutions,
+      ),
+    [
+      optimisticQualityReviewExecution,
+      pendingGeraLandingQualityReviewExecutions,
+      completedGeraLandingQualityReviewExecutions,
+    ],
+  );
+
+  useEffect(() => {
+    if (!optimisticQualityReviewExecution) {
+      return;
+    }
+    const persistedExecution =
+      hasExecutionWithJobId(
+        pendingGeraLandingQualityReviewExecutions,
+        optimisticQualityReviewExecution.idJob,
+      ) ||
+      hasExecutionWithJobId(
+        completedGeraLandingQualityReviewExecutions,
+        optimisticQualityReviewExecution.idJob,
+      );
+    if (persistedExecution) {
+      setOptimisticQualityReviewExecution(null);
+    }
+  }, [
+    optimisticQualityReviewExecution,
+    pendingGeraLandingQualityReviewExecutions,
+    completedGeraLandingQualityReviewExecutions,
+  ]);
+
+  const hasRunningGeraLandingQualityReviewExecution =
+    mergedPendingGeraLandingQualityReviewExecutions.some((execution) =>
+      isRunningExecution(execution.status),
+    );
+  const runningGeraLandingQualityReviewExecutions = useMemo(
+    () =>
+      mergedPendingGeraLandingQualityReviewExecutions.filter((execution) =>
+        isRunningExecution(execution.status),
+      ),
+    [mergedPendingGeraLandingQualityReviewExecutions],
+  );
+  const historyGeraLandingQualityReviewExecutions = useMemo(() => {
+    const completedHistory = (
+      completedGeraLandingQualityReviewExecutions ?? []
+    ).filter(
+      (execution) =>
+        isCompletedExecution(execution.status) ||
+        hasFailedExecution(execution.status),
+    );
+    const failedFromPending = (
+      pendingGeraLandingQualityReviewExecutions ?? []
+    ).filter((execution) => hasFailedExecution(execution.status));
+
+    const sortedExecutions = [...failedFromPending, ...completedHistory].sort(
+      (leftExecution, rightExecution) => {
+        const leftTimestamp = Date.parse(
+          leftExecution.executionRequestedAt ?? "",
+        );
+        const rightTimestamp = Date.parse(
+          rightExecution.executionRequestedAt ?? "",
+        );
+        const normalizedLeftTimestamp = Number.isNaN(leftTimestamp)
+          ? 0
+          : leftTimestamp;
+        const normalizedRightTimestamp = Number.isNaN(rightTimestamp)
+          ? 0
+          : rightTimestamp;
+
+        return normalizedRightTimestamp - normalizedLeftTimestamp;
+      },
+    );
+
+    return sortedExecutions.filter(
+      (execution, index, allExecutions) =>
+        allExecutions.findIndex(
+          (candidate) => candidate.idJob === execution.idJob,
+        ) === index,
+    );
+  }, [
+    completedGeraLandingQualityReviewExecutions,
+    pendingGeraLandingQualityReviewExecutions,
+  ]);
+
   const mergedPendingGeraLandingDeliverablesExecutions = useMemo(
     () =>
       mergeOptimisticExecution(
@@ -1279,6 +1419,10 @@ export default function ExperimentDetailPage() {
     totalCompletedGeraLandingCostUsd +
     totalCompletedGeraLandingCopyCostUsd +
     totalCompletedGeraLandingDesignPresetCostUsd +
+    historyGeraLandingQualityReviewExecutions.reduce(
+      (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
+      0,
+    ) +
     historyGeraLandingDeliverablesExecutions.reduce(
       (sum, execution) => sum + (resolveExecutionCostUsd(execution) ?? 0),
       0,
@@ -2999,7 +3143,143 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">6 - Gera Entregáveis</h5>
+                    <h5 className="card-title mb-0">6 - Quality Review</h5>
+                    <span className="badge text-bg-light border fs-6 fw-semibold">
+                      Total execuções:{" "}
+                      {formatCurrencyUsd(
+                        historyGeraLandingQualityReviewExecutions.reduce(
+                          (sum, execution) =>
+                            sum + (resolveExecutionCostUsd(execution) ?? 0),
+                          0,
+                        ),
+                      )}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary align-self-start"
+                    onClick={handleStartQualityReview}
+                    disabled={
+                      isStartingQualityReview ||
+                      hasRunningGeraLandingQualityReviewExecution
+                    }
+                  >
+                    {isStartingQualityReview ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        />
+                        Iniciando...
+                      </>
+                    ) : (
+                      "Iniciar"
+                    )}
+                  </button>
+                  {isLoadingPendingGeraLandingQualityReviewExecutions ? (
+                    <p className="text-muted mb-0">
+                      Carregando jobs da etapa...
+                    </p>
+                  ) : runningGeraLandingQualityReviewExecutions.length === 0 ? (
+                    <p className="text-muted mb-0">
+                      Nenhum job pendente ou em execução.
+                    </p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Job ID</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Data-hora</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {runningGeraLandingQualityReviewExecutions.map(
+                            (execution) => (
+                              <tr key={execution.idJob}>
+                                <td>
+                                  <Link
+                                    to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-quality-review`}
+                                    className="fw-semibold text-decoration-none"
+                                  >
+                                    {execution.idJob}
+                                  </Link>
+                                </td>
+                                <td>{execution.status}</td>
+                                <td>
+                                  {formatDateTimeValue(
+                                    execution.executionRequestedAt,
+                                  )}
+                                </td>
+                              </tr>
+                            ),
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
+                    <h6 className="mb-0">Histórico de execuções</h6>
+                    {isLoadingCompletedGeraLandingQualityReviewExecutions ? (
+                      <p className="text-muted mb-0">Carregando execuções...</p>
+                    ) : historyGeraLandingQualityReviewExecutions.length ===
+                      0 ? (
+                      <p className="text-muted mb-0">
+                        Nenhuma execução registrada para esta etapa.
+                      </p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-sm align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th scope="col">Job ID</th>
+                              <th scope="col">Status</th>
+                              <th scope="col">Data-hora</th>
+                              <th scope="col" className="text-end">
+                                Custo
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historyGeraLandingQualityReviewExecutions.map(
+                              (execution) => (
+                                <tr key={execution.idJob}>
+                                  <td>
+                                    <Link
+                                      to={`/experiments/${expId}/geralanding/stage-executions/${execution.idJob}?stageCode=landing-page-quality-review`}
+                                      className="fw-semibold text-decoration-none"
+                                    >
+                                      {execution.idJob}
+                                    </Link>
+                                  </td>
+                                  <td>{execution.status}</td>
+                                  <td>
+                                    {formatDateTimeValue(
+                                      execution.executionRequestedAt,
+                                    )}
+                                  </td>
+                                  <td className="text-end">
+                                    {formatCurrencyUsd(
+                                      resolveExecutionCostUsd(execution),
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <h5 className="card-title mb-0">7 - Gera Entregáveis</h5>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(

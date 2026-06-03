@@ -3,19 +3,27 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Coordena a ingestão, consulta e processamento das páginas de vendas da biblioteca MOIS.
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MoisSalesLibraryService {
 
     private static final String JOB_STATUS_PENDING = "PENDING";
@@ -23,8 +31,9 @@ public class MoisSalesLibraryService {
 
     private final JdbcTemplate jdbcTemplate;
 
-
-
+    /**
+     * Reserva o próximo job pendente da biblioteca para processamento pelo worker.
+     */
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(MoisSalesLibraryDtos.SalesLibraryClaimRequest request) {
         List<MoisSalesLibraryDtos.SalesLibraryClaimedJob> rows = jdbcTemplate.query("""
@@ -45,6 +54,9 @@ public class MoisSalesLibraryService {
         return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(true, job);
     }
 
+    /**
+     * Registra a análise concluída de uma página e finaliza o job correspondente.
+     */
     @Transactional
     public void completeJob(long jobId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
         Long pageId = jdbcTemplate.queryForObject("SELECT url_ingest_id FROM mois_sales_library_processing_job WHERE id = ? LIMIT 1", Long.class, jobId);
@@ -57,71 +69,76 @@ public class MoisSalesLibraryService {
         jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
     }
 
+    /**
+     * Marca um job como falho preservando a categoria e a mensagem de erro operacional.
+     */
     @Transactional
     public void failJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
         jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), request.errorMessage(), jobId);
     }
 
+    /**
+     * Ingere URLs informadas explicitamente e cria jobs apenas para páginas novas.
+     */
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryIngestResponse ingestUrls(MoisSalesLibraryDtos.SalesLibraryIngestRequest request) {
-        int persisted = 0;
-        String normalizedSource = request.source().trim().toUpperCase(Locale.ROOT);
-        for (MoisSalesLibraryDtos.SalesLibraryUrlItem item : request.urls()) {
-            String canonical = canonicalize(item.url());
-            if (canonical == null || canonical.isBlank()) {
-                continue;
-            }
-            Instant capturedAt = item.capturedAt() == null ? Instant.now() : item.capturedAt();
-            LocalDateTime capturedAtUtc = LocalDateTime.ofInstant(capturedAt, ZoneOffset.UTC);
-            int ingestUpsertResult = jdbcTemplate.update(
-                    """
-                            INSERT INTO mois_sales_library_url_ingest
-                            (workspace_id, source, url_original, url_canonical, title, first_captured_at, last_captured_at, ingest_count, created_at, updated_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                            ON DUPLICATE KEY UPDATE
-                                source = VALUES(source),
-                                url_original = VALUES(url_original),
-                                title = COALESCE(NULLIF(VALUES(title), ''), title),
-                                last_captured_at = GREATEST(COALESCE(last_captured_at, VALUES(last_captured_at)), VALUES(last_captured_at)),
-                                ingest_count = ingest_count + 1,
-                                updated_at = UTC_TIMESTAMP()
-                            """,
-                    request.workspaceId(),
-                    normalizedSource,
-                    item.url(),
-                    canonical,
-                    item.title(),
-                    capturedAtUtc,
-                    capturedAtUtc
-            );
-
-            if (ingestUpsertResult == 1) {
-                Long urlIngestId = jdbcTemplate.queryForObject(
-                        """
-                                SELECT id
-                                FROM mois_sales_library_url_ingest
-                                WHERE url_canonical = ?
-                                LIMIT 1
-                                """,
-                        Long.class,
-                        canonical
-                );
-                if (urlIngestId != null) {
-                    createPendingJob(urlIngestId);
-                }
-            }
-            persisted++;
-        }
+        log.info("Biblioteca de páginas de vendas recebeu payload bruto de ingestão explícita. request={}", request);
+        IngestCounters counters = ingestUrlItems(request.workspaceId(), request.source(), request.urls());
 
         return new MoisSalesLibraryDtos.SalesLibraryIngestResponse(
                 request.workspaceId(),
-                normalizedSource,
+                request.source().trim().toUpperCase(Locale.ROOT),
                 request.urls().size(),
-                persisted
+                counters.persisted()
         );
     }
 
-    public MoisSalesLibraryDtos.SalesLibraryJobResponse getJob(long jobId) { /* unchanged simplified */
+    /**
+     * Ingere na biblioteca as URLs dos produtos Hotmart já coletados, priorizando o lote de 400 produtos mais recente.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestResponse ingestHotmartCollectedProducts(
+            MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestRequest request
+    ) {
+        log.info("Biblioteca de páginas de vendas recebeu payload bruto para ingestir produtos Hotmart coletados. request={}", request);
+        int normalizedLimit = Math.max(1, Math.min(request.limit() == null ? 400 : request.limit(), 400));
+        String effectiveJobId = resolveHotmartJobId(request.workspaceId(), request.jobId());
+        if (effectiveJobId == null) {
+            return new MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestResponse(
+                    request.workspaceId(), null, 0, 0, 0, 0, 0, 0
+            );
+        }
+
+        List<CollectedReferenceForIngest> references = findHotmartCollectedReferences(request.workspaceId(), effectiveJobId, normalizedLimit);
+        List<MoisSalesLibraryDtos.SalesLibraryUrlItem> urls = new ArrayList<>();
+        int skippedWithoutUrl = 0;
+        for (CollectedReferenceForIngest reference : references) {
+            String url = coalesceNotBlank(reference.salesPageUrl(), reference.productUrl(), reference.url());
+            if (url == null || url.isBlank()) {
+                skippedWithoutUrl++;
+                continue;
+            }
+            String title = coalesceNotBlank(reference.productName(), reference.title(), reference.referenceId());
+            urls.add(new MoisSalesLibraryDtos.SalesLibraryUrlItem(url, title, reference.collectedAt()));
+        }
+
+        IngestCounters counters = ingestUrlItems(request.workspaceId(), "HOTMART", urls);
+        return new MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestResponse(
+                request.workspaceId(),
+                effectiveJobId,
+                references.size(),
+                urls.size(),
+                counters.inserted(),
+                counters.updated(),
+                counters.jobsCreated(),
+                skippedWithoutUrl + counters.skippedWithoutUrl()
+        );
+    }
+
+    /**
+     * Busca os metadados operacionais de um job da biblioteca.
+     */
+    public MoisSalesLibraryDtos.SalesLibraryJobResponse getJob(long jobId) {
         List<MoisSalesLibraryDtos.SalesLibraryJobResponse> rows = jdbcTemplate.query("""
                         SELECT id, url_ingest_id, status, attempts, error_category, error_message,
                                next_retry_at, created_at, updated_at, started_at, finished_at
@@ -140,6 +157,9 @@ public class MoisSalesLibraryService {
         return rows.get(0);
     }
 
+    /**
+     * Lista jobs da biblioteca por workspace, com filtro opcional por status.
+     */
     public MoisSalesLibraryDtos.SalesLibraryJobPageResponse listJobs(String workspaceId, String status, int page, int pageSize) {
         int normalizedPage = Math.max(1, page);
         int normalizedPageSize = Math.max(1, Math.min(pageSize, 100));
@@ -168,7 +188,10 @@ public class MoisSalesLibraryService {
         return new MoisSalesLibraryDtos.SalesLibraryJobPageResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
 
-    public MoisSalesLibraryDtos.SalesLibraryEntryPageResponse listEntries(String workspaceId, int page, int pageSize) { /* keep */
+    /**
+     * Lista entradas de URL ingeridas na biblioteca para auditoria operacional.
+     */
+    public MoisSalesLibraryDtos.SalesLibraryEntryPageResponse listEntries(String workspaceId, int page, int pageSize) {
         int normalizedPage = Math.max(1, page); int normalizedPageSize = Math.max(1, Math.min(pageSize, 100)); int offset = (normalizedPage - 1) * normalizedPageSize;
         Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE workspace_id = ?", Long.class, workspaceId);
         List<MoisSalesLibraryDtos.SalesLibraryEntryResponse> items = jdbcTemplate.query("""
@@ -184,6 +207,9 @@ public class MoisSalesLibraryService {
         return new MoisSalesLibraryDtos.SalesLibraryEntryPageResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
 
+    /**
+     * Lista páginas canônicas da biblioteca junto com a análise mais recente.
+     */
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(String workspaceId, int page, int pageSize) {
         int normalizedPage = Math.max(1, page); int normalizedPageSize = Math.max(1, Math.min(pageSize, 100)); int offset = (normalizedPage - 1) * normalizedPageSize;
         Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE workspace_id = ?", Long.class, workspaceId);
@@ -204,6 +230,9 @@ public class MoisSalesLibraryService {
         return new MoisSalesLibraryDtos.SalesLibraryPageListResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
 
+    /**
+     * Busca uma página canônica da biblioteca pelo identificador interno.
+     */
     public MoisSalesLibraryDtos.SalesLibraryPageResponse getPage(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
                 SELECT i.id, i.workspace_id, i.source, i.url_canonical, i.title, i.updated_at,
@@ -222,6 +251,9 @@ public class MoisSalesLibraryService {
         return rows.get(0);
     }
 
+    /**
+     * Busca a análise mais recente de uma página da biblioteca.
+     */
     public MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse getPageAnalysis(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse> rows = jdbcTemplate.query("""
                 SELECT a.id, a.url_ingest_id, a.job_id, a.status, a.score_total, a.parser_version,
@@ -270,6 +302,9 @@ public class MoisSalesLibraryService {
         return new MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse(pageId, jobId, normalizedStatus, notes, Instant.now());
     }
 
+    /**
+     * Cria um novo job pendente para reanalisar uma página existente.
+     */
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse reanalyzePage(long pageId) {
         Long exists = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE id = ?", Long.class, pageId);
@@ -283,12 +318,198 @@ public class MoisSalesLibraryService {
         return new MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse(pageId, jobId, JOB_STATUS_PENDING, Instant.now());
     }
 
+
+    /**
+     * Executa a gravação comum de itens de URL e consolida contadores de inserção, atualização e jobs.
+     */
+    private IngestCounters ingestUrlItems(String workspaceId, String source, List<MoisSalesLibraryDtos.SalesLibraryUrlItem> urls) {
+        int persisted = 0;
+        int inserted = 0;
+        int updated = 0;
+        int jobsCreated = 0;
+        int skippedWithoutUrl = 0;
+        String normalizedSource = source.trim().toUpperCase(Locale.ROOT);
+        for (MoisSalesLibraryDtos.SalesLibraryUrlItem item : urls) {
+            String canonical = canonicalize(item.url());
+            if (canonical == null || canonical.isBlank()) {
+                skippedWithoutUrl++;
+                continue;
+            }
+            Instant capturedAt = item.capturedAt() == null ? Instant.now() : item.capturedAt();
+            LocalDateTime capturedAtUtc = LocalDateTime.ofInstant(capturedAt, ZoneOffset.UTC);
+            int ingestUpsertResult = jdbcTemplate.update(
+                    """
+                            INSERT INTO mois_sales_library_url_ingest
+                            (workspace_id, source, url_original, url_canonical, title, first_captured_at, last_captured_at, ingest_count, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                            ON DUPLICATE KEY UPDATE
+                                source = VALUES(source),
+                                url_original = VALUES(url_original),
+                                title = COALESCE(NULLIF(VALUES(title), ''), title),
+                                last_captured_at = GREATEST(COALESCE(last_captured_at, VALUES(last_captured_at)), VALUES(last_captured_at)),
+                                ingest_count = ingest_count + 1,
+                                updated_at = UTC_TIMESTAMP()
+                            """,
+                    workspaceId,
+                    normalizedSource,
+                    item.url(),
+                    canonical,
+                    item.title(),
+                    capturedAtUtc,
+                    capturedAtUtc
+            );
+
+            if (ingestUpsertResult == 1) {
+                inserted++;
+                Long urlIngestId = jdbcTemplate.queryForObject(
+                        """
+                                SELECT id
+                                FROM mois_sales_library_url_ingest
+                                WHERE url_canonical = ?
+                                LIMIT 1
+                                """,
+                        Long.class,
+                        canonical
+                );
+                if (urlIngestId != null) {
+                    createPendingJob(urlIngestId);
+                    jobsCreated++;
+                }
+            } else {
+                updated++;
+            }
+            persisted++;
+        }
+        return new IngestCounters(persisted, inserted, updated, jobsCreated, skippedWithoutUrl);
+    }
+
+    /**
+     * Resolve o job Hotmart solicitado ou, quando ausente, identifica o job mais recente do workspace.
+     */
+    private String resolveHotmartJobId(String workspaceId, String requestedJobId) {
+        if (requestedJobId != null && !requestedJobId.isBlank()) {
+            return requestedJobId.trim();
+        }
+        return jdbcTemplate.query(
+                """
+                        SELECT job_id
+                        FROM mois_collected_reference
+                        WHERE workspace_id = ?
+                          AND source = 'HOTMART'
+                        GROUP BY job_id
+                        ORDER BY MAX(updated_at) DESC
+                        LIMIT 1
+                        """,
+                (rs, rowNum) -> rs.getString("job_id"),
+                workspaceId
+        ).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Busca produtos Hotmart coletados no lote escolhido para transformá-los em URLs da biblioteca.
+     */
+    private List<CollectedReferenceForIngest> findHotmartCollectedReferences(String workspaceId, String jobId, int limit) {
+        return jdbcTemplate.query(
+                """
+                        SELECT reference_id, title, product_name, url, product_url, sales_page_url, collected_at
+                        FROM mois_collected_reference
+                        WHERE workspace_id = ?
+                          AND source = 'HOTMART'
+                          AND job_id = ?
+                        ORDER BY collected_at ASC, id ASC
+                        LIMIT ?
+                        """,
+                (rs, rowNum) -> mapCollectedReferenceForIngest(rs),
+                workspaceId,
+                jobId,
+                limit
+        );
+    }
+
+    /**
+     * Mapeia uma linha de referência coletada para a estrutura interna de ingestão.
+     */
+    private CollectedReferenceForIngest mapCollectedReferenceForIngest(ResultSet rs) throws SQLException {
+        Timestamp collectedAt = rs.getTimestamp("collected_at");
+        return new CollectedReferenceForIngest(
+                rs.getString("reference_id"),
+                rs.getString("title"),
+                rs.getString("product_name"),
+                rs.getString("url"),
+                rs.getString("product_url"),
+                rs.getString("sales_page_url"),
+                collectedAt == null ? null : collectedAt.toInstant()
+        );
+    }
+
+    /**
+     * Retorna o primeiro texto não vazio para aplicar fallbacks de URL e título.
+     */
+    private String coalesceNotBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Cria um job pendente para uma URL ingerida e retorna o identificador criado.
+     */
     private long createPendingJob(long urlIngestId) {
-        jdbcTemplate.update("INSERT INTO mois_sales_library_processing_job (url_ingest_id, status, attempts, created_at, updated_at) VALUES (?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())", urlIngestId, JOB_STATUS_PENDING);
+        jdbcTemplate.update(
+                "INSERT INTO mois_sales_library_processing_job (url_ingest_id, status, attempts, created_at, updated_at) VALUES (?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())",
+                urlIngestId,
+                JOB_STATUS_PENDING
+        );
         Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         return id == null ? 0L : id;
     }
 
-    private String canonicalize(String rawUrl) { if (rawUrl == null || rawUrl.isBlank()) return null; try { URI uri = URI.create(rawUrl.trim()); String scheme = uri.getScheme() == null ? "https" : uri.getScheme().toLowerCase(Locale.ROOT); String host = uri.getHost(); if (host == null || host.isBlank()) return rawUrl.trim(); String path = (uri.getPath() == null || uri.getPath().isBlank()) ? "/" : uri.getPath(); return scheme + "://" + host.toLowerCase(Locale.ROOT) + path; } catch (Exception ignored) { return rawUrl.trim(); } }
-    private Instant toInstant(Timestamp timestamp) { return timestamp == null ? null : timestamp.toInstant(); }
+    /**
+     * Normaliza uma URL para deduplicação por esquema, host e caminho.
+     */
+    private String canonicalize(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(rawUrl.trim());
+            String scheme = uri.getScheme() == null ? "https" : uri.getScheme().toLowerCase(Locale.ROOT);
+            String host = uri.getHost();
+            if (host == null || host.isBlank()) {
+                return rawUrl.trim();
+            }
+            String path = (uri.getPath() == null || uri.getPath().isBlank()) ? "/" : uri.getPath();
+            return scheme + "://" + host.toLowerCase(Locale.ROOT) + path;
+        } catch (Exception ex) {
+            log.warn("Biblioteca de páginas de vendas não conseguiu canonicalizar URL. operacao=canonicalize, rawUrl={}", rawUrl, ex);
+            return rawUrl.trim();
+        }
+    }
+
+    /**
+     * Converte timestamp JDBC em Instant preservando nulos.
+     */
+    private Instant toInstant(Timestamp timestamp) {
+        return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    private record IngestCounters(int persisted, int inserted, int updated, int jobsCreated, int skippedWithoutUrl) {
+    }
+
+    private record CollectedReferenceForIngest(
+            String referenceId,
+            String title,
+            String productName,
+            String url,
+            String productUrl,
+            String salesPageUrl,
+            Instant collectedAt
+    ) {
+    }
 }

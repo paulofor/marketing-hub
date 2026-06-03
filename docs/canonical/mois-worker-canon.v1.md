@@ -329,6 +329,20 @@ erDiagram
 4. Persistência de análise final deve ficar em `mois_sales_library_page_analysis`, mantendo rastreabilidade por `job_id` e `url_ingest_id`.
 5. Snapshots e artefatos complementares não substituem a análise principal; eles enriquecem histórico e diagnóstico.
 
+### 13.6 Bootstrap operacional Hotmart com lote de até 400 produtos
+
+Para iniciar o MVP da biblioteca com a base Hotmart já coletada, o backend expõe o contrato operacional:
+
+- `POST /api/mois/sales-library/hotmart-products:ingest`
+- payload: `{ "workspaceId": "workspace-001", "jobId"?: "...", "limit"?: 400 }`
+- quando `jobId` não é informado, o backend seleciona o job Hotmart mais recente em `mois_collected_reference` para o workspace;
+- o limite padrão e máximo é `400`, para manter o primeiro ciclo aderente ao plano de usar a base inicial de aproximadamente 400 produtos;
+- a URL priorizada é `sales_page_url`, com fallback em `product_url` e depois `url`;
+- cada URL elegível é inserida/atualizada em `mois_sales_library_url_ingest` e somente URLs novas geram job `PENDING` em `mois_sales_library_processing_job`;
+- a resposta retorna contadores de referências lidas, URLs elegíveis, URLs inseridas, URLs atualizadas, jobs criados e itens ignorados sem URL.
+
+Esse bootstrap é a ponte entre a coleta Hotmart já persistida e o MVP 1 do plano de pipeline da Biblioteca de Páginas de Vendas, sem escrita direta por workers no banco.
+
 
 ### 13.5 Diagrama de dados (somente chaves)
 ```mermaid

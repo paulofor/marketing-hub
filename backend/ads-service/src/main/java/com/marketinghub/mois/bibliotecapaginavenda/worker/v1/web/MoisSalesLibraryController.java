@@ -6,6 +6,7 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLi
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,15 +19,22 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Expõe os contratos HTTP da Biblioteca de Páginas de Vendas do MOIS.
+ */
 @RestController
 @RequestMapping("/api/mois/sales-library")
 @RequiredArgsConstructor
 @Validated
+@Slf4j
 public class MoisSalesLibraryController {
 
     private final MoisSalesLibraryService service;
     private final MoisSalesLibrarySnapshotService snapshotService;
 
+    /**
+     * Lista entradas de URLs ingeridas pela biblioteca.
+     */
     @GetMapping("/entries")
     public MoisSalesLibraryDtos.SalesLibraryEntryPageResponse listEntries(
             @RequestParam String workspaceId,
@@ -36,6 +44,9 @@ public class MoisSalesLibraryController {
         return service.listEntries(workspaceId, page, pageSize);
     }
 
+    /**
+     * Lista jobs de processamento da biblioteca.
+     */
     @GetMapping("/jobs")
     public MoisSalesLibraryDtos.SalesLibraryJobPageResponse listJobs(
             @RequestParam String workspaceId,
@@ -46,15 +57,22 @@ public class MoisSalesLibraryController {
         return service.listJobs(workspaceId, status, page, pageSize);
     }
 
+    /**
+     * Busca um job de processamento pelo identificador.
+     */
     @GetMapping("/jobs/{jobId}")
     public MoisSalesLibraryDtos.SalesLibraryJobResponse getJob(@PathVariable long jobId) {
         try {
             return service.getJob(jobId);
         } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou job solicitado. operacao=getJob, jobId={}, erro={}", jobId, ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
 
+    /**
+     * Lista páginas canônicas registradas na biblioteca.
+     */
     @GetMapping("/pages")
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(
             @RequestParam String workspaceId,
@@ -64,30 +82,42 @@ public class MoisSalesLibraryController {
         return service.listPages(workspaceId, page, pageSize);
     }
 
+    /**
+     * Busca os dados básicos de uma página canônica.
+     */
     @GetMapping("/pages/{pageId}")
     public MoisSalesLibraryDtos.SalesLibraryPageResponse getPage(@PathVariable long pageId) {
         try {
             return service.getPage(pageId);
         } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou página solicitada. operacao=getPage, pageId={}, erro={}", pageId, ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
 
+    /**
+     * Busca a análise mais recente de uma página canônica.
+     */
     @GetMapping("/pages/{pageId}/analysis")
     public MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse getPageAnalysis(@PathVariable long pageId) {
         try {
             return service.getPageAnalysis(pageId);
         } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou análise solicitada. operacao=getPageAnalysis, pageId={}, erro={}", pageId, ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
 
+    /**
+     * Solicita reanálise de uma página existente.
+     */
     @PostMapping("/pages/{pageId}:reanalyze")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse reanalyzePage(@PathVariable long pageId) {
         try {
             return service.reanalyzePage(pageId);
         } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não conseguiu solicitar reanálise. operacao=reanalyzePage, pageId={}, erro={}", pageId, ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
@@ -105,10 +135,14 @@ public class MoisSalesLibraryController {
         try {
             return service.updatePageStatus(pageId, request);
         } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas rejeitou atualização manual de status. operacao=updatePageStatus, pageId={}, status={}, erro={}", pageId, request.status(), ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
     }
 
+    /**
+     * Solicita captura de snapshots para páginas sem captura recente.
+     */
     @PostMapping("/snapshots:capture")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureResponse captureSnapshots(
@@ -117,11 +151,17 @@ public class MoisSalesLibraryController {
         return snapshotService.captureSnapshots(request);
     }
 
+    /**
+     * Lista snapshots já capturados para uma página.
+     */
     @GetMapping("/pages/{pageId}/snapshots")
     public List<MoisSalesLibraryDtos.SalesLibraryPageSnapshotResponse> listPageSnapshots(@PathVariable long pageId) {
         return snapshotService.listSnapshots(pageId);
     }
 
+    /**
+     * Reserva o próximo job pendente para o worker.
+     */
     @PostMapping("/jobs:claim")
     public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(
             @Valid @RequestBody MoisSalesLibraryDtos.SalesLibraryClaimRequest request
@@ -129,6 +169,9 @@ public class MoisSalesLibraryController {
         return service.claimJob(request);
     }
 
+    /**
+     * Recebe o resultado final de análise de um job.
+     */
     @PostMapping("/jobs/{jobId}:complete")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completeJob(
@@ -138,6 +181,9 @@ public class MoisSalesLibraryController {
         service.completeJob(jobId, request);
     }
 
+    /**
+     * Registra falha terminal de um job do worker.
+     */
     @PostMapping("/jobs/{jobId}:fail")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void failJob(
@@ -147,11 +193,25 @@ public class MoisSalesLibraryController {
         service.failJob(jobId, request);
     }
 
+    /**
+     * Ingere URLs externas já selecionadas para a biblioteca.
+     */
     @PostMapping("/urls:ingest")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public MoisSalesLibraryDtos.SalesLibraryIngestResponse ingestUrls(
             @Valid @RequestBody MoisSalesLibraryDtos.SalesLibraryIngestRequest request
     ) {
         return service.ingestUrls(request);
+    }
+
+    /**
+     * Dispara a ingestão das URLs dos produtos Hotmart já coletados para iniciar o MVP com até 400 produtos.
+     */
+    @PostMapping("/hotmart-products:ingest")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestResponse ingestHotmartCollectedProducts(
+            @Valid @RequestBody MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestRequest request
+    ) {
+        return service.ingestHotmartCollectedProducts(request);
     }
 }

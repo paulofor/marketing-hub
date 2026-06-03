@@ -7,6 +7,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Agrupa contratos HTTP da Biblioteca de Páginas de Vendas do MOIS.
+ */
 public final class MoisSalesLibraryDtos {
 
 
@@ -52,6 +55,9 @@ public final class MoisSalesLibraryDtos {
     }
 
 
+    /**
+     * Impede instanciação do agrupador de contratos.
+     */
     private MoisSalesLibraryDtos() {
     }
 
@@ -74,6 +80,25 @@ public final class MoisSalesLibraryDtos {
             String source,
             int received,
             int persisted
+    ) {
+    }
+
+    public record SalesLibraryHotmartCollectedIngestRequest(
+            @NotBlank String workspaceId,
+            String jobId,
+            Integer limit
+    ) {
+    }
+
+    public record SalesLibraryHotmartCollectedIngestResponse(
+            String workspaceId,
+            String jobId,
+            int collectedReferencesRead,
+            int eligibleUrls,
+            int insertedUrls,
+            int updatedUrls,
+            int jobsCreated,
+            int skippedWithoutUrl
     ) {
     }
 

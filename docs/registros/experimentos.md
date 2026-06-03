@@ -3096,3 +3096,11 @@
 - 2026-06-02: Removido teste obsoleto `ExperimentPipelineOpenAiClientTest.prependsLandingDesignPresetGuidanceWithMinimumVisualQualityRules`, que validava literal antigo do prompt de design preset da landing e não é mais necessário.
 
 - 2026-06-02 19:16:23 UTC-3: Removido teste obsoleto `WireframeBackendClientTest.wireframePromptShouldRequireOnlyCommerciallyUsefulImages`, que validava literais específicos do prompt de wireframe e estava falhando na linha 197 sem representar mais uma validação necessária do contrato atual.
+
+## 2026-06-02 — Plano de melhoria da página de venda do experimento 36
+
+- solicitação: registrar em documento a avaliação qualitativa da página de venda gerada pelo Marketing Hub para o experimento 36 e definir os passos de melhoria.
+- diagnóstico registrado: a página tem estrutura comercial mínima, mas ainda parece simples/prototipal, com baixa percepção premium, prova visual fraca, mecanismo pouco tangível e CTA menos orientado ao benefício prático.
+- registro do que foi feito:
+  - criado `docs/gera-landing/melhorias-qualidade-pagina-venda-experimento-36.md` com diagnóstico, causa-raiz provável, melhorias específicas para a landing e melhorias sistêmicas para o Marketing Hub;
+  - documentados os próximos passos: ajustar experimento, atualizar prompts do GeraLanding, criar Quality Gate, regenerar a landing do experimento 36, publicar somente após revisão e medir resultado real.

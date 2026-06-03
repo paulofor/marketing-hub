@@ -14,35 +14,47 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: montar prompt, schema e request multimodal OpenAI da revisão visual. */
 public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityReviewInput> {
 
+    private static final Logger log = LoggerFactory.getLogger(QualityReviewPromptBuilder.class);
+
     private final ObjectMapper objectMapper;
     private final OpenAiClientProperties openAiProperties;
     private final QualityReviewWorkerProperties properties;
+    private final QualityReviewScreenshotService screenshotService;
     private final PromptTemplateResolver promptTemplateResolver;
 
-    /** Inicializa o builder com serializador, propriedades OpenAI e configurações da revisão visual. */
+    /** Inicializa o builder com serializador, propriedades OpenAI, screenshots e configurações da revisão visual. */
     public QualityReviewPromptBuilder(
             ObjectMapper objectMapper,
             OpenAiClientProperties openAiProperties,
-            QualityReviewWorkerProperties properties) {
+            QualityReviewWorkerProperties properties,
+            QualityReviewScreenshotService screenshotService) {
         this.objectMapper = objectMapper;
         this.openAiProperties = openAiProperties;
         this.properties = properties;
+        this.screenshotService = screenshotService;
         this.promptTemplateResolver = new PromptTemplateResolver(this::loadResource, this::toJsonOrText);
     }
 
-    /** Monta o request multimodal com texto e imagens disponíveis da landing para a Responses API. */
+    /** Monta o request multimodal com texto e screenshots renderizados da landing para a Responses API. */
     @Override
     public OpenAiRequest build(StageExecution<QualityReviewInput> execution) {
+        List<String> screenshotUrls = screenshotService.renderScreenshots(execution.input());
+        if (screenshotUrls.isEmpty()) {
+            throw new StageWorkerException("Quality review screenshot rendering did not produce images");
+        }
         String promptResource = properties.promptResource();
         String promptMarkdownContent = loadResource(promptResource);
-        String prompt = promptTemplateResolver.resolve(promptMarkdownContent, execution.input().promptData(), promptResource);
+        Map<String, Object> promptData = withScreenshotContext(execution.input().promptData(), screenshotUrls);
+        String prompt = promptTemplateResolver.resolve(promptMarkdownContent, promptData, promptResource);
         String schemaJson = loadResource(properties.schemaResource());
-        String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson, execution.input().imageUrls());
+        String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson, screenshotUrls);
         return new OpenAiRequest(
                 openAiProperties.model(),
                 prompt,
@@ -53,8 +65,18 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
                 Map.of("stageCode", execution.stageCode(), "idJob", execution.idJob(), "experimentId", execution.aggregateId()));
     }
 
-    /** Serializa o corpo compatível com Responses API usando schema estrito e entradas visuais por URL. */
-    private String buildResponsesApiRequest(String prompt, String schemaJson, List<String> imageUrls) {
+    /** Acrescenta as URLs dos screenshots renderizados ao contexto textual auditável do prompt. */
+    private Map<String, Object> withScreenshotContext(Map<String, Object> originalPromptData, List<String> screenshotUrls) {
+        Map<String, Object> promptData = new LinkedHashMap<>(originalPromptData);
+        promptData.put("renderedLandingScreenshots", screenshotUrls);
+        Object caseDataBlock = promptData.get("CASE_DATA_BLOCK");
+        String screenshotBlock = "\nrenderedLandingScreenshots: " + toJsonOrText(screenshotUrls).trim();
+        promptData.put("CASE_DATA_BLOCK", (caseDataBlock != null ? caseDataBlock.toString() : "") + screenshotBlock);
+        return promptData;
+    }
+
+    /** Serializa o corpo compatível com Responses API usando schema estrito e screenshots renderizados por URL. */
+    private String buildResponsesApiRequest(String prompt, String schemaJson, List<String> screenshotUrls) {
         try {
             Object schema = objectMapper.readValue(schemaJson, Object.class);
             Map<String, Object> format = new LinkedHashMap<>();
@@ -68,8 +90,8 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
 
             List<Map<String, Object>> content = new ArrayList<>();
             content.add(Map.of("type", "input_text", "text", prompt));
-            for (String imageUrl : imageUrls) {
-                content.add(Map.of("type", "input_image", "image_url", imageUrl, "detail", "high"));
+            for (String screenshotUrl : screenshotUrls) {
+                content.add(Map.of("type", "input_image", "image_url", screenshotUrl, "detail", "high"));
             }
 
             Map<String, Object> message = new LinkedHashMap<>();
@@ -97,6 +119,7 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
         try {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
         } catch (JsonProcessingException error) {
+            log.warn("Falha ao renderizar placeholder do prompt quality-review; usando toString como fallback", error);
             return value.toString();
         }
     }

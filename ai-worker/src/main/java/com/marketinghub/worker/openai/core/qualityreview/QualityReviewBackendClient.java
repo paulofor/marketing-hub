@@ -1,5 +1,6 @@
 package com.marketinghub.worker.openai.core.qualityreview;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
@@ -8,16 +9,18 @@ import com.marketinghub.worker.openai.core.port.StageBackendPort;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: integrar a revisão visual do core OpenAI aos endpoints internos do backend. */
 public class QualityReviewBackendClient implements StageBackendPort<QualityReviewInput, QualityReviewOutput> {
 
+    private static final Logger log = LoggerFactory.getLogger(QualityReviewBackendClient.class);
     private static final String STATUS_STARTED = "INICIADO";
 
     private final WebClient webClient;
@@ -84,7 +87,7 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         String stageCode = asString(item.get("stageCode"));
         String idJob = asString(item.get("jobid"));
         Map<String, Object> promptData = buildPromptDataFromPending(item);
-        QualityReviewInput input = new QualityReviewInput(experimentId, stageCode, idJob, promptData, extractImageUrls(promptData));
+        QualityReviewInput input = new QualityReviewInput(experimentId, stageCode, idJob, promptData, resolveLandingHtml(promptData));
         return new StageExecution<>(idJob, experimentId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input);
     }
 
@@ -119,39 +122,13 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         return builder.toString();
     }
 
-    /** Extrai URLs de imagens públicas dos artefatos da landing para entrada visual do modelo. */
-    private List<String> extractImageUrls(Map<String, Object> promptData) {
-        List<String> urls = new ArrayList<>();
-        collectUrls(promptData.get("landingPageImageAssets"), urls);
-        collectUrls(promptData.get("htmlGeraLanding"), urls);
-        collectUrls(promptData.get("landingPageHtml"), urls);
-        return urls.stream().distinct().limit(12).toList();
-    }
-
-    /** Coleta URLs http(s) de strings, listas e mapas aninhados. */
-    private void collectUrls(Object value, List<String> urls) {
-        if (value instanceof String text) {
-            if (text.trim().startsWith("{") || text.trim().startsWith("[")) {
-                try {
-                    collectUrls(objectMapper.readValue(text, Object.class), urls);
-                    return;
-                } catch (Exception ignored) {
-                    // continua com extração textual simples abaixo
-                }
-            }
-            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("https?://[^\\s\\\"'<>]+", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(text);
-            while (matcher.find()) {
-                urls.add(matcher.group());
-            }
-            return;
+    /** Resolve o HTML final que deve ser renderizado em browser para gerar screenshots do Quality Review. */
+    private String resolveLandingHtml(Map<String, Object> promptData) {
+        String htmlGeraLanding = asString(promptData.get("htmlGeraLanding"));
+        if (htmlGeraLanding != null && !htmlGeraLanding.isBlank()) {
+            return htmlGeraLanding;
         }
-        if (value instanceof Map<?, ?> map) {
-            map.values().forEach(child -> collectUrls(child, urls));
-            return;
-        }
-        if (value instanceof Iterable<?> iterable) {
-            iterable.forEach(child -> collectUrls(child, urls));
-        }
+        return asString(promptData.get("landingPageHtml"));
     }
 
     /** Envia o callback de resposta ou falha da revisão visual ao backend. */
@@ -189,7 +166,8 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         }
         try {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
-        } catch (Exception error) {
+        } catch (JsonProcessingException error) {
+            log.warn("Falha ao renderizar valor estruturado no contexto da revisão visual; usando toString como fallback", error);
             return value.toString();
         }
     }

@@ -18,7 +18,9 @@ public record QualityReviewWorkerProperties(
         @NotBlank String promptResource,
         @NotBlank String schemaResource,
         @NotBlank String schemaName,
-        @NotNull Duration timeout
+        @NotNull Duration timeout,
+        String chromiumExecutablePath,
+        @NotNull Duration screenshotTimeout
 ) {
     /** Normaliza valores opcionais usados pelo worker de revisão visual quando a configuração externa omite o campo. */
     public QualityReviewWorkerProperties {
@@ -27,6 +29,12 @@ public record QualityReviewWorkerProperties(
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);
+        }
+        if (chromiumExecutablePath == null || chromiumExecutablePath.isBlank()) {
+            chromiumExecutablePath = "/usr/bin/chromium";
+        }
+        if (screenshotTimeout == null || screenshotTimeout.isNegative() || screenshotTimeout.isZero()) {
+            screenshotTimeout = Duration.ofSeconds(30);
         }
     }
 }

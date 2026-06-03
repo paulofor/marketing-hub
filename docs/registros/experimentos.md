@@ -3173,3 +3173,26 @@
   - incluído o card `6 - Quality Review` entre `5 - Gera Preset Design` e `7 - Gera Entregáveis`, com botão de início, estado de carregamento, jobs em execução, histórico e custo total;
   - o total consolidado das etapas do GeraLanding passou a considerar também o custo das execuções de Quality Review.
 - impacto esperado: o usuário consegue executar e auditar o Quality Gate comercial visual na ordem correta antes de gerar os entregáveis finais.
+
+## 2026-06-03 — Correção de URL vazia no Quality Review visual
+
+- solicitação: investigar e corrigir falha do job `2608e1e4-0689-4d9b-9868-0c82f0f3361b` na etapa `landing-page-quality-review`, onde a OpenAI Responses API retornou HTTP 400 por arquivo baixado sem dados.
+- causa-raiz: o Worker AI extraía qualquer URL HTTP encontrada no HTML final da landing e enviava todas como `input_image`; no Experimento 36 isso incluiu o pixel `<noscript>` do Facebook (`https://www.facebook.com/tr?...`), que responde HTTP 200 com corpo vazio e fez a OpenAI tentar baixar uma “imagem” sem bytes.
+- registro do que foi feito:
+  - filtragem da extração visual no `QualityReviewBackendClient` para manter somente URLs de imagem reais ou campos canônicos de assets (`sourceUrl`, `resolvedUrl`, `imageUrl`, etc.);
+  - descarte de scripts, pixels de tracking e endpoints sem extensão de imagem no HTML antes da montagem do request multimodal;
+  - adicionado teste de regressão cobrindo HTML com `fbevents.js` e pixel vazio do Facebook, garantindo que apenas imagens válidas entrem no `imageUrls` do Quality Review.
+- impacto esperado: novas execuções do Quality Review não devem mais falhar por URLs de tracking/analytics ou recursos externos sem dados enviados como imagem para a OpenAI.
+
+## 2026-06-03 — Quality Review visual por screenshot renderizado
+
+- solicitação: corrigir a abordagem da etapa `landing-page-quality-review`, pois revisar imagens soltas da landing não representa a experiência real do usuário; a etapa deve carregar o HTML em um browser/headless, gerar print da página e enviar esse screenshot ao modelo de visão da OpenAI.
+- causa-raiz/objetivo: a implementação anterior extraía URLs de imagens/assets do HTML, mas isso avalia componentes isolados e ainda corre risco de capturar URLs não visuais; o Quality Gate comercial precisa avaliar a landing renderizada como o usuário enxerga.
+- registro do que foi feito:
+  - o Worker AI passou a manter o HTML final (`htmlGeraLanding`, com fallback para `landingPageHtml`) no input da etapa;
+  - criado serviço de screenshot com Chromium/Playwright para renderizar o HTML em viewports desktop e mobile, capturar JPEG full-page, publicar no storage público e enviar apenas esses screenshots como `input_image` da Responses API;
+  - atualizado o prompt do Quality Review para tratar os screenshots renderizados como evidência visual principal e os artefatos textuais apenas como contexto;
+  - atualizado o Dockerfile do AI Worker para disponibilizar Chromium no runtime;
+  - atualizado o cânone de arquitetura do GeraLanding para explicitar que o Worker AI pode renderizar o HTML em browser/headless quando o backend disponibiliza o HTML final;
+  - substituídos testes de filtragem de URL por testes que validam exposição do HTML final e uso exclusivo dos screenshots renderizados no request multimodal.
+- impacto esperado: o Quality Review passa a avaliar a experiência visual real da landing final, reduzindo falso diagnóstico por imagens isoladas e evitando enviar pixels/scripts como imagens ao modelo.

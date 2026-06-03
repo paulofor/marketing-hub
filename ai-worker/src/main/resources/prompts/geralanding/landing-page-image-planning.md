@@ -3,7 +3,7 @@
 # Etapa: Gera Prompt Imagens (landing-page-image-planning)
 
 template_id: landing-page-image-planning
-template_version: v2
+template_version: v3
 artifact_target: landingPageImagePlanning
 
 Objetivo:
@@ -41,6 +41,8 @@ Para cada `tag: img`, use obrigatoriamente os dados do próprio elemento no wire
 ## Qualidade comercial obrigatória
 - Toda imagem deve responder visualmente a uma pergunta do usuário: “o que eu vou receber?”, “isso parece útil?”, “isso serve para mim?”, “isso é confiável?”, “por que isso vale meu tempo?”.
 - Priorize tangibilidade: mockups de páginas, cards de conteúdo, telas conceituais, mapas de progresso, checklists, antes/depois visual ou demonstrações do mecanismo.
+- A prova visual deve ser adequada ao tipo de produto digital: roteiro/script pede simulação ou antes/depois; plano de ação pede checklist, mapa ou cronograma; produto educacional pede módulo demonstrativo; diagnóstico pede relatório/indicadores; template/ferramenta pede print conceitual ou fluxo preenchido; biblioteca/kit pede cards de exemplos e modo de uso.
+- Cada prompt deve reforçar pelo menos uma parte da narrativa Dor → Resultado → Mecanismo → Prova → Oferta → Ação, especialmente prova, mecanismo ou oferta.
 - Evite imagens abstratas, ícones genéricos, pessoas sorrindo sem contexto, gráficos decorativos, objetos aleatórios ou ilustrações que não provem a entrega.
 - A imagem do hero deve aumentar desejo e confiança em poucos segundos: mostrar o produto/resultado de forma premium, organizada e com aparência real.
 - Imagens de prova devem mostrar a entrega como algo concreto e visualmente valioso, não apenas um documento branco com marca d’água gigante.

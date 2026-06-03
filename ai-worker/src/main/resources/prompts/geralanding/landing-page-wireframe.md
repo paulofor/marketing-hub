@@ -43,7 +43,7 @@ Briefing das Imagens dos Anuncios:
 
 
 template_id: landing-wireframe
-template_version: v6
+template_version: v7
 artifact_target: landingPageWireframe
 
 # Objetivo da etapa
@@ -97,6 +97,22 @@ Regras obrigatórias:
 - A promessa principal deve ser baseada em `pain`, `result`, `mecanismo` e `campaignAngle`; amostra/PDF/mini-kit é prova ou redução de risco, nunca o centro da primeira dobra.
 - O usuário deve entender em poucos segundos: qual problema resolve, por que é diferente, o que verá antes de comprar e qual é o próximo passo.
 - Priorize seções com contraste narrativo: antes/depois, dor concreta, mecanismo simples, prova visual da entrega, captura com baixo risco e FAQ de objeções.
+
+# Padrão universal de qualidade comercial
+
+A landing deve funcionar para qualquer produto digital validado pelo Marketing Hub, sem ficar presa a um caso, nicho ou formato específico. Use sempre a narrativa:
+
+**Dor → Resultado → Mecanismo → Prova → Oferta → Ação**
+
+Regras obrigatórias para estruturar a página:
+- **Dor**: criar seção que mostre sintomas concretos e custo de manter o problema.
+- **Resultado**: deixar claro o avanço prático que o público quer alcançar.
+- **Mecanismo**: reservar espaço para explicar por que o produto digital resolve a dor de forma plausível, normalmente em 3 passos.
+- **Prova**: reservar pelo menos uma seção de preview/demonstração aplicada da entrega, não apenas uma imagem decorativa.
+- **Oferta**: listar entregáveis pelo benefício que geram, não apenas pelo formato do arquivo.
+- **Ação**: conduzir para o formulário com CTA orientado ao benefício imediato.
+
+Escolha a prova conforme o tipo de produto digital: roteiro/script pede antes/depois ou simulação; plano de ação pede checklist/mapa/cronograma; produto educacional pede módulo demonstrativo ou transformação aplicada; diagnóstico pede amostra de relatório/indicadores; template/ferramenta pede print conceitual ou fluxo preenchido; biblioteca/kit pede cards de exemplos e modo de uso.
 
 # Estrutura comercial mínima
 

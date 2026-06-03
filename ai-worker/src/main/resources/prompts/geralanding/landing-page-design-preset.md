@@ -131,6 +131,16 @@ Rejeite qualquer saída onde no mobile:
 
 A landing deve parecer um produto digital premium, não um formulário técnico em fundo escuro.
 
+# Hierarquia comercial universal
+
+O design deve materializar visualmente a sequência **Dor → Resultado → Mecanismo → Prova → Oferta → Ação** sem alterar a estrutura do wireframe. Para isso:
+- Hero deve ser a área de maior impacto e comunicar transformação com CTA evidente.
+- Dor/antes-depois deve ter contraste suficiente para o usuário reconhecer o problema rapidamente.
+- Mecanismo deve parecer organizado, simples e plausível, normalmente em steps/cards.
+- Prova/preview deve parecer vitrine real do produto digital, com mockup funcional maior e mais concreto que imagens decorativas.
+- Oferta/entregáveis deve ser escaneável e conectada a benefícios práticos.
+- Formulário deve ser o ponto de ação mais forte, com superfície própria e confiança visual.
+
 Use profundidade e acabamento com:
 - hero visual forte;
 - cards em camadas;

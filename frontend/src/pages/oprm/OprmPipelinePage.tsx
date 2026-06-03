@@ -113,6 +113,7 @@ export default function OprmPipelinePage() {
     isError,
     isLoading,
   } = useOprmRoutineResearchOrchestratorRecent(10);
+  const latestCycle = recentProcessed[0];
   const latestRunningCycle = recentProcessed.find(
     (item) => item.cycleStatus === "RUNNING",
   );
@@ -288,6 +289,69 @@ export default function OprmPipelinePage() {
                     </span>
                     <p className="mb-0 small">{stage.output}</p>
                   </div>
+                  {stage.number === "1" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Execução mais recente
+                      </span>
+                      <dl className="row g-2 small mb-0">
+                        <dt className="col-5 text-secondary fw-normal">
+                          Ciclo
+                        </dt>
+                        <dd className="col-7 mb-0 fw-semibold">
+                          #{latestCycle.researchCycleId}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Criado em
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {formatProcessedAt(latestCycle.processedAt)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">CNAE</dt>
+                        <dd className="col-7 mb-0">
+                          <span className="d-block">
+                            {latestCycle.cnaeCode}
+                          </span>
+                          <span className="text-secondary">
+                            {latestCycle.cnaeDescription}
+                          </span>
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Score
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {latestCycle.sourceScore.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Status
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          <span
+                            className={buildStatusBadgeClass(
+                              latestCycle.cycleStatus,
+                            )}
+                          >
+                            {latestCycle.cycleStatus}
+                          </span>
+                          {latestCycle.finishedAt ? (
+                            <span className="text-secondary d-block mt-1">
+                              Finalizado em{" "}
+                              {formatProcessedAt(latestCycle.finishedAt)}
+                            </span>
+                          ) : null}
+                        </dd>
+                      </dl>
+                      {latestCycle.errorMessage ? (
+                        <div className="text-danger small mt-2">
+                          <span className="fw-semibold">Erro:</span>{" "}
+                          {buildFailureMessage(latestCycle.errorMessage)}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {stage.number === "1" && latestRunningCycle ? (
                     <div className="border-top pt-3">
                       <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">

@@ -34,6 +34,8 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String CYCLE_STATUS_FAILED = "FAILED";
   private static final String QUERY_STATUS_PENDING = "PENDING";
+  private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
+  private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
   private static final int MIN_QUERY_COUNT = 1;
   private static final int MAX_QUERY_COUNT = 15;
@@ -62,10 +64,16 @@ public class BackendNicheResearchSeedBuilderService {
     this.researchQueryRepository = researchQueryRepository;
   }
 
-  /** Lista ciclos em execução que ainda precisam receber seed operacional e queries de pesquisa. */
+  /** Lista ciclos em execução ou falhas retryáveis que ainda precisam receber seed e queries. */
   @Transactional(readOnly = true)
   public List<RecordNicheResearchSeedBuilderPending> listPending() {
-    return routineResearchCycleRepository.findSeedBuilderPendingByStatus(CYCLE_STATUS_RUNNING, PageRequest.of(0, 20))
+    return routineResearchCycleRepository
+        .findSeedBuilderPendingOrRetryable(
+            CYCLE_STATUS_RUNNING,
+            CYCLE_STATUS_FAILED,
+            RETRYABLE_LEGACY_CONTRACT_ERROR,
+            COMPLETE_STAGE_PATH_FRAGMENT,
+            PageRequest.of(0, 20))
         .stream()
         .map(this::toPending)
         .toList();
@@ -86,6 +94,7 @@ public class BackendNicheResearchSeedBuilderService {
       OprmNicheResearchSeed savedSeed = nicheResearchSeedRepository.save(createSeed(cycle, request, now));
       List<OprmResearchQuery> savedQueries = researchQueryRepository.saveAll(createQueries(
           researchCycleId, savedSeed.getId(), request.queries(), normalizeCreatedBy(request.createdBy()), now));
+      reactivateCycleAfterSuccessfulCompletion(cycle);
       cycle.setTotalQueries(savedQueries.size());
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
@@ -128,6 +137,15 @@ public class BackendNicheResearchSeedBuilderService {
         .orElse(null);
     return new NicheResearchSeedBuilderDetailResponse(
         cycle.getId(), cycle.getStatus(), cycle.getTotalQueries(), cycle.getErrorMessage(), seed);
+  }
+
+  /** Reabre o ciclo quando uma falha retryável da etapa dois é concluída com sucesso após correção. */
+  private void reactivateCycleAfterSuccessfulCompletion(OprmRoutineResearchCycle cycle) {
+    if (CYCLE_STATUS_FAILED.equals(cycle.getStatus())) {
+      cycle.setStatus(CYCLE_STATUS_RUNNING);
+      cycle.setFinishedAt(null);
+      cycle.setErrorMessage(null);
+    }
   }
 
   /** Busca o ciclo de pesquisa ou interrompe a operação com erro explícito. */

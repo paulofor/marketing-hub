@@ -22,7 +22,7 @@ RUN mvn -s settings.xml -B package -DskipTests
 ########################################
 # Runtime stage
 ########################################
-FROM eclipse-temurin:21-jre
+FROM mcr.microsoft.com/playwright/java:v1.49.0-jammy
 WORKDIR /app
 
 COPY --from=build /workspace/target/app.jar ./app.jar

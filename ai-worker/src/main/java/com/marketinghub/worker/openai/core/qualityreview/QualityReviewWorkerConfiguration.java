@@ -1,6 +1,7 @@
 package com.marketinghub.worker.openai.core.qualityreview;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.frameworkimage.FrameworkImageStorageClient;
 import com.marketinghub.worker.openai.core.StageWorker;
 import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.openai.ResponsesApiOpenAiClient;
@@ -24,10 +25,20 @@ public class QualityReviewWorkerConfiguration {
         return new QualityReviewBackendClient(webClientBuilder, properties, objectMapper);
     }
 
+    /** Cria o serviço que renderiza o HTML final em Chromium e publica screenshots públicos. */
+    @Bean
+    public QualityReviewScreenshotService qualityReviewScreenshotService(FrameworkImageStorageClient storageClient, QualityReviewWorkerProperties properties) {
+        return new PlaywrightQualityReviewScreenshotService(storageClient, properties);
+    }
+
     /** Cria o builder responsável por montar prompt, schema e request OpenAI multimodal da revisão visual. */
     @Bean
-    public QualityReviewPromptBuilder qualityReviewPromptBuilder(ObjectMapper objectMapper, OpenAiClientProperties openAiProperties, QualityReviewWorkerProperties properties) {
-        return new QualityReviewPromptBuilder(objectMapper, openAiProperties, properties);
+    public QualityReviewPromptBuilder qualityReviewPromptBuilder(
+            ObjectMapper objectMapper,
+            OpenAiClientProperties openAiProperties,
+            QualityReviewWorkerProperties properties,
+            QualityReviewScreenshotService screenshotService) {
+        return new QualityReviewPromptBuilder(objectMapper, openAiProperties, properties, screenshotService);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a revisão visual. */

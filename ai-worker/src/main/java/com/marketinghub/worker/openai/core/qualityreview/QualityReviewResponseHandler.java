@@ -15,10 +15,10 @@ public class QualityReviewResponseHandler implements StageResponseHandler<Qualit
     @Override
     public void handleSuccess(StageExecution<QualityReviewInput> execution, OpenAiResult<QualityReviewOutput> result) {
         log.info(
-                "Quality review execution completed. idJob={}, experimentId={}, imageCount={}, inputTokens={}, outputTokens={}, costUsd={}",
+                "Quality review execution completed. idJob={}, experimentId={}, htmlLength={}, inputTokens={}, outputTokens={}, costUsd={}",
                 execution.idJob(),
                 execution.aggregateId(),
-                execution.input().imageUrls().size(),
+                execution.input().landingHtml() != null ? execution.input().landingHtml().length() : 0,
                 result.inputTokens(),
                 result.outputTokens(),
                 result.costUsd());

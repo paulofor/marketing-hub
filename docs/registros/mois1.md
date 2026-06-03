@@ -815,3 +815,15 @@ Arquivos alterados:
 - criado backend como dono da leitura/persistência da primeira etapa do novo pipeline, com endpoints `POST /api/mois/sales-library/collected-reference-html:claim`, `POST /api/mois/sales-library/collected-reference-html/{captureId}:complete` e `POST /api/mois/sales-library/collected-reference-html/{captureId}:fail`.
 - adicionada tabela `mois_collected_reference_html_capture` para reservar URLs de `mois_collected_reference`, guardar URL original/final, status, HTTP status, content type, hash, tamanho e HTML bruto completo.
 - ajustado o `mois-sales-library-worker` para executar a captura na internet: reserva uma referência no backend, faz GET da URL priorizada (`sales_page_url`, fallback `product_url`, fallback `url`) e devolve o HTML bruto ao backend para a próxima etapa.
+
+## 2026-06-03 07:38:12 UTC-3
+- adicionada a primeira etapa visual do pipeline da Biblioteca de Páginas de Vendas do MOIS para orientar a obtenção dos HTML.
+- a solução foi mantida simples e estática porque a tela de pipeline ainda não possui contrato específico de métricas agregadas para este card.
+- o card agora apresenta entrada, saída esperada, critério de qualidade e informações operacionais que devem ser acompanhadas na captura de HTML bruto.
+- documentos lidos para tratar a situação:
+  - docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-biblioteca-sales-pages.md
+  - docs/novos-modulos/mois-biblioteca-pagina-venda/guia-secoes-biblioteca-paginas-vendas.md
+- arquivos alterados:
+  - frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx
+  - docs/novos-modulos/mois-biblioteca-pagina-venda/guia-secoes-biblioteca-paginas-vendas.md
+  - docs/registros/mois1.md

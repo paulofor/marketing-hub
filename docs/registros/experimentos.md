@@ -3196,3 +3196,14 @@
   - atualizado o cânone de arquitetura do GeraLanding para explicitar que o Worker AI pode renderizar o HTML em browser/headless quando o backend disponibiliza o HTML final;
   - substituídos testes de filtragem de URL por testes que validam exposição do HTML final e uso exclusivo dos screenshots renderizados no request multimodal.
 - impacto esperado: o Quality Review passa a avaliar a experiência visual real da landing final, reduzindo falso diagnóstico por imagens isoladas e evitando enviar pixels/scripts como imagens ao modelo.
+
+## 2026-06-03 — Modelo de visão dedicado no Quality Review do GeraLanding
+
+- solicitação: verificar se o Quality Review estava usando um modelo de visão e ajustar o request conforme documentação oficial da OpenAI para análise de imagens na Responses API.
+- causa-raiz: a etapa montava `input_image` corretamente, porém usava o `openai.model` global; isso deixava o Quality Review dependente de configuração textual compartilhada e não garantia um modelo dedicado para visão.
+- registro do que foi feito:
+  - criada configuração `qualityreview.worker.vision-model` com padrão `gpt-5.5` para a etapa visual, separada do modelo global do Worker AI;
+  - criada configuração `qualityreview.worker.image-detail` com padrão `original`, validando os valores aceitos (`low`, `high`, `original`, `auto`);
+  - o request multimodal da etapa passou a preencher o campo `model` com o modelo visual dedicado e a aplicar o nível de detalhe configurado em cada `input_image`;
+  - o cânone do GeraLanding passou a exigir modelo de visão dedicado para `landing-page-quality-review`.
+- impacto esperado: novas execuções do Quality Review deixam de depender de modelo textual global e passam a enviar screenshots renderizados para um modelo multimodal/visão configurado explicitamente.

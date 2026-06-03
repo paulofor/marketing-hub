@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -18,6 +19,8 @@ public record QualityReviewWorkerProperties(
         @NotBlank String promptResource,
         @NotBlank String schemaResource,
         @NotBlank String schemaName,
+        @NotBlank String visionModel,
+        @NotBlank String imageDetail,
         @NotNull Duration timeout,
         String chromiumExecutablePath,
         @NotNull Duration screenshotTimeout
@@ -26,6 +29,17 @@ public record QualityReviewWorkerProperties(
     public QualityReviewWorkerProperties {
         if (apiPrefix == null || apiPrefix.isBlank()) {
             apiPrefix = "/api";
+        }
+        if (visionModel == null || visionModel.isBlank()) {
+            visionModel = "gpt-5.5";
+        }
+        if (imageDetail == null || imageDetail.isBlank()) {
+            imageDetail = "original";
+        } else {
+            imageDetail = imageDetail.trim().toLowerCase();
+        }
+        if (!List.of("low", "high", "original", "auto").contains(imageDetail)) {
+            throw new IllegalArgumentException("qualityreview.worker.image-detail must be one of: low, high, original, auto");
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);

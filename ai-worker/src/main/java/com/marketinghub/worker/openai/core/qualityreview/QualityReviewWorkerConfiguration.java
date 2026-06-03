@@ -35,10 +35,9 @@ public class QualityReviewWorkerConfiguration {
     @Bean
     public QualityReviewPromptBuilder qualityReviewPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             QualityReviewWorkerProperties properties,
             QualityReviewScreenshotService screenshotService) {
-        return new QualityReviewPromptBuilder(objectMapper, openAiProperties, properties, screenshotService);
+        return new QualityReviewPromptBuilder(objectMapper, properties, screenshotService);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a revisão visual. */

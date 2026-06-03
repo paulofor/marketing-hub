@@ -31,11 +31,17 @@ public class RoutineResearchOrchestratorBackendClient {
     public List<RoutineResearchOrchestratorPending> listPendingCandidates() {
         String url = collectorProperties.backendBaseUrl() + PENDING_PATH;
         try {
+            log.info("Chamando backend para listar pendências da etapa zero OPRM nichocnae (method=GET, endpoint={})", url);
             RoutineResearchOrchestratorPending[] response = restClient.get()
                     .uri(url)
                     .retrieve()
                     .body(RoutineResearchOrchestratorPending[].class);
-            return response == null ? List.of() : Arrays.asList(response);
+            List<RoutineResearchOrchestratorPending> pendingCandidates = response == null ? List.of() : Arrays.asList(response);
+            log.info(
+                    "Backend retornou pendências da etapa zero OPRM nichocnae (endpoint={}, count={})",
+                    url,
+                    pendingCandidates.size());
+            return pendingCandidates;
         } catch (RestClientException ex) {
             log.error("Erro ao listar pendências da etapa zero OPRM nichocnae (endpoint={})", url, ex);
             throw ex;
@@ -46,6 +52,7 @@ public class RoutineResearchOrchestratorBackendClient {
     public RoutineResearchOrchestratorOutput runNext() {
         String url = collectorProperties.backendBaseUrl() + RUN_NEXT_PATH;
         try {
+            log.info("Chamando backend para executar etapa zero OPRM nichocnae (method=POST, endpoint={})", url);
             RoutineResearchOrchestratorOutput response = restClient.post()
                     .uri(url)
                     .retrieve()
@@ -53,6 +60,15 @@ public class RoutineResearchOrchestratorBackendClient {
             if (response == null) {
                 throw new IllegalStateException("Backend OPRM nichocnae retornou corpo vazio na etapa zero.");
             }
+            log.info(
+                    "Backend concluiu execução da etapa zero OPRM nichocnae (endpoint={}, started={}, researchCycleId={}, sourceNicheId={}, routineStatus={}, cycleStatus={}, message={})",
+                    url,
+                    response.started(),
+                    response.researchCycleId(),
+                    response.sourceNicheId(),
+                    response.routineResearchStatus(),
+                    response.cycleStatus(),
+                    response.message());
             return response;
         } catch (RestClientException | IllegalStateException ex) {
             log.error("Erro ao executar etapa zero OPRM nichocnae (endpoint={})", url, ex);

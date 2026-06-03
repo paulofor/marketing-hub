@@ -38,41 +38,84 @@ public class BackendRoutineResearchOrchestratorService {
     /** Lista o próximo nicho CNAE pendente que seria selecionado pela etapa zero. */
     @Transactional(readOnly = true)
     public List<RecordRoutineResearchOrchestratorPending> listPending() {
-        return nicheCandidateRepository.findNextPendingRoutineResearchCandidatePreview(PageRequest.of(0, 1)).stream()
+        LOGGER.info("Listando prévia de pendência da etapa zero OPRM nichocnae (limit=1)");
+        List<RecordRoutineResearchOrchestratorPending> pendingCandidates = nicheCandidateRepository
+                .findNextPendingRoutineResearchCandidatePreview(PageRequest.of(0, 1))
+                .stream()
                 .map(this::toPending)
                 .toList();
+        LOGGER.info("Prévia de pendência da etapa zero OPRM nichocnae retornada (count={})", pendingCandidates.size());
+        return pendingCandidates;
     }
 
     /** Lista os últimos nichos processados pela etapa zero para acompanhamento no card operacional. */
     @Transactional(readOnly = true)
     public List<RecordRoutineResearchOrchestratorRecent> listRecentProcessed(int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 10));
-        return routineResearchCycleRepository.findAllByOrderByStartedAtDesc(PageRequest.of(0, safeLimit)).stream()
+        LOGGER.info("Listando ciclos recentes da etapa zero OPRM nichocnae (requestedLimit={}, safeLimit={})", limit, safeLimit);
+        List<RecordRoutineResearchOrchestratorRecent> recentCycles = routineResearchCycleRepository
+                .findAllByOrderByStartedAtDesc(PageRequest.of(0, safeLimit))
+                .stream()
                 .map(this::toRecentProcessed)
                 .toList();
+        LOGGER.info("Ciclos recentes da etapa zero OPRM nichocnae retornados (count={})", recentCycles.size());
+        return recentCycles;
     }
 
     /** Executa a etapa zero, marcando o nicho selecionado como em pesquisa e criando o ciclo pai. */
     @Transactional
     public RecordRoutineResearchOrchestratorResult runNext() {
+        LOGGER.info("Iniciando etapa zero OPRM nichocnae no backend: buscando próximo candidato pendente com bloqueio pessimista (limit=1)");
         List<OprmNicheCandidate> candidates = nicheCandidateRepository.findNextPendingRoutineResearchCandidate(
                 PageRequest.of(0, 1));
+        LOGGER.info("Busca de candidato pendente da etapa zero OPRM nichocnae concluída (count={})", candidates.size());
         if (candidates.isEmpty()) {
+            LOGGER.info("Nenhum candidato pendente encontrado para etapa zero OPRM nichocnae; ciclo não será criado.");
             return new RecordRoutineResearchOrchestratorResult(
                     false, null, null, null, null, null, null, null, null, ROUTINE_STATUS_PENDING,
                     "Nenhum nicho CNAE pendente com score disponível para pesquisa de rotina.");
         }
 
         OprmNicheCandidate candidate = candidates.getFirst();
+        LOGGER.info(
+                "Candidato selecionado para etapa zero OPRM nichocnae (sourceNicheId={}, cnaeCode={}, nicheName={}, score={}, routineStatus={}, lastRoutineResearchCycleId={})",
+                candidate.getId(),
+                candidate.getCnaeCode(),
+                candidate.getCandidateNicheName(),
+                candidate.getOpportunityScore(),
+                candidate.getRoutineResearchStatus(),
+                candidate.getLastRoutineResearchCycleId());
         Instant now = Instant.now();
         try {
             OprmRoutineResearchCycle cycle = createCycle(candidate, now);
             OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(cycle);
+            LOGGER.info(
+                    "Ciclo de pesquisa de rotina criado pela etapa zero OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, cycleStatus={}, triggerSource={}, startedAt={})",
+                    savedCycle.getId(),
+                    savedCycle.getSourceNicheId(),
+                    savedCycle.getCnaeCode(),
+                    savedCycle.getStatus(),
+                    savedCycle.getTriggerSource(),
+                    savedCycle.getStartedAt());
             candidate.setRoutineResearchStatus(ROUTINE_STATUS_RUNNING);
             candidate.setLastRoutineResearchCycleId(savedCycle.getId());
             candidate.setUpdatedAt(now);
             nicheCandidateRepository.save(candidate);
-            return toStartedResult(candidate, savedCycle);
+            LOGGER.info(
+                    "Candidato atualizado após criação do ciclo da etapa zero OPRM nichocnae (sourceNicheId={}, routineStatus={}, lastRoutineResearchCycleId={}, updatedAt={})",
+                    candidate.getId(),
+                    candidate.getRoutineResearchStatus(),
+                    candidate.getLastRoutineResearchCycleId(),
+                    candidate.getUpdatedAt());
+            RecordRoutineResearchOrchestratorResult result = toStartedResult(candidate, savedCycle);
+            LOGGER.info(
+                    "Etapa zero OPRM nichocnae concluída no backend (started={}, researchCycleId={}, sourceNicheId={}, routineStatus={}, cycleStatus={})",
+                    result.started(),
+                    result.researchCycleId(),
+                    result.sourceNicheId(),
+                    result.routineResearchStatus(),
+                    result.cycleStatus());
+            return result;
         } catch (RuntimeException ex) {
             LOGGER.error(
                     "Erro ao executar etapa zero do OPRM nichocnae (sourceNicheId={}, cnaeCode={}, nicheName={}, score={})",

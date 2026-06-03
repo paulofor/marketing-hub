@@ -22,7 +22,7 @@ class RoutineResearchOrchestratorInitialSchedulerTest {
     /** Confirma que o scheduler dispara a etapa zero na data operacional de 03/06/2026. */
     @Test
     void shouldRunInitialScheduleOnConfiguredDate() {
-        when(orchestratorService.runNext("SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_22H"))
+        when(orchestratorService.runNext("SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_04H"))
                 .thenReturn(new RoutineResearchOrchestratorOutput(
                         true,
                         101L,
@@ -35,21 +35,21 @@ class RoutineResearchOrchestratorInitialSchedulerTest {
                         "RUNNING",
                         "RESEARCH_RUNNING",
                         "Pesquisa iniciada."));
-        RoutineResearchOrchestratorInitialScheduler scheduler = newScheduler("2026-06-04T01:00:00Z");
+        RoutineResearchOrchestratorInitialScheduler scheduler = newScheduler("2026-06-03T07:00:00Z");
 
         scheduler.runInitialNichoCnaeSchedule();
 
-        verify(orchestratorService).runNext("SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_22H");
+        verify(orchestratorService).runNext("SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_04H");
     }
 
     /** Confirma que disparos anuais futuros do mesmo cron são ignorados pela guarda de data. */
     @Test
     void shouldIgnoreScheduleOutsideConfiguredDate() {
-        RoutineResearchOrchestratorInitialScheduler scheduler = newScheduler("2027-06-04T01:00:00Z");
+        RoutineResearchOrchestratorInitialScheduler scheduler = newScheduler("2027-06-03T07:00:00Z");
 
         scheduler.runInitialNichoCnaeSchedule();
 
-        verify(orchestratorService, never()).runNext("SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_22H");
+        verify(orchestratorService, never()).runNext("SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_04H");
     }
 
     /** Monta o scheduler com relógio fixo no fuso de São Paulo para validar o comportamento temporal. */

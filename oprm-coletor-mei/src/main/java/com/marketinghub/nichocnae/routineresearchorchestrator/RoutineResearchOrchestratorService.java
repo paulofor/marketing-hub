@@ -31,7 +31,10 @@ public class RoutineResearchOrchestratorService {
 
     /** Lista o candidato que o backend selecionaria na próxima execução da etapa zero. */
     public List<RoutineResearchOrchestratorPending> listPendingCandidates() {
-        return backendClient.listPendingCandidates();
+        log.info("Listando pendências da etapa zero OPRM nichocnae pelo coletor.");
+        List<RoutineResearchOrchestratorPending> pendingCandidates = backendClient.listPendingCandidates();
+        log.info("Pendências da etapa zero OPRM nichocnae recebidas (count={})", pendingCandidates.size());
+        return pendingCandidates;
     }
 
     /** Executa a etapa zero sob demanda, sem scheduler, e retorna o ciclo criado ou a ausência de pendências. */
@@ -41,10 +44,26 @@ public class RoutineResearchOrchestratorService {
                 new RoutineResearchOrchestratorInput(requestedBy),
                 Map.of("stage", "oprmRoutineResearchOrchestrator"));
         try {
+            log.info(
+                    "Iniciando execução da etapa zero OPRM nichocnae no coletor (executionId={}, requestedBy={}, metadata={})",
+                    execution.idJob(),
+                    requestedBy,
+                    execution.config());
             PipelineWorker<RoutineResearchOrchestratorInput, RoutineResearchOrchestratorOutput> worker = new PipelineWorker<>(
                     processor, artifactStore);
             StageResult<RoutineResearchOrchestratorOutput> result = worker.processResult(execution);
-            return result.output();
+            RoutineResearchOrchestratorOutput output = result.output();
+            log.info(
+                    "Etapa zero OPRM nichocnae finalizada no coletor (executionId={}, requestedBy={}, started={}, researchCycleId={}, sourceNicheId={}, routineStatus={}, cycleStatus={}, metrics={})",
+                    execution.idJob(),
+                    requestedBy,
+                    output.started(),
+                    output.researchCycleId(),
+                    output.sourceNicheId(),
+                    output.routineResearchStatus(),
+                    output.cycleStatus(),
+                    result.metrics());
+            return output;
         } catch (RuntimeException ex) {
             log.error("Erro ao executar sob demanda a etapa zero OPRM nichocnae (requestedBy={})", requestedBy, ex);
             throw ex;

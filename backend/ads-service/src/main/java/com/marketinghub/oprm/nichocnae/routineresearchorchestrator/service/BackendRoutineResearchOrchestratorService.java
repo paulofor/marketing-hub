@@ -38,7 +38,7 @@ public class BackendRoutineResearchOrchestratorService {
     /** Lista o próximo nicho CNAE pendente que seria selecionado pela etapa zero. */
     @Transactional(readOnly = true)
     public List<RecordRoutineResearchOrchestratorPending> listPending() {
-        return nicheCandidateRepository.findNextPendingRoutineResearchCandidate(PageRequest.of(0, 1)).stream()
+        return nicheCandidateRepository.findNextPendingRoutineResearchCandidatePreview(PageRequest.of(0, 1)).stream()
                 .map(this::toPending)
                 .toList();
     }

@@ -24,6 +24,16 @@ public interface OprmNicheCandidateRepository extends JpaRepository<OprmNicheCan
     List<OprmNicheCandidate> findNextPendingRoutineResearchCandidate(Pageable pageable);
 
     /**
+     * Lista sem bloqueio pessimista os melhores candidatos ainda pendentes de pesquisa de rotina para visualização.
+     */
+    @Query(
+            "select c from OprmNicheCandidate c "
+                    + "where (c.routineResearchStatus is null or c.routineResearchStatus = 'PENDING') "
+                    + "and c.opportunityScore is not null "
+                    + "order by c.opportunityScore desc, c.createdAt asc")
+    List<OprmNicheCandidate> findNextPendingRoutineResearchCandidatePreview(Pageable pageable);
+
+    /**
      * Lista candidatos de nicho vinculados a um CNAE específico.
      */
     List<OprmNicheCandidate> findByCnaeCodeOrderByOpportunityScoreDescCreatedAtDesc(String cnaeCode);

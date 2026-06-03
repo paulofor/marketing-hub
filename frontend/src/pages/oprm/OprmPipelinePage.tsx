@@ -4,14 +4,6 @@ import OprmModuleNavigation from "./OprmModuleNavigation";
 
 const pipelineStages = [
   {
-    number: "0",
-    title: "Orquestrador de Pesquisa",
-    technicalName: "oprmRoutineResearchOrchestrator",
-    description:
-      "Seleciona automaticamente o próximo nicho CNAE enriquecido com maior score e ainda sem pesquisa de rotina concluída.",
-    output: "Nicho marcado como RESEARCH_RUNNING e ciclo de pesquisa criado.",
-  },
-  {
     number: "1",
     title: "Ciclo de Pesquisa de Rotina",
     technicalName: "oprmRoutineResearchCycle",
@@ -25,7 +17,8 @@ const pipelineStages = [
     technicalName: "oprmNicheResearchSeedBuilder",
     description:
       "Usa IA para transformar o CNAE em nicho operacional, objetos comerciais, suposições iniciais e queries de pesquisa.",
-    output: "Seed do nicho e frases de pesquisa para rotina, dores, perguntas e ofertas.",
+    output:
+      "Seed do nicho e frases de pesquisa para rotina, dores, perguntas e ofertas.",
   },
   {
     number: "3",
@@ -57,7 +50,8 @@ const pipelineStages = [
     technicalName: "oprmRoutineSynthesizer",
     description:
       "Monta o cartão de rotina do nicho a partir dos sinais extraídos, sem criar oferta, campanha ou landing page.",
-    output: "oprm_niche_routine_card com rotina, dores, resultados e evidências.",
+    output:
+      "oprm_niche_routine_card com rotina, dores, resultados e evidências.",
   },
   {
     number: "7",
@@ -65,7 +59,8 @@ const pipelineStages = [
     technicalName: "oprmRoutineQualityGate",
     description:
       "Avalia se o card tem fontes, sinais, especificidade e confiança suficientes para seguir para hipótese comercial.",
-    output: "Decisão: pronto para hipótese, precisa de mais pesquisa ou ficou genérico.",
+    output:
+      "Decisão: pronto para hipótese, precisa de mais pesquisa ou ficou genérico.",
   },
 ];
 
@@ -81,8 +76,11 @@ function formatProcessedAt(value: string) {
 }
 
 export default function OprmPipelinePage() {
-  const { data: recentProcessed = [], isError, isLoading } =
-    useOprmRoutineResearchOrchestratorRecent(10);
+  const {
+    data: recentProcessed = [],
+    isError,
+    isLoading,
+  } = useOprmRoutineResearchOrchestratorRecent(10);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -104,8 +102,8 @@ export default function OprmPipelinePage() {
           <h2 className="h5 mb-2">Fluxo do pipeline de pesquisa da rotina</h2>
           <p className="text-secondary mb-0">
             Entrada: nicho CNAE com score alto. Saída esperada:
-            <strong> oprm_niche_routine_card</strong>, que será usado depois pelo
-            pipeline de hipótese comercial para trabalhar dor, resultado,
+            <strong> oprm_niche_routine_card</strong>, que será usado depois
+            pelo pipeline de hipótese comercial para trabalhar dor, resultado,
             mecanismo, prova e oferta.
           </p>
         </div>
@@ -130,7 +128,9 @@ export default function OprmPipelinePage() {
           </div>
 
           {isLoading ? (
-            <p className="text-secondary mb-0">Carregando nichos processados...</p>
+            <p className="text-secondary mb-0">
+              Carregando nichos processados...
+            </p>
           ) : isError ? (
             <div className="alert alert-warning mb-0" role="alert">
               Não foi possível carregar os últimos nichos processados pelo
@@ -138,8 +138,9 @@ export default function OprmPipelinePage() {
             </div>
           ) : recentProcessed.length === 0 ? (
             <div className="alert alert-info mb-0" role="status">
-              Nenhum nicho processado ainda por esta etapa. Quando o primeiro
-              agendamento criar um ciclo, ele aparecerá aqui com o horário.
+              Nenhum ciclo foi criado ainda. Os candidatos com score continuam
+              na fila; esta lista só será preenchida depois que o disparo
+              agendado ou manual da etapa zero criar o primeiro ciclo.
             </div>
           ) : (
             <div className="table-responsive">

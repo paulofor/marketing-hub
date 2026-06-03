@@ -45,7 +45,7 @@ describe("OPRM navigation", () => {
   it("renders Pipeline page on /oprm/pipeline route", () => {
     setup(<App />, ["/oprm/pipeline"]);
     expect(screen.getByText(/^Pipeline NichoCNAE$/)).toBeTruthy();
-    expect(screen.getByText(/^Orquestrador de Pesquisa$/)).toBeTruthy();
+    expect(screen.getByText(/^Últimos 10 nichos processados$/)).toBeTruthy();
     expect(screen.getByText(/^Ciclo de Pesquisa de Rotina$/)).toBeTruthy();
     expect(screen.getByText(/^Seed de Pesquisa do Nicho$/)).toBeTruthy();
     expect(screen.getByText(/^Gate de Qualidade$/)).toBeTruthy();

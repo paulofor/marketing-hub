@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
@@ -31,6 +32,26 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Mock private OprmRoutineResearchCycleRepository routineResearchCycleRepository;
 
     @InjectMocks private BackendRoutineResearchOrchestratorService service;
+
+    /** Deve listar o próximo candidato pendente sem usar a consulta com bloqueio pessimista. */
+    @Test
+    void listPendingUsesPreviewQueryWithoutPessimisticLock() {
+        OprmNicheCandidate candidate = candidate();
+        when(nicheCandidateRepository.findNextPendingRoutineResearchCandidatePreview(any(Pageable.class)))
+                .thenReturn(List.of(candidate));
+
+        List<RecordRoutineResearchOrchestratorPending> result = service.listPending();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().sourceNicheId()).isEqualTo(55L);
+        assertThat(result.getFirst().cnaeCode()).isEqualTo("9602501");
+        assertThat(result.getFirst().routineResearchStatus()).isEqualTo("PENDING");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(nicheCandidateRepository).findNextPendingRoutineResearchCandidatePreview(pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(1);
+        verifyNoInteractions(routineResearchCycleRepository);
+    }
 
     /** Deve listar os últimos nichos processados pela etapa zero com horário do ciclo criado. */
     @Test

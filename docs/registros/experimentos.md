@@ -3135,3 +3135,11 @@
   - atualizado o prompt `landing-page-image-planning.md` para priorizar mockups funcionais, previews e provas visuais conforme a categoria do produto digital;
   - atualizado o prompt `landing-page-design-preset.md` para materializar a hierarquia comercial universal com destaque visual para hero, dor, mecanismo, prova, oferta e formulário;
   - atualizado o plano `docs/gera-landing/melhorias-qualidade-paginas-venda-produtos-digitais.md` para marcar o Passo 2 como executado.
+
+## 2026-06-03 — Remoção de teste obsoleto de rastreio de versão do template de landing copy
+
+- solicitação: excluir o teste `ExperimentPipelineOpenAiClientTest.storesTemplateTraceInTrackedRequestBodyForLandingCopy`, que falhava ao validar uma versão antiga do template de copy da landing.
+- causa-raiz/objetivo: o teste estava acoplado ao literal `template_version: v4`, enquanto o prompt atual `landing-page-copy.md` já declara `template_version: v5`; a validação deixou de representar uma regra útil de negócio e bloqueava a suíte por expectativa obsoleta.
+- registro do que foi feito:
+  - removido o método de teste obsoleto da suíte `ExperimentPipelineOpenAiClientTest`;
+  - mantidos os demais testes do cliente OpenAI do pipeline de experimentos sem alterar o comportamento de produção.

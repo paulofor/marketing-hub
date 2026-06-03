@@ -632,3 +632,15 @@ banco estruturado + vector store + biblioteca de padrões + validação forte
 O vector store ajuda a encontrar referências semanticamente parecidas. O banco estruturado ajuda a filtrar por características objetivas. A biblioteca de padrões transforma as referências em conhecimento reutilizável. O assembler continua determinístico e não inventa nada.
 
 Essa combinação deve melhorar a qualidade das páginas geradas, reduzir retrabalho e criar uma vantagem acumulativa: quanto mais páginas analisadas e quanto mais páginas próprias forem geradas e medidas, melhor a inteligência comercial do sistema fica.
+
+## 20. Execução inicial no Marketing Hub — lote Hotmart de 400 produtos
+
+Primeiro passo implementado para começar pelo lote Hotmart já coletado:
+
+- endpoint operacional: `POST /api/mois/sales-library/hotmart-products:ingest`;
+- entrada mínima: `{ "workspaceId": "workspace-001", "limit": 400 }`;
+- quando `jobId` não é informado, o backend escolhe o job Hotmart mais recente persistido em `mois_collected_reference`;
+- origem dos dados: `mois_collected_reference` com `source = 'HOTMART'`;
+- URL priorizada: `sales_page_url`, com fallback em `product_url` e `url`;
+- destino: `mois_sales_library_url_ingest`, com criação de job `PENDING` em `mois_sales_library_processing_job` apenas quando a URL ainda não existia;
+- objetivo deste passo: transformar o lote bruto de produtos Hotmart em fila deduplicada de páginas para análise do MVP 1.

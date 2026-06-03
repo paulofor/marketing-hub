@@ -1,3 +1,18 @@
+
+## 2026-06-03 — Bootstrap Hotmart 400 para Biblioteca de Páginas de Vendas
+
+- implementado endpoint backend `POST /api/mois/sales-library/hotmart-products:ingest` para ingerir até 400 produtos Hotmart já persistidos em `mois_collected_reference` na Biblioteca de Páginas de Vendas.
+- o fluxo usa `sales_page_url` com fallback em `product_url` e `url`, grava/deduplica em `mois_sales_library_url_ingest` e cria jobs `PENDING` apenas para URLs novas.
+- atualizado o cânone MOIS para registrar o contrato de bootstrap operacional do MVP 1 da biblioteca.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/novos-modulos/mois-biblioteca-pagina-venda/plano-pipeline-biblioteca-paginas-venda-gerado-por-chatgpt.md`
+
 # Registros — Mois
 
 > 🔴 **Arquivo canônico principal (atual)** para registro operacional dos módulos coletores do MOIS.

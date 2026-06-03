@@ -37,6 +37,7 @@ public class ExperimentDto {
     private String landingPageImageAssets;
     private String landingPageDesignPreset;
     private String htmlGeraLanding;
+    private String landingPageQualityReview;
     private String landingPageDeliverables;
     private String landingPageHtml;
     private InstagramAccountDto instagramAccount;

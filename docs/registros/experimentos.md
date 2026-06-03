@@ -3143,3 +3143,11 @@
 - registro do que foi feito:
   - removido o método de teste obsoleto da suíte `ExperimentPipelineOpenAiClientTest`;
   - mantidos os demais testes do cliente OpenAI do pipeline de experimentos sem alterar o comportamento de produção.
+
+## 2026-06-03 — Quality Gate automático do GeraLanding
+- solicitação: executar o Passo 3 do plano de melhorias de qualidade de páginas de venda de produtos digitais, criando o Quality Gate da landing.
+- causa-raiz/objetivo: após o HTML final do GeraLanding, faltava uma validação persistida para medir qualidade comercial, bloquear publicações fracas e apontar quais etapas precisam ser reexecutadas.
+- foi feito: criada a etapa `landing-page-quality-review`, com schema JSON persistido em `experiment.landing_page_quality_review` e em `gera_landing_stage_execution.model_response`, contendo `score`, `targetAudienceSpecificity`, `blockingIssues`, `recommendedRegeneration` e `approvalRecommendation`.
+- integração: o Quality Gate passou a ser executado automaticamente após a montagem do `htmlGeraLanding` na conclusão do design preset, além de expor endpoint manual em `/api/experiments/{experimentId}/geralanding/quality-review/start`.
+- governança: a etapa ficou isolada no pacote backend `geralanding.qualityreview`, sem acoplar a revisão ao pipeline legado de experimento; o contrato público foi documentado no Swagger do GeraLanding.
+- testes: adicionados testes unitários cobrindo aprovação, bloqueio com recomendações de regeneração e consulta de detalhe da execução.

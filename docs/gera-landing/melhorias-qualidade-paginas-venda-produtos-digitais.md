@@ -222,10 +222,20 @@ Entregável do Passo 2:
 
 ### Passo 3 — Criar o Quality Gate
 
+**Status: executado em 2026-06-03.**
+
 - Definir schema de avaliação da landing.
 - Implementar a etapa `LANDING_PAGE_QUALITY_REVIEW` ou validação equivalente.
 - Persistir score, diagnóstico, bloqueios e recomendações.
 - Recomendar explicitamente quais etapas devem ser reexecutadas.
+
+Entregável do Passo 3:
+
+- criada a validação equivalente `landing-page-quality-review` dentro do módulo backend `geralanding.qualityreview`, como Quality Gate comercial após o HTML final;
+- persistência adicionada em `experiment.landing_page_quality_review` e nas execuções da etapa em `gera_landing_stage_execution`;
+- saída padronizada com `score`, `targetAudienceSpecificity`, `blockingIssues`, `recommendedRegeneration` e `approvalRecommendation`;
+- execução automática após a montagem do `htmlGeraLanding` e endpoint manual próprio do GeraLanding para reavaliar a landing;
+- recomendações de regeneração passaram a apontar explicitamente `LANDING_PAGE_COPY`, `LANDING_PAGE_IMAGE_PLANNING`, `LANDING_PAGE_DESIGN_PRESET`, `LANDING_PAGE_HTML` ou etapas correlatas conforme o bloqueio encontrado.
 
 ### Passo 4 — Exibir diagnóstico na interface administrativa
 

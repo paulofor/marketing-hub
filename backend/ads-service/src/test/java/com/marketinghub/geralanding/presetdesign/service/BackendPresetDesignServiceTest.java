@@ -17,6 +17,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
+import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.geralanding.presetdesign.service.detailStageExecution.RecordBackendPresetDesignDetalheDto;
 import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.GeraLandingPresetDesignExecutionSummaryResponse;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
@@ -37,7 +38,7 @@ class BackendPresetDesignServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendPresetDesignService service =
-                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class));
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class), mock(BackendQualityReviewService.class));
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(91L);
         when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
@@ -64,7 +65,7 @@ class BackendPresetDesignServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendPresetDesignService service =
-                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class));
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class), mock(BackendQualityReviewService.class));
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(77L);
         when(experiment.getName()).thenReturn("Experimento DesignPreset");
@@ -125,7 +126,7 @@ class BackendPresetDesignServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendPresetDesignService service =
-                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class));
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class), mock(BackendQualityReviewService.class));
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .idJob("job-design-preset".getBytes(StandardCharsets.UTF_8))
                 .status("INICIADO")
@@ -150,8 +151,9 @@ class BackendPresetDesignServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         DesignPresetProvisionalHtmlAssembler htmlAssembler = mock(DesignPresetProvisionalHtmlAssembler.class);
+        BackendQualityReviewService qualityReviewService = mock(BackendQualityReviewService.class);
         BackendPresetDesignService service =
-                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), htmlAssembler);
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), htmlAssembler, qualityReviewService);
         Experiment experiment = mock(Experiment.class);
         when(experiment.getLandingPageWireframe()).thenReturn("{\"landingPageWireframe\":{}}");
         when(experiment.getLandingPageCopy()).thenReturn("{\"landingPageCopy\":{}}");
@@ -191,6 +193,7 @@ class BackendPresetDesignServiceTest {
         verify(experiment).setHtmlGeraLanding("<html>GeraLanding Design Preset</html>");
         assertEquals("<html>GeraLanding Design Preset</html>", execution.getProvisionalHtml());
         verify(experimentRepository, times(2)).save(experiment);
+        verify(qualityReviewService).reviewAfterHtmlGeneration(experiment);
     }
 
     /** Deve marcar falha sem sobrescrever o artefato final de design preset no experimento. */
@@ -199,7 +202,7 @@ class BackendPresetDesignServiceTest {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendPresetDesignService service =
-                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class));
+                new BackendPresetDesignService(experimentRepository, executionRepository, new ObjectMapper(), mock(DesignPresetProvisionalHtmlAssembler.class), mock(BackendQualityReviewService.class));
         Experiment experiment = mock(Experiment.class);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(88L)

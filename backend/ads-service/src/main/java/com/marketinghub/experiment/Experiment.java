@@ -218,6 +218,9 @@ public class Experiment {
     @Column(name = "html_geralanding", columnDefinition = "LONGTEXT")
     private String htmlGeraLanding;
 
+    @Column(name = "landing_page_quality_review", columnDefinition = "LONGTEXT")
+    private String landingPageQualityReview;
+
     @Column(name = "landing_page_deliverables", columnDefinition = "LONGTEXT")
     private String landingPageDeliverables;
 

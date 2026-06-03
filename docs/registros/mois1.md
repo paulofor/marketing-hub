@@ -844,3 +844,16 @@ Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-03 — Cooldown de falhas na obtenção de HTML bruto
+- Corrigida a causa-raiz do reprocessamento improdutivo de URLs de sales page que já falharam por destino indisponível, DNS, 404, redirecionamento sem HTML ou timeout.
+- A seleção automática da etapa de captura agora ignora snapshots `FAILED` nas últimas 24 horas e URLs com 3 ou mais falhas acumuladas, salvo quando o acionamento for explícito com `force=true`.
+- As falhas persistidas passam a registrar categoria operacional no `error_message` e, quando disponível, `http_status`/`content_type`, facilitando diagnóstico na tela e auditoria pelo banco.
+- Atualizados testes unitários, Swagger e cânone MOIS para documentar o cooldown, o limite de falhas e as categorias de falha.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotServiceTest.java`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/registros/mois1.md`

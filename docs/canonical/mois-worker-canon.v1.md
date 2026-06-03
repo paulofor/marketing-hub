@@ -472,6 +472,10 @@ A primeira etapa do pipeline de páginas de venda deve separar responsabilidades
 3. A seleção da URL segue a prioridade `sales_page_url`, depois `product_url`, depois `url`.
 4. O HTML bruto persistido em `mois_collected_reference_html_capture.raw_html` é a entrada canônica para uma etapa posterior de parsing/análise, sem obrigar o worker a acessar diretamente o banco.
 5. A tabela `mois_collected_reference` permanece como fonte de produtos coletados; ela não deve armazenar o HTML bruto capturado.
+6. URLs com snapshot `FAILED` recente não devem ser reprocessadas imediatamente pelo fluxo automático; o cooldown operacional mínimo é de 24 horas para evitar loop improdutivo em destinos indisponíveis.
+7. URLs com 3 ou mais snapshots `FAILED` devem sair da seleção automática normal até uma revisão/acionamento forçado, preservando capacidade do pipeline para páginas que realmente entregam HTML útil.
+8. Falhas de captura devem ser categorizadas no `error_message` com prefixo operacional claro, por exemplo `HTTP_404`, `DESTINATION_DNS_FAILURE`, `REDIRECT_WITHOUT_HTML`, `TIMEOUT`, `FINAL_URL_UNAVAILABLE` ou `CAPTURE_EXCEPTION`.
+9. O acionamento `force=true` é reservado para revisão operacional e pode ignorar cooldown/limite de falhas, mantendo a decisão explícita e auditável.
 
 Contratos operacionais do backend:
 

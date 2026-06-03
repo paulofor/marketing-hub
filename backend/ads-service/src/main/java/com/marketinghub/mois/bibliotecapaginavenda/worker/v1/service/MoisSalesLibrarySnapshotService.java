@@ -41,6 +41,8 @@ public class MoisSalesLibrarySnapshotService {
     private static final int MAX_LIMIT = 20;
     private static final String ARTIFACT_RAW_HTML = "RAW_HTML";
     private static final String ARTIFACT_SCREENSHOT_PNG = "SCREENSHOT_PNG";
+    private static final Duration FAILED_RETRY_COOLDOWN = Duration.ofHours(24);
+    private static final int MAX_FAILED_ATTEMPTS_WITHOUT_FORCE = 3;
 
     private final JdbcTemplate jdbcTemplate;
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -169,35 +171,69 @@ public class MoisSalesLibrarySnapshotService {
         return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "FAILED");
     }
 
-    /** Seleciona páginas da biblioteca elegíveis para captura de HTML bruto. */
+    /**
+     * Seleciona páginas da biblioteca elegíveis para captura de HTML bruto, evitando reprocessar falhas recentes ou recorrentes.
+     */
     private List<PageToCapture> findPagesToCapture(String workspaceId, int limit, boolean force) {
         String forceClause = force ? "" : """
                 AND NOT EXISTS (
                     SELECT 1 FROM mois_sales_library_page_snapshot s
                     WHERE s.url_ingest_id = i.id AND s.status IN ('CAPTURED', 'FETCHING')
                 )
+                AND NOT EXISTS (
+                    SELECT 1 FROM mois_sales_library_page_snapshot recent_failure
+                    WHERE recent_failure.url_ingest_id = i.id
+                      AND recent_failure.status = 'FAILED'
+                      AND recent_failure.captured_at >= ?
+                )
+                AND (
+                    SELECT COUNT(1)
+                    FROM mois_sales_library_page_snapshot repeated_failure
+                    WHERE repeated_failure.url_ingest_id = i.id
+                      AND repeated_failure.status = 'FAILED'
+                ) < ?
                 """;
-        return jdbcTemplate.query("""
+        String query = """
                 SELECT i.id, i.url_canonical, i.title
                 FROM mois_sales_library_url_ingest i
                 WHERE i.workspace_id = ?
                 """ + forceClause + """
                 ORDER BY i.updated_at DESC, i.id DESC
                 LIMIT ?
-                """, (rs, rowNum) -> new PageToCapture(rs.getLong("id"), rs.getString("url_canonical"), rs.getString("title")), workspaceId, limit);
+                """;
+        if (force) {
+            return jdbcTemplate.query(query, this::mapPageToCapture, workspaceId, limit);
+        }
+        Timestamp retryCutoff = Timestamp.from(Instant.now().minus(FAILED_RETRY_COOLDOWN));
+        return jdbcTemplate.query(
+                query,
+                this::mapPageToCapture,
+                workspaceId,
+                retryCutoff,
+                MAX_FAILED_ATTEMPTS_WITHOUT_FORCE,
+                limit);
     }
 
+    /** Converte uma linha JDBC da URL ingerida na estrutura interna de captura. */
+    private PageToCapture mapPageToCapture(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+        return new PageToCapture(rs.getLong("id"), rs.getString("url_canonical"), rs.getString("title"));
+    }
+
+    /** Executa uma captura isolada convertendo qualquer exceção em snapshot FAILED auditável. */
     private MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem captureOneSafely(PageToCapture page) {
         try {
             return captureOne(page);
         } catch (Exception ex) {
-            log.warn("Falha ao capturar snapshot bruto da sales page MOIS. pageId={}, url={}", page.pageId(), page.urlCanonical(), ex);
-            Long snapshotId = persistFailedSnapshot(page, ex.getMessage());
+            String errorMessage = categorizeExceptionFailure(ex);
+            log.warn("Falha ao capturar snapshot bruto da sales page MOIS. pageId={}, url={}, categoria={}",
+                    page.pageId(), page.urlCanonical(), errorMessage, ex);
+            Long snapshotId = persistFailedSnapshot(page, errorMessage, null, null);
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
-                    page.pageId(), snapshotId, page.urlCanonical(), "FAILED", null, null, 0L, 0L, ex.getMessage());
+                    page.pageId(), snapshotId, page.urlCanonical(), "FAILED", null, null, 0L, 0L, errorMessage);
         }
     }
 
+    /** Busca a URL canônica, valida o HTML recebido e persiste os artefatos de snapshot quando a captura é útil. */
     private MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem captureOne(PageToCapture page) throws Exception {
         HttpRequest request = HttpRequest.newBuilder(URI.create(page.urlCanonical()))
                 .timeout(Duration.ofSeconds(30))
@@ -211,10 +247,11 @@ public class MoisSalesLibrarySnapshotService {
                 page.pageId(), page.urlCanonical(), response.statusCode(), contentType, truncate(rawHtml, 4000));
 
         if (response.statusCode() < 200 || response.statusCode() >= 400 || rawHtml.isBlank()) {
-            Long snapshotId = persistFailedSnapshot(page, "HTTP " + response.statusCode() + " sem HTML capturável");
+            String errorMessage = categorizeHttpFailure(response.statusCode(), rawHtml);
+            Long snapshotId = persistFailedSnapshot(page, errorMessage, response.statusCode(), contentType);
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
                     page.pageId(), snapshotId, page.urlCanonical(), "FAILED", null, response.statusCode(), 0L, 0L,
-                    "HTTP " + response.statusCode() + " sem HTML capturável");
+                    errorMessage);
         }
 
         String hash = sha256(rawHtml);
@@ -233,15 +270,17 @@ public class MoisSalesLibrarySnapshotService {
                 page.pageId(), snapshotId, page.urlCanonical(), "CAPTURED", hash, response.statusCode(), rawHtmlBytes.length, screenshot.length, null);
     }
 
-    private Long persistFailedSnapshot(PageToCapture page, String errorMessage) {
+    /** Persiste uma falha de captura preservando categoria, HTTP e tipo de conteúdo quando disponíveis. */
+    private Long persistFailedSnapshot(PageToCapture page, String errorMessage, Integer httpStatus, String contentType) {
         try {
-            return insertFailedSnapshot(page, truncate(errorMessage, 1000));
+            return insertFailedSnapshot(page, truncate(errorMessage, 1000), httpStatus, contentType);
         } catch (Exception persistEx) {
             log.warn("Falha ao persistir snapshot FAILED da sales page MOIS. pageId={}", page.pageId(), persistEx);
             return null;
         }
     }
 
+    /** Insere os metadados principais de um snapshot capturado com sucesso. */
     private long insertSnapshot(PageToCapture page, String hash, int httpStatus, String contentType) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
@@ -259,16 +298,23 @@ public class MoisSalesLibrarySnapshotService {
         return generatedId(keyHolder);
     }
 
-    private long insertFailedSnapshot(PageToCapture page, String errorMessage) {
+    /** Insere um snapshot FAILED com metadados suficientes para auditoria e cooldown de reprocessamento. */
+    private long insertFailedSnapshot(PageToCapture page, String errorMessage, Integer httpStatus, String contentType) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement("""
                     INSERT INTO mois_sales_library_page_snapshot
-                    (url_ingest_id, status, error_message, captured_at, created_at, updated_at)
-                    VALUES (?, 'FAILED', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                    (url_ingest_id, status, http_status, content_type, error_message, captured_at, created_at, updated_at)
+                    VALUES (?, 'FAILED', ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP())
                     """, Statement.RETURN_GENERATED_KEYS);
             ps.setLong(1, page.pageId());
-            ps.setString(2, errorMessage);
+            if (httpStatus == null) {
+                ps.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                ps.setInt(2, httpStatus);
+            }
+            ps.setString(3, truncate(contentType, 255));
+            ps.setString(4, errorMessage);
             return ps;
         }, keyHolder);
         return generatedId(keyHolder);
@@ -304,6 +350,7 @@ public class MoisSalesLibrarySnapshotService {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    /** Localiza snapshot já persistido para a mesma página e mesmo hash antes de criar duplicidade. */
     private Long findExistingSnapshot(long pageId, String hash) {
         List<Long> rows = jdbcTemplate.query("""
                 SELECT id FROM mois_sales_library_page_snapshot
@@ -313,6 +360,7 @@ public class MoisSalesLibrarySnapshotService {
         return rows.isEmpty() ? null : rows.get(0);
     }
 
+    /** Extrai a chave gerada pelo banco após um INSERT com GeneratedKeyHolder. */
     private long generatedId(KeyHolder keyHolder) {
         if (keyHolder.getKeys() != null && keyHolder.getKeys().get("id") instanceof Number id) {
             return id.longValue();
@@ -321,6 +369,7 @@ public class MoisSalesLibrarySnapshotService {
         return key == null ? 0L : key.longValue();
     }
 
+    /** Persiste um artefato textual associado ao snapshot. */
     private void insertTextArtifact(long snapshotId, String artifactType, String contentType, String contentText, long sizeBytes) {
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_library_snapshot_artifact
@@ -329,6 +378,7 @@ public class MoisSalesLibrarySnapshotService {
                 """, snapshotId, artifactType, contentType, contentText, sizeBytes);
     }
 
+    /** Persiste um artefato binário associado ao snapshot. */
     private void insertBinaryArtifact(long snapshotId, String artifactType, String contentType, byte[] contentBlob) {
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_library_snapshot_artifact
@@ -337,6 +387,7 @@ public class MoisSalesLibrarySnapshotService {
                 """, snapshotId, artifactType, contentType, contentBlob, contentBlob.length);
     }
 
+    /** Renderiza uma prévia PNG básica do HTML para auditoria visual da captura. */
     private byte[] renderBasicScreenshot(String rawHtml, String url) throws Exception {
         int width = 1280;
         int height = 1800;
@@ -361,11 +412,50 @@ public class MoisSalesLibrarySnapshotService {
         return output.toByteArray();
     }
 
+    /** Normaliza o limite de captura para manter a execução curta e previsível. */
     private int normalizeLimit(Integer limit) {
         if (limit == null) return DEFAULT_LIMIT;
         return Math.max(1, Math.min(limit, MAX_LIMIT));
     }
 
+    /** Classifica falhas HTTP para impedir que URLs indisponíveis sejam tratadas como pendência normal. */
+    private String categorizeHttpFailure(int httpStatus, String rawHtml) {
+        String preview = truncate(rawHtml == null ? "" : rawHtml.strip(), 200);
+        if (httpStatus == 404) {
+            return "HTTP_404: página final não encontrada";
+        }
+        if (httpStatus == 503 && preview.toLowerCase().contains("dns resolution failure")) {
+            return "DESTINATION_DNS_FAILURE: destino final indisponível por falha de DNS";
+        }
+        if (httpStatus >= 300 && httpStatus < 400) {
+            return "REDIRECT_WITHOUT_HTML: redirecionamento não entregou HTML capturável";
+        }
+        if (httpStatus >= 500) {
+            return "FINAL_URL_UNAVAILABLE: HTTP " + httpStatus + " sem HTML capturável";
+        }
+        if (preview.isBlank()) {
+            return "EMPTY_HTML: HTTP " + httpStatus + " sem corpo HTML capturável";
+        }
+        return "HTTP_NOT_CAPTURABLE: HTTP " + httpStatus + " sem HTML capturável";
+    }
+
+    /** Classifica exceções de captura para distinguir DNS, timeout, bloqueio e falhas genéricas. */
+    private String categorizeExceptionFailure(Exception ex) {
+        String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+        String normalized = message.toLowerCase();
+        if (ex instanceof java.net.http.HttpTimeoutException || normalized.contains("timeout")) {
+            return "TIMEOUT: captura excedeu o tempo limite";
+        }
+        if (ex instanceof java.net.UnknownHostException || normalized.contains("dns") || normalized.contains("unknownhost")) {
+            return "DESTINATION_DNS_FAILURE: " + message;
+        }
+        if (normalized.contains("too many redirects") || normalized.contains("redirect")) {
+            return "REDIRECT_FAILURE: " + message;
+        }
+        return "CAPTURE_EXCEPTION: " + message;
+    }
+
+    /** Calcula o hash SHA-256 do HTML bruto para versionamento e deduplicação. */
     private String sha256(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -377,11 +467,13 @@ public class MoisSalesLibrarySnapshotService {
         }
     }
 
+    /** Limita textos persistidos em colunas com tamanho máximo. */
     private String truncate(String value, int maxLength) {
         if (value == null) return null;
         return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 
+    /** Converte timestamps JDBC opcionais para Instant. */
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
     }

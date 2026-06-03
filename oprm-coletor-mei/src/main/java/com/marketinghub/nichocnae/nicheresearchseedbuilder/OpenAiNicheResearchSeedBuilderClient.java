@@ -2,7 +2,10 @@ package com.marketinghub.nichocnae.nicheresearchseedbuilder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +47,8 @@ public class OpenAiNicheResearchSeedBuilderClient {
 
     /** Gera seed e queries por IA, extrai o JSON estruturado e valida regras de contrato antes do retorno. */
     public OpenAiSeedBuilderResult generate(NicheResearchSeedBuilderPending input) {
-        if (properties.apiKey().isBlank()) {
+        String apiKey = resolveApiKey(input);
+        if (apiKey.isBlank()) {
             throw new IllegalStateException("OPRM nichocnae seed builder OpenAI API key não configurada.");
         }
 
@@ -52,7 +56,7 @@ public class OpenAiNicheResearchSeedBuilderClient {
         Map<String, Object> requestBody = buildRequestBody(prompt);
         String url = properties.baseUrl() + RESPONSES_PATH;
         try {
-            Map<String, Object> raw = responseBody(url, requestBody);
+            Map<String, Object> raw = responseBody(url, requestBody, apiKey);
             if (raw == null) {
                 throw new IllegalStateException("OpenAI retornou corpo vazio para a etapa dois OPRM nichocnae.");
             }
@@ -77,12 +81,33 @@ public class OpenAiNicheResearchSeedBuilderClient {
         }
     }
 
+    /** Resolve a chave OpenAI por variável direta ou pelo arquivo montado no mesmo host do ai-worker. */
+    String resolveApiKey(NicheResearchSeedBuilderPending input) {
+        if (!properties.apiKey().isBlank()) {
+            return properties.apiKey().trim();
+        }
+        if (properties.apiKeyFile().isBlank()) {
+            return "";
+        }
+        try {
+            return Files.readString(Path.of(properties.apiKeyFile())).trim();
+        } catch (IOException ex) {
+            log.error(
+                    "Erro ao ler arquivo de chave OpenAI da etapa dois OPRM nichocnae (apiKeyFile={}, researchCycleId={}, cnaeCode={})",
+                    properties.apiKeyFile(),
+                    input.researchCycleId(),
+                    input.cnaeCode(),
+                    ex);
+            throw new IllegalStateException("Falha ao ler arquivo de chave OpenAI da etapa dois OPRM nichocnae.", ex);
+        }
+    }
+
     /** Executa a requisição HTTP e isola o cast seguro do corpo retornado pelo RestClient. */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> responseBody(String url, Map<String, Object> requestBody) {
+    private Map<String, Object> responseBody(String url, Map<String, Object> requestBody, String apiKey) {
         Map<?, ?> response = restClient.post()
                 .uri(URI.create(url))
-                .header("Authorization", "Bearer " + properties.apiKey())
+                .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
                 .body(requestBody)
                 .retrieve()

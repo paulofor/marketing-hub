@@ -246,3 +246,5 @@
 - 2026-06-03 00:00:00 (UTC): canonizada a regra de execução do pipeline OPRM NichoCNAE para manter chamadas ao modelo dentro do próprio módulo executor OPRM (`oprm-coletor-mei`), seguindo `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`, sem usar `ai-worker` para essas etapas e preservando etapas plugáveis por contratos oficiais.
 
 - 2026-06-03 00:00:00 (UTC): adicionada inicialização agendada da etapa dois `oprmNicheResearchSeedBuilder` no próprio `oprm-coletor-mei`, com cron fixo a cada minuto, guarda local contra execução concorrente e chamada ao serviço de etapa que gera seed/queries por IA sem usar `ai-worker`.
+
+- 2026-06-03 00:00:00 (UTC): ajustada a publicação do `oprm-coletor-mei` para o mesmo host do `ai-worker` (`191.252.120.96`) e configurada a etapa `oprmNicheResearchSeedBuilder` para ler a chave OpenAI pelo arquivo montado `/run/secrets/openai_api_key`, reutilizando o segredo já provisionado no host sem commitar credenciais.

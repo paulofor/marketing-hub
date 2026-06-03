@@ -7,12 +7,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record NicheResearchSeedBuilderOpenAiProperties(
         String baseUrl,
         String apiKey,
+        String apiKeyFile,
         String model) {
 
     /** Normaliza valores padrão seguros para a chamada síncrona da Responses API. */
     public NicheResearchSeedBuilderOpenAiProperties {
         baseUrl = baseUrl == null || baseUrl.isBlank() ? "https://api.openai.com/v1" : baseUrl;
         apiKey = apiKey == null ? "" : apiKey;
+        apiKeyFile = apiKeyFile == null ? "" : apiKeyFile;
         model = model == null || model.isBlank() ? "gpt-4.1-mini" : model;
     }
 }

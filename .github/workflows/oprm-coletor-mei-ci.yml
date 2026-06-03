@@ -83,7 +83,7 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_HOST: 177.153.62.107
+      DEPLOY_HOST: 191.252.120.96
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.OPRM_COLETOR_MEI_REMOTE_PATH || '/root/oprm-coletor-mei' }}
       IMAGE_REGISTRY: ghcr.io

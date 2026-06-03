@@ -240,3 +240,5 @@
 - 2026-06-03 03:15:00 (UTC): ajustada a tela `/oprm/pipeline` para não duplicar a etapa zero `oprmRoutineResearchOrchestrator`: o acompanhamento dos últimos processados permanece no card operacional superior e a grade inferior passa a iniciar no ciclo de pesquisa de rotina. Também foi corrigida a consulta de prévia de pendências no backend para usar uma query sem bloqueio pessimista, evitando erro de transação read-only ao validar a fila antes do processamento.
 
 - 2026-06-03 03:44:00 (UTC): adicionados logs diagnósticos na etapa zero do pipeline OPRM NichoCNAE (`oprmRoutineResearchOrchestrator`) no coletor e no backend, cobrindo carregamento do scheduler, acionamento do cron, chamada ao backend, seleção de candidato, criação do ciclo e atualização do status do candidato para investigar por que a tela `/oprm/pipeline` continua sem ciclos criados.
+
+- 2026-06-03 03:55:00 (UTC): ajustado o agendamento inicial do pipeline OPRM NichoCNAE para executar hoje, 03/06/2026, às 04h no fuso `America/Sao_Paulo`, mantendo a guarda de data para bloquear reexecução anual acidental do mesmo cron.

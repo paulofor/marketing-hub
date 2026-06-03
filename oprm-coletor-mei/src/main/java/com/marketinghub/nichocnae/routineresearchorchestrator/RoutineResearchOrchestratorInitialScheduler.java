@@ -17,7 +17,7 @@ public class RoutineResearchOrchestratorInitialScheduler {
     private static final Logger log = LoggerFactory.getLogger(RoutineResearchOrchestratorInitialScheduler.class);
     private static final ZoneId SCHEDULE_ZONE = ZoneId.of("America/Sao_Paulo");
     private static final LocalDate INITIAL_SCHEDULE_DATE = LocalDate.of(2026, 6, 3);
-    private static final String REQUESTED_BY = "SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_22H";
+    private static final String REQUESTED_BY = "SCHEDULED_INITIAL_NICHO_CNAE_2026_06_03_04H";
 
     private final RoutineResearchOrchestratorService orchestratorService;
     private final Clock clock;
@@ -40,15 +40,15 @@ public class RoutineResearchOrchestratorInitialScheduler {
         ZonedDateTime now = ZonedDateTime.now(clock.withZone(SCHEDULE_ZONE));
         log.info(
                 "Scheduler inicial NichoCNAE carregado (cron={}, zone={}, expectedDate={}, currentDateTime={}, requestedBy={})",
-                "0 0 22 3 6 *",
+                "0 0 4 3 6 *",
                 SCHEDULE_ZONE,
                 INITIAL_SCHEDULE_DATE,
                 now,
                 REQUESTED_BY);
     }
 
-    /** Dispara a etapa zero do NichoCNAE em 03/06/2026 às 22h no horário de São Paulo. */
-    @Scheduled(cron = "0 0 22 3 6 *", zone = "America/Sao_Paulo")
+    /** Dispara a etapa zero do NichoCNAE em 03/06/2026 às 04h no horário de São Paulo. */
+    @Scheduled(cron = "0 0 4 3 6 *", zone = "America/Sao_Paulo")
     public void runInitialNichoCnaeSchedule() {
         ZonedDateTime currentDateTime = ZonedDateTime.now(clock.withZone(SCHEDULE_ZONE));
         LocalDate currentDate = currentDateTime.toLocalDate();
@@ -67,7 +67,7 @@ public class RoutineResearchOrchestratorInitialScheduler {
 
         try {
             log.info(
-                    "Iniciando agendamento inicial NichoCNAE às 22h America/Sao_Paulo (currentDateTime={}, requestedBy={}).",
+                    "Iniciando agendamento inicial NichoCNAE às 04h America/Sao_Paulo (currentDateTime={}, requestedBy={}).",
                     currentDateTime,
                     REQUESTED_BY);
             RoutineResearchOrchestratorOutput output = orchestratorService.runNext(REQUESTED_BY);

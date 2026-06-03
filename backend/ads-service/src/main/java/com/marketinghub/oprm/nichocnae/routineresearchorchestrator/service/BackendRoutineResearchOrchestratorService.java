@@ -3,6 +3,7 @@ package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -39,6 +40,15 @@ public class BackendRoutineResearchOrchestratorService {
     public List<RecordRoutineResearchOrchestratorPending> listPending() {
         return nicheCandidateRepository.findNextPendingRoutineResearchCandidate(PageRequest.of(0, 1)).stream()
                 .map(this::toPending)
+                .toList();
+    }
+
+    /** Lista os últimos nichos processados pela etapa zero para acompanhamento no card operacional. */
+    @Transactional(readOnly = true)
+    public List<RecordRoutineResearchOrchestratorRecent> listRecentProcessed(int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 10));
+        return routineResearchCycleRepository.findAllByOrderByStartedAtDesc(PageRequest.of(0, safeLimit)).stream()
+                .map(this::toRecentProcessed)
                 .toList();
     }
 
@@ -93,6 +103,20 @@ public class BackendRoutineResearchOrchestratorService {
         cycle.setCreatedAt(now);
         cycle.setUpdatedAt(now);
         return cycle;
+    }
+
+    /** Converte o ciclo criado pela etapa zero para o contrato de histórico recente. */
+    private RecordRoutineResearchOrchestratorRecent toRecentProcessed(OprmRoutineResearchCycle cycle) {
+        return new RecordRoutineResearchOrchestratorRecent(
+                cycle.getId(),
+                cycle.getSourceNicheId(),
+                cycle.getCnaeCode(),
+                cycle.getCnaeDescription(),
+                cycle.getNicheName(),
+                cycle.getSourceScore(),
+                cycle.getTriggerSource(),
+                cycle.getStatus(),
+                cycle.getStartedAt());
     }
 
     /** Converte o candidato selecionável para o contrato de pendência da etapa zero. */

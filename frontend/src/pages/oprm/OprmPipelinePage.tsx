@@ -1,3 +1,4 @@
+import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 
@@ -68,7 +69,21 @@ const pipelineStages = [
   },
 ];
 
+function formatProcessedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Horário indisponível";
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function OprmPipelinePage() {
+  const { data: recentProcessed = [], isError, isLoading } =
+    useOprmRoutineResearchOrchestratorRecent(10);
+
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
@@ -93,6 +108,90 @@ export default function OprmPipelinePage() {
             pipeline de hipótese comercial para trabalhar dor, resultado,
             mecanismo, prova e oferta.
           </p>
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+            <div>
+              <span className="badge text-bg-primary mb-2">
+                oprmRoutineResearchOrchestrator
+              </span>
+              <h2 className="h5 mb-1">Últimos 10 nichos processados</h2>
+              <p className="text-secondary mb-0">
+                Mostra os nichos que o orquestrador já selecionou, com o horário
+                em que o ciclo de pesquisa de rotina foi criado.
+              </p>
+            </div>
+            <span className="text-secondary small align-self-lg-start">
+              Saída esperada: RESEARCH_RUNNING + ciclo criado
+            </span>
+          </div>
+
+          {isLoading ? (
+            <p className="text-secondary mb-0">Carregando nichos processados...</p>
+          ) : isError ? (
+            <div className="alert alert-warning mb-0" role="alert">
+              Não foi possível carregar os últimos nichos processados pelo
+              orquestrador. Atualize a tela ou verifique o backend OPRM.
+            </div>
+          ) : recentProcessed.length === 0 ? (
+            <div className="alert alert-info mb-0" role="status">
+              Nenhum nicho processado ainda por esta etapa. Quando o primeiro
+              agendamento criar um ciclo, ele aparecerá aqui com o horário.
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Horário</th>
+                    <th scope="col">Nicho</th>
+                    <th scope="col">CNAE</th>
+                    <th scope="col" className="text-end">
+                      Score
+                    </th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentProcessed.map((item) => (
+                    <tr key={item.researchCycleId}>
+                      <td className="text-nowrap">
+                        {formatProcessedAt(item.processedAt)}
+                      </td>
+                      <td>
+                        <span className="fw-semibold d-block">
+                          {item.nicheName}
+                        </span>
+                        <span className="text-secondary small">
+                          Ciclo #{item.researchCycleId}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="text-nowrap">{item.cnaeCode}</span>
+                        <span className="text-secondary small d-block">
+                          {item.cnaeDescription}
+                        </span>
+                      </td>
+                      <td className="text-end">
+                        {item.sourceScore.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </td>
+                      <td>
+                        <span className="badge text-bg-light border text-secondary">
+                          {item.cycleStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </section>
 

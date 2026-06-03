@@ -3274,3 +3274,7 @@
   - `backend/ads-service/src/main/java/com/marketinghub/geralanding/presetdesign/provisorio/DesignPresetProvisionalHtmlProcessor.java`
   - `backend/ads-service/src/test/java/com/marketinghub/geralanding/DesignPresetProvisionalHtmlProcessorTest.java`
   - `docs/registros/experimentos.md`
+- 2026-06-03: Ajustada a etapa `landing-page-quality-review` do GeraLanding para reduzir o prompt textual enviado ao modelo de visão.
+  - decisão de regra: como a etapa envia screenshots renderizados da landing, a avaliação deve priorizar o visual da tela e não carregar um prompt extenso com blocos de artefatos/HTML.
+  - alteração aplicada: prompt de Quality Review simplificado para checklist visual curto e `QualityReviewBackendClient` passou a montar apenas contexto mínimo necessário para renderizar screenshots.
+  - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md`.

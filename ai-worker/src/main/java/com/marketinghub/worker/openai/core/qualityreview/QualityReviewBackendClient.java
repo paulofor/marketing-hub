@@ -1,6 +1,5 @@
 package com.marketinghub.worker.openai.core.qualityreview;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
@@ -12,26 +11,20 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: integrar a revisão visual do core OpenAI aos endpoints internos do backend. */
 public class QualityReviewBackendClient implements StageBackendPort<QualityReviewInput, QualityReviewOutput> {
 
-    private static final Logger log = LoggerFactory.getLogger(QualityReviewBackendClient.class);
     private static final String STATUS_STARTED = "INICIADO";
 
     private final WebClient webClient;
     private final QualityReviewWorkerProperties properties;
-    private final ObjectMapper objectMapper;
-
-    /** Inicializa o cliente com WebClient, propriedades da revisão visual e ObjectMapper para normalizar artefatos. */
+    /** Inicializa o cliente com WebClient, propriedades da revisão visual e ObjectMapper mantido por compatibilidade de configuração. */
     public QualityReviewBackendClient(WebClient.Builder builder, QualityReviewWorkerProperties properties, ObjectMapper objectMapper) {
         this.webClient = builder.build();
         this.properties = properties;
-        this.objectMapper = objectMapper;
     }
 
     /** Busca no backend os jobs de revisão visual iniciados e aptos para processamento pela OpenAI. */
@@ -91,35 +84,15 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         return new StageExecution<>(idJob, experimentId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input);
     }
 
-    /** Monta os dados do prompt com artefatos canônicos e HTML final disponíveis no backend. */
+    /** Monta somente o contexto mínimo necessário para renderizar screenshots e evitar prompt textual longo. */
     private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> experiment = asMap(pending.get("experiment"));
-        Map<String, Object> hypothesis = asMap(pending.get("hypothesis"));
-        Map<String, Object> framework = asMap(hypothesis.get("framework"));
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("experiment", experiment);
-        payload.put("framework", framework);
+        payload.put("experimentId", experiment.get("id"));
+        payload.put("experimentName", experiment.get("name"));
         payload.put("htmlGeraLanding", experiment.get("htmlGeraLanding"));
         payload.put("landingPageHtml", experiment.get("landingPageHtml"));
-        payload.put("landingPageImageAssets", experiment.get("landingPageImageAssets"));
-        payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(experiment, framework));
         return payload;
-    }
-
-    /** Monta o bloco textual de contexto estratégico exigido pelo prompt da revisão visual. */
-    private String buildCaseDataBlock(Map<String, Object> experiment, Map<String, Object> framework) {
-        StringBuilder builder = new StringBuilder("[CASE_DATA_BEGIN]\n");
-        appendCaseData(builder, "framework", framework);
-        appendCaseData(builder, "campaignAngle", experiment.get("campaignAngle"));
-        appendCaseData(builder, "adCopy", experiment.get("adCopy"));
-        appendCaseData(builder, "landingPageCopy", experiment.get("landingPageCopy"));
-        appendCaseData(builder, "landingPageWireframe", experiment.get("landingPageWireframe"));
-        appendCaseData(builder, "landingPageDesignPreset", experiment.get("landingPageDesignPreset"));
-        appendCaseData(builder, "landingPageImagePlanning", experiment.get("landingPageImagePlanning"));
-        appendCaseData(builder, "landingPageImageAssets", experiment.get("landingPageImageAssets"));
-        appendCaseData(builder, "htmlGeraLanding", experiment.get("htmlGeraLanding"));
-        builder.append("[CASE_DATA_END]");
-        return builder.toString();
     }
 
     /** Resolve o HTML final que deve ser renderizado em browser para gerar screenshots do Quality Review. */
@@ -149,27 +122,6 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block(properties.timeout());
-    }
-
-    /** Acrescenta uma chave do contexto no bloco CASE_DATA com renderização segura. */
-    private void appendCaseData(StringBuilder builder, String key, Object value) {
-        builder.append(key).append(": ").append(toJsonOrText(value).trim()).append('\n');
-    }
-
-    /** Renderiza objetos estruturados como JSON formatado e preserva textos simples. */
-    private String toJsonOrText(Object value) {
-        if (value == null) {
-            return "";
-        }
-        if (value instanceof String text) {
-            return text;
-        }
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
-        } catch (JsonProcessingException error) {
-            log.warn("Falha ao renderizar valor estruturado no contexto da revisão visual; usando toString como fallback", error);
-            return value.toString();
-        }
     }
 
     /** Extrai um mapa tipado quando o valor recebido é um objeto JSON. */

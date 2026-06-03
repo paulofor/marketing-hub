@@ -60,6 +60,9 @@ class QualityReviewPromptBuilderTest {
                 .filteredOn(item -> "input_image".equals(item.get("type")))
                 .extracting(item -> item.get("detail"))
                 .containsOnly("original");
+        assertThat(request.prompt())
+                .doesNotContain("CASE_DATA_BEGIN")
+                .doesNotContain("https://cdn.example.com/asset-hero.jpg");
         assertThat(body.get("model")).isEqualTo("gpt-5.5");
         assertThat(request.model()).isEqualTo("gpt-5.5");
     }

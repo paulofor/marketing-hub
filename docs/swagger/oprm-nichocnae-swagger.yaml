@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: OPRM Nicho CNAE Pipeline API
-  version: 0.4.0
+  version: 0.4.1
   description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
 paths:
   /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
@@ -11,6 +11,28 @@ paths:
       responses:
         '200':
           description: Próximo nicho pendente, quando existir.
+  /api/oprm/nichocnae/routine-research-orchestrator/recent-processed:
+    get:
+      summary: Lista os últimos nichos processados pela etapa zero para exibição no card operacional.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 10
+      responses:
+        '200':
+          description: Últimos nichos com ciclo de pesquisa criado pelo orquestrador.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutineResearchOrchestratorRecent'
   /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
     post:
       summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.
@@ -284,6 +306,37 @@ components:
         type: integer
         format: int64
   schemas:
+    RoutineResearchOrchestratorRecent:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+          example: '9602501'
+        cnaeDescription:
+          type: string
+          example: Cabeleireiros, manicure e pedicure
+        nicheName:
+          type: string
+          example: Cabeleireiros, manicures e pedicures
+        sourceScore:
+          type: number
+          format: double
+          example: 90.0
+        triggerSource:
+          type: string
+          example: AUTO_SCORE_QUEUE
+        cycleStatus:
+          type: string
+          example: RUNNING
+        processedAt:
+          type: string
+          format: date-time
     NicheResearchSeedBuilderPending:
       type: object
       properties:

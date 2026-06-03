@@ -3,10 +3,12 @@ package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -29,6 +31,29 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Mock private OprmRoutineResearchCycleRepository routineResearchCycleRepository;
 
     @InjectMocks private BackendRoutineResearchOrchestratorService service;
+
+    /** Deve listar os últimos nichos processados pela etapa zero com horário do ciclo criado. */
+    @Test
+    void listRecentProcessedReturnsLatestCyclesWithProcessedAt() {
+        OprmRoutineResearchCycle firstCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        OprmRoutineResearchCycle secondCycle = cycle(320L, 54L, "Lojas de roupas", "2026-06-02T22:00:00Z");
+        when(routineResearchCycleRepository.findAllByOrderByStartedAtDesc(any(Pageable.class)))
+                .thenReturn(List.of(firstCycle, secondCycle));
+
+        List<RecordRoutineResearchOrchestratorRecent> result = service.listRecentProcessed(25);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.getFirst().researchCycleId()).isEqualTo(321L);
+        assertThat(result.getFirst().sourceNicheId()).isEqualTo(55L);
+        assertThat(result.getFirst().nicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(result.getFirst().sourceScore()).isEqualByComparingTo("92.50");
+        assertThat(result.getFirst().processedAt()).isEqualTo(Instant.parse("2026-06-03T01:00:00Z"));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(routineResearchCycleRepository).findAllByOrderByStartedAtDesc(pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+        verifyNoInteractions(nicheCandidateRepository);
+    }
 
     /** Deve criar ciclo e marcar o candidato como em pesquisa quando existir nicho pendente. */
     @Test
@@ -80,6 +105,27 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.started()).isFalse();
         assertThat(result.researchCycleId()).isNull();
         assertThat(result.message()).contains("Nenhum nicho CNAE pendente");
+    }
+
+    /** Monta um ciclo de pesquisa de rotina criado pela etapa zero do pipeline. */
+    private OprmRoutineResearchCycle cycle(Long id, Long sourceNicheId, String nicheName, String startedAt) {
+        OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
+        cycle.setId(id);
+        cycle.setSourceNicheId(sourceNicheId);
+        cycle.setCnaeCode("9602501");
+        cycle.setCnaeDescription("Cabeleireiros, manicure e pedicure");
+        cycle.setNicheName(nicheName);
+        cycle.setSourceScore(new BigDecimal("92.50"));
+        cycle.setTriggerSource("AUTO_SCORE_QUEUE");
+        cycle.setStatus("RUNNING");
+        cycle.setTotalQueries(0);
+        cycle.setTotalSourceCandidates(0);
+        cycle.setTotalSourceSnapshots(0);
+        cycle.setTotalExtractedSignals(0);
+        cycle.setStartedAt(Instant.parse(startedAt));
+        cycle.setCreatedAt(Instant.parse(startedAt));
+        cycle.setUpdatedAt(Instant.parse(startedAt));
+        return cycle;
     }
 
     /** Monta um candidato de nicho CNAE com score para a etapa zero do pipeline. */

@@ -106,3 +106,18 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Um ciclo de score deve registrar quantidade de CNAEs lidos sem score, quantidade processada, quantidade com falha, versão da regra/algoritmo do OPRM e resumo final.
 - Um ciclo de enriquecimento deve registrar critério de seleção por score, quantidade selecionada, fontes externas acionadas, quantidade de candidatos gerados, quantidade com falha e resumo final.
 - O frontend deve consumir dados persistidos de ranking, score, ciclos e candidatos via backend, sem disparar cálculo de score como etapa obrigatória do usuário.
+
+## Regra obrigatória — execução das etapas NichoCNAE dentro do próprio módulo OPRM
+
+- As etapas do pipeline OPRM NichoCNAE que precisam acessar modelo de IA devem implementar esse acesso no próprio módulo executor do OPRM, atualmente `oprm-coletor-mei`, e não no `ai-worker`.
+- O padrão arquitetural obrigatório para essas etapas é o documento `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
+- Cada etapa concreta deve permanecer em pacote próprio, plugável e removível, dependendo apenas do núcleo genérico do pipeline, infraestrutura compartilhada permitida e contratos persistidos/DTOs oficiais.
+- É proibido acoplar uma etapa concreta a outra etapa concreta para avançar o fluxo; o encadeamento deve ocorrer por contratos persistidos, artefatos auditáveis, endpoints do backend ou outro contrato oficial.
+- O backend principal permanece como fonte de verdade dos dados e contratos; o módulo executor OPRM deve consumir e concluir etapas por endpoints do próprio OPRM/backend, sem acesso direto ao banco.
+- Chamadas ao modelo, prompts, validações e mapeamento de resposta devem ficar encapsulados no pacote da etapa concreta que usa IA, preservando isolamento, rastreabilidade e testabilidade.
+
+## Critério de efetividade — execução modular das etapas NichoCNAE
+
+- Alterações em etapas OPRM NichoCNAE com IA devem citar o pacote da etapa concreta no `oprm-coletor-mei` e o contrato backend consumido/concluído.
+- Testes de arquitetura/ArchUnit devem proteger que o núcleo do pipeline não dependa de etapas concretas e que etapas concretas não dependam entre si.
+- A implementação ou revisão de uma etapa deve validar se o avanço para a próxima etapa ocorre por dados/contratos oficiais, e não por chamada direta entre classes de etapas.

@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/** Orquestra manualmente a etapa dois do submódulo nichocnae para gerar seed e queries por IA. */
+/** Orquestra a etapa dois do submódulo nichocnae para gerar seed e queries por IA. */
 @Service
 public class NicheResearchSeedBuilderService {
     private static final Logger log = LoggerFactory.getLogger(NicheResearchSeedBuilderService.class);
@@ -39,7 +39,7 @@ public class NicheResearchSeedBuilderService {
         return backendClient.detailStageExecution(researchCycleId);
     }
 
-    /** Processa sob demanda os ciclos pendentes pela etapa dois e retorna os seeds gerados. */
+    /** Processa os ciclos pendentes pela etapa dois e retorna os seeds gerados. */
     public List<NicheResearchSeedBuilderOutput> processPending(String requestedBy) {
         List<NicheResearchSeedBuilderPending> pendingSeeds = backendClient.listPendingSeeds();
         return pendingSeeds.stream()

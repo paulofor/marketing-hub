@@ -242,3 +242,7 @@
 - 2026-06-03 03:44:00 (UTC): adicionados logs diagnósticos na etapa zero do pipeline OPRM NichoCNAE (`oprmRoutineResearchOrchestrator`) no coletor e no backend, cobrindo carregamento do scheduler, acionamento do cron, chamada ao backend, seleção de candidato, criação do ciclo e atualização do status do candidato para investigar por que a tela `/oprm/pipeline` continua sem ciclos criados.
 
 - 2026-06-03 03:55:00 (UTC): ajustado o agendamento inicial do pipeline OPRM NichoCNAE para executar hoje, 03/06/2026, às 04h no fuso `America/Sao_Paulo`, mantendo a guarda de data para bloquear reexecução anual acidental do mesmo cron.
+
+- 2026-06-03 00:00:00 (UTC): canonizada a regra de execução do pipeline OPRM NichoCNAE para manter chamadas ao modelo dentro do próprio módulo executor OPRM (`oprm-coletor-mei`), seguindo `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`, sem usar `ai-worker` para essas etapas e preservando etapas plugáveis por contratos oficiais.
+
+- 2026-06-03 00:00:00 (UTC): adicionada inicialização agendada da etapa dois `oprmNicheResearchSeedBuilder` no próprio `oprm-coletor-mei`, com cron fixo a cada minuto, guarda local contra execução concorrente e chamada ao serviço de etapa que gera seed/queries por IA sem usar `ai-worker`.

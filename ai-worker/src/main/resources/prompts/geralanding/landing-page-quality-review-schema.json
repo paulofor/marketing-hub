@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "targetAudienceSpecificity": { "type": "string", "enum": ["low", "medium", "high"] },
+    "blockingIssues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommendedRegeneration": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "LANDING_PAGE_COPY",
+          "LANDING_PAGE_WIREFRAME",
+          "LANDING_PAGE_IMAGE_PLANNING",
+          "LANDING_PAGE_IMAGE_GENERATION",
+          "LANDING_PAGE_DESIGN_PRESET",
+          "LANDING_PAGE_HTML",
+          "LANDING_PAGE_DELIVERABLES"
+        ]
+      }
+    },
+    "approvalRecommendation": {
+      "type": "string",
+      "enum": ["APPROVE_FOR_PUBLICATION", "REGENERATE_BEFORE_PUBLICATION"]
+    }
+  },
+  "required": [
+    "score",
+    "targetAudienceSpecificity",
+    "blockingIssues",
+    "recommendedRegeneration",
+    "approvalRecommendation"
+  ]
+}

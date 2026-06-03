@@ -8,7 +8,6 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
-import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.geralanding.presetdesign.service.detailStageExecution.RecordBackendPresetDesignDetalheDto;
 import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.GeraLandingPresetDesignExecutionSummaryResponse;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignExperiment;
@@ -43,20 +42,17 @@ public class BackendPresetDesignService {
     private final GeraLandingStageExecutionRepository executionRepository;
     private final ObjectMapper objectMapper;
     private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
-    private final BackendQualityReviewService qualityReviewService;
 
     /** Inicializa o serviço com os repositórios e montador necessários para consultar e finalizar execuções de design preset. */
     public BackendPresetDesignService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
             ObjectMapper objectMapper,
-            DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler,
-            BackendQualityReviewService qualityReviewService) {
+            DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.objectMapper = objectMapper;
         this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
-        this.qualityReviewService = qualityReviewService;
     }
 
 
@@ -240,10 +236,26 @@ public class BackendPresetDesignService {
             execution.setProvisionalHtml(htmlGeraLanding);
             executionRepository.save(execution);
             experimentRepository.save(experiment);
-            qualityReviewService.reviewAfterHtmlGeneration(experiment);
+            createQualityReviewExecution(experiment);
         }
     }
 
+    /** Agenda a revisão visual de qualidade como próxima etapa após a montagem do HTML final. */
+    private void createQualityReviewExecution(Experiment experiment) {
+        Instant now = Instant.now();
+        GeraLandingStageExecution qualityExecution = GeraLandingStageExecution.builder()
+                .experimentId(experiment.getId())
+                .experiment(experiment)
+                .stageCode("landing-page-quality-review")
+                .executionRequestedAt(now)
+                .createdAt(now)
+                .promptTemplateId("auto/html-geralanding")
+                .promptContent("Quality Gate visual da landing final via modelo de visão OpenAI.")
+                .status(STATUS_STARTED)
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .build();
+        executionRepository.save(qualityExecution);
+    }
 
     /** Monta o HTML final do GeraLanding usando os artefatos canônicos disponíveis no experimento. */
     private String assembleHtmlGeraLanding(GeraLandingStageExecution execution, Experiment experiment, String modelResponse) {

@@ -6,8 +6,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
-import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -24,7 +22,6 @@ class QualityReviewPromptBuilderTest {
     void buildShouldSendRenderedScreenshotsAsVisionInputs() throws Exception {
         QualityReviewPromptBuilder builder = new QualityReviewPromptBuilder(
                 objectMapper,
-                openAiProperties(),
                 workerProperties(),
                 input -> List.of(
                         "https://cdn.example.com/screens/job-quality-1-desktop.jpg",
@@ -59,18 +56,12 @@ class QualityReviewPromptBuilderTest {
                 .filteredOn(item -> "input_image".equals(item.get("type")))
                 .extracting(item -> item.get("image_url"))
                 .doesNotContain("https://cdn.example.com/asset-hero.jpg");
-    }
-
-    /** Cria propriedades OpenAI mínimas para montar o request do teste. */
-    private OpenAiClientProperties openAiProperties() {
-        return new OpenAiClientProperties(
-                "test-key",
-                "https://api.openai.com/v1",
-                "gpt-5.2",
-                Duration.ofSeconds(5),
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                false);
+        assertThat(content)
+                .filteredOn(item -> "input_image".equals(item.get("type")))
+                .extracting(item -> item.get("detail"))
+                .containsOnly("original");
+        assertThat(body.get("model")).isEqualTo("gpt-5.5");
+        assertThat(request.model()).isEqualTo("gpt-5.5");
     }
 
     /** Cria propriedades operacionais mínimas para o builder quality-review. */
@@ -83,6 +74,8 @@ class QualityReviewPromptBuilderTest {
                 "prompts/geralanding/landing-page-quality-review.md",
                 "prompts/geralanding/landing-page-quality-review-schema.json",
                 "experiment_pipeline_landing_page_quality_review",
+                "gpt-5.5",
+                "original",
                 Duration.ofSeconds(5),
                 "/usr/bin/chromium",
                 Duration.ofSeconds(5));

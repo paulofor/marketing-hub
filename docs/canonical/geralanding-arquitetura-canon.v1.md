@@ -43,9 +43,10 @@ Regras arquiteturais refletidas (ArchUnit):
 
 ## Quality Review visual
 
-- A etapa `landing-page-quality-review` é o Quality Gate comercial final do GeraLanding e deve usar modelo de visão da OpenAI como avaliador principal da experiência renderizada.
+- A etapa `landing-page-quality-review` é o Quality Gate comercial final do GeraLanding e deve usar modelo com capacidade de visão da OpenAI como avaliador principal da experiência renderizada.
+- O modelo da etapa deve ser configurado de forma dedicada em `qualityreview.worker.vision-model`, sem depender do `openai.model` global usado por etapas textuais; o padrão deve apontar para um modelo OpenAI multimodal com entrada de imagem.
 - O backend deve disponibilizar o `htmlGeraLanding` final na fila da etapa; a renderização visual deve produzir screenshots desktop e mobile em browser/headless antes da chamada ao modelo, mantendo validações determinísticas apenas como pré-check técnico de HTML, renderização e ausência de metadados proibidos.
-- O Worker AI deve processar a etapa pelo contrato canônico `pending` → `recebePrompt` → `recebeResposta`, renderizar o HTML final em browser/headless quando o backend ainda não trouxer screenshots prontos, publicar os screenshots e enviá-los ao modelo de visão com contexto textual mínimo dos artefatos canônicos para avaliar Dor → Resultado → Mecanismo → Prova → Oferta.
+- O Worker AI deve processar a etapa pelo contrato canônico `pending` → `recebePrompt` → `recebeResposta`, renderizar o HTML final em browser/headless quando o backend ainda não trouxer screenshots prontos, publicar os screenshots e enviá-los como `input_image` da Responses API ao modelo de visão com contexto textual mínimo dos artefatos canônicos para avaliar Dor → Resultado → Mecanismo → Prova → Oferta.
 - A resposta da etapa deve permanecer estruturada com `score`, `targetAudienceSpecificity`, `blockingIssues`, `recommendedRegeneration` e `approvalRecommendation`, indicando explicitamente as etapas que precisam ser reexecutadas.
 
 ## 2) Worker AI — núcleo OpenAI (`ai-worker / com.marketinghub.worker.openai.core`)

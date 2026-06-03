@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
-import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 import java.io.IOException;
@@ -24,7 +23,6 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
     private static final Logger log = LoggerFactory.getLogger(QualityReviewPromptBuilder.class);
 
     private final ObjectMapper objectMapper;
-    private final OpenAiClientProperties openAiProperties;
     private final QualityReviewWorkerProperties properties;
     private final QualityReviewScreenshotService screenshotService;
     private final PromptTemplateResolver promptTemplateResolver;
@@ -32,11 +30,9 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
     /** Inicializa o builder com serializador, propriedades OpenAI, screenshots e configurações da revisão visual. */
     public QualityReviewPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             QualityReviewWorkerProperties properties,
             QualityReviewScreenshotService screenshotService) {
         this.objectMapper = objectMapper;
-        this.openAiProperties = openAiProperties;
         this.properties = properties;
         this.screenshotService = screenshotService;
         this.promptTemplateResolver = new PromptTemplateResolver(this::loadResource, this::toJsonOrText);
@@ -56,7 +52,7 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
         String schemaJson = loadResource(properties.schemaResource());
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson, screenshotUrls);
         return new OpenAiRequest(
-                openAiProperties.model(),
+                properties.visionModel(),
                 prompt,
                 requestBodyJson,
                 properties.schemaName(),
@@ -91,7 +87,7 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
             List<Map<String, Object>> content = new ArrayList<>();
             content.add(Map.of("type", "input_text", "text", prompt));
             for (String screenshotUrl : screenshotUrls) {
-                content.add(Map.of("type", "input_image", "image_url", screenshotUrl, "detail", "high"));
+                content.add(Map.of("type", "input_image", "image_url", screenshotUrl, "detail", properties.imageDetail()));
             }
 
             Map<String, Object> message = new LinkedHashMap<>();
@@ -99,7 +95,7 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
             message.put("content", content);
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", openAiProperties.model());
+            body.put("model", properties.visionModel());
             body.put("input", List.of(message));
             body.put("text", text);
             return objectMapper.writeValueAsString(body);

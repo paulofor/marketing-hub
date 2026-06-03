@@ -78,6 +78,8 @@ class QualityReviewBackendClientTest {
                 "prompts/geralanding/landing-page-quality-review.md",
                 "prompts/geralanding/landing-page-quality-review-schema.json",
                 "experiment_pipeline_landing_page_quality_review",
+                "gpt-5.5",
+                "original",
                 Duration.ofSeconds(5),
                 "/usr/bin/chromium",
                 Duration.ofSeconds(5));

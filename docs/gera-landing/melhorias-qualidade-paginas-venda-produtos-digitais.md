@@ -187,6 +187,8 @@ Saída sugerida:
 
 ### Passo 1 — Generalizar o padrão de qualidade da landing
 
+**Status: executado em 2026-06-03.**
+
 - Transformar o aprendizado do Experimento 36 em critério universal de qualidade para qualquer produto digital.
 - Definir critérios de avaliação independentes de nicho.
 - Tratar casos específicos apenas como exemplos, nunca como regra fixa do pipeline.
@@ -194,10 +196,29 @@ Saída sugerida:
 
 ### Passo 2 — Atualizar prompts do GeraLanding
 
+- Registrar o padrão universal no cânone de procedimento de experimento/Gera Landing, para que ele seja fonte de verdade antes dos próximos passos de prompt, Quality Gate, interface e publicação.
+
+Entregável do Passo 1:
+
+- o padrão universal ficou formalizado no cânone como regra mandatória de qualidade comercial da landing;
+- o Experimento 36 ficou classificado como caso de referência, não como regra fixa;
+- os próximos passos devem usar esse padrão para orientar prompts, avaliação automática e aprovação de landing.
+
+### Passo 2 — Atualizar prompts do GeraLanding
+
+**Status: executado em 2026-06-03.**
+
 - Ajustar o prompt de wireframe para exigir prova concreta adequada ao tipo de produto.
 - Ajustar o prompt de copy para reforçar dor, resultado, mecanismo, prova, oferta e CTA.
 - Ajustar o prompt de imagem para priorizar mockups funcionais e previews da entrega.
 - Ajustar o prompt de design preset para aumentar percepção premium, destaque do hero, prova e formulário.
+
+Entregável do Passo 2:
+
+- o prompt de wireframe passou a exigir a narrativa Dor → Resultado → Mecanismo → Prova → Oferta → Ação e a seleção de prova adequada ao tipo de produto digital;
+- o prompt de copy passou a reforçar especificidade do nicho, mecanismo plausível, prova de valor e CTA orientado ao benefício;
+- o prompt de imagem passou a direcionar mockups/previews conforme a categoria do produto digital;
+- o prompt de design preset passou a materializar a hierarquia comercial universal com destaque visual para hero, prova, oferta e formulário.
 
 ### Passo 3 — Criar o Quality Gate
 

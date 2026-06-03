@@ -3114,3 +3114,24 @@
   - generalizados os critérios de qualidade para páginas de venda de qualquer produto digital, mantendo o eixo Dor → Resultado → Mecanismo → Prova → Oferta → Ação;
   - documentado o Passo 1 como generalização do padrão de qualidade, antes de ajustes de prompt, Quality Gate, interface, publicação e medição;
   - mantido o Experimento 36 apenas como caso de referência, sem limitar o desenho do sistema.
+
+## 2026-06-03 — Execução do Passo 1 do padrão universal de landing
+
+- solicitação: executar o Passo 1 do plano de qualidade universal das landing pages.
+- causa-raiz/objetivo: transformar o aprendizado levantado a partir do Experimento 36 em regra universal do Marketing Hub, sem prender o GeraLanding a um nicho, produto ou caso específico.
+- registro do que foi feito:
+  - atualizado o cânone `docs/canonical/procedimento-experimento-canon.v1.md` com a regra mandatória de padrão universal de qualidade comercial da landing;
+  - formalizado que toda landing deve seguir o eixo Dor → Resultado → Mecanismo → Prova → Oferta → Ação;
+  - definidos critérios universais obrigatórios: promessa, especificidade do nicho, mecanismo plausível, prova concreta, oferta percebida, CTA orientado ao benefício, hierarquia visual/mobile e coerência experimental;
+  - atualizado o plano `docs/gera-landing/melhorias-qualidade-paginas-venda-produtos-digitais.md` para marcar o Passo 1 como executado e apontar os próximos passos.
+
+## 2026-06-03 — Execução do Passo 2 do padrão universal de landing
+
+- solicitação: executar o Passo 2 do plano de qualidade universal das landing pages.
+- causa-raiz/objetivo: ajustar os prompts do GeraLanding para que o padrão universal formalizado no cânone seja aplicado na geração estrutural, textual, visual e de acabamento das páginas de venda.
+- registro do que foi feito:
+  - atualizado o prompt `landing-page-wireframe.md` para exigir a narrativa Dor → Resultado → Mecanismo → Prova → Oferta → Ação e a escolha de prova adequada ao tipo de produto digital;
+  - atualizado o prompt `landing-page-copy.md` para reforçar especificidade do nicho, mecanismo plausível, prova de valor e CTA orientado ao benefício;
+  - atualizado o prompt `landing-page-image-planning.md` para priorizar mockups funcionais, previews e provas visuais conforme a categoria do produto digital;
+  - atualizado o prompt `landing-page-design-preset.md` para materializar a hierarquia comercial universal com destaque visual para hero, dor, mecanismo, prova, oferta e formulário;
+  - atualizado o plano `docs/gera-landing/melhorias-qualidade-paginas-venda-produtos-digitais.md` para marcar o Passo 2 como executado.

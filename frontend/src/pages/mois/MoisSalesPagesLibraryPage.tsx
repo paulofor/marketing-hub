@@ -52,9 +52,14 @@ export default function MoisSalesPagesLibraryPage() {
           <PageTitle>Biblioteca de Páginas de Vendas</PageTitle>
           <p className="text-secondary mb-0">Tabela consolidada com cada produto coletado e a fase atual no fluxo canônico.</p>
         </div>
-        <Link className="btn btn-outline-secondary" to="/mois">
-          Voltar ao workspace
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          <Link className="btn btn-primary" to="/mois/sales-pages-library/pipeline">
+            Pipeline
+          </Link>
+          <Link className="btn btn-outline-secondary" to="/mois">
+            Voltar ao workspace
+          </Link>
+        </div>
       </header>
 
       {summary ? (

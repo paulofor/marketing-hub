@@ -416,7 +416,34 @@ A tabela `ai_worker_generation` armazena registros genéricos de geração por I
 | PK | `id` | Identificação do registro. |
 | Índice | `domain`, `created_at DESC` | Consulta por domínio e recência. |
 
-## 10. Separação canônica por tipo de dado persistido
+## 10. Tabela `openai_model`
+
+A tabela `openai_model` mantém o catálogo financeiro dos modelos OpenAI usado para estimar custo antes/depois das chamadas de IA. Os preços são valores oficiais por 1 milhão de tokens e devem ser sincronizados automaticamente todos os dias às 04:00 pelo backend, usando a página oficial de preços da OpenAI como fonte.
+
+| Coluna | Tipo lógico | Natureza do dado de IA | Finalidade no modelo |
+|---|---|---|---|
+| `id` | `BIGINT` | chave | Identificador do modelo no catálogo interno. |
+| `name` | `VARCHAR(255)` | metadado técnico | Nome exibido do modelo. |
+| `code` | `VARCHAR(128)` | metadado técnico | Código oficial do modelo usado em chamadas OpenAI. |
+| `price_input_standard` | `DECIMAL(12,5)` | telemetria financeira | Preço standard de entrada por 1 milhão de tokens. |
+| `price_input_cached_standard` | `DECIMAL(12,5)` | telemetria financeira | Preço standard de entrada em cache por 1 milhão de tokens. |
+| `price_output_standard` | `DECIMAL(12,5)` | telemetria financeira | Preço standard de saída por 1 milhão de tokens. |
+| `price_input_batch` | `DECIMAL(12,5)` | telemetria financeira | Preço batch de entrada por 1 milhão de tokens. |
+| `price_input_cached_batch` | `DECIMAL(12,5)` | telemetria financeira | Preço batch de entrada em cache por 1 milhão de tokens. |
+| `price_output_batch` | `DECIMAL(12,5)` | telemetria financeira | Preço batch de saída por 1 milhão de tokens. |
+| `accepts_image_input` | `BOOLEAN` | capacidade operacional | Indica se o modelo aceita imagem como entrada. |
+| `pricing_source` | `VARCHAR(255)` | auditoria | Fonte oficial usada na última sincronização automática de preços. |
+| `last_pricing_sync_at` | `DATETIME(6)` | auditoria | Data/hora da última sincronização automática de preços. |
+| `created_at`, `updated_at` | `DATETIME` | auditoria | Datas de criação e atualização do cadastro. |
+
+### 10.1 Regras operacionais do catálogo financeiro
+
+1. A sincronização automática deve atualizar modelos existentes por `code` e criar novos modelos textuais/reasoning quando aparecerem na fonte oficial.
+2. O backend deve ler o token OpenAI de `OPENAI_API_KEY` ou, quando ausente, do arquivo seguro `/root/infra/openai-token/openai_api_key`.
+3. Quando a fonte oficial não publicar preço de cache, persistir `0` para manter o contrato numérico explícito e evitar JSON dentro de JSON ou metadado ambíguo.
+4. A rotina deve registrar logs de sucesso e logs com stack trace completo em caso de falha, sem expor o token.
+
+## 11. Separação canônica por tipo de dado persistido
 
 | Tipo de dado | Colunas/tabelas principais | Observação de modelo |
 |---|---|---|
@@ -430,7 +457,7 @@ A tabela `ai_worker_generation` armazena registros genéricos de geração por I
 | Estado operacional | `status`, `stage`, `worker_id`, `error_message`, `started_at`, `finished_at` | Controle de fila, execução e diagnóstico. |
 | Vínculo de origem | `hypothesis_id`, `experiment_id`, `section`, `planning_item_key`, `reference_id`, `domain` | Permite rastrear a que objeto a geração pertence. |
 
-## 11. Cardinalidades canônicas
+## 12. Cardinalidades canônicas
 
 | Relação | Cardinalidade | Significado no modelo |
 |---|---|---|
@@ -441,7 +468,7 @@ A tabela `ai_worker_generation` armazena registros genéricos de geração por I
 | `experiment -> framework_image_generation_job` | 1:N | Um experimento pode ter vários jobs de imagem. |
 | `ai_worker_generation.domain/reference_id -> objeto de domínio` | N:1 lógico | Vínculo genérico, sem FK física canônica obrigatória. |
 
-## 12. Regras canônicas de localização de dados
+## 13. Regras canônicas de localização de dados
 
 1. **Hipótese consolidada** fica em `hypothesis`.
 2. **Histórico de geração/refinamento de framework da hipótese** fica em `hypothesis_framework_generation_job`.
@@ -452,9 +479,10 @@ A tabela `ai_worker_generation` armazena registros genéricos de geração por I
 7. **Resposta bruta do modelo** deve ficar em coluna `raw_response` de tabela de job/auditoria, não em coluna de artefato consolidado.
 8. **Conteúdo normalizado de uma chamada** deve ficar em `response_content` quando existir tabela de job especializada.
 9. **Artefato funcional atual do domínio** deve ficar no campo consolidado do objeto de domínio (`hypothesis` ou `experiment`).
-10. **Modelo, tokens, custo, worker, status e erro** são metadados técnicos e pertencem às colunas de auditoria/job, exceto campos agregados já existentes em `hypothesis` e `experiment`.
+10. **Catálogo financeiro de modelos OpenAI** deve ficar em `openai_model`, com preços por 1 milhão de tokens, fonte e data da última sincronização.
+11. **Modelo, tokens, custo, worker, status e erro** são metadados técnicos e pertencem às colunas de auditoria/job, exceto campos agregados já existentes em `hypothesis` e `experiment`.
 
-## 13. Documentos relacionados de modelo de dados
+## 14. Documentos relacionados de modelo de dados
 
 - `docs/modelo-dados-hipotese.md`
 - `docs/modelo-dados-experimento.md`

@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-openai-model-pricing-sync-metadata
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: openai_model
+              columnName: last_pricing_sync_at
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: >
+              ALTER TABLE openai_model
+              ADD COLUMN pricing_source VARCHAR(255) NULL
+              COMMENT 'Fonte oficial usada na ultima sincronizacao automatica de precos'
+              AFTER accepts_image_input,
+              ADD COLUMN last_pricing_sync_at DATETIME(6) NULL
+              COMMENT 'Data e hora da ultima sincronizacao automatica de precos'
+              AFTER pricing_source;

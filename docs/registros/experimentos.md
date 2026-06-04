@@ -3382,3 +3382,9 @@
 - causa-raiz/objetivo: a correção anterior protegia o desktop, mas o uso amplo de `!important` desktop e a exigência de `minItems` no schema poderiam induzir estilos artificiais ou disputar com a experiência mobile que já estava boa.
 - correção aplicada: o prompt passou a declarar explicitamente mobile como prioridade comercial, a correção desktop voltou a preferir remoção de classes conflitantes em vez de `!important` padrão, e o schema retornou a permitir listas de estilo sem `minItems` para não forçar classes artificiais.
 - impacto esperado: manter os ganhos de CTA/formulário/grid desktop sem degradar responsividade, leitura e conversão no mobile.
+## 2026-06-04 — Remoção do catálogo oficial OpenAI sem token
+
+- solicitação: retirar da tela `/openai-models` o bloco/botão “Atualizar catálogo”, pois a importação direta da OpenAI não funciona no ambiente sem token.
+- causa-raiz/objetivo: o endpoint `/models` da OpenAI exige autenticação Bearer; manter o botão ativo criava uma ação que aparentava sincronizar dados oficiais, mas falhava quando `OPENAI_API_KEY` não estava configurada.
+- correção aplicada: removido o card “Catálogo oficial (OpenAI)” e a chamada frontend `/api/modelos/openai/catalogo/v1`, preservando apenas a tabela do catálogo interno `openai_model`, que é a fonte operacional dos preços por 1 milhão de tokens.
+- impacto esperado: a tela fica mais simples e evita uma ação indisponível, mantendo foco no cadastro interno de preços usado nos cálculos de custo dos experimentos.

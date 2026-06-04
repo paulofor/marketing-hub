@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MoisSalesLibraryService {
 
     private static final String JOB_STATUS_PENDING = "PENDING";
+    private static final String JOB_STATUS_FETCHING = "FETCHING";
     private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
 
     private final JdbcTemplate jdbcTemplate;
@@ -44,22 +45,43 @@ public class MoisSalesLibraryService {
      */
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(MoisSalesLibraryDtos.SalesLibraryClaimRequest request) {
+        String normalizedSource = request.source().trim().toUpperCase(Locale.ROOT);
+        String claimedBy = UUID.randomUUID().toString();
         List<MoisSalesLibraryDtos.SalesLibraryClaimedJob> rows = jdbcTemplate.query("""
-                SELECT j.id AS job_id, i.id AS page_id, i.url_canonical, i.title
-                FROM mois_sales_library_processing_job j
-                JOIN mois_sales_library_url_ingest i ON i.id = j.url_ingest_id
-                WHERE j.status = 'PENDING' AND i.workspace_id = ? AND i.source = ?
-                ORDER BY j.created_at ASC
+                SELECT e.id AS job_id, sp.id AS page_id, sp.url_canonical, sp.title
+                FROM mois_sales_page_job_execution e
+                JOIN mois_sales_page sp ON sp.id = e.sales_page_id
+                WHERE e.status = 'PENDING'
+                  AND e.stage = 'ANALYSIS'
+                  AND e.job_type IN ('PAGE_ANALYSIS', 'PROCESSING_JOB')
+                  AND sp.workspace_id = ?
+                  AND sp.source = ?
+                ORDER BY e.created_at ASC, e.id ASC
                 LIMIT 1
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryClaimedJob(
                 rs.getLong("job_id"), rs.getLong("page_id"), rs.getString("url_canonical"), rs.getString("title")),
-                request.workspaceId(), request.source().trim().toUpperCase(Locale.ROOT));
+                request.workspaceId(), normalizedSource);
         if (rows.isEmpty()) {
             return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(false, null);
         }
         MoisSalesLibraryDtos.SalesLibraryClaimedJob job = rows.get(0);
-        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FETCHING', started_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=? AND status='PENDING'", job.jobId());
-        dualWriteGateway.syncProcessingJob(job.jobId());
+        int claimed = jdbcTemplate.update("""
+                UPDATE mois_sales_page_job_execution
+                SET status = 'FETCHING', claimed_by = ?, started_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
+                WHERE id = ? AND status = 'PENDING'
+                """, claimedBy, job.jobId());
+        if (claimed == 0) {
+            return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(false, null);
+        }
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                SET current_stage = 'ANALYSIS', current_status = 'FETCHING', analysis_status = 'FETCHING',
+                    last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, job.jobId(), job.pageId());
+        mirrorClaimToLegacyAudit(job.pageId());
+        log.info("MOIS sales-library claim usando modelo operacional novo. modulo=MOIS, operacao=claimJob, workspaceId={}, source={}, pageId={}, executionId={}",
+                request.workspaceId(), normalizedSource, job.pageId(), job.jobId());
         return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(true, job);
     }
 
@@ -68,16 +90,31 @@ public class MoisSalesLibraryService {
      */
     @Transactional
     public void completeJob(long jobId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
-        Long pageId = jdbcTemplate.queryForObject("SELECT url_ingest_id FROM mois_sales_library_processing_job WHERE id = ? LIMIT 1", Long.class, jobId);
-        if (pageId == null) throw new IllegalArgumentException("Job not found: " + jobId);
+        Long salesPageId = findOperationalSalesPageIdForExecution(jobId);
+        if (salesPageId == null) {
+            completeLegacyJob(jobId, request);
+            return;
+        }
+        Instant analyzedAt = request.analyzedAt() == null ? Instant.now() : request.analyzedAt();
         jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, request_payload_json, analyzed_at, created_at, updated_at)
-                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
-        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
-        dualWriteGateway.syncProcessingJob(jobId);
-        dualWriteGateway.syncLatestAnalysis(pageId);
+                UPDATE mois_sales_page_job_execution
+                SET job_type = 'PAGE_ANALYSIS', stage = 'ANALYSIS', status = 'DONE', score_total = ?,
+                    sections_json = ?, copy_json = ?, visual_json = ?, image_json = ?,
+                    request_payload_json = ?, response_payload_json = ?, error_category = NULL, error_message = ?,
+                    finished_at = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, request.scoreTotal(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(),
+                request.requestPayloadJson(), request.analysisNotes(), null, Timestamp.from(analyzedAt), jobId);
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                SET current_stage = 'ANALYSIS', current_status = 'DONE', analysis_status = 'DONE', score_total = ?,
+                    last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?,
+                    last_analyzed_at = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, request.scoreTotal(), jobId, Timestamp.from(analyzedAt), salesPageId);
+        mirrorAnalysisCompletionToLegacyAudit(salesPageId, jobId, request, analyzedAt);
+        log.info("MOIS sales-library análise concluída no modelo operacional novo. modulo=MOIS, operacao=completeJob, pageId={}, executionId={}, scoreTotal={}",
+                salesPageId, jobId, request.scoreTotal());
     }
 
     /**
@@ -85,8 +122,25 @@ public class MoisSalesLibraryService {
      */
     @Transactional
     public void failJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
-        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), request.errorMessage(), jobId);
-        dualWriteGateway.syncProcessingJob(jobId);
+        Long salesPageId = findOperationalSalesPageIdForExecution(jobId);
+        if (salesPageId == null) {
+            failLegacyJob(jobId, request);
+            return;
+        }
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page_job_execution
+                SET status = 'FAILED', error_category = ?, error_message = ?, finished_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, request.errorCategory(), truncate(request.errorMessage(), 1000), jobId);
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                SET current_stage = 'ANALYSIS', current_status = 'FAILED', analysis_status = 'FAILED',
+                    last_error_category = ?, last_error_message = ?, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, request.errorCategory(), truncate(request.errorMessage(), 1000), jobId, salesPageId);
+        mirrorAnalysisFailureToLegacyAudit(salesPageId, jobId, request);
+        log.info("MOIS sales-library análise falhou no modelo operacional novo. modulo=MOIS, operacao=failJob, pageId={}, executionId={}, errorCategory={}",
+                salesPageId, jobId, request.errorCategory());
     }
 
     /**
@@ -433,6 +487,144 @@ public class MoisSalesLibraryService {
                 toInstant(rs.getTimestamp("updated_at"))), pageId);
     }
 
+
+    /**
+     * Busca a página operacional vinculada a uma execução nova de análise.
+     */
+    private Long findOperationalSalesPageIdForExecution(long executionId) {
+        return jdbcTemplate.query("""
+                SELECT sales_page_id
+                FROM mois_sales_page_job_execution
+                WHERE id = ? AND stage = 'ANALYSIS' AND status IN ('PENDING', 'FETCHING')
+                LIMIT 1
+                """, (rs, rowNum) -> rs.getLong("sales_page_id"), executionId).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Conclui um job legado quando o worker ainda enviar identificador antigo durante a transição.
+     */
+    private void completeLegacyJob(long jobId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
+        Long pageId = jdbcTemplate.queryForObject("SELECT url_ingest_id FROM mois_sales_library_processing_job WHERE id = ? LIMIT 1", Long.class, jobId);
+        if (pageId == null) throw new IllegalArgumentException("Job not found: " + jobId);
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_page_analysis
+                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, request_payload_json, analyzed_at, created_at, updated_at)
+                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
+        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
+        dualWriteGateway.syncProcessingJob(jobId);
+        dualWriteGateway.syncLatestAnalysis(pageId);
+    }
+
+    /**
+     * Marca um job legado como falho quando o worker ainda enviar identificador antigo durante a transição.
+     */
+    private void failLegacyJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
+        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), request.errorMessage(), jobId);
+        dualWriteGateway.syncProcessingJob(jobId);
+    }
+
+    /**
+     * Espelha o claim operacional novo no job legado mais próximo apenas para auditoria de transição.
+     */
+    private void mirrorClaimToLegacyAudit(long salesPageId) {
+        Long legacyJobId = findLatestLegacyJobForSalesPage(salesPageId, JOB_STATUS_PENDING);
+        if (legacyJobId != null) {
+            jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FETCHING', started_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=? AND status='PENDING'", legacyJobId);
+        }
+    }
+
+    /**
+     * Espelha a conclusão da análise nova em tabelas legadas somente para manter auditoria compatível.
+     */
+    private void mirrorAnalysisCompletionToLegacyAudit(long salesPageId, long executionId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request, Instant analyzedAt) {
+        Long urlIngestId = findUrlIngestIdForSalesPage(salesPageId);
+        if (urlIngestId == null) {
+            return;
+        }
+        Long legacyJobId = findLatestLegacyJobForSalesPage(salesPageId, JOB_STATUS_FETCHING);
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_page_analysis
+                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, request_payload_json, analyzed_at, created_at, updated_at)
+                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, urlIngestId, legacyJobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), Timestamp.from(analyzedAt));
+        if (legacyJobId != null) {
+            jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", legacyJobId);
+        }
+        log.info("MOIS sales-library espelhou conclusão nova no legado para auditoria. modulo=MOIS, operacao=mirrorAnalysisCompletionToLegacyAudit, pageId={}, executionId={}, legacyUrlIngestId={}, legacyJobId={}",
+                salesPageId, executionId, urlIngestId, legacyJobId);
+    }
+
+    /**
+     * Espelha a falha da análise nova em tabelas legadas somente para manter auditoria compatível.
+     */
+    private void mirrorAnalysisFailureToLegacyAudit(long salesPageId, long executionId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
+        Long urlIngestId = findUrlIngestIdForSalesPage(salesPageId);
+        if (urlIngestId == null) {
+            return;
+        }
+        Long legacyJobId = findLatestLegacyJobForSalesPage(salesPageId, JOB_STATUS_FETCHING);
+        if (legacyJobId != null) {
+            jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), truncate(request.errorMessage(), 1000), legacyJobId);
+        }
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_page_analysis
+                (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
+                VALUES (?, ?, 'FAILED', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, urlIngestId, legacyJobId, truncate(request.errorMessage(), 1000));
+        log.info("MOIS sales-library espelhou falha nova no legado para auditoria. modulo=MOIS, operacao=mirrorAnalysisFailureToLegacyAudit, pageId={}, executionId={}, legacyUrlIngestId={}, legacyJobId={}",
+                salesPageId, executionId, urlIngestId, legacyJobId);
+    }
+
+    /**
+     * Localiza a URL legada correspondente a uma página operacional, quando ainda existir para auditoria.
+     */
+    private Long findUrlIngestIdForSalesPage(long salesPageId) {
+        return jdbcTemplate.query("""
+                SELECT i.id
+                FROM mois_sales_page sp
+                JOIN mois_sales_library_url_ingest i ON i.workspace_id = sp.workspace_id AND i.url_canonical = sp.url_canonical
+                WHERE sp.id = ?
+                LIMIT 1
+                """, (rs, rowNum) -> rs.getLong("id"), salesPageId).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Localiza o job legado mais recente de uma página operacional pelo status desejado.
+     */
+    private Long findLatestLegacyJobForSalesPage(long salesPageId, String status) {
+        return jdbcTemplate.query("""
+                SELECT j.id
+                FROM mois_sales_page sp
+                JOIN mois_sales_library_url_ingest i ON i.workspace_id = sp.workspace_id AND i.url_canonical = sp.url_canonical
+                JOIN mois_sales_library_processing_job j ON j.url_ingest_id = i.id
+                WHERE sp.id = ? AND j.status = ?
+                ORDER BY j.updated_at DESC, j.id DESC
+                LIMIT 1
+                """, (rs, rowNum) -> rs.getLong("id"), salesPageId, status).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Cria uma execução operacional pendente de análise usando as novas tabelas como fonte principal.
+     */
+    private long createOperationalAnalysisExecution(long salesPageId, String reason) {
+        MoisSalesLibraryDtos.SalesLibraryPageResponse page = getPage(salesPageId);
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_page_job_execution
+                (sales_page_id, workspace_id, job_type, stage, status, attempt, input_url, request_payload_json, created_at, updated_at)
+                VALUES (?, ?, 'PAGE_ANALYSIS', 'ANALYSIS', 'PENDING', 1, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, salesPageId, page.workspaceId(), page.urlCanonical(), reason);
+        Long executionId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        long safeExecutionId = executionId == null ? 0L : executionId;
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                SET current_stage = 'ANALYSIS', current_status = 'PENDING', analysis_status = 'PENDING',
+                    last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, safeExecutionId, salesPageId);
+        return safeExecutionId;
+    }
+
     /**
      * Atualiza manualmente o status da análise de uma página da biblioteca.
      */
@@ -441,8 +633,6 @@ public class MoisSalesLibraryService {
             long pageId,
             MoisSalesLibraryDtos.SalesLibraryStatusUpdateRequest request
     ) {
-        long urlIngestId = findUrlIngestIdForOperationalPage(pageId);
-
         String normalizedStatus = request.status().trim().toUpperCase(Locale.ROOT);
         if (!JOB_STATUS_PENDING.equals(normalizedStatus) && !ANALYSIS_STATUS_CANCELED.equals(normalizedStatus)) {
             throw new IllegalArgumentException("Unsupported status: " + request.status());
@@ -451,19 +641,42 @@ public class MoisSalesLibraryService {
         Long jobId = null;
         String notes = request.reason() == null || request.reason().isBlank() ? "Status atualizado manualmente via API" : request.reason().trim();
         if (JOB_STATUS_PENDING.equals(normalizedStatus)) {
-            jobId = createPendingJob(urlIngestId);
+            jobId = createOperationalAnalysisExecution(pageId, notes);
+            Long urlIngestId = findUrlIngestIdForSalesPage(pageId);
+            if (urlIngestId != null) {
+                long legacyJobId = createPendingJob(urlIngestId);
+                jdbcTemplate.update("""
+                        INSERT INTO mois_sales_library_page_analysis
+                        (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                        """, urlIngestId, legacyJobId, normalizedStatus, notes);
+            }
+        } else {
+            jdbcTemplate.update("""
+                    INSERT INTO mois_sales_page_job_execution
+                    (sales_page_id, workspace_id, job_type, stage, status, attempt, request_payload_json, created_at, updated_at)
+                    SELECT id, workspace_id, 'STATUS_UPDATE', 'ANALYSIS', ?, 1, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+                    FROM mois_sales_page WHERE id = ?
+                    """, normalizedStatus, notes, pageId);
+            Long executionId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+            jobId = executionId == null || executionId == 0L ? null : executionId;
+            jdbcTemplate.update("""
+                    UPDATE mois_sales_page
+                    SET current_stage = 'ANALYSIS', current_status = ?, analysis_status = ?, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
+                    WHERE id = ?
+                    """, normalizedStatus, normalizedStatus, jobId, pageId);
+            Long urlIngestId = findUrlIngestIdForSalesPage(pageId);
+            if (urlIngestId != null) {
+                jdbcTemplate.update("""
+                        INSERT INTO mois_sales_library_page_analysis
+                        (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
+                        VALUES (?, NULL, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                        """, urlIngestId, normalizedStatus, notes);
+            }
         }
 
-        jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
-                VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, urlIngestId, jobId, normalizedStatus, notes);
-        if (jobId != null) {
-            dualWriteGateway.syncProcessingJob(jobId);
-        }
-        dualWriteGateway.syncLatestAnalysis(urlIngestId);
-
+        log.info("MOIS sales-library status manual atualizado no modelo operacional novo. modulo=MOIS, operacao=updatePageStatus, pageId={}, executionId={}, status={}",
+                pageId, jobId, normalizedStatus);
         return new MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse(pageId, jobId, normalizedStatus, notes, Instant.now());
     }
 
@@ -472,15 +685,18 @@ public class MoisSalesLibraryService {
      */
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse reanalyzePage(long pageId) {
-        long urlIngestId = findUrlIngestIdForOperationalPage(pageId);
-        long jobId = createPendingJob(urlIngestId);
-        jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
-                VALUES (?, ?, 'PENDING', 'Reanálise solicitada via API', UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, urlIngestId, jobId);
-        dualWriteGateway.syncProcessingJob(jobId);
-        dualWriteGateway.syncLatestAnalysis(urlIngestId);
+        String notes = "Reanálise solicitada via API";
+        long jobId = createOperationalAnalysisExecution(pageId, notes);
+        Long urlIngestId = findUrlIngestIdForSalesPage(pageId);
+        if (urlIngestId != null) {
+            long legacyJobId = createPendingJob(urlIngestId);
+            jdbcTemplate.update("""
+                    INSERT INTO mois_sales_library_page_analysis
+                    (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
+                    VALUES (?, ?, 'PENDING', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                    """, urlIngestId, legacyJobId, notes);
+        }
+        log.info("MOIS sales-library reanálise criada no modelo operacional novo. modulo=MOIS, operacao=reanalyzePage, pageId={}, executionId={}", pageId, jobId);
         return new MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse(pageId, jobId, JOB_STATUS_PENDING, Instant.now());
     }
 

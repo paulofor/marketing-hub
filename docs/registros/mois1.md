@@ -949,3 +949,16 @@ Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/registros/mois1.md`
+
+## 2026-06-04 — Fase 5 do pipeline de páginas de vendas em duas tabelas
+- alterada a execução operacional de análise da Biblioteca de Páginas de Vendas para usar `mois_sales_page_job_execution` como fila principal de claim/conclusão/falha, retornando o `executionId` como `jobId` para o worker.
+- conclusões e falhas de análise agora atualizam primeiro `mois_sales_page_job_execution` e consolidam o estado atual em `mois_sales_page`, preservando espelhos legados apenas para auditoria transicional quando houver vínculo com `mois_sales_library_url_ingest`/`mois_sales_library_processing_job`.
+- reanálise e atualização manual de status passaram a criar execuções no histórico consolidado antes do espelho legado, reforçando `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal.
+- adicionados logs de transição com `pageId` e `executionId` para rastrear claim, conclusão, falha, reanálise e atualização manual de status no modelo novo.
+- atualizado o cânone MOIS e o Swagger da Biblioteca para explicitar a regra da Fase 5 e o significado operacional do `jobId` nos endpoints de worker.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

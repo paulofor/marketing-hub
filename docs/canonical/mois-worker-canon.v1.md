@@ -505,6 +505,27 @@ Regra de transição da Fase 1:
 - Qualquer gravação futura no modelo novo deve manter `mois_sales_page` como estado atual e `mois_sales_page_job_execution` como histórico/auditoria.
 
 
+#### 13.7.2 Fase 5 — escrita operacional principal nas duas tabelas
+
+A partir da Fase 5, os comandos operacionais de análise da Biblioteca de Páginas de Vendas devem tratar `mois_sales_page` e `mois_sales_page_job_execution` como fonte principal de escrita e leitura de estado atual.
+
+Regras obrigatórias da Fase 5:
+
+- o claim de análise deve reservar uma execução pendente em `mois_sales_page_job_execution` e atualizar `mois_sales_page.current_stage/current_status/analysis_status`;
+- a conclusão ou falha de análise deve atualizar primeiro `mois_sales_page_job_execution` e depois o estado consolidado em `mois_sales_page`;
+- reanálise e atualização manual de status devem criar execuções novas no histórico consolidado antes de qualquer espelho legado;
+- tabelas legadas de URL, job e análise podem receber espelhos transitórios somente para auditoria/compatibilidade, mas não podem ser a fonte de verdade da UI operacional;
+- logs de transição devem informar `pageId`, `executionId`, operação executada e resultado para rastrear cada mudança de etapa;
+- contratos Swagger da Biblioteca devem explicitar que `jobId` de claim/complete/fail representa `mois_sales_page_job_execution.id` nesta fase.
+
+Critérios de aceite da Fase 5:
+
+- o pipeline de análise executa ponta a ponta usando `mois_sales_page` e `mois_sales_page_job_execution` como tabelas operacionais;
+- a UI principal continua independente das tabelas legadas para estado atual;
+- os espelhos legados são preservados apenas como auditoria transitória até a Fase 6.
+
+
+
 ### 13.8 Pipeline de captura de HTML bruto a partir de referências coletadas
 
 A primeira etapa do pipeline de páginas de venda deve separar responsabilidades:

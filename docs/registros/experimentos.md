@@ -3413,3 +3413,12 @@
 - causa-raiz/objetivo: a tela de pipelines configura dados operacionais críticos e precisa ser governada pelo backend como contrato, não como CRUD livre, preservando a aderência entre frontend, banco, backend, workers e documentos canônicos.
 - registro aplicado: criado `docs/implementacao/plano-pipelines-contrato-operacional.md` com estratégia em três fases: governança sem novas tabelas, contrato forte com sincronização segura e separação persistente entre definição e configuração somente se houver necessidade comprovada.
 - decisão operacional: iniciar pela Fase 1 sem criar tabelas novas, mantendo as tabelas atuais e fortalecendo validação, metadados e diagnóstico no backend.
+
+## 2026-06-04 — Fase 1 do contrato operacional da tela de Pipelines
+
+- solicitação: executar a Fase 1 de `docs/implementacao/plano-pipelines-contrato-operacional.md` sem criar tabelas novas.
+- causa-raiz/objetivo: reduzir divergência silenciosa entre tela, banco e código, tornando o backend guardião do contrato oficial dos pipelines antes da execução operacional.
+- correção aplicada: criado registry oficial de pipelines/etapas no backend, endpoints `GET /api/pipelines/metadata` e `GET /api/pipelines/{id}/diagnostics`, bloqueios de exclusão/alteração estrutural em pipeline oficial, validações de duplicidade, modelo OpenAI inexistente, etapa obrigatória removida/inativa e etapa sem mapeamento canônico.
+- tela ajustada: `/pipelines` passou a exibir status `OK`, `ATENÇÃO` ou `BLOQUEADO`, contagem esperada/configurada, divergências com causa-raiz e ação recomendada, código do banco e código canônico lado a lado, além de campos estruturais protegidos para pipelines oficiais.
+- documentação de contrato: criado `docs/swagger/pipeline-swagger.yaml` e atualizado o índice `docs/swagger/README.md`.
+- validação automatizada: testes unitários de `PipelineServiceTest` cobrem exclusão de pipeline oficial, remoção/alteração de etapa oficial, diagnóstico de etapa ausente/extra, aliases canônicos e modelo OpenAI inexistente.

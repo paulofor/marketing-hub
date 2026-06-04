@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Pipeline Governance API
+  version: "1.0.0"
+  description: Endpoints administrativos para governança de pipelines e etapas sem criar tabelas novas.
+servers:
+  - url: /api
+paths:
+  /pipelines/metadata:
+    get:
+      summary: Lista metadados oficiais de pipelines, módulos e etapas permitidas.
+      responses:
+        "200":
+          description: Metadados oficiais para controlar campos editáveis na tela.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineMetadata"
+  /pipelines/{id}/diagnostics:
+    get:
+      summary: Diagnostica aderência do pipeline salvo no banco à definição oficial do backend.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Status do contrato operacional e divergências acionáveis.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineDiagnostics"
+        "404":
+          description: Pipeline não encontrado.
+components:
+  schemas:
+    PipelineMetadata:
+      type: object
+      required: [validModules, officialPipelines]
+      properties:
+        validModules:
+          type: array
+          items:
+            type: string
+        officialPipelines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfficialPipeline"
+    OfficialPipeline:
+      type: object
+      required: [module, code, name, official, aliases, stages]
+      properties:
+        module:
+          type: string
+          example: EXPERIMENT
+        code:
+          type: string
+          example: experiment-pipeline
+        name:
+          type: string
+          example: Pipeline de Experimento
+        official:
+          type: boolean
+          example: true
+        aliases:
+          type: array
+          items:
+            type: string
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfficialPipelineStage"
+    OfficialPipelineStage:
+      type: object
+      required: [canonicalCode, operationalCode, name, position, required, configurable, aliases]
+      properties:
+        canonicalCode:
+          type: string
+          example: LANDING_PAGE_WIREFRAME
+        operationalCode:
+          type: string
+          example: landing-page-wireframe
+        name:
+          type: string
+          example: Landing Page Wireframe
+        position:
+          type: integer
+          example: 4
+        required:
+          type: boolean
+          example: true
+        configurable:
+          type: boolean
+          example: true
+        aliases:
+          type: array
+          items:
+            type: string
+    PipelineDiagnostics:
+      type: object
+      required: [pipelineId, pipelineCode, status, expectedStages, configuredStages, issues]
+      properties:
+        pipelineId:
+          type: integer
+          format: int64
+        pipelineCode:
+          type: string
+        canonicalPipelineCode:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [OK, ATENÇÃO, BLOQUEADO]
+        expectedStages:
+          type: integer
+        configuredStages:
+          type: integer
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/PipelineDiagnosticsIssue"
+    PipelineDiagnosticsIssue:
+      type: object
+      required: [severity, message, rootCause, recommendedAction]
+      properties:
+        severity:
+          type: string
+          enum: [ERROR, WARN, INFO]
+        stageCode:
+          type: string
+          nullable: true
+        canonicalCode:
+          type: string
+          nullable: true
+        message:
+          type: string
+        rootCause:
+          type: string
+        recommendedAction:
+          type: string

@@ -2,7 +2,9 @@ package com.marketinghub.pipeline.web;
 
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
+import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineDto;
+import com.marketinghub.pipeline.dto.PipelineMetadataDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageDto;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
@@ -45,11 +47,27 @@ public class PipelineController {
     }
 
     /**
+     * Obtém metadados oficiais que governam campos editáveis na tela.
+     */
+    @GetMapping("/metadata")
+    public PipelineMetadataDto metadata() {
+        return service.metadata();
+    }
+
+    /**
      * Obtém um pipeline específico com suas etapas ordenadas.
      */
     @GetMapping("/{id}")
     public PipelineDto get(@PathVariable Long id) {
         return mapper.toDto(service.get(id));
+    }
+
+    /**
+     * Diagnostica divergências entre banco e definição oficial do backend.
+     */
+    @GetMapping("/{id}/diagnostics")
+    public PipelineDiagnosticsDto diagnostics(@PathVariable Long id) {
+        return service.diagnostics(id);
     }
 
     /**

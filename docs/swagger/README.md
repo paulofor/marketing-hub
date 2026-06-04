@@ -17,6 +17,7 @@ Esta pasta é o local único para contratos Swagger/OpenAPI do Marketing Hub.
 - `docs/swagger/openapi.yaml` — superfície geral da API Marketing Hub.
 - `docs/swagger/openapi_mds_backend_stub.yaml` — stub de integração MDS.
 - `docs/swagger/openapi_mois_backend_stub.yaml` — stub de integração MOIS.
+- `docs/swagger/pipeline-swagger.yaml` — governança administrativa de pipelines e etapas.
 - `docs/swagger/oprm-backend-integration-openapi.v1.yaml` — integração OPRM ↔ backend.
 - `docs/swagger/oprm-backend-required-endpoints.swagger.yaml` — endpoints obrigatórios do backend para OPRM.
 - `docs/swagger/oprm-nichocnae-swagger.yaml` — pipeline OPRM Nicho CNAE.

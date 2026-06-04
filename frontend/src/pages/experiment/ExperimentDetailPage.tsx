@@ -160,6 +160,48 @@ function mergeOptimisticExecution(
   return [optimisticExecution, ...(pendingExecutions ?? [])];
 }
 
+function normalizeQualityReviewScore(score?: number | string | null) {
+  if (score == null) return null;
+  if (typeof score === "number") return Number.isFinite(score) ? score : null;
+  const normalizedScore = score.replace(",", ".").trim();
+  if (!normalizedScore) return null;
+  const parsedScore = Number(normalizedScore);
+  return Number.isFinite(parsedScore) ? parsedScore : null;
+}
+
+function formatQualityReviewScore(score?: number | string | null) {
+  const normalizedScore = normalizeQualityReviewScore(score);
+  return normalizedScore != null
+    ? new Intl.NumberFormat("pt-BR", {
+        maximumFractionDigits: 2,
+      }).format(normalizedScore)
+    : "—";
+}
+
+function resolveQualityReviewApprovalLabel(
+  execution?: GeraLandingStageExecutionItem,
+) {
+  if (!execution) return "Sem revisão concluída";
+  if (execution.approvedForPublication === true) return "Aprovado";
+  if (execution.approvedForPublication === false) return "Não aprovado";
+  if (execution.approvalRecommendation === "APPROVE_FOR_PUBLICATION") {
+    return "Aprovado";
+  }
+  if (execution.approvalRecommendation === "REGENERATE_BEFORE_PUBLICATION") {
+    return "Não aprovado";
+  }
+  return "Decisão indisponível";
+}
+
+function resolveQualityReviewApprovalBadgeClass(
+  execution?: GeraLandingStageExecutionItem,
+) {
+  const label = resolveQualityReviewApprovalLabel(execution);
+  if (label === "Aprovado") return "text-bg-success";
+  if (label === "Não aprovado") return "text-bg-danger";
+  return "text-bg-secondary";
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -1258,6 +1300,10 @@ export default function ExperimentDetailPage() {
     completedGeraLandingQualityReviewExecutions,
     pendingGeraLandingQualityReviewExecutions,
   ]);
+  const latestCompletedQualityReviewExecution =
+    historyGeraLandingQualityReviewExecutions.find((execution) =>
+      isCompletedExecution(execution.status),
+    );
 
   const mergedPendingGeraLandingDeliverablesExecutions = useMemo(
     () =>
@@ -3154,6 +3200,36 @@ export default function ExperimentDetailPage() {
                         ),
                       )}
                     </span>
+                  </div>
+                  <div className="rounded border border-primary-subtle bg-primary-subtle p-3">
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                      <div>
+                        <div className="small text-uppercase fw-semibold text-primary-emphasis">
+                          Score mais recente
+                        </div>
+                        <div className="display-6 fw-bold text-primary-emphasis mb-0">
+                          {formatQualityReviewScore(
+                            latestCompletedQualityReviewExecution?.score,
+                          )}
+                        </div>
+                        <div className="small text-primary-emphasis">
+                          {latestCompletedQualityReviewExecution
+                            ? `Job ${latestCompletedQualityReviewExecution.idJob} · ${formatDateTimeValue(
+                                latestCompletedQualityReviewExecution.executionRequestedAt,
+                              )}`
+                            : "Nenhuma execução concluída ainda."}
+                        </div>
+                      </div>
+                      <span
+                        className={`badge fs-6 ${resolveQualityReviewApprovalBadgeClass(
+                          latestCompletedQualityReviewExecution,
+                        )}`}
+                      >
+                        {resolveQualityReviewApprovalLabel(
+                          latestCompletedQualityReviewExecution,
+                        )}
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="button"

@@ -898,6 +898,22 @@ components:
           type: number
           format: double
           nullable: true
+        score:
+          type: number
+          format: double
+          nullable: true
+          description: Score final retornado pela IA para a etapa Quality Review, quando disponível.
+        approvalRecommendation:
+          type: string
+          nullable: true
+          description: Recomendação da IA para publicação da landing na etapa Quality Review.
+          enum:
+            - APPROVE_FOR_PUBLICATION
+            - REGENERATE_BEFORE_PUBLICATION
+        approvedForPublication:
+          type: boolean
+          nullable: true
+          description: Indica se a recomendação mais recente aprova a landing para publicação.
       required:
         - idJob
         - status

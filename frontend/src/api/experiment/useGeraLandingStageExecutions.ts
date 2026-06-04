@@ -20,6 +20,9 @@ export interface GeraLandingStageExecutionItem {
   status: string;
   executionRequestedAt: string;
   costUsd?: number;
+  score?: number | string | null;
+  approvalRecommendation?: string | null;
+  approvedForPublication?: boolean | null;
 }
 
 export interface GeraLandingStageExecutionDetail extends GeraLandingStageExecutionItem {

@@ -3393,3 +3393,10 @@
 - causa-raiz/objetivo: o endpoint `/models` da OpenAI exige autenticação Bearer; manter o botão ativo criava uma ação que aparentava sincronizar dados oficiais, mas falhava quando `OPENAI_API_KEY` não estava configurada.
 - correção aplicada: removido o card “Catálogo oficial (OpenAI)” e a chamada frontend `/api/modelos/openai/catalogo/v1`, preservando apenas a tabela do catálogo interno `openai_model`, que é a fonte operacional dos preços por 1 milhão de tokens.
 - impacto esperado: a tela fica mais simples e evita uma ação indisponível, mantendo foco no cadastro interno de preços usado nos cálculos de custo dos experimentos.
+
+## 2026-06-04 — Destaque do score mais recente no Quality Review
+
+- solicitação: na tela do experimento, etapa `6 - Quality Review`, exibir em destaque no card o score mais recente e a condição de aprovado ou não aprovado.
+- causa-raiz/objetivo: o usuário precisava abrir o detalhe ou interpretar o histórico para saber rapidamente se a landing está pronta para publicação, criando esforço desnecessário em uma etapa crítica para vendas.
+- correção aplicada: o resumo de execuções do Quality Review passou a expor `score`, `approvalRecommendation` e `approvedForPublication`, e o frontend passou a destacar a execução concluída mais recente com score, job, data-hora e badge de aprovação.
+- impacto esperado: decisão operacional mais rápida sobre publicar, regenerar ou revisar a landing antes de tráfego pago.

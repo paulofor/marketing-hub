@@ -468,7 +468,32 @@ public class BackendQualityReviewService {
                 fromDatabaseIdJob(execution.getIdJob()),
                 execution.getStatus(),
                 execution.getExecutionRequestedAt(),
-                execution.getCostUsd());
+                execution.getCostUsd(),
+                extractScore(execution.getModelResponse()),
+                extractApprovalRecommendation(execution.getModelResponse()),
+                resolveApprovedForPublication(execution.getModelResponse()));
+    }
+
+    /** Extrai o score final do JSON retornado pelo modelo quando possível. */
+    private BigDecimal extractScore(String modelResponse) {
+        if (!StringUtils.hasText(modelResponse)) {
+            return null;
+        }
+        try {
+            Object parsed = objectMapper.readValue(modelResponse, Object.class);
+            if (parsed instanceof Map<?, ?> map && map.get("score") != null) {
+                return new BigDecimal(String.valueOf(map.get("score")));
+            }
+        } catch (JsonProcessingException | NumberFormatException ex) {
+            log.warn("Falha ao ler score do Quality Review. modelResponseLength={}", modelResponse.length(), ex);
+        }
+        return null;
+    }
+
+    /** Resolve se a recomendação do modelo aprova a landing para publicação. */
+    private Boolean resolveApprovedForPublication(String modelResponse) {
+        String recommendation = extractApprovalRecommendation(modelResponse);
+        return recommendation != null ? "APPROVE_FOR_PUBLICATION".equals(recommendation) : null;
     }
 
     /** Converte a execução persistida para o detalhe público da etapa. */

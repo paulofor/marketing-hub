@@ -23,9 +23,17 @@ Todo controller interno de backend criado para uma etapa operacional deve ficar 
 `@RestController`, declarar `@RequestMapping("/api")` e possuir um método público chamado `pending`.
 
 O pacote direto `service` da etapa deve conter uma classe canônica `Backend<Etapa>Service` anotada
-com `@Service` e deve possuir os subpacotes obrigatórios `detailStageExecution`,
-`listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`. Esses subpacotes representam
-as bordas contratuais da etapa e devem conter somente tipos Java declarados como `record`.
+com `@Service`. Quando a etapa acessar modelos de IA, o pacote `service` deve possuir os subpacotes
+obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e
+`recebeResposta`. Esses subpacotes representam as bordas contratuais da etapa com modelo de IA e devem
+conter somente tipos Java declarados como `record`.
+
+Etapas determinísticas que não acessam modelos de IA, como coletores, buscadores, fetchers ou
+normalizadores sem prompt/resposta de modelo, não precisam criar subpacotes artificiais
+`recebePrompt`/`recebeResposta`. Nesses casos, o pacote `service` deve manter DTOs imutáveis em
+subpacotes por operação real do contrato da etapa, por exemplo `pending`, `completeStageExecution`,
+`failStageExecution` e `detailStageExecution`, sempre com nomes estáveis e contendo somente tipos Java
+`record` nas bordas contratuais.
 
 Esse método representa o contrato mínimo da fila interna da etapa para o Worker AI:
 

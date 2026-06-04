@@ -3367,3 +3367,10 @@
 - correção aplicada: a conclusão sem erro da etapa `landing-page-wireframe` agora persiste `experiment.landing_page_wireframe` e cria uma execução `landing-page-copy` com `promptTemplateId` `auto/wireframe`, `status` `INICIADO` e novo `idJob`.
 - cânones atualizados: `docs/canonical/procedimento-experimento-canon.v1.md` e `docs/canonical/geralanding-arquitetura-canon.v1.md` passaram a declarar o encadeamento automático WireFrame → Copy.
 - validação automatizada: teste unitário do `BackendWireframeService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
+
+## 2026-06-04 — Remoção do catálogo oficial OpenAI sem token
+
+- solicitação: retirar da tela `/openai-models` o bloco/botão “Atualizar catálogo”, pois a importação direta da OpenAI não funciona no ambiente sem token.
+- causa-raiz/objetivo: o endpoint `/models` da OpenAI exige autenticação Bearer; manter o botão ativo criava uma ação que aparentava sincronizar dados oficiais, mas falhava quando `OPENAI_API_KEY` não estava configurada.
+- correção aplicada: removido o card “Catálogo oficial (OpenAI)” e a chamada frontend `/api/modelos/openai/catalogo/v1`, preservando apenas a tabela do catálogo interno `openai_model`, que é a fonte operacional dos preços por 1 milhão de tokens.
+- impacto esperado: a tela fica mais simples e evita uma ação indisponível, mantendo foco no cadastro interno de preços usado nos cálculos de custo dos experimentos.

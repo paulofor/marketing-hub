@@ -2,10 +2,13 @@ import { useMemo, useState } from "react";
 import PageTitle from "../../components/PageTitle";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { usePipelines } from "../../api/pipeline/usePipelines";
+import { usePipelineDiagnostics } from "../../api/pipeline/usePipelineDiagnostics";
+import { usePipelineMetadata } from "../../api/pipeline/usePipelineMetadata";
 import type {
   Pipeline,
   PipelinePayload,
   PipelineStage,
+  PipelineDiagnostics,
   PipelineStagePayload,
 } from "../../api/pipeline/types";
 import {
@@ -35,6 +38,16 @@ const emptyStage: PipelineStagePayload = {
   openAiModelId: null,
 };
 
+function normalizeCode(code?: string | null) {
+  return (code ?? "").trim().toLowerCase().replace(/_/g, "-");
+}
+
+function statusBadgeClass(status?: PipelineDiagnostics["status"]) {
+  if (status === "OK") return "text-bg-success";
+  if (status === "BLOQUEADO") return "text-bg-danger";
+  return "text-bg-warning";
+}
+
 function pipelineToPayload(pipeline: Pipeline): PipelinePayload {
   return {
     name: pipeline.name,
@@ -59,6 +72,8 @@ function stageToPayload(stage: PipelineStage): PipelineStagePayload {
 
 export default function PipelineCrudPage() {
   const { data, isLoading, isError } = usePipelines();
+  const { data: metadata, isLoading: isLoadingMetadata } =
+    usePipelineMetadata();
   const { data: openAiModels, isLoading: isLoadingOpenAiModels } =
     useOpenAiModels();
   const createPipeline = useCreatePipeline();
@@ -69,7 +84,25 @@ export default function PipelineCrudPage() {
   const deleteStage = useDeletePipelineStage();
 
   const pipelines = useMemo(() => data ?? [], [data]);
+  const diagnosticsQueries = usePipelineDiagnostics(pipelines);
   const modelOptions = useMemo(() => openAiModels ?? [], [openAiModels]);
+  const officialPipelines = useMemo(
+    () => metadata?.officialPipelines ?? [],
+    [metadata],
+  );
+  const validModules = useMemo(
+    () => metadata?.validModules ?? ["EXPERIMENT"],
+    [metadata],
+  );
+  const diagnosticsByPipelineId = useMemo(() => {
+    const entries = diagnosticsQueries
+      .map((query) => query.data)
+      .filter((diagnostic): diagnostic is PipelineDiagnostics =>
+        Boolean(diagnostic),
+      )
+      .map((diagnostic) => [diagnostic.pipelineId, diagnostic] as const);
+    return new Map(entries);
+  }, [diagnosticsQueries]);
   const [pipelineForm, setPipelineForm] =
     useState<PipelinePayload>(emptyPipeline);
   const [editingPipelineId, setEditingPipelineId] = useState<number | null>(
@@ -82,6 +115,10 @@ export default function PipelineCrudPage() {
 
   const isSavingPipeline = createPipeline.isPending || updatePipeline.isPending;
   const isSavingStage = createStage.isPending || updateStage.isPending;
+  const editingOfficialPipeline = officialPipelines.find(
+    (official) =>
+      normalizeCode(official.code) === normalizeCode(pipelineForm.code),
+  );
 
   const submitPipeline = () => {
     const payload = {
@@ -170,6 +207,7 @@ export default function PipelineCrudPage() {
               <label className="form-label">Código *</label>
               <input
                 className="form-control"
+                disabled={Boolean(editingOfficialPipeline)}
                 value={pipelineForm.code}
                 onChange={(event) =>
                   setPipelineForm((current) => ({
@@ -182,17 +220,23 @@ export default function PipelineCrudPage() {
             </div>
             <div className="col-md-3">
               <label className="form-label">Módulo *</label>
-              <input
-                className="form-control"
+              <select
+                className="form-select"
                 value={pipelineForm.module}
+                disabled={Boolean(editingOfficialPipeline) || isLoadingMetadata}
                 onChange={(event) =>
                   setPipelineForm((current) => ({
                     ...current,
                     module: event.target.value,
                   }))
                 }
-                placeholder="EXPERIMENT"
-              />
+              >
+                {validModules.map((module) => (
+                  <option key={module} value={module}>
+                    {module}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="col-md-2 d-flex align-items-end">
               <div className="form-check form-switch mb-2">
@@ -228,6 +272,15 @@ export default function PipelineCrudPage() {
                 placeholder="Objetivo comercial e resultado esperado do pipeline."
               />
             </div>
+            {editingOfficialPipeline ? (
+              <div className="col-12">
+                <div className="alert alert-info mb-0">
+                  Pipeline oficial protegido: código e módulo são estruturais e
+                  só o backend pode redefinir. A tela edita apenas configuração
+                  operacional segura.
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="d-flex gap-2 mt-3">
             <button
@@ -264,6 +317,26 @@ export default function PipelineCrudPage() {
       <div className="d-grid gap-4">
         {pipelines.map((pipeline) => {
           const stageForm = stageForms[pipeline.id] ?? emptyStage;
+          const diagnostic = diagnosticsByPipelineId.get(pipeline.id);
+          const officialPipeline = officialPipelines.find(
+            (official) =>
+              normalizeCode(official.code) === normalizeCode(pipeline.code),
+          );
+          const stageDefinition = officialPipeline?.stages.find(
+            (stage) =>
+              normalizeCode(stage.operationalCode) ===
+                normalizeCode(stageForm.code) ||
+              normalizeCode(stage.canonicalCode) ===
+                normalizeCode(stageForm.code) ||
+              stage.aliases.some(
+                (alias) =>
+                  normalizeCode(alias) === normalizeCode(stageForm.code),
+              ),
+          );
+          const isOfficialPipeline = Boolean(officialPipeline);
+          const isEditingOfficialStage = Boolean(
+            editingStageId && stageDefinition,
+          );
           return (
             <section className="card" key={pipeline.id}>
               <div className="card-header d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -275,10 +348,25 @@ export default function PipelineCrudPage() {
                     >
                       {pipeline.active ? "Ativo" : "Inativo"}
                     </span>
+                    <span
+                      className={`badge ${statusBadgeClass(diagnostic?.status)}`}
+                    >
+                      Contrato: {diagnostic?.status ?? "ATENÇÃO"}
+                    </span>
+                    {isOfficialPipeline ? (
+                      <span className="badge text-bg-primary">Oficial</span>
+                    ) : null}
                   </div>
                   <div className="small text-body-secondary">
                     {pipeline.module} · {pipeline.code} ·{" "}
                     {pipeline.stages.length} etapas
+                    {diagnostic ? (
+                      <>
+                        {" "}
+                        · esperado no código: {diagnostic.expectedStages} ·
+                        configurado no banco: {diagnostic.configuredStages}
+                      </>
+                    ) : null}
                   </div>
                   {pipeline.description ? (
                     <p className="mb-0 mt-2">{pipeline.description}</p>
@@ -296,7 +384,7 @@ export default function PipelineCrudPage() {
                   </button>
                   <button
                     className="btn btn-sm btn-outline-danger"
-                    disabled={deletePipeline.isPending}
+                    disabled={deletePipeline.isPending || isOfficialPipeline}
                     onClick={() => {
                       if (
                         confirm(
@@ -312,77 +400,147 @@ export default function PipelineCrudPage() {
                 </div>
               </div>
               <div className="card-body">
+                {diagnostic ? (
+                  <div
+                    className={`alert ${diagnostic.status === "BLOQUEADO" ? "alert-danger" : diagnostic.status === "OK" ? "alert-success" : "alert-warning"}`}
+                  >
+                    <div className="fw-semibold">
+                      Status do contrato operacional: {diagnostic.status}
+                    </div>
+                    <div>
+                      Etapas esperadas no código: {diagnostic.expectedStages} ·
+                      etapas configuradas no banco:{" "}
+                      {diagnostic.configuredStages}
+                    </div>
+                    {diagnostic.issues.length > 0 ? (
+                      <ul className="mb-0 mt-2">
+                        {diagnostic.issues.map((issue, index) => (
+                          <li key={`${issue.stageCode ?? "pipeline"}-${index}`}>
+                            <strong>{issue.severity}</strong> ·{" "}
+                            {issue.stageCode ? (
+                              <code>{issue.stageCode}</code>
+                            ) : (
+                              "pipeline"
+                            )}
+                            {issue.canonicalCode ? (
+                              <>
+                                {" "}
+                                → <code>{issue.canonicalCode}</code>
+                              </>
+                            ) : null}
+                            : {issue.message} Causa-raiz: {issue.rootCause}{" "}
+                            Ação: {issue.recommendedAction}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="table-responsive mb-4">
                   <table className="table align-middle">
                     <thead>
                       <tr>
                         <th style={{ width: 90 }}>Etapa</th>
                         <th>Nome</th>
-                        <th>Código</th>
+                        <th>Código banco</th>
+                        <th>Código canônico</th>
                         <th>Descrição</th>
                         <th>Obrigatória</th>
                         <th>Modelo OpenAI</th>
                         <th>Status</th>
+                        <th>Proteção</th>
                         <th>Ações</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {pipeline.stages.map((stage) => (
-                        <tr key={stage.id}>
-                          <td>Etapa {stage.position}</td>
-                          <td>{stage.name}</td>
-                          <td>
-                            <code>{stage.code}</code>
-                          </td>
-                          <td>{stage.description || "-"}</td>
-                          <td>{stage.required ? "Sim" : "Não"}</td>
-                          <td>
-                            {stage.openAiModelCode ? (
-                              <span title={stage.openAiModelName ?? undefined}>
-                                {stage.openAiModelName ?? stage.openAiModelCode}{" "}
-                                (<code>{stage.openAiModelCode}</code>)
-                              </span>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                          <td>{stage.active ? "Ativa" : "Inativa"}</td>
-                          <td className="d-flex gap-2">
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => {
-                                setEditingStageId(stage.id);
-                                setStageForms((current) => ({
-                                  ...current,
-                                  [pipeline.id]: stageToPayload(stage),
-                                }));
-                              }}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-danger"
-                              disabled={deleteStage.isPending}
-                              onClick={() => {
-                                if (confirm("Deseja remover esta etapa?")) {
-                                  deleteStage.mutate({
-                                    pipelineId: pipeline.id,
-                                    stageId: stage.id,
-                                  });
+                      {pipeline.stages.map((stage) => {
+                        const rowDefinition = officialPipeline?.stages.find(
+                          (definition) =>
+                            normalizeCode(definition.operationalCode) ===
+                              normalizeCode(stage.code) ||
+                            definition.aliases.some(
+                              (alias) =>
+                                normalizeCode(alias) ===
+                                normalizeCode(stage.code),
+                            ),
+                        );
+                        return (
+                          <tr key={stage.id}>
+                            <td>Etapa {stage.position}</td>
+                            <td>{stage.name}</td>
+                            <td>
+                              <code>{stage.code}</code>
+                            </td>
+                            <td>
+                              {rowDefinition ? (
+                                <code>{rowDefinition.canonicalCode}</code>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td>{stage.description || "-"}</td>
+                            <td>{stage.required ? "Sim" : "Não"}</td>
+                            <td>
+                              {stage.openAiModelCode ? (
+                                <span
+                                  title={stage.openAiModelName ?? undefined}
+                                >
+                                  {stage.openAiModelName ??
+                                    stage.openAiModelCode}{" "}
+                                  (<code>{stage.openAiModelCode}</code>)
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td>{stage.active ? "Ativa" : "Inativa"}</td>
+                            <td>
+                              {rowDefinition?.required
+                                ? "Estrutural"
+                                : isOfficialPipeline
+                                  ? "Não mapeada"
+                                  : "Editável"}
+                            </td>
+                            <td className="d-flex gap-2">
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => {
+                                  setEditingStageId(stage.id);
+                                  setStageForms((current) => ({
+                                    ...current,
+                                    [pipeline.id]: stageToPayload(stage),
+                                  }));
+                                }}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                disabled={
+                                  deleteStage.isPending ||
+                                  Boolean(rowDefinition?.required)
                                 }
-                              }}
-                            >
-                              {deleteStage.isPending
-                                ? "Excluindo..."
-                                : "Excluir"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                                onClick={() => {
+                                  if (confirm("Deseja remover esta etapa?")) {
+                                    deleteStage.mutate({
+                                      pipelineId: pipeline.id,
+                                      stageId: stage.id,
+                                    });
+                                  }
+                                }}
+                              >
+                                {deleteStage.isPending
+                                  ? "Excluindo..."
+                                  : "Excluir"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {pipeline.stages.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={8}
+                            colSpan={10}
                             className="text-center text-body-secondary"
                           >
                             Nenhuma etapa cadastrada para este pipeline.
@@ -404,6 +562,7 @@ export default function PipelineCrudPage() {
                         type="number"
                         min={1}
                         className="form-control"
+                        disabled={isEditingOfficialStage}
                         value={stageForm.position}
                         onChange={(event) =>
                           setStageForms((current) => ({
@@ -420,6 +579,7 @@ export default function PipelineCrudPage() {
                       <label className="form-label">Nome *</label>
                       <input
                         className="form-control"
+                        disabled={isEditingOfficialStage}
                         value={stageForm.name}
                         onChange={(event) =>
                           setStageForms((current) => ({
@@ -435,20 +595,58 @@ export default function PipelineCrudPage() {
                     </div>
                     <div className="col-md-3">
                       <label className="form-label">Código *</label>
-                      <input
-                        className="form-control"
-                        value={stageForm.code}
-                        onChange={(event) =>
-                          setStageForms((current) => ({
-                            ...current,
-                            [pipeline.id]: {
-                              ...stageForm,
-                              code: event.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="campaign-angle"
-                      />
+                      {isOfficialPipeline && officialPipeline ? (
+                        <select
+                          className="form-select"
+                          value={stageForm.code}
+                          disabled={isEditingOfficialStage}
+                          onChange={(event) => {
+                            const selected = officialPipeline.stages.find(
+                              (stage) =>
+                                stage.operationalCode === event.target.value,
+                            );
+                            setStageForms((current) => ({
+                              ...current,
+                              [pipeline.id]: {
+                                ...stageForm,
+                                code: event.target.value,
+                                name: selected?.name ?? stageForm.name,
+                                position:
+                                  selected?.position ?? stageForm.position,
+                                required:
+                                  selected?.required ?? stageForm.required,
+                                active: true,
+                              },
+                            }));
+                          }}
+                        >
+                          <option value="">Selecione etapa oficial</option>
+                          {officialPipeline.stages.map((stage) => (
+                            <option
+                              key={stage.operationalCode}
+                              value={stage.operationalCode}
+                            >
+                              {stage.position}. {stage.name} (
+                              {stage.operationalCode})
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          className="form-control"
+                          value={stageForm.code}
+                          onChange={(event) =>
+                            setStageForms((current) => ({
+                              ...current,
+                              [pipeline.id]: {
+                                ...stageForm,
+                                code: event.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="campaign-angle"
+                        />
+                      )}
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">
@@ -493,6 +691,10 @@ export default function PipelineCrudPage() {
                           className="form-check-input"
                           type="checkbox"
                           checked={stageForm.required}
+                          disabled={
+                            isEditingOfficialStage ||
+                            Boolean(stageDefinition?.required)
+                          }
                           onChange={(event) =>
                             setStageForms((current) => ({
                               ...current,
@@ -518,6 +720,7 @@ export default function PipelineCrudPage() {
                           className="form-check-input"
                           type="checkbox"
                           checked={stageForm.active}
+                          disabled={Boolean(stageDefinition?.required)}
                           onChange={(event) =>
                             setStageForms((current) => ({
                               ...current,

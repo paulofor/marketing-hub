@@ -41,3 +41,48 @@ export type PipelineStagePayload = Pick<
   | "active"
   | "openAiModelId"
 >;
+
+export interface OfficialPipelineStageMetadata {
+  canonicalCode: string;
+  operationalCode: string;
+  name: string;
+  position: number;
+  required: boolean;
+  configurable: boolean;
+  aliases: string[];
+}
+
+export interface OfficialPipelineMetadata {
+  module: string;
+  code: string;
+  name: string;
+  official: boolean;
+  aliases: string[];
+  stages: OfficialPipelineStageMetadata[];
+}
+
+export interface PipelineMetadata {
+  validModules: string[];
+  officialPipelines: OfficialPipelineMetadata[];
+}
+
+export type PipelineDiagnosticsStatus = "OK" | "ATENÇÃO" | "BLOQUEADO";
+
+export interface PipelineDiagnosticsIssue {
+  severity: "ERROR" | "WARN" | "INFO";
+  stageCode?: string | null;
+  canonicalCode?: string | null;
+  message: string;
+  rootCause: string;
+  recommendedAction: string;
+}
+
+export interface PipelineDiagnostics {
+  pipelineId: number;
+  pipelineCode: string;
+  canonicalPipelineCode?: string | null;
+  status: PipelineDiagnosticsStatus;
+  expectedStages: number;
+  configuredStages: number;
+  issues: PipelineDiagnosticsIssue[];
+}

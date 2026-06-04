@@ -1,24 +1,30 @@
 package com.marketinghub.pipeline.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
+import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry;
+import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
+import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
+import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Testa as regras de manutenção de pipelines e etapas configuráveis.
@@ -31,8 +37,20 @@ class PipelineServiceTest {
     @Mock
     private PipelineStageRepository stageRepository;
 
-    @InjectMocks
+    @Mock
+    private OpenAiModelRepository openAiModelRepository;
+
+    private final PipelineDefinitionRegistry definitionRegistry = new PipelineDefinitionRegistry();
+
     private PipelineService service;
+
+    /**
+     * Inicializa o serviço com registry real para validar regras canônicas.
+     */
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        service = new PipelineService(pipelineRepository, stageRepository, openAiModelRepository, definitionRegistry);
+    }
 
     /**
      * Garante que a listagem devolve pipelines e etapas em ordem operacional previsível.
@@ -86,16 +104,194 @@ class PipelineServiceTest {
         assertThat(captor.getValue().getCode()).isEqualTo("campaign-angle");
     }
 
+
+    /**
+     * Garante que pipeline oficial não pode ser excluído pela tela administrativa.
+     */
+    @Test
+    void shouldNotDeleteOfficialPipeline() {
+        Pipeline pipeline = Pipeline.builder()
+                .id(10L)
+                .name("Pipeline de Experimento")
+                .code("experiment-pipeline")
+                .module("EXPERIMENT")
+                .stages(new ArrayList<>())
+                .build();
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+
+        assertThatThrownBy(() -> service.delete(10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Pipeline oficial não pode ser excluído");
+    }
+
+    /**
+     * Garante que a atualização de pipeline oficial preserva código e módulo estruturais.
+     */
+    @Test
+    void shouldNotChangeOfficialPipelineCodeOrModule() {
+        Pipeline pipeline = Pipeline.builder()
+                .id(10L)
+                .name("Pipeline de Experimento")
+                .code("experiment-pipeline")
+                .module("EXPERIMENT")
+                .stages(new ArrayList<>())
+                .build();
+        PipelineRequest request = new PipelineRequest();
+        request.setName("Pipeline editado");
+        request.setCode("outro-pipeline");
+        request.setModule("EXPERIMENT");
+        request.setActive(true);
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+
+        assertThatThrownBy(() -> service.update(10L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Código de pipeline oficial não pode ser alterado");
+    }
+
+    /**
+     * Garante que etapa obrigatória oficial não pode ser removida.
+     */
+    @Test
+    void shouldNotDeleteRequiredOfficialStage() {
+        Pipeline pipeline = officialPipelineWith(stage(1L, 1, "campaign-angle"));
+        when(stageRepository.findById(1L)).thenReturn(Optional.of(pipeline.getStages().getFirst()));
+
+        assertThatThrownBy(() -> service.deleteStage(10L, 1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Etapa obrigatória oficial não pode ser excluída");
+    }
+
+    /**
+     * Garante que etapa oficial não aceita troca de código estrutural para outra etapa canônica.
+     */
+    @Test
+    void shouldNotChangeOfficialStageStructuralCode() {
+        Pipeline pipeline = officialPipelineWith(stage(1L, 1, "campaign-angle"));
+        PipelineStageRequest request = stageRequest(1, "Ad Copy", "ad-copy");
+        when(stageRepository.findById(1L)).thenReturn(Optional.of(pipeline.getStages().getFirst()));
+
+        assertThatThrownBy(() -> service.updateStage(10L, 1L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Código estrutural de etapa oficial não pode ser alterado");
+    }
+
+    /**
+     * Garante que o diagnóstico acusa etapa obrigatória ausente no banco.
+     */
+    @Test
+    void shouldDiagnoseMissingRequiredOfficialStage() {
+        Pipeline pipeline = officialPipelineWith(stage(1L, 1, "campaign-angle"));
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+
+        PipelineDiagnosticsDto diagnostics = service.diagnostics(10L);
+
+        assertThat(diagnostics.status()).isEqualTo("BLOQUEADO");
+        assertThat(diagnostics.expectedStages()).isEqualTo(8);
+        assertThat(diagnostics.configuredStages()).isEqualTo(1);
+        assertThat(diagnostics.issues())
+                .anySatisfy(issue -> {
+                    assertThat(issue.severity()).isEqualTo("ERROR");
+                    assertThat(issue.message()).isEqualTo("Etapa obrigatória está ausente no banco.");
+                });
+    }
+
+    /**
+     * Garante que o diagnóstico acusa etapa extra sem mapeamento canônico.
+     */
+    @Test
+    void shouldDiagnoseExtraStageWithoutCanonicalMapping() {
+        Pipeline pipeline = officialPipelineWith(stage(1L, 1, "unknown-stage"));
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+
+        PipelineDiagnosticsDto diagnostics = service.diagnostics(10L);
+
+        assertThat(diagnostics.status()).isEqualTo("BLOQUEADO");
+        assertThat(diagnostics.issues())
+                .anySatisfy(issue -> assertThat(issue.message())
+                        .isEqualTo("Etapa extra não possui mapeamento canônico conhecido."));
+    }
+
+    /**
+     * Garante que cada etapa oficial possui código operacional e alias canônico reconhecido.
+     */
+    @Test
+    void shouldExposeOfficialStageAliasesAndCanonicalCodes() {
+        assertThat(definitionRegistry.officialPipelines()).singleElement().satisfies(pipeline -> {
+            assertThat(pipeline.code()).isEqualTo("experiment-pipeline");
+            assertThat(pipeline.stages()).hasSize(8);
+            assertThat(pipeline.stages())
+                    .allSatisfy(stage -> {
+                        assertThat(stage.canonicalCode()).isNotBlank();
+                        assertThat(stage.operationalCode()).isNotBlank();
+                        assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
+                        assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
+                    });
+        });
+    }
+
+    /**
+     * Garante que o serviço rejeita modelo OpenAI inexistente na etapa.
+     */
+    @Test
+    void shouldRejectMissingOpenAiModel() {
+        Pipeline pipeline = Pipeline.builder().id(10L).name("Pipeline").code("custom").module("EXPERIMENT").stages(new ArrayList<>()).build();
+        PipelineStageRequest request = stageRequest(1, "Campaign Angle", "campaign-angle");
+        request.setOpenAiModelId(99L);
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+        when(openAiModelRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createStage(10L, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("Modelo OpenAI não encontrado");
+    }
+
     /**
      * Cria uma etapa sintética para validar ordenação no serviço.
      */
     private PipelineStage stage(Long id, Integer position) {
+        return stage(id, position, "stage-" + position);
+    }
+
+    /**
+     * Cria uma etapa sintética com código explícito para validar contrato oficial.
+     */
+    private PipelineStage stage(Long id, Integer position, String code) {
         return PipelineStage.builder()
                 .id(id)
                 .position(position)
                 .name("Etapa " + position)
-                .code("stage-" + position)
+                .code(code)
+                .required(true)
+                .active(true)
                 .build();
+    }
+
+    /**
+     * Cria payload sintético de etapa para testes de validação.
+     */
+    private PipelineStageRequest stageRequest(Integer position, String name, String code) {
+        PipelineStageRequest request = new PipelineStageRequest();
+        request.setPosition(position);
+        request.setName(name);
+        request.setCode(code);
+        request.setRequired(true);
+        request.setActive(true);
+        return request;
+    }
+
+    /**
+     * Cria pipeline oficial sintético com as etapas informadas já vinculadas.
+     */
+    private Pipeline officialPipelineWith(PipelineStage... stages) {
+        Pipeline pipeline = Pipeline.builder()
+                .id(10L)
+                .name("Pipeline de Experimento")
+                .code("experiment-pipeline")
+                .module("EXPERIMENT")
+                .stages(new ArrayList<>(List.of(stages)))
+                .build();
+        pipeline.getStages().forEach(stage -> stage.setPipeline(pipeline));
+        return pipeline;
     }
 
 }

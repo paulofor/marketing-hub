@@ -3,16 +3,29 @@ package com.marketinghub.pipeline.service;
 import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
+import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry;
+import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry.PipelineDefinition;
+import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry.PipelineStageDefinition;
+import com.marketinghub.pipeline.dto.OfficialPipelineDto;
+import com.marketinghub.pipeline.dto.OfficialPipelineStageDto;
+import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
+import com.marketinghub.pipeline.dto.PipelineDiagnosticsIssueDto;
+import com.marketinghub.pipeline.dto.PipelineMetadataDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
 import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Serviço responsável por manter pipelines e etapas usados pela operação do Marketing Hub.
@@ -22,6 +35,7 @@ public class PipelineService {
     private final PipelineRepository pipelineRepository;
     private final PipelineStageRepository stageRepository;
     private final OpenAiModelRepository openAiModelRepository;
+    private final PipelineDefinitionRegistry definitionRegistry;
 
     /**
      * Inicializa o serviço com os repositórios centralizados de pipelines, etapas e modelos OpenAI.
@@ -29,10 +43,12 @@ public class PipelineService {
     public PipelineService(
             PipelineRepository pipelineRepository,
             PipelineStageRepository stageRepository,
-            OpenAiModelRepository openAiModelRepository) {
+            OpenAiModelRepository openAiModelRepository,
+            PipelineDefinitionRegistry definitionRegistry) {
         this.pipelineRepository = pipelineRepository;
         this.stageRepository = stageRepository;
         this.openAiModelRepository = openAiModelRepository;
+        this.definitionRegistry = definitionRegistry;
     }
 
     /**
@@ -55,39 +71,47 @@ public class PipelineService {
     }
 
     /**
-     * Cria um novo pipeline operacional.
+     * Cria um novo pipeline operacional validando módulo e contrato conhecido.
      */
     @Transactional
     public Pipeline create(PipelineRequest request) {
+        validatePipelineModule(request.getModule());
         Pipeline pipeline = new Pipeline();
         applyPipelineRequest(pipeline, request);
         return pipelineRepository.save(pipeline);
     }
 
     /**
-     * Atualiza os dados básicos de um pipeline existente.
+     * Atualiza os dados básicos de um pipeline existente sem permitir mudanças estruturais oficiais.
      */
     @Transactional
     public Pipeline update(Long id, PipelineRequest request) {
         Pipeline pipeline = findPipeline(id);
+        validatePipelineModule(request.getModule());
+        validateOfficialPipelineUpdate(pipeline, request);
         applyPipelineRequest(pipeline, request);
         return pipelineRepository.save(pipeline);
     }
 
     /**
-     * Remove um pipeline e suas etapas vinculadas.
+     * Remove um pipeline configurável, bloqueando exclusão de contratos oficiais.
      */
     @Transactional
     public void delete(Long id) {
-        pipelineRepository.delete(findPipeline(id));
+        Pipeline pipeline = findPipeline(id);
+        if (definitionRegistry.isOfficialPipelineCode(pipeline.getCode())) {
+            throw badRequest("Pipeline oficial não pode ser excluído: " + pipeline.getCode());
+        }
+        pipelineRepository.delete(pipeline);
     }
 
     /**
-     * Cria uma etapa dentro de um pipeline existente.
+     * Cria uma etapa dentro de um pipeline existente validando contrato oficial quando aplicável.
      */
     @Transactional
     public PipelineStage createStage(Long pipelineId, PipelineStageRequest request) {
         Pipeline pipeline = findPipeline(pipelineId);
+        validateStageRequest(pipeline, null, request);
         PipelineStage stage = new PipelineStage();
         stage.setPipeline(pipeline);
         applyStageRequest(stage, request);
@@ -95,21 +119,88 @@ public class PipelineService {
     }
 
     /**
-     * Atualiza uma etapa, preservando o vínculo com o pipeline informado na rota.
+     * Atualiza uma etapa, preservando o vínculo e bloqueando alterações estruturais oficiais.
      */
     @Transactional
     public PipelineStage updateStage(Long pipelineId, Long stageId, PipelineStageRequest request) {
         PipelineStage stage = findStageInPipeline(pipelineId, stageId);
+        validateStageRequest(stage.getPipeline(), stage, request);
         applyStageRequest(stage, request);
         return stageRepository.save(stage);
     }
 
     /**
-     * Remove uma etapa específica de um pipeline.
+     * Remove uma etapa específica, bloqueando remoção de etapa obrigatória oficial.
      */
     @Transactional
     public void deleteStage(Long pipelineId, Long stageId) {
-        stageRepository.delete(findStageInPipeline(pipelineId, stageId));
+        PipelineStage stage = findStageInPipeline(pipelineId, stageId);
+        PipelineDefinition definition = definitionRegistry.findByPipelineCode(stage.getPipeline().getCode()).orElse(null);
+        if (definition != null && definitionRegistry.findStage(definition, stage.getCode()).filter(PipelineStageDefinition::required).isPresent()) {
+            throw badRequest("Etapa obrigatória oficial não pode ser excluída: " + stage.getCode());
+        }
+        stageRepository.delete(stage);
+    }
+
+
+    /**
+     * Retorna os metadados oficiais que orientam os campos editáveis e protegidos na tela.
+     */
+    public PipelineMetadataDto metadata() {
+        return PipelineMetadataDto.builder()
+                .validModules(definitionRegistry.validModules().stream().sorted().toList())
+                .officialPipelines(definitionRegistry.officialPipelines().stream().map(this::toOfficialDto).toList())
+                .build();
+    }
+
+    /**
+     * Compara as etapas salvas no banco com a definição oficial conhecida pelo backend.
+     */
+    public PipelineDiagnosticsDto diagnostics(Long id) {
+        Pipeline pipeline = get(id);
+        PipelineDefinition definition = definitionRegistry.findByPipelineCode(pipeline.getCode()).orElse(null);
+        if (definition == null) {
+            return PipelineDiagnosticsDto.builder()
+                    .pipelineId(pipeline.getId())
+                    .pipelineCode(pipeline.getCode())
+                    .canonicalPipelineCode(null)
+                    .status("ATENÇÃO")
+                    .expectedStages(0)
+                    .configuredStages(pipeline.getStages().size())
+                    .issues(List.of(issue("WARN", null, null, "Pipeline não possui definição oficial no backend.",
+                            "Pipeline foi criado como configuração livre ou ainda não foi canonizado.",
+                            "Criar definição oficial no backend antes de usar como pipeline estrutural.")))
+                    .build();
+        }
+
+        List<PipelineDiagnosticsIssueDto> issues = new ArrayList<>();
+        Set<String> configuredCodes = new HashSet<>();
+        Set<Integer> configuredPositions = new HashSet<>();
+        for (PipelineStage stage : pipeline.getStages()) {
+            validateStageAgainstDefinition(definition, stage, configuredCodes, configuredPositions, issues);
+        }
+        for (PipelineStageDefinition expected : definition.stages()) {
+            boolean present = pipeline.getStages().stream()
+                    .anyMatch(stage -> definitionRegistry.findStage(definition, stage.getCode())
+                            .map(expected::equals)
+                            .orElse(false));
+            if (!present) {
+                issues.add(issue("ERROR", expected.operationalCode(), expected.canonicalCode(),
+                        "Etapa obrigatória está ausente no banco.",
+                        "Banco foi alterado manualmente ou o pipeline foi criado sem sincronização oficial.",
+                        "Cadastrar a etapa conforme definição oficial antes de executar o pipeline."));
+            }
+        }
+        String status = resolveDiagnosticsStatus(issues);
+        return PipelineDiagnosticsDto.builder()
+                .pipelineId(pipeline.getId())
+                .pipelineCode(pipeline.getCode())
+                .canonicalPipelineCode(definition.code())
+                .status(status)
+                .expectedStages(definition.stages().size())
+                .configuredStages(pipeline.getStages().size())
+                .issues(issues)
+                .build();
     }
 
     /**
@@ -130,6 +221,194 @@ public class PipelineService {
             throw new EntityNotFoundException("Etapa não pertence ao pipeline informado: " + pipelineId);
         }
         return stage;
+    }
+
+
+    /**
+     * Garante que o módulo informado pertence aos módulos oficiais conhecidos.
+     */
+    private void validatePipelineModule(String module) {
+        if (!definitionRegistry.validModules().contains(module)) {
+            throw badRequest("Módulo de pipeline desconhecido: " + module);
+        }
+    }
+
+    /**
+     * Bloqueia alteração de código ou módulo estrutural em pipeline oficial já existente.
+     */
+    private void validateOfficialPipelineUpdate(Pipeline pipeline, PipelineRequest request) {
+        if (!definitionRegistry.isOfficialPipelineCode(pipeline.getCode())) {
+            return;
+        }
+        PipelineDefinition definition = definitionRegistry.findByPipelineCode(pipeline.getCode()).orElseThrow();
+        if (!definitionRegistry.normalize(pipeline.getCode()).equals(definitionRegistry.normalize(request.getCode()))) {
+            throw badRequest("Código de pipeline oficial não pode ser alterado: " + pipeline.getCode());
+        }
+        if (!definition.module().equals(request.getModule())) {
+            throw badRequest("Módulo de pipeline oficial não pode ser alterado: " + pipeline.getCode());
+        }
+    }
+
+    /**
+     * Valida duplicidade operacional e aderência da etapa ao contrato oficial quando existir.
+     */
+    private void validateStageRequest(Pipeline pipeline, PipelineStage currentStage, PipelineStageRequest request) {
+        ensureUniqueStagePositionAndCode(pipeline, currentStage, request);
+        PipelineDefinition definition = definitionRegistry.findByPipelineCode(pipeline.getCode()).orElse(null);
+        if (definition == null) {
+            return;
+        }
+        PipelineStageDefinition requestedDefinition = definitionRegistry.findStage(definition, request.getCode())
+                .orElseThrow(() -> badRequest("Etapa não mapeia para definição canônica oficial: " + request.getCode()));
+        if (currentStage != null) {
+            PipelineStageDefinition currentDefinition = definitionRegistry.findStage(definition, currentStage.getCode())
+                    .orElseThrow(() -> badRequest("Etapa atual não mapeia para definição canônica oficial: " + currentStage.getCode()));
+            if (!currentDefinition.equals(requestedDefinition)) {
+                throw badRequest("Código estrutural de etapa oficial não pode ser alterado: " + currentStage.getCode());
+            }
+        }
+        if (requestedDefinition.required() && !request.isRequired()) {
+            throw badRequest("Etapa obrigatória oficial não pode deixar de ser obrigatória: " + request.getCode());
+        }
+        if (requestedDefinition.required() && !request.isActive()) {
+            throw badRequest("Etapa obrigatória oficial não pode ser desativada sem regra explícita: " + request.getCode());
+        }
+    }
+
+    /**
+     * Impede duplicidade de posição ou código operacional antes da constraint do banco.
+     */
+    private void ensureUniqueStagePositionAndCode(Pipeline pipeline, PipelineStage currentStage, PipelineStageRequest request) {
+        for (PipelineStage existing : pipeline.getStages()) {
+            if (currentStage != null && existing.getId().equals(currentStage.getId())) {
+                continue;
+            }
+            if (existing.getPosition().equals(request.getPosition())) {
+                throw badRequest("Já existe etapa com a posição operacional " + request.getPosition());
+            }
+            if (definitionRegistry.normalize(existing.getCode()).equals(definitionRegistry.normalize(request.getCode()))) {
+                throw badRequest("Já existe etapa com o código operacional " + request.getCode());
+            }
+        }
+    }
+
+    /**
+     * Adiciona divergências específicas de uma etapa comparando banco e definição oficial.
+     */
+    private void validateStageAgainstDefinition(
+            PipelineDefinition definition,
+            PipelineStage stage,
+            Set<String> configuredCodes,
+            Set<Integer> configuredPositions,
+            List<PipelineDiagnosticsIssueDto> issues) {
+        PipelineStageDefinition stageDefinition = definitionRegistry.findStage(definition, stage.getCode()).orElse(null);
+        String normalizedCode = definitionRegistry.normalize(stage.getCode());
+        if (!configuredCodes.add(normalizedCode)) {
+            issues.add(issue("ERROR", stage.getCode(), stageDefinition == null ? null : stageDefinition.canonicalCode(),
+                    "Código operacional duplicado no banco.",
+                    "Banco recebeu alteração duplicada antes da validação estrutural.",
+                    "Manter apenas uma etapa por código operacional."));
+        }
+        if (!configuredPositions.add(stage.getPosition())) {
+            issues.add(issue("ERROR", stage.getCode(), stageDefinition == null ? null : stageDefinition.canonicalCode(),
+                    "Posição operacional duplicada no banco.",
+                    "Banco recebeu alteração duplicada antes da validação estrutural.",
+                    "Manter apenas uma etapa por posição operacional."));
+        }
+        if (stageDefinition == null) {
+            issues.add(issue("ERROR", stage.getCode(), null,
+                    "Etapa extra não possui mapeamento canônico conhecido.",
+                    "Banco foi alterado manualmente ou a tela salvou código fora do contrato oficial.",
+                    "Remover a etapa extra ou criar alias oficial no backend."));
+            return;
+        }
+        if (!stage.getPosition().equals(stageDefinition.position())) {
+            issues.add(issue("ERROR", stage.getCode(), stageDefinition.canonicalCode(),
+                    "Etapa obrigatória está fora da posição canônica.",
+                    "Banco foi alterado manualmente ou por tela sem validação estrutural.",
+                    "Corrigir posição conforme definição oficial."));
+        }
+        if (stageDefinition.required() && !stage.isRequired()) {
+            issues.add(issue("ERROR", stage.getCode(), stageDefinition.canonicalCode(),
+                    "Etapa obrigatória está marcada como opcional no banco.",
+                    "Configuração operacional removeu obrigação estrutural do pipeline oficial.",
+                    "Marcar a etapa como obrigatória."));
+        }
+        if (stageDefinition.required() && !stage.isActive()) {
+            issues.add(issue("ERROR", stage.getCode(), stageDefinition.canonicalCode(),
+                    "Etapa obrigatória está inativa no banco.",
+                    "Configuração operacional desativou etapa necessária para execução do contrato.",
+                    "Reativar a etapa obrigatória ou formalizar regra explícita."));
+        }
+    }
+
+    /**
+     * Resolve o status agregado do diagnóstico a partir da maior severidade encontrada.
+     */
+    private String resolveDiagnosticsStatus(List<PipelineDiagnosticsIssueDto> issues) {
+        if (issues.stream().anyMatch(issue -> "ERROR".equals(issue.severity()))) {
+            return "BLOQUEADO";
+        }
+        if (issues.stream().anyMatch(issue -> "WARN".equals(issue.severity()))) {
+            return "ATENÇÃO";
+        }
+        return "OK";
+    }
+
+    /**
+     * Cria uma divergência padronizada com causa-raiz e ação recomendada para a tela.
+     */
+    private PipelineDiagnosticsIssueDto issue(
+            String severity,
+            String stageCode,
+            String canonicalCode,
+            String message,
+            String rootCause,
+            String recommendedAction) {
+        return PipelineDiagnosticsIssueDto.builder()
+                .severity(severity)
+                .stageCode(stageCode)
+                .canonicalCode(canonicalCode)
+                .message(message)
+                .rootCause(rootCause)
+                .recommendedAction(recommendedAction)
+                .build();
+    }
+
+    /**
+     * Converte definição oficial interna para DTO de metadados consumido pela tela.
+     */
+    private OfficialPipelineDto toOfficialDto(PipelineDefinition definition) {
+        return OfficialPipelineDto.builder()
+                .module(definition.module())
+                .code(definition.code())
+                .name(definition.name())
+                .official(definition.official())
+                .aliases(definition.aliases().stream().sorted().toList())
+                .stages(definition.stages().stream().map(this::toOfficialStageDto).toList())
+                .build();
+    }
+
+    /**
+     * Converte definição oficial de etapa para DTO de metadados consumido pela tela.
+     */
+    private OfficialPipelineStageDto toOfficialStageDto(PipelineStageDefinition definition) {
+        return OfficialPipelineStageDto.builder()
+                .canonicalCode(definition.canonicalCode())
+                .operationalCode(definition.operationalCode())
+                .name(definition.name())
+                .position(definition.position())
+                .required(definition.required())
+                .configurable(definition.configurable())
+                .aliases(definition.aliases().stream().sorted().toList())
+                .build();
+    }
+
+    /**
+     * Cria erro HTTP 400 para violações do contrato operacional editável.
+     */
+    private ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 
     /**

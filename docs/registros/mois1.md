@@ -890,3 +890,17 @@ Arquivos alterados:
   - docs/canonical/mois-worker-canon.v1.md
   - backend/AGENTS.md
   - AGENTS.md
+
+## 2026-06-04 — Fase 2 do pipeline de páginas de vendas em duas tabelas
+- implementada rotina idempotente de backfill inicial para popular `mois_sales_page` a partir de `mois_sales_library_url_ingest` consolidando fonte, URL, status atual, última captura, última análise, score, erro e vínculo possível com `mois_collected_reference`.
+- implementada migração de histórico mínimo para `mois_sales_page_job_execution`, incluindo o último job de processamento, a última análise, o último snapshot e a última captura bruta ligada à referência coletada quando houver vínculo.
+- adicionados contadores operacionais em log para páginas legadas, páginas novas antes/depois, execuções antes/depois, linhas afetadas/inseridas por etapa e ponteiros `last_job_execution_id` atualizados.
+- adicionada proteção para ignorar a rotina quando o schema de backfill ainda não existir, mantendo testes e ambientes incompletos sem falha de inicialização.
+- tentativa de execução direta contra o MySQL pela rede do Codex falhou por bloqueio de conexão direta à porta 3306; a rotina fica habilitada para execução automática no backend após deploy/inicialização.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/MoisSalesPageBackfillRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/MoisSalesPageBackfillService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/repository/jdbc/mois/MoisSalesPageBackfillServiceTest.java`
+- `backend/ads-service/src/main/resources/application.properties`
+- `docs/registros/mois1.md`

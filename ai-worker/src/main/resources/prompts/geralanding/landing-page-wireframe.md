@@ -150,6 +150,8 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - Agrupe CTAs do hero em um container próprio com objetivo/briefing de linha de ações, para que o preset consiga aplicar espaçamento, alinhamento e quebra mobile sem transformar os CTAs em barras soltas.
 - Não crie mais de 2 ações visíveis no hero antes da microcopy.
 - O formulário deve ter um botão `button` de submit com texto curto e direto.
+- Todo CTA principal precisa ser pensado como botão final premium, não como link: no `objetivo`/`briefingVisual` indique área clicável confortável, altura mínima e presença visual forte.
+- O submit do formulário deve ser o componente de ação mais evidente da seção de captura e não pode ficar menor que CTAs secundários.
 
 # Regras para imagens
 
@@ -160,6 +162,8 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - Não usar imagem decorativa genérica.
 - Imagens de prova devem pedir mockups/prints conceituais de tela ou páginas com elementos legíveis e úteis.
 - Hero com imagem controlada: declarar proporção e altura máxima, sem bloco full-width desproporcional.
+- A imagem principal do desktop deve nascer dentro de um wrapper dedicado de mídia/mockup, com intenção explícita de `max-width`, proporção e centralização; nunca deixe a imagem como bloco largo solto que possa ocupar metade da dobra com vazio.
+- Em `briefingVisual` da imagem hero, descreva que o preset deve limitar largura visual, aplicar moldura/sombra e manter preenchimento útil, sem áreas vazias grandes ao redor do mockup.
 
 # Formulário obrigatório
 
@@ -167,6 +171,9 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - Não incluir telefone, WhatsApp, CPF, empresa ou outros campos.
 - Campos devem ter rótulos ou microcopy visível.
 - Inputs não podem depender apenas de campos vazios para o usuário entender.
+- O formulário deve ficar dentro de um container/card próprio, com intenção clara de largura controlada no desktop; não desenhe formulário horizontalmente esticado, baixo ou sem hierarquia.
+- Em desktop, a intenção do formulário deve ser bloco vertical compacto e confiável, com campos full-width dentro do card, e não uma faixa larga atravessando a seção.
+- Em mobile, o formulário deve ocupar largura total segura, com campos e botão grandes para toque.
 
 # Heurísticas de composição
 
@@ -175,6 +182,7 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - Antes/depois: 3 itens de antes e 3 de depois.
 - Como funciona: 3 passos.
 - FAQ: 4 a 6 perguntas.
+- Formulário: card vertical com título/microcopy, labels, campos nome/e-mail e submit full-width dentro do card.
 - Evitar listas grandes no início da página.
 - Evitar mais de 5 itens visíveis por bloco quando a pessoa ainda não entendeu a oferta.
 - Evitar misturar benefícios, recursos e explicações extensas no mesmo bloco.
@@ -189,6 +197,9 @@ Releia o wireframe gerado e rejeite mentalmente se:
 - houver `targetSectionId` com `##`;
 - CTA interno for `button` em vez de `a`;
 - CTA principal estiver com `componente = none` ou sem container de ações;
+- qualquer CTA principal puder parecer link azul/barra fina por falta de componente ou intenção visual;
+- formulário desktop estiver descrito como faixa larga/baixa em vez de card vertical com largura controlada;
+- imagem hero estiver solta, gigante ou com áreas vazias sem moldura/limite;
 - hero não tiver separação clara entre texto, CTAs e prova visual;
 - a página ficar fraca sem as imagens.
 

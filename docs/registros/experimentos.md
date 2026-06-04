@@ -3278,3 +3278,16 @@
   - decisão de regra: como a etapa envia screenshots renderizados da landing, a avaliação deve priorizar o visual da tela e não carregar um prompt extenso com blocos de artefatos/HTML.
   - alteração aplicada: prompt de Quality Review simplificado para checklist visual curto e `QualityReviewBackendClient` passou a montar apenas contexto mínimo necessário para renderizar screenshots.
   - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md`.
+
+## 2026-06-03 — Reforço visual dos prompts de wireframe/design do GeraLanding
+
+- solicitação: melhorar os prompts após identificação de CTAs como links/barras azuis finas, botões com tap area fraca, formulário desktop esticado/baixo, imagem principal desktop larga com áreas vazias e aparência de rascunho em pontos críticos de conversão.
+- causa-raiz tratada: a geração upstream ainda permitia intenção estrutural e tokens visuais insuficientes para componentes críticos; o preset podia receber CTAs/formulário/imagem sem restrições explícitas de dimensão, largura, hierarquia e acabamento final.
+- correção aplicada:
+  - prompt de wireframe reforçado para declarar CTAs como botões premium, submit como ação principal, formulário em card vertical de largura controlada e imagem hero em wrapper dedicado com limite visual;
+  - prompt de design preset reforçado com bloco de correções obrigatórias para CTAs, tap area, formulário desktop, imagem hero e aparência final, além de classes mínimas para `formShell`, `formShellCentered`, `mediaConstrained` e `heroMediaMax`.
+- resultado esperado: novas landings do GeraLanding devem sair com CTAs mais parecidos com componentes finais, botões confortáveis em mobile/desktop, formulário desktop mais confiável e imagem principal mais refinada na primeira dobra.
+- arquivos alterados:
+  - `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md`
+  - `ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md`
+  - `docs/registros/experimentos.md`

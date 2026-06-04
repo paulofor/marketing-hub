@@ -33,6 +33,7 @@ public class BackendImageGenerationService {
     private static final Logger log = LoggerFactory.getLogger(BackendImageGenerationService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "landing-page-image-generation";
+    private static final String NEXT_STAGE_DESIGN_PRESET = "landing-page-design-preset";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -206,6 +207,24 @@ public class BackendImageGenerationService {
         }
         experiment.setLandingPageImageAssets(modelResponse);
         experimentRepository.save(experiment);
+        createDesignPresetExecution(experiment);
+    }
+
+    /** Agenda o preset de design como próxima etapa automática após a materialização dos assets de imagem. */
+    private void createDesignPresetExecution(Experiment experiment) {
+        Instant now = Instant.now();
+        GeraLandingStageExecution designExecution = GeraLandingStageExecution.builder()
+                .experimentId(experiment.getId())
+                .experiment(experiment)
+                .stageCode(NEXT_STAGE_DESIGN_PRESET)
+                .executionRequestedAt(now)
+                .createdAt(now)
+                .promptTemplateId("auto/image-generation")
+                .promptContent("Preset de design da landing iniciado automaticamente após o Gera Imagem.")
+                .status(STATUS_STARTED)
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .build();
+        executionRepository.save(designExecution);
     }
 
     /** Normaliza a mensagem de erro e garante status FALHA quando o callback traz apenas detalhe técnico. */

@@ -110,6 +110,7 @@ import OprmOperationsPage from "./pages/oprm/OprmOperationsPage";
 import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
 import OprmCnaeVolumePage from "./pages/oprm/OprmCnaeVolumePage";
 import OprmPipelinePage from "./pages/oprm/OprmPipelinePage";
+import OprmNicheResearchSeedBuilderDetailPage from "./pages/oprm/OprmNicheResearchSeedBuilderDetailPage";
 import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
 import MoisReferenceIntakePage from "./pages/mois/MoisReferenceIntakePage";
 import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
@@ -318,6 +319,7 @@ export default function App() {
                 element={<OprmOperationsPage />}
               />
               <Route path="/oprm/pipeline" element={<OprmPipelinePage />} />
+              <Route path="/oprm/pipeline/niche-research-seed-builder/:researchCycleId" element={<OprmNicheResearchSeedBuilderDetailPage />} />
               <Route
                 path="/oprm/occupations"
                 element={<OprmOccupationCatalogPage />}

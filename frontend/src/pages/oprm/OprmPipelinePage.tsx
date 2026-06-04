@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNicheResearchSeedBuilderDetail";
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import PageTitle from "../../components/PageTitle";
@@ -100,6 +102,14 @@ function getStageCardClass(stageNumber: string, hasContinuationError: boolean) {
   return "card border-0 shadow-sm h-100";
 }
 
+function formatQueryGoal(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function formatErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
@@ -130,6 +140,13 @@ export default function OprmPipelinePage() {
         (item) => item.researchCycleId === latestRunningCycle.researchCycleId,
       )
     : undefined;
+  const {
+    data: seedBuilderDetail,
+    error: seedBuilderDetailError,
+    isError: isSeedBuilderDetailError,
+    isFetching: isSeedBuilderDetailFetching,
+  } = useOprmNicheResearchSeedBuilderDetail(latestCycle?.researchCycleId);
+  const generatedSeed = seedBuilderDetail?.seed;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -350,6 +367,81 @@ export default function OprmPipelinePage() {
                           {buildFailureMessage(latestCycle.errorMessage)}
                         </div>
                       ) : null}
+                    </div>
+                  ) : null}
+
+                  {stage.number === "2" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Dados gerados pela IA
+                      </span>
+                      {isSeedBuilderDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando seed e queries do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isSeedBuilderDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(seedBuilderDetailError)}
+                        </div>
+                      ) : generatedSeed ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-5 text-secondary fw-normal">
+                              Seed
+                            </dt>
+                            <dd className="col-7 mb-0 fw-semibold">
+                              #{generatedSeed.nicheResearchSeedId}
+                            </dd>
+                            <dt className="col-5 text-secondary fw-normal">
+                              Gerado em
+                            </dt>
+                            <dd className="col-7 mb-0">
+                              {formatProcessedAt(generatedSeed.createdAt)}
+                            </dd>
+                            <dt className="col-5 text-secondary fw-normal">
+                              Nicho
+                            </dt>
+                            <dd className="col-7 mb-0">
+                              {generatedSeed.nicheName}
+                            </dd>
+                            <dt className="col-5 text-secondary fw-normal">
+                              Tipo
+                            </dt>
+                            <dd className="col-7 mb-0">
+                              {generatedSeed.businessType}
+                            </dd>
+                            <dt className="col-5 text-secondary fw-normal">
+                              Queries
+                            </dt>
+                            <dd className="col-7 mb-0 fw-semibold">
+                              {generatedSeed.totalQueries}
+                            </dd>
+                          </dl>
+                          <p className="text-secondary mb-2">
+                            {generatedSeed.initialAssumptions}
+                          </p>
+                          <p className="text-secondary mb-2">
+                            {generatedSeed.queries.length} queries geradas para
+                            as próximas etapas. Abra o detalhe para ver a
+                            requisição enviada à IA e o JSON completo gerado.
+                          </p>
+                          <Link
+                            className="btn btn-outline-primary btn-sm"
+                            to={`/oprm/pipeline/niche-research-seed-builder/${latestCycle.researchCycleId}`}
+                          >
+                            Ver detalhe da IA
+                          </Link>
+                        </div>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não tem
+                          seed nem queries gravadas pela etapa 2.
+                        </p>
+                      )}
                     </div>
                   ) : null}
                   {stage.number === "1" && latestRunningCycle ? (

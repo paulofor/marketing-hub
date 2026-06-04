@@ -3,6 +3,7 @@ import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNic
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import { useOprmSourceFetcherDetail } from "../../api/oprm/useOprmSourceFetcherDetail";
+import { useOprmSignalExtractorDetail } from "../../api/oprm/useOprmSignalExtractorDetail";
 import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -168,6 +169,14 @@ export default function OprmPipelinePage() {
   } = useOprmSourceFetcherDetail(latestCycle?.researchCycleId);
   const sourceSnapshots = sourceFetcherDetail?.snapshots ?? [];
   const latestSourceSnapshot = sourceSnapshots[sourceSnapshots.length - 1];
+  const {
+    data: signalExtractorDetail,
+    error: signalExtractorDetailError,
+    isError: isSignalExtractorDetailError,
+    isFetching: isSignalExtractorDetailFetching,
+  } = useOprmSignalExtractorDetail(latestCycle?.researchCycleId);
+  const latestSignals =
+    signalExtractorDetail?.signals.slice(-3).reverse() ?? [];
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -672,6 +681,102 @@ export default function OprmPipelinePage() {
                         <p className="text-secondary small mb-0">
                           Ciclo #{latestCycle.researchCycleId} ainda não possui
                           resumo da etapa 4.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {stage.number === "5" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Resumo da última execução
+                      </span>
+                      {isSignalExtractorDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando sinais do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isSignalExtractorDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(signalExtractorDetailError)}
+                        </div>
+                      ) : signalExtractorDetail ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-6 text-secondary fw-normal">
+                              Snapshots coletados
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                signalExtractorDetail.cycleTotalSourceSnapshots,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Sinais extraídos
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                signalExtractorDetail.cycleTotalExtractedSignals,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Status do ciclo
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              <span
+                                className={buildStatusBadgeClass(
+                                  signalExtractorDetail.cycleStatus,
+                                )}
+                              >
+                                {signalExtractorDetail.cycleStatus}
+                              </span>
+                            </dd>
+                          </dl>
+                          {latestSignals.length > 0 ? (
+                            <div className="d-flex flex-column gap-2">
+                              {latestSignals.map((signal) => (
+                                <div
+                                  className="border rounded-2 p-2 bg-light"
+                                  key={signal.extractedSignalId}
+                                >
+                                  <span className="badge text-bg-light border text-secondary mb-1">
+                                    {signal.signalType}
+                                  </span>
+                                  <p className="mb-1 fw-semibold">
+                                    {signal.signalText}
+                                  </p>
+                                  <p className="mb-1 text-secondary text-truncate">
+                                    {signal.evidenceExcerpt}
+                                  </p>
+                                  <span className="text-secondary">
+                                    Fonte: {signal.sourceDomain} · Confiança:{" "}
+                                    {signal.confidenceScore}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : signalExtractorDetail.cycleTotalSourceSnapshots >
+                            0 ? (
+                            <p className="text-primary mb-0">
+                              Há{" "}
+                              {signalExtractorDetail.cycleTotalSourceSnapshots}{" "}
+                              snapshots aguardando a extração estruturada da
+                              etapa 5.
+                            </p>
+                          ) : (
+                            <p className="text-secondary mb-0">
+                              Nenhum snapshot coletado disponível para extração
+                              de sinais neste ciclo.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não possui
+                          resumo da etapa 5.
                         </p>
                       )}
                     </div>

@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-04-oprm-nichocnae-signal-extractor.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-04-quality-review-audit.yaml
       relativeToChangelogFile: true
   - include:

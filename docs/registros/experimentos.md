@@ -3368,6 +3368,20 @@
 - cânones atualizados: `docs/canonical/procedimento-experimento-canon.v1.md` e `docs/canonical/geralanding-arquitetura-canon.v1.md` passaram a declarar o encadeamento automático WireFrame → Copy.
 - validação automatizada: teste unitário do `BackendWireframeService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
 
+## 2026-06-04 — Reforço de prompts e schema do preset design GeraLanding para desktop premium
+
+- solicitação: usar a avaliação de qualidade mais recente para melhorar prompts e schemas do `geralanding`, corrigindo hero empilhado no desktop, CTAs sem acabamento, inputs fracos e conflito entre classes antigas do wireframe e classes premium do preset.
+- causa-raiz/objetivo: o preset podia aplicar classes premium sem remover/neutralizar classes antigas como `stackCol` e `gridCols1`; como a cascata final pode manter CSS do wireframe depois do preset, o layout desktop ficava em coluna única e componentes interativos pareciam inacabados.
+- correção aplicada: o prompt `landing-page-design-preset` passou a orientar remoção de classes conflitantes no mesmo elemento e definições completas para `heroDesktopGrid`, `gridDesktopTwo`, `gridDesktopThree`, botões, formulário e inputs, sem tratar schema como substituto de julgamento visual.
+- impacto esperado: a próxima regeneração do preset tende a produzir primeira dobra desktop em duas colunas, cards em grid real, CTAs com corpo visual e formulário mais premium, reduzindo aparência de template quebrado.
+
+
+## 2026-06-04 — Ajuste cirúrgico do Preset Design para preservar mobile
+
+- solicitação: revisar a melhoria anterior com cuidado para não piorar os pontos já bem avaliados, lembrando que o mobile é a experiência mais importante.
+- causa-raiz/objetivo: a correção anterior protegia o desktop, mas o uso amplo de `!important` desktop e a exigência de `minItems` no schema poderiam induzir estilos artificiais ou disputar com a experiência mobile que já estava boa.
+- correção aplicada: o prompt passou a declarar explicitamente mobile como prioridade comercial, a correção desktop voltou a preferir remoção de classes conflitantes em vez de `!important` padrão, e o schema retornou a permitir listas de estilo sem `minItems` para não forçar classes artificiais.
+- impacto esperado: manter os ganhos de CTA/formulário/grid desktop sem degradar responsividade, leitura e conversão no mobile.
 ## 2026-06-04 — Remoção do catálogo oficial OpenAI sem token
 
 - solicitação: retirar da tela `/openai-models` o bloco/botão “Atualizar catálogo”, pois a importação direta da OpenAI não funciona no ambiente sem token.

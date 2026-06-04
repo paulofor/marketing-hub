@@ -244,6 +244,21 @@ class PresetDesignBackendClientTest {
                 .doesNotContain("\"not\"");
     }
 
+    /** Deve manter no prompt a regra cirúrgica de remover classes antigas sem prejudicar o mobile. */
+    @Test
+    void presetDesignPromptShouldBlockConflictingWireframeLayoutClassesWithoutWeakeningMobile() throws Exception {
+        String prompt = new ClassPathResource("prompts/geralanding/landing-page-design-preset.md")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(prompt)
+                .contains("Mobile é a prioridade comercial")
+                .contains("REMOVA da lista `estilos[]`")
+                .contains("stackCol")
+                .contains("gridCols1")
+                .contains("não use `!important` como solução padrão no desktop")
+                .contains("grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr)");
+    }
+
     /** Percorre recursivamente o schema e lista objetos que não bloqueiam propriedades extras. */
     private void collectObjectSchemasWithoutStrictAdditionalProperties(JsonNode node, String path, List<String> invalidPaths) {
         if (node == null || node.isMissingNode()) {

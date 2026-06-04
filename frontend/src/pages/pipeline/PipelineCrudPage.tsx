@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import PageTitle from "../../components/PageTitle";
+import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { usePipelines } from "../../api/pipeline/usePipelines";
 import type {
   Pipeline,
@@ -31,6 +32,7 @@ const emptyStage: PipelineStagePayload = {
   description: "",
   required: true,
   active: true,
+  openAiModelId: null,
 };
 
 function pipelineToPayload(pipeline: Pipeline): PipelinePayload {
@@ -51,11 +53,14 @@ function stageToPayload(stage: PipelineStage): PipelineStagePayload {
     description: stage.description ?? "",
     required: stage.required,
     active: stage.active,
+    openAiModelId: stage.openAiModelId ?? null,
   };
 }
 
 export default function PipelineCrudPage() {
   const { data, isLoading, isError } = usePipelines();
+  const { data: openAiModels, isLoading: isLoadingOpenAiModels } =
+    useOpenAiModels();
   const createPipeline = useCreatePipeline();
   const updatePipeline = useUpdatePipeline();
   const deletePipeline = useDeletePipeline();
@@ -64,6 +69,7 @@ export default function PipelineCrudPage() {
   const deleteStage = useDeletePipelineStage();
 
   const pipelines = useMemo(() => data ?? [], [data]);
+  const modelOptions = useMemo(() => openAiModels ?? [], [openAiModels]);
   const [pipelineForm, setPipelineForm] =
     useState<PipelinePayload>(emptyPipeline);
   const [editingPipelineId, setEditingPipelineId] = useState<number | null>(
@@ -315,6 +321,7 @@ export default function PipelineCrudPage() {
                         <th>Código</th>
                         <th>Descrição</th>
                         <th>Obrigatória</th>
+                        <th>Modelo OpenAI</th>
                         <th>Status</th>
                         <th>Ações</th>
                       </tr>
@@ -329,6 +336,16 @@ export default function PipelineCrudPage() {
                           </td>
                           <td>{stage.description || "-"}</td>
                           <td>{stage.required ? "Sim" : "Não"}</td>
+                          <td>
+                            {stage.openAiModelCode ? (
+                              <span title={stage.openAiModelName ?? undefined}>
+                                {stage.openAiModelName ?? stage.openAiModelCode}{" "}
+                                (<code>{stage.openAiModelCode}</code>)
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td>{stage.active ? "Ativa" : "Inativa"}</td>
                           <td className="d-flex gap-2">
                             <button
@@ -365,7 +382,7 @@ export default function PipelineCrudPage() {
                       {pipeline.stages.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={7}
+                            colSpan={8}
                             className="text-center text-body-secondary"
                           >
                             Nenhuma etapa cadastrada para este pipeline.
@@ -432,6 +449,42 @@ export default function PipelineCrudPage() {
                         }
                         placeholder="campaign-angle"
                       />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">
+                        Modelo OpenAI da etapa
+                      </label>
+                      <select
+                        className="form-select"
+                        value={stageForm.openAiModelId ?? ""}
+                        disabled={isLoadingOpenAiModels}
+                        onChange={(event) =>
+                          setStageForms((current) => ({
+                            ...current,
+                            [pipeline.id]: {
+                              ...stageForm,
+                              openAiModelId: event.target.value
+                                ? Number(event.target.value)
+                                : null,
+                            },
+                          }))
+                        }
+                      >
+                        <option value="">
+                          {isLoadingOpenAiModels
+                            ? "Carregando modelos..."
+                            : "Sem modelo fixo"}
+                        </option>
+                        {modelOptions.map((model) => (
+                          <option key={model.id} value={model.id}>
+                            {model.name} ({model.code})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="form-text">
+                        Use o modelo recomendado para manter foco em venda por
+                        etapa.
+                      </div>
                     </div>
                     <div className="col-md-2 d-flex align-items-end">
                       <div className="form-check form-switch mb-2">

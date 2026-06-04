@@ -47,6 +47,14 @@ Regras arquiteturais refletidas (ArchUnit):
 - Cada pacote direto `geralanding.<etapa>.service` de backend deve possuir os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`.
 - Os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta` devem conter somente tipos Java declarados como `record`, preservando DTOs contratuais imutáveis para as bordas de cada etapa.
 
+
+## Catálogo operacional de pipeline e modelo por etapa
+
+- O catálogo administrativo de pipelines e etapas é persistido em `pipeline` e `pipeline_stage` e deve ser usado como fonte operacional para configurar a escolha padrão de modelo por etapa.
+- Cada registro de `pipeline_stage` pode apontar para um modelo da tabela `openai_model` por meio de `openai_model_id`; quando o campo estiver nulo, a etapa deve manter o fallback técnico já definido no executor/worker correspondente.
+- Para o GeraLanding, a configuração de modelo por etapa deve priorizar a finalidade comercial da etapa e o foco em vendas, evitando parâmetros técnicos avançados na tela principal.
+- A tela administrativa de pipelines deve exibir uma seleção simples de modelo OpenAI por etapa, usando os modelos cadastrados em `openai_model`.
+
 ## Quality Review visual
 
 - A etapa `landing-page-quality-review` é o Quality Gate comercial final do GeraLanding e deve usar modelo com capacidade de visão da OpenAI como avaliador principal da experiência renderizada.

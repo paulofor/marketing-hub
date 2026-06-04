@@ -600,6 +600,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-06-04-pipeline-stage-openai-model.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: V2030_10_20__hypothesis_model_and_cost.sql
       relativeToChangelogFile: true
 

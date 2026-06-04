@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-pipeline-stage-openai-model
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: pipeline_stage
+                columnName: openai_model_id
+      changes:
+        - addColumn:
+            tableName: pipeline_stage
+            columns:
+              - column:
+                  name: openai_model_id
+                  type: BIGINT
+                  remarks: Modelo OpenAI padrão escolhido para a etapa do pipeline.
+        - createIndex:
+            tableName: pipeline_stage
+            indexName: idx_pipeline_stage_openai_model
+            columns:
+              - column:
+                  name: openai_model_id
+        - addForeignKeyConstraint:
+            baseTableName: pipeline_stage
+            baseColumnNames: openai_model_id
+            constraintName: fk_pipeline_stage_openai_model
+            referencedTableName: openai_model
+            referencedColumnNames: id
+            onDelete: SET NULL

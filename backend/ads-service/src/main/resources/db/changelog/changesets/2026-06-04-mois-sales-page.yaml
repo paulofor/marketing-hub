@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-mois-sales-page-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_collected_reference
+        - not:
+            tableExists:
+              tableName: mois_sales_page
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                workspace_id VARCHAR(120) NOT NULL,
+                source VARCHAR(40) NOT NULL,
+                source_job_id VARCHAR(120) NULL,
+                source_reference_id VARCHAR(120) NULL,
+                collected_reference_id BIGINT NULL,
+                product_name VARCHAR(512) NULL,
+                title VARCHAR(512) NULL,
+                url_original VARCHAR(1024) NOT NULL,
+                url_canonical VARCHAR(1024) NOT NULL,
+                sales_page_url VARCHAR(1024) NULL,
+                product_url VARCHAR(1024) NULL,
+                url_final VARCHAR(1024) NULL,
+                redirect_root_url VARCHAR(1024) NULL,
+                current_stage VARCHAR(40) NOT NULL,
+                current_status VARCHAR(40) NOT NULL,
+                capture_status VARCHAR(40) NULL,
+                analysis_status VARCHAR(40) NULL,
+                http_status INT NULL,
+                content_type VARCHAR(255) NULL,
+                html_sha256 VARCHAR(64) NULL,
+                html_bytes BIGINT NOT NULL DEFAULT 0,
+                score_total DECIMAL(6,2) NULL,
+                offer_summary VARCHAR(1000) NULL,
+                mechanism_summary VARCHAR(1000) NULL,
+                promise_summary VARCHAR(1000) NULL,
+                proof_summary VARCHAR(1000) NULL,
+                last_error_category VARCHAR(120) NULL,
+                last_error_message VARCHAR(1000) NULL,
+                last_job_execution_id BIGINT NULL,
+                ingest_count INT NOT NULL DEFAULT 1,
+                first_seen_at DATETIME NULL,
+                last_collected_at DATETIME NULL,
+                last_captured_at DATETIME NULL,
+                last_analyzed_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_mois_sales_page_workspace_url (workspace_id, url_canonical(512)),
+                KEY idx_mois_sales_page_source_status (workspace_id, source, current_status, updated_at),
+                KEY idx_mois_sales_page_stage_status (workspace_id, current_stage, current_status, updated_at),
+                KEY idx_mois_sales_page_score (workspace_id, score_total),
+                KEY idx_mois_sales_page_source_reference (workspace_id, source, source_job_id, source_reference_id),
+                KEY idx_mois_sales_page_collected_reference (collected_reference_id),
+                CONSTRAINT fk_mois_sales_page_collected_reference
+                  FOREIGN KEY (collected_reference_id) REFERENCES mois_collected_reference(id)
+                  ON DELETE SET NULL
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

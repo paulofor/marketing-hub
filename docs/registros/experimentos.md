@@ -3314,3 +3314,9 @@
 - causa-raiz/objetivo: o diagnóstico de qualidade depende diretamente das evidências visuais enviadas; sem prévia na tela, o usuário precisava abrir o JSON bruto para conferir quais imagens foram avaliadas.
 - correção aplicada: o detalhe da execução agora identifica imagens anexadas no `openAiRequestBody` da etapa Quality Review, renderiza as prévias em cards com link para abrir cada imagem em nova aba e mantém mensagem explícita quando não houver imagem no payload.
 - validação automatizada: adicionados testes unitários para extração de imagens em payload OpenAI Responses API e payload bruto com data URLs duplicadas.
+## 2026-06-04 — Restrição arquitetural de repositories nos services do GeraLanding
+
+- solicitação: reforçar no teste de arquitetura do backend que os pacotes `geralanding.*.service` só possam acessar repositories das quatro tabelas usadas pelo GeraLanding.
+- causa-raiz/objetivo: evitar acoplamento acidental dos services do GeraLanding com persistências de outros módulos/tabelas, preservando o modelo central do fluxo de landing.
+- correção aplicada: `ArquiteturaTest` passou a manter lista explícita dos repositories permitidos para services do GeraLanding: `ExperimentRepository`, `HypothesisRepository`, `FrameworkImageGenerationJobRepository` e `GeraLandingStageExecutionRepository`.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` documenta que apenas repositories das tabelas `experiment`, `hypothesis`, `framework_image_generation_job` e `gera_landing_stage_execution` são permitidos nessa camada.

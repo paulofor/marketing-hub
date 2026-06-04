@@ -1,11 +1,61 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - MOIS Sales Library
-  version: 0.2.0
-  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS.
+  version: 0.3.0
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 5, os endpoints de jobs de análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal; tabelas legadas são mantidas apenas para auditoria transitória.
 servers:
   - url: /api/mois/sales-library
 paths:
+  /jobs:claim:
+    post:
+      summary: Reserva a próxima execução de análise pelo modelo operacional novo
+      description: Retorna `jobId` como identificador de `mois_sales_page_job_execution`; o backend espelha no legado somente para auditoria durante a transição.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesLibraryClaimRequest'
+      responses:
+        '200':
+          description: Resultado da reserva operacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesLibraryClaimResponse'
+  /jobs/{jobId}:complete:
+    post:
+      summary: Conclui uma execução de análise operacional
+      description: Atualiza primariamente `mois_sales_page_job_execution` e o estado atual de `mois_sales_page`; o legado recebe espelho de auditoria quando houver vínculo.
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesLibraryCompleteRequest'
+      responses:
+        '204':
+          description: Execução concluída
+  /jobs/{jobId}:fail:
+    post:
+      summary: Registra falha de uma execução de análise operacional
+      description: Atualiza primariamente `mois_sales_page_job_execution` e `mois_sales_page`; o legado recebe espelho de auditoria quando houver vínculo.
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesLibraryFailRequest'
+      responses:
+        '204':
+          description: Falha registrada
   /collected-reference-html:claim:
     post:
       summary: Reserva uma referência coletada para captura de HTML bruto
@@ -80,6 +130,13 @@ paths:
                 $ref: '#/components/schemas/SalesLibrarySnapshotCaptureResponse'
 components:
   parameters:
+    JobId:
+      in: path
+      name: jobId
+      required: true
+      schema:
+        type: integer
+        format: int64
     CaptureId:
       in: path
       name: captureId
@@ -88,6 +145,71 @@ components:
         type: integer
         format: int64
   schemas:
+    SalesLibraryClaimRequest:
+      type: object
+      required: [workspaceId, source]
+      properties:
+        workspaceId:
+          type: string
+          example: workspace-001
+        source:
+          type: string
+          example: HOTMART
+    SalesLibraryClaimedJob:
+      type: object
+      properties:
+        jobId:
+          type: integer
+          format: int64
+          description: Identificador de `mois_sales_page_job_execution` na Fase 5.
+        pageId:
+          type: integer
+          format: int64
+          description: Identificador de `mois_sales_page`.
+        urlCanonical:
+          type: string
+        title:
+          type: string
+    SalesLibraryClaimResponse:
+      type: object
+      properties:
+        claimed:
+          type: boolean
+        job:
+          $ref: '#/components/schemas/SalesLibraryClaimedJob'
+    SalesLibraryCompleteRequest:
+      type: object
+      properties:
+        scoreTotal:
+          type: number
+        sectionsJson:
+          type: string
+        copyJson:
+          type: string
+        visualJson:
+          type: string
+        imageJson:
+          type: string
+        analysisNotes:
+          type: string
+        requestPayloadJson:
+          type: string
+        parserVersion:
+          type: string
+        promptVersion:
+          type: string
+        modelName:
+          type: string
+        analyzedAt:
+          type: string
+          format: date-time
+    SalesLibraryFailRequest:
+      type: object
+      properties:
+        errorCategory:
+          type: string
+        errorMessage:
+          type: string
     CollectedReferenceHtmlClaimRequest:
       type: object
       required: [workspaceId, source]

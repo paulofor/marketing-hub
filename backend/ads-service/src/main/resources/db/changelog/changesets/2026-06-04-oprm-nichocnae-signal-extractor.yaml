@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-01-oprm-source-snapshot-signal-status
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_source_snapshot
+              columnName: signal_extraction_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_source_snapshot
+                ADD COLUMN signal_extraction_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+                ADD COLUMN signal_extraction_error LONGTEXT NULL,
+                ADD COLUMN signal_extracted_at DATETIME NULL;
+              CREATE INDEX idx_oprm_source_snapshot_signal_pending
+                ON oprm_source_snapshot (fetch_status, signal_extraction_status, research_cycle_id, id);
+
+  - changeSet:
+      id: 2026-06-04-02-oprm-extracted-signal
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_extracted_signal
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_extracted_signal (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                research_cycle_id BIGINT NOT NULL,
+                source_snapshot_id BIGINT NOT NULL,
+                source_candidate_id BIGINT NOT NULL,
+                signal_type VARCHAR(64) NOT NULL,
+                signal_text VARCHAR(500) NOT NULL,
+                evidence_excerpt VARCHAR(1000) NOT NULL,
+                source_domain VARCHAR(255) NOT NULL,
+                confidence_score INT NOT NULL,
+                created_by VARCHAR(64) NOT NULL,
+                created_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_extracted_signal PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_oprm_extracted_signal_cycle ON oprm_extracted_signal (research_cycle_id, id);
+              CREATE INDEX idx_oprm_extracted_signal_snapshot ON oprm_extracted_signal (source_snapshot_id);
+              CREATE INDEX idx_oprm_extracted_signal_type ON oprm_extracted_signal (signal_type, confidence_score);

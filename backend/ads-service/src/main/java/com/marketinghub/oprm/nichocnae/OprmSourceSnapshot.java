@@ -60,6 +60,15 @@ public class OprmSourceSnapshot {
   @Column(name = "error_message", columnDefinition = "LONGTEXT")
   private String errorMessage;
 
+  @Column(name = "signal_extraction_status", nullable = false, length = 32)
+  private String signalExtractionStatus;
+
+  @Column(name = "signal_extraction_error", columnDefinition = "LONGTEXT")
+  private String signalExtractionError;
+
+  @Column(name = "signal_extracted_at")
+  private Instant signalExtractedAt;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 }

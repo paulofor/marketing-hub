@@ -32,6 +32,7 @@ public class BackendSourceFetcherService {
   private static final String DEFAULT_FETCH_STATUS = "COMPLETED";
   private static final String DEFAULT_SOURCE_TYPE = "PUBLIC_CONTENT";
   private static final String DEFAULT_STORAGE_POLICY = "SHORT_EXCERPT_ALLOWED";
+  private static final String SIGNAL_STATUS_PENDING = "PENDING";
   private static final int MAX_PENDING = 30;
   private static final int MAX_SHORT_EXCERPT_LENGTH = 1200;
 
@@ -192,6 +193,9 @@ public class BackendSourceFetcherService {
     snapshot.setStoragePolicy(defaultText(request.storagePolicy(), DEFAULT_STORAGE_POLICY));
     snapshot.setLicenseState(trimToNull(request.licenseState()));
     snapshot.setErrorMessage(null);
+    snapshot.setSignalExtractionStatus(SIGNAL_STATUS_PENDING);
+    snapshot.setSignalExtractionError(null);
+    snapshot.setSignalExtractedAt(null);
     snapshot.setCreatedAt(now);
     return snapshot;
   }

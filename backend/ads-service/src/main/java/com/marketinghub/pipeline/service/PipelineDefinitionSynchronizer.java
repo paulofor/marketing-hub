@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,19 +27,34 @@ public class PipelineDefinitionSynchronizer {
     private final PipelineStageRepository stageRepository;
     private final PipelineDefinitionRegistry definitionRegistry;
     private final PipelineService pipelineService;
+    private final PipelinePersistentContractSynchronizer persistentContractSynchronizer;
 
     /**
      * Inicializa o sincronizador com persistência centralizada, registry canônico e diagnóstico do serviço.
+     */
+    @Autowired
+    public PipelineDefinitionSynchronizer(
+            PipelineRepository pipelineRepository,
+            PipelineStageRepository stageRepository,
+            PipelineDefinitionRegistry definitionRegistry,
+            PipelineService pipelineService,
+            PipelinePersistentContractSynchronizer persistentContractSynchronizer) {
+        this.pipelineRepository = pipelineRepository;
+        this.stageRepository = stageRepository;
+        this.definitionRegistry = definitionRegistry;
+        this.pipelineService = pipelineService;
+        this.persistentContractSynchronizer = persistentContractSynchronizer;
+    }
+
+    /**
+     * Inicializa o sincronizador em testes que não exercitam a persistência separada da fase 3.
      */
     public PipelineDefinitionSynchronizer(
             PipelineRepository pipelineRepository,
             PipelineStageRepository stageRepository,
             PipelineDefinitionRegistry definitionRegistry,
             PipelineService pipelineService) {
-        this.pipelineRepository = pipelineRepository;
-        this.stageRepository = stageRepository;
-        this.definitionRegistry = definitionRegistry;
-        this.pipelineService = pipelineService;
+        this(pipelineRepository, stageRepository, definitionRegistry, pipelineService, null);
     }
 
     /**
@@ -75,6 +91,9 @@ public class PipelineDefinitionSynchronizer {
             synchronizeStage(pipeline, definition, stageDefinition, appliedActions);
         }
         pipelineRepository.save(pipeline);
+        if (persistentContractSynchronizer != null) {
+            appliedActions.addAll(persistentContractSynchronizer.sync(definition, pipeline));
+        }
 
         PipelineDiagnosticsDto diagnostics = pipelineService.diagnostics(pipelineId);
         return PipelineSyncResultDto.builder()

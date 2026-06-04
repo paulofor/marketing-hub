@@ -85,26 +85,29 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         return new StageExecution<>(idJob, experimentId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input);
     }
 
-    /** Monta o contexto textual enviado ao modelo com os artefatos fonte usados para diagnosticar o que ficou ruim. */
+    /** Monta o contexto textual enviado ao modelo usando somente o HTML final consolidado do GeraLanding. */
     private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> experiment = asMap(pending.get("experiment"));
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("experimentId", experiment.get("id"));
-        payload.put("experimentName", experiment.get("name"));
-        payload.put("landingPageWireframe", experiment.get("landingPageWireframe"));
-        payload.put("landingPageDesignPreset", experiment.get("landingPageDesignPreset"));
-        payload.put("htmlGeraLanding", experiment.get("htmlGeraLanding"));
-        payload.put("landingPageHtml", experiment.get("landingPageHtml"));
+        putIfPresent(payload, "htmlGeraLanding", resolveHtmlGeraLanding(experiment));
         return payload;
     }
 
-    /** Resolve o HTML final que deve ser renderizado em browser para gerar screenshots do Quality Review. */
+    /** Resolve exclusivamente o htmlGeraLanding usado como fonte visual canônica do Quality Review. */
     private String resolveLandingHtml(Map<String, Object> promptData) {
-        String htmlGeraLanding = asString(promptData.get("htmlGeraLanding"));
-        if (htmlGeraLanding != null && !htmlGeraLanding.isBlank()) {
-            return htmlGeraLanding;
+        return asString(promptData.get("htmlGeraLanding"));
+    }
+
+    /** Resolve o campo canônico htmlGeraLanding recebido do backend sem usar fallback legado de landingPageHtml. */
+    private String resolveHtmlGeraLanding(Map<String, Object> experiment) {
+        return asString(experiment.get("htmlGeraLanding"));
+    }
+
+    /** Adiciona ao payload somente campos com valor real para preservar compatibilidade com Map.copyOf. */
+    private void putIfPresent(Map<String, Object> payload, String key, Object value) {
+        if (value != null) {
+            payload.put(key, value);
         }
-        return asString(promptData.get("landingPageHtml"));
     }
 
     /** Envia o callback de resposta ou falha da revisão visual ao backend. */

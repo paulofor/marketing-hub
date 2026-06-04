@@ -3485,3 +3485,11 @@
   - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStageConfig.java
   - backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelinePersistentContractSynchronizer.java
   - backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java
+
+## 2026-06-04 — Quality Review usa somente html_geralanding
+
+- solicitação: o prompt da etapa `landing-page-quality-review` deve considerar apenas o HTML consolidado `html_geralanding`, sem usar `landing_page_html` legado, wireframe ou preset design como contexto textual.
+- causa-raiz/objetivo: o Quality Review avalia o artefato final publicável e o fallback `landing_page_html` pode estar nulo por contrato; incluir campos nulos ou fontes intermediárias derrubava o worker antes do despacho e confundia a análise de qualidade do HTML final.
+- correção aplicada: o Worker AI passou a montar `promptData` da revisão visual somente com `htmlGeraLanding`, ignorando `landingPageHtml` e artefatos intermediários; o prompt markdown foi simplificado para orientar avaliação apenas pelo HTML final e screenshots renderizados.
+- cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` registra que o Quality Review visual usa exclusivamente `experiment.html_geralanding` como HTML fonte.
+- validação automatizada: testes do `QualityReviewBackendClient` cobrem ausência de fallback legado e `landingPageHtml` nulo; teste do `QualityReviewPromptBuilder` garante que o prompt não inclui wireframe/preset.

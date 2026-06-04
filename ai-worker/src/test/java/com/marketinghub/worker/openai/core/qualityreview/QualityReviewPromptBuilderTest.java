@@ -44,12 +44,7 @@ class QualityReviewPromptBuilderTest {
                         36L,
                         "landing-page-quality-review",
                         "job-quality-1",
-                        Map.of(
-                                "landingPageWireframe", Map.of("sectionOrder", List.of(Map.of("sectionId", "hero", "purpose", "Promessa"))),
-                                "landingPageDesignPreset", Map.of("presetId", "premium", "sectionPresets", List.of(Map.of("sectionId", "hero"))),
-                                "htmlGeraLanding", "<!doctype html><html><body>Landing</body></html>",
-                                "CASE_DATA_BLOCK", "[CASE_DATA_BEGIN]\nlandingPageImageAssets: https://cdn.example.com/asset-hero.jpg\n[CASE_DATA_END]",
-                                "landingPageImageAssets", Map.of("sourceUrl", "https://cdn.example.com/asset-hero.jpg")),
+                        Map.of("htmlGeraLanding", "<!doctype html><html><body>Landing</body></html>"),
                         "<!doctype html><html><body>Landing</body></html>"));
 
         OpenAiRequest request = builder.build(execution);
@@ -72,13 +67,13 @@ class QualityReviewPromptBuilderTest {
                 .extracting(item -> item.get("detail"))
                 .containsOnly("original");
         assertThat(request.prompt())
-                .contains("JSON da etapa wireframe")
-                .contains("sectionOrder")
-                .contains("JSON da etapa preset design")
-                .contains("premium")
                 .contains("HTML final do GeraLanding")
                 .contains("<!doctype html><html><body>Landing</body></html>")
                 .contains("https://cdn.example.com/screens/job-quality-1-desktop.jpg")
+                .doesNotContain("JSON da etapa wireframe")
+                .doesNotContain("JSON da etapa preset design")
+                .doesNotContain("landingPageWireframe")
+                .doesNotContain("landingPageDesignPreset")
                 .doesNotContain("CASE_DATA_BEGIN")
                 .doesNotContain("https://cdn.example.com/asset-hero.jpg");
         assertThat(body.get("model")).isEqualTo("gpt-5.5");

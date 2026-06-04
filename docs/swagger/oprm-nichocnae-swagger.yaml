@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: OPRM Nicho CNAE Pipeline API
-  version: 0.4.1
+  version: 0.5.0
   description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
 paths:
   /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
@@ -341,6 +341,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignalExtractorDetailResponse'
+        '404':
+          description: Ciclo de pesquisa não encontrado.
+
+  /api/internal/oprm/nichocnae/routine-synthesizer/stage-executions/pending:
+    get:
+      summary: Lista ciclos com sinais extraídos pendentes para a etapa seis de síntese da rotina.
+      tags: [OPRM Nicho CNAE]
+      responses:
+        '200':
+          description: Ciclos pendentes com sinais selecionados para síntese.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutineSynthesizerPending'
+  /api/internal/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}/complete:
+    post:
+      summary: Persiste o cartão de rotina sintetizado da etapa seis.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRoutineSynthesizerRequest'
+      responses:
+        '200':
+          description: Cartão de rotina persistido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteRoutineSynthesizerResponse'
+        '400':
+          description: Payload inválido ou resumo vazio.
+  /api/internal/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}/fail:
+    post:
+      summary: Registra falha operacional da etapa seis.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailRoutineSynthesizerRequest'
+      responses:
+        '204':
+          description: Falha registrada.
+  /api/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha o cartão de rotina sintetizado para um ciclo de pesquisa.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Detalhe público da síntese de rotina.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineSynthesizerDetailResponse'
         '404':
           description: Ciclo de pesquisa não encontrado.
 
@@ -1152,3 +1217,130 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExtractedSignalResponse'
+    SignalForRoutineSynthesis:
+      type: object
+      properties:
+        extractedSignalId:
+          type: integer
+          format: int64
+        sourceSnapshotId:
+          type: integer
+          format: int64
+        sourceCandidateId:
+          type: integer
+          format: int64
+        signalType:
+          type: string
+        signalText:
+          type: string
+        evidenceExcerpt:
+          type: string
+        sourceDomain:
+          type: string
+        confidenceScore:
+          type: integer
+    RoutineSynthesizerPending:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        cnaeDescription:
+          type: string
+        nicheName:
+          type: string
+        sourceScore:
+          type: number
+        cycleStatus:
+          type: string
+        totalExtractedSignals:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignalForRoutineSynthesis'
+    CompleteRoutineSynthesizerRequest:
+      type: object
+      required: [researchCycleId, nicheName, routineSummary, painsSummary, resultsSummary, mechanismOpportunitiesSummary, evidenceSummary, sourceDomains, confidenceScore]
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        nicheName:
+          type: string
+        routineSummary:
+          type: string
+        painsSummary:
+          type: string
+        resultsSummary:
+          type: string
+        mechanismOpportunitiesSummary:
+          type: string
+        evidenceSummary:
+          type: string
+        sourceDomains:
+          type: string
+        confidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        synthesizedBy:
+          type: string
+          example: oprmRoutineSynthesizer
+    CompleteRoutineSynthesizerResponse:
+      type: object
+      properties:
+        routineCardId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        nicheName:
+          type: string
+        confidenceScore:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    FailRoutineSynthesizerRequest:
+      type: object
+      required: [errorMessage]
+      properties:
+        errorMessage:
+          type: string
+    RoutineCardResponse:
+      allOf:
+        - $ref: '#/components/schemas/CompleteRoutineSynthesizerRequest'
+        - type: object
+          properties:
+            routineCardId:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+    RoutineSynthesizerDetailResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        cycleTotalExtractedSignals:
+          type: integer
+        routineCard:
+          nullable: true
+          $ref: '#/components/schemas/RoutineCardResponse'
+

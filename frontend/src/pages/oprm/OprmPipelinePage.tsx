@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNicheResearchSeedBuilderDetail";
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
+import { useOprmRoutineSynthesizerDetail } from "../../api/oprm/useOprmRoutineSynthesizerDetail";
 import { useOprmSourceFetcherDetail } from "../../api/oprm/useOprmSourceFetcherDetail";
 import { useOprmSignalExtractorDetail } from "../../api/oprm/useOprmSignalExtractorDetail";
 import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
@@ -160,7 +161,7 @@ export default function OprmPipelinePage() {
     isError: isSourceSearcherDetailError,
     isFetching: isSourceSearcherDetailFetching,
   } = useOprmSourceSearcherDetail(latestCycle?.researchCycleId);
-  const latestSourceCandidate = sourceSearcherDetail?.candidates[0];
+  const latestSourceCandidate = sourceSearcherDetail?.candidates?.[0];
   const {
     data: sourceFetcherDetail,
     error: sourceFetcherDetailError,
@@ -176,7 +177,14 @@ export default function OprmPipelinePage() {
     isFetching: isSignalExtractorDetailFetching,
   } = useOprmSignalExtractorDetail(latestCycle?.researchCycleId);
   const latestSignals =
-    signalExtractorDetail?.signals.slice(-3).reverse() ?? [];
+    signalExtractorDetail?.signals?.slice(-3).reverse() ?? [];
+  const {
+    data: routineSynthesizerDetail,
+    error: routineSynthesizerDetailError,
+    isError: isRoutineSynthesizerDetailError,
+    isFetching: isRoutineSynthesizerDetailFetching,
+  } = useOprmRoutineSynthesizerDetail(latestCycle?.researchCycleId);
+  const routineCard = routineSynthesizerDetail?.routineCard;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -777,6 +785,78 @@ export default function OprmPipelinePage() {
                         <p className="text-secondary small mb-0">
                           Ciclo #{latestCycle.researchCycleId} ainda não possui
                           resumo da etapa 5.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {stage.number === "6" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Resumo da última execução
+                      </span>
+                      {isRoutineSynthesizerDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando síntese do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isRoutineSynthesizerDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(routineSynthesizerDetailError)}
+                        </div>
+                      ) : routineCard ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-6 text-secondary fw-normal">
+                              Card
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              #{routineCard.routineCardId}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Confiança
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {routineCard.confidenceScore}%
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Status do ciclo
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              <span
+                                className={buildStatusBadgeClass(
+                                  routineSynthesizerDetail.cycleStatus,
+                                )}
+                              >
+                                {routineSynthesizerDetail.cycleStatus}
+                              </span>
+                            </dd>
+                          </dl>
+                          <p className="mb-2 fw-semibold">
+                            {routineCard.nicheName}
+                          </p>
+                          <p className="text-secondary mb-2 text-truncate">
+                            {routineCard.routineSummary}
+                          </p>
+                          <p className="text-secondary mb-0">
+                            Fontes: {routineCard.sourceDomains}
+                          </p>
+                        </div>
+                      ) : (routineSynthesizerDetail?.cycleTotalExtractedSignals ??
+                          0) > 0 ? (
+                        <p className="text-primary mb-0 small">
+                          Há{" "}
+                          {routineSynthesizerDetail?.cycleTotalExtractedSignals ??
+                            0}{" "}
+                          sinais aguardando a síntese do cartão de rotina.
+                        </p>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não possui
+                          sinais suficientes para a etapa 6.
                         </p>
                       )}
                     </div>

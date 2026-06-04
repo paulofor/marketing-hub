@@ -3429,3 +3429,17 @@
 - causa-raiz/objetivo: o wireframe define a estrutura comercial que reduz esforço de entendimento e orienta copy, imagens, preset visual e HTML final; por isso precisa de modelo dedicado em vez de depender do `openai.model` global.
 - correção aplicada: o Worker AI passou a ter `wireframe.worker.model` com padrão `gpt-5.4`, o builder da etapa usa esse modelo no `OpenAiRequest` e no corpo da Responses API, e o cliente legado do pipeline também força `gpt-5.4` quando a seção é `landing-page-wireframe`.
 - validação automatizada: testes cobrem o payload dedicado do `WireframePromptBuilder` e o enforcement do modelo `gpt-5.4` no cliente legado do pipeline.
+
+## 2026-06-04 — Quality Review retroalimenta reexecução do Preset Design
+
+- solicitação: ao reexecutar `landing-page-design-preset`, enviar ao modelo o JSON gerado pelo Quality Review anterior, quando existir, e explicar no prompt que ele deve corrigir os problemas diagnosticados.
+- causa-raiz/objetivo: evitar que a regeneração do preset ignore a causa-raiz já identificada pelo avaliador visual, reduzindo ciclos de tentativa e erro antes de uma landing pronta para vendas.
+- correção aplicada: o pending do backend da etapa preset design passou a expor `landingPageQualityReview`, o Worker AI passou a inserir esse JSON no contexto do prompt e o prompt foi atualizado para usar `blockingIssues`/`recommendedRegeneration` como orientação causal sem contaminar o artefato final com metadados técnicos.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` passou a declarar que a reexecução do preset design deve receber o Quality Review mais recente quando existir.
+
+## 2026-06-04 — Preset Design compara versão anterior com Quality Review
+
+- solicitação: quando existir Quality Review anterior na reexecução do `landing-page-design-preset`, também enviar ao modelo o JSON antigo do próprio preset design para ele ver o que gerou antes e o que a qualidade apontou como ruim.
+- causa-raiz/objetivo: o diagnóstico sozinho indica problemas, mas o modelo precisa enxergar o preset anterior para localizar quais definições/classes geraram a falha e produzir uma versão melhor com menos tentativa e erro.
+- correção aplicada: o Worker AI passou a incluir `landingPageDesignPreset` no contexto do prompt do preset design e o prompt agora exibe o preset anterior junto do Quality Review, instruindo comparação causal entre ambos antes de gerar o novo JSON.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` passou a exigir o envio conjunto de `landing_page_design_preset` anterior e `landing_page_quality_review` na reexecução do preset design quando existirem.

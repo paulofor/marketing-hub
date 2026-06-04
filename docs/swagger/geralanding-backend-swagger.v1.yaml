@@ -1069,6 +1069,8 @@ components:
           $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageDesignPreset:
           $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageQualityReview:
+          $ref: '#/components/schemas/JsonBackedArtifact'
         landingPageDeliverables:
           $ref: '#/components/schemas/JsonBackedArtifact'
         htmlGeraLanding:

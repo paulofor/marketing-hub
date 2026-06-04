@@ -16,6 +16,7 @@ public record RecordPresetDesignExperiment(
         Object landingPageWireframe,
         Object landingPageImagePlanning,
         Object landingPageDesignPreset,
+        Object landingPageQualityReview,
         Object landingPageDeliverables,
         String htmlGeraLanding
 ) {

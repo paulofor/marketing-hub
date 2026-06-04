@@ -288,6 +288,7 @@ public class BackendPresetDesignService {
                 resolveJsonArtifact(experiment.getId(), "landingPageWireframe", experiment.getLandingPageWireframe()),
                 resolveJsonArtifact(experiment.getId(), "landingPageImagePlanning", experiment.getLandingPageImagePlanning()),
                 resolveJsonArtifact(experiment.getId(), "landingPageDesignPreset", experiment.getLandingPageDesignPreset()),
+                resolveJsonArtifact(experiment.getId(), "landingPageQualityReview", experiment.getLandingPageQualityReview()),
                 resolveJsonArtifact(experiment.getId(), "landingPageDeliverables", experiment.getLandingPageDeliverables()),
                 experiment.getHtmlGeraLanding());
     }

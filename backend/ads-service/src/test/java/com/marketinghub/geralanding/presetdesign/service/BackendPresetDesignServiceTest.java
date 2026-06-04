@@ -78,6 +78,7 @@ class BackendPresetDesignServiceTest {
         when(experiment.getLandingPageWireframe()).thenReturn("{\"landingPageWireframe\":{\"sectionOrder\":[\"hero\"]}}");
         when(experiment.getLandingPageImagePlanning()).thenReturn("Planejamento imagem");
         when(experiment.getLandingPageDesignPreset()).thenReturn("Preset design");
+        when(experiment.getLandingPageQualityReview()).thenReturn("{\"score\":72,\"recommendedRegeneration\":[\"LANDING_PAGE_DESIGN_PRESET\"]}");
         when(experiment.getLandingPageDeliverables()).thenReturn("Entregáveis landing");
         when(experiment.getHtmlGeraLanding()).thenReturn("<html>GeraLanding</html>");
         UUID hypothesisId = UUID.fromString("11111111-1111-1111-1111-111111111111");
@@ -115,6 +116,8 @@ class BackendPresetDesignServiceTest {
         assertEquals("landing-page-design-preset", pending.get(0).stageCode());
         assertEquals("Experimento DesignPreset", pending.get(0).experiment().name());
         assertTrue(pending.get(0).experiment().campaignAngle() instanceof java.util.Map<?, ?>);
+        assertTrue(pending.get(0).experiment().landingPageQualityReview() instanceof java.util.Map<?, ?>);
+        assertEquals(72, ((java.util.Map<?, ?>) pending.get(0).experiment().landingPageQualityReview()).get("score"));
         assertEquals(hypothesisId, pending.get(0).hypothesis().id());
         assertEquals("Dor superficial", ((java.util.Map<?, ?>) pending.get(0).hypothesis().framework().get("pain")).get("surface"));
     }

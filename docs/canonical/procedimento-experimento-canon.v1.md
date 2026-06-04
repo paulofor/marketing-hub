@@ -113,7 +113,16 @@ Regras:
 2. Enriquecimentos transversais (ex.: injeção de URLs finais de imagem) devem ocorrer em serviço auxiliar dedicado e orquestrados pelo serviço da etapa, sem transferir a responsabilidade de etapa entre processadores.
 3. A etapa de geração de imagens deve persistir o manifesto consolidado `experiment.landing_page_image_assets`; a etapa de preset design deve consumir esse manifesto para substituir placeholders/URLs provisórias por URLs finais antes de persistir o HTML.
 
-### 5.5 Worker AI — divisão equivalente por etapa (obrigatória)
+### 5.5 Quality Review visual — fonte canônica do prompt
+
+A etapa `landing-page-quality-review` deve avaliar o artefato final publicável com base somente em:
+
+1. `experiment.html_geralanding`, exposto ao Worker AI como `htmlGeraLanding`;
+2. screenshots renderizados a partir desse mesmo HTML.
+
+O prompt textual do Quality Review não deve receber `experiment.landing_page_html` como fallback legado, nem JSONs intermediários de wireframe, copy, image planning, image generation ou design preset. A causa-raiz apontada pelo Quality Review deve ser inferida apenas a partir do HTML final e da evidência visual renderizada, preservando o foco no artefato que será publicado e evitando falhas quando `landing_page_html` ainda estiver nulo antes da aprovação/publicação.
+
+### 5.6 Worker AI — divisão equivalente por etapa (obrigatória)
 
 No `ai-worker`, a mesma divisão por etapa deve ser mantida para evitar acoplamento entre execução,
 prompt e schema. A arquitetura canônica vigente para qualquer etapa de landing no Worker AI é o núcleo

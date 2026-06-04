@@ -32,9 +32,9 @@ class QualityReviewBackendClientTest {
         server.shutdown();
     }
 
-    /** Deve expor o HTML final para que o prompt builder gere screenshots renderizados em browser. */
+    /** Deve expor somente o htmlGeraLanding para que o prompt builder gere screenshots renderizados em browser. */
     @Test
-    void listPendingShouldExposeFinalLandingHtmlForScreenshotRendering() {
+    void listPendingShouldExposeOnlyHtmlGeraLandingForScreenshotRendering() {
         server.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setBody("""
@@ -68,14 +68,44 @@ class QualityReviewBackendClientTest {
         assertThat(pending.getFirst().input().landingHtml())
                 .isEqualTo("<!doctype html><html><body><h1>Landing final</h1></body></html>");
         assertThat(pending.getFirst().input().promptData())
-                .containsEntry("experimentId", 36)
-                .containsEntry("experimentName", "Experimento visual")
-                .containsKeys("landingPageWireframe", "landingPageDesignPreset", "htmlGeraLanding")
-                .doesNotContainKeys("CASE_DATA_BLOCK", "landingPageImageAssets");
-        assertThat(pending.getFirst().input().promptData().get("landingPageWireframe").toString())
-                .contains("sectionOrder");
-        assertThat(pending.getFirst().input().promptData().get("landingPageDesignPreset").toString())
-                .contains("premium");
+                .containsOnlyKeys("htmlGeraLanding")
+                .containsEntry("htmlGeraLanding", "<!doctype html><html><body><h1>Landing final</h1></body></html>")
+                .doesNotContainKeys("experimentId", "experimentName", "landingPageWireframe", "landingPageDesignPreset", "landingPageHtml", "CASE_DATA_BLOCK", "landingPageImageAssets");
+    }
+
+    /** Deve ignorar landingPageHtml nulo porque o Quality Review usa somente htmlGeraLanding. */
+    @Test
+    void listPendingShouldIgnoreNullLegacyLandingPageHtml() {
+        server.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [
+                          {
+                            "experimentId": 37,
+                            "jobid": "job-quality-2",
+                            "stageCode": "landing-page-quality-review",
+                            "executionRequestedAt": "2026-06-04T22:32:02Z",
+                            "experiment": {
+                              "id": 37,
+                              "htmlGeraLanding": "<!doctype html><html><body><h1>HTML canônico</h1></body></html>",
+                              "landingPageHtml": null
+                            }
+                          }
+                        ]
+                        """));
+        QualityReviewBackendClient client = new QualityReviewBackendClient(
+                WebClient.builder(),
+                properties(),
+                objectMapper);
+
+        List<StageExecution<QualityReviewInput>> pending = client.listPending(5);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.getFirst().input().landingHtml())
+                .isEqualTo("<!doctype html><html><body><h1>HTML canônico</h1></body></html>");
+        assertThat(pending.getFirst().input().promptData())
+                .containsOnlyKeys("htmlGeraLanding")
+                .doesNotContainKeys("landingPageHtml");
     }
 
     /** Monta propriedades mínimas para o client quality-review usado no teste. */

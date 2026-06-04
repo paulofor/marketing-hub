@@ -503,7 +503,6 @@ Regra de legado após Fase 5:
 - Backfills corretivos podem existir apenas como rotinas idempotentes de migração/auditoria, sem recolocar tabelas legadas como fonte operacional.
 - Qualquer gravação futura no modelo novo deve manter `mois_sales_page` como estado atual e `mois_sales_page_job_execution` como histórico/auditoria.
 
-
 #### 13.7.2 Fase 5 — escrita operacional principal nas duas tabelas
 
 A partir da Fase 5, os comandos operacionais de análise da Biblioteca de Páginas de Vendas devem tratar `mois_sales_page` e `mois_sales_page_job_execution` como fonte principal de escrita e leitura de estado atual.
@@ -523,6 +522,35 @@ Critérios de aceite da Fase 5:
 - o pipeline de análise executa ponta a ponta usando `mois_sales_page` e `mois_sales_page_job_execution` como tabelas operacionais;
 - a UI principal continua independente das tabelas legadas para estado atual;
 - os dados legados permanecem preservados apenas como auditoria até a Fase 6.
+
+
+#### 13.7.3 Fase 6 — congelamento e desativação gradual do legado
+
+A partir de 2026-06-04, a Biblioteca de Páginas de Vendas considera concluída a troca operacional para o modelo de duas tabelas. O estado atual da operação deve ser lido e escrito somente em `mois_sales_page`, e o histórico/auditoria de execuções deve ser lido e escrito somente em `mois_sales_page_job_execution`.
+
+Tabelas legadas congeladas:
+
+- `mois_sales_library_url_ingest`;
+- `mois_sales_library_processing_job`;
+- `mois_sales_library_page_analysis`;
+- `mois_sales_library_page_snapshot`;
+- `mois_sales_library_snapshot_artifact`;
+- `mois_collected_reference_html_capture`.
+
+Regra canônica de congelamento:
+
+1. As tabelas legadas acima ficam em modo **somente leitura** para auditoria histórica e backfill corretivo idempotente.
+2. Nenhum endpoint produtivo, worker ou rotina operacional pode executar `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `TRUNCATE`, `ALTER` ou `DROP` nessas tabelas.
+3. Consultas às tabelas legadas só podem existir em rotinas explicitamente identificadas como backfill, auditoria ou diagnóstico histórico.
+4. A janela mínima de auditoria histórica é de **180 dias a partir de 2026-06-04**, encerrando em **2026-12-01**, salvo decisão canônica posterior.
+5. Depois da janela mínima, o arquivamento ou limpeza deve ser planejado em changelog incremental próprio, com validação de contagem, amostragem de rastreabilidade e plano de rollback.
+6. Qualquer necessidade de reativar escrita no legado deve ser tratada como exceção crítica, documentada no cânone antes da implementação e acompanhada de teste que prove a causa-raiz.
+
+Critério operacional vigente:
+
+- a UI principal (`/mois/sales-pages-library` e `/mois/sales-pages-library/pipeline`) não pode depender das tabelas legadas para totalizadores, status atual, detalhes ou histórico;
+- o Swagger da Biblioteca deve declarar o modelo novo como contrato operacional atual;
+- testes automatizados devem proteger o congelamento, impedindo DML acidental nas tabelas legadas.
 
 
 

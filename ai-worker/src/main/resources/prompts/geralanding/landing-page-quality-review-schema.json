@@ -2,14 +2,89 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-    "targetAudienceSpecificity": { "type": "string", "enum": ["low", "medium", "high"] },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Nota geral de qualidade comercial e visual da landing, calibrada para publicação em tráfego pago."
+    },
+    "targetAudienceSpecificity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Grau em que a landing parece feita para um público real e específico, e não para um nicho genérico."
+    },
+    "commercialReadiness": {
+      "type": "string",
+      "enum": ["weak", "acceptable", "strong", "excellent"],
+      "description": "Força comercial percebida da página para transformar visitante frio em lead interessado."
+    },
+    "criteriaScores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "firstFoldClarity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Clareza da primeira dobra: público, dor, resultado, mecanismo e CTA."
+        },
+        "painResultMechanism": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Força da narrativa Dor → Resultado → Mecanismo."
+        },
+        "proofStrength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Qualidade da microprova, preview ou amostra de valor apresentada antes da captura de e-mail."
+        },
+        "offerDesirability": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Desejo gerado pela oferta de entrada e clareza do valor recebido pelo lead."
+        },
+        "ctaAndFormStrength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Força do CTA e do formulário como troca valiosa pelo e-mail."
+        },
+        "visualPremiumFeel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Percepção premium, confiança, acabamento visual, contraste, espaçamento e hierarquia."
+        },
+        "mobileDesktopExecution": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Execução visual em desktop e mobile, incluindo responsividade e ausência de falhas visíveis."
+        }
+      },
+      "required": [
+        "firstFoldClarity",
+        "painResultMechanism",
+        "proofStrength",
+        "offerDesirability",
+        "ctaAndFormStrength",
+        "visualPremiumFeel",
+        "mobileDesktopExecution"
+      ]
+    },
     "blockingIssues": {
       "type": "array",
-      "items": { "type": "string" }
+      "description": "Problemas curtos, específicos e acionáveis no formato '[Área] problema observado → impacto comercial → correção esperada'.",
+      "items": {
+        "type": "string"
+      }
     },
     "recommendedRegeneration": {
       "type": "array",
+      "description": "Etapas que devem ser reexecutadas para atacar a causa-raiz dos bloqueios encontrados.",
       "items": {
         "type": "string",
         "enum": [
@@ -25,12 +100,15 @@
     },
     "approvalRecommendation": {
       "type": "string",
-      "enum": ["APPROVE_FOR_PUBLICATION", "REGENERATE_BEFORE_PUBLICATION"]
+      "enum": ["APPROVE_FOR_PUBLICATION", "REGENERATE_BEFORE_PUBLICATION"],
+      "description": "Decisão final de publicação. Só aprovar quando a página estiver comercialmente forte, visualmente final e sem bloqueios técnicos."
     }
   },
   "required": [
     "score",
     "targetAudienceSpecificity",
+    "commercialReadiness",
+    "criteriaScores",
     "blockingIssues",
     "recommendedRegeneration",
     "approvalRecommendation"

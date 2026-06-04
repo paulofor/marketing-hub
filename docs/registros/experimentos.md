@@ -3307,3 +3307,10 @@
 - correção aplicada: a conclusão bem-sucedida da etapa `landing-page-image-planning` agora persiste o planejamento de imagens e cria automaticamente uma execução `landing-page-image-generation` com `promptTemplateId` `auto/image-planning` e status `INICIADO`.
 - cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` passou a declarar que o Gera Imagem deve ser enfileirado automaticamente após o Gera Prompt Imagem.
 - validação automatizada: teste unitário do `BackendImagePlanningService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
+
+## 2026-06-04 — Restrição arquitetural de repositories nos services do GeraLanding
+
+- solicitação: reforçar no teste de arquitetura do backend que os pacotes `geralanding.*.service` só possam acessar repositories das quatro tabelas usadas pelo GeraLanding.
+- causa-raiz/objetivo: evitar acoplamento acidental dos services do GeraLanding com persistências de outros módulos/tabelas, preservando o modelo central do fluxo de landing.
+- correção aplicada: `ArquiteturaTest` passou a manter lista explícita dos repositories permitidos para services do GeraLanding: `ExperimentRepository`, `HypothesisRepository`, `FrameworkImageGenerationJobRepository` e `GeraLandingStageExecutionRepository`.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` documenta que apenas repositories das tabelas `experiment`, `hypothesis`, `framework_image_generation_job` e `gera_landing_stage_execution` são permitidos nessa camada.

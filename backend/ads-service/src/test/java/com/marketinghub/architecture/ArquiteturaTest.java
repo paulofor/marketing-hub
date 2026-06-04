@@ -1,7 +1,9 @@
 package com.marketinghub.architecture;
 
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.frameworkimage.FrameworkImageGenerationJobRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -41,10 +43,13 @@ class ArquiteturaTest {
 
     private static final String MOIS_SALES_LIBRARY_PACKAGE = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
     private static final String EXPERIMENT_CLASS = "com.marketinghub.experiment.Experiment";
-    private static final String EXPERIMENT_REPOSITORY_CLASS = "com.marketinghub.repository.jpa.experiment.ExperimentRepository";
+    private static final String EXPERIMENT_REPOSITORY_CLASS = ExperimentRepository.class.getName();
+    private static final String HYPOTHESIS_REPOSITORY_CLASS = HypothesisRepository.class.getName();
+    private static final String FRAMEWORK_IMAGE_GENERATION_JOB_REPOSITORY_CLASS =
+            FrameworkImageGenerationJobRepository.class.getName();
     private static final String GERALANDING_STAGE_EXECUTION_CLASS = "com.marketinghub.geralanding.GeraLandingStageExecution";
     private static final String GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS =
-            "com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository";
+            GeraLandingStageExecutionRepository.class.getName();
     private static final String GERALANDING_STAGE_EXECUTION_BUILDER_CLASS =
             "com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder";
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
@@ -83,6 +88,11 @@ class ArquiteturaTest {
             "updateFinancialPlan");
     private static final List<String> REQUIRED_BACKEND_CONTROLLER_METHODS = List.of(
             "start", "listStageExecutions", "pending", "recebePrompt", "recebeResposta", "detailStageExecution");
+    private static final List<String> ALLOWED_GERALANDING_SERVICE_REPOSITORIES = List.of(
+            EXPERIMENT_REPOSITORY_CLASS,
+            HYPOTHESIS_REPOSITORY_CLASS,
+            FRAMEWORK_IMAGE_GENERATION_JOB_REPOSITORY_CLASS,
+            GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
 
     @ArchTest
     static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -975,9 +985,8 @@ class ArquiteturaTest {
                     if (isSameStageServiceDependency(item, targetClass)
                             || isSameStageProvisorioDependency(item, targetClass)
                             || targetName.equals(EXPERIMENT_CLASS)
-                            || targetName.equals(EXPERIMENT_REPOSITORY_CLASS)
+                            || isAllowedGeraLandingServiceRepository(targetName)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_CLASS)
-                            || targetName.equals(GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS)
                             || targetName.equals(GERALANDING_STAGE_EXECUTION_BUILDER_CLASS)) {
                         return;
                     }
@@ -987,14 +996,21 @@ class ArquiteturaTest {
                             + " | regra: serviços em geralanding.*.service só podem acessar "
                             + "pacotes internos geralanding.<etapa>.service.* e geralanding.<etapa>.provisorio.* da mesma etapa, "
                             + EXPERIMENT_CLASS + ", "
-                            + EXPERIMENT_REPOSITORY_CLASS + ", "
                             + GERALANDING_STAGE_EXECUTION_CLASS + ", "
-                            + GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS + " e "
-                            + GERALANDING_STAGE_EXECUTION_BUILDER_CLASS;
+                            + GERALANDING_STAGE_EXECUTION_BUILDER_CLASS
+                            + " e somente repositories das tabelas experiment, hypothesis, framework_image_generation_job e gera_landing_stage_execution: "
+                            + ALLOWED_GERALANDING_SERVICE_REPOSITORIES;
                     events.add(SimpleConditionEvent.violated(item, message));
                 });
             }
         };
+    }
+
+    /**
+     * Verifica se a dependência alvo é um repository liberado para services do GeraLanding.
+     */
+    private static boolean isAllowedGeraLandingServiceRepository(String targetName) {
+        return ALLOWED_GERALANDING_SERVICE_REPOSITORIES.contains(targetName);
     }
 
     /**

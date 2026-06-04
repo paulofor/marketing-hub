@@ -25,6 +25,7 @@ public record RecordBackendQualityReviewDetalheDto(
         String provisionalHtml,
         String errorMessage,
         String errorDetail,
+        String qualityReviewAudit,
         Integer inputTokens,
         Integer outputTokens,
         BigDecimal costUsd

@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
+/** Responsabilidade: representar a execução persistida de uma etapa do GeraLanding e seus artefatos auditáveis. */
 @Entity
 @Table(name = "gera_landing_stage_execution")
 @Getter
@@ -86,6 +87,10 @@ public class GeraLandingStageExecution {
     @Lob
     @Column(name = "error_detail", columnDefinition = "LONGTEXT")
     private String errorDetail;
+
+    @Lob
+    @Column(name = "quality_review_audit", columnDefinition = "LONGTEXT")
+    private String qualityReviewAudit;
 
     @Column(name = "input_tokens")
     private Integer inputTokens;

@@ -73,7 +73,8 @@ public class BackendQualityReviewController {
                 payload.promptMarkdownContent(),
                 payload.schemaJson(),
                 payload.requestBodyJson(),
-                payload.jobidopenai());
+                payload.jobidopenai(),
+                payload.qualityReviewAudit());
         return ResponseEntity.accepted().build();
     }
 

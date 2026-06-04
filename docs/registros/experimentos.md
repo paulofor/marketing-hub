@@ -3320,3 +3320,15 @@
 - causa-raiz/objetivo: evitar acoplamento acidental dos services do GeraLanding com persistências de outros módulos/tabelas, preservando o modelo central do fluxo de landing.
 - correção aplicada: `ArquiteturaTest` passou a manter lista explícita dos repositories permitidos para services do GeraLanding: `ExperimentRepository`, `HypothesisRepository`, `FrameworkImageGenerationJobRepository` e `GeraLandingStageExecutionRepository`.
 - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` documenta que apenas repositories das tabelas `experiment`, `hypothesis`, `framework_image_generation_job` e `gera_landing_stage_execution` são permitidos nessa camada.
+
+## 2026-06-04 — Auditoria de evidência visual do Quality Review
+
+- solicitação: implementar melhorias para evitar confusão quando execuções do `landing-page-quality-review` avaliam a mesma imagem/HTML ou recebem decisões divergentes.
+- causa-raiz tratada: o histórico do experimento 36 mostrou que duas execuções podem publicar URLs diferentes, mas com screenshots binariamente idênticos quando o HTML não muda; sem hashes persistidos, a tela não evidencia reuso da mesma prova visual nem contradições de decisão entre rubricas/prompts.
+- correção aplicada:
+  - criada auditoria `quality_review_audit` na tabela `gera_landing_stage_execution`;
+  - o Worker AI passou a calcular SHA-256 do HTML, prompt/request e screenshots, além de registrar bytes, viewport, URL, modelo de visão, `imageDetail` e schema operacional;
+  - o backend passou a enriquecer a auditoria no recebimento do prompt e no fechamento da resposta, detectando reuso de evidência e decisões contraditórias para a mesma evidência visual;
+  - a tela de detalhe da execução passou a exibir hashes, screenshots auditados e alertas de reuso/contradição;
+  - Swagger e cânone do GeraLanding foram sincronizados com a nova auditoria.
+- impacto esperado: avaliações futuras do Quality Review passam a ser comparáveis por evidência real, evitando publicar ou descartar uma landing com base em scores divergentes sem perceber que o modelo viu o mesmo HTML/screenshot.

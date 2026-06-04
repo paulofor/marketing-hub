@@ -9,6 +9,8 @@ import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,12 +43,13 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
     /** Monta o request multimodal com texto e screenshots renderizados da landing para a Responses API. */
     @Override
     public OpenAiRequest build(StageExecution<QualityReviewInput> execution) {
-        List<String> screenshotUrls = screenshotService.renderScreenshots(execution.input());
-        if (screenshotUrls.isEmpty()) {
+        List<QualityReviewScreenshotEvidence> screenshots = screenshotService.renderScreenshots(execution.input());
+        if (screenshots.isEmpty()) {
             throw new StageWorkerException("Quality review screenshot rendering did not produce images");
         }
         String promptResource = properties.promptResource();
         String promptMarkdownContent = loadResource(promptResource);
+        List<String> screenshotUrls = screenshots.stream().map(QualityReviewScreenshotEvidence::publicUrl).toList();
         Map<String, Object> promptData = withScreenshotContext(execution.input().promptData(), screenshotUrls);
         String prompt = promptTemplateResolver.resolve(promptMarkdownContent, promptData, promptResource);
         String schemaJson = loadResource(properties.schemaResource());
@@ -58,7 +61,63 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
                 properties.schemaName(),
                 schemaJson,
                 promptMarkdownContent,
-                Map.of("stageCode", execution.stageCode(), "idJob", execution.idJob(), "experimentId", execution.aggregateId()));
+                auditMetadata(execution, screenshots, prompt, requestBodyJson));
+    }
+
+
+    /** Monta metadados de auditoria para rastrear HTML, screenshots e versão operacional do Quality Review. */
+    private Map<String, Object> auditMetadata(
+            StageExecution<QualityReviewInput> execution,
+            List<QualityReviewScreenshotEvidence> screenshots,
+            String prompt,
+            String requestBodyJson
+    ) {
+        Map<String, Object> audit = new LinkedHashMap<>();
+        String landingHtml = execution.input().landingHtml();
+        audit.put("landingHtmlSha256", sha256Hex(landingHtml));
+        audit.put("landingHtmlLength", landingHtml != null ? landingHtml.length() : 0);
+        audit.put("promptSha256", sha256Hex(prompt));
+        audit.put("openAiRequestBodySha256", sha256Hex(requestBodyJson));
+        audit.put("promptResource", properties.promptResource());
+        audit.put("schemaName", properties.schemaName());
+        audit.put("visionModel", properties.visionModel());
+        audit.put("imageDetail", properties.imageDetail());
+        audit.put("screenshots", screenshots.stream().map(this::toScreenshotAudit).toList());
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("stageCode", execution.stageCode());
+        metadata.put("idJob", execution.idJob());
+        metadata.put("experimentId", execution.aggregateId());
+        metadata.put("qualityReviewAudit", audit);
+        return metadata;
+    }
+
+    /** Converte uma evidência de screenshot para mapa serializável em JSON de auditoria. */
+    private Map<String, Object> toScreenshotAudit(QualityReviewScreenshotEvidence evidence) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("viewport", evidence.viewport());
+        item.put("publicUrl", evidence.publicUrl());
+        item.put("sha256", evidence.sha256());
+        item.put("bytes", evidence.bytes());
+        return item;
+    }
+
+    /** Calcula SHA-256 hexadecimal para rastrear conteúdo textual sem persistir duplicações extras. */
+    private String sha256Hex(String text) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(hash.length * 2);
+            for (byte value : hash) {
+                builder.append(String.format("%02x", value));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException error) {
+            throw new StageWorkerException("SHA-256 algorithm unavailable for quality-review audit", error);
+        }
     }
 
     /** Acrescenta as URLs dos screenshots renderizados ao contexto textual auditável do prompt. */

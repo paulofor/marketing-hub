@@ -2,6 +2,7 @@ package com.marketinghub.geralanding.qualityreview.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -107,6 +108,56 @@ class BackendQualityReviewServiceTest {
         verify(experimentRepository).save(experiment);
         verify(executionRepository, times(1)).save(execution);
     }
+
+
+
+    /** Deve sinalizar quando a mesma evidência visual recebe decisões divergentes em execuções diferentes. */
+    @Test
+    void markCompletedFromResponseShouldFlagContradictoryDecisionForSameEvidence() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendQualityReviewService service = new BackendQualityReviewService(experimentRepository, executionRepository, new ObjectMapper());
+        Experiment experiment = mock(Experiment.class);
+        String auditJson = "{\"landingHtmlSha256\":\"html-a\",\"screenshots\":[{\"viewport\":\"mobile\",\"sha256\":\"img-m\"},{\"viewport\":\"desktop\",\"sha256\":\"img-d\"}]}";
+        GeraLandingStageExecution previous = GeraLandingStageExecution.builder()
+                .experimentId(38L)
+                .stageCode("landing-page-quality-review")
+                .status("CONCLUIDO")
+                .idJob("job-previous".getBytes(StandardCharsets.UTF_8))
+                .qualityReviewAudit(auditJson)
+                .modelResponse("{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\"}")
+                .build();
+        GeraLandingStageExecution current = GeraLandingStageExecution.builder()
+                .experimentId(38L)
+                .experiment(experiment)
+                .stageCode("landing-page-quality-review")
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .idJob("job-current".getBytes(StandardCharsets.UTF_8))
+                .qualityReviewAudit(auditJson)
+                .build();
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("job-current".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(current));
+        when(executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(38L, "landing-page-quality-review"))
+                .thenReturn(List.of(current, previous));
+        when(executionRepository.save(any(GeraLandingStageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.markCompletedFromResponse(
+                "job-current",
+                38L,
+                "landing-page-quality-review",
+                "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\"}",
+                100,
+                50,
+                BigDecimal.valueOf(0.01),
+                "resp_123",
+                null,
+                null);
+
+        assertTrue(current.getQualityReviewAudit().contains("\"evidenceReuseDetected\":true"));
+        assertTrue(current.getQualityReviewAudit().contains("\"contradictoryDecisionDetected\":true"));
+        assertTrue(current.getQualityReviewAudit().contains("job-previous"));
+    }
+
 
     /** Deve retornar detalhes de execução já persistidos usando o id textual do job. */
     @Test

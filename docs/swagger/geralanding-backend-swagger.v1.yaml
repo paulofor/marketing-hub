@@ -966,6 +966,10 @@ components:
         errorDetail:
           type: string
           nullable: true
+        qualityReviewAudit:
+          type: string
+          nullable: true
+          description: JSON de auditoria da evidência visual do Quality Review com hashes de HTML, screenshots, prompt, request e alertas de reuso/contradição.
         inputTokens:
           type: integer
           format: int32
@@ -1110,6 +1114,11 @@ components:
           type: string
           minLength: 1
           description: Alias aceito por alguns DTOs via JsonAlias.
+        qualityReviewAudit:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Auditoria estruturada da evidência visual do Quality Review, incluindo hashes de HTML/screenshots e versão operacional do prompt.
       required:
         - prompt
         - schemaJson

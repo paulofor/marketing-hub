@@ -54,6 +54,7 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         body.put("schemaJson", dispatch.schemaJson());
         body.put("requestBodyJson", dispatch.requestBodyJson());
         body.put("jobidopenai", dispatch.openAiJobId());
+        body.put("qualityReviewAudit", dispatch.metadata().get("qualityReviewAudit"));
         webClient.post()
                 .uri(stageExecutionBaseUrl() + "/{idJob}/recebe-prompt", execution.idJob())
                 .bodyValue(body)

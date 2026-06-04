@@ -8,7 +8,9 @@ import com.marketinghub.pipeline.dto.PipelineMetadataDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageDto;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
+import com.marketinghub.pipeline.dto.PipelineSyncResultDto;
 import com.marketinghub.pipeline.mapper.PipelineMapper;
+import com.marketinghub.pipeline.service.PipelineDefinitionSynchronizer;
 import com.marketinghub.pipeline.service.PipelineService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -28,13 +30,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/pipelines")
 public class PipelineController {
     private final PipelineService service;
+    private final PipelineDefinitionSynchronizer synchronizer;
     private final PipelineMapper mapper;
 
     /**
-     * Inicializa o controller com o serviço de domínio e mapper de contratos.
+     * Inicializa o controller com serviço, sincronizador seguro e mapper de contratos.
      */
-    public PipelineController(PipelineService service, PipelineMapper mapper) {
+    public PipelineController(
+            PipelineService service, PipelineDefinitionSynchronizer synchronizer, PipelineMapper mapper) {
         this.service = service;
+        this.synchronizer = synchronizer;
         this.mapper = mapper;
     }
 
@@ -68,6 +73,22 @@ public class PipelineController {
     @GetMapping("/{id}/diagnostics")
     public PipelineDiagnosticsDto diagnostics(@PathVariable Long id) {
         return service.diagnostics(id);
+    }
+
+    /**
+     * Sincroniza com segurança o pipeline informado contra sua definição oficial.
+     */
+    @PostMapping("/{id}/sync")
+    public PipelineSyncResultDto sync(@PathVariable Long id) {
+        return synchronizer.sync(id);
+    }
+
+    /**
+     * Cria ou sincroniza com segurança um pipeline oficial pelo código canônico.
+     */
+    @PostMapping("/official/{code}/sync")
+    public PipelineSyncResultDto syncOfficial(@PathVariable String code) {
+        return synchronizer.syncOfficialByCode(code);
     }
 
     /**

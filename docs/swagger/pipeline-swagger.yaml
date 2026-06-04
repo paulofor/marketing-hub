@@ -35,6 +35,43 @@ paths:
                 $ref: "#/components/schemas/PipelineDiagnostics"
         "404":
           description: Pipeline não encontrado.
+  /pipelines/{id}/sync:
+    post:
+      summary: Sincroniza com segurança um pipeline existente contra a definição oficial.
+      description: Não aceita payload; repara somente campos estruturais seguros e preserva configuração operacional.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Resultado da sincronização segura com ações aplicadas e divergências restantes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineSyncResult"
+        "404":
+          description: Pipeline não encontrado.
+  /pipelines/official/{code}/sync:
+    post:
+      summary: Cria ou sincroniza um pipeline oficial ausente pelo código canônico.
+      description: Não aceita payload; usa exclusivamente o contrato oficial exposto em metadata.
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resultado da criação/sincronização segura do pipeline oficial.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineSyncResult"
 components:
   schemas:
     PipelineMetadata:
@@ -51,7 +88,7 @@ components:
             $ref: "#/components/schemas/OfficialPipeline"
     OfficialPipeline:
       type: object
-      required: [module, code, name, official, aliases, stages]
+      required: [module, code, name, canonicalVersion, official, aliases, fieldPolicy, stages]
       properties:
         module:
           type: string
@@ -62,6 +99,9 @@ components:
         name:
           type: string
           example: Pipeline de Experimento
+        canonicalVersion:
+          type: string
+          example: procedimento-experimento-canon.v1
         official:
           type: boolean
           example: true
@@ -69,13 +109,15 @@ components:
           type: array
           items:
             type: string
+        fieldPolicy:
+          $ref: "#/components/schemas/PipelineFieldPolicy"
         stages:
           type: array
           items:
             $ref: "#/components/schemas/OfficialPipelineStage"
     OfficialPipelineStage:
       type: object
-      required: [canonicalCode, operationalCode, name, position, required, configurable, aliases]
+      required: [canonicalCode, operationalCode, name, position, required, configurable, fieldPolicy, aliases]
       properties:
         canonicalCode:
           type: string
@@ -95,6 +137,8 @@ components:
         configurable:
           type: boolean
           example: true
+        fieldPolicy:
+          $ref: "#/components/schemas/StageFieldPolicy"
         aliases:
           type: array
           items:
@@ -141,3 +185,55 @@ components:
           type: string
         recommendedAction:
           type: string
+
+    PipelineFieldPolicy:
+      type: object
+      required: [codeStructural, moduleStructural, nameStructural, descriptionOperational, activeOperational]
+      properties:
+        codeStructural: { type: boolean }
+        moduleStructural: { type: boolean }
+        nameStructural: { type: boolean }
+        descriptionOperational: { type: boolean }
+        activeOperational: { type: boolean }
+    StageFieldPolicy:
+      type: object
+      required: [codeStructural, positionStructural, nameStructural, requiredStructural, descriptionOperational, activeOperational, openAiModelOperational]
+      properties:
+        codeStructural: { type: boolean }
+        positionStructural: { type: boolean }
+        nameStructural: { type: boolean }
+        requiredStructural: { type: boolean }
+        descriptionOperational: { type: boolean }
+        activeOperational: { type: boolean }
+        openAiModelOperational: { type: boolean }
+    PipelineSyncResult:
+      type: object
+      required: [status, synchronizedSafely, expectedStages, configuredStages, appliedActions, issues]
+      properties:
+        status:
+          type: string
+          enum: [OK, ATENÇÃO, BLOQUEADO]
+        synchronizedSafely:
+          type: boolean
+        pipelineId:
+          type: integer
+          format: int64
+          nullable: true
+        pipelineCode:
+          type: string
+          nullable: true
+        canonicalPipelineCode:
+          type: string
+          nullable: true
+        expectedStages:
+          type: integer
+        configuredStages:
+          type: integer
+        appliedActions:
+          type: array
+          items:
+            type: string
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/PipelineDiagnosticsIssue"

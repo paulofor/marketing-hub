@@ -3454,3 +3454,10 @@
   - frontend/AGENTS.md
   - docs/implementacao/backend/plano-pipelines-contrato-operacional.md
   - docs/registros/experimentos.md
+
+## 2026-06-04 — Fase 2 do contrato operacional da tela de Pipelines
+
+- solicitação: executar a fase 2 do plano `docs/implementacao/backend/plano-pipelines-contrato-operacional.md` para contrato forte e sincronização segura dos pipelines oficiais.
+- causa-raiz endereçada: a fase 1 diagnosticava divergências, mas ainda não havia um mecanismo idempotente para reparar divergências simples e bloquear alterações destrutivas com rastreabilidade.
+- correção aplicada: evoluído o registry oficial com versão canônica e política explícita de campos estruturais versus operacionais; criado `PipelineDefinitionSynchronizer` para criar pipeline/etapas oficiais ausentes, corrigir nome/posição/obrigatoriedade estruturais e preservar `openAiModel`, `active` e descrições operacionais; adicionados endpoints `POST /api/pipelines/{id}/sync` e `POST /api/pipelines/official/{code}/sync` sem payload da tela; documentação Swagger e cânone de experimento sincronizados.
+- validação automatizada: adicionados testes para criação de etapa oficial ausente, preservação de modelo OpenAI configurado, bloqueio de divergência destrutiva, criação de pipeline oficial ausente por código e aderência do registry à versão canônica.

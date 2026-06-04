@@ -6,12 +6,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
 import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
+import com.marketinghub.pipeline.dto.PipelineSyncResultDto;
 import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
@@ -42,6 +44,7 @@ class PipelineServiceTest {
     private final PipelineDefinitionRegistry definitionRegistry = new PipelineDefinitionRegistry();
 
     private PipelineService service;
+    private PipelineDefinitionSynchronizer synchronizer;
 
     /**
      * Inicializa o serviço com registry real para validar regras canônicas.
@@ -49,6 +52,8 @@ class PipelineServiceTest {
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
         service = new PipelineService(pipelineRepository, stageRepository, openAiModelRepository, definitionRegistry);
+        synchronizer = new PipelineDefinitionSynchronizer(
+                pipelineRepository, stageRepository, definitionRegistry, service);
     }
 
     /**
@@ -258,6 +263,110 @@ class PipelineServiceTest {
         assertThatThrownBy(() -> service.createStage(10L, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Modelo OpenAI não encontrado");
+    }
+
+
+    /**
+     * Garante que a sincronização cria etapas oficiais ausentes de forma idempotente.
+     */
+    @Test
+    void shouldSynchronizeMissingOfficialStage() {
+        Pipeline pipeline = officialPipelineWith(stage(1L, 1, "campaign-angle"));
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+        when(stageRepository.save(any(PipelineStage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pipelineRepository.save(any(Pipeline.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PipelineSyncResultDto result = synchronizer.sync(10L);
+
+        assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapa oficial ausente criada"));
+        assertThat(pipeline.getStages()).hasSize(8);
+        assertThat(pipeline.getStages()).extracting(PipelineStage::getCode).contains("landing-page-html");
+    }
+
+    /**
+     * Garante que a sincronização preserva modelo OpenAI e descrição operacional já configurados.
+     */
+    @Test
+    void shouldPreserveConfiguredOpenAiModelDuringSynchronization() {
+        OpenAiModel model = OpenAiModel.builder().id(99L).name("GPT 5.2").code("gpt-5.2").build();
+        PipelineStage configured = stage(1L, 2, "campaign-angle");
+        configured.setName("Nome antigo");
+        configured.setDescription("Descrição operacional do usuário");
+        configured.setOpenAiModel(model);
+        Pipeline pipeline = officialPipelineWith(configured);
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+        when(stageRepository.save(any(PipelineStage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pipelineRepository.save(any(Pipeline.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        synchronizer.sync(10L);
+
+        assertThat(configured.getPosition()).isEqualTo(1);
+        assertThat(configured.getName()).isEqualTo("Campaign Angle");
+        assertThat(configured.getDescription()).isEqualTo("Descrição operacional do usuário");
+        assertThat(configured.getOpenAiModel()).isEqualTo(model);
+    }
+
+    /**
+     * Garante que a sincronização bloqueia divergência destrutiva antes de remover etapa extra.
+     */
+    @Test
+    void shouldBlockDestructiveSynchronization() {
+        Pipeline pipeline = officialPipelineWith(stage(1L, 1, "unknown-stage"));
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+
+        PipelineSyncResultDto result = synchronizer.sync(10L);
+
+        assertThat(result.status()).isEqualTo("BLOQUEADO");
+        assertThat(result.synchronizedSafely()).isFalse();
+        assertThat(result.issues()).anySatisfy(issue -> {
+            assertThat(issue.message()).isEqualTo("Etapa extra com possível histórico impede sincronização destrutiva.");
+            assertThat(issue.rootCause()).contains("não existe no contrato canônico");
+            assertThat(issue.recommendedAction()).contains("Analisar histórico");
+        });
+    }
+
+
+    /**
+     * Garante que a sincronização cria pipeline oficial ausente pelo código canônico.
+     */
+    @Test
+    void shouldCreateMissingOfficialPipelineByCode() {
+        when(pipelineRepository.findByCode("experiment-pipeline")).thenReturn(Optional.empty());
+        when(pipelineRepository.save(any(Pipeline.class))).thenAnswer(invocation -> {
+            Pipeline saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(10L);
+            }
+            return saved;
+        });
+        when(pipelineRepository.findById(10L)).thenAnswer(invocation -> {
+            Pipeline pipeline = Pipeline.builder()
+                    .id(10L)
+                    .name("Pipeline de Experimento")
+                    .code("experiment-pipeline")
+                    .module("EXPERIMENT")
+                    .stages(new ArrayList<>())
+                    .build();
+            return Optional.of(pipeline);
+        });
+        when(stageRepository.save(any(PipelineStage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PipelineSyncResultDto result = synchronizer.syncOfficialByCode("experiment-pipeline");
+
+        assertThat(result.appliedActions()).hasSize(8);
+        assertThat(result.canonicalPipelineCode()).isEqualTo("experiment-pipeline");
+    }
+
+    /**
+     * Garante que o registry expõe versão canônica e política explícita de campos estruturais.
+     */
+    @Test
+    void shouldExposeCanonicalVersionAndFieldPolicies() {
+        assertThat(definitionRegistry.officialPipelines()).singleElement().satisfies(pipeline -> {
+            assertThat(pipeline.canonicalVersion()).isEqualTo("procedimento-experimento-canon.v1");
+            assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
+            assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
+        });
     }
 
     /**

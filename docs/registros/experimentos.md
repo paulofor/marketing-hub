@@ -3344,3 +3344,10 @@
   - a tela de detalhe da execução passou a exibir hashes, screenshots auditados e alertas de reuso/contradição;
   - Swagger e cânone do GeraLanding foram sincronizados com a nova auditoria.
 - impacto esperado: avaliações futuras do Quality Review passam a ser comparáveis por evidência real, evitando publicar ou descartar uma landing com base em scores divergentes sem perceber que o modelo viu o mesmo HTML/screenshot.
+
+## 2026-06-04 — Quality Review do GeraLanding com artefatos fonte
+
+- solicitação: na etapa `landing-page-quality-review`, enviar ao modelo também o JSON da etapa `landing-page-wireframe`, o JSON da etapa `landing-page-design-preset` e o HTML final `htmlGeraLanding`, pedindo uma avaliação do que ficou ruim nos arquivos enviados.
+- causa-raiz/objetivo: permitir que o Quality Review diferencie sintoma visual renderizado de problema de origem no wireframe, no preset de design ou na montagem HTML, recomendando regeneração da etapa correta.
+- correção aplicada: o Worker AI passou a montar o contexto textual da revisão com os artefatos fonte e o prompt foi atualizado para pedir análise de causa-raiz por arquivo/etapa, mantendo screenshots renderizados como evidência visual.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md`.

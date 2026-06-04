@@ -962,3 +962,11 @@ Arquivos alterados:
 - `docs/canonical/mois-worker-canon.v1.md`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-04 — MOIS Biblioteca de Páginas de Vendas — Fase 5 do modelo em duas tabelas
+
+- executada a Fase 5 do plano `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`.
+- ingestão explícita e ingestão Hotmart agora escrevem primariamente em `mois_sales_page` e criam execução pendente `PAGE_ANALYSIS` em `mois_sales_page_job_execution` para páginas novas.
+- captura HTML por worker/backend agora cria e conclui execuções `HTML_CAPTURE` diretamente em `mois_sales_page_job_execution`, atualizando `mois_sales_page` em claim, sucesso, duplicidade e falha.
+- tabelas legadas permanecem apenas como auditoria transitória quando houver espelhamento compatível; leitura operacional permanece concentrada nas duas tabelas novas.
+- Swagger `docs/swagger/mois-sales-library-swagger.yaml` atualizado para documentar ingestão, análise e captura como contratos do modelo operacional novo.

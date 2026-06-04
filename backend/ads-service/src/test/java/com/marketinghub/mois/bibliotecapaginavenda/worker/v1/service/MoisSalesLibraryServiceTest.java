@@ -8,12 +8,14 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,13 +51,11 @@ class MoisSalesLibraryServiceTest {
                 List.of(new MoisSalesLibraryDtos.SalesLibraryUrlItem("https://example.com/pagina", "Title", Instant.parse("2026-05-19T00:00:00Z")))
         );
 
-        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(1);
-        given(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(), any())).willReturn(99L);
+        stubOperationalIngest(1);
 
         service.ingestUrls(request);
 
-        verify(jdbcTemplate).update(contains("INSERT INTO mois_sales_library_processing_job"), eq(99L), eq("PENDING"));
+        verify(jdbcTemplate).update(contains("INSERT INTO mois_sales_page_job_execution"), eq(99L), any(), any(), any());
     }
 
     /**
@@ -69,13 +69,11 @@ class MoisSalesLibraryServiceTest {
                 List.of(new MoisSalesLibraryDtos.SalesLibraryUrlItem("https://example.com/pagina", "Title", Instant.parse("2026-05-19T00:00:00Z")))
         );
 
-        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(2);
+        stubOperationalIngest(2);
 
         service.ingestUrls(request);
 
-        verify(jdbcTemplate, never()).queryForObject(anyString(), eq(Long.class), any());
-        verify(jdbcTemplate, never()).update(contains("INSERT INTO mois_sales_library_processing_job"), any(), any());
+        verify(jdbcTemplate, never()).update(contains("INSERT INTO mois_sales_page_job_execution"), any(), any(), any(), any());
     }
 
     /**
@@ -97,14 +95,12 @@ class MoisSalesLibraryServiceTest {
                             "ref-2", "Produto com fallback", null, "https://produto.example/pagina", null);
                     return List.of(mapper.mapRow(firstRow, 0), mapper.mapRow(secondRow, 1));
                 });
-        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(1, 2);
-        given(jdbcTemplate.queryForObject(contains("SELECT id"), eq(Long.class), any(), any())).willReturn(77L);
+        stubOperationalIngest(1, 2);
 
         MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestResponse response =
                 service.ingestHotmartCollectedProducts(request);
 
-        verify(jdbcTemplate).update(contains("INSERT INTO mois_sales_library_processing_job"), eq(77L), eq("PENDING"));
+        verify(jdbcTemplate).update(contains("INSERT INTO mois_sales_page_job_execution"), eq(99L), any(), any(), any());
         org.assertj.core.api.Assertions.assertThat(response.jobId()).isEqualTo("hotmart-job-400");
         org.assertj.core.api.Assertions.assertThat(response.collectedReferencesRead()).isEqualTo(2);
         org.assertj.core.api.Assertions.assertThat(response.eligibleUrls()).isEqualTo(2);
@@ -158,6 +154,24 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.status()).isEqualTo("CAPTURED");
     }
 
+
+    /**
+     * Configura mocks comuns da ingestão operacional principal em mois_sales_page.
+     */
+    private void stubOperationalIngest(int... upsertResults) {
+        lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_page"), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(upsertResults.length == 0 ? 1 : upsertResults[0], java.util.Arrays.stream(upsertResults).skip(1).boxed().toArray(Integer[]::new));
+        lenient().when(jdbcTemplate.query(contains("WHERE workspace_id = ? AND url_canonical = ?"), isA(RowMapper.class), any(), any()))
+                .thenReturn(List.of(99L));
+        lenient().when(jdbcTemplate.query(contains("SELECT id, workspace_id, source"), isA(RowMapper.class), any()))
+                .thenReturn(List.of(new MoisSalesLibraryDtos.SalesLibraryPageResponse(99L, "10", "HOTMART", "https://example.com/pagina", "Title",
+                        "ANALYSIS", "PENDING", null, "PENDING", null, null, null, 0L, BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, Instant.now())));
+        lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), any(), any(), any())).thenReturn(1);
+        lenient().when(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).thenReturn(123L);
+        lenient().when(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any())).thenReturn(1);
+        lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any())).thenReturn(1);
+        lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_processing_job"), isA(Long.class))).thenReturn(1);
+    }
 
     /**
      * Monta uma linha simulada de captura de HTML bruto reservada.

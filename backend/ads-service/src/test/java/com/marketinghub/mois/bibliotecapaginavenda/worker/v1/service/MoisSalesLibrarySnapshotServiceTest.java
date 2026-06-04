@@ -3,7 +3,6 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
-import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,7 +33,7 @@ public class MoisSalesLibrarySnapshotServiceTest {
         jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.execute("CREATE ALIAS IF NOT EXISTS UTC_TIMESTAMP FOR \"com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotServiceTest.utcTimestamp\"");
         createSchema();
-        service = new MoisSalesLibrarySnapshotService(jdbcTemplate, new NoOpDualWriteGateway());
+        service = new MoisSalesLibrarySnapshotService(jdbcTemplate);
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/sales", exchange -> {
             byte[] body = """
@@ -87,11 +86,7 @@ public class MoisSalesLibrarySnapshotServiceTest {
     @Test
     void shouldCaptureRawHtmlAndScreenshotArtifacts() {
         String url = "http://localhost:" + server.getAddress().getPort() + "/sales";
-        jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_url_ingest
-                (id, workspace_id, source, url_original, url_canonical, title, ingest_count, created_at, updated_at)
-                VALUES (1, 'workspace-001', 'TEST', ?, ?, 'Oferta Teste', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, url, url);
+        insertPage(1L, url);
 
         var response = service.captureSnapshots(
                 new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureRequest("workspace-001", 5, false));
@@ -104,31 +99,31 @@ public class MoisSalesLibrarySnapshotServiceTest {
         assertThat(response.items().getFirst().rawHtmlBytes()).isPositive();
         assertThat(response.items().getFirst().screenshotBytes()).isPositive();
 
-        Integer snapshotCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM mois_sales_library_page_snapshot",
-                Integer.class);
-        Integer artifactCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM mois_sales_library_snapshot_artifact",
+        Integer executionCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM mois_sales_page_job_execution WHERE sales_page_id = 1 AND stage = 'CAPTURE' AND status = 'CAPTURED'",
                 Integer.class);
         Integer htmlCount = jdbcTemplate.queryForObject(
                 """
                         SELECT COUNT(*)
-                        FROM mois_sales_library_snapshot_artifact
-                        WHERE artifact_type = 'RAW_HTML' AND content_text LIKE '%Oferta Teste%'
+                        FROM mois_sales_page_job_execution
+                        WHERE sales_page_id = 1 AND raw_html LIKE '%Oferta Teste%'
                         """,
                 Integer.class);
         Integer screenshotCount = jdbcTemplate.queryForObject(
                 """
                         SELECT COUNT(*)
-                        FROM mois_sales_library_snapshot_artifact
-                        WHERE artifact_type = 'SCREENSHOT_PNG' AND content_blob IS NOT NULL
+                        FROM mois_sales_page_job_execution
+                        WHERE sales_page_id = 1 AND screenshot_blob IS NOT NULL
                         """,
                 Integer.class);
+        Integer pageCaptured = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM mois_sales_page WHERE id = 1 AND current_stage = 'CAPTURE' AND current_status = 'CAPTURED'",
+                Integer.class);
 
-        assertThat(snapshotCount).isEqualTo(1);
-        assertThat(artifactCount).isEqualTo(2);
+        assertThat(executionCount).isEqualTo(1);
         assertThat(htmlCount).isEqualTo(1);
         assertThat(screenshotCount).isEqualTo(1);
+        assertThat(pageCaptured).isEqualTo(1);
         assertThat(service.listSnapshots(1)).hasSize(1);
     }
 
@@ -148,10 +143,10 @@ public class MoisSalesLibrarySnapshotServiceTest {
         assertThat(response.items().getFirst().httpStatus()).isEqualTo(404);
         assertThat(response.items().getFirst().errorMessage()).startsWith("HTTP_404");
         String persistedError = jdbcTemplate.queryForObject(
-                "SELECT error_message FROM mois_sales_library_page_snapshot WHERE url_ingest_id = 2",
+                "SELECT error_message FROM mois_sales_page_job_execution WHERE sales_page_id = 2 AND stage = 'CAPTURE'",
                 String.class);
         Integer persistedHttpStatus = jdbcTemplate.queryForObject(
-                "SELECT http_status FROM mois_sales_library_page_snapshot WHERE url_ingest_id = 2",
+                "SELECT http_status FROM mois_sales_page_job_execution WHERE sales_page_id = 2 AND stage = 'CAPTURE'",
                 Integer.class);
         assertThat(persistedError).startsWith("HTTP_404");
         assertThat(persistedHttpStatus).isEqualTo(404);
@@ -226,42 +221,13 @@ public class MoisSalesLibrarySnapshotServiceTest {
         assertThat(response.items().getFirst().redirectDestinationUrl()).isEqualTo(baseUrl + "/missing");
         assertThat(response.items().getFirst().redirectRootUrl()).isEqualTo(baseUrl);
         String capturedHtml = jdbcTemplate.queryForObject(
-                "SELECT content_text FROM mois_sales_library_snapshot_artifact WHERE artifact_type = 'RAW_HTML'",
+                "SELECT raw_html FROM mois_sales_page_job_execution WHERE sales_page_id = 8 AND stage = 'CAPTURE'",
                 String.class);
         assertThat(capturedHtml).contains("Oferta Raiz");
         var storedUrls = jdbcTemplate.queryForMap(
-                "SELECT redirect_destination_url, redirect_root_url FROM mois_sales_library_page_snapshot WHERE url_ingest_id = 8");
-        assertThat(storedUrls.get("redirect_destination_url")).isEqualTo(baseUrl + "/missing");
+                "SELECT final_url, redirect_root_url FROM mois_sales_page_job_execution WHERE sales_page_id = 8 AND stage = 'CAPTURE'");
+        assertThat(storedUrls.get("final_url")).isEqualTo(baseUrl + "/missing");
         assertThat(storedUrls.get("redirect_root_url")).isEqualTo(baseUrl);
-    }
-
-    /** Ignora a escrita dupla nos testes focados apenas no comportamento legado de snapshots. */
-    private static class NoOpDualWriteGateway implements MoisSalesPageDualWriteGateway {
-
-        /** Não sincroniza URLs ingeridas no teste de snapshot. */
-        @Override
-        public void syncUrlIngest(long urlIngestId, Long processingJobId) {
-        }
-
-        /** Não sincroniza jobs no teste de snapshot. */
-        @Override
-        public void syncProcessingJob(long processingJobId) {
-        }
-
-        /** Não sincroniza análises no teste de snapshot. */
-        @Override
-        public void syncLatestAnalysis(long urlIngestId) {
-        }
-
-        /** Não sincroniza snapshots no teste de snapshot legado. */
-        @Override
-        public void syncSnapshot(long snapshotId) {
-        }
-
-        /** Não sincroniza capturas de referências coletadas no teste de snapshot. */
-        @Override
-        public void syncCollectedReferenceHtmlCapture(long captureId) {
-        }
     }
 
     /** Fornece timestamp UTC compatível com a função usada no SQL MySQL dos testes. */
@@ -269,72 +235,86 @@ public class MoisSalesLibrarySnapshotServiceTest {
         return Timestamp.from(Instant.now());
     }
 
-    /** Insere uma URL de biblioteca para os testes de seleção e captura. */
+    /** Insere uma página operacional para os testes de seleção e captura. */
     private void insertPage(long pageId, String url) {
         jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_url_ingest
-                (id, workspace_id, source, url_original, url_canonical, title, ingest_count, created_at, updated_at)
-                VALUES (?, 'workspace-001', 'TEST', ?, ?, 'Oferta Teste', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                INSERT INTO mois_sales_page
+                (id, workspace_id, source, url_original, url_canonical, title, current_stage, current_status, ingest_count, created_at, updated_at)
+                VALUES (?, 'workspace-001', 'TEST', ?, ?, 'Oferta Teste', 'ANALYSIS', 'PENDING', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """, pageId, url, url);
     }
 
     /** Insere uma falha prévia para validar cooldown e limite de tentativas. */
     private void insertFailedSnapshot(long pageId, Timestamp capturedAt) {
         jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_snapshot
-                (url_ingest_id, status, error_message, captured_at, created_at, updated_at)
-                VALUES (?, 'FAILED', 'HTTP_404: página final não encontrada', ?, ?, ?)
-                """, pageId, capturedAt, capturedAt, capturedAt);
+                INSERT INTO mois_sales_page_job_execution
+                (sales_page_id, workspace_id, job_type, stage, status, attempt, input_url, error_category, error_message, finished_at, created_at, updated_at)
+                SELECT id, workspace_id, 'HTML_CAPTURE', 'CAPTURE', 'FAILED', 1, url_canonical, 'CAPTURE_FAILED',
+                       'HTTP_404: página final não encontrada', ?, ?, ?
+                FROM mois_sales_page
+                WHERE id = ?
+                """, capturedAt, capturedAt, capturedAt, pageId);
     }
 
-    /** Cria o schema mínimo usado pelos testes de snapshots. */
+    /** Cria o schema mínimo usado pelos testes de capturas no modelo consolidado. */
     private void createSchema() {
-        jdbcTemplate.execute("DROP TABLE IF EXISTS mois_sales_library_snapshot_artifact");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS mois_sales_library_page_snapshot");
-        jdbcTemplate.execute("DROP TABLE IF EXISTS mois_sales_library_url_ingest");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS mois_sales_page_job_execution");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS mois_sales_page");
         jdbcTemplate.execute("""
-                CREATE TABLE mois_sales_library_url_ingest (
+                CREATE TABLE mois_sales_page (
                   id BIGINT AUTO_INCREMENT PRIMARY KEY,
                   workspace_id VARCHAR(120) NOT NULL,
                   source VARCHAR(40) NOT NULL,
+                  title VARCHAR(512),
                   url_original VARCHAR(1024) NOT NULL,
                   url_canonical VARCHAR(1024) NOT NULL,
-                  title VARCHAR(512),
-                  first_captured_at TIMESTAMP,
-                  last_captured_at TIMESTAMP,
+                  url_final VARCHAR(1024),
+                  redirect_root_url VARCHAR(1024),
+                  current_stage VARCHAR(40) NOT NULL,
+                  current_status VARCHAR(40) NOT NULL,
+                  capture_status VARCHAR(40),
+                  http_status INT,
+                  content_type VARCHAR(255),
+                  html_sha256 VARCHAR(64),
+                  html_bytes BIGINT NOT NULL DEFAULT 0,
+                  last_error_category VARCHAR(120),
+                  last_error_message VARCHAR(1000),
+                  last_job_execution_id BIGINT,
                   ingest_count INT NOT NULL DEFAULT 1,
+                  last_captured_at TIMESTAMP,
                   created_at TIMESTAMP NOT NULL,
                   updated_at TIMESTAMP NOT NULL
                 )
                 """);
         jdbcTemplate.execute("""
-                CREATE TABLE mois_sales_library_page_snapshot (
+                CREATE TABLE mois_sales_page_job_execution (
                   id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                  url_ingest_id BIGINT NOT NULL,
-                  snapshot_hash VARCHAR(128),
-                  status VARCHAR(32) NOT NULL,
+                  sales_page_id BIGINT NOT NULL,
+                  workspace_id VARCHAR(120) NOT NULL,
+                  job_type VARCHAR(40) NOT NULL,
+                  stage VARCHAR(40) NOT NULL,
+                  status VARCHAR(40) NOT NULL,
+                  attempt INT NOT NULL DEFAULT 1,
+                  claimed_by VARCHAR(120),
+                  input_url VARCHAR(1024),
+                  final_url VARCHAR(1024),
+                  redirect_root_url VARCHAR(1024),
                   http_status INT,
                   content_type VARCHAR(255),
-                  redirect_destination_url VARCHAR(1024),
-                  redirect_root_url VARCHAR(1024),
+                  raw_html LONGTEXT,
+                  raw_html_sha256 VARCHAR(64),
+                  raw_html_bytes BIGINT NOT NULL DEFAULT 0,
+                  screenshot_blob BLOB,
+                  screenshot_bytes BIGINT NOT NULL DEFAULT 0,
+                  score_total DECIMAL(6,2),
+                  error_category VARCHAR(120),
                   error_message VARCHAR(1000),
-                  captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  started_at TIMESTAMP,
+                  finished_at TIMESTAMP,
                   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """);
-        jdbcTemplate.execute("""
-                CREATE TABLE mois_sales_library_snapshot_artifact (
-                  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                  snapshot_id BIGINT NOT NULL,
-                  artifact_type VARCHAR(40) NOT NULL,
-                  content_type VARCHAR(255) NOT NULL,
-                  storage_kind VARCHAR(40) NOT NULL,
-                  content_text LONGTEXT,
-                  content_blob LONGBLOB,
-                  size_bytes BIGINT NOT NULL DEFAULT 0,
-                  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-                """);
     }
+
 }

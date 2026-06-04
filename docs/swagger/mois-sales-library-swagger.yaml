@@ -1,11 +1,47 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - MOIS Sales Library
-  version: 0.3.0
-  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 5, os endpoints de jobs de análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal; tabelas legadas são mantidas apenas para auditoria transitória.
+  version: 0.4.0
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 5, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal; tabelas legadas são mantidas apenas para auditoria transitória.
 servers:
   - url: /api/mois/sales-library
 paths:
+  /urls:ingest:
+    post:
+      summary: Ingere URLs externas no modelo operacional novo
+      description: Cria/atualiza primariamente `mois_sales_page`; quando a URL é nova, cria execução `PAGE_ANALYSIS` pendente em `mois_sales_page_job_execution`. O legado recebe espelho apenas para auditoria.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesLibraryIngestRequest'
+      responses:
+        '202':
+          description: URLs aceitas para ingestão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesLibraryIngestResponse'
+  /hotmart-products:ingest:
+    post:
+      summary: Ingere URLs de produtos Hotmart coletados no modelo operacional novo
+      description: Lê `mois_collected_reference` como origem bruta e grava o estado operacional em `mois_sales_page` com execução pendente em `mois_sales_page_job_execution` para páginas novas.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalesLibraryHotmartCollectedIngestRequest'
+      responses:
+        '202':
+          description: Produtos avaliados para ingestão operacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesLibraryHotmartCollectedIngestResponse'
   /jobs:claim:
     post:
       summary: Reserva a próxima execução de análise pelo modelo operacional novo
@@ -111,9 +147,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CollectedReferenceHtmlPersistResponse'
+  /html-captures:claim:
+    post:
+      summary: Reserva uma execução de captura HTML pelo modelo operacional novo
+      description: Retorna `snapshotId` como identificador compatível da execução `HTML_CAPTURE` em `mois_sales_page_job_execution`; `pageId` identifica `mois_sales_page`.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HtmlCaptureClaimRequest'
+      responses:
+        '200':
+          description: Resultado da reserva de captura
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HtmlCaptureClaimResponse'
+  /html-captures/{snapshotId}:complete:
+    post:
+      summary: Conclui uma execução de captura HTML operacional
+      description: Atualiza `mois_sales_page_job_execution` com HTML bruto, hash, screenshot e metadados de redirecionamento; atualiza também o estado atual de `mois_sales_page`.
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/SnapshotId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HtmlCaptureCompleteRequest'
+      responses:
+        '200':
+          description: Captura concluída
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HtmlCapturePersistResponse'
+  /html-captures/{snapshotId}:fail:
+    post:
+      summary: Registra falha de uma execução de captura HTML operacional
+      description: Atualiza falha em `mois_sales_page_job_execution` e reflete causa-raiz no estado atual de `mois_sales_page`.
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/SnapshotId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HtmlCaptureFailRequest'
+      responses:
+        '200':
+          description: Falha registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HtmlCapturePersistResponse'
   /snapshots:capture:
     post:
-      summary: Executa captura de snapshots HTML para páginas sem captura recente
+      summary: Executa captura HTML backend para páginas sem captura recente usando o modelo operacional novo
       tags: [MOIS Sales Library]
       requestBody:
         required: true
@@ -141,6 +235,14 @@ components:
       in: path
       name: captureId
       required: true
+      schema:
+        type: integer
+        format: int64
+    SnapshotId:
+      in: path
+      name: snapshotId
+      required: true
+      description: Identificador compatível da execução `HTML_CAPTURE` em `mois_sales_page_job_execution`.
       schema:
         type: integer
         format: int64
@@ -278,6 +380,163 @@ components:
           format: int64
         status:
           type: string
+    SalesLibraryIngestRequest:
+      type: object
+      required: [workspaceId, source, urls]
+      properties:
+        workspaceId:
+          type: string
+        source:
+          type: string
+        urls:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesLibraryUrlItem'
+    SalesLibraryUrlItem:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        capturedAt:
+          type: string
+          format: date-time
+    SalesLibraryIngestResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        source:
+          type: string
+        received:
+          type: integer
+        persisted:
+          type: integer
+    SalesLibraryHotmartCollectedIngestRequest:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+        jobId:
+          type: string
+          nullable: true
+        limit:
+          type: integer
+          maximum: 400
+          nullable: true
+    SalesLibraryHotmartCollectedIngestResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        jobId:
+          type: string
+          nullable: true
+        collectedReferencesRead:
+          type: integer
+        eligibleUrls:
+          type: integer
+        insertedUrls:
+          type: integer
+        updatedUrls:
+          type: integer
+        jobsCreated:
+          type: integer
+        skippedWithoutUrl:
+          type: integer
+    HtmlCaptureClaimRequest:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 20
+        force:
+          type: boolean
+    HtmlCaptureJobResponse:
+      type: object
+      properties:
+        snapshotId:
+          type: integer
+          format: int64
+          description: Identificador compatível da execução `HTML_CAPTURE`.
+        pageId:
+          type: integer
+          format: int64
+        urlCanonical:
+          type: string
+        title:
+          type: string
+    HtmlCaptureClaimResponse:
+      type: object
+      properties:
+        claimed:
+          type: boolean
+        job:
+          $ref: '#/components/schemas/HtmlCaptureJobResponse'
+    HtmlCaptureCompleteRequest:
+      type: object
+      required: [rawHtml]
+      properties:
+        rawHtml:
+          type: string
+        finalUrl:
+          type: string
+          nullable: true
+        redirectDestinationUrl:
+          type: string
+          nullable: true
+        redirectRootUrl:
+          type: string
+          nullable: true
+        httpStatus:
+          type: integer
+          nullable: true
+        contentType:
+          type: string
+          nullable: true
+        sha256:
+          type: string
+          nullable: true
+        sizeBytes:
+          type: integer
+          format: int64
+          nullable: true
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+    HtmlCaptureFailRequest:
+      type: object
+      properties:
+        errorCategory:
+          type: string
+        errorMessage:
+          type: string
+        redirectDestinationUrl:
+          type: string
+          nullable: true
+        redirectRootUrl:
+          type: string
+          nullable: true
+        httpStatus:
+          type: integer
+          nullable: true
+    HtmlCapturePersistResponse:
+      type: object
+      properties:
+        snapshotId:
+          type: integer
+          format: int64
+          description: Identificador compatível da execução `HTML_CAPTURE`.
+        status:
+          type: string
     SalesLibrarySnapshotCaptureRequest:
       type: object
       required: [workspaceId]
@@ -292,7 +551,7 @@ components:
           example: 5
         force:
           type: boolean
-          description: Quando verdadeiro, recaptura páginas mesmo que já possuam snapshot CAPTURED/FETCHING ou estejam em cooldown por falha recente/recorrente.
+          description: Quando verdadeiro, recaptura páginas mesmo que já possuam captura CAPTURED/FETCHING ou estejam em cooldown por falha recente/recorrente.
     SalesLibrarySnapshotCaptureItem:
       type: object
       properties:
@@ -303,6 +562,7 @@ components:
           type: integer
           format: int64
           nullable: true
+          description: Identificador compatível da execução `HTML_CAPTURE` em `mois_sales_page_job_execution`.
         urlCanonical:
           type: string
         redirectDestinationUrl:

@@ -702,7 +702,7 @@ public class MoisSalesLibraryService {
 
 
     /**
-     * Executa a gravação comum de itens de URL e consolida contadores de inserção, atualização e jobs.
+     * Executa a gravação comum de itens de URL usando mois_sales_page como escrita principal.
      */
     private IngestCounters ingestUrlItems(String workspaceId, String source, List<MoisSalesLibraryDtos.SalesLibraryUrlItem> urls) {
         int persisted = 0;
@@ -719,58 +719,114 @@ public class MoisSalesLibraryService {
             }
             Instant capturedAt = item.capturedAt() == null ? Instant.now() : item.capturedAt();
             LocalDateTime capturedAtUtc = LocalDateTime.ofInstant(capturedAt, ZoneOffset.UTC);
-            int ingestUpsertResult = jdbcTemplate.update(
+            int pageUpsertResult = jdbcTemplate.update(
                     """
-                            INSERT INTO mois_sales_library_url_ingest
-                            (workspace_id, source, url_original, url_canonical, title, first_captured_at, last_captured_at, ingest_count, created_at, updated_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                            INSERT INTO mois_sales_page
+                            (workspace_id, source, title, url_original, url_canonical, current_stage, current_status,
+                             analysis_status, ingest_count, first_seen_at, last_collected_at, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, 'ANALYSIS', 'PENDING', 'PENDING', 1, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
                             ON DUPLICATE KEY UPDATE
                                 source = VALUES(source),
-                                url_original = VALUES(url_original),
                                 title = COALESCE(NULLIF(VALUES(title), ''), title),
-                                last_captured_at = GREATEST(COALESCE(last_captured_at, VALUES(last_captured_at)), VALUES(last_captured_at)),
+                                url_original = VALUES(url_original),
+                                current_stage = CASE
+                                  WHEN current_status IN ('DONE', 'ANALYZED', 'CAPTURED', 'DUPLICATE', 'FETCHING', 'FAILED') THEN current_stage
+                                  ELSE 'ANALYSIS'
+                                END,
+                                current_status = CASE
+                                  WHEN current_status IN ('DONE', 'ANALYZED', 'CAPTURED', 'DUPLICATE', 'FETCHING', 'FAILED') THEN current_status
+                                  ELSE 'PENDING'
+                                END,
+                                analysis_status = CASE
+                                  WHEN analysis_status IN ('DONE', 'FETCHING', 'FAILED') THEN analysis_status
+                                  ELSE 'PENDING'
+                                END,
                                 ingest_count = ingest_count + 1,
+                                last_collected_at = GREATEST(COALESCE(last_collected_at, VALUES(last_collected_at)), VALUES(last_collected_at)),
                                 updated_at = UTC_TIMESTAMP()
                             """,
                     workspaceId,
                     normalizedSource,
+                    item.title(),
                     item.url(),
                     canonical,
-                    item.title(),
                     capturedAtUtc,
                     capturedAtUtc
             );
 
-            if (ingestUpsertResult == 1) {
+            Long pageId = findSalesPageIdByCanonical(workspaceId, canonical);
+            if (pageId == null) {
+                log.warn("MOIS sales-library não localizou página após upsert principal. modulo=MOIS, operacao=ingestUrlItems, workspaceId={}, canonical={}",
+                        workspaceId, canonical);
+                skippedWithoutUrl++;
+                continue;
+            }
+
+            Long executionId = null;
+            if (pageUpsertResult == 1) {
                 inserted++;
-                Long urlIngestId = jdbcTemplate.queryForObject(
-                        """
-                                SELECT id
-                                FROM mois_sales_library_url_ingest
-                                WHERE workspace_id = ? AND url_canonical = ?
-                                LIMIT 1
-                                """,
-                        Long.class,
-                        workspaceId,
-                        canonical
-                );
-                if (urlIngestId != null) {
-                    long jobId = createPendingJob(urlIngestId);
-                    dualWriteGateway.syncUrlIngest(urlIngestId, jobId);
-                    jobsCreated++;
-                }
+                executionId = createOperationalAnalysisExecution(pageId, "INGESTION");
+                jobsCreated++;
             } else {
                 updated++;
-                Long urlIngestId = findUrlIngestIdByCanonical(workspaceId, canonical);
-                if (urlIngestId != null) {
-                    dualWriteGateway.syncUrlIngest(urlIngestId, null);
-                }
             }
+            mirrorOperationalIngestToLegacyAudit(pageId, executionId, capturedAtUtc);
             persisted++;
         }
         return new IngestCounters(persisted, inserted, updated, jobsCreated, skippedWithoutUrl);
     }
 
+
+
+    /**
+     * Localiza a página operacional pelo workspace e URL canônica.
+     */
+    private Long findSalesPageIdByCanonical(String workspaceId, String canonical) {
+        return jdbcTemplate.query(
+                """
+                        SELECT id
+                        FROM mois_sales_page
+                        WHERE workspace_id = ? AND url_canonical = ?
+                        LIMIT 1
+                        """,
+                (rs, rowNum) -> rs.getLong("id"),
+                workspaceId,
+                canonical
+        ).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Espelha a ingestão principal nova em tabelas legadas apenas para auditoria de transição.
+     */
+    private void mirrorOperationalIngestToLegacyAudit(long pageId, Long executionId, LocalDateTime capturedAtUtc) {
+        MoisSalesLibraryDtos.SalesLibraryPageResponse page = getPage(pageId);
+        jdbcTemplate.update(
+                """
+                        INSERT INTO mois_sales_library_url_ingest
+                        (workspace_id, source, url_original, url_canonical, title, first_captured_at, last_captured_at, ingest_count, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                        ON DUPLICATE KEY UPDATE
+                            source = VALUES(source),
+                            url_original = VALUES(url_original),
+                            title = COALESCE(NULLIF(VALUES(title), ''), title),
+                            last_captured_at = GREATEST(COALESCE(last_captured_at, VALUES(last_captured_at)), VALUES(last_captured_at)),
+                            ingest_count = ingest_count + 1,
+                            updated_at = UTC_TIMESTAMP()
+                        """,
+                page.workspaceId(), page.source(), page.urlCanonical(), page.urlCanonical(), page.title(), capturedAtUtc, capturedAtUtc);
+        Long urlIngestId = findUrlIngestIdByCanonical(page.workspaceId(), page.urlCanonical());
+        if (urlIngestId != null && executionId != null) {
+            jdbcTemplate.update(
+                    """
+                            INSERT INTO mois_sales_library_processing_job
+                            (url_ingest_id, status, attempts, created_at, updated_at)
+                            VALUES (?, 'PENDING', 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                            """,
+                    urlIngestId);
+        }
+        log.info("MOIS sales-library espelhou ingestão nova no legado para auditoria. modulo=MOIS, operacao=mirrorOperationalIngestToLegacyAudit, pageId={}, executionId={}, legacyUrlIngestId={}",
+                pageId, executionId, urlIngestId);
+    }
 
     /**
      * Localiza o item recém-reservado pelo token de claim do worker.

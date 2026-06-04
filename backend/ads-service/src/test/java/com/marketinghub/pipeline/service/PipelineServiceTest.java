@@ -18,7 +18,6 @@ import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -149,6 +148,22 @@ class PipelineServiceTest {
     }
 
     /**
+     * Garante que criação de pipeline oficial não permite módulo divergente do contrato.
+     */
+    @Test
+    void shouldNotCreateOfficialPipelineWithDifferentModule() {
+        PipelineRequest request = new PipelineRequest();
+        request.setName("Pipeline de Experimento");
+        request.setCode("experiment-pipeline");
+        request.setModule("MDS");
+        request.setActive(true);
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Pipeline oficial deve usar o módulo canônico EXPERIMENT");
+    }
+
+    /**
      * Garante que etapa obrigatória oficial não pode ser removida.
      */
     @Test
@@ -241,7 +256,7 @@ class PipelineServiceTest {
         when(openAiModelRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createStage(10L, request))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Modelo OpenAI não encontrado");
     }
 

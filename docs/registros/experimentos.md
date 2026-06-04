@@ -3443,3 +3443,14 @@
 - causa-raiz/objetivo: o diagnóstico sozinho indica problemas, mas o modelo precisa enxergar o preset anterior para localizar quais definições/classes geraram a falha e produzir uma versão melhor com menos tentativa e erro.
 - correção aplicada: o Worker AI passou a incluir `landingPageDesignPreset` no contexto do prompt do preset design e o prompt agora exibe o preset anterior junto do Quality Review, instruindo comparação causal entre ambos antes de gerar o novo JSON.
 - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` passou a exigir o envio conjunto de `landing_page_design_preset` anterior e `landing_page_quality_review` na reexecução do preset design quando existirem.
+
+## 2026-06-04 17:37:55 UTC-3
+- solicitação: executar a fase 1 do plano de governança de contrato operacional de pipelines sem criar novas tabelas.
+- raciocínio: a causa-raiz das divergências entre tela, banco e código deve ser bloqueada no backend por contrato oficial e exposta pela tela por metadados/diagnóstico antes de virar falha tardia na execução do pipeline.
+- foi feito: reforço das travas da fase 1 para impedir criação de pipeline oficial com módulo divergente do cânone e para tratar associação a modelo OpenAI inexistente como violação HTTP 400 do contrato operacional, com cobertura unitária adicional.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - frontend/AGENTS.md
+  - docs/implementacao/backend/plano-pipelines-contrato-operacional.md
+  - docs/registros/experimentos.md

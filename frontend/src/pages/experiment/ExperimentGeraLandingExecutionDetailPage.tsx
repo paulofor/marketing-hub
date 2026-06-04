@@ -28,6 +28,123 @@ function extractModelFromRequestBody(raw?: string) {
   }
 }
 
+export interface QualityReviewSentScreenshot {
+  src: string;
+  label: string;
+}
+
+function isDisplayableImageReference(value: string) {
+  const trimmed = value.trim();
+  return (
+    /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(trimmed) ||
+    /^https?:\/\//i.test(trimmed)
+  );
+}
+
+function imageUrlFromUnknown(value: unknown): string | null {
+  if (typeof value === "string" && isDisplayableImageReference(value)) {
+    return value.trim();
+  }
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    return imageUrlFromUnknown(record.url ?? record.href ?? record.src);
+  }
+
+  return null;
+}
+
+function labelFromImageNode(
+  node: Record<string, unknown>,
+  fallbackIndex: number,
+) {
+  const labelCandidates = [
+    node.label,
+    node.name,
+    node.title,
+    node.viewport,
+    node.device,
+    node.detail,
+  ];
+  const label = labelCandidates.find(
+    (candidate): candidate is string =>
+      typeof candidate === "string" && candidate.trim().length > 0,
+  );
+  return label ? label.trim() : `Screenshot ${fallbackIndex}`;
+}
+
+export function extractQualityReviewSentScreenshots(
+  raw?: string | null,
+): QualityReviewSentScreenshot[] {
+  if (!raw?.trim()) return [];
+
+  const screenshots: QualityReviewSentScreenshot[] = [];
+  const seen = new Set<string>();
+
+  const addScreenshot = (src: string, label?: string) => {
+    if (seen.has(src)) return;
+    seen.add(src);
+    screenshots.push({
+      src,
+      label: label?.trim() || `Screenshot ${screenshots.length + 1}`,
+    });
+  };
+
+  const visit = (value: unknown, keyHint?: string) => {
+    if (typeof value === "string") {
+      if (isDisplayableImageReference(value)) {
+        addScreenshot(value.trim(), keyHint);
+      }
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => visit(item, keyHint));
+      return;
+    }
+
+    if (!value || typeof value !== "object") return;
+
+    const record = value as Record<string, unknown>;
+    const type =
+      typeof record.type === "string" ? record.type.toLowerCase() : "";
+    const nodeLooksLikeImage =
+      type.includes("image") ||
+      Object.keys(record).some((key) => /image|screenshot/i.test(key));
+
+    const directImage =
+      imageUrlFromUnknown(record.image_url) ??
+      imageUrlFromUnknown(record.imageUrl) ??
+      imageUrlFromUnknown(record.screenshotUrl) ??
+      imageUrlFromUnknown(record.screenshot_url) ??
+      (nodeLooksLikeImage
+        ? imageUrlFromUnknown(record.url ?? record.src)
+        : null);
+
+    if (directImage) {
+      addScreenshot(
+        directImage,
+        labelFromImageNode(record, screenshots.length + 1),
+      );
+    }
+
+    Object.entries(record).forEach(([key, child]) => visit(child, key));
+  };
+
+  try {
+    visit(JSON.parse(raw));
+  } catch {
+    const dataImageMatches = raw.match(
+      /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\r\n_-]+/g,
+    );
+    dataImageMatches?.forEach((match) =>
+      addScreenshot(match.replace(/\s/g, "")),
+    );
+  }
+
+  return screenshots;
+}
+
 function extractErrorFileContent(raw?: string) {
   if (!raw) return undefined;
 
@@ -96,6 +213,12 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
   const errorFileContent = extractErrorFileContent(
     detailQuery.data?.errorDetail,
   );
+  const isQualityReviewStage =
+    (detailQuery.data?.stageCode ?? stageCode) ===
+    "landing-page-quality-review";
+  const qualityReviewSentScreenshots = isQualityReviewStage
+    ? extractQualityReviewSentScreenshots(detailQuery.data?.openAiRequestBody)
+    : [];
 
   const buildJsonDownloadProps = (fieldName: string, value?: string | null) => {
     if (!value) return null;
@@ -292,6 +415,61 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <strong>Custo USD:</strong> {detailQuery.data.costUsd ?? "—"}
                 </div>
               </div>
+
+              {isQualityReviewStage ? (
+                <div>
+                  <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+                    <div>
+                      <h6 className="mb-1">Screenshots das imagens enviadas</h6>
+                      <p className="text-muted small mb-0">
+                        Imagens anexadas ao request visual enviado para o
+                        Quality Gate.
+                      </p>
+                    </div>
+                    <span className="badge text-bg-light border border-secondary-subtle text-dark">
+                      {qualityReviewSentScreenshots.length} imagem
+                      {qualityReviewSentScreenshots.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  {qualityReviewSentScreenshots.length > 0 ? (
+                    <div className="row g-3">
+                      {qualityReviewSentScreenshots.map((screenshot, index) => (
+                        <div className="col-12 col-xl-6" key={screenshot.src}>
+                          <div className="border rounded bg-light p-2 h-100">
+                            <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
+                              <strong className="small">
+                                {screenshot.label || `Screenshot ${index + 1}`}
+                              </strong>
+                              <a
+                                href={screenshot.src}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-outline-secondary"
+                              >
+                                Abrir imagem
+                              </a>
+                            </div>
+                            <img
+                              src={screenshot.src}
+                              alt={`Screenshot enviado ao Quality Gate ${index + 1}`}
+                              className="img-fluid rounded border bg-white d-block mx-auto"
+                              style={{
+                                maxHeight: "520px",
+                                objectFit: "contain",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted mb-0">
+                      Nenhuma imagem enviada foi encontrada no request visual
+                      desta execução.
+                    </p>
+                  )}
+                </div>
+              ) : null}
 
               <div>
                 <div className="d-flex align-items-center gap-2 mb-2">

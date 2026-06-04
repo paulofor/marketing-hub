@@ -464,7 +464,20 @@ Fonte externa] -->|Coleta de produtos/URLs| CC[mois-clickbank-collector\npackage
 
 Este diagrama foi movido para o cânone de experimento em `docs/canonical/procedimento-experimento-canon.v1.md`, seção **15.4**, para centralizar as regras canônicas do fluxo Gera Landing em um único documento.
 
-### 13.7 Pipeline de captura de HTML bruto a partir de referências coletadas
+### 13.7 Diretriz alvo — simplificação da Biblioteca de Páginas de Vendas em duas tabelas operacionais
+
+Para reduzir ambiguidade operacional entre referências coletadas, URLs consolidadas, snapshots, análises e jobs, o modelo alvo da Biblioteca de Páginas de Vendas passa a ser simplificado em duas tabelas operacionais principais:
+
+1. `mois_sales_page` — fonte de verdade futura para o estado atual consolidado da página de venda.
+2. `mois_sales_page_job_execution` — fonte de verdade futura para histórico, auditoria e payloads de execuções do pipeline.
+
+A tabela `mois_collected_reference` permanece como origem bruta dos coletores Hotmart/ClickBank e não deve ser usada como estado operacional da UI principal da Biblioteca.
+
+Durante a transição, as tabelas atuais (`mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_analysis`, `mois_sales_library_page_snapshot`, `mois_sales_library_snapshot_artifact` e `mois_collected_reference_html_capture`) permanecem compatíveis até conclusão de backfill, escrita dupla, migração de leitura do frontend e congelamento do legado.
+
+O plano faseado obrigatório para essa migração está documentado em `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`.
+
+### 13.8 Pipeline de captura de HTML bruto a partir de referências coletadas
 
 A primeira etapa do pipeline de páginas de venda deve separar responsabilidades:
 

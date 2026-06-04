@@ -869,3 +869,13 @@ Arquivos alterados:
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/pipeline/htmlcapture/HtmlCaptureProcessor.java`
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/canonical/mois-worker-canon.v1.md`
+
+## 2026-06-04 — Plano de simplificação do pipeline de páginas de vendas em duas tabelas
+- Documentado o plano faseado para simplificar o pipeline operacional da Biblioteca de Páginas de Vendas do MOIS em duas tabelas principais: `mois_sales_page` para estado atual consolidado e `mois_sales_page_job_execution` para histórico/auditoria de execuções.
+- O plano preserva `mois_collected_reference` como origem bruta dos coletores e propõe migração incremental com criação do novo schema, backfill, escrita dupla temporária, migração do frontend, troca da escrita principal e congelamento do legado.
+- Registrada a intenção arquitetural de reduzir ambiguidade entre referências coletadas, URLs consolidadas, snapshots, análises e jobs, mantendo diagnóstico de causa-raiz por execução.
+
+Arquivos alterados:
+- `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/registros/mois1.md`

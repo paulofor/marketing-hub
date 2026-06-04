@@ -3367,3 +3367,9 @@
 - correção aplicada: a conclusão sem erro da etapa `landing-page-wireframe` agora persiste `experiment.landing_page_wireframe` e cria uma execução `landing-page-copy` com `promptTemplateId` `auto/wireframe`, `status` `INICIADO` e novo `idJob`.
 - cânones atualizados: `docs/canonical/procedimento-experimento-canon.v1.md` e `docs/canonical/geralanding-arquitetura-canon.v1.md` passaram a declarar o encadeamento automático WireFrame → Copy.
 - validação automatizada: teste unitário do `BackendWireframeService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
+
+## 2026-06-04 — Campo de capacidade de imagem no catálogo OpenAI
+
+- Adicionado o campo `openai_model.accepts_image_input` para identificar modelos que aceitam imagem junto do prompt.
+- Atualizada a tela de Modelos OpenAI para cadastrar, editar e listar a capacidade “Aceita imagem + prompt”.
+- Atualizado o seletor de modelo por etapa do pipeline para destacar modelos que aceitam imagem, apoiando a escolha correta no Quality Review visual do GeraLanding.

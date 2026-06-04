@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 /**
- * Request body for creating/updating OpenAI models in the catalog.
+ * Responsabilidade: receber os dados editáveis do cadastro administrativo de modelos OpenAI.
  */
 @Data
 public class CreateOpenAiModelRequest {
@@ -16,4 +16,5 @@ public class CreateOpenAiModelRequest {
     private BigDecimal priceInputBatch;
     private BigDecimal priceInputCachedBatch;
     private BigDecimal priceOutputBatch;
+    private boolean acceptsImageInput;
 }

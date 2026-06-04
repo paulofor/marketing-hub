@@ -864,6 +864,7 @@ openai_model|price_output_standard|decimal(12,5)|NO|NULL||
 openai_model|price_input_batch|decimal(12,5)|NO|NULL||
 openai_model|price_input_cached_batch|decimal(12,5)|NO|NULL||
 openai_model|price_output_batch|decimal(12,5)|NO|NULL||
+openai_model|accepts_image_input|tinyint(1)|NO|0||
 openai_model|created_at|timestamp|NO|CURRENT_TIMESTAMP||
 openai_model|updated_at|timestamp|NO|CURRENT_TIMESTAMP||on update CURRENT_TIMESTAMP
 prompt|id|bigint(20)|NO|NULL|PRI|auto_increment
@@ -2029,8 +2030,8 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
   - `active`: Campo usado para armazenar informações de **active**. (tipo `tinyint(1)`; obrigatório; default `1`).
 
 ### `openai_model`
-- **Finalidade da tabela:** Configura domínios, atributos e parâmetros usados na construção de prompts e geração com IA.
-- **Campos (11):**
+- **Finalidade da tabela:** Configura modelos OpenAI, preços por modo de execução e capacidades de entrada multimodal usadas nas etapas com IA.
+- **Campos (12):**
   - `id`: Identificador único do registro. (tipo `bigint(20)`; obrigatório; chave `PRI`; auto_increment).
   - `name`: Nome de exibição do registro. (tipo `varchar(255)`; obrigatório).
   - `code`: Campo usado para armazenar informações de **code**. (tipo `varchar(128)`; obrigatório; chave `UNI`).
@@ -2040,6 +2041,7 @@ visual_proof|proof_type|varchar(255)|YES|NULL||
   - `price_input_batch`: Campo usado para armazenar informações de **preço entrada batch**. (tipo `decimal(12,5)`; obrigatório).
   - `price_input_cached_batch`: Campo usado para armazenar informações de **preço entrada cached batch**. (tipo `decimal(12,5)`; obrigatório).
   - `price_output_batch`: Campo usado para armazenar informações de **preço saída batch**. (tipo `decimal(12,5)`; obrigatório).
+  - `accepts_image_input`: Indica se o modelo aceita imagem como entrada junto do prompt. (tipo `tinyint(1)`; obrigatório; default `0`).
   - `created_at`: Data/hora de criação do registro. (tipo `timestamp`; obrigatório; default `CURRENT_TIMESTAMP`).
   - `updated_at`: Data/hora da última atualização do registro. (tipo `timestamp`; obrigatório; default `CURRENT_TIMESTAMP`; on update CURRENT_TIMESTAMP).
 

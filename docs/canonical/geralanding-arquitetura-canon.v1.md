@@ -54,6 +54,7 @@ Regras arquiteturais refletidas (ArchUnit):
 - Cada registro de `pipeline_stage` pode apontar para um modelo da tabela `openai_model` por meio de `openai_model_id`; quando o campo estiver nulo, a etapa deve manter o fallback técnico já definido no executor/worker correspondente.
 - Para o GeraLanding, a configuração de modelo por etapa deve priorizar a finalidade comercial da etapa e o foco em vendas, evitando parâmetros técnicos avançados na tela principal.
 - A tela administrativa de pipelines deve exibir uma seleção simples de modelo OpenAI por etapa, usando os modelos cadastrados em `openai_model`.
+- O cadastro administrativo de `openai_model` deve manter a flag `accepts_image_input` para sinalizar modelos que aceitam imagem + prompt; etapas visuais como `landing-page-quality-review` devem escolher modelos com essa capacidade.
 
 ## Quality Review visual
 

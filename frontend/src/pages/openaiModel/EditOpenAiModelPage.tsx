@@ -5,7 +5,9 @@ import { useUpdateOpenAiModel } from "../../api/openAiModel/useUpdateOpenAiModel
 import PageTitle from "../../components/PageTitle";
 import OpenAiModelForm, { OpenAiModelFormValues } from "./OpenAiModelForm";
 
-function toFormValues(model?: ReturnType<typeof useOpenAiModel>["data"]): OpenAiModelFormValues {
+function toFormValues(
+  model?: ReturnType<typeof useOpenAiModel>["data"],
+): OpenAiModelFormValues {
   return {
     name: model?.name ?? "",
     code: model?.code ?? "",
@@ -15,6 +17,7 @@ function toFormValues(model?: ReturnType<typeof useOpenAiModel>["data"]): OpenAi
     priceInputBatch: model?.priceInputBatch?.toString() ?? "",
     priceInputCachedBatch: model?.priceInputCachedBatch?.toString() ?? "",
     priceOutputBatch: model?.priceOutputBatch?.toString() ?? "",
+    acceptsImageInput: model?.acceptsImageInput ?? false,
   };
 }
 
@@ -29,6 +32,7 @@ function toPayload(values: OpenAiModelFormValues, id: number) {
     priceInputBatch: Number(values.priceInputBatch || 0),
     priceInputCachedBatch: Number(values.priceInputCachedBatch || 0),
     priceOutputBatch: Number(values.priceOutputBatch || 0),
+    acceptsImageInput: values.acceptsImageInput,
   };
 }
 

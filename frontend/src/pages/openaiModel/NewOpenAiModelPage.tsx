@@ -13,6 +13,7 @@ function toPayload(values: OpenAiModelFormValues) {
     priceInputBatch: Number(values.priceInputBatch || 0),
     priceInputCachedBatch: Number(values.priceInputCachedBatch || 0),
     priceOutputBatch: Number(values.priceOutputBatch || 0),
+    acceptsImageInput: values.acceptsImageInput,
   };
 }
 
@@ -29,7 +30,10 @@ export default function NewOpenAiModelPage() {
   return (
     <div>
       <PageTitle>Novo modelo da OpenAI</PageTitle>
-      <OpenAiModelForm onSubmit={handleSubmit} isSubmitting={create.isPending} />
+      <OpenAiModelForm
+        onSubmit={handleSubmit}
+        isSubmitting={create.isPending}
+      />
     </div>
   );
 }

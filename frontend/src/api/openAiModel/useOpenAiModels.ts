@@ -11,13 +11,16 @@ export interface OpenAiModel {
   priceInputBatch: number;
   priceInputCachedBatch: number;
   priceOutputBatch: number;
+  acceptsImageInput: boolean;
 }
 
 export function useOpenAiModels() {
   return useQuery({
     queryKey: ["openAiModels"],
     queryFn: async () => {
-      const { data } = await axios.get<OpenAiModel[]>("/api/modelos/openai/catalogo/v1/modelos");
+      const { data } = await axios.get<OpenAiModel[]>(
+        "/api/modelos/openai/catalogo/v1/modelos",
+      );
       return data;
     },
   });

@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-openai-model-accepts-image-input
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: openai_model
+                columnName: accepts_image_input
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: >
+              ALTER TABLE openai_model
+              ADD COLUMN accepts_image_input TINYINT(1) NOT NULL DEFAULT 0
+              COMMENT 'Indica se o modelo aceita imagem como entrada junto do prompt'
+              AFTER price_output_batch;

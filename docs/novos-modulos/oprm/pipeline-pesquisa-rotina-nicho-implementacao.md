@@ -527,6 +527,17 @@ oprm_routine_research_cycle.total_source_candidates
 Não.
 ```
 
+### Execução automática implementada
+
+O `oprm-coletor-mei` executa periodicamente a etapa `oprmSourceSearcher` por scheduler, consulta
+o endpoint interno de queries `PENDING`, usa o provedor público `DUCKDUCKGO_HTML` para obter
+resultados orgânicos sem IA, grava até 20 fontes candidatas por query no backend e registra falha
+por query quando a busca externa não responde. O backend permanece como fonte de verdade para
+persistência e contratos, enquanto o coletor executa a integração externa. O endpoint de detalhe
+da etapa retorna também o resumo operacional da última execução para exibição no card da tela do
+pipeline.
+
+
 ### Saída de exemplo
 
 Para a query:

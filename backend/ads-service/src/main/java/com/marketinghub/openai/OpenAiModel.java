@@ -58,6 +58,12 @@ public class OpenAiModel {
     @Builder.Default
     private boolean acceptsImageInput = false;
 
+    @Column(name = "pricing_source", length = 255)
+    private String pricingSource;
+
+    @Column(name = "last_pricing_sync_at")
+    private Instant lastPricingSyncAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

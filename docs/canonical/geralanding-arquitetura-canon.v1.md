@@ -50,8 +50,10 @@ Regras arquiteturais refletidas (ArchUnit):
 
 ## Catálogo operacional de pipeline e modelo por etapa
 
-- O catálogo administrativo de pipelines e etapas é persistido em `pipeline` e `pipeline_stage` e deve ser usado como fonte operacional para configurar a escolha padrão de modelo por etapa.
-- Cada registro de `pipeline_stage` pode apontar para um modelo da tabela `openai_model` por meio de `openai_model_id`; quando o campo estiver nulo, a etapa deve manter o fallback técnico já definido no executor/worker correspondente.
+- O catálogo administrativo legado de pipelines e etapas permanece em `pipeline` e `pipeline_stage` durante a transição operacional.
+- A definição persistente oficial deve ficar separada em `pipeline_definition` e `pipeline_stage_definition`, enquanto os campos editáveis pela operação ficam em `pipeline_stage_config`.
+- Cada configuração operacional de etapa pode apontar para um modelo da tabela `openai_model` por meio de `pipeline_stage_config.openai_model_id`; enquanto a transição estiver ativa, `pipeline_stage.openai_model_id` continua compatível e deve ser migrado sem sobrescrever a escolha do usuário.
+- Quando não houver modelo OpenAI configurado para a etapa, a execução deve manter o fallback técnico já definido no executor/worker correspondente.
 - Para o GeraLanding, a configuração de modelo por etapa deve priorizar a finalidade comercial da etapa e o foco em vendas, evitando parâmetros técnicos avançados na tela principal.
 - A etapa `landing-page-wireframe` deve usar configuração dedicada `wireframe.worker.model`, com padrão `gpt-5.4`, porque define a estrutura comercial de baixa fricção que orienta copy, imagens, preset visual e HTML final.
 - A tela administrativa de pipelines deve exibir uma seleção simples de modelo OpenAI por etapa, usando os modelos cadastrados em `openai_model`.

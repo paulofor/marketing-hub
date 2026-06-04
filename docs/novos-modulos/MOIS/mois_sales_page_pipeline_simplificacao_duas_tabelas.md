@@ -379,6 +379,14 @@ Critério de aceite:
 - dados legados seguem disponíveis para auditoria durante a janela combinada;
 - documentação deixa claro qual é a fonte de verdade atual.
 
+#### Implementação realizada em 2026-06-04
+
+- O cânone MOIS passou a marcar `mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_analysis`, `mois_sales_library_page_snapshot`, `mois_sales_library_snapshot_artifact` e `mois_collected_reference_html_capture` como tabelas legadas congeladas.
+- A janela mínima de auditoria histórica foi definida em 180 dias a partir de 2026-06-04, com encerramento mínimo em 2026-12-01, antes de qualquer arquivamento/limpeza futura.
+- O uso permitido do legado ficou restrito a leitura explícita para backfill idempotente, auditoria ou diagnóstico histórico.
+- Foi adicionado teste automatizado de congelamento para impedir DML acidental nas tabelas legadas dentro do código Java principal do backend.
+- A documentação Swagger foi atualizada para declarar a Fase 6 como contrato operacional vigente: modelo novo como fonte de verdade atual e legado somente leitura.
+
 ## 9. Regras de transição de estado
 
 Estados sugeridos para `mois_sales_page.current_status`:

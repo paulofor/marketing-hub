@@ -3468,3 +3468,20 @@
 - causa-raiz identificada: a URL pública do domínio `oportunidadebrasil.shop` é servida pelo Lead Portal em `/api/flows/{slug}/page`; esse controller devolvia o HTML standalone salvo sem injetar um script que enviasse `page_view`/tempo de seção para o backend principal. O endpoint de analytics existia no Marketing Hub, mas a página real acessada pelo usuário não chamava esse endpoint, mantendo a etapa de visualização do formulário zerada.
 - correção aplicada: o Lead Portal passou a injetar dinamicamente `data-mh-landing-analytics` em landings standalone, postar eventos no novo endpoint local `/api/flows/{slug}/page-analytics` e encaminhar esses eventos ao Marketing Hub pelo `ExperimentFunnelTrackingClient`; no backend principal, a resolução do experimento agora também usa o slug presente em `follow_up_action_url`, cobrindo publicações externas do GeraLanding como o experimento 36, preservando o fluxo obrigatório Lead Portal → backend principal → banco.
 - validação automatizada: testes do Lead Portal cobrem a injeção do script na página standalone e o encaminhamento do payload de analytics ao cliente de tracking.
+## 2026-06-04 — Fase 3 do contrato operacional da tela de Pipelines
+
+- solicitação: executar a Fase 3 do plano `docs/implementacao/backend/plano-pipelines-contrato-operacional.md`, separando definição persistente e configuração operacional.
+- causa-raiz/objetivo: permitir versionamento/auditoria futura e reduzir risco de divergência entre contrato estrutural de pipeline e campos editáveis da operação.
+- foi feito:
+  - adicionadas tabelas `pipeline_definition`, `pipeline_stage_definition` e `pipeline_stage_config` via changelog Liquibase incremental, com FKs, uniques e migração inicial das configurações atuais de `pipeline_stage` para `pipeline_stage_config`;
+  - criadas entidades JPA e repositories centralizados em `com.marketinghub.repository.jpa.pipeline` para a persistência separada do contrato;
+  - criado `PipelinePersistentContractSynchronizer` para sincronizar definições oficiais do registry e criar configuração operacional sem sobrescrever modelo OpenAI, descrição ou status configurados;
+  - integrado o sincronizador persistente ao fluxo seguro já existente de sincronização de pipelines oficiais;
+  - adicionada cobertura unitária para preservar configuração operacional na separação persistente.
+- arquivos principais:
+  - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-04-pipeline-persistent-contract.yaml
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineDefinitionEntity.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStageDefinitionEntity.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStageConfig.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelinePersistentContractSynchronizer.java
+  - backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java

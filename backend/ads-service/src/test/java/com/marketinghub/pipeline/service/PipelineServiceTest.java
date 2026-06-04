@@ -3,19 +3,27 @@ package com.marketinghub.pipeline.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.pipeline.Pipeline;
+import com.marketinghub.pipeline.PipelineDefinitionEntity;
 import com.marketinghub.pipeline.PipelineStage;
+import com.marketinghub.pipeline.PipelineStageConfig;
+import com.marketinghub.pipeline.PipelineStageDefinitionEntity;
 import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
 import com.marketinghub.pipeline.dto.PipelineSyncResultDto;
 import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineDefinitionEntityRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineStageDefinitionEntityRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -367,6 +375,73 @@ class PipelineServiceTest {
             assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
             assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
         });
+    }
+
+    /**
+     * Garante que a fase 3 persiste definição canônica separada da configuração operacional herdada.
+     */
+    @Test
+    void shouldPersistDefinitionSeparatedFromOperationalConfig() {
+        PipelineDefinitionEntityRepository definitionRepository = mock(PipelineDefinitionEntityRepository.class);
+        PipelineStageDefinitionEntityRepository stageDefinitionRepository = mock(PipelineStageDefinitionEntityRepository.class);
+        PipelineStageConfigRepository configRepository = mock(PipelineStageConfigRepository.class);
+        PipelinePersistentContractSynchronizer persistentSynchronizer = new PipelinePersistentContractSynchronizer(
+                definitionRepository, stageDefinitionRepository, configRepository);
+        OpenAiModel model = OpenAiModel.builder().id(99L).name("GPT 5.2").code("gpt-5.2").build();
+        PipelineStage configured = stage(1L, 1, "campaign-angle");
+        configured.setDescription("Descrição operacional preservada");
+        configured.setOpenAiModel(model);
+        Pipeline pipeline = officialPipelineWith(configured);
+        PipelineDefinitionEntity persistedDefinition = PipelineDefinitionEntity.builder()
+                .id(7L)
+                .code("experiment-pipeline")
+                .module("EXPERIMENT")
+                .name("Pipeline de Experimento")
+                .canonicalVersion("procedimento-experimento-canon.v1")
+                .active(true)
+                .build();
+        PipelineStageDefinitionEntity persistedStage = PipelineStageDefinitionEntity.builder()
+                .id(8L)
+                .pipelineDefinition(persistedDefinition)
+                .canonicalCode("CAMPAIGN_ANGLE")
+                .displayName("Campaign Angle")
+                .position(1)
+                .required(true)
+                .implementedStageEnum("CAMPAIGN_ANGLE")
+                .requiresOpenAiModel(true)
+                .configurable(true)
+                .build();
+        when(definitionRepository.findByCodeAndCanonicalVersion(
+                        "experiment-pipeline", "procedimento-experimento-canon.v1"))
+                .thenReturn(Optional.of(persistedDefinition));
+        when(stageDefinitionRepository.findByPipelineDefinitionIdAndCanonicalCode(7L, "CAMPAIGN_ANGLE"))
+                .thenReturn(Optional.of(persistedStage));
+        when(stageDefinitionRepository.save(any(PipelineStageDefinitionEntity.class))).thenAnswer(invocation -> {
+            PipelineStageDefinitionEntity saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(90L + saved.getPosition());
+            }
+            return saved;
+        });
+        when(configRepository.findByPipelineStageDefinitionId(8L)).thenReturn(Optional.empty());
+        when(configRepository.save(any(PipelineStageConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<String> actions = persistentSynchronizer.sync(
+                definitionRegistry.findByPipelineCode("experiment-pipeline").orElseThrow(), pipeline);
+
+        assertThat(actions)
+                .containsExactly(
+                        "Definição persistente e configurações operacionais sincronizadas sem sobrescrever campos editáveis.");
+        ArgumentCaptor<PipelineStageConfig> configCaptor = ArgumentCaptor.forClass(PipelineStageConfig.class);
+        verify(configRepository, atLeastOnce()).save(configCaptor.capture());
+        PipelineStageConfig migratedConfig = configCaptor.getAllValues().stream()
+                .filter(config -> config.getPipelineStageDefinition().getId().equals(8L))
+                .findFirst()
+                .orElseThrow();
+        assertThat(migratedConfig.getPipelineStageDefinition()).isEqualTo(persistedStage);
+        assertThat(migratedConfig.getDescriptionOverride()).isEqualTo("Descrição operacional preservada");
+        assertThat(migratedConfig.getOpenAiModel()).isEqualTo(model);
+        assertThat(migratedConfig.isActive()).isTrue();
     }
 
     /**

@@ -10,15 +10,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+/** Responsabilidade: configurar clientes HTTP usados na integração backend com a OpenAI. */
 @Configuration
 @EnableConfigurationProperties(OpenAiProperties.class)
 public class OpenAiConfiguration {
 
+    /** Cria o WebClient autenticado da OpenAI usando token direto ou arquivo seguro configurado. */
     @Bean(name = "openAiWebClient")
-    public WebClient openAiWebClient(WebClient.Builder builder, OpenAiProperties properties) {
+    public WebClient openAiWebClient(WebClient.Builder builder, OpenAiProperties properties, OpenAiApiKeyResolver apiKeyResolver) {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) properties.getConnectTimeout().toMillis())
                 .responseTimeout(properties.getRequestTimeout())
@@ -34,8 +37,9 @@ public class OpenAiConfiguration {
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 
-        if (properties.isEnabled()) {
-            configured.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getApiKey());
+        String apiKey = apiKeyResolver.resolve(properties);
+        if (StringUtils.hasText(apiKey)) {
+            configured.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
         }
 
         return configured.build();

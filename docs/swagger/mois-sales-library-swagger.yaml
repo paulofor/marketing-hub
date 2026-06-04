@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Marketing Hub - MOIS Sales Library
   version: 0.5.0
-  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 5, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal; tabelas legadas ficam fora da escrita operacional principal e não alimentam a UI principal.
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 6, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte de verdade operacional atual; tabelas legadas ficam congeladas em somente leitura para auditoria/backfill histórico e não alimentam a UI principal.
 servers:
   - url: /api/mois/sales-library
 paths:
@@ -45,7 +45,7 @@ paths:
   /entries:
     get:
       summary: Lista entradas operacionais consolidadas da biblioteca
-      description: Lê `mois_sales_page` como fonte operacional principal; não consulta `mois_sales_library_url_ingest` para alimentar a UI principal na Fase 5.
+      description: Lê `mois_sales_page` como fonte de verdade operacional atual; não consulta `mois_sales_library_url_ingest` para alimentar a UI principal na Fase 6.
       tags: [MOIS Sales Library]
       parameters:
         - in: query

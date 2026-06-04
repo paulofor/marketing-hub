@@ -1,6 +1,7 @@
 package com.marketinghub.openai.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 /** Responsabilidade: transportar dados de modelo OpenAI para as telas administrativas e seletores. */
 public record OpenAiModelDto(
@@ -13,4 +14,6 @@ public record OpenAiModelDto(
         BigDecimal priceInputBatch,
         BigDecimal priceInputCachedBatch,
         BigDecimal priceOutputBatch,
-        boolean acceptsImageInput) {}
+        boolean acceptsImageInput,
+        String pricingSource,
+        Instant lastPricingSyncAt) {}

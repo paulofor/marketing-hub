@@ -1,15 +1,15 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - MOIS Sales Library
-  version: 0.4.0
-  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 5, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal; tabelas legadas são mantidas apenas para auditoria transitória.
+  version: 0.5.0
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 5, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte operacional principal; tabelas legadas ficam fora da escrita operacional principal e não alimentam a UI principal.
 servers:
   - url: /api/mois/sales-library
 paths:
   /urls:ingest:
     post:
       summary: Ingere URLs externas no modelo operacional novo
-      description: Cria/atualiza primariamente `mois_sales_page`; quando a URL é nova, cria execução `PAGE_ANALYSIS` pendente em `mois_sales_page_job_execution`. O legado recebe espelho apenas para auditoria.
+      description: Cria/atualiza primariamente `mois_sales_page`; quando a URL é nova, cria execução `PAGE_ANALYSIS` pendente em `mois_sales_page_job_execution`.
       tags: [MOIS Sales Library]
       requestBody:
         required: true
@@ -45,7 +45,7 @@ paths:
   /jobs:claim:
     post:
       summary: Reserva a próxima execução de análise pelo modelo operacional novo
-      description: Retorna `jobId` como identificador de `mois_sales_page_job_execution`; o backend espelha no legado somente para auditoria durante a transição.
+      description: Retorna `jobId` como identificador de `mois_sales_page_job_execution`; tabelas legadas não são atualizadas pela reserva operacional.
       tags: [MOIS Sales Library]
       requestBody:
         required: true
@@ -63,7 +63,7 @@ paths:
   /jobs/{jobId}:complete:
     post:
       summary: Conclui uma execução de análise operacional
-      description: Atualiza primariamente `mois_sales_page_job_execution` e o estado atual de `mois_sales_page`; o legado recebe espelho de auditoria quando houver vínculo.
+      description: Atualiza `mois_sales_page_job_execution` e o estado atual de `mois_sales_page`, sem escrita nas tabelas legadas.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/JobId'
@@ -79,7 +79,7 @@ paths:
   /jobs/{jobId}:fail:
     post:
       summary: Registra falha de uma execução de análise operacional
-      description: Atualiza primariamente `mois_sales_page_job_execution` e `mois_sales_page`; o legado recebe espelho de auditoria quando houver vínculo.
+      description: Atualiza `mois_sales_page_job_execution` e `mois_sales_page`, sem escrita nas tabelas legadas.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/JobId'
@@ -95,6 +95,7 @@ paths:
   /collected-reference-html:claim:
     post:
       summary: Reserva uma referência coletada para captura de HTML bruto
+      description: Lê `mois_collected_reference` como origem bruta, cria/atualiza `mois_sales_page` e retorna `captureId` como execução `COLLECTED_REFERENCE_HTML` em `mois_sales_page_job_execution`.
       tags: [MOIS Sales Library]
       requestBody:
         required: true
@@ -112,6 +113,7 @@ paths:
   /collected-reference-html/{captureId}:complete:
     post:
       summary: Persiste HTML bruto capturado para a referência reservada
+      description: Persiste HTML bruto, hash e metadados em `mois_sales_page_job_execution` e consolida status/bytes em `mois_sales_page`.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/CaptureId'
@@ -131,6 +133,7 @@ paths:
   /collected-reference-html/{captureId}:fail:
     post:
       summary: Registra falha de captura de HTML bruto
+      description: Marca a execução `COLLECTED_REFERENCE_HTML` como `FAILED` e atualiza o último erro em `mois_sales_page`.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/CaptureId'
@@ -235,6 +238,7 @@ components:
       in: path
       name: captureId
       required: true
+      description: Identificador da execução `COLLECTED_REFERENCE_HTML` em `mois_sales_page_job_execution`.
       schema:
         type: integer
         format: int64

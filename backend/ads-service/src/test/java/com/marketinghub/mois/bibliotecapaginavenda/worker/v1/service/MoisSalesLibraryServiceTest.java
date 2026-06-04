@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
-import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -33,9 +32,6 @@ class MoisSalesLibraryServiceTest {
 
     @Mock
     private JdbcTemplate jdbcTemplate;
-
-    @Mock
-    private MoisSalesPageDualWriteGateway dualWriteGateway;
 
     @InjectMocks
     private MoisSalesLibraryService service;
@@ -117,14 +113,20 @@ class MoisSalesLibraryServiceTest {
         MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest request =
                 new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest("workspace-001", "hotmart");
 
-        given(jdbcTemplate.update(contains("INSERT INTO mois_collected_reference_html_capture"), any(), eq("workspace-001"), eq("HOTMART")))
-                .willReturn(1);
-        given(jdbcTemplate.query(contains("FROM mois_collected_reference_html_capture"), isA(RowMapper.class), any()))
+        given(jdbcTemplate.query(contains("FROM mois_collected_reference r"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART")))
                 .willAnswer(invocation -> {
                     RowMapper<?> mapper = invocation.getArgument(1);
                     ResultSet row = htmlCaptureRow();
                     return List.of(mapper.mapRow(row, 0));
                 });
+        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_page"), any(), any(), eq(20L))).willReturn(1);
+        given(jdbcTemplate.query(contains("SELECT workspace_id FROM mois_collected_reference"), isA(RowMapper.class), eq(20L)))
+                .willReturn(List.of("workspace-001"));
+        given(jdbcTemplate.query(contains("WHERE workspace_id = ? AND url_canonical = ?"), isA(RowMapper.class), eq("workspace-001"), eq("https://go.hotmart.com/A1")))
+                .willReturn(List.of(99L));
+        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), any(), eq(99L))).willReturn(1);
+        given(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).willReturn(10L);
+        given(jdbcTemplate.update(contains("UPDATE mois_sales_page SET last_job_execution_id"), eq(10L), eq(99L))).willReturn(1);
 
         MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse response = service.claimCollectedReferenceHtml(request);
 
@@ -146,9 +148,16 @@ class MoisSalesLibraryServiceTest {
                         "text/html",
                         Instant.parse("2026-06-03T10:00:00Z"));
 
+        given(jdbcTemplate.query(contains("FROM mois_sales_page_job_execution"), isA(RowMapper.class), eq(10L)))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    ResultSet row = captureExecutionRow();
+                    return List.of(mapper.mapRow(row, 0));
+                });
+
         MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse response = service.completeCollectedReferenceHtml(10L, request);
 
-        verify(jdbcTemplate).update(contains("UPDATE mois_collected_reference_html_capture"),
+        verify(jdbcTemplate).update(contains("UPDATE mois_sales_page_job_execution"),
                 eq("https://final.example/oferta"), eq(200), eq("text/html"), eq("<html><body>Oferta</body></html>"),
                 any(), eq(32), any(), eq(10L));
         org.assertj.core.api.Assertions.assertThat(response.status()).isEqualTo("CAPTURED");
@@ -174,11 +183,20 @@ class MoisSalesLibraryServiceTest {
     }
 
     /**
+     * Monta uma linha simulada de execução operacional de captura reservada.
+     */
+    private ResultSet captureExecutionRow() throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("id")).willReturn(10L);
+        given(resultSet.getLong("sales_page_id")).willReturn(99L);
+        return resultSet;
+    }
+
+    /**
      * Monta uma linha simulada de captura de HTML bruto reservada.
      */
     private ResultSet htmlCaptureRow() throws Exception {
         ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
-        given(resultSet.getLong("id")).willReturn(10L);
         given(resultSet.getLong("collected_reference_id")).willReturn(20L);
         given(resultSet.getString("collection_job_id")).willReturn("hotmart-job-400");
         given(resultSet.getString("reference_id")).willReturn("ref-1");

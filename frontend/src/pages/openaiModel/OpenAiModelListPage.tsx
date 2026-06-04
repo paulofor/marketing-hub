@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import { useOpenAiModelCatalog } from "../../api/openAiModel/useOpenAiModelCatalog";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 
 const priceFormatter = new Intl.NumberFormat("pt-BR", {

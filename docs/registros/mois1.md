@@ -921,3 +921,12 @@ Arquivos alterados:
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotServiceTest.java`
 - `backend/ads-service/src/test/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageDualWriteRepositoryTest.java`
 - `docs/registros/mois1.md`
+
+## 2026-06-04 — Correção dos testes da escrita dupla da Biblioteca de Páginas de Vendas
+- corrigidos os testes unitários de `MoisSalesLibraryServiceTest` para injetar o gateway de escrita dupla usado pela Fase 3 do pipeline, eliminando `NullPointerException` nos fluxos que sincronizam capturas HTML coletadas.
+- ajustados os stubs Mockito de `JdbcTemplate.queryForObject` para refletirem os dois parâmetros reais enviados pela busca de URL canônica (`workspace_id` e `url_canonical`), eliminando falsos erros de `PotentialStubbingProblem` em modo strict.
+- verificado o teste unitário específico da Biblioteca de Páginas de Vendas e a suíte unitária completa do `ads-service` após a correção.
+
+Arquivos alterados:
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `docs/registros/mois1.md`

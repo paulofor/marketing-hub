@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -31,6 +32,9 @@ class MoisSalesLibraryServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    private MoisSalesPageDualWriteGateway dualWriteGateway;
+
     @InjectMocks
     private MoisSalesLibraryService service;
 
@@ -47,7 +51,7 @@ class MoisSalesLibraryServiceTest {
 
         given(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any()))
                 .willReturn(1);
-        given(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any())).willReturn(99L);
+        given(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(), any())).willReturn(99L);
 
         service.ingestUrls(request);
 
@@ -95,7 +99,7 @@ class MoisSalesLibraryServiceTest {
                 });
         given(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any()))
                 .willReturn(1, 2);
-        given(jdbcTemplate.queryForObject(contains("SELECT id"), eq(Long.class), any())).willReturn(77L);
+        given(jdbcTemplate.queryForObject(contains("SELECT id"), eq(Long.class), any(), any())).willReturn(77L);
 
         MoisSalesLibraryDtos.SalesLibraryHotmartCollectedIngestResponse response =
                 service.ingestHotmartCollectedProducts(request);

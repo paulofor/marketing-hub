@@ -184,6 +184,7 @@ class BackendImageGenerationServiceTest {
         BackendImageGenerationService service =
                 new BackendImageGenerationService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
+        when(experiment.getId()).thenReturn(88L);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(88L)
                 .experiment(experiment)
@@ -218,6 +219,15 @@ class BackendImageGenerationServiceTest {
         verify(experiment).setLandingPageImageAssets(modelResponse);
         verify(experiment, never()).setLandingPageWireframe(any());
         verify(experimentRepository).save(experiment);
+        verify(executionRepository).save(argThat(designExecution ->
+                designExecution != execution
+                        && Long.valueOf(88L).equals(designExecution.getExperimentId())
+                        && designExecution.getExperiment() == experiment
+                        && "landing-page-design-preset".equals(designExecution.getStageCode())
+                        && "INICIADO".equals(designExecution.getStatus())
+                        && "auto/image-generation".equals(designExecution.getPromptTemplateId())
+                        && designExecution.getPromptContent().contains("Gera Imagem")
+                        && designExecution.getIdJob() != null));
         verify(experimentRepository, never()).findById(88L);
     }
 

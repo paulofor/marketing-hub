@@ -3291,3 +3291,11 @@
   - `ai-worker/src/main/resources/prompts/geralanding/landing-page-wireframe.md`
   - `ai-worker/src/main/resources/prompts/geralanding/landing-page-design-preset.md`
   - `docs/registros/experimentos.md`
+
+## 2026-06-04 — Automação do Preset Design após Gera Imagem
+
+- solicitação: aplicar para o Preset Design o mesmo encadeamento automático observado entre Design Preset e Quality Review.
+- causa-raiz/objetivo: após o Gera Imagem concluir e materializar `landing_page_image_assets`, o fluxo ainda dependia de clique manual para iniciar `landing-page-design-preset`, quebrando a continuidade operacional do GeraLanding.
+- correção aplicada: a conclusão bem-sucedida da etapa `landing-page-image-generation` agora persiste o manifesto de imagens e cria automaticamente uma execução `landing-page-design-preset` com `promptTemplateId` `auto/image-generation` e status `INICIADO`.
+- cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` passou a declarar que o Preset Design deve ser enfileirado automaticamente após o Gera Imagem.
+- validação automatizada: teste unitário do `BackendImageGenerationService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.

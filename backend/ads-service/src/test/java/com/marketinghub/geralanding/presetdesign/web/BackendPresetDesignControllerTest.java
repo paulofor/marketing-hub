@@ -103,6 +103,7 @@ class BackendPresetDesignControllerTest {
         assertEquals(1, json.size());
         assertEquals("job-design-preset", json.get(0).get("jobid").asText());
         assertEquals(33L, json.get(0).get("experiment").get("id").asLong());
+        assertEquals(72, json.get(0).get("experiment").get("landingPageQualityReview").get("score").asInt());
         assertTrue(json.get(0).has("hypothesis"));
         assertEquals("Dor superficial", json.get(0).get("hypothesis").get("framework").get("pain").get("surface").asText());
     }
@@ -138,6 +139,7 @@ class BackendPresetDesignControllerTest {
                 "Wireframe landing",
                 "Planejamento imagem",
                 "Preset design",
+                Map.of("score", 72, "recommendedRegeneration", List.of("LANDING_PAGE_DESIGN_PRESET")),
                 "Entregáveis landing",
                 "<html>GeraLanding</html>");
     }

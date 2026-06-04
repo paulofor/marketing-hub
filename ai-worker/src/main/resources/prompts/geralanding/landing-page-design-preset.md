@@ -44,6 +44,12 @@ Briefing das imagens dos anúncios:
 Wireframe da landing:
 {dados-landingPageWireframe}
 
+Preset design anterior gerado, quando existir:
+{{landingPageDesignPreset}}
+
+Diagnóstico do Quality Review anterior, quando existir:
+{{landingPageQualityReview}}
+
 # Objetivo
 
 Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto raiz contendo `definicoes` e `pagina`.
@@ -51,6 +57,8 @@ Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto ra
 Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere somente `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável, responsiva e visualmente menos monótona.
 
 O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Se um botão, input, label, grid, card, imagem ou container precisa de altura, padding, alinhamento, largura, coluna ou quebra mobile, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
+
+Se `landingPageQualityReview` trouxer diagnóstico anterior, use-o como orientação principal de correção causal junto com `landingPageDesignPreset`: primeiro entenda o preset anterior que você gerou, depois compare com `blockingIssues`, `recommendedRegeneration`, `rootCause`, `impact`, `fix` e campos equivalentes para identificar exatamente o que ficou ruim e por quê. Quando a recomendação citar `LANDING_PAGE_DESIGN_PRESET`, gere uma versão melhor do preset corrigindo diretamente os problemas apontados no JSON anterior. Não copie o diagnóstico nem o preset antigo para a resposta final, não crie metadados técnicos e não reescreva estrutura/copy fora do contrato: ajuste `definicoes`, classes em `estilos[]`, hierarquia visual permitida, contraste, espaçamento, aparência premium, CTAs, formulários, cards, imagens e responsividade para resolver a causa-raiz. Se o diagnóstico ou preset anterior estiver vazio, nulo ou sem issues acionáveis, siga as regras normais do preset.
 
 
 # Correções obrigatórias para falhas recorrentes de conversão

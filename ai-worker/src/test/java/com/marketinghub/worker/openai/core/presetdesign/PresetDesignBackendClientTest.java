@@ -41,6 +41,66 @@ class PresetDesignBackendClientTest {
         server.shutdown();
     }
 
+    /** Deve carregar o diagnóstico do Quality Review para retroalimentar o prompt do preset design. */
+    @Test
+    void listPendingShouldIncludeQualityReviewDiagnosticInPromptData() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [
+                          {
+                            "experimentId": 12,
+                            "jobid": "job-ia-1",
+                            "stageCode": "landing-page-design-preset",
+                            "executionRequestedAt": "2026-05-29T10:00:00Z",
+                            "experiment": {
+                              "id": 12,
+                              "name": "Experimento Design",
+                              "landingPageWireframe": {"pagina": {"head": {}}},
+                              "landingPageDesignPreset": {
+                                "definicoes": {"desktop": [{"nome": "ctaAntigo", "css": "color:#999"}]},
+                                "pagina": {"corpo": {"estilos": ["bgBody"]}}
+                              },
+                              "landingPageQualityReview": {
+                                "score": 72,
+                                "blockingIssues": [{"rootCause": "CTA sem contraste"}],
+                                "recommendedRegeneration": ["LANDING_PAGE_DESIGN_PRESET"]
+                              }
+                            },
+                            "hypothesis": {
+                              "framework": {
+                                "pain": {"headline": "dor"},
+                                "result": {"headline": "resultado"}
+                              }
+                            }
+                          }
+                        ]
+                        """));
+        PresetDesignBackendClient client = new PresetDesignBackendClient(
+                WebClient.builder(),
+                new PresetDesignWorkerProperties(
+                        true,
+                        5,
+                        server.url("/").toString(),
+                        "/api",
+                        "prompts/geralanding/landing-page-design-preset.md",
+                        "prompts/geralanding/landing-page-design-preset-schema.json",
+                        "experiment_pipeline_landing_page_design_preset",
+                        "gpt-5.5",
+                        Duration.ofSeconds(5)),
+                objectMapper);
+
+        List<StageExecution<PresetDesignInput>> pending = client.listPending(5);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.getFirst().input().promptData().get("landingPageDesignPreset").toString())
+                .contains("ctaAntigo");
+        assertThat(pending.getFirst().input().promptData().get("landingPageQualityReview").toString())
+                .contains("CTA sem contraste")
+                .contains("LANDING_PAGE_DESIGN_PRESET");
+    }
+
     /** Deve enviar prompt, schema e request cru no callback recebe-prompt. */
     @Test
     void markDispatchedShouldSendPromptSchemaAndRawRequestToRecebePrompt() throws Exception {
@@ -167,13 +227,25 @@ class PresetDesignBackendClientTest {
                                 "NICHE_NAME", "gestores",
                                 "PAIN_JSON", Map.of("headline", "dor"),
                                 "RESULT_JSON", Map.of("headline", "resultado"),
-                                "landingPageWireframe", Map.of("pagina", Map.of("head", Map.of())))));
+                                "landingPageWireframe", Map.of("pagina", Map.of("head", Map.of())),
+                                "landingPageDesignPreset", Map.of(
+                                        "definicoes", Map.of("desktop", List.of(Map.of("nome", "ctaAntigo")))),
+                                "landingPageQualityReview", Map.of(
+                                        "score", 72,
+                                        "blockingIssues", List.of(Map.of("rootCause", "CTA sem contraste")),
+                                        "recommendedRegeneration", List.of("LANDING_PAGE_DESIGN_PRESET")))));
 
         var request = builder.build(execution);
         JsonNode body = objectMapper.readTree(request.requestBodyJson());
 
         assertThat(request.schemaName()).isEqualTo("experiment_pipeline_landing_page_design_preset");
-        assertThat(request.prompt()).contains("gestores");
+        assertThat(request.prompt())
+                .contains("gestores")
+                .contains("Preset design anterior gerado")
+                .contains("ctaAntigo")
+                .contains("Diagnóstico do Quality Review anterior")
+                .contains("CTA sem contraste")
+                .contains("LANDING_PAGE_DESIGN_PRESET");
         assertThat(body.path("model").asText()).isEqualTo("gpt-5.5");
         assertThat(body.path("text").path("format").path("name").asText())
                 .isEqualTo("experiment_pipeline_landing_page_design_preset");
@@ -250,7 +322,11 @@ class PresetDesignBackendClientTest {
                 .contains("stackCol")
                 .contains("gridCols1")
                 .contains("não use `!important` como solução padrão no desktop")
-                .contains("grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr)");
+                .contains("grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr)")
+                .contains("{{landingPageDesignPreset}}")
+                .contains("{{landingPageQualityReview}}")
+                .contains("blockingIssues")
+                .contains("recommendedRegeneration");
     }
 
     /** Percorre recursivamente o schema e lista objetos que não bloqueiam propriedades extras. */

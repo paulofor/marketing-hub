@@ -260,9 +260,61 @@ export interface MoisSalesLibraryPage {
   source: string;
   urlCanonical: string;
   title?: string;
+  currentStage?: string;
+  currentStatus?: string;
+  captureStatus?: string;
   analysisStatus?: string;
+  urlFinal?: string;
+  httpStatus?: number;
+  htmlSha256?: string;
+  htmlBytes: number;
   scoreTotal?: number;
+  offerSummary?: string;
+  mechanismSummary?: string;
+  promiseSummary?: string;
+  proofSummary?: string;
+  lastErrorCategory?: string;
+  lastErrorMessage?: string;
+  lastJobExecutionId?: number;
+  lastCapturedAt?: string;
   analyzedAt?: string;
+  updatedAt: string;
+}
+
+export interface MoisSalesLibraryPageSummary {
+  workspaceId: string;
+  total: number;
+  pending: number;
+  capturing: number;
+  captured: number;
+  analyzed: number;
+  failed: number;
+  blockedCooldown: number;
+  hotmart: number;
+  clickbank: number;
+  updatedAt?: string;
+}
+
+export interface MoisSalesLibraryPageExecution {
+  executionId: number;
+  pageId: number;
+  jobType: string;
+  stage: string;
+  status: string;
+  attempt: number;
+  inputUrl?: string;
+  finalUrl?: string;
+  redirectRootUrl?: string;
+  httpStatus?: number;
+  contentType?: string;
+  rawHtmlBytes: number;
+  screenshotBytes: number;
+  scoreTotal?: number;
+  errorCategory?: string;
+  errorMessage?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  createdAt: string;
   updatedAt: string;
 }
 

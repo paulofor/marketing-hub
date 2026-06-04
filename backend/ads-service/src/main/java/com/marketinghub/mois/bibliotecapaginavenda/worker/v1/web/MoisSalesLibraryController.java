@@ -104,7 +104,7 @@ public class MoisSalesLibraryController {
     }
 
     /**
-     * Lista páginas canônicas registradas na biblioteca.
+     * Lista páginas canônicas registradas no modelo consolidado da biblioteca.
      */
     @GetMapping("/pages")
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(
@@ -113,6 +113,14 @@ public class MoisSalesLibraryController {
             @RequestParam(defaultValue = "20") int pageSize
     ) {
         return service.listPages(workspaceId, page, pageSize);
+    }
+
+    /**
+     * Retorna contadores globais das páginas consolidadas sem depender da paginação da listagem.
+     */
+    @GetMapping("/pages/summary")
+    public MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse summarizePages(@RequestParam String workspaceId) {
+        return service.summarizePages(workspaceId);
     }
 
     /**
@@ -218,11 +226,19 @@ public class MoisSalesLibraryController {
     }
 
     /**
-     * Lista snapshots já capturados para uma página.
+     * Lista snapshots legados já capturados para uma página durante a transição.
      */
     @GetMapping("/pages/{pageId}/snapshots")
     public List<MoisSalesLibraryDtos.SalesLibraryPageSnapshotResponse> listPageSnapshots(@PathVariable long pageId) {
         return snapshotService.listSnapshots(pageId);
+    }
+
+    /**
+     * Lista o histórico consolidado de execuções da página no modelo novo.
+     */
+    @GetMapping("/pages/{pageId}/executions")
+    public List<MoisSalesLibraryDtos.SalesLibraryPageExecutionResponse> listPageExecutions(@PathVariable long pageId) {
+        return service.listPageExecutions(pageId);
     }
 
     /**

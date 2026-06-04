@@ -1,0 +1,14 @@
+package com.marketinghub.oprm.nichocnae.routinesynthesizer.service.completeStageExecution;
+
+/** Payload de conclusão da etapa seis com o cartão de rotina sintetizado. */
+public record CompleteRoutineSynthesizerRequest(
+    Long researchCycleId,
+    String nicheName,
+    String routineSummary,
+    String painsSummary,
+    String resultsSummary,
+    String mechanismOpportunitiesSummary,
+    String evidenceSummary,
+    String sourceDomains,
+    Integer confidenceScore,
+    String synthesizedBy) {}

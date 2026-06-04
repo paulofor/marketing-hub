@@ -3307,3 +3307,10 @@
 - correção aplicada: a conclusão bem-sucedida da etapa `landing-page-image-planning` agora persiste o planejamento de imagens e cria automaticamente uma execução `landing-page-image-generation` com `promptTemplateId` `auto/image-planning` e status `INICIADO`.
 - cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` passou a declarar que o Gera Imagem deve ser enfileirado automaticamente após o Gera Prompt Imagem.
 - validação automatizada: teste unitário do `BackendImagePlanningService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
+
+## 2026-06-04 — Screenshots enviados no detalhe do Quality Review
+
+- solicitação: na tela de detalhe da execução Gera Landing, quando a etapa for `landing-page-quality-review`, exibir os screenshots das imagens enviadas ao modelo de visão.
+- causa-raiz/objetivo: o diagnóstico de qualidade depende diretamente das evidências visuais enviadas; sem prévia na tela, o usuário precisava abrir o JSON bruto para conferir quais imagens foram avaliadas.
+- correção aplicada: o detalhe da execução agora identifica imagens anexadas no `openAiRequestBody` da etapa Quality Review, renderiza as prévias em cards com link para abrir cada imagem em nova aba e mantém mensagem explícita quando não houver imagem no payload.
+- validação automatizada: adicionados testes unitários para extração de imagens em payload OpenAI Responses API e payload bruto com data URLs duplicadas.

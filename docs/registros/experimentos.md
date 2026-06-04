@@ -3360,3 +3360,10 @@
 - causa-raiz/objetivo: permitir que o Quality Review diferencie sintoma visual renderizado de problema de origem no wireframe, no preset de design ou na montagem HTML, recomendando regeneração da etapa correta.
 - correção aplicada: o Worker AI passou a montar o contexto textual da revisão com os artefatos fonte e o prompt foi atualizado para pedir análise de causa-raiz por arquivo/etapa, mantendo screenshots renderizados como evidência visual.
 - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md`.
+## 2026-06-04 — Disparo automático do Gera Copy após WireFrame
+
+- solicitação: no pipeline do GeraLanding, disparar automaticamente a etapa `landing-page-copy` ao final bem-sucedido do Gera WireFrame, seguindo o padrão já usado no fim do Gera Preset Design para iniciar o Quality Review.
+- causa-raiz/objetivo: a criação da landing ainda tinha uma interrupção manual entre estrutura e copy, reduzindo fluidez operacional e atrasando a sequência que leva à oferta publicável.
+- correção aplicada: a conclusão sem erro da etapa `landing-page-wireframe` agora persiste `experiment.landing_page_wireframe` e cria uma execução `landing-page-copy` com `promptTemplateId` `auto/wireframe`, `status` `INICIADO` e novo `idJob`.
+- cânones atualizados: `docs/canonical/procedimento-experimento-canon.v1.md` e `docs/canonical/geralanding-arquitetura-canon.v1.md` passaram a declarar o encadeamento automático WireFrame → Copy.
+- validação automatizada: teste unitário do `BackendWireframeService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.

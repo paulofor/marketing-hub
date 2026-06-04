@@ -50,12 +50,13 @@ Local canônico vigente:
 No fluxo atual, a geração da landing segue as etapas:
 1. gerar wireframe (`LANDING_PAGE_WIREFRAME`);
 2. gerar copy (`LANDING_PAGE_COPY`);
-3. gerar planejamento/prompt de imagens (`LANDING_PAGE_IMAGE_PLANNING`) e gerar imagens, materializando `experiment.landing_page_image_assets` com as URLs finais;
-4. gerar preset de design (`LANDING_PAGE_DESIGN_PRESET`), que deve ser enfileirado automaticamente após a conclusão bem-sucedida do Gera Imagem;
-5. gerar entregável HTML da landing (`LANDING_PAGE_HTML`).
+3. gerar planejamento/prompt de imagens (`LANDING_PAGE_IMAGE_PLANNING`), que deve enfileirar automaticamente o Gera Imagem após conclusão bem-sucedida;
+4. gerar imagens (`LANDING_PAGE_IMAGE_GENERATION`), materializando `experiment.landing_page_image_assets` com as URLs finais;
+5. gerar preset de design (`LANDING_PAGE_DESIGN_PRESET`), que deve ser enfileirado automaticamente após a conclusão bem-sucedida do Gera Imagem;
+6. gerar entregável HTML da landing (`LANDING_PAGE_HTML`).
 
 ### 5.1 Observação obrigatória — HTML provisório por etapa
-Durante o pipeline de Gera Landing, existe produção incremental/provisória de conteúdo para permitir evolução etapa a etapa. No estágio de design preset é consolidada a base visual e ocorre a etapa usada para ingestão do pixel no fluxo atual. Ao concluir o Gera Imagem com sucesso e persistir `experiment.landing_page_image_assets`, o backend deve criar automaticamente uma execução `landing-page-design-preset` com `promptTemplateId` operacional `auto/image-generation`, mantendo a continuidade do fluxo sem exigir novo clique do usuário.
+Durante o pipeline de Gera Landing, existe produção incremental/provisória de conteúdo para permitir evolução etapa a etapa. No estágio de design preset é consolidada a base visual e ocorre a etapa usada para ingestão do pixel no fluxo atual. Ao concluir o Gera Prompt Imagem com sucesso e persistir `experiment.landing_page_image_planning`, o backend deve criar automaticamente uma execução `landing-page-image-generation` com `promptTemplateId` operacional `auto/image-planning`. Ao concluir o Gera Imagem com sucesso e persistir `experiment.landing_page_image_assets`, o backend deve criar automaticamente uma execução `landing-page-design-preset` com `promptTemplateId` operacional `auto/image-generation`, mantendo a continuidade do fluxo sem exigir novo clique do usuário.
 
 ### 5.2 Instrumentação obrigatória de funil no assembler do design preset
 Para a etapa `LANDING_PAGE_DESIGN_PRESET`, o assembler de HTML provisório deve injetar instrumentação mínima de comportamento para diagnóstico de avanço de funil na landing:

@@ -158,6 +158,30 @@ class BackendQualityReviewServiceTest {
         assertTrue(current.getQualityReviewAudit().contains("job-previous"));
     }
 
+    /** Deve expor score e aprovação no resumo para destacar a decisão mais recente no card do frontend. */
+    @Test
+    void listExperimentStageExecutionsShouldExposeScoreAndApprovalDecision() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendQualityReviewService service = new BackendQualityReviewService(experimentRepository, executionRepository, new ObjectMapper());
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(40L)
+                .stageCode("landing-page-quality-review")
+                .status("CONCLUIDO")
+                .idJob("job-approved".getBytes(StandardCharsets.UTF_8))
+                .costUsd(BigDecimal.valueOf(0.02))
+                .modelResponse("{\"score\":94,\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\"}")
+                .build();
+        when(executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(40L, "landing-page-quality-review"))
+                .thenReturn(List.of(execution));
+
+        var summaries = service.listExperimentStageExecutions(40L, true);
+
+        assertEquals(1, summaries.size());
+        assertEquals(new BigDecimal("94"), summaries.get(0).score());
+        assertEquals("APPROVE_FOR_PUBLICATION", summaries.get(0).approvalRecommendation());
+        assertEquals(Boolean.TRUE, summaries.get(0).approvedForPublication());
+    }
 
     /** Deve retornar detalhes de execução já persistidos usando o id textual do job. */
     @Test

@@ -8,7 +8,10 @@ public record GeraLandingQualityReviewExecutionSummaryResponse(
         String idJob,
         String status,
         Instant executionRequestedAt,
-        BigDecimal costUsd
+        BigDecimal costUsd,
+        BigDecimal score,
+        String approvalRecommendation,
+        Boolean approvedForPublication
 ) {
     /** Mantém o contrato imutável do resumo de execução. */
     public GeraLandingQualityReviewExecutionSummaryResponse {}

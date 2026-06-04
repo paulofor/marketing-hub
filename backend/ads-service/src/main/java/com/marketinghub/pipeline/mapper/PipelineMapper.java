@@ -42,6 +42,9 @@ public class PipelineMapper {
                 .description(stage.getDescription())
                 .required(stage.isRequired())
                 .active(stage.isActive())
+                .openAiModelId(stage.getOpenAiModel() != null ? stage.getOpenAiModel().getId() : null)
+                .openAiModelName(stage.getOpenAiModel() != null ? stage.getOpenAiModel().getName() : null)
+                .openAiModelCode(stage.getOpenAiModel() != null ? stage.getOpenAiModel().getCode() : null)
                 .createdAt(stage.getCreatedAt())
                 .updatedAt(stage.getUpdatedAt())
                 .build();

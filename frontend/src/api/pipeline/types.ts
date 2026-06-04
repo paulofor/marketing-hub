@@ -7,6 +7,9 @@ export interface PipelineStage {
   description?: string | null;
   required: boolean;
   active: boolean;
+  openAiModelId?: number | null;
+  openAiModelName?: string | null;
+  openAiModelCode?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -30,5 +33,11 @@ export type PipelinePayload = Pick<
 
 export type PipelineStagePayload = Pick<
   PipelineStage,
-  "position" | "name" | "code" | "description" | "required" | "active"
+  | "position"
+  | "name"
+  | "code"
+  | "description"
+  | "required"
+  | "active"
+  | "openAiModelId"
 >;

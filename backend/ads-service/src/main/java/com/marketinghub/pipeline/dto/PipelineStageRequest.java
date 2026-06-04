@@ -26,4 +26,5 @@ public class PipelineStageRequest {
     private String description;
     private boolean required = true;
     private boolean active = true;
+    private Long openAiModelId;
 }

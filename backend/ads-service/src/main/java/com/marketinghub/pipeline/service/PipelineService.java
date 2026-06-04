@@ -1,9 +1,11 @@
 package com.marketinghub.pipeline.service;
 
+import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
+import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,13 +21,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class PipelineService {
     private final PipelineRepository pipelineRepository;
     private final PipelineStageRepository stageRepository;
+    private final OpenAiModelRepository openAiModelRepository;
 
     /**
-     * Inicializa o serviço com os repositórios centralizados de pipelines e etapas.
+     * Inicializa o serviço com os repositórios centralizados de pipelines, etapas e modelos OpenAI.
      */
-    public PipelineService(PipelineRepository pipelineRepository, PipelineStageRepository stageRepository) {
+    public PipelineService(
+            PipelineRepository pipelineRepository,
+            PipelineStageRepository stageRepository,
+            OpenAiModelRepository openAiModelRepository) {
         this.pipelineRepository = pipelineRepository;
         this.stageRepository = stageRepository;
+        this.openAiModelRepository = openAiModelRepository;
     }
 
     /**
@@ -146,6 +153,18 @@ public class PipelineService {
         stage.setDescription(request.getDescription());
         stage.setRequired(request.isRequired());
         stage.setActive(request.isActive());
+        stage.setOpenAiModel(resolveOpenAiModel(request.getOpenAiModelId()));
+    }
+
+    /**
+     * Resolve o modelo OpenAI escolhido para a etapa ou remove a escolha quando não informado.
+     */
+    private OpenAiModel resolveOpenAiModel(Long openAiModelId) {
+        if (openAiModelId == null) {
+            return null;
+        }
+        return openAiModelRepository.findById(openAiModelId)
+                .orElseThrow(() -> new EntityNotFoundException("Modelo OpenAI não encontrado: " + openAiModelId));
     }
 
     /**

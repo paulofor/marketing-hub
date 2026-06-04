@@ -3344,3 +3344,13 @@
   - a tela de detalhe da execução passou a exibir hashes, screenshots auditados e alertas de reuso/contradição;
   - Swagger e cânone do GeraLanding foram sincronizados com a nova auditoria.
 - impacto esperado: avaliações futuras do Quality Review passam a ser comparáveis por evidência real, evitando publicar ou descartar uma landing com base em scores divergentes sem perceber que o modelo viu o mesmo HTML/screenshot.
+
+## 2026-06-04 — Modelo OpenAI por etapa no catálogo de pipelines
+
+- tarefa: concentrar a escolha do modelo OpenAI de cada etapa no catálogo administrativo de pipelines e etapas.
+- causa-raiz/objetivo: evitar uma configuração paralela para o GeraLanding e reaproveitar as tabelas `pipeline` e `pipeline_stage` como fonte simples de decisão por etapa.
+- alterações aplicadas:
+  - adicionada chave estrangeira opcional `pipeline_stage.openai_model_id` para `openai_model`;
+  - backend do CRUD de pipelines passa a receber e devolver o modelo OpenAI associado à etapa;
+  - tela `/pipelines` passa a exibir uma combo de modelos OpenAI por etapa e mostra o modelo selecionado na listagem.
+- impacto esperado: o usuário consegue escolher o modelo por etapa em uma única tela administrativa, preservando simplicidade operacional e foco em vendas.

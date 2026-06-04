@@ -22,6 +22,9 @@ public class PipelineStageDto {
     private String description;
     private boolean required;
     private boolean active;
+    private Long openAiModelId;
+    private String openAiModelName;
+    private String openAiModelCode;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -1,5 +1,6 @@
 package com.marketinghub.pipeline;
 
+import com.marketinghub.openai.OpenAiModel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -60,6 +61,10 @@ public class PipelineStage {
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "openai_model_id")
+    private OpenAiModel openAiModel;
 
     @CreationTimestamp
     private Instant createdAt;

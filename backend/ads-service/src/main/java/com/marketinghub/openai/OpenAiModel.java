@@ -1,6 +1,11 @@
 package com.marketinghub.openai;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.AllArgsConstructor;
@@ -11,7 +16,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
- * Catalog entry for OpenAI text/embedding models with pricing details.
+ * Responsabilidade: representar um modelo OpenAI cadastrado com preços e capacidades operacionais.
  */
 @Entity
 @Table(name = "openai_model")
@@ -48,6 +53,10 @@ public class OpenAiModel {
 
     @Column(name = "price_output_batch", nullable = false, precision = 12, scale = 5)
     private BigDecimal priceOutputBatch;
+
+    @Column(name = "accepts_image_input", nullable = false)
+    @Builder.Default
+    private boolean acceptsImageInput = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

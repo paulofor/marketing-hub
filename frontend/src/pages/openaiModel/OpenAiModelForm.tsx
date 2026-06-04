@@ -9,7 +9,16 @@ export type OpenAiModelFormValues = {
   priceInputBatch: string;
   priceInputCachedBatch: string;
   priceOutputBatch: string;
+  acceptsImageInput: boolean;
 };
+
+type OpenAiModelPriceField =
+  | "priceInputStandard"
+  | "priceInputCachedStandard"
+  | "priceOutputStandard"
+  | "priceInputBatch"
+  | "priceInputCachedBatch"
+  | "priceOutputBatch";
 
 interface Props {
   initialValues?: OpenAiModelFormValues;
@@ -27,6 +36,7 @@ const DEFAULT_VALUES: OpenAiModelFormValues = {
   priceInputBatch: "",
   priceInputCachedBatch: "",
   priceOutputBatch: "",
+  acceptsImageInput: false,
 };
 
 export default function OpenAiModelForm({
@@ -41,15 +51,20 @@ export default function OpenAiModelForm({
     setValues(initialValues);
   }, [initialValues]);
 
-  const handleChange = (field: keyof OpenAiModelFormValues) =>
+  const handleChange =
+    (field: keyof OpenAiModelFormValues) =>
     (event: ChangeEvent<HTMLInputElement>) => {
-      setValues((prev) => ({ ...prev, [field]: event.target.value }));
+      const nextValue =
+        event.target.type === "checkbox"
+          ? event.target.checked
+          : event.target.value;
+      setValues((prev) => ({ ...prev, [field]: nextValue }));
     };
 
   const handleSubmit = () => onSubmit(values);
 
   const renderPriceField = (
-    field: keyof OpenAiModelFormValues,
+    field: OpenAiModelPriceField,
     label: string,
     helper?: string,
   ) => (
@@ -67,9 +82,7 @@ export default function OpenAiModelForm({
         min={0}
         placeholder="0.00000"
       />
-      {helper ? (
-        <small className="text-body-secondary">{helper}</small>
-      ) : null}
+      {helper ? <small className="text-body-secondary">{helper}</small> : null}
     </div>
   );
 
@@ -101,11 +114,34 @@ export default function OpenAiModelForm({
               placeholder="ex: gpt-4o-mini"
             />
           </div>
+          <div className="col-12">
+            <div className="form-check form-switch">
+              <input
+                id="acceptsImageInput"
+                className="form-check-input"
+                type="checkbox"
+                checked={values.acceptsImageInput}
+                onChange={handleChange("acceptsImageInput")}
+              />
+              <label
+                className="form-check-label fw-semibold"
+                htmlFor="acceptsImageInput"
+              >
+                Aceita imagem + prompt
+              </label>
+            </div>
+            <small className="text-body-secondary">
+              Marque quando o modelo puder receber imagens como entrada, por
+              exemplo para Quality Review visual.
+            </small>
+          </div>
         </div>
 
         <div className="row g-3 mt-3">
           <div className="col-12">
-            <p className="fw-semibold mb-1">Preços - modo standard (por 1 milhão de tokens)</p>
+            <p className="fw-semibold mb-1">
+              Preços - modo standard (por 1 milhão de tokens)
+            </p>
             <p className="text-body-secondary small mb-0">
               Inclui preços de entrada, entrada com cache e saída.
             </p>
@@ -129,7 +165,9 @@ export default function OpenAiModelForm({
 
         <div className="row g-3 mt-3">
           <div className="col-12">
-            <p className="fw-semibold mb-1">Preços - modo batch (por 1 milhão de tokens)</p>
+            <p className="fw-semibold mb-1">
+              Preços - modo batch (por 1 milhão de tokens)
+            </p>
             <p className="text-body-secondary small mb-0">
               Valores aplicados às operações em lote.
             </p>

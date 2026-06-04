@@ -478,12 +478,13 @@ export default function PipelineCrudPage() {
                         {modelOptions.map((model) => (
                           <option key={model.id} value={model.id}>
                             {model.name} ({model.code})
+                            {model.acceptsImageInput ? " · aceita imagem" : ""}
                           </option>
                         ))}
                       </select>
                       <div className="form-text">
-                        Use o modelo recomendado para manter foco em venda por
-                        etapa.
+                        Use modelos com imagem para etapas visuais, como Quality
+                        Review, e mantenha foco em venda por etapa.
                       </div>
                     </div>
                     <div className="col-md-2 d-flex align-items-end">

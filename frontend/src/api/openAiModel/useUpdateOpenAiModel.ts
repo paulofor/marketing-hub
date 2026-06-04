@@ -16,9 +16,10 @@ export function useUpdateOpenAiModel() {
         priceInputBatch: payload.priceInputBatch,
         priceInputCachedBatch: payload.priceInputCachedBatch,
         priceOutputBatch: payload.priceOutputBatch,
+        acceptsImageInput: payload.acceptsImageInput,
       };
       const { data } = await axios.put<OpenAiModel>(
-        `/api/openai-models/${payload.id}`,
+        `/api/modelos/openai/catalogo/v1/modelos/${payload.id}`,
         body,
       );
       return data;
@@ -26,7 +27,9 @@ export function useUpdateOpenAiModel() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["openAiModels"] });
       if (data?.id) {
-        queryClient.invalidateQueries({ queryKey: ["openAiModels", data.id.toString()] });
+        queryClient.invalidateQueries({
+          queryKey: ["openAiModels", data.id.toString()],
+        });
       }
     },
   });

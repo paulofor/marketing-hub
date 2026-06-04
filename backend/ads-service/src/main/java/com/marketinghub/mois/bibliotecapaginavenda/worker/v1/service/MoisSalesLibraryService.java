@@ -1,6 +1,7 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -36,6 +37,7 @@ public class MoisSalesLibraryService {
     private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
 
     private final JdbcTemplate jdbcTemplate;
+    private final MoisSalesPageDualWriteGateway dualWriteGateway;
 
     /**
      * Reserva o próximo job pendente da biblioteca para processamento pelo worker.
@@ -57,6 +59,7 @@ public class MoisSalesLibraryService {
         }
         MoisSalesLibraryDtos.SalesLibraryClaimedJob job = rows.get(0);
         jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FETCHING', started_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=? AND status='PENDING'", job.jobId());
+        dualWriteGateway.syncProcessingJob(job.jobId());
         return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(true, job);
     }
 
@@ -73,6 +76,8 @@ public class MoisSalesLibraryService {
                 VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
                 """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
         jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
+        dualWriteGateway.syncProcessingJob(jobId);
+        dualWriteGateway.syncLatestAnalysis(pageId);
     }
 
     /**
@@ -81,6 +86,7 @@ public class MoisSalesLibraryService {
     @Transactional
     public void failJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
         jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), request.errorMessage(), jobId);
+        dualWriteGateway.syncProcessingJob(jobId);
     }
 
     /**
@@ -225,6 +231,7 @@ public class MoisSalesLibraryService {
                 rawHtmlBytes.length,
                 Timestamp.from(request.fetchedAt() == null ? Instant.now() : request.fetchedAt()),
                 captureId);
+        dualWriteGateway.syncCollectedReferenceHtmlCapture(captureId);
         return new MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse(captureId, "CAPTURED");
     }
 
@@ -248,6 +255,7 @@ public class MoisSalesLibraryService {
                         """,
                 truncate(message, 1000),
                 captureId);
+        dualWriteGateway.syncCollectedReferenceHtmlCapture(captureId);
         return new MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse(captureId, "FAILED");
     }
 
@@ -414,6 +422,10 @@ public class MoisSalesLibraryService {
                 (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
                 VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
                 """, pageId, jobId, normalizedStatus, notes);
+        if (jobId != null) {
+            dualWriteGateway.syncProcessingJob(jobId);
+        }
+        dualWriteGateway.syncLatestAnalysis(pageId);
 
         return new MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse(pageId, jobId, normalizedStatus, notes, Instant.now());
     }
@@ -431,6 +443,8 @@ public class MoisSalesLibraryService {
                 (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
                 VALUES (?, ?, 'PENDING', 'Reanálise solicitada via API', UTC_TIMESTAMP(), UTC_TIMESTAMP())
                 """, pageId, jobId);
+        dualWriteGateway.syncProcessingJob(jobId);
+        dualWriteGateway.syncLatestAnalysis(pageId);
         return new MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse(pageId, jobId, JOB_STATUS_PENDING, Instant.now());
     }
 
@@ -481,18 +495,24 @@ public class MoisSalesLibraryService {
                         """
                                 SELECT id
                                 FROM mois_sales_library_url_ingest
-                                WHERE url_canonical = ?
+                                WHERE workspace_id = ? AND url_canonical = ?
                                 LIMIT 1
                                 """,
                         Long.class,
+                        workspaceId,
                         canonical
                 );
                 if (urlIngestId != null) {
-                    createPendingJob(urlIngestId);
+                    long jobId = createPendingJob(urlIngestId);
+                    dualWriteGateway.syncUrlIngest(urlIngestId, jobId);
                     jobsCreated++;
                 }
             } else {
                 updated++;
+                Long urlIngestId = findUrlIngestIdByCanonical(workspaceId, canonical);
+                if (urlIngestId != null) {
+                    dualWriteGateway.syncUrlIngest(urlIngestId, null);
+                }
             }
             persisted++;
         }
@@ -621,6 +641,23 @@ public class MoisSalesLibraryService {
             }
         }
         return null;
+    }
+
+    /**
+     * Localiza uma URL ingerida pelo workspace e identificador canônico para espelhar atualizações no modelo novo.
+     */
+    private Long findUrlIngestIdByCanonical(String workspaceId, String canonical) {
+        return jdbcTemplate.query(
+                """
+                        SELECT id
+                        FROM mois_sales_library_url_ingest
+                        WHERE workspace_id = ? AND url_canonical = ?
+                        LIMIT 1
+                        """,
+                (rs, rowNum) -> rs.getLong("id"),
+                workspaceId,
+                canonical
+        ).stream().findFirst().orElse(null);
     }
 
     /**

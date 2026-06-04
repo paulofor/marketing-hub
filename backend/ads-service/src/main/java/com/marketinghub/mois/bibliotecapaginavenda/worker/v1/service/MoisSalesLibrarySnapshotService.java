@@ -1,6 +1,7 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -45,6 +46,7 @@ public class MoisSalesLibrarySnapshotService {
     private static final int MAX_FAILED_ATTEMPTS_WITHOUT_FORCE = 3;
 
     private final JdbcTemplate jdbcTemplate;
+    private final MoisSalesPageDualWriteGateway dualWriteGateway;
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -118,6 +120,7 @@ public class MoisSalesLibrarySnapshotService {
         }
         PageToCapture page = pages.get(0);
         Long snapshotId = insertFetchingSnapshot(page);
+        dualWriteGateway.syncSnapshot(snapshotId);
         return new MoisSalesLibraryDtos.HtmlCaptureClaimResponse(
                 true,
                 new MoisSalesLibraryDtos.HtmlCaptureJobResponse(snapshotId, page.pageId(), page.urlCanonical(), page.title()));
@@ -143,6 +146,7 @@ public class MoisSalesLibrarySnapshotService {
                     """, request.httpStatus(), truncate(request.contentType(), 255), truncate(request.redirectDestinationUrl(), 1024),
                     truncate(request.redirectRootUrl(), 1024), "HTML idêntico ao snapshot " + duplicateSnapshotId,
                     Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
+            dualWriteGateway.syncSnapshot(snapshotId);
             return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "DUPLICATE");
         }
         jdbcTemplate.update("""
@@ -152,6 +156,7 @@ public class MoisSalesLibrarySnapshotService {
                 """, hash, request.httpStatus(), truncate(request.contentType(), 255), truncate(request.redirectDestinationUrl(), 1024),
                 truncate(request.redirectRootUrl(), 1024), Timestamp.from(request.capturedAt() == null ? Instant.now() : request.capturedAt()), snapshotId);
         insertTextArtifact(snapshotId, ARTIFACT_RAW_HTML, request.contentType() == null ? "text/html" : request.contentType(), rawHtml, rawHtmlBytes.length);
+        dualWriteGateway.syncSnapshot(snapshotId);
         return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "CAPTURED");
     }
 
@@ -172,6 +177,7 @@ public class MoisSalesLibrarySnapshotService {
                 WHERE id = ?
                 """, request.httpStatus(), truncate(request.redirectDestinationUrl(), 1024), truncate(request.redirectRootUrl(), 1024),
                 truncate(message, 1000), snapshotId);
+        dualWriteGateway.syncSnapshot(snapshotId);
         return new MoisSalesLibraryDtos.HtmlCapturePersistResponse(snapshotId, "FAILED");
     }
 
@@ -232,6 +238,7 @@ public class MoisSalesLibrarySnapshotService {
             log.warn("Falha ao capturar snapshot bruto da sales page MOIS. pageId={}, url={}, categoria={}",
                     page.pageId(), page.urlCanonical(), errorMessage, ex);
             Long snapshotId = persistFailedSnapshot(page, errorMessage, null, null, null, null);
+            syncSnapshotWhenPresent(snapshotId);
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
                     page.pageId(), snapshotId, page.urlCanonical(), null, null, "FAILED", null, null, 0L, 0L, errorMessage);
         }
@@ -256,6 +263,7 @@ public class MoisSalesLibrarySnapshotService {
         if (!effective.isCapturable()) {
             String errorMessage = categorizeHttpFailure(effective.statusCode(), effective.rawHtml());
             Long snapshotId = persistFailedSnapshot(page, errorMessage, effective.statusCode(), effective.contentType(), redirectDestinationUrl, redirectRootUrl);
+            syncSnapshotWhenPresent(snapshotId);
             return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
                     page.pageId(), snapshotId, page.urlCanonical(), redirectDestinationUrl, redirectRootUrl, "FAILED", null, effective.statusCode(), 0L, 0L,
                     errorMessage);
@@ -275,9 +283,17 @@ public class MoisSalesLibrarySnapshotService {
         insertTextArtifact(snapshotId, ARTIFACT_RAW_HTML, "text/html; charset=UTF-8", rawHtml, rawHtmlBytes.length);
         byte[] screenshot = renderBasicScreenshot(rawHtml, effective.finalUrl());
         insertBinaryArtifact(snapshotId, ARTIFACT_SCREENSHOT_PNG, "image/png", screenshot);
+        dualWriteGateway.syncSnapshot(snapshotId);
         return new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureItem(
                 page.pageId(), snapshotId, page.urlCanonical(), redirectDestinationUrl, redirectRootUrl, "CAPTURED", hash,
                 effective.statusCode(), rawHtmlBytes.length, screenshot.length, null);
+    }
+
+    /** Sincroniza um snapshot no modelo consolidado apenas quando a falha gerou identificador válido. */
+    private void syncSnapshotWhenPresent(Long snapshotId) {
+        if (snapshotId != null) {
+            dualWriteGateway.syncSnapshot(snapshotId);
+        }
     }
 
     /** Persiste uma falha de captura preservando URLs de redirecionamento, categoria, HTTP e tipo de conteúdo quando disponíveis. */

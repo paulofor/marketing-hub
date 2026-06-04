@@ -350,6 +350,14 @@ Critério de aceite:
 - UI não depende mais de joins com as tabelas antigas;
 - logs indicam claramente cada transição de etapa.
 
+#### Implementação realizada em 2026-06-04
+
+- A ingestão explícita (`/urls:ingest`) e a ingestão Hotmart (`/hotmart-products:ingest`) passaram a gravar primariamente em `mois_sales_page`; páginas novas criam execução pendente `PAGE_ANALYSIS` em `mois_sales_page_job_execution`.
+- A reserva/conclusão/falha de análise (`/jobs:claim`, `/jobs/{jobId}:complete`, `/jobs/{jobId}:fail`) usa `mois_sales_page_job_execution` como identificador operacional do worker e atualiza o estado consolidado da página em `mois_sales_page`.
+- A captura HTML (`/html-captures:claim`, `/html-captures/{snapshotId}:complete`, `/html-captures/{snapshotId}:fail` e `/snapshots:capture`) passou a gravar o HTML bruto, hash, screenshot, redirecionamento, erro e transições diretamente em `mois_sales_page_job_execution`, atualizando `mois_sales_page` a cada transição.
+- As tabelas antigas permanecem em modo legado/auditoria; a UI principal e os detalhes operacionais devem continuar lendo `mois_sales_page` e `mois_sales_page_job_execution`.
+- O Swagger do módulo foi atualizado para explicitar que `snapshotId` nos endpoints de captura é identificador compatível de execução `HTML_CAPTURE` no histórico novo.
+
 ### Fase 6 — Congelamento e desativação gradual do legado
 
 Objetivo: reduzir manutenção do modelo antigo sem perder auditoria.

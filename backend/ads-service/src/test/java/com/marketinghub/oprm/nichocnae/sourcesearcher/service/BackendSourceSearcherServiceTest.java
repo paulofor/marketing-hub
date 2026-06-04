@@ -116,6 +116,35 @@ class BackendSourceSearcherServiceTest {
     assertThat(queryCaptor.getValue().getErrorMessage()).isEqualTo("Brave Search indisponível");
   }
 
+
+
+  /** Deve resumir a última execução da etapa três para alimentar o card da tela do pipeline. */
+  @Test
+  void detailSummarizesLastExecutionForPipelineCard() {
+    OprmResearchQuery completedQuery = query();
+    completedQuery.setStatus("COMPLETED");
+    completedQuery.setResultCount(1);
+    completedQuery.setUpdatedAt(Instant.parse("2026-06-02T11:00:00Z"));
+    OprmResearchQuery failedQuery = query();
+    failedQuery.setId(2002L);
+    failedQuery.setStatus("FAILED");
+    failedQuery.setErrorMessage("Busca indisponível");
+    failedQuery.setUpdatedAt(Instant.parse("2026-06-02T11:05:00Z"));
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
+    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+        .thenReturn(List.of(candidate(10L, 1)));
+    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L))
+        .thenReturn(List.of(completedQuery, failedQuery));
+
+    var response = service.detail(1001L);
+
+    assertThat(response.completedQueries()).isEqualTo(1);
+    assertThat(response.failedQueries()).isEqualTo(1);
+    assertThat(response.lastSearchProvider()).isEqualTo("BRAVE_SEARCH");
+    assertThat(response.lastErrorMessage()).isEqualTo("Busca indisponível");
+    assertThat(response.candidates()).hasSize(1);
+  }
+
   /** Monta uma query pendente padrão para os testes da etapa três. */
   private OprmResearchQuery query() {
     OprmResearchQuery query = new OprmResearchQuery();

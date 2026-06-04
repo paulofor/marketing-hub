@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNicheResearchSeedBuilderDetail";
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
+import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 
@@ -102,6 +103,10 @@ function getStageCardClass(stageNumber: string, hasContinuationError: boolean) {
   return "card border-0 shadow-sm h-100";
 }
 
+function formatStageCount(value?: number) {
+  return Number.isFinite(value) ? value : 0;
+}
+
 function formatQueryGoal(value: string) {
   return value
     .toLowerCase()
@@ -147,6 +152,13 @@ export default function OprmPipelinePage() {
     isFetching: isSeedBuilderDetailFetching,
   } = useOprmNicheResearchSeedBuilderDetail(latestCycle?.researchCycleId);
   const generatedSeed = seedBuilderDetail?.seed;
+  const {
+    data: sourceSearcherDetail,
+    error: sourceSearcherDetailError,
+    isError: isSourceSearcherDetailError,
+    isFetching: isSourceSearcherDetailFetching,
+  } = useOprmSourceSearcherDetail(latestCycle?.researchCycleId);
+  const latestSourceCandidate = sourceSearcherDetail?.candidates[0];
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -444,6 +456,114 @@ export default function OprmPipelinePage() {
                       )}
                     </div>
                   ) : null}
+
+                  {stage.number === "3" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Resumo da última execução
+                      </span>
+                      {isSourceSearcherDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando buscas executadas do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isSourceSearcherDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(sourceSearcherDetailError)}
+                        </div>
+                      ) : sourceSearcherDetail ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-6 text-secondary fw-normal">
+                              Queries concluídas
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                sourceSearcherDetail.completedQueries,
+                              )}{" "}
+                              /{" "}
+                              {formatStageCount(
+                                sourceSearcherDetail.cycleTotalQueries,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Pendentes
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              {formatStageCount(
+                                sourceSearcherDetail.pendingQueries,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Falhas
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              {formatStageCount(
+                                sourceSearcherDetail.failedQueries,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Fontes candidatas
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                sourceSearcherDetail.cycleTotalSourceCandidates,
+                              )}
+                            </dd>
+                            {sourceSearcherDetail.lastExecutedAt ? (
+                              <>
+                                <dt className="col-6 text-secondary fw-normal">
+                                  Última busca
+                                </dt>
+                                <dd className="col-6 mb-0">
+                                  {formatProcessedAt(
+                                    sourceSearcherDetail.lastExecutedAt,
+                                  )}
+                                </dd>
+                              </>
+                            ) : null}
+                            {sourceSearcherDetail.lastSearchProvider ? (
+                              <>
+                                <dt className="col-6 text-secondary fw-normal">
+                                  Provedor
+                                </dt>
+                                <dd className="col-6 mb-0">
+                                  {sourceSearcherDetail.lastSearchProvider}
+                                </dd>
+                              </>
+                            ) : null}
+                          </dl>
+                          {latestSourceCandidate ? (
+                            <p className="text-secondary mb-2">
+                              Fonte mais recente:{" "}
+                              {latestSourceCandidate.sourceDomain}
+                            </p>
+                          ) : (
+                            <p className="text-secondary mb-2">
+                              A busca automática ainda não registrou fontes para
+                              este ciclo. O agendador consulta a fila da etapa 3
+                              periodicamente.
+                            </p>
+                          )}
+                          {sourceSearcherDetail.lastErrorMessage ? (
+                            <div className="text-danger mb-0">
+                              <span className="fw-semibold">Última falha:</span>{" "}
+                              {sourceSearcherDetail.lastErrorMessage}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não possui
+                          resumo da etapa 3.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
                   {stage.number === "1" && latestRunningCycle ? (
                     <div className="border-top pt-3">
                       <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">

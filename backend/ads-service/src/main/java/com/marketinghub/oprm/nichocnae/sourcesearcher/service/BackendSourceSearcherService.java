@@ -110,13 +110,42 @@ public class BackendSourceSearcherService {
   @Transactional(readOnly = true)
   public SourceSearcherDetailResponse detail(Long researchCycleId) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-    List<SourceCandidateResponse> candidates = sourceCandidateRepository
-        .findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId)
-        .stream()
-        .map(this::toCandidateResponse)
-        .toList();
+    List<OprmSourceCandidate> sourceCandidates =
+        sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(researchCycleId);
+    List<SourceCandidateResponse> candidates = sourceCandidates.stream().map(this::toCandidateResponse).toList();
+    List<OprmResearchQuery> queries =
+        researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId);
+    OprmSourceCandidate latestCandidate = sourceCandidates.stream()
+        .max(Comparator.comparing(OprmSourceCandidate::getUpdatedAt))
+        .orElse(null);
     return new SourceSearcherDetailResponse(
-        cycle.getId(), cycle.getStatus(), cycle.getTotalQueries(), cycle.getTotalSourceCandidates(), candidates);
+        cycle.getId(),
+        cycle.getStatus(),
+        cycle.getTotalQueries(),
+        cycle.getTotalSourceCandidates(),
+        countQueriesByStatus(queries, QUERY_STATUS_PENDING),
+        countQueriesByStatus(queries, QUERY_STATUS_COMPLETED),
+        countQueriesByStatus(queries, QUERY_STATUS_FAILED),
+        latestCandidate == null ? null : latestCandidate.getUpdatedAt(),
+        latestCandidate == null ? null : latestCandidate.getSearchProvider(),
+        latestFailureMessage(queries),
+        candidates);
+  }
+
+  /** Conta as queries do ciclo por status para resumir o avanço operacional da etapa três. */
+  private long countQueriesByStatus(List<OprmResearchQuery> queries, String status) {
+    return queries.stream().filter(query -> status.equals(query.getStatus())).count();
+  }
+
+  /** Recupera a mensagem da falha mais recente de query para exibir no resumo da etapa três. */
+  private String latestFailureMessage(List<OprmResearchQuery> queries) {
+    return queries.stream()
+        .filter(query -> QUERY_STATUS_FAILED.equals(query.getStatus()))
+        .sorted(Comparator.comparing(OprmResearchQuery::getUpdatedAt).reversed())
+        .map(OprmResearchQuery::getErrorMessage)
+        .filter(StringUtils::hasText)
+        .findFirst()
+        .orElse(null);
   }
 
   /** Localiza a frase de pesquisa ou falha com erro de contrato quando ela não existe. */

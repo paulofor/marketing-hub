@@ -634,6 +634,29 @@ components:
           type: integer
         cycleTotalSourceCandidates:
           type: integer
+        pendingQueries:
+          type: integer
+          format: int64
+          description: Total de queries ainda pendentes na etapa três.
+        completedQueries:
+          type: integer
+          format: int64
+          description: Total de queries concluídas pela etapa três.
+        failedQueries:
+          type: integer
+          format: int64
+          description: Total de queries com falha registrada na etapa três.
+        lastExecutedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSearchProvider:
+          type: string
+          nullable: true
+          example: DUCKDUCKGO_HTML
+        lastErrorMessage:
+          type: string
+          nullable: true
         candidates:
           type: array
           items:
@@ -692,6 +715,29 @@ components:
           type: integer
         cycleTotalSourceCandidates:
           type: integer
+        pendingQueries:
+          type: integer
+          format: int64
+          description: Total de queries ainda pendentes na etapa três.
+        completedQueries:
+          type: integer
+          format: int64
+          description: Total de queries concluídas pela etapa três.
+        failedQueries:
+          type: integer
+          format: int64
+          description: Total de queries com falha registrada na etapa três.
+        lastExecutedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSearchProvider:
+          type: string
+          nullable: true
+          example: DUCKDUCKGO_HTML
+        lastErrorMessage:
+          type: string
+          nullable: true
         candidates:
           type: array
           items:

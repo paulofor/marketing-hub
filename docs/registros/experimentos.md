@@ -3406,3 +3406,10 @@
 - causa-raiz/objetivo: o preset visual precisa de maior capacidade de julgamento para transformar wireframe, copy e imagens em acabamento comercial mais premium, preservando o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
 - correção aplicada: o Worker AI passou a ter modelo específico `presetdesign.worker.model`, com padrão `gpt-5.5`, e o builder da etapa usa esse modelo no `OpenAiRequest` e no corpo da Responses API; o cliente legado do pipeline também força `gpt-5.5` quando a seção é `landing-page-design-preset`.
 - validação automatizada: teste do `PresetDesignPromptBuilder` atualizado para garantir que o payload enviado à OpenAI declara `gpt-5.5` na etapa de preset design.
+
+## 2026-06-04 — Plano de implementação do contrato operacional da tela de Pipelines
+
+- solicitação: documentar o plano de 3 fases para amarrar a tela `/pipelines` ao código e ao banco, evitando divergência entre configuração visual e etapas realmente implementadas.
+- causa-raiz/objetivo: a tela de pipelines configura dados operacionais críticos e precisa ser governada pelo backend como contrato, não como CRUD livre, preservando a aderência entre frontend, banco, backend, workers e documentos canônicos.
+- registro aplicado: criado `docs/implementacao/plano-pipelines-contrato-operacional.md` com estratégia em três fases: governança sem novas tabelas, contrato forte com sincronização segura e separação persistente entre definição e configuração somente se houver necessidade comprovada.
+- decisão operacional: iniciar pela Fase 1 sem criar tabelas novas, mantendo as tabelas atuais e fortalecendo validação, metadados e diagnóstico no backend.

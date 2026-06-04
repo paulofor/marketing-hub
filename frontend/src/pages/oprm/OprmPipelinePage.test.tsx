@@ -95,4 +95,118 @@ describe("OprmPipelinePage", () => {
       );
     });
   });
+
+  it("mostra seed e queries geradas pela IA no card da etapa 2", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url.includes("routine-research-orchestrator/recent-processed")) {
+        return new Response(
+          JSON.stringify([
+            {
+              researchCycleId: 1,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              nicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              sourceScore: 90,
+              triggerSource: "AUTO_SCORE_QUEUE",
+              cycleStatus: "RUNNING",
+              processedAt: "2026-06-03T06:59:59Z",
+              finishedAt: null,
+              errorMessage: null,
+            },
+          ]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      if (
+        url.includes("niche-research-seed-builder/stage-executions/pending")
+      ) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (url.includes("niche-research-seed-builder/stage-executions/1")) {
+        return new Response(
+          JSON.stringify({
+            researchCycleId: 1,
+            cycleStatus: "RUNNING",
+            cycleTotalQueries: 15,
+            cycleErrorMessage: null,
+            seed: {
+              researchCycleId: 1,
+              nicheResearchSeedId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              nicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              businessType: "Serviços pessoais de beleza",
+              operationType: "Pesquisa de rotina",
+              customerType: "Profissional de beleza",
+              commercialObjects: "serviços de corte, manicure e pedicure",
+              initialAssumptions:
+                "Profissionais enfrentam desafios na gestão de agenda.",
+              confidenceLevel: "INFERRED_FROM_CNAE",
+              createdBy: "AI",
+              createdAt: "2026-06-03T17:45:44Z",
+              totalQueries: 15,
+              queries: [
+                {
+                  queryId: 1,
+                  researchCycleId: 1,
+                  nicheResearchSeedId: 1,
+                  queryText:
+                    "Quais são as etapas diárias na rotina de trabalho?",
+                  queryGoal: "ROUTINE_DISCOVERY",
+                  sourceGroup: "rotina",
+                  priority: 1,
+                  status: "PENDING",
+                  resultCount: 0,
+                  createdBy: "AI",
+                  createdAt: "2026-06-03T17:45:44Z",
+                  updatedAt: "2026-06-03T17:45:44Z",
+                },
+              ],
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response("[]", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    expect(await screen.findByText("Dados gerados pela IA")).toBeTruthy();
+    expect(await screen.findByText("Serviços pessoais de beleza")).toBeTruthy();
+    expect(
+      screen.getByText("Profissionais enfrentam desafios na gestão de agenda."),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "1 queries geradas para as próximas etapas. Abra o detalhe para ver a requisição enviada à IA e o JSON completo gerado.",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: "Ver detalhe da IA" })
+        .getAttribute("href"),
+    ).toBe("/oprm/pipeline/niche-research-seed-builder/1");
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "niche-research-seed-builder/stage-executions/1",
+        ),
+      );
+    });
+  });
 });

@@ -984,3 +984,17 @@ Arquivos alterados:
 - finalizada a troca da listagem `/api/mois/sales-library/entries` para ler `mois_sales_page`, removendo a última leitura operacional do service da Biblioteca contra `mois_sales_library_url_ingest`.
 - atualizado o Swagger do módulo para documentar `/entries`, `/jobs` e `/jobs/{jobId}` como contratos apoiados em `mois_sales_page`/`mois_sales_page_job_execution` na Fase 5.
 - ajustado o cânone MOIS para explicitar que a UI principal deve consultar apenas as duas tabelas operacionais novas, deixando tabelas antigas somente para auditoria histórica explícita.
+
+## 2026-06-04 — Fase 6 da simplificação da Biblioteca de Páginas de Vendas
+
+- executada a Fase 6 do plano de simplificação em duas tabelas da Biblioteca de Páginas de Vendas do MOIS.
+- marcado no cânone que `mois_sales_page` é a fonte de verdade do estado atual e `mois_sales_page_job_execution` é a fonte de verdade do histórico/auditoria.
+- congeladas as tabelas legadas em somente leitura para backfill idempotente, auditoria e diagnóstico histórico, com janela mínima de 180 dias até 2026-12-01.
+- adicionado teste automatizado para impedir escrita/DDL acidental nas tabelas legadas congeladas no código Java principal do backend.
+- atualizado o Swagger da biblioteca para declarar a Fase 6 como contrato operacional vigente.
+
+Arquivos alterados:
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/schema/MoisSalesLibraryLegacyFreezeTest.java`

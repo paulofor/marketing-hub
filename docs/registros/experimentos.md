@@ -3354,3 +3354,9 @@
   - backend do CRUD de pipelines passa a receber e devolver o modelo OpenAI associado à etapa;
   - tela `/pipelines` passa a exibir uma combo de modelos OpenAI por etapa e mostra o modelo selecionado na listagem.
 - impacto esperado: o usuário consegue escolher o modelo por etapa em uma única tela administrativa, preservando simplicidade operacional e foco em vendas.
+## 2026-06-04 — Quality Review do GeraLanding com artefatos fonte
+
+- solicitação: na etapa `landing-page-quality-review`, enviar ao modelo também o JSON da etapa `landing-page-wireframe`, o JSON da etapa `landing-page-design-preset` e o HTML final `htmlGeraLanding`, pedindo uma avaliação do que ficou ruim nos arquivos enviados.
+- causa-raiz/objetivo: permitir que o Quality Review diferencie sintoma visual renderizado de problema de origem no wireframe, no preset de design ou na montagem HTML, recomendando regeneração da etapa correta.
+- correção aplicada: o Worker AI passou a montar o contexto textual da revisão com os artefatos fonte e o prompt foi atualizado para pedir análise de causa-raiz por arquivo/etapa, mantendo screenshots renderizados como evidência visual.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md`.

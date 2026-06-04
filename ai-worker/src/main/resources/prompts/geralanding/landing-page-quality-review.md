@@ -17,6 +17,36 @@ A landing do GeraLanding não deve apenas parecer bonita. Ela precisa cumprir um
 
 Use as imagens como evidência principal. Avalie o que aparece na tela, não o que provavelmente estava no briefing. Não recompense intenção invisível.
 
+Além dos screenshots, você receberá três arquivos fonte da execução: o JSON da etapa `landing-page-wireframe`, o JSON da etapa `landing-page-design-preset` e o HTML final `htmlGeraLanding`. Use esses arquivos para identificar **o que ficou ruim nos próprios arquivos enviados** e separar causa-raiz de sintoma: problema estrutural do wireframe, problema de preset visual ou problema de montagem/renderização do HTML.
+
+## Arquivos enviados para avaliação de causa-raiz
+
+### JSON da etapa wireframe (`landingPageWireframe`)
+
+```json
+{{landingPageWireframe}}
+```
+
+### JSON da etapa preset design (`landingPageDesignPreset`)
+
+```json
+{{landingPageDesignPreset}}
+```
+
+### HTML final do GeraLanding (`htmlGeraLanding`)
+
+```html
+{{htmlGeraLanding}}
+```
+
+### Screenshots renderizados enviados como imagens
+
+```json
+{{renderedLandingScreenshots}}
+```
+
+Ao preencher `blockingIssues` e `recommendedRegeneration`, cite o arquivo/etapa que provavelmente originou a falha quando a evidência permitir. Se o HTML renderizado está ruim por copiar uma decisão ruim do wireframe ou do preset, recomende regenerar a etapa de origem, não apenas o HTML.
+
 ## O que a landing precisa provar
 
 A página deve sustentar a sequência comercial:

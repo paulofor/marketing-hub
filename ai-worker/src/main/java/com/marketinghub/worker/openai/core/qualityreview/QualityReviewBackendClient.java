@@ -85,12 +85,14 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         return new StageExecution<>(idJob, experimentId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input);
     }
 
-    /** Monta somente o contexto mínimo necessário para renderizar screenshots e evitar prompt textual longo. */
+    /** Monta o contexto textual enviado ao modelo com os artefatos fonte usados para diagnosticar o que ficou ruim. */
     private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> experiment = asMap(pending.get("experiment"));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("experimentId", experiment.get("id"));
         payload.put("experimentName", experiment.get("name"));
+        payload.put("landingPageWireframe", experiment.get("landingPageWireframe"));
+        payload.put("landingPageDesignPreset", experiment.get("landingPageDesignPreset"));
         payload.put("htmlGeraLanding", experiment.get("htmlGeraLanding"));
         payload.put("landingPageHtml", experiment.get("landingPageHtml"));
         return payload;

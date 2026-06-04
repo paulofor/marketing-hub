@@ -3,6 +3,7 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,7 +34,7 @@ public class MoisSalesLibrarySnapshotServiceTest {
         jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.execute("CREATE ALIAS IF NOT EXISTS UTC_TIMESTAMP FOR \"com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotServiceTest.utcTimestamp\"");
         createSchema();
-        service = new MoisSalesLibrarySnapshotService(jdbcTemplate);
+        service = new MoisSalesLibrarySnapshotService(jdbcTemplate, new NoOpDualWriteGateway());
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/sales", exchange -> {
             byte[] body = """
@@ -232,6 +233,35 @@ public class MoisSalesLibrarySnapshotServiceTest {
                 "SELECT redirect_destination_url, redirect_root_url FROM mois_sales_library_page_snapshot WHERE url_ingest_id = 8");
         assertThat(storedUrls.get("redirect_destination_url")).isEqualTo(baseUrl + "/missing");
         assertThat(storedUrls.get("redirect_root_url")).isEqualTo(baseUrl);
+    }
+
+    /** Ignora a escrita dupla nos testes focados apenas no comportamento legado de snapshots. */
+    private static class NoOpDualWriteGateway implements MoisSalesPageDualWriteGateway {
+
+        /** Não sincroniza URLs ingeridas no teste de snapshot. */
+        @Override
+        public void syncUrlIngest(long urlIngestId, Long processingJobId) {
+        }
+
+        /** Não sincroniza jobs no teste de snapshot. */
+        @Override
+        public void syncProcessingJob(long processingJobId) {
+        }
+
+        /** Não sincroniza análises no teste de snapshot. */
+        @Override
+        public void syncLatestAnalysis(long urlIngestId) {
+        }
+
+        /** Não sincroniza snapshots no teste de snapshot legado. */
+        @Override
+        public void syncSnapshot(long snapshotId) {
+        }
+
+        /** Não sincroniza capturas de referências coletadas no teste de snapshot. */
+        @Override
+        public void syncCollectedReferenceHtmlCapture(long captureId) {
+        }
     }
 
     /** Fornece timestamp UTC compatível com a função usada no SQL MySQL dos testes. */

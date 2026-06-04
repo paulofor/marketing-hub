@@ -37,6 +37,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
     private static final String REQUIRED_TEXT_MODEL = "gpt-5.2";
+    private static final String REQUIRED_LANDING_DESIGN_PRESET_MODEL = "gpt-5.5";
     private static final String REQUIRED_LANDING_HTML_MODEL = "gpt-5.1-codex";
     private static final int TRANSIENT_ERROR_MAX_ATTEMPTS = 3;
     private static final long TRANSIENT_ERROR_RETRY_DELAY_MS = 1_500L;
@@ -1423,8 +1424,9 @@ public class ExperimentPipelineOpenAiClient {
     }
 
 
+    /** Define o modelo obrigatório por seção antes do envio do job para a OpenAI. */
     private String enforceRequiredModel(Map<String, Object> payload, ExperimentPipelineJobDto job) {
-        String requiredModel = isLandingHtmlSection(job) ? REQUIRED_LANDING_HTML_MODEL : REQUIRED_TEXT_MODEL;
+        String requiredModel = requiredModelForSection(job);
         if (payload == null) {
             return requiredModel;
         }
@@ -1440,6 +1442,17 @@ public class ExperimentPipelineOpenAiClient {
         }
         payload.put("model", requiredModel);
         return requiredModel;
+    }
+
+    /** Resolve o modelo obrigatório conforme a etapa do pipeline de experimento. */
+    private String requiredModelForSection(ExperimentPipelineJobDto job) {
+        if (isLandingHtmlSection(job)) {
+            return REQUIRED_LANDING_HTML_MODEL;
+        }
+        if (isLandingDesignPresetSection(job)) {
+            return REQUIRED_LANDING_DESIGN_PRESET_MODEL;
+        }
+        return REQUIRED_TEXT_MODEL;
     }
 
     private OpenAiResponse requestWithTransientRetries(Map<String, Object> payload, ExperimentPipelineJobDto job) {

@@ -31,6 +31,9 @@ public record PresetDesignWorkerProperties(
         @NotBlank
         String schemaName,
 
+        @NotBlank
+        String model,
+
         @NotNull
         Duration timeout
 ) {
@@ -38,6 +41,9 @@ public record PresetDesignWorkerProperties(
     public PresetDesignWorkerProperties {
         if (apiPrefix == null || apiPrefix.isBlank()) {
             apiPrefix = "/api";
+        }
+        if (model == null || model.isBlank()) {
+            model = "gpt-5.5";
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);

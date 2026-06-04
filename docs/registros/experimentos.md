@@ -3400,3 +3400,9 @@
 - causa-raiz/objetivo: o usuário precisava abrir o detalhe ou interpretar o histórico para saber rapidamente se a landing está pronta para publicação, criando esforço desnecessário em uma etapa crítica para vendas.
 - correção aplicada: o resumo de execuções do Quality Review passou a expor `score`, `approvalRecommendation` e `approvedForPublication`, e o frontend passou a destacar a execução concluída mais recente com score, job, data-hora e badge de aprovação.
 - impacto esperado: decisão operacional mais rápida sobre publicar, regenerar ou revisar a landing antes de tráfego pago.
+## 2026-06-04 — Modelo 5.5 no Preset Design do GeraLanding
+
+- solicitação: configurar a etapa `landing-page-design-preset` do GeraLanding para usar o modelo `gpt-5.5`.
+- causa-raiz/objetivo: o preset visual precisa de maior capacidade de julgamento para transformar wireframe, copy e imagens em acabamento comercial mais premium, preservando o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+- correção aplicada: o Worker AI passou a ter modelo específico `presetdesign.worker.model`, com padrão `gpt-5.5`, e o builder da etapa usa esse modelo no `OpenAiRequest` e no corpo da Responses API; o cliente legado do pipeline também força `gpt-5.5` quando a seção é `landing-page-design-preset`.
+- validação automatizada: teste do `PresetDesignPromptBuilder` atualizado para garantir que o payload enviado à OpenAI declara `gpt-5.5` na etapa de preset design.

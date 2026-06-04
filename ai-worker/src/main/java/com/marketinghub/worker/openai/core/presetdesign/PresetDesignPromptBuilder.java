@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
-import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 
@@ -19,18 +18,15 @@ import org.springframework.core.io.ClassPathResource;
 public class PresetDesignPromptBuilder implements StagePromptBuilder<PresetDesignInput> {
 
     private final ObjectMapper objectMapper;
-    private final OpenAiClientProperties openAiProperties;
     private final PresetDesignWorkerProperties presetdesignProperties;
     private final PromptTemplateResolver promptTemplateResolver;
 
-    /** Inicializa o builder com serializador, propriedades OpenAI e propriedades da etapa presetdesign. */
+    /** Inicializa o builder com serializador e propriedades da etapa presetdesign. */
     public PresetDesignPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             PresetDesignWorkerProperties presetdesignProperties
     ) {
         this.objectMapper = objectMapper;
-        this.openAiProperties = openAiProperties;
         this.presetdesignProperties = presetdesignProperties;
         this.promptTemplateResolver = new PromptTemplateResolver(this::loadResource, this::toJsonOrText);
     }
@@ -47,7 +43,7 @@ public class PresetDesignPromptBuilder implements StagePromptBuilder<PresetDesig
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
 
         return new OpenAiRequest(
-                openAiProperties.model(),
+                presetdesignProperties.model(),
                 prompt,
                 requestBodyJson,
                 presetdesignProperties.schemaName(),
@@ -76,7 +72,7 @@ public class PresetDesignPromptBuilder implements StagePromptBuilder<PresetDesig
             text.put("format", format);
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", openAiProperties.model());
+            body.put("model", presetdesignProperties.model());
             body.put("input", prompt);
             body.put("text", text);
 

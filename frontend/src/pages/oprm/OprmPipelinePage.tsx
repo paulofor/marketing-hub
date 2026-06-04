@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNicheResearchSeedBuilderDetail";
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
+import { useOprmSourceFetcherDetail } from "../../api/oprm/useOprmSourceFetcherDetail";
 import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -159,6 +160,14 @@ export default function OprmPipelinePage() {
     isFetching: isSourceSearcherDetailFetching,
   } = useOprmSourceSearcherDetail(latestCycle?.researchCycleId);
   const latestSourceCandidate = sourceSearcherDetail?.candidates[0];
+  const {
+    data: sourceFetcherDetail,
+    error: sourceFetcherDetailError,
+    isError: isSourceFetcherDetailError,
+    isFetching: isSourceFetcherDetailFetching,
+  } = useOprmSourceFetcherDetail(latestCycle?.researchCycleId);
+  const sourceSnapshots = sourceFetcherDetail?.snapshots ?? [];
+  const latestSourceSnapshot = sourceSnapshots[sourceSnapshots.length - 1];
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -559,6 +568,110 @@ export default function OprmPipelinePage() {
                         <p className="text-secondary small mb-0">
                           Ciclo #{latestCycle.researchCycleId} ainda não possui
                           resumo da etapa 3.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {stage.number === "4" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Resumo da última execução
+                      </span>
+                      {isSourceFetcherDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando coletas do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isSourceFetcherDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(sourceFetcherDetailError)}
+                        </div>
+                      ) : sourceFetcherDetail ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-6 text-secondary fw-normal">
+                              Fontes candidatas
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                sourceFetcherDetail.cycleTotalSourceCandidates,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Snapshots coletados
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                sourceFetcherDetail.cycleTotalSourceSnapshots,
+                              )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Status do ciclo
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              <span
+                                className={buildStatusBadgeClass(
+                                  sourceFetcherDetail.cycleStatus,
+                                )}
+                              >
+                                {sourceFetcherDetail.cycleStatus}
+                              </span>
+                            </dd>
+                            {latestSourceSnapshot ? (
+                              <>
+                                <dt className="col-6 text-secondary fw-normal">
+                                  Última coleta
+                                </dt>
+                                <dd className="col-6 mb-0">
+                                  {formatProcessedAt(
+                                    latestSourceSnapshot.fetchedAt,
+                                  )}
+                                </dd>
+                                <dt className="col-6 text-secondary fw-normal">
+                                  HTTP
+                                </dt>
+                                <dd className="col-6 mb-0">
+                                  {latestSourceSnapshot.httpStatus ?? "-"}
+                                </dd>
+                              </>
+                            ) : null}
+                          </dl>
+                          {latestSourceSnapshot ? (
+                            <div className="text-secondary mb-0">
+                              <span className="fw-semibold d-block">
+                                Fonte mais recente:{" "}
+                                {latestSourceSnapshot.sourceDomain}
+                              </span>
+                              <span className="d-block">
+                                {latestSourceSnapshot.sourceTitle}
+                              </span>
+                              <span className="d-block text-truncate">
+                                {latestSourceSnapshot.shortExcerpt}
+                              </span>
+                            </div>
+                          ) : sourceFetcherDetail.cycleTotalSourceCandidates >
+                            0 ? (
+                            <p className="text-primary mb-0">
+                              Há{" "}
+                              {sourceFetcherDetail.cycleTotalSourceCandidates}{" "}
+                              fontes candidatas aguardando a coleta curta da
+                              etapa 4.
+                            </p>
+                          ) : (
+                            <p className="text-secondary mb-0">
+                              Nenhuma fonte candidata disponível para coleta
+                              neste ciclo.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não possui
+                          resumo da etapa 4.
                         </p>
                       )}
                     </div>

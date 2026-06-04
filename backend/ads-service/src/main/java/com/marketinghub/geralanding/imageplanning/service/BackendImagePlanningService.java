@@ -34,6 +34,7 @@ public class BackendImagePlanningService {
     private static final Logger log = LoggerFactory.getLogger(BackendImagePlanningService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "landing-page-image-planning";
+    private static final String NEXT_STAGE_IMAGE_GENERATION = "landing-page-image-generation";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -246,6 +247,24 @@ public class BackendImagePlanningService {
             experiment.setLandingPageHtml(provisionalHtml);
         }
         experimentRepository.save(experiment);
+        createImageGenerationExecution(experiment);
+    }
+
+    /** Agenda a geração de imagens como próxima etapa automática após salvar o planejamento de prompts de imagem. */
+    private void createImageGenerationExecution(Experiment experiment) {
+        Instant now = Instant.now();
+        GeraLandingStageExecution imageGenerationExecution = GeraLandingStageExecution.builder()
+                .experimentId(experiment.getId())
+                .experiment(experiment)
+                .stageCode(NEXT_STAGE_IMAGE_GENERATION)
+                .executionRequestedAt(now)
+                .createdAt(now)
+                .promptTemplateId("auto/image-planning")
+                .promptContent("Gera Imagem iniciado automaticamente após o Gera Prompt Imagem.")
+                .status(STATUS_STARTED)
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .build();
+        executionRepository.save(imageGenerationExecution);
     }
 
     /** Resolve o experimento da execução, buscando no repositório quando a associação não estiver carregada. */

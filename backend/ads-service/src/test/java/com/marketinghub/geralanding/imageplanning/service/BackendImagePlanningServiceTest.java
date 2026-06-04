@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
 /** Valida as consultas de execução específicas da etapa image planning. */
@@ -97,9 +100,9 @@ class BackendImagePlanningServiceTest {
         assertTrue(pending.get(0).hypothesis().framework().containsKey("checklist"));
     }
 
-    /** Deve concluir resposta com sucesso e persistir o artefato de image planning no experimento. */
+    /** Deve concluir resposta com sucesso, persistir o artefato e iniciar automaticamente a geração de imagens. */
     @Test
-    void markCompletedFromResponseShouldPersistImagePlanningArtifact() {
+    void markCompletedFromResponseShouldPersistImagePlanningArtifactAndStartImageGeneration() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
         GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
         BackendImagePlanningService service = new BackendImagePlanningService(
@@ -138,5 +141,57 @@ class BackendImagePlanningServiceTest {
         assertEquals("{\"landingPageImagePlanning\":{}}", experiment.getLandingPageImagePlanning());
         assertEquals("<html>preview</html>", experiment.getLandingPageHtml());
         verify(experimentRepository).save(experiment);
+        ArgumentCaptor<GeraLandingStageExecution> saveCaptor = ArgumentCaptor.forClass(GeraLandingStageExecution.class);
+        verify(executionRepository, times(2)).save(saveCaptor.capture());
+        GeraLandingStageExecution imageGenerationExecution = saveCaptor.getAllValues().get(1);
+        assertEquals(44L, imageGenerationExecution.getExperimentId());
+        assertEquals(experiment, imageGenerationExecution.getExperiment());
+        assertEquals("landing-page-image-generation", imageGenerationExecution.getStageCode());
+        assertEquals("auto/image-planning", imageGenerationExecution.getPromptTemplateId());
+        assertEquals("Gera Imagem iniciado automaticamente após o Gera Prompt Imagem.", imageGenerationExecution.getPromptContent());
+        assertEquals("INICIADO", imageGenerationExecution.getStatus());
+        assertNotNull(imageGenerationExecution.getIdJob());
+    }
+
+    /** Deve falhar resposta com erro sem persistir artefato nem iniciar automaticamente a geração de imagens. */
+    @Test
+    void markCompletedFromResponseShouldNotStartImageGenerationWhenResponseFails() {
+        ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+        GeraLandingStageExecutionRepository executionRepository = mock(GeraLandingStageExecutionRepository.class);
+        BackendImagePlanningService service = new BackendImagePlanningService(
+                experimentRepository,
+                executionRepository,
+                new ObjectMapper(),
+                mock(ApplicationEventPublisher.class));
+        Experiment experiment = new Experiment();
+        experiment.setId(45L);
+        GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
+                .experimentId(45L)
+                .experiment(experiment)
+                .stageCode("landing-page-image-planning")
+                .idJob("job-45".getBytes(StandardCharsets.UTF_8))
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .build();
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("job-45".getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(executionRepository.save(any(GeraLandingStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.markCompletedFromResponse(
+                "job-45",
+                45L,
+                "landing-page-image-planning",
+                "{\"landingPageImagePlanning\":{}}",
+                "<html>preview</html>",
+                120,
+                80,
+                new BigDecimal("0.012300"),
+                "openai-job-2",
+                "falha externa",
+                null);
+
+        assertEquals("FALHA", execution.getStatus());
+        verify(experimentRepository, never()).save(any(Experiment.class));
+        verify(executionRepository, times(1)).save(any(GeraLandingStageExecution.class));
     }
 }

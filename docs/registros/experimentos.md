@@ -3299,3 +3299,11 @@
 - correção aplicada: a conclusão bem-sucedida da etapa `landing-page-image-generation` agora persiste o manifesto de imagens e cria automaticamente uma execução `landing-page-design-preset` com `promptTemplateId` `auto/image-generation` e status `INICIADO`.
 - cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` passou a declarar que o Preset Design deve ser enfileirado automaticamente após o Gera Imagem.
 - validação automatizada: teste unitário do `BackendImageGenerationService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
+
+## 2026-06-04 — Automação do Gera Imagem após Gera Prompt Imagem
+
+- solicitação: criar entre `Gera Prompt Imagem` e `Gera Imagem` o mesmo mecanismo de disparo automático já existente entre `Gera Imagem` e `Gera Preset Design`.
+- causa-raiz/objetivo: após concluir `landing-page-image-planning`, o fluxo ainda dependia de clique manual para iniciar `landing-page-image-generation`, interrompendo a sequência operacional de criação da landing.
+- correção aplicada: a conclusão bem-sucedida da etapa `landing-page-image-planning` agora persiste o planejamento de imagens e cria automaticamente uma execução `landing-page-image-generation` com `promptTemplateId` `auto/image-planning` e status `INICIADO`.
+- cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` passou a declarar que o Gera Imagem deve ser enfileirado automaticamente após o Gera Prompt Imagem.
+- validação automatizada: teste unitário do `BackendImagePlanningService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.

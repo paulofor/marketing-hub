@@ -123,16 +123,19 @@ A etapa de qualidade penaliza fortemente CTA quebrado, layout desktop sem primei
 
 # Regra crítica de cascade, conflito com wireframe e responsividade
 
+Mobile é a prioridade comercial: preserve tudo que já funciona bem no mobile e corrija desktop de forma cirúrgica, sem trocar a hierarquia mobile, sem criar duas colunas mobile e sem aumentar peso visual desnecessário.
+
 O HTML final emite o CSS do preset e também o CSS do wireframe; em algumas montagens o CSS do wireframe pode aparecer depois do preset. Portanto, a saída do preset deve ser robusta mesmo quando classes antigas como `stackCol`, `gridCols1`, `rowInline`, `gridOneCol`, `mobileStackOnly`, `heroStack`, `cardsStack` ou equivalentes ainda existirem no HTML.
 
-Obrigatório para desktop e mobile:
+Obrigatório para desktop sem piorar mobile:
 - Quando transformar um bloco em layout comercial desktop de duas/três colunas, REMOVA da lista `estilos[]` do mesmo elemento qualquer classe de wireframe que force coluna única, stack vertical ou grid de 1 coluna (`stackCol`, `gridCols1`, `gridOneCol`, `heroStack`, `cardsStack` e equivalentes). Não deixe classe antiga e classe premium brigando no mesmo elemento.
-- Se por preservação estrutural uma classe antiga precisar permanecer, a classe premium aplicada no mesmo elemento deve vencer a cascata com propriedades críticas usando `!important` também no desktop: `display:grid !important`, `grid-template-columns:... !important`, `align-items:... !important`, `gap:... !important`, `width:100% !important`, `max-width:... !important` e `box-sizing:border-box !important`.
+- A correção principal deve ser remover classes conflitantes do elemento e declarar CSS desktop completo no preset; não use `!important` como solução padrão no desktop.
+- Use `!important` em desktop somente se uma classe conflitante não puder ser removida por contrato estrutural; nesse caso, limite o override ao container afetado e registre a justificativa em `consistencyChecks.details`.
 - Defina `heroDesktopGrid`, `gridDesktopTwo`, `gridDesktopThree` e/ou equivalentes como classes completas no desktop, não apenas nomes sem propriedades. Para hero, use duas colunas reais (`minmax(0,1.02fr) minmax(320px,.98fr)` ou proporção equivalente), gap amplo e alinhamento ao centro.
 - Para grids de cards/prova/oferta no desktop, use `grid-template-columns:repeat(2,minmax(0,1fr))` ou `repeat(3,minmax(0,1fr))` conforme quantidade de cards; nunca deixe cards estratégicos como uma única coluna larga quando houver espaço desktop.
 - Todo elemento que receber layout desktop em colunas (`gridDesktopTwo`, `gridDesktopThree`, `gridDesktopTwoEqual`, `heroDesktopGrid`, `cardsDesktopGrid`, ou equivalente) DEVE receber também uma classe mobile com override forte para uma coluna.
 - Crie e aplique classes mobile específicas com valores `!important` quando necessário para vencer CSS posterior do wireframe.
-- Use `!important` somente em overrides críticos de layout/largura/cascata: `display`, `grid-template-columns`, `flex-direction`, `align-items`, `width`, `max-width`, `box-sizing`, `overflow`, `padding` e `gap` quando necessário.
+- Use `!important` livremente apenas nos overrides mobile críticos que protegem conversão e legibilidade: `display`, `grid-template-columns`, `flex-direction`, `align-items`, `width`, `max-width`, `box-sizing`, `overflow`, `padding` e `gap` quando necessário.
 - No mobile, todo grid principal deve virar uma coluna: `grid-template-columns: 1fr !important`.
 - No mobile, toda linha de CTA deve virar coluna: `flex-direction: column !important`.
 - No mobile, todo card deve ocupar a largura disponível: `width: 100% !important`, `max-width: 100% !important`, `box-sizing: border-box !important`.
@@ -307,9 +310,9 @@ Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propried
 
 Crie obrigatoriamente em `definicoes` e aplique aos containers adequados:
 
-- `heroDesktopGrid`: `display:grid !important`, `grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr) !important`, `align-items:center !important`, `gap:40px !important`, `width:100% !important`, `box-sizing:border-box !important`.
-- `gridDesktopTwo`: `display:grid !important`, `grid-template-columns:repeat(2,minmax(0,1fr)) !important`, `gap:24px !important`, `align-items:stretch !important`, `width:100% !important`, `box-sizing:border-box !important`.
-- `gridDesktopThree`: `display:grid !important`, `grid-template-columns:repeat(3,minmax(0,1fr)) !important`, `gap:22px !important`, `align-items:stretch !important`, `width:100% !important`, `box-sizing:border-box !important`.
+- `heroDesktopGrid`: `display:grid`, `grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr)`, `align-items:center`, `gap:40px`, `width:100%`, `box-sizing:border-box`.
+- `gridDesktopTwo`: `display:grid`, `grid-template-columns:repeat(2,minmax(0,1fr))`, `gap:24px`, `align-items:stretch`, `width:100%`, `box-sizing:border-box`.
+- `gridDesktopThree`: `display:grid`, `grid-template-columns:repeat(3,minmax(0,1fr))`, `gap:22px`, `align-items:stretch`, `width:100%`, `box-sizing:border-box`.
 - `containerWide`: `width:100%`, `max-width:1180px`, `margin-left:auto`, `margin-right:auto`, `box-sizing:border-box`.
 - `containerCenter`: `margin-left:auto`, `margin-right:auto`, `box-sizing:border-box`.
 - `mobileOneColumn`: em `mobile`, `display:grid !important`, `grid-template-columns:1fr !important`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`.
@@ -399,8 +402,9 @@ Rejeite e gere novamente se o JSON produzir:
 Antes de responder, revise o JSON como se fosse renderizado.
 
 Garanta que:
+- mobile continue sendo a experiência mais protegida: uma coluna real, CTAs grandes, inputs confortáveis e mídia sem corte;
 - nenhum container com `heroDesktopGrid`, `gridDesktopTwo` ou `gridDesktopThree` mantenha classes conflitantes de coluna única como `stackCol` ou `gridCols1`;
-- desktop use largura comercial e colunas quando possível, especialmente hero em 2 colunas e cards em 2/3 colunas;
+- desktop use largura comercial e colunas quando possível, especialmente hero em 2 colunas e cards em 2/3 colunas, sem depender de `!important` quando a classe conflitante puder ser removida;
 - mobile tenha uma coluna real em todos os grids principais;
 - mobile tenha padding suficiente, botões grandes e imagens controladas;
 - todos os cards no mobile tenham largura total e `box-sizing:border-box`;

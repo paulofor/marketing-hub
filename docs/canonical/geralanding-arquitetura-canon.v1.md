@@ -57,9 +57,10 @@ Regras arquiteturais refletidas (ArchUnit):
 
 ## Contrato visual do Preset Design
 
-- A etapa `landing-page-design-preset` deve tratar classes do wireframe como rascunho estrutural, não como acabamento final: ao aplicar layout premium em desktop, deve remover ou neutralizar no próprio `estilos[]` classes conflitantes que forcem coluna única, stack vertical ou grid de 1 coluna.
+- A etapa `landing-page-design-preset` deve preservar o mobile como experiência comercial prioritária, mantendo uma coluna real, CTAs grandes, inputs confortáveis e mídia segura.
+- Classes do wireframe são rascunho estrutural, não acabamento final: ao aplicar layout premium em desktop, o preset deve preferir remover do próprio `estilos[]` classes conflitantes que forcem coluna única, stack vertical ou grid de 1 coluna.
 - O preset deve declarar definições CSS completas para layouts críticos (`heroDesktopGrid`, grids de 2/3 colunas), CTAs, formulário e inputs; aplicar apenas o nome de uma classe sem propriedades suficientes não cumpre o contrato de landing comercial.
-- Como a montagem final pode combinar CSS do preset e CSS do wireframe em ordem variável, propriedades críticas de layout/largura podem usar `!important` de forma pontual para preservar desktop premium e mobile em uma coluna.
+- Como a montagem final pode combinar CSS do preset e CSS do wireframe em ordem variável, `!important` deve ser reservado principalmente para overrides mobile críticos; em desktop, deve ser pontual e justificado quando uma classe conflitante não puder ser removida.
 
 ## Quality Review visual
 

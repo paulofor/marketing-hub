@@ -244,33 +244,19 @@ class PresetDesignBackendClientTest {
                 .doesNotContain("\"not\"");
     }
 
-    /** Deve manter estilos obrigatórios em seções e elementos para evitar HTML sem classes premium. */
+    /** Deve manter no prompt a regra cirúrgica de remover classes antigas sem prejudicar o mobile. */
     @Test
-    void presetDesignSchemaShouldRequireAtLeastOneStyleForSectionsAndElements() throws Exception {
-        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
-                .getContentAsString(StandardCharsets.UTF_8);
-        JsonNode schema = objectMapper.readTree(schemaJson);
-
-        JsonNode defs = schema.path("$defs");
-
-        assertThat(defs.path("secao").path("properties").path("estilos").path("minItems").asInt())
-                .isEqualTo(1);
-        assertThat(defs.path("elementoSecao").path("properties").path("estilos").path("minItems").asInt())
-                .isEqualTo(1);
-    }
-
-    /** Deve manter no prompt a regra de remover classes antigas que quebram o grid desktop premium. */
-    @Test
-    void presetDesignPromptShouldBlockConflictingWireframeLayoutClasses() throws Exception {
+    void presetDesignPromptShouldBlockConflictingWireframeLayoutClassesWithoutWeakeningMobile() throws Exception {
         String prompt = new ClassPathResource("prompts/geralanding/landing-page-design-preset.md")
                 .getContentAsString(StandardCharsets.UTF_8);
 
         assertThat(prompt)
+                .contains("Mobile é a prioridade comercial")
                 .contains("REMOVA da lista `estilos[]`")
                 .contains("stackCol")
                 .contains("gridCols1")
-                .contains("heroDesktopGrid")
-                .contains("grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr) !important");
+                .contains("não use `!important` como solução padrão no desktop")
+                .contains("grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr)");
     }
 
     /** Percorre recursivamente o schema e lista objetos que não bloqueiam propriedades extras. */

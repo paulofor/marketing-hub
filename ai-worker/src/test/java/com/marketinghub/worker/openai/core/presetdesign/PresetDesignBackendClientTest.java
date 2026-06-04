@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.StageExecution;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,6 +55,7 @@ class PresetDesignBackendClientTest {
                         "prompts/geralanding/landing-page-design-preset.md",
                         "prompts/geralanding/landing-page-design-preset-schema.json",
                         "experiment_pipeline_landing_page_design_preset",
+                        "gpt-5.5",
                         Duration.ofSeconds(5)),
                 objectMapper);
         StageExecution<PresetDesignInput> execution = new StageExecution<>(
@@ -102,6 +102,7 @@ class PresetDesignBackendClientTest {
                         "prompts/geralanding/landing-page-design-preset.md",
                         "prompts/geralanding/landing-page-design-preset-schema.json",
                         "experiment_pipeline_landing_page_design_preset",
+                        "gpt-5.5",
                         Duration.ofSeconds(5)),
                 objectMapper);
         StageExecution<PresetDesignInput> execution = new StageExecution<>(
@@ -149,16 +150,9 @@ class PresetDesignBackendClientTest {
                 "prompts/geralanding/landing-page-design-preset.md",
                 "prompts/geralanding/landing-page-design-preset-schema.json",
                 "experiment_pipeline_landing_page_design_preset",
+                "gpt-5.5",
                 Duration.ofSeconds(5));
-        var openAiProperties = new com.marketinghub.worker.openai.core.openai.OpenAiClientProperties(
-                "test-key",
-                "https://api.openai.com/v1",
-                "gpt-test",
-                Duration.ofMinutes(30),
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                true);
-        PresetDesignPromptBuilder builder = new PresetDesignPromptBuilder(objectMapper, openAiProperties, properties);
+        PresetDesignPromptBuilder builder = new PresetDesignPromptBuilder(objectMapper, properties);
         StageExecution<PresetDesignInput> execution = new StageExecution<>(
                 "job-ia-1",
                 12L,
@@ -180,7 +174,7 @@ class PresetDesignBackendClientTest {
 
         assertThat(request.schemaName()).isEqualTo("experiment_pipeline_landing_page_design_preset");
         assertThat(request.prompt()).contains("gestores");
-        assertThat(body.path("model").asText()).isEqualTo("gpt-test");
+        assertThat(body.path("model").asText()).isEqualTo("gpt-5.5");
         assertThat(body.path("text").path("format").path("name").asText())
                 .isEqualTo("experiment_pipeline_landing_page_design_preset");
         assertThat(body.path("text").path("format").path("strict").asBoolean()).isTrue();

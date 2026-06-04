@@ -41,10 +41,9 @@ public class PresetDesignWorkerConfiguration {
     @Bean
     public PresetDesignPromptBuilder presetdesignPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             PresetDesignWorkerProperties presetdesignProperties
     ) {
-        return new PresetDesignPromptBuilder(objectMapper, openAiProperties, presetdesignProperties);
+        return new PresetDesignPromptBuilder(objectMapper, presetdesignProperties);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a etapa presetdesign. */

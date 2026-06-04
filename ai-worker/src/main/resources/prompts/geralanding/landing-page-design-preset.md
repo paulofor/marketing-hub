@@ -52,6 +52,19 @@ Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, ass
 
 O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Se um botão, input, label, grid, card, imagem ou container precisa de altura, padding, alinhamento, largura, coluna ou quebra mobile, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
 
+
+# Correções obrigatórias para falhas recorrentes de conversão
+
+Aplique estas correções como prioridade máxima sobre escolhas estéticas genéricas:
+
+1. **CTA nunca pode parecer link ou barra fina**: qualquer `a`/`button` acionável deve ter `display:inline-flex` ou `display:flex`, `align-items:center`, `justify-content:center`, `padding` vertical real, `min-height` de pelo menos 48px, `border-radius`, cor/contraste, peso tipográfico e `text-decoration:none`.
+2. **Tap area forte em mobile e desktop**: CTAs principais e submit devem ter pelo menos 48px de altura visual no desktop e 52px no mobile, com largura total no mobile quando forem ação principal.
+3. **Formulário desktop com largura controlada**: o card/`form` de captura no desktop deve ter `max-width` entre 420px e 520px quando estiver em coluna própria, ou no máximo 640px quando centralizado. Nunca deixe o formulário como faixa horizontal muito larga e baixa.
+4. **Formulário deve parecer bloco de confiança**: use `formShell`, padding generoso, stack vertical, gap real, borda/sombra e botão full-width; campos e submit devem compartilhar a mesma largura interna.
+5. **Imagem principal desktop controlada**: hero/mockup deve ter wrapper com `max-width` controlado, `overflow:hidden`, moldura/sombra e imagem `width:100%`, `height:auto` ou `max-height` coerente. Nunca deixe a imagem ocupar bloco enorme com espaço vazio.
+6. **Dobra refinada**: Hero deve equilibrar texto, CTA, prova visual e formulário/ação com hierarquia clara. Se o layout tiver duas colunas, a coluna visual não pode dominar a dobra sem conteúdo útil.
+7. **Aparência final, não rascunho**: rejeite qualquer combinação que dependa de poucos tokens genéricos (`rowInline`, `radiusMd`, `shadowMd`, `ctaPrimaryBg`) sem dimensões, espaçamento, alinhamento e estado base completos.
+
 # Regras obrigatórias
 
 1. Responda somente JSON válido.
@@ -152,7 +165,7 @@ O design deve materializar visualmente a sequência **Dor → Resultado → Meca
 - Mecanismo deve parecer organizado, simples e plausível, normalmente em steps/cards.
 - Prova/preview deve parecer vitrine real do produto digital, com mockup funcional maior e mais concreto que imagens decorativas.
 - Oferta/entregáveis deve ser escaneável e conectada a benefícios práticos.
-- Formulário deve ser o ponto de ação mais forte, com superfície própria e confiança visual.
+- Formulário deve ser o ponto de ação mais forte, com superfície própria, largura controlada e confiança visual.
 
 Use profundidade e acabamento com:
 - hero visual forte;
@@ -177,7 +190,7 @@ Evite o sistema visual repetitivo: fundo escuro + card azul + botão verde em to
 - Mobile sempre em uma coluna, com `mobileOneColumn` e `mobileFullWidth` nos blocos principais.
 - Headline dominante.
 - CTA primário com aparência de botão real.
-- Mockup com moldura, sombra e tamanho controlado.
+- Mockup com moldura, sombra, tamanho controlado e sem áreas vazias largas; aplique wrapper de mídia com `mediaFrame`, `mediaConstrained` e `imgFluid`.
 
 ## Dor / Problema / Antes e Depois
 - Contraste claro em relação ao Hero.
@@ -197,8 +210,8 @@ Evite o sistema visual repetitivo: fundo escuro + card azul + botão verde em to
 
 ## Formulário / Captura
 - Deve ser o bloco de conversão mais evidente.
-- Use superfície própria, padding maior, borda/sombra e hierarquia clara.
-- Campos full-width, confortáveis e legíveis.
+- Use superfície própria, padding maior, borda/sombra, hierarquia clara e `max-width` controlado no desktop.
+- Campos full-width dentro do card, confortáveis e legíveis; o card não pode virar uma faixa desktop muito larga/baixa.
 - Labels visíveis precisam parecer labels de formulário, não parágrafos soltos.
 - Inputs devem parecer campos premium: altura confortável, borda clara, fundo limpo, sombra sutil, padding real, texto legível e largura total.
 - Botão submit mais forte que botões secundários.
@@ -237,6 +250,8 @@ Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propried
 - `inputShadowSoft`: `box-shadow:0 8px 18px rgba(15,23,42,0.06)`.
 - `fieldLabel`: `display:block`, `font-size:14px`, `font-weight:700`, `line-height:1.2`, `margin-bottom:6px`.
 - `formStack`: `display:flex`, `flex-direction:column`.
+- `formShell`: `width:100%`, `max-width:520px`, `box-sizing:border-box`, `padding:28px`, `border-radius:24px`.
+- `formShellCentered`: `margin-left:auto`, `margin-right:auto`.
 - `fieldGap`: `gap:8px` ou `row-gap:8px`.
 - `formGap`: `gap:14px` ou `row-gap:14px`.
 
@@ -273,14 +288,16 @@ Para todo elemento `a` ou `button`:
 
 Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propriedades quando necessário usando o mesmo `nome` repetido:
 
-- `buttonPrimaryPremium`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:14px 22px`, `min-height:48px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`, `text-decoration:none`, `box-shadow:0 14px 32px rgba(37,99,235,0.24)`.
+- `buttonPrimaryPremium`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:14px 22px`, `min-height:48px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`, `text-align:center`, `text-decoration:none`, `box-shadow:0 14px 32px rgba(37,99,235,0.24)`.
 - `buttonSecondaryGhost`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:13px 20px`, `min-height:46px`, `border-radius:14px`, `font-size:15px`, `font-weight:750`, `line-height:1.2`, `text-decoration:none`, `background-color:#FFFFFF`, `border:1px solid #DCE6F7`.
 - `buttonTertiaryLink`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:10px 12px`, `min-height:42px`, `border-radius:999px`, `font-size:14px`, `font-weight:700`, `line-height:1.2`, `text-decoration:none`.
-- `buttonFullMobile`: em `mobile`, `width:100% !important`.
+- `buttonFullMobile`: em `mobile`, `width:100% !important`, `min-height:52px`, `padding:15px 20px`.
 - `buttonMinTouch`: `min-height:48px`.
 - `buttonTextStrong`: `font-size:16px`, `font-weight:800`, `line-height:1.2`.
 - `buttonFormSubmit`: `display:flex`, `align-items:center`, `justify-content:center`, `width:100%`, `padding:15px 22px`, `min-height:50px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`.
 - `ctaRowPremium`: `display:flex`, `align-items:center`, `gap:12px`, `flex-wrap:wrap`.
+- `mediaConstrained`: `width:100%`, `max-width:560px`, `margin-left:auto`, `margin-right:auto`.
+- `heroMediaMax`: `max-height:520px`, `overflow:hidden`.
 
 # Classes obrigatórias globais mínimas
 
@@ -322,7 +339,10 @@ Crie e aplique, quando apropriado:
 - `buttonTextStrong`
 - `buttonFormSubmit`
 - `formShell`
+- `formShellCentered`
 - `mediaFrame`
+- `mediaConstrained`
+- `heroMediaMax`
 - `ctaRowPremium`
 
 # Critérios negativos
@@ -331,16 +351,18 @@ Rejeite e gere novamente se o JSON produzir:
 - texto colado na borda;
 - link com aparência padrão;
 - imagem gigante sem container;
+- imagem principal em desktop ocupando bloco largo com áreas vazias ou sem limite de largura/altura;
 - título que quebra a primeira dobra agressivamente;
 - todos os cards parecidos;
 - formulário mais fraco que cards informativos;
+- formulário desktop esticado horizontalmente, baixo, sem card próprio ou sem `max-width`;
 - desktop com largura de mobile;
 - seções consecutivas sem contraste;
 - Hero sem prova visual forte;
 - Preview/prova sem força de produto;
 - CTA primário sem aparência de botão;
 - CTA com menos de 44px de altura visual;
-- botão primário parecendo uma barra fina;
+- botão primário parecendo uma barra fina, link azul ou texto clicável sem corpo visual;
 - botão submit menor ou mais fraco que CTAs secundários;
 - container de CTA sem gap real ou com links soltos visualmente;
 - navegação/topo empilhado como lista improvisada;
@@ -348,6 +370,7 @@ Rejeite e gere novamente se o JSON produzir:
 - elemento com `componente = buttonPrimary` sem a classe `buttonPrimaryPremium`;
 - elemento com `componente = buttonSecondary` sem a classe `buttonSecondaryGhost`;
 - botão submit sem a classe `buttonFormSubmit`;
+- form/card de captura sem `formShell` e sem largura desktop controlada;
 - input com `componente = formInput` sem a classe `formInputPremium`;
 - input sem `width:100%`, `box-sizing:border-box`, `min-height` e padding real;
 - label de campo sem classe `fieldLabel`;
@@ -365,11 +388,14 @@ Garanta que:
 - mobile tenha padding suficiente, botões grandes e imagens controladas;
 - todos os cards no mobile tenham largura total e `box-sizing:border-box`;
 - todos os inputs tenham aparência premium, largura total, altura confortável e labels visíveis;
+- o formulário desktop tenha largura controlada e altura compatível com card de confiança, não uma faixa horizontal;
 - Hero, Prova e Formulário não usem o mesmo tratamento visual;
 - Formulário seja o bloco mais acionável;
 - Preview pareça uma vitrine do produto;
 - FAQ seja legível e mais calmo;
 - nenhum CTA dependa apenas de `background`, `border-radius` e `shadow` para parecer botão;
+- nenhum CTA final pareça link padrão, barra fina ou componente inacabado;
+- a imagem principal do hero esteja contida por wrapper premium e não deixe vazio visual dominante;
 - nenhum artefato técnico/provisório apareça em `pagina.head.texto` ou em texto visível.
 
 # Formato esperado de saída

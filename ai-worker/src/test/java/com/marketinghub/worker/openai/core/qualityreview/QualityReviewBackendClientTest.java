@@ -48,6 +48,8 @@ class QualityReviewBackendClientTest {
                             "experiment": {
                               "id": 36,
                               "name": "Experimento visual",
+                              "landingPageWireframe": {"sectionOrder": [{"sectionId": "hero", "purpose": "Promessa"}]},
+                              "landingPageDesignPreset": {"presetId": "premium", "sectionPresets": [{"sectionId": "hero"}]},
                               "htmlGeraLanding": "<!doctype html><html><body><h1>Landing final</h1></body></html>",
                               "landingPageHtml": "<html><body>Fallback antigo</body></html>",
                               "landingPageImageAssets": {"images": [{"sourceUrl": "https://cdn.example.com/hero.jpg"}]}
@@ -68,7 +70,12 @@ class QualityReviewBackendClientTest {
         assertThat(pending.getFirst().input().promptData())
                 .containsEntry("experimentId", 36)
                 .containsEntry("experimentName", "Experimento visual")
+                .containsKeys("landingPageWireframe", "landingPageDesignPreset", "htmlGeraLanding")
                 .doesNotContainKeys("CASE_DATA_BLOCK", "landingPageImageAssets");
+        assertThat(pending.getFirst().input().promptData().get("landingPageWireframe").toString())
+                .contains("sectionOrder");
+        assertThat(pending.getFirst().input().promptData().get("landingPageDesignPreset").toString())
+                .contains("premium");
     }
 
     /** Monta propriedades mínimas para o client quality-review usado no teste. */

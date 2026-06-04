@@ -33,6 +33,7 @@ public class BackendWireframeService {
     private static final Logger log = LoggerFactory.getLogger(BackendWireframeService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "landing-page-wireframe";
+    private static final String NEXT_STAGE_COPY = "landing-page-copy";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -215,6 +216,24 @@ public class BackendWireframeService {
         }
         experiment.setLandingPageWireframe(modelResponse);
         experimentRepository.save(experiment);
+        createCopyExecution(experiment);
+    }
+
+    /** Agenda o Gera Copy como próxima etapa automática após salvar o wireframe da landing. */
+    private void createCopyExecution(Experiment experiment) {
+        Instant now = Instant.now();
+        GeraLandingStageExecution copyExecution = GeraLandingStageExecution.builder()
+                .experimentId(experiment.getId())
+                .experiment(experiment)
+                .stageCode(NEXT_STAGE_COPY)
+                .executionRequestedAt(now)
+                .createdAt(now)
+                .promptTemplateId("auto/wireframe")
+                .promptContent("Gera Copy iniciado automaticamente após o Gera WireFrame.")
+                .status(STATUS_STARTED)
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .build();
+        executionRepository.save(copyExecution);
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

@@ -176,7 +176,7 @@ class BackendWireframeServiceTest {
         verify(executionRepository).save(execution);
     }
 
-    /** Deve concluir a execução e gravar o artefato wireframe recebido do Worker AI. */
+    /** Deve concluir a execução, gravar o wireframe e agendar o Gera Copy automático. */
     @Test
     void markCompletedFromResponseShouldPersistExecutionAndExperimentArtifact() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
@@ -184,6 +184,7 @@ class BackendWireframeServiceTest {
         BackendWireframeService service =
                 new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
+        when(experiment.getId()).thenReturn(88L);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(88L)
                 .experiment(experiment)
@@ -218,6 +219,16 @@ class BackendWireframeServiceTest {
         verify(experiment).setLandingPageWireframe(modelResponse);
         verify(experimentRepository).save(experiment);
         verify(experimentRepository, never()).findById(88L);
+        verify(executionRepository).save(argThat(nextExecution ->
+                nextExecution.getExperimentId().equals(88L)
+                        && nextExecution.getExperiment() == experiment
+                        && nextExecution.getStageCode().equals("landing-page-copy")
+                        && nextExecution.getStatus().equals("INICIADO")
+                        && nextExecution.getPromptTemplateId().equals("auto/wireframe")
+                        && nextExecution.getPromptContent().equals("Gera Copy iniciado automaticamente após o Gera WireFrame.")
+                        && nextExecution.getExecutionRequestedAt() != null
+                        && nextExecution.getCreatedAt() != null
+                        && nextExecution.getIdJob() != null));
     }
 
     /** Deve marcar a execução como falha sem gravar artefato quando o Worker AI retorna erro. */

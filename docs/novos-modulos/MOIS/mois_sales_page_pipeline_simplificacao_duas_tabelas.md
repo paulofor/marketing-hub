@@ -357,6 +357,9 @@ Critério de aceite:
 - A captura HTML (`/html-captures:claim`, `/html-captures/{snapshotId}:complete`, `/html-captures/{snapshotId}:fail` e `/snapshots:capture`) passou a gravar o HTML bruto, hash, screenshot, redirecionamento, erro e transições diretamente em `mois_sales_page_job_execution`, atualizando `mois_sales_page` a cada transição.
 - As tabelas antigas permanecem em modo legado/auditoria; a UI principal e os detalhes operacionais devem continuar lendo `mois_sales_page` e `mois_sales_page_job_execution`.
 - O Swagger do módulo foi atualizado para explicitar que `snapshotId` nos endpoints de captura é identificador compatível de execução `HTML_CAPTURE` no histórico novo.
+- Ajuste final da Fase 5: escrita dupla/espelhos legados foram removidos do caminho operacional do backend; `jobs`, reanálise, status manual e captura de referência coletada gravam em `mois_sales_page`/`mois_sales_page_job_execution` sem atualizar as tabelas antigas.
+- Os endpoints `/collected-reference-html:*` agora tratam `captureId` como execução `COLLECTED_REFERENCE_HTML` em `mois_sales_page_job_execution`, usando `mois_collected_reference` somente como origem bruta.
+- A listagem/busca de jobs passou a consultar `mois_sales_page_job_execution`; campos compatíveis legados devem ser interpretados como identificadores operacionais novos quando expostos.
 
 ### Fase 6 — Congelamento e desativação gradual do legado
 

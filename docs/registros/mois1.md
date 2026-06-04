@@ -970,3 +970,11 @@ Arquivos alterados:
 - captura HTML por worker/backend agora cria e conclui execuções `HTML_CAPTURE` diretamente em `mois_sales_page_job_execution`, atualizando `mois_sales_page` em claim, sucesso, duplicidade e falha.
 - tabelas legadas permanecem apenas como auditoria transitória quando houver espelhamento compatível; leitura operacional permanece concentrada nas duas tabelas novas.
 - Swagger `docs/swagger/mois-sales-library-swagger.yaml` atualizado para documentar ingestão, análise e captura como contratos do modelo operacional novo.
+
+## 2026-06-04 — Fase 5 MOIS sales page pipeline: escrita principal no modelo novo
+
+- removida a dependência operacional da escrita dupla/espelho legado na Biblioteca de Páginas de Vendas MOIS.
+- endpoints de análise (`/jobs:claim`, `/jobs/{jobId}:complete`, `/jobs/{jobId}:fail`) passam a aceitar somente execuções vigentes em `mois_sales_page_job_execution` como identificador operacional.
+- endpoints de captura de referência coletada (`/collected-reference-html:*`) agora leem `mois_collected_reference` apenas como origem bruta, criam/atualizam `mois_sales_page` e gravam HTML/erro em `mois_sales_page_job_execution`.
+- listagem e busca de jobs passam a consultar o histórico consolidado `mois_sales_page_job_execution`, mantendo o campo compatível `urlIngestId` como identificador da página operacional.
+- removidas as classes de escrita dupla MOIS para evitar que o legado volte a ser tratado como caminho principal.

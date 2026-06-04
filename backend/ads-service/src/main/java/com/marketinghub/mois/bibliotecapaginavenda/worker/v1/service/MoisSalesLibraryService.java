@@ -1,7 +1,6 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
-import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageDualWriteGateway;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -11,8 +10,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HexFormat;
@@ -20,7 +17,6 @@ import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,11 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class MoisSalesLibraryService {
 
     private static final String JOB_STATUS_PENDING = "PENDING";
-    private static final String JOB_STATUS_FETCHING = "FETCHING";
     private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
 
     private final JdbcTemplate jdbcTemplate;
-    private final MoisSalesPageDualWriteGateway dualWriteGateway;
 
     /**
      * Reserva o próximo job pendente da biblioteca para processamento pelo worker.
@@ -79,7 +73,6 @@ public class MoisSalesLibraryService {
                     last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, job.jobId(), job.pageId());
-        mirrorClaimToLegacyAudit(job.pageId());
         log.info("MOIS sales-library claim usando modelo operacional novo. modulo=MOIS, operacao=claimJob, workspaceId={}, source={}, pageId={}, executionId={}",
                 request.workspaceId(), normalizedSource, job.pageId(), job.jobId());
         return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(true, job);
@@ -92,8 +85,7 @@ public class MoisSalesLibraryService {
     public void completeJob(long jobId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
         Long salesPageId = findOperationalSalesPageIdForExecution(jobId);
         if (salesPageId == null) {
-            completeLegacyJob(jobId, request);
-            return;
+            throw new IllegalArgumentException("Operational analysis execution not found: " + jobId);
         }
         Instant analyzedAt = request.analyzedAt() == null ? Instant.now() : request.analyzedAt();
         jdbcTemplate.update("""
@@ -112,7 +104,6 @@ public class MoisSalesLibraryService {
                     last_analyzed_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, request.scoreTotal(), jobId, Timestamp.from(analyzedAt), salesPageId);
-        mirrorAnalysisCompletionToLegacyAudit(salesPageId, jobId, request, analyzedAt);
         log.info("MOIS sales-library análise concluída no modelo operacional novo. modulo=MOIS, operacao=completeJob, pageId={}, executionId={}, scoreTotal={}",
                 salesPageId, jobId, request.scoreTotal());
     }
@@ -124,8 +115,7 @@ public class MoisSalesLibraryService {
     public void failJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
         Long salesPageId = findOperationalSalesPageIdForExecution(jobId);
         if (salesPageId == null) {
-            failLegacyJob(jobId, request);
-            return;
+            throw new IllegalArgumentException("Operational analysis execution not found: " + jobId);
         }
         jdbcTemplate.update("""
                 UPDATE mois_sales_page_job_execution
@@ -138,7 +128,6 @@ public class MoisSalesLibraryService {
                     last_error_category = ?, last_error_message = ?, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, request.errorCategory(), truncate(request.errorMessage(), 1000), jobId, salesPageId);
-        mirrorAnalysisFailureToLegacyAudit(salesPageId, jobId, request);
         log.info("MOIS sales-library análise falhou no modelo operacional novo. modulo=MOIS, operacao=failJob, pageId={}, executionId={}, errorCategory={}",
                 salesPageId, jobId, request.errorCategory());
     }
@@ -202,7 +191,7 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Reserva uma referência coletada para a primeira etapa do pipeline de captura de HTML bruto.
+     * Reserva uma referência coletada criando página e execução de captura no modelo operacional principal.
      */
     @Transactional
     public MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse claimCollectedReferenceHtml(
@@ -210,156 +199,119 @@ public class MoisSalesLibraryService {
     ) {
         String normalizedSource = request.source().trim().toUpperCase(Locale.ROOT);
         String claimedBy = UUID.randomUUID().toString();
-        try {
-            int inserted = jdbcTemplate.update(
-                    """
-                            INSERT INTO mois_collected_reference_html_capture
-                              (collected_reference_id, workspace_id, source, collection_job_id, reference_id, title,
-                               url_source, url_original, status, claimed_by, claimed_at, created_at, updated_at)
-                            SELECT r.id, r.workspace_id, r.source, r.job_id, r.reference_id,
-                                   COALESCE(NULLIF(r.product_name, ''), NULLIF(r.title, ''), r.reference_id),
-                                   CASE
-                                     WHEN r.sales_page_url IS NOT NULL AND r.sales_page_url <> '' THEN 'SALES_PAGE_URL'
-                                     WHEN r.product_url IS NOT NULL AND r.product_url <> '' THEN 'PRODUCT_URL'
-                                     ELSE 'URL'
-                                   END,
-                                   COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')),
-                                   'CLAIMED', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP()
-                            FROM mois_collected_reference r
-                            WHERE r.workspace_id = ?
-                              AND r.source = ?
-                              AND COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')) IS NOT NULL
-                              AND NOT EXISTS (
-                                SELECT 1 FROM mois_collected_reference_html_capture c
-                                WHERE c.collected_reference_id = r.id
-                              )
-                            ORDER BY r.collected_at ASC, r.id ASC
-                            LIMIT 1
-                            """,
-                    claimedBy,
-                    request.workspaceId(),
-                    normalizedSource);
-            if (inserted == 0) {
-                return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null);
-            }
-            return findClaimedCollectedReferenceHtml(claimedBy)
-                    .map(job -> new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(true, job))
-                    .orElseGet(() -> new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null));
-        } catch (DataAccessException ex) {
-            log.warn("Falha ao reservar HTML bruto de referência coletada. operacao=claimCollectedReferenceHtml, workspaceId={}, source={}, claimedBy={}, erroClasse={}, erro={}",
-                    request.workspaceId(), normalizedSource, claimedBy, ex.getClass().getName(), ex.getMessage(), ex);
-            return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null);
-        }
+        return findNextCollectedReferenceHtmlCandidate(request.workspaceId(), normalizedSource)
+                .map(candidate -> claimCollectedReferenceCandidate(candidate, claimedBy))
+                .orElseGet(() -> new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null));
     }
 
     /**
-     * Persiste o HTML bruto capturado pelo worker MOIS para uma referência coletada.
+     * Persiste o HTML bruto capturado pelo worker MOIS diretamente na execução operacional.
      */
     @Transactional
     public MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse completeCollectedReferenceHtml(
             long captureId,
             MoisSalesLibraryDtos.CollectedReferenceHtmlCompleteRequest request
     ) {
+        CaptureExecution execution = findCollectedReferenceCaptureExecution(captureId);
         String rawHtml = request.rawHtml() == null ? "" : request.rawHtml();
         byte[] rawHtmlBytes = rawHtml.getBytes(StandardCharsets.UTF_8);
+        String hash = sha256(rawHtml);
+        Instant fetchedAt = request.fetchedAt() == null ? Instant.now() : request.fetchedAt();
         jdbcTemplate.update(
                 """
-                        UPDATE mois_collected_reference_html_capture
-                        SET status = 'CAPTURED',
-                            url_final = ?,
-                            http_status = ?,
-                            content_type = ?,
-                            raw_html = ?,
-                            raw_html_sha256 = ?,
-                            raw_html_bytes = ?,
-                            error_message = NULL,
-                            fetched_at = ?,
-                            updated_at = UTC_TIMESTAMP()
+                        UPDATE mois_sales_page_job_execution
+                        SET status = 'CAPTURED', final_url = ?, http_status = ?, content_type = ?, raw_html = ?,
+                            raw_html_sha256 = ?, raw_html_bytes = ?, error_category = NULL, error_message = NULL,
+                            finished_at = ?, updated_at = UTC_TIMESTAMP()
                         WHERE id = ?
                         """,
                 truncate(request.finalUrl(), 1024),
                 request.httpStatus(),
                 truncate(request.contentType(), 255),
                 rawHtml,
-                sha256(rawHtml),
+                hash,
                 rawHtmlBytes.length,
-                Timestamp.from(request.fetchedAt() == null ? Instant.now() : request.fetchedAt()),
+                Timestamp.from(fetchedAt),
                 captureId);
-        dualWriteGateway.syncCollectedReferenceHtmlCapture(captureId);
+        updateSalesPageAfterCollectedReferenceCapture(execution.salesPageId(), captureId, "CAPTURED", request.httpStatus(),
+                request.contentType(), request.finalUrl(), hash, rawHtmlBytes.length, null, null, fetchedAt);
+        log.info("MOIS sales-library captura de referência coletada concluída no modelo operacional novo. modulo=MOIS, operacao=completeCollectedReferenceHtml, pageId={}, executionId={}, bytes={}",
+                execution.salesPageId(), captureId, rawHtmlBytes.length);
         return new MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse(captureId, "CAPTURED");
     }
 
     /**
-     * Registra falha terminal da captura de HTML bruto de uma referência coletada.
+     * Registra falha terminal da captura de HTML bruto de uma referência coletada no histórico operacional.
      */
     @Transactional
     public MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse failCollectedReferenceHtml(
             long captureId,
             MoisSalesLibraryDtos.CollectedReferenceHtmlFailRequest request
     ) {
+        CaptureExecution execution = findCollectedReferenceCaptureExecution(captureId);
         String message = coalesceNotBlank(request.errorMessage(), request.errorCategory(), "Falha sem detalhe");
         jdbcTemplate.update(
                 """
-                        UPDATE mois_collected_reference_html_capture
-                        SET status = 'FAILED',
-                            error_message = ?,
-                            fetched_at = UTC_TIMESTAMP(),
-                            updated_at = UTC_TIMESTAMP()
+                        UPDATE mois_sales_page_job_execution
+                        SET status = 'FAILED', error_category = ?, error_message = ?, finished_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
                         WHERE id = ?
                         """,
+                truncate(request.errorCategory(), 120),
                 truncate(message, 1000),
                 captureId);
-        dualWriteGateway.syncCollectedReferenceHtmlCapture(captureId);
+        updateSalesPageAfterCollectedReferenceCapture(execution.salesPageId(), captureId, "FAILED", null, null, null, null, 0L,
+                request.errorCategory(), message, Instant.now());
+        log.info("MOIS sales-library captura de referência coletada falhou no modelo operacional novo. modulo=MOIS, operacao=failCollectedReferenceHtml, pageId={}, executionId={}, errorCategory={}",
+                execution.salesPageId(), captureId, request.errorCategory());
         return new MoisSalesLibraryDtos.CollectedReferenceHtmlPersistResponse(captureId, "FAILED");
     }
 
     /**
-     * Busca os metadados operacionais de um job da biblioteca.
+     * Busca os metadados operacionais de uma execução da biblioteca no histórico consolidado.
      */
     public MoisSalesLibraryDtos.SalesLibraryJobResponse getJob(long jobId) {
         List<MoisSalesLibraryDtos.SalesLibraryJobResponse> rows = jdbcTemplate.query("""
-                        SELECT id, url_ingest_id, status, attempts, error_category, error_message,
-                               next_retry_at, created_at, updated_at, started_at, finished_at
-                        FROM mois_sales_library_processing_job
+                        SELECT id, sales_page_id, status, attempt, error_category, error_message,
+                               created_at, updated_at, started_at, finished_at
+                        FROM mois_sales_page_job_execution
                         WHERE id = ?
                         LIMIT 1
                         """, (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryJobResponse(
-                        rs.getLong("id"), rs.getLong("url_ingest_id"), rs.getString("status"),
-                        rs.getInt("attempts"), rs.getString("error_category"), rs.getString("error_message"),
-                        toInstant(rs.getTimestamp("next_retry_at")), toInstant(rs.getTimestamp("created_at")),
+                        rs.getLong("id"), rs.getLong("sales_page_id"), rs.getString("status"),
+                        rs.getInt("attempt"), rs.getString("error_category"), rs.getString("error_message"),
+                        null, toInstant(rs.getTimestamp("created_at")),
                         toInstant(rs.getTimestamp("updated_at")), toInstant(rs.getTimestamp("started_at")),
                         toInstant(rs.getTimestamp("finished_at"))), jobId);
         if (rows.isEmpty()) {
-            throw new IllegalArgumentException("Job not found: " + jobId);
+            throw new IllegalArgumentException("Job execution not found: " + jobId);
         }
         return rows.get(0);
     }
 
     /**
-     * Lista jobs da biblioteca por workspace, com filtro opcional por status.
+     * Lista execuções da biblioteca por workspace, com filtro opcional por status, usando as tabelas operacionais novas.
      */
     public MoisSalesLibraryDtos.SalesLibraryJobPageResponse listJobs(String workspaceId, String status, int page, int pageSize) {
         int normalizedPage = Math.max(1, page);
         int normalizedPageSize = Math.max(1, Math.min(pageSize, 100));
         int offset = (normalizedPage - 1) * normalizedPageSize;
         String normalizedStatus = status == null || status.isBlank() ? null : status.trim().toUpperCase(Locale.ROOT);
-        String statusClause = normalizedStatus == null ? "" : " AND j.status = ?";
+        String statusClause = normalizedStatus == null ? "" : " AND status = ?";
         Long total = jdbcTemplate.queryForObject("""
-                        SELECT COUNT(*) FROM mois_sales_library_processing_job j
-                        JOIN mois_sales_library_url_ingest i ON i.id = j.url_ingest_id
-                        WHERE i.workspace_id = ?
+                        SELECT COUNT(*)
+                        FROM mois_sales_page_job_execution
+                        WHERE workspace_id = ?
                         """ + statusClause,
                 Long.class, normalizedStatus == null ? new Object[]{workspaceId} : new Object[]{workspaceId, normalizedStatus});
         List<MoisSalesLibraryDtos.SalesLibraryJobResponse> items = jdbcTemplate.query("""
-                        SELECT j.id, j.url_ingest_id, j.status, j.attempts, j.error_category, j.error_message,
-                               j.next_retry_at, j.created_at, j.updated_at, j.started_at, j.finished_at
-                        FROM mois_sales_library_processing_job j
-                        JOIN mois_sales_library_url_ingest i ON i.id = j.url_ingest_id
-                        WHERE i.workspace_id = ?
-                        """ + statusClause + " ORDER BY j.updated_at DESC LIMIT ? OFFSET ?",
-                (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryJobResponse(rs.getLong("id"), rs.getLong("url_ingest_id"),
-                        rs.getString("status"), rs.getInt("attempts"), rs.getString("error_category"), rs.getString("error_message"),
-                        toInstant(rs.getTimestamp("next_retry_at")), toInstant(rs.getTimestamp("created_at")),
+                        SELECT id, sales_page_id, status, attempt, error_category, error_message,
+                               created_at, updated_at, started_at, finished_at
+                        FROM mois_sales_page_job_execution
+                        WHERE workspace_id = ?
+                        """ + statusClause + " ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?",
+                (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryJobResponse(rs.getLong("id"), rs.getLong("sales_page_id"),
+                        rs.getString("status"), rs.getInt("attempt"), rs.getString("error_category"), rs.getString("error_message"),
+                        null, toInstant(rs.getTimestamp("created_at")),
                         toInstant(rs.getTimestamp("updated_at")), toInstant(rs.getTimestamp("started_at")),
                         toInstant(rs.getTimestamp("finished_at"))),
                 normalizedStatus == null ? new Object[]{workspaceId, normalizedPageSize, offset} : new Object[]{workspaceId, normalizedStatus, normalizedPageSize, offset});
@@ -501,110 +453,6 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Conclui um job legado quando o worker ainda enviar identificador antigo durante a transição.
-     */
-    private void completeLegacyJob(long jobId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
-        Long pageId = jdbcTemplate.queryForObject("SELECT url_ingest_id FROM mois_sales_library_processing_job WHERE id = ? LIMIT 1", Long.class, jobId);
-        if (pageId == null) throw new IllegalArgumentException("Job not found: " + jobId);
-        jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, request_payload_json, analyzed_at, created_at, updated_at)
-                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, pageId, jobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), request.analyzedAt() == null ? Instant.now() : request.analyzedAt());
-        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", jobId);
-        dualWriteGateway.syncProcessingJob(jobId);
-        dualWriteGateway.syncLatestAnalysis(pageId);
-    }
-
-    /**
-     * Marca um job legado como falho quando o worker ainda enviar identificador antigo durante a transição.
-     */
-    private void failLegacyJob(long jobId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
-        jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), request.errorMessage(), jobId);
-        dualWriteGateway.syncProcessingJob(jobId);
-    }
-
-    /**
-     * Espelha o claim operacional novo no job legado mais próximo apenas para auditoria de transição.
-     */
-    private void mirrorClaimToLegacyAudit(long salesPageId) {
-        Long legacyJobId = findLatestLegacyJobForSalesPage(salesPageId, JOB_STATUS_PENDING);
-        if (legacyJobId != null) {
-            jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FETCHING', started_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=? AND status='PENDING'", legacyJobId);
-        }
-    }
-
-    /**
-     * Espelha a conclusão da análise nova em tabelas legadas somente para manter auditoria compatível.
-     */
-    private void mirrorAnalysisCompletionToLegacyAudit(long salesPageId, long executionId, MoisSalesLibraryDtos.SalesLibraryCompleteRequest request, Instant analyzedAt) {
-        Long urlIngestId = findUrlIngestIdForSalesPage(salesPageId);
-        if (urlIngestId == null) {
-            return;
-        }
-        Long legacyJobId = findLatestLegacyJobForSalesPage(salesPageId, JOB_STATUS_FETCHING);
-        jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, score_total, parser_version, prompt_version, model_name, sections_json, copy_json, visual_json, image_json, analysis_notes, request_payload_json, analyzed_at, created_at, updated_at)
-                VALUES (?, ?, 'DONE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, urlIngestId, legacyJobId, request.scoreTotal(), request.parserVersion(), request.promptVersion(), request.modelName(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(), request.analysisNotes(), request.requestPayloadJson(), Timestamp.from(analyzedAt));
-        if (legacyJobId != null) {
-            jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='DONE', finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", legacyJobId);
-        }
-        log.info("MOIS sales-library espelhou conclusão nova no legado para auditoria. modulo=MOIS, operacao=mirrorAnalysisCompletionToLegacyAudit, pageId={}, executionId={}, legacyUrlIngestId={}, legacyJobId={}",
-                salesPageId, executionId, urlIngestId, legacyJobId);
-    }
-
-    /**
-     * Espelha a falha da análise nova em tabelas legadas somente para manter auditoria compatível.
-     */
-    private void mirrorAnalysisFailureToLegacyAudit(long salesPageId, long executionId, MoisSalesLibraryDtos.SalesLibraryFailRequest request) {
-        Long urlIngestId = findUrlIngestIdForSalesPage(salesPageId);
-        if (urlIngestId == null) {
-            return;
-        }
-        Long legacyJobId = findLatestLegacyJobForSalesPage(salesPageId, JOB_STATUS_FETCHING);
-        if (legacyJobId != null) {
-            jdbcTemplate.update("UPDATE mois_sales_library_processing_job SET status='FAILED', error_category=?, error_message=?, finished_at=UTC_TIMESTAMP(), updated_at=UTC_TIMESTAMP() WHERE id=?", request.errorCategory(), truncate(request.errorMessage(), 1000), legacyJobId);
-        }
-        jdbcTemplate.update("""
-                INSERT INTO mois_sales_library_page_analysis
-                (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
-                VALUES (?, ?, 'FAILED', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, urlIngestId, legacyJobId, truncate(request.errorMessage(), 1000));
-        log.info("MOIS sales-library espelhou falha nova no legado para auditoria. modulo=MOIS, operacao=mirrorAnalysisFailureToLegacyAudit, pageId={}, executionId={}, legacyUrlIngestId={}, legacyJobId={}",
-                salesPageId, executionId, urlIngestId, legacyJobId);
-    }
-
-    /**
-     * Localiza a URL legada correspondente a uma página operacional, quando ainda existir para auditoria.
-     */
-    private Long findUrlIngestIdForSalesPage(long salesPageId) {
-        return jdbcTemplate.query("""
-                SELECT i.id
-                FROM mois_sales_page sp
-                JOIN mois_sales_library_url_ingest i ON i.workspace_id = sp.workspace_id AND i.url_canonical = sp.url_canonical
-                WHERE sp.id = ?
-                LIMIT 1
-                """, (rs, rowNum) -> rs.getLong("id"), salesPageId).stream().findFirst().orElse(null);
-    }
-
-    /**
-     * Localiza o job legado mais recente de uma página operacional pelo status desejado.
-     */
-    private Long findLatestLegacyJobForSalesPage(long salesPageId, String status) {
-        return jdbcTemplate.query("""
-                SELECT j.id
-                FROM mois_sales_page sp
-                JOIN mois_sales_library_url_ingest i ON i.workspace_id = sp.workspace_id AND i.url_canonical = sp.url_canonical
-                JOIN mois_sales_library_processing_job j ON j.url_ingest_id = i.id
-                WHERE sp.id = ? AND j.status = ?
-                ORDER BY j.updated_at DESC, j.id DESC
-                LIMIT 1
-                """, (rs, rowNum) -> rs.getLong("id"), salesPageId, status).stream().findFirst().orElse(null);
-    }
-
-    /**
      * Cria uma execução operacional pendente de análise usando as novas tabelas como fonte principal.
      */
     private long createOperationalAnalysisExecution(long salesPageId, String reason) {
@@ -642,15 +490,6 @@ public class MoisSalesLibraryService {
         String notes = request.reason() == null || request.reason().isBlank() ? "Status atualizado manualmente via API" : request.reason().trim();
         if (JOB_STATUS_PENDING.equals(normalizedStatus)) {
             jobId = createOperationalAnalysisExecution(pageId, notes);
-            Long urlIngestId = findUrlIngestIdForSalesPage(pageId);
-            if (urlIngestId != null) {
-                long legacyJobId = createPendingJob(urlIngestId);
-                jdbcTemplate.update("""
-                        INSERT INTO mois_sales_library_page_analysis
-                        (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                        """, urlIngestId, legacyJobId, normalizedStatus, notes);
-            }
         } else {
             jdbcTemplate.update("""
                     INSERT INTO mois_sales_page_job_execution
@@ -665,14 +504,6 @@ public class MoisSalesLibraryService {
                     SET current_stage = 'ANALYSIS', current_status = ?, analysis_status = ?, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
                     WHERE id = ?
                     """, normalizedStatus, normalizedStatus, jobId, pageId);
-            Long urlIngestId = findUrlIngestIdForSalesPage(pageId);
-            if (urlIngestId != null) {
-                jdbcTemplate.update("""
-                        INSERT INTO mois_sales_library_page_analysis
-                        (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
-                        VALUES (?, NULL, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                        """, urlIngestId, normalizedStatus, notes);
-            }
         }
 
         log.info("MOIS sales-library status manual atualizado no modelo operacional novo. modulo=MOIS, operacao=updatePageStatus, pageId={}, executionId={}, status={}",
@@ -687,15 +518,6 @@ public class MoisSalesLibraryService {
     public MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse reanalyzePage(long pageId) {
         String notes = "Reanálise solicitada via API";
         long jobId = createOperationalAnalysisExecution(pageId, notes);
-        Long urlIngestId = findUrlIngestIdForSalesPage(pageId);
-        if (urlIngestId != null) {
-            long legacyJobId = createPendingJob(urlIngestId);
-            jdbcTemplate.update("""
-                    INSERT INTO mois_sales_library_page_analysis
-                    (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
-                    VALUES (?, ?, 'PENDING', ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                    """, urlIngestId, legacyJobId, notes);
-        }
         log.info("MOIS sales-library reanálise criada no modelo operacional novo. modulo=MOIS, operacao=reanalyzePage, pageId={}, executionId={}", pageId, jobId);
         return new MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse(pageId, jobId, JOB_STATUS_PENDING, Instant.now());
     }
@@ -718,7 +540,7 @@ public class MoisSalesLibraryService {
                 continue;
             }
             Instant capturedAt = item.capturedAt() == null ? Instant.now() : item.capturedAt();
-            LocalDateTime capturedAtUtc = LocalDateTime.ofInstant(capturedAt, ZoneOffset.UTC);
+            Timestamp capturedAtUtc = Timestamp.from(capturedAt);
             int pageUpsertResult = jdbcTemplate.update(
                     """
                             INSERT INTO mois_sales_page
@@ -770,7 +592,6 @@ public class MoisSalesLibraryService {
             } else {
                 updated++;
             }
-            mirrorOperationalIngestToLegacyAudit(pageId, executionId, capturedAtUtc);
             persisted++;
         }
         return new IngestCounters(persisted, inserted, updated, jobsCreated, skippedWithoutUrl);
@@ -796,53 +617,36 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Espelha a ingestão principal nova em tabelas legadas apenas para auditoria de transição.
+     * Localiza a próxima referência bruta ainda elegível para captura operacional.
      */
-    private void mirrorOperationalIngestToLegacyAudit(long pageId, Long executionId, LocalDateTime capturedAtUtc) {
-        MoisSalesLibraryDtos.SalesLibraryPageResponse page = getPage(pageId);
-        jdbcTemplate.update(
-                """
-                        INSERT INTO mois_sales_library_url_ingest
-                        (workspace_id, source, url_original, url_canonical, title, first_captured_at, last_captured_at, ingest_count, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                        ON DUPLICATE KEY UPDATE
-                            source = VALUES(source),
-                            url_original = VALUES(url_original),
-                            title = COALESCE(NULLIF(VALUES(title), ''), title),
-                            last_captured_at = GREATEST(COALESCE(last_captured_at, VALUES(last_captured_at)), VALUES(last_captured_at)),
-                            ingest_count = ingest_count + 1,
-                            updated_at = UTC_TIMESTAMP()
-                        """,
-                page.workspaceId(), page.source(), page.urlCanonical(), page.urlCanonical(), page.title(), capturedAtUtc, capturedAtUtc);
-        Long urlIngestId = findUrlIngestIdByCanonical(page.workspaceId(), page.urlCanonical());
-        if (urlIngestId != null && executionId != null) {
-            jdbcTemplate.update(
-                    """
-                            INSERT INTO mois_sales_library_processing_job
-                            (url_ingest_id, status, attempts, created_at, updated_at)
-                            VALUES (?, 'PENDING', 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                            """,
-                    urlIngestId);
-        }
-        log.info("MOIS sales-library espelhou ingestão nova no legado para auditoria. modulo=MOIS, operacao=mirrorOperationalIngestToLegacyAudit, pageId={}, executionId={}, legacyUrlIngestId={}",
-                pageId, executionId, urlIngestId);
-    }
-
-    /**
-     * Localiza o item recém-reservado pelo token de claim do worker.
-     */
-    private java.util.Optional<MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob> findClaimedCollectedReferenceHtml(String claimedBy) {
+    private java.util.Optional<MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob> findNextCollectedReferenceHtmlCandidate(String workspaceId, String source) {
         return jdbcTemplate.query(
                 """
-                        SELECT id, collected_reference_id, collection_job_id, reference_id, source, title, url_original, url_source
-                        FROM mois_collected_reference_html_capture
-                        WHERE claimed_by = ?
-                          AND status = 'CLAIMED'
-                        ORDER BY claimed_at DESC, id DESC
+                        SELECT r.id AS collected_reference_id, r.job_id AS collection_job_id, r.reference_id, r.source,
+                               COALESCE(NULLIF(r.product_name, ''), NULLIF(r.title, ''), r.reference_id) AS title,
+                               COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')) AS url_original,
+                               CASE
+                                 WHEN r.sales_page_url IS NOT NULL AND r.sales_page_url <> '' THEN 'SALES_PAGE_URL'
+                                 WHEN r.product_url IS NOT NULL AND r.product_url <> '' THEN 'PRODUCT_URL'
+                                 ELSE 'URL'
+                               END AS url_source
+                        FROM mois_collected_reference r
+                        WHERE r.workspace_id = ?
+                          AND r.source = ?
+                          AND COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')) IS NOT NULL
+                          AND NOT EXISTS (
+                            SELECT 1
+                            FROM mois_sales_page sp
+                            JOIN mois_sales_page_job_execution e ON e.sales_page_id = sp.id
+                            WHERE sp.collected_reference_id = r.id
+                              AND e.stage = 'CAPTURE'
+                              AND e.status IN ('FETCHING', 'CAPTURED')
+                          )
+                        ORDER BY r.collected_at ASC, r.id ASC
                         LIMIT 1
                         """,
                 (rs, rowNum) -> new MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob(
-                        rs.getLong("id"),
+                        0L,
                         rs.getLong("collected_reference_id"),
                         rs.getString("collection_job_id"),
                         rs.getString("reference_id"),
@@ -850,9 +654,114 @@ public class MoisSalesLibraryService {
                         rs.getString("title"),
                         rs.getString("url_original"),
                         rs.getString("url_source")),
-                claimedBy)
+                workspaceId,
+                source)
                 .stream()
                 .findFirst();
+    }
+
+    /**
+     * Converte uma referência bruta em página consolidada e cria a execução de captura reservada.
+     */
+    private MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse claimCollectedReferenceCandidate(
+            MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob candidate,
+            String claimedBy
+    ) {
+        String canonical = canonicalize(candidate.url());
+        jdbcTemplate.update(
+                """
+                        INSERT INTO mois_sales_page
+                        (workspace_id, source, source_job_id, source_reference_id, collected_reference_id, title, url_original, url_canonical,
+                         current_stage, current_status, capture_status, ingest_count, first_seen_at, last_collected_at, created_at, updated_at)
+                        SELECT r.workspace_id, r.source, r.job_id, r.reference_id, r.id,
+                               COALESCE(NULLIF(r.product_name, ''), NULLIF(r.title, ''), r.reference_id),
+                               ?, ?, 'CAPTURE', 'FETCHING', 'FETCHING', 1, UTC_TIMESTAMP(), r.collected_at, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+                        FROM mois_collected_reference r
+                        WHERE r.id = ?
+                        ON DUPLICATE KEY UPDATE
+                            collected_reference_id = COALESCE(collected_reference_id, VALUES(collected_reference_id)),
+                            source_job_id = COALESCE(source_job_id, VALUES(source_job_id)),
+                            source_reference_id = COALESCE(source_reference_id, VALUES(source_reference_id)),
+                            title = COALESCE(NULLIF(VALUES(title), ''), title),
+                            current_stage = 'CAPTURE',
+                            current_status = 'FETCHING',
+                            capture_status = 'FETCHING',
+                            last_error_category = NULL,
+                            last_error_message = NULL,
+                            updated_at = UTC_TIMESTAMP()
+                        """,
+                candidate.url(),
+                canonical,
+                candidate.collectedReferenceId());
+        Long pageId = findSalesPageIdByCanonical(getWorkspaceForCollectedReference(candidate.collectedReferenceId()), canonical);
+        if (pageId == null) {
+            throw new IllegalStateException("Sales page not found after collected reference claim: " + candidate.collectedReferenceId());
+        }
+        jdbcTemplate.update(
+                """
+                        INSERT INTO mois_sales_page_job_execution
+                        (sales_page_id, workspace_id, job_type, stage, status, attempt, claimed_by, input_url, started_at, created_at, updated_at)
+                        SELECT id, workspace_id, 'COLLECTED_REFERENCE_HTML', 'CAPTURE', 'FETCHING', 1, ?, url_canonical, UTC_TIMESTAMP(), UTC_TIMESTAMP(), UTC_TIMESTAMP()
+                        FROM mois_sales_page
+                        WHERE id = ?
+                        """,
+                claimedBy,
+                pageId);
+        Long executionId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        long captureId = executionId == null ? 0L : executionId;
+        jdbcTemplate.update("UPDATE mois_sales_page SET last_job_execution_id = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?", captureId, pageId);
+        log.info("MOIS sales-library referência coletada reservada no modelo operacional novo. modulo=MOIS, operacao=claimCollectedReferenceHtml, pageId={}, executionId={}, collectedReferenceId={}",
+                pageId, captureId, candidate.collectedReferenceId());
+        return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(
+                true,
+                new MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob(captureId, candidate.collectedReferenceId(), candidate.collectionJobId(),
+                        candidate.referenceId(), candidate.source(), candidate.title(), candidate.url(), candidate.urlSource()));
+    }
+
+    /**
+     * Localiza o workspace da referência bruta para buscar a página consolidada recém-criada.
+     */
+    private String getWorkspaceForCollectedReference(long collectedReferenceId) {
+        return jdbcTemplate.query(
+                "SELECT workspace_id FROM mois_collected_reference WHERE id = ? LIMIT 1",
+                (rs, rowNum) -> rs.getString("workspace_id"),
+                collectedReferenceId).stream().findFirst().orElseThrow(() -> new IllegalArgumentException("Collected reference not found: " + collectedReferenceId));
+    }
+
+    /**
+     * Localiza uma execução de captura de referência que ainda pode receber conclusão ou falha.
+     */
+    private CaptureExecution findCollectedReferenceCaptureExecution(long executionId) {
+        List<CaptureExecution> rows = jdbcTemplate.query(
+                """
+                        SELECT id, sales_page_id
+                        FROM mois_sales_page_job_execution
+                        WHERE id = ? AND stage = 'CAPTURE' AND status IN ('FETCHING', 'PENDING')
+                        LIMIT 1
+                        """,
+                (rs, rowNum) -> new CaptureExecution(rs.getLong("id"), rs.getLong("sales_page_id")),
+                executionId);
+        if (rows.isEmpty()) {
+            throw new IllegalArgumentException("Collected reference capture execution not found: " + executionId);
+        }
+        return rows.get(0);
+    }
+
+    /**
+     * Atualiza o estado consolidado da página após a conclusão ou falha da captura de referência.
+     */
+    private void updateSalesPageAfterCollectedReferenceCapture(long pageId, long executionId, String status, Integer httpStatus, String contentType,
+                                                              String finalUrl, String hash, long rawHtmlBytes, String errorCategory, String errorMessage, Instant fetchedAt) {
+        jdbcTemplate.update(
+                """
+                        UPDATE mois_sales_page
+                        SET current_stage = 'CAPTURE', current_status = ?, capture_status = ?, http_status = ?, content_type = ?, url_final = ?,
+                            html_sha256 = COALESCE(?, html_sha256), html_bytes = ?, last_error_category = ?, last_error_message = ?,
+                            last_job_execution_id = ?, last_captured_at = ?, updated_at = UTC_TIMESTAMP()
+                        WHERE id = ?
+                        """,
+                status, status, httpStatus, truncate(contentType, 255), truncate(finalUrl, 1024), hash, rawHtmlBytes,
+                truncate(errorCategory, 120), truncate(errorMessage, 1000), executionId, Timestamp.from(fetchedAt), pageId);
     }
 
     /**
@@ -984,58 +893,6 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Resolve o identificador legado de URL a partir do identificador operacional novo para ações ainda em escrita dupla.
-     */
-    private long findUrlIngestIdForOperationalPage(long pageId) {
-        List<Long> rows = jdbcTemplate.query("""
-                SELECT i.id
-                FROM mois_sales_page sp
-                JOIN mois_sales_library_url_ingest i
-                  ON i.workspace_id = sp.workspace_id AND i.url_canonical = sp.url_canonical
-                WHERE sp.id = ?
-                LIMIT 1
-                """, (rs, rowNum) -> rs.getLong("id"), pageId);
-        if (!rows.isEmpty()) {
-            return rows.get(0);
-        }
-        Long legacyExists = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE id = ?", Long.class, pageId);
-        if (legacyExists != null && legacyExists > 0) {
-            return pageId;
-        }
-        throw new IllegalArgumentException("Page not found: " + pageId);
-    }
-
-    /**
-     * Localiza uma URL ingerida pelo workspace e identificador canônico para espelhar atualizações no modelo novo.
-     */
-    private Long findUrlIngestIdByCanonical(String workspaceId, String canonical) {
-        return jdbcTemplate.query(
-                """
-                        SELECT id
-                        FROM mois_sales_library_url_ingest
-                        WHERE workspace_id = ? AND url_canonical = ?
-                        LIMIT 1
-                        """,
-                (rs, rowNum) -> rs.getLong("id"),
-                workspaceId,
-                canonical
-        ).stream().findFirst().orElse(null);
-    }
-
-    /**
-     * Cria um job pendente para uma URL ingerida e retorna o identificador criado.
-     */
-    private long createPendingJob(long urlIngestId) {
-        jdbcTemplate.update(
-                "INSERT INTO mois_sales_library_processing_job (url_ingest_id, status, attempts, created_at, updated_at) VALUES (?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())",
-                urlIngestId,
-                JOB_STATUS_PENDING
-        );
-        Long id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
-        return id == null ? 0L : id;
-    }
-
-    /**
      * Normaliza uma URL para deduplicação por esquema, host e caminho.
      */
     private String canonicalize(String rawUrl) {
@@ -1065,6 +922,9 @@ public class MoisSalesLibraryService {
     }
 
     private record IngestCounters(int persisted, int inserted, int updated, int jobsCreated, int skippedWithoutUrl) {
+    }
+
+    private record CaptureExecution(long executionId, long salesPageId) {
     }
 
     private record CollectedReferenceForIngest(

@@ -37,6 +37,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
     private static final String REQUIRED_TEXT_MODEL = "gpt-5.2";
+    private static final String REQUIRED_LANDING_WIREFRAME_MODEL = "gpt-5.4";
     private static final String REQUIRED_LANDING_DESIGN_PRESET_MODEL = "gpt-5.5";
     private static final String REQUIRED_LANDING_HTML_MODEL = "gpt-5.1-codex";
     private static final int TRANSIENT_ERROR_MAX_ATTEMPTS = 3;
@@ -1448,6 +1449,9 @@ public class ExperimentPipelineOpenAiClient {
     private String requiredModelForSection(ExperimentPipelineJobDto job) {
         if (isLandingHtmlSection(job)) {
             return REQUIRED_LANDING_HTML_MODEL;
+        }
+        if (isLandingLayoutSection(job)) {
+            return REQUIRED_LANDING_WIREFRAME_MODEL;
         }
         if (isLandingDesignPresetSection(job)) {
             return REQUIRED_LANDING_DESIGN_PRESET_MODEL;

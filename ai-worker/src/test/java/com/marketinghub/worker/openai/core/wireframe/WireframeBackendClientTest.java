@@ -53,6 +53,7 @@ class WireframeBackendClientTest {
                         "prompts/geralanding/landing-page-wireframe.md",
                         "prompts/geralanding/landing-page-wireframe-schema.json",
                         "experiment_pipeline_landing_page_wireframe",
+                        "gpt-5.4",
                         Duration.ofSeconds(5)),
                 objectMapper);
         StageExecution<WireframeInput> execution = new StageExecution<>(
@@ -99,6 +100,7 @@ class WireframeBackendClientTest {
                         "prompts/geralanding/landing-page-wireframe.md",
                         "prompts/geralanding/landing-page-wireframe-schema.json",
                         "experiment_pipeline_landing_page_wireframe",
+                        "gpt-5.4",
                         Duration.ofSeconds(5)),
                 objectMapper);
         StageExecution<WireframeInput> execution = new StageExecution<>(
@@ -208,6 +210,37 @@ class WireframeBackendClientTest {
                 .contains("maxVisualHeight")
                 .contains("layoutRole")
                 .contains("relacaoComCta");
+    }
+
+    /** Deve montar o request da etapa wireframe usando o modelo dedicado gpt-5.4. */
+    @Test
+    void wireframePromptBuilderShouldUseDedicatedGpt54Model() throws Exception {
+        WireframeWorkerProperties properties = new WireframeWorkerProperties(
+                true,
+                5,
+                "http://backend",
+                "/api",
+                "prompts/geralanding/landing-page-wireframe.md",
+                "prompts/geralanding/landing-page-wireframe-schema.json",
+                "experiment_pipeline_landing_page_wireframe",
+                "gpt-5.4",
+                Duration.ofSeconds(5));
+        WireframePromptBuilder builder = new WireframePromptBuilder(objectMapper, properties);
+        StageExecution<WireframeInput> execution = new StageExecution<>(
+                "job-ia-1",
+                12L,
+                "landing-page-wireframe",
+                "INICIADO",
+                Instant.parse("2026-05-29T10:00:00Z"),
+                new WireframeInput(12L, "landing-page-wireframe", "job-ia-1", Map.of(
+                        "NICHE_NAME", "nicho",
+                        "PERSONA_NAME", "persona")));
+
+        var request = builder.build(execution);
+        JsonNode body = objectMapper.readTree(request.requestBodyJson());
+
+        assertThat(request.model()).isEqualTo("gpt-5.4");
+        assertThat(body.path("model").asText()).isEqualTo("gpt-5.4");
     }
 
 }

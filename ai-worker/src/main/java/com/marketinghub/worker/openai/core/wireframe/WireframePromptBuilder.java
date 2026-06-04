@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
-import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 
@@ -19,18 +18,15 @@ import org.springframework.core.io.ClassPathResource;
 public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput> {
 
     private final ObjectMapper objectMapper;
-    private final OpenAiClientProperties openAiProperties;
     private final WireframeWorkerProperties wireframeProperties;
     private final PromptTemplateResolver promptTemplateResolver;
 
-    /** Inicializa o builder com serializador, propriedades OpenAI e propriedades da etapa wireframe. */
+    /** Inicializa o builder com serializador e propriedades da etapa wireframe. */
     public WireframePromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             WireframeWorkerProperties wireframeProperties
     ) {
         this.objectMapper = objectMapper;
-        this.openAiProperties = openAiProperties;
         this.wireframeProperties = wireframeProperties;
         this.promptTemplateResolver = new PromptTemplateResolver(this::loadResource, this::toJsonOrText);
     }
@@ -47,7 +43,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
 
         return new OpenAiRequest(
-                openAiProperties.model(),
+                wireframeProperties.model(),
                 prompt,
                 requestBodyJson,
                 wireframeProperties.schemaName(),
@@ -76,7 +72,7 @@ public class WireframePromptBuilder implements StagePromptBuilder<WireframeInput
             text.put("format", format);
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", openAiProperties.model());
+            body.put("model", wireframeProperties.model());
             body.put("input", prompt);
             body.put("text", text);
 

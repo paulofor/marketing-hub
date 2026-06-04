@@ -3422,3 +3422,10 @@
 - tela ajustada: `/pipelines` passou a exibir status `OK`, `ATENÇÃO` ou `BLOQUEADO`, contagem esperada/configurada, divergências com causa-raiz e ação recomendada, código do banco e código canônico lado a lado, além de campos estruturais protegidos para pipelines oficiais.
 - documentação de contrato: criado `docs/swagger/pipeline-swagger.yaml` e atualizado o índice `docs/swagger/README.md`.
 - validação automatizada: testes unitários de `PipelineServiceTest` cobrem exclusão de pipeline oficial, remoção/alteração de etapa oficial, diagnóstico de etapa ausente/extra, aliases canônicos e modelo OpenAI inexistente.
+
+## 2026-06-04 — Modelo 5.4 no Wireframe do GeraLanding
+
+- solicitação: configurar a etapa `landing-page-wireframe` do GeraLanding para ser gerada pelo modelo `gpt-5.4`.
+- causa-raiz/objetivo: o wireframe define a estrutura comercial que reduz esforço de entendimento e orienta copy, imagens, preset visual e HTML final; por isso precisa de modelo dedicado em vez de depender do `openai.model` global.
+- correção aplicada: o Worker AI passou a ter `wireframe.worker.model` com padrão `gpt-5.4`, o builder da etapa usa esse modelo no `OpenAiRequest` e no corpo da Responses API, e o cliente legado do pipeline também força `gpt-5.4` quando a seção é `landing-page-wireframe`.
+- validação automatizada: testes cobrem o payload dedicado do `WireframePromptBuilder` e o enforcement do modelo `gpt-5.4` no cliente legado do pipeline.

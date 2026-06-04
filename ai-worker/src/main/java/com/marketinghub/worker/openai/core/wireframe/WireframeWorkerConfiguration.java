@@ -41,10 +41,9 @@ public class WireframeWorkerConfiguration {
     @Bean
     public WireframePromptBuilder wireframePromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             WireframeWorkerProperties wireframeProperties
     ) {
-        return new WireframePromptBuilder(objectMapper, openAiProperties, wireframeProperties);
+        return new WireframePromptBuilder(objectMapper, wireframeProperties);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a etapa wireframe. */

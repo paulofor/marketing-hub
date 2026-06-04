@@ -884,6 +884,47 @@ class ExperimentPipelineOpenAiClientTest {
     }
 
     @Test
+    void enforcesGpt54ModelForLandingWireframePipelineCall() throws Exception {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        String openAiText = MAPPER.writeValueAsString(Map.of(
+                "landingPageWireframe", Map.of(
+                        "pageGoal", "captura",
+                        "variantLayoutId", "form-first",
+                        "sectionOrder", List.of(
+                                Map.of("sectionId", "hero", "surfaceSpec", Map.of(
+                                        "surfaceToken", "surface-hero",
+                                        "style", "band",
+                                        "contrastMode", "high"))),
+                        "consistencyChecks", List.of())));
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef, openAiText)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                16L,
+                "landing-page-wireframe",
+                "gpt-4o-mini",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-4o-mini",
+                          "input": [
+                            {"role": "user", "content": "Prompt de wireframe"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        assertThat(payload.get("model")).isEqualTo("gpt-5.4");
+    }
+
+    @Test
     void enforcesGpt51CodexModelForLandingHtmlPipelineCall() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(

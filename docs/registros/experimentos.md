@@ -1,3 +1,15 @@
+## 2026-06-04 — GeraLanding: disparo automático de Gera Prompt Imagem após Gera Copy
+
+- solicitação: no pipeline do GeraLanding, disparar automaticamente a etapa `Gera Prompt Imagem` ao final bem-sucedido da etapa `Gera Copy`, seguindo o padrão já existente de `Gera Prompt Imagem` para `Gera Imagem`.
+- causa-raiz: a etapa `landing-page-image-planning` só era iniciada por comando manual ou por jobs já enfileirados, enquanto `landing-page-image-generation` já era encadeada automaticamente após `landing-page-image-planning`; isso deixava uma quebra operacional entre copy e prompts de imagem.
+- foi feito: ao concluir `landing-page-copy` sem erro, o backend salva o artefato de copy no experimento e cria uma nova execução `INICIADO` para `landing-page-image-planning` com `promptTemplateId=auto/copy`.
+- validação: teste unitário da etapa copy atualizado para garantir que o callback de sucesso persiste o artefato e enfileira a próxima etapa automática, preservando o comportamento de não avançar em falha.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/service/GeraLandingCopyStageExecutionService.java
+  - backend/ads-service/src/test/java/com/marketinghub/geralanding/copy/service/GeraLandingCopyStageExecutionServiceTest.java
+  - docs/canonical/geralanding-arquitetura-canon.v1.md
+  - docs/registros/experimentos.md
+
 
 ## 2026-06-03 — Decisão de Quality Gate visual do GeraLanding
 - solicitação: registrar no plano que a validação de qualidade da landing deve usar um modelo de visão.

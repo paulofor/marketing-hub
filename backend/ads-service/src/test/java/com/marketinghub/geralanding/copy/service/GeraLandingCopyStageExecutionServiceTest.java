@@ -142,7 +142,7 @@ class GeraLandingCopyStageExecutionServiceTest {
         verify(executionRepository).save(execution);
     }
 
-    /** Deve concluir com sucesso, gravar métricas e persistir o artefato final de copy no experimento. */
+    /** Deve concluir com sucesso, gravar métricas, persistir o artefato final de copy e enfileirar prompts de imagem. */
     @Test
     void markCompletedFromResponseShouldPersistCopyArtifactOnSuccess() {
         ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
@@ -150,6 +150,7 @@ class GeraLandingCopyStageExecutionServiceTest {
         GeraLandingCopyStageExecutionService service =
                 new GeraLandingCopyStageExecutionService(experimentRepository, executionRepository, new ObjectMapper());
         Experiment experiment = mock(Experiment.class);
+        when(experiment.getId()).thenReturn(88L);
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(88L)
                 .experiment(experiment)
@@ -167,6 +168,14 @@ class GeraLandingCopyStageExecutionServiceTest {
         assertEquals("CONCLUIDO", execution.getStatus());
         verify(experiment).setLandingPageCopy("{\"landingPageCopy\":{}}");
         verify(experimentRepository).save(experiment);
+        verify(executionRepository).save(argThat(nextExecution ->
+                nextExecution.getExperimentId().equals(88L)
+                        && nextExecution.getExperiment() == experiment
+                        && nextExecution.getStageCode().equals("landing-page-image-planning")
+                        && nextExecution.getStatus().equals("INICIADO")
+                        && nextExecution.getPromptTemplateId().equals("auto/copy")
+                        && nextExecution.getPromptContent().equals("Gera Prompt Imagem iniciado automaticamente após o Gera Copy.")
+                        && nextExecution.getIdJob() != null));
     }
 
     /** Deve marcar falha sem sobrescrever o artefato final de copy no experimento. */

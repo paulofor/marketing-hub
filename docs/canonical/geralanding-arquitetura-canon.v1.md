@@ -12,16 +12,22 @@ flowchart LR
     SERV["Pacote: geralanding.<etapa>.service"]
     SERV_INT["Pacotes internos: geralanding.<etapa>.service.*"]
     PROV["Pacote: geralanding.<etapa>.provisorio"]
-    EXP["Pacote: com.marketinghub.experiment (Experiment + ExperimentRepository)"]
-    EXEC["Pacote: com.marketinghub.geralanding.execution (GeraLandingStageExecution + GeraLandingStageExecutionRepository)"]
+    EXP["Tabela experiment: Experiment + ExperimentRepository"]
+    HYP["Tabela hypothesis: HypothesisRepository"]
+    IMG["Tabela framework_image_generation_job: FrameworkImageGenerationJobRepository"]
+    EXEC["Tabela gera_landing_stage_execution: GeraLandingStageExecution + GeraLandingStageExecutionRepository"]
 
     WEB -->|pode usar| SERV
     SERV -->|pode usar| SERV_INT
     SERV_INT -->|pode usar| SERV
     SERV_INT -->|pode usar| SERV_INT
     SERV -->|pode usar| EXP
+    SERV -->|pode usar| HYP
+    SERV -->|pode usar| IMG
     SERV -->|pode usar| EXEC
     SERV_INT -->|pode usar| EXP
+    SERV_INT -->|pode usar| HYP
+    SERV_INT -->|pode usar| IMG
     SERV_INT -->|pode usar| EXEC
 ```
 
@@ -32,11 +38,11 @@ Regras arquiteturais refletidas (ArchUnit):
 - `GeraLandingStageExecutionService` não pode chamar assinaturas legadas dos assemblers de wireframe/copy/design preset.
 - `GeraLandingStageExecutionService` deve chamar explicitamente as assinaturas canônicas dos assemblers.
 - `WireframeProvisionalHtmlAssembler` deve residir em `geralanding.wireframe`, `DesignPresetProvisionalHtmlAssembler` deve residir em `geralanding.presetdesign.provisorio` para manter o montador provisório dentro da etapa preset design, e os endpoints/serviços backend da etapa devem residir em `geralanding.presetdesign` seguindo a estrutura canônica de `wireframe`.
-- Serviços em `com.marketinghub.geralanding..service..` podem depender de classes da árvore interna de serviço da mesma etapa (`geralanding.<etapa>.service` e `geralanding.<etapa>.service.*`), de classes provisórias da mesma etapa (`geralanding.<etapa>.provisorio` e `geralanding.<etapa>.provisorio.*`) e de `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository` e do builder de `GeraLandingStageExecution` no domínio `com.marketinghub`.
+- Serviços em `com.marketinghub.geralanding..service..` podem depender de classes da árvore interna de serviço da mesma etapa (`geralanding.<etapa>.service` e `geralanding.<etapa>.service.*`), de classes provisórias da mesma etapa (`geralanding.<etapa>.provisorio` e `geralanding.<etapa>.provisorio.*`), de `Experiment`, de `GeraLandingStageExecution`, do builder de `GeraLandingStageExecution` e somente dos repositories das quatro tabelas canônicas do GeraLanding: `ExperimentRepository` (`experiment`), `HypothesisRepository` (`hypothesis`), `FrameworkImageGenerationJobRepository` (`framework_image_generation_job`) e `GeraLandingStageExecutionRepository` (`gera_landing_stage_execution`).
 - `geralanding.*.web` só pode acessar `geralanding.*.web` e `geralanding.*.service` da mesma etapa.
 - Cada pacote direto `geralanding.<etapa>.web` de backend deve conter uma única classe canônica `Backend<Etapa>Controller`, anotada com `@RestController` e `@RequestMapping("/api")`.
 - `geralanding.*.provisorio` só pode acessar `geralanding.*.provisorio` da mesma etapa.
-- `geralanding.*.service` só pode acessar classes `com.marketinghub` permitidas: classes da árvore interna `service` da mesma etapa (`service` e `service.*`), classes da árvore `provisorio` da mesma etapa (`provisorio` e `provisorio.*`), `Experiment`, `ExperimentRepository`, `GeraLandingStageExecution`, `GeraLandingStageExecutionRepository` e o builder de `GeraLandingStageExecution`.
+- `geralanding.*.service` só pode acessar classes `com.marketinghub` permitidas: classes da árvore interna `service` da mesma etapa (`service` e `service.*`), classes da árvore `provisorio` da mesma etapa (`provisorio` e `provisorio.*`), `Experiment`, `GeraLandingStageExecution`, o builder de `GeraLandingStageExecution` e somente os repositories das tabelas `experiment`, `hypothesis`, `framework_image_generation_job` e `gera_landing_stage_execution`.
 - Cada pacote direto `geralanding.<etapa>.service` de backend deve conter a classe canônica `Backend<Etapa>Service`, anotada com `@Service`.
 - Cada pacote direto `geralanding.<etapa>.service` de backend deve possuir os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta`.
 - Os subpacotes obrigatórios `detailStageExecution`, `listStageExecutions`, `pending`, `recebePrompt` e `recebeResposta` devem conter somente tipos Java declarados como `record`, preservando DTOs contratuais imutáveis para as bordas de cada etapa.

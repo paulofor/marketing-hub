@@ -76,6 +76,7 @@ public class PipelineService {
     @Transactional
     public Pipeline create(PipelineRequest request) {
         validatePipelineModule(request.getModule());
+        validateOfficialPipelineCreate(request);
         Pipeline pipeline = new Pipeline();
         applyPipelineRequest(pipeline, request);
         return pipelineRepository.save(pipeline);
@@ -230,6 +231,19 @@ public class PipelineService {
     private void validatePipelineModule(String module) {
         if (!definitionRegistry.validModules().contains(module)) {
             throw badRequest("Módulo de pipeline desconhecido: " + module);
+        }
+    }
+
+    /**
+     * Bloqueia criação de pipeline oficial com módulo divergente do contrato canônico.
+     */
+    private void validateOfficialPipelineCreate(PipelineRequest request) {
+        PipelineDefinition definition = definitionRegistry.findByPipelineCode(request.getCode()).orElse(null);
+        if (definition != null && !definition.module().equals(request.getModule())) {
+            throw badRequest("Pipeline oficial deve usar o módulo canônico "
+                    + definition.module()
+                    + ": "
+                    + request.getCode());
         }
     }
 
@@ -443,7 +457,7 @@ public class PipelineService {
             return null;
         }
         return openAiModelRepository.findById(openAiModelId)
-                .orElseThrow(() -> new EntityNotFoundException("Modelo OpenAI não encontrado: " + openAiModelId));
+                .orElseThrow(() -> badRequest("Modelo OpenAI não encontrado: " + openAiModelId));
     }
 
     /**

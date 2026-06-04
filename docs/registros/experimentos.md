@@ -3393,3 +3393,10 @@
 - causa-raiz/objetivo: o endpoint `/models` da OpenAI exige autenticação Bearer; manter o botão ativo criava uma ação que aparentava sincronizar dados oficiais, mas falhava quando `OPENAI_API_KEY` não estava configurada.
 - correção aplicada: removido o card “Catálogo oficial (OpenAI)” e a chamada frontend `/api/modelos/openai/catalogo/v1`, preservando apenas a tabela do catálogo interno `openai_model`, que é a fonte operacional dos preços por 1 milhão de tokens.
 - impacto esperado: a tela fica mais simples e evita uma ação indisponível, mantendo foco no cadastro interno de preços usado nos cálculos de custo dos experimentos.
+
+## 2026-06-04 — Modelo 5.5 no Preset Design do GeraLanding
+
+- solicitação: configurar a etapa `landing-page-design-preset` do GeraLanding para usar o modelo `gpt-5.5`.
+- causa-raiz/objetivo: o preset visual precisa de maior capacidade de julgamento para transformar wireframe, copy e imagens em acabamento comercial mais premium, preservando o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+- correção aplicada: o Worker AI passou a ter modelo específico `presetdesign.worker.model`, com padrão `gpt-5.5`, e o builder da etapa usa esse modelo no `OpenAiRequest` e no corpo da Responses API; o cliente legado do pipeline também força `gpt-5.5` quando a seção é `landing-page-design-preset`.
+- validação automatizada: teste do `PresetDesignPromptBuilder` atualizado para garantir que o payload enviado à OpenAI declara `gpt-5.5` na etapa de preset design.

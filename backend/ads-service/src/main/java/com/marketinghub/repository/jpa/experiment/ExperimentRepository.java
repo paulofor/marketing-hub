@@ -26,7 +26,19 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findByStatus(ExperimentStatus status);
     List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
 
+    /**
+     * Busca o experimento vinculado diretamente ao slug do fluxo interno do Lead Portal.
+     */
     Optional<Experiment> findFirstByLeadPortalFlowSlug(String slug);
+
+    /**
+     * Busca o experimento publicado no Lead Portal externo pelo slug presente na URL final da landing.
+     */
+    @Query("""
+            select e from Experiment e
+            where e.followUpActionUrl like concat(concat('%/api/flows/', :slug), '/page%')
+            """)
+    Optional<Experiment> findFirstByFollowUpActionUrlFlowSlug(@Param("slug") String slug);
 
     @Query("""
             select distinct e from Experiment e

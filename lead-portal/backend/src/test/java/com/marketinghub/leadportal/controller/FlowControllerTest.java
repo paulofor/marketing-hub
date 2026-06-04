@@ -31,6 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Testa o contrato público de criação, consulta e entrega standalone de fluxos do Lead Portal.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -51,6 +54,9 @@ class FlowControllerTest {
     @Autowired
     private MeterRegistry meterRegistry;
 
+    /**
+     * Limpa fluxos, acessos e métricas entre os cenários de teste.
+     */
     @BeforeEach
     void clearFlows() {
         flowService.list().stream()
@@ -61,6 +67,9 @@ class FlowControllerTest {
         meterRegistry.clear();
     }
 
+    /**
+     * Valida criação e consulta básica de fluxo com perguntas.
+     */
     @Test
     void upsertAndRetrieveFlow() throws Exception {
         UpsertFlowRequest request = buildRequest();
@@ -79,6 +88,9 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.prompt").doesNotExist());
     }
 
+    /**
+     * Valida entrega de fluxo simples do catálogo e registro de acesso.
+     */
     @Test
     void simpleFlowIsServedFromCatalogWithoutDatabaseRoundtrip() throws Exception {
         mockMvc.perform(get("/api/flows/formulario-simples-personal-trainer"))
@@ -97,6 +109,9 @@ class FlowControllerTest {
     }
 
 
+    /**
+     * Valida captura do cookie de visitante no acesso ao fluxo.
+     */
     @Test
     void getFlowRegistersVisitorCookieOnAccess() throws Exception {
         mockMvc.perform(put("/api/flows/diagnostico")
@@ -115,6 +130,9 @@ class FlowControllerTest {
                 .isEqualTo("visitor-123");
     }
 
+    /**
+     * Valida captura do código de campanha vindo da query string.
+     */
     @Test
     void getFlowCapturesCampaignCodeFromQueryParameter() throws Exception {
         mockMvc.perform(put("/api/flows/diagnostico")
@@ -132,6 +150,9 @@ class FlowControllerTest {
     }
 
 
+    /**
+     * Valida exposição de acessos do fluxo em métricas Prometheus.
+     */
     @Test
     void flowAccessesAreExposedAsPrometheusMetrics() throws Exception {
         mockMvc.perform(put("/api/flows/diagnostico")
@@ -194,6 +215,9 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.slug").value("diagnostico-com-estilo"));
     }
 
+    /**
+     * Valida publicação de HTML customizado sem perguntas.
+     */
     @Test
     void upsertFlowAllowsCustomFormWithoutQuestions() throws Exception {
         UpsertFlowRequest request = new UpsertFlowRequest();
@@ -211,6 +235,9 @@ class FlowControllerTest {
                 .andExpect(jsonPath("$.questions", hasSize(0)));
     }
 
+    /**
+     * Valida bloqueio de fluxo sem perguntas quando não há HTML customizado.
+     */
     @Test
     void upsertFlowRequiresQuestionsWhenCustomFormMissing() throws Exception {
         UpsertFlowRequest request = new UpsertFlowRequest();
@@ -224,6 +251,9 @@ class FlowControllerTest {
     }
 
 
+    /**
+     * Valida entrega HTML standalone com analytics injetado sem fetch JSON adicional.
+     */
     @Test
     void getStandaloneFlowPageReturnsHtmlDocumentWithoutJsonFetch() throws Exception {
         UpsertFlowRequest request = buildRequest();
@@ -241,9 +271,15 @@ class FlowControllerTest {
         mockMvc.perform(get("/api/flows/landing-direta/page"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
-                .andExpect(content().string(containsString("<body>Landing direta</body>")));
+                .andExpect(content().string(containsString("Landing direta")))
+                .andExpect(content().string(containsString("data-mh-landing-analytics=\"true\"")))
+                .andExpect(content().string(containsString("/api/flows/")))
+                .andExpect(content().string(containsString("/page-analytics")));
     }
 
+    /**
+     * Valida conflito quando a página standalone é solicitada para HTML de iframe.
+     */
     @Test
     void getStandaloneFlowPageReturnsConflictWhenFlowUsesIframeHtml() throws Exception {
         UpsertFlowRequest request = buildRequest();
@@ -260,6 +296,9 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("HTML standalone")));
     }
 
+    /**
+     * Monta um payload mínimo reutilizável para criação de fluxo.
+     */
     private UpsertFlowRequest buildRequest() {
         FlowQuestionRequest question = new FlowQuestionRequest();
         question.setTitle("Qual o seu nome?");

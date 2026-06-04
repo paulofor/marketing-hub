@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useOpenAiModelCatalog } from "../../api/openAiModel/useOpenAiModelCatalog";
 import PageTitle from "../../components/PageTitle";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 

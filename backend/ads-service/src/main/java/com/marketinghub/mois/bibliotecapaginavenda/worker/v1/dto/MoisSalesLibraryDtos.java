@@ -193,15 +193,78 @@ public final class MoisSalesLibraryDtos {
     ) {
     }
 
+    /**
+     * Representa o estado atual consolidado de uma página de venda no modelo novo.
+     */
     public record SalesLibraryPageResponse(
             long pageId,
             String workspaceId,
             String source,
             String urlCanonical,
             String title,
+            String currentStage,
+            String currentStatus,
+            String captureStatus,
             String analysisStatus,
+            String urlFinal,
+            Integer httpStatus,
+            String htmlSha256,
+            long htmlBytes,
             BigDecimal scoreTotal,
+            String offerSummary,
+            String mechanismSummary,
+            String promiseSummary,
+            String proofSummary,
+            String lastErrorCategory,
+            String lastErrorMessage,
+            Long lastJobExecutionId,
+            Instant lastCapturedAt,
             Instant analyzedAt,
+            Instant updatedAt
+    ) {
+    }
+
+    /**
+     * Representa os contadores globais consolidados da Biblioteca de Páginas de Vendas.
+     */
+    public record SalesLibraryPageSummaryResponse(
+            String workspaceId,
+            long total,
+            long pending,
+            long capturing,
+            long captured,
+            long analyzed,
+            long failed,
+            long blockedCooldown,
+            long hotmart,
+            long clickbank,
+            Instant updatedAt
+    ) {
+    }
+
+    /**
+     * Representa uma execução auditável da página no histórico consolidado.
+     */
+    public record SalesLibraryPageExecutionResponse(
+            long executionId,
+            long pageId,
+            String jobType,
+            String stage,
+            String status,
+            int attempt,
+            String inputUrl,
+            String finalUrl,
+            String redirectRootUrl,
+            Integer httpStatus,
+            String contentType,
+            long rawHtmlBytes,
+            long screenshotBytes,
+            BigDecimal scoreTotal,
+            String errorCategory,
+            String errorMessage,
+            Instant startedAt,
+            Instant finishedAt,
+            Instant createdAt,
             Instant updatedAt
     ) {
     }

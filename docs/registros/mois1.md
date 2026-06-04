@@ -930,3 +930,22 @@ Arquivos alterados:
 Arquivos alterados:
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
 - `docs/registros/mois1.md`
+
+## 2026-06-04 — Fase 4 do pipeline de páginas de vendas em duas tabelas
+- migrada a leitura operacional da Biblioteca de Páginas de Vendas para o modelo consolidado `mois_sales_page`, incluindo listagem, detalhe e resumo global de páginas por workspace.
+- criado endpoint de resumo global baseado em `mois_sales_page` para total de páginas, pendentes, em captura, capturadas, analisadas, falhas, bloqueadas por cooldown e totais por fonte Hotmart/ClickBank, eliminando contadores derivados apenas da página carregada no frontend.
+- criado endpoint de histórico consolidado baseado em `mois_sales_page_job_execution` para explicar as execuções de captura/análise por página a partir do modelo novo.
+- atualizadas as telas `/mois/sales-pages-library`, `/mois/sales-pages-library/pipeline` e `/mois/sales-pages-library/:pageId` para usar os dados consolidados, exibir contadores globais reais e montar o histórico a partir das execuções novas.
+- preservadas ações transicionais de reanálise e atualização manual com resolução do identificador legado enquanto a escrita dupla ainda estiver ativa.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryControllerTest.java`
+- `frontend/src/api/mois/types.ts`
+- `frontend/src/api/mois/useMoisSalesLibrary.ts`
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/registros/mois1.md`

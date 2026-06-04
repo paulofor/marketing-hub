@@ -5,8 +5,10 @@ import type {
   MoisSalesLibraryJobPageResponse,
   MoisSalesLibraryPage,
   MoisSalesLibraryPageAnalysis,
+  MoisSalesLibraryPageExecution,
   MoisSalesLibraryPageListResponse,
   MoisSalesLibraryPageSnapshot,
+  MoisSalesLibraryPageSummary,
   MoisSalesLibraryReanalyzeResponse,
   MoisSalesLibrarySnapshotCaptureResponse,
   MoisSalesLibraryStatusUpdateResponse,
@@ -78,6 +80,19 @@ export function useMoisSalesLibraryPages(
   });
 }
 
+export function useMoisSalesLibraryPageSummary(workspaceId: string) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+    queryFn: async () => {
+      const { data } = await axios.get<MoisSalesLibraryPageSummary>(
+        "/api/mois/sales-library/pages/summary",
+        { params: { workspaceId } },
+      );
+      return data;
+    },
+  });
+}
+
 export function useMoisSalesLibraryPageAnalysis(pageId?: number) {
   return useQuery({
     queryKey: ["mois", "sales-library", "analysis", pageId],
@@ -107,6 +122,9 @@ export function useReanalyzeMoisSalesLibraryPage(workspaceId: string) {
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "jobs", workspaceId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+      });
     },
   });
 }
@@ -134,6 +152,17 @@ export function useUpdateMoisSalesLibraryPageStatus(workspaceId: string) {
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "analysis", variables.pageId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "mois",
+          "sales-library",
+          "page-executions",
+          variables.pageId,
+        ],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+      });
     },
   });
 }
@@ -153,6 +182,9 @@ export function useCaptureMoisSalesLibrarySnapshots(workspaceId: string) {
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "pages", workspaceId],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+      });
     },
   });
 }
@@ -163,12 +195,16 @@ export function getSalesLibraryJobBadgeClass(job: {
 }) {
   switch (job.status || job.analysisStatus) {
     case "DONE":
+    case "CAPTURED":
+    case "ANALYZED":
       return "bg-success-subtle text-success-emphasis";
     case "FAILED":
       return "bg-danger-subtle text-danger-emphasis";
     case "FETCHING":
+    case "CAPTURING":
       return "bg-primary-subtle text-primary-emphasis";
     case "PENDING":
+    case "BLOCKED_COOLDOWN":
       return "bg-warning-subtle text-warning-emphasis";
     default:
       return "bg-secondary-subtle text-secondary-emphasis";
@@ -195,6 +231,19 @@ export function useMoisSalesLibraryPageSnapshots(pageId?: number) {
     queryFn: async () => {
       const { data } = await axios.get<MoisSalesLibraryPageSnapshot[]>(
         `/api/mois/sales-library/pages/${pageId}/snapshots`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useMoisSalesLibraryPageExecutions(pageId?: number) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "page-executions", pageId],
+    enabled: Boolean(pageId),
+    queryFn: async () => {
+      const { data } = await axios.get<MoisSalesLibraryPageExecution[]>(
+        `/api/mois/sales-library/pages/${pageId}/executions`,
       );
       return data;
     },

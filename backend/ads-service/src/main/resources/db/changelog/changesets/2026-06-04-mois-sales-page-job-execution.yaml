@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-mois-sales-page-job-execution-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            tableExists:
+              tableName: mois_sales_page_job_execution
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page_job_execution (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                sales_page_id BIGINT NOT NULL,
+                workspace_id VARCHAR(120) NOT NULL,
+                job_type VARCHAR(40) NOT NULL,
+                stage VARCHAR(40) NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                attempt INT NOT NULL DEFAULT 1,
+                claimed_by VARCHAR(120) NULL,
+                input_url VARCHAR(1024) NULL,
+                final_url VARCHAR(1024) NULL,
+                redirect_root_url VARCHAR(1024) NULL,
+                http_status INT NULL,
+                content_type VARCHAR(255) NULL,
+                raw_html LONGTEXT NULL,
+                raw_html_sha256 VARCHAR(64) NULL,
+                raw_html_bytes BIGINT NOT NULL DEFAULT 0,
+                screenshot_blob LONGBLOB NULL,
+                screenshot_bytes BIGINT NOT NULL DEFAULT 0,
+                score_total DECIMAL(6,2) NULL,
+                sections_json LONGTEXT NULL,
+                copy_json LONGTEXT NULL,
+                visual_json LONGTEXT NULL,
+                image_json LONGTEXT NULL,
+                request_payload_json LONGTEXT NULL,
+                response_payload_json LONGTEXT NULL,
+                error_category VARCHAR(120) NULL,
+                error_message VARCHAR(1000) NULL,
+                started_at DATETIME NULL,
+                finished_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mois_sales_page_job_page_created (sales_page_id, created_at),
+                KEY idx_mois_sales_page_job_status (workspace_id, stage, status, updated_at),
+                KEY idx_mois_sales_page_job_type_status (workspace_id, job_type, status, updated_at),
+                CONSTRAINT fk_mois_sales_page_job_execution_page
+                  FOREIGN KEY (sales_page_id) REFERENCES mois_sales_page(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

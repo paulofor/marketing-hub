@@ -477,6 +477,34 @@ Durante a transição, as tabelas atuais (`mois_sales_library_url_ingest`, `mois
 
 O plano faseado obrigatório para essa migração está documentado em `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`.
 
+#### 13.7.1 Modelo operacional canonizado — Fase 1 (duas tabelas)
+
+A Fase 1 da simplificação canoniza somente o preparo estrutural do banco e da documentação, sem remover nem substituir tabelas legadas. O backend deve subir mantendo os endpoints atuais e as leituras/escritas existentes da Biblioteca de Páginas de Vendas até as fases seguintes.
+
+Responsabilidades canônicas das novas tabelas:
+
+- `mois_sales_page`: guarda o estado atual consolidado de cada página de venda por `workspace_id` + `url_canonical`, incluindo origem, URLs observadas, etapa/status atuais, resumo da última captura, resumo da última análise, último erro, score e ponteiro lógico para a última execução que alterou a página.
+- `mois_sales_page_job_execution`: guarda o histórico/auditoria de execuções operacionais de uma página, incluindo tipo de job, etapa, status, tentativa, URLs usadas, HTTP/content type, HTML bruto do MVP, screenshot bruto opcional, payloads técnicos de auditoria, JSONs de análise, erro e timestamps de início/fim.
+
+Índices mínimos obrigatórios para leitura operacional:
+
+- `uk_mois_sales_page_workspace_url (workspace_id, url_canonical(512))` para deduplicação consolidada por workspace.
+- `idx_mois_sales_page_source_status (workspace_id, source, current_status, updated_at)` para contadores por fonte/status.
+- `idx_mois_sales_page_stage_status (workspace_id, current_stage, current_status, updated_at)` para fila operacional por etapa/status.
+- `idx_mois_sales_page_score (workspace_id, score_total)` para priorização comercial.
+- `idx_mois_sales_page_source_reference (workspace_id, source, source_job_id, source_reference_id)` para rastrear a origem coletada.
+- `idx_mois_sales_page_job_page_created (sales_page_id, created_at)` para histórico por página.
+- `idx_mois_sales_page_job_status (workspace_id, stage, status, updated_at)` para filas e diagnósticos por etapa.
+- `idx_mois_sales_page_job_type_status (workspace_id, job_type, status, updated_at)` para filas e diagnósticos por tipo de execução.
+
+Regra de transição da Fase 1:
+
+- Não remover `mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_analysis`, `mois_sales_library_page_snapshot`, `mois_sales_library_snapshot_artifact` nem `mois_collected_reference_html_capture`.
+- Não migrar a leitura principal da UI nesta fase.
+- Não iniciar backfill nesta fase.
+- Qualquer gravação futura no modelo novo deve manter `mois_sales_page` como estado atual e `mois_sales_page_job_execution` como histórico/auditoria.
+
+
 ### 13.8 Pipeline de captura de HTML bruto a partir de referências coletadas
 
 A primeira etapa do pipeline de páginas de venda deve separar responsabilidades:

@@ -879,3 +879,14 @@ Arquivos alterados:
 - `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`
 - `docs/canonical/mois-worker-canon.v1.md`
 - `docs/registros/mois1.md`
+
+## 2026-06-04 00:08:14 UTC-3
+- execução da Fase 1 do plano de simplificação do pipeline da Biblioteca de Páginas de Vendas do MOIS em duas tabelas operacionais.
+- foi mantida a compatibilidade com o fluxo atual, sem remoção de tabelas legadas, preparando apenas o modelo estrutural novo para backfill e escrita dupla nas próximas fases.
+- criados changelogs Liquibase incrementais para `mois_sales_page` e `mois_sales_page_job_execution`, com índices operacionais de leitura e teste de contrato de schema.
+- atualizado o cânone MOIS para registrar responsabilidades, índices obrigatórios e regra de transição da Fase 1.
+- documentos lidos para tratar a situação:
+  - docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md
+  - docs/canonical/mois-worker-canon.v1.md
+  - backend/AGENTS.md
+  - AGENTS.md

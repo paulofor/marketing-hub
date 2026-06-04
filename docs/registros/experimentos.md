@@ -3367,3 +3367,10 @@
 - correção aplicada: a conclusão sem erro da etapa `landing-page-wireframe` agora persiste `experiment.landing_page_wireframe` e cria uma execução `landing-page-copy` com `promptTemplateId` `auto/wireframe`, `status` `INICIADO` e novo `idJob`.
 - cânones atualizados: `docs/canonical/procedimento-experimento-canon.v1.md` e `docs/canonical/geralanding-arquitetura-canon.v1.md` passaram a declarar o encadeamento automático WireFrame → Copy.
 - validação automatizada: teste unitário do `BackendWireframeService` atualizado para garantir criação da próxima execução automática somente no caminho de sucesso.
+
+## 2026-06-04 — Reforço de prompts e schema do preset design GeraLanding para desktop premium
+
+- solicitação: usar a avaliação de qualidade mais recente para melhorar prompts e schemas do `geralanding`, corrigindo hero empilhado no desktop, CTAs sem acabamento, inputs fracos e conflito entre classes antigas do wireframe e classes premium do preset.
+- causa-raiz/objetivo: o preset podia aplicar classes premium sem remover/neutralizar classes antigas como `stackCol` e `gridCols1`; como a cascata final pode manter CSS do wireframe depois do preset, o layout desktop ficava em coluna única e componentes interativos pareciam inacabados.
+- correção aplicada: o prompt `landing-page-design-preset` passou a exigir remoção de classes conflitantes no mesmo elemento, overrides críticos com `!important` também no desktop quando necessário, definições completas para `heroDesktopGrid`, `gridDesktopTwo`, `gridDesktopThree`, botões, formulário e inputs; o schema agora exige ao menos uma classe em `estilos[]` de seções e elementos.
+- impacto esperado: a próxima regeneração do preset tende a produzir primeira dobra desktop em duas colunas, cards em grid real, CTAs com corpo visual e formulário mais premium, reduzindo aparência de template quebrado.

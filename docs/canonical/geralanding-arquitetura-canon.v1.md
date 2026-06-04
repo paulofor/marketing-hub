@@ -55,6 +55,12 @@ Regras arquiteturais refletidas (ArchUnit):
 - Para o GeraLanding, a configuração de modelo por etapa deve priorizar a finalidade comercial da etapa e o foco em vendas, evitando parâmetros técnicos avançados na tela principal.
 - A tela administrativa de pipelines deve exibir uma seleção simples de modelo OpenAI por etapa, usando os modelos cadastrados em `openai_model`.
 
+## Contrato visual do Preset Design
+
+- A etapa `landing-page-design-preset` deve tratar classes do wireframe como rascunho estrutural, não como acabamento final: ao aplicar layout premium em desktop, deve remover ou neutralizar no próprio `estilos[]` classes conflitantes que forcem coluna única, stack vertical ou grid de 1 coluna.
+- O preset deve declarar definições CSS completas para layouts críticos (`heroDesktopGrid`, grids de 2/3 colunas), CTAs, formulário e inputs; aplicar apenas o nome de uma classe sem propriedades suficientes não cumpre o contrato de landing comercial.
+- Como a montagem final pode combinar CSS do preset e CSS do wireframe em ordem variável, propriedades críticas de layout/largura podem usar `!important` de forma pontual para preservar desktop premium e mobile em uma coluna.
+
 ## Quality Review visual
 
 - A etapa `landing-page-quality-review` é o Quality Gate comercial final do GeraLanding e deve usar modelo com capacidade de visão da OpenAI como avaliador principal da experiência renderizada.

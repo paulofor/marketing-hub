@@ -121,14 +121,18 @@ A etapa de qualidade penaliza fortemente CTA quebrado, layout desktop sem primei
 - Se o wireframe trouxer `componente = buttonPrimary` ou `buttonSecondary`, a saída é inválida se o elemento não receber a classe premium correspondente e todos os tokens mínimos definidos neste prompt.
 - Se o formulário existir, o card do formulário deve ser visualmente mais forte que cards informativos e o submit deve parecer a ação mais segura e óbvia da página.
 
-# Regra crítica de cascade e responsividade mobile
+# Regra crítica de cascade, conflito com wireframe e responsividade
 
-O HTML final emite o CSS do preset e também o CSS do wireframe. Como o CSS do wireframe pode aparecer depois, o preset precisa blindar o mobile contra classes antigas/agressivas do wireframe.
+O HTML final emite o CSS do preset e também o CSS do wireframe; em algumas montagens o CSS do wireframe pode aparecer depois do preset. Portanto, a saída do preset deve ser robusta mesmo quando classes antigas como `stackCol`, `gridCols1`, `rowInline`, `gridOneCol`, `mobileStackOnly`, `heroStack`, `cardsStack` ou equivalentes ainda existirem no HTML.
 
-Obrigatório:
+Obrigatório para desktop e mobile:
+- Quando transformar um bloco em layout comercial desktop de duas/três colunas, REMOVA da lista `estilos[]` do mesmo elemento qualquer classe de wireframe que force coluna única, stack vertical ou grid de 1 coluna (`stackCol`, `gridCols1`, `gridOneCol`, `heroStack`, `cardsStack` e equivalentes). Não deixe classe antiga e classe premium brigando no mesmo elemento.
+- Se por preservação estrutural uma classe antiga precisar permanecer, a classe premium aplicada no mesmo elemento deve vencer a cascata com propriedades críticas usando `!important` também no desktop: `display:grid !important`, `grid-template-columns:... !important`, `align-items:... !important`, `gap:... !important`, `width:100% !important`, `max-width:... !important` e `box-sizing:border-box !important`.
+- Defina `heroDesktopGrid`, `gridDesktopTwo`, `gridDesktopThree` e/ou equivalentes como classes completas no desktop, não apenas nomes sem propriedades. Para hero, use duas colunas reais (`minmax(0,1.02fr) minmax(320px,.98fr)` ou proporção equivalente), gap amplo e alinhamento ao centro.
+- Para grids de cards/prova/oferta no desktop, use `grid-template-columns:repeat(2,minmax(0,1fr))` ou `repeat(3,minmax(0,1fr))` conforme quantidade de cards; nunca deixe cards estratégicos como uma única coluna larga quando houver espaço desktop.
 - Todo elemento que receber layout desktop em colunas (`gridDesktopTwo`, `gridDesktopThree`, `gridDesktopTwoEqual`, `heroDesktopGrid`, `cardsDesktopGrid`, ou equivalente) DEVE receber também uma classe mobile com override forte para uma coluna.
 - Crie e aplique classes mobile específicas com valores `!important` quando necessário para vencer CSS posterior do wireframe.
-- Use `!important` apenas em overrides mobile críticos de layout/largura: `display`, `grid-template-columns`, `flex-direction`, `width`, `max-width`, `box-sizing`, `overflow`, `padding` quando necessário.
+- Use `!important` somente em overrides críticos de layout/largura/cascata: `display`, `grid-template-columns`, `flex-direction`, `align-items`, `width`, `max-width`, `box-sizing`, `overflow`, `padding` e `gap` quando necessário.
 - No mobile, todo grid principal deve virar uma coluna: `grid-template-columns: 1fr !important`.
 - No mobile, toda linha de CTA deve virar coluna: `flex-direction: column !important`.
 - No mobile, todo card deve ocupar a largura disponível: `width: 100% !important`, `max-width: 100% !important`, `box-sizing: border-box !important`.
@@ -286,7 +290,7 @@ Para todo elemento `a` ou `button`:
 
 ## Definições mínimas obrigatórias de botão
 
-Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propriedades quando necessário usando o mesmo `nome` repetido:
+Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propriedades quando necessário usando o mesmo `nome` repetido. Cada propriedade listada deve aparecer como um item próprio em `definicoes`; não basta aplicar o nome da classe em `estilos[]`.
 
 - `buttonPrimaryPremium`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:14px 22px`, `min-height:48px`, `border-radius:14px`, `font-size:16px`, `font-weight:800`, `line-height:1.2`, `text-align:center`, `text-decoration:none`, `box-shadow:0 14px 32px rgba(37,99,235,0.24)`.
 - `buttonSecondaryGhost`: `display:inline-flex`, `align-items:center`, `justify-content:center`, `padding:13px 20px`, `min-height:46px`, `border-radius:14px`, `font-size:15px`, `font-weight:750`, `line-height:1.2`, `text-decoration:none`, `background-color:#FFFFFF`, `border:1px solid #DCE6F7`.
@@ -298,6 +302,18 @@ Crie obrigatoriamente em `definicoes` as classes abaixo, com múltiplas propried
 - `ctaRowPremium`: `display:flex`, `align-items:center`, `gap:12px`, `flex-wrap:wrap`.
 - `mediaConstrained`: `width:100%`, `max-width:560px`, `margin-left:auto`, `margin-right:auto`.
 - `heroMediaMax`: `max-height:520px`, `overflow:hidden`.
+
+## Definições mínimas obrigatórias de layout desktop
+
+Crie obrigatoriamente em `definicoes` e aplique aos containers adequados:
+
+- `heroDesktopGrid`: `display:grid !important`, `grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr) !important`, `align-items:center !important`, `gap:40px !important`, `width:100% !important`, `box-sizing:border-box !important`.
+- `gridDesktopTwo`: `display:grid !important`, `grid-template-columns:repeat(2,minmax(0,1fr)) !important`, `gap:24px !important`, `align-items:stretch !important`, `width:100% !important`, `box-sizing:border-box !important`.
+- `gridDesktopThree`: `display:grid !important`, `grid-template-columns:repeat(3,minmax(0,1fr)) !important`, `gap:22px !important`, `align-items:stretch !important`, `width:100% !important`, `box-sizing:border-box !important`.
+- `containerWide`: `width:100%`, `max-width:1180px`, `margin-left:auto`, `margin-right:auto`, `box-sizing:border-box`.
+- `containerCenter`: `margin-left:auto`, `margin-right:auto`, `box-sizing:border-box`.
+- `mobileOneColumn`: em `mobile`, `display:grid !important`, `grid-template-columns:1fr !important`, `width:100% !important`, `max-width:100% !important`, `box-sizing:border-box !important`.
+- `mobileStack`: em `mobile`, `display:flex !important`, `flex-direction:column !important`, `width:100% !important`, `gap:12px !important`.
 
 # Classes obrigatórias globais mínimas
 
@@ -383,7 +399,8 @@ Rejeite e gere novamente se o JSON produzir:
 Antes de responder, revise o JSON como se fosse renderizado.
 
 Garanta que:
-- desktop use largura comercial e colunas quando possível;
+- nenhum container com `heroDesktopGrid`, `gridDesktopTwo` ou `gridDesktopThree` mantenha classes conflitantes de coluna única como `stackCol` ou `gridCols1`;
+- desktop use largura comercial e colunas quando possível, especialmente hero em 2 colunas e cards em 2/3 colunas;
 - mobile tenha uma coluna real em todos os grids principais;
 - mobile tenha padding suficiente, botões grandes e imagens controladas;
 - todos os cards no mobile tenham largura total e `box-sizing:border-box`;

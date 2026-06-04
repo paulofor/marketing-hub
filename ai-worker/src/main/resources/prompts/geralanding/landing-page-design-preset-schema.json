@@ -345,7 +345,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "minItems": 1
         }
       },
       "required": [
@@ -409,7 +410,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "minItems": 1
         },
         "briefingVisual": {
           "anyOf": [

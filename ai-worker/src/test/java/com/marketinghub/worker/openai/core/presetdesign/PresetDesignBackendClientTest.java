@@ -244,6 +244,35 @@ class PresetDesignBackendClientTest {
                 .doesNotContain("\"not\"");
     }
 
+    /** Deve manter estilos obrigatórios em seções e elementos para evitar HTML sem classes premium. */
+    @Test
+    void presetDesignSchemaShouldRequireAtLeastOneStyleForSectionsAndElements() throws Exception {
+        String schemaJson = new ClassPathResource("prompts/geralanding/landing-page-design-preset-schema.json")
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode schema = objectMapper.readTree(schemaJson);
+
+        JsonNode defs = schema.path("$defs");
+
+        assertThat(defs.path("secao").path("properties").path("estilos").path("minItems").asInt())
+                .isEqualTo(1);
+        assertThat(defs.path("elementoSecao").path("properties").path("estilos").path("minItems").asInt())
+                .isEqualTo(1);
+    }
+
+    /** Deve manter no prompt a regra de remover classes antigas que quebram o grid desktop premium. */
+    @Test
+    void presetDesignPromptShouldBlockConflictingWireframeLayoutClasses() throws Exception {
+        String prompt = new ClassPathResource("prompts/geralanding/landing-page-design-preset.md")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(prompt)
+                .contains("REMOVA da lista `estilos[]`")
+                .contains("stackCol")
+                .contains("gridCols1")
+                .contains("heroDesktopGrid")
+                .contains("grid-template-columns:minmax(0,1.02fr) minmax(320px,.98fr) !important");
+    }
+
     /** Percorre recursivamente o schema e lista objetos que não bloqueiam propriedades extras. */
     private void collectObjectSchemasWithoutStrictAdditionalProperties(JsonNode node, String path, List<String> invalidPaths) {
         if (node == null || node.isMissingNode()) {

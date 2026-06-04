@@ -53,6 +53,9 @@ public class ExperimentFunnelService {
             """;
     private static final int MAX_CAMPAIGN_CODE_LENGTH = 190;
 
+    /**
+     * Consolida as métricas automáticas e eventos registrados por etapa do funil.
+     */
     public List<ExperimentFunnelStageDto> summarize(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages = bootstrapStages();
@@ -67,6 +70,9 @@ public class ExperimentFunnelService {
                 .toList();
     }
 
+    /**
+     * Registra manualmente um evento do funil para o experimento informado.
+     */
     @Transactional
     public void registerEvent(Long experimentId, RegisterExperimentFunnelEventRequest request) {
         if (request == null || request.stage() == null) {
@@ -87,6 +93,9 @@ public class ExperimentFunnelService {
         eventRepository.save(event);
     }
 
+    /**
+     * Limpa os eventos manuais e define o marco temporal de reinício do funil.
+     */
     @Transactional
     public Instant resetFunnel(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
@@ -97,13 +106,15 @@ public class ExperimentFunnelService {
         return now;
     }
 
+    /**
+     * Registra a visualização do formulário recebida pelo tracking público do Lead Portal.
+     */
     @Transactional
     public void registerFormRenderCompleted(String flowSlug, String visitorId, String campaignCode) {
         if (flowSlug == null || flowSlug.isBlank()) {
             throw new IllegalArgumentException("Slug do fluxo é obrigatório");
         }
-        Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+        Experiment experiment = resolveExperimentByFlowSlug(flowSlug.trim());
 
         String sanitizedVisitorId = visitorId == null ? null : visitorId.trim();
         String payload = sanitizedVisitorId == null || sanitizedVisitorId.isBlank()
@@ -121,6 +132,9 @@ public class ExperimentFunnelService {
         eventRepository.save(event);
     }
 
+    /**
+     * Registra de forma idempotente o envio do formulário recebido pelo Lead Portal.
+     */
     @Transactional
     public boolean registerFormSubmission(String flowSlug, RegisterLeadPortalSubmissionRequest request) {
         if (flowSlug == null || flowSlug.isBlank()) {
@@ -130,8 +144,7 @@ public class ExperimentFunnelService {
             throw new IllegalArgumentException("ID da submissão é obrigatório");
         }
 
-        Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+        Experiment experiment = resolveExperimentByFlowSlug(flowSlug.trim());
 
         String payload = "submissionId=" + request.submissionId().trim();
         boolean duplicated = eventRepository.existsByExperimentIdAndStageAndSourceAndPayload(
@@ -156,6 +169,9 @@ public class ExperimentFunnelService {
         return true;
     }
 
+    /**
+     * Converte o contrato v1 de submissão do Lead Portal para o registro idempotente legado.
+     */
     @Transactional
     public boolean registerFormSubmission(String flowSlug, LeadPortalSubmissionEngagementContractV1 request) {
         if (request == null) {
@@ -172,6 +188,9 @@ public class ExperimentFunnelService {
     }
 
 
+    /**
+     * Registra analytics da landing publicada e converte eventos compatíveis em visualização do formulário.
+     */
     @Transactional
     public void registerLandingPageAnalyticsEvent(String flowSlug, RegisterLandingPageAnalyticsEventRequest request) {
         if (flowSlug == null || flowSlug.isBlank()) {
@@ -183,8 +202,7 @@ public class ExperimentFunnelService {
         if (request.eventType() == null || request.eventType().isBlank()) {
             throw new IllegalArgumentException("eventType é obrigatório");
         }
-        Experiment experiment = experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+        Experiment experiment = resolveExperimentByFlowSlug(flowSlug.trim());
 
         Long elapsedMs = request.elapsedMs() != null ? request.elapsedMs() : request.visibleMs();
         String eventType = request.eventType().trim();
@@ -217,6 +235,19 @@ public class ExperimentFunnelService {
         }
     }
 
+
+    /**
+     * Resolve o experimento pelo slug, cobrindo tanto vínculo interno quanto landing publicada externamente.
+     */
+    private Experiment resolveExperimentByFlowSlug(String flowSlug) {
+        return experimentRepository.findFirstByLeadPortalFlowSlug(flowSlug)
+                .or(() -> experimentRepository.findFirstByFollowUpActionUrlFlowSlug(flowSlug))
+                .orElseThrow(() -> new IllegalArgumentException("Fluxo não vinculado a experimento"));
+    }
+
+    /**
+     * Mapeia eventos de analytics da landing para a etapa consolidada do funil.
+     */
     private ExperimentFunnelStage resolveStageForLandingAnalyticsEvent(String eventType) {
         if ("page_view".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.VISUALIZACAO_FORM;
@@ -227,6 +258,9 @@ public class ExperimentFunnelService {
         return null;
     }
 
+    /**
+     * Monta um payload textual rastreável sem serializar JSON dentro de JSON.
+     */
     private String buildLandingAnalyticsPayload(RegisterLandingPageAnalyticsEventRequest request, Long elapsedMs) {
         String sectionId = request.sectionId() == null ? "" : request.sectionId().trim();
         String sessionId = request.sessionId() == null ? "" : request.sessionId().trim();

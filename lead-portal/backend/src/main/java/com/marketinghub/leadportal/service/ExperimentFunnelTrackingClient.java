@@ -22,6 +22,9 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/**
+ * Cliente responsável por encaminhar eventos de engajamento do Lead Portal ao Marketing Hub.
+ */
 @Service
 public class ExperimentFunnelTrackingClient {
 
@@ -37,6 +40,9 @@ public class ExperimentFunnelTrackingClient {
     private final RestTemplate restTemplate;
     private final URI baseUri;
 
+    /**
+     * Configura o cliente HTTP com a URL base pública de tracking do Marketing Hub.
+     */
     public ExperimentFunnelTrackingClient(
             RestTemplateBuilder restTemplateBuilder,
             @Value("${lead-portal.marketing-hub.funnel-tracking-base-url}") String baseUrl) {
@@ -54,6 +60,9 @@ public class ExperimentFunnelTrackingClient {
                 .build();
     }
 
+    /**
+     * Encaminha o evento de renderização completa do fluxo para o Marketing Hub.
+     */
     public TrackingResult registerRenderComplete(String slug, String visitorId, String campaignCode) {
         if (!StringUtils.hasText(slug)) {
             throw new IllegalArgumentException("O slug do fluxo é obrigatório");
@@ -68,6 +77,9 @@ public class ExperimentFunnelTrackingClient {
         return sendTrackingRequest(endpoint, entity, "render-complete", slug);
     }
 
+    /**
+     * Encaminha o evento idempotente de submissão do formulário para o Marketing Hub.
+     */
     public TrackingResult registerSubmission(
             String slug,
             UUID submissionId,
@@ -99,6 +111,27 @@ public class ExperimentFunnelTrackingClient {
         return sendTrackingRequest(endpoint, entity, "submission", slug);
     }
 
+
+    /**
+     * Encaminha eventos de visualização da landing standalone para o Marketing Hub.
+     */
+    public TrackingResult registerPageAnalytics(String slug, Map<String, Object> payload) {
+        if (!StringUtils.hasText(slug)) {
+            throw new IllegalArgumentException("O slug do fluxo é obrigatório");
+        }
+
+        URI endpoint = UriComponentsBuilder.fromUri(baseUri)
+                .path("/flows/{slug}/page-analytics")
+                .buildAndExpand(slug.trim())
+                .toUri();
+
+        HttpEntity<Map<String, Object>> entity = buildPageAnalyticsPayload(payload);
+        return sendTrackingRequest(endpoint, entity, "page-analytics", slug);
+    }
+
+    /**
+     * Envia uma requisição de tracking e traduz o resultado HTTP em status operacional.
+     */
     private TrackingResult sendTrackingRequest(URI endpoint, HttpEntity<?> entity, String action, String slug) {
         try {
             ResponseEntity<Void> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, Void.class);
@@ -123,6 +156,9 @@ public class ExperimentFunnelTrackingClient {
         }
     }
 
+    /**
+     * Monta o payload JSON de renderização completa.
+     */
     private HttpEntity<Map<String, String>> buildRenderPayload(String visitorId, String campaignCode) {
         String sanitizedVisitor = visitorId != null ? visitorId.trim() : null;
         String sanitizedCampaign = campaignCode != null ? campaignCode.trim() : null;
@@ -138,6 +174,9 @@ public class ExperimentFunnelTrackingClient {
         return new HttpEntity<>(body, headers);
     }
 
+    /**
+     * Monta o payload JSON do contrato de submissão do Lead Portal.
+     */
     private HttpEntity<Map<String, Object>> buildSubmissionPayload(
             String slug,
             UUID submissionId,
@@ -162,6 +201,15 @@ public class ExperimentFunnelTrackingClient {
         if (campaignCode != null && !campaignCode.trim().isEmpty()) {
             body.put("campaignCode", campaignCode.trim());
         }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
+    }
+    /**
+     * Monta o payload JSON de analytics preservando somente o corpo recebido.
+     */
+    private HttpEntity<Map<String, Object>> buildPageAnalyticsPayload(Map<String, Object> payload) {
+        Map<String, Object> body = payload == null ? new HashMap<>() : new HashMap<>(payload);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return new HttpEntity<>(body, headers);

@@ -14,4 +14,5 @@ public record OfficialPipelineStageDto(
         int position,
         boolean required,
         boolean configurable,
+        StageFieldPolicyDto fieldPolicy,
         List<String> aliases) {}

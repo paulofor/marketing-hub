@@ -10,9 +10,11 @@ import com.marketinghub.pipeline.dto.OfficialPipelineDto;
 import com.marketinghub.pipeline.dto.OfficialPipelineStageDto;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsIssueDto;
+import com.marketinghub.pipeline.dto.PipelineFieldPolicyDto;
 import com.marketinghub.pipeline.dto.PipelineMetadataDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
+import com.marketinghub.pipeline.dto.StageFieldPolicyDto;
 import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
@@ -397,16 +399,19 @@ public class PipelineService {
                 .module(definition.module())
                 .code(definition.code())
                 .name(definition.name())
+                .canonicalVersion(definition.canonicalVersion())
                 .official(definition.official())
                 .aliases(definition.aliases().stream().sorted().toList())
-                .stages(definition.stages().stream().map(this::toOfficialStageDto).toList())
+                .fieldPolicy(toPipelineFieldPolicyDto(definition))
+                .stages(definition.stages().stream().map(stage -> toOfficialStageDto(definition, stage)).toList())
                 .build();
     }
 
     /**
      * Converte definição oficial de etapa para DTO de metadados consumido pela tela.
      */
-    private OfficialPipelineStageDto toOfficialStageDto(PipelineStageDefinition definition) {
+    private OfficialPipelineStageDto toOfficialStageDto(
+            PipelineDefinition pipelineDefinition, PipelineStageDefinition definition) {
         return OfficialPipelineStageDto.builder()
                 .canonicalCode(definition.canonicalCode())
                 .operationalCode(definition.operationalCode())
@@ -414,7 +419,36 @@ public class PipelineService {
                 .position(definition.position())
                 .required(definition.required())
                 .configurable(definition.configurable())
+                .fieldPolicy(toStageFieldPolicyDto(pipelineDefinition))
                 .aliases(definition.aliases().stream().sorted().toList())
+                .build();
+    }
+
+    /**
+     * Converte política oficial de pipeline para DTO de metadados consumido pela tela.
+     */
+    private PipelineFieldPolicyDto toPipelineFieldPolicyDto(PipelineDefinition definition) {
+        return PipelineFieldPolicyDto.builder()
+                .codeStructural(definition.pipelineFieldPolicy().codeStructural())
+                .moduleStructural(definition.pipelineFieldPolicy().moduleStructural())
+                .nameStructural(definition.pipelineFieldPolicy().nameStructural())
+                .descriptionOperational(definition.pipelineFieldPolicy().descriptionOperational())
+                .activeOperational(definition.pipelineFieldPolicy().activeOperational())
+                .build();
+    }
+
+    /**
+     * Converte política oficial de etapa para DTO de metadados consumido pela tela.
+     */
+    private StageFieldPolicyDto toStageFieldPolicyDto(PipelineDefinition definition) {
+        return StageFieldPolicyDto.builder()
+                .codeStructural(definition.stageFieldPolicy().codeStructural())
+                .positionStructural(definition.stageFieldPolicy().positionStructural())
+                .nameStructural(definition.stageFieldPolicy().nameStructural())
+                .requiredStructural(definition.stageFieldPolicy().requiredStructural())
+                .descriptionOperational(definition.stageFieldPolicy().descriptionOperational())
+                .activeOperational(definition.stageFieldPolicy().activeOperational())
+                .openAiModelOperational(definition.stageFieldPolicy().openAiModelOperational())
                 .build();
     }
 

@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 public class PipelineDefinitionRegistry {
     private static final String EXPERIMENT_PIPELINE_CODE = "experiment-pipeline";
     private static final String EXPERIMENT_MODULE = "EXPERIMENT";
+    private static final String EXPERIMENT_CANONICAL_VERSION = "procedimento-experimento-canon.v1";
 
     private final List<PipelineDefinition> officialPipelines;
     private final Set<String> validModules;
@@ -99,8 +100,11 @@ public class PipelineDefinitionRegistry {
                 EXPERIMENT_MODULE,
                 EXPERIMENT_PIPELINE_CODE,
                 "Pipeline de Experimento",
+                EXPERIMENT_CANONICAL_VERSION,
                 true,
                 Set.of(EXPERIMENT_PIPELINE_CODE, "experiment_pipeline"),
+                PipelineFieldPolicy.officialDefault(),
+                StageFieldPolicy.officialDefault(),
                 stages);
     }
 
@@ -120,8 +124,11 @@ public class PipelineDefinitionRegistry {
             String module,
             String code,
             String name,
+            String canonicalVersion,
             boolean official,
             Set<String> aliases,
+            PipelineFieldPolicy pipelineFieldPolicy,
+            StageFieldPolicy stageFieldPolicy,
             List<PipelineStageDefinition> stages) {
         /**
          * Informa se o código recebido é o código oficial ou um alias permitido.
@@ -146,6 +153,43 @@ public class PipelineDefinitionRegistry {
                 return "";
             }
             return code.trim().toLowerCase(Locale.ROOT).replace('_', '-');
+        }
+    }
+
+
+    /**
+     * Política que separa campos estruturais de pipeline dos campos operacionais editáveis.
+     */
+    public record PipelineFieldPolicy(
+            boolean codeStructural,
+            boolean moduleStructural,
+            boolean nameStructural,
+            boolean descriptionOperational,
+            boolean activeOperational) {
+        /**
+         * Retorna a política padrão para pipelines oficiais versionados no código.
+         */
+        public static PipelineFieldPolicy officialDefault() {
+            return new PipelineFieldPolicy(true, true, true, true, true);
+        }
+    }
+
+    /**
+     * Política que separa campos estruturais de etapa dos campos operacionais configuráveis.
+     */
+    public record StageFieldPolicy(
+            boolean codeStructural,
+            boolean positionStructural,
+            boolean nameStructural,
+            boolean requiredStructural,
+            boolean descriptionOperational,
+            boolean activeOperational,
+            boolean openAiModelOperational) {
+        /**
+         * Retorna a política padrão para etapas oficiais versionadas no código.
+         */
+        public static StageFieldPolicy officialDefault() {
+            return new StageFieldPolicy(true, true, true, true, true, true, true);
         }
     }
 

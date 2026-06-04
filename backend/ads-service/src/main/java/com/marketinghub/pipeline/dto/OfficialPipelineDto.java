@@ -11,6 +11,8 @@ public record OfficialPipelineDto(
         String module,
         String code,
         String name,
+        String canonicalVersion,
         boolean official,
         List<String> aliases,
+        PipelineFieldPolicyDto fieldPolicy,
         List<OfficialPipelineStageDto> stages) {}

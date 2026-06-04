@@ -38,7 +38,19 @@ A sequência canônica de seções do pipeline inclui:
 
 Essas seções e suas dependências fazem parte do enum oficial do backend.
 
-### 4.1 Prompts dessas etapas
+### 4.1 Contrato operacional administrativo do pipeline
+
+O pipeline oficial de experimento usa a versão canônica `procedimento-experimento-canon.v1` no backend administrativo de pipelines. A sincronização segura deve considerar estruturais os campos `code`, `module` e `name` do pipeline, além de `code`, `position`, `name` e `required` das etapas oficiais. Os campos `description`, `active` e `openAiModelId` das etapas são configuração operacional e não podem ser sobrescritos pela sincronização sem regra explícita.
+
+Endpoints administrativos vigentes:
+- `GET /api/pipelines/metadata` expõe versão canônica, aliases e política de campos;
+- `GET /api/pipelines/{id}/diagnostics` compara banco e contrato oficial com causa-raiz e ação recomendada;
+- `POST /api/pipelines/{id}/sync` sincroniza de forma idempotente um pipeline existente, sem aceitar payload da tela;
+- `POST /api/pipelines/official/{code}/sync` cria ou sincroniza um pipeline oficial ausente pelo código canônico, sem aceitar payload da tela.
+
+A sincronização segura pode criar pipeline/etapas oficiais ausentes e corrigir campos estruturais permitidos, mas deve bloquear divergências destrutivas, como etapa extra sem mapeamento canônico ou duplicidade operacional, para evitar perda de histórico e preservar a causa-raiz para decisão humana.
+
+### 4.2 Prompts dessas etapas
 Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.
 
 Local canônico vigente:

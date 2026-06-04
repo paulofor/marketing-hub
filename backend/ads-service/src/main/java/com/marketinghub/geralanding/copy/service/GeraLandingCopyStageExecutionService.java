@@ -33,6 +33,7 @@ public class GeraLandingCopyStageExecutionService {
     private static final Logger log = LoggerFactory.getLogger(GeraLandingCopyStageExecutionService.class);
     private static final TypeReference<LinkedHashMap<String, Object>> FRAMEWORK_TYPE = new TypeReference<>() {};
     private static final String STAGE_CODE = "landing-page-copy";
+    private static final String NEXT_STAGE_IMAGE_PLANNING = "landing-page-image-planning";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
@@ -153,7 +154,7 @@ public class GeraLandingCopyStageExecutionService {
         return prompt;
     }
 
-    /** Conclui ou falha a execução da etapa copy com a resposta devolvida pelo Worker AI. */
+    /** Conclui ou falha a execução da etapa copy com a resposta do Worker AI e avança para prompts de imagem quando há sucesso. */
     @Transactional
     public void markCompletedFromResponse(
             String idJob,
@@ -232,18 +233,42 @@ public class GeraLandingCopyStageExecutionService {
         return null;
     }
 
-    /** Persiste o artefato JSON final do copy no experimento associado à execução concluída. */
+    /** Persiste o artefato JSON final do copy e agenda a próxima etapa automática no experimento associado à execução concluída. */
     private void persistCopyArtifactOnExperiment(GeraLandingStageExecution execution, String modelResponse) {
         if (!StringUtils.hasText(modelResponse)) {
             return;
         }
+        Experiment experiment = resolveExperiment(execution);
+        experiment.setLandingPageCopy(modelResponse);
+        experimentRepository.save(experiment);
+        createImagePlanningExecution(experiment);
+    }
+
+    /** Agenda o Gera Prompt Imagem como próxima etapa automática após salvar a copy da landing. */
+    private void createImagePlanningExecution(Experiment experiment) {
+        Instant now = Instant.now();
+        GeraLandingStageExecution imagePlanningExecution = GeraLandingStageExecution.builder()
+                .experimentId(experiment.getId())
+                .experiment(experiment)
+                .stageCode(NEXT_STAGE_IMAGE_PLANNING)
+                .executionRequestedAt(now)
+                .createdAt(now)
+                .promptTemplateId("auto/copy")
+                .promptContent("Gera Prompt Imagem iniciado automaticamente após o Gera Copy.")
+                .status(STATUS_STARTED)
+                .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
+                .build();
+        executionRepository.save(imagePlanningExecution);
+    }
+
+    /** Resolve o experimento da execução, buscando no repositório quando a associação não estiver carregada. */
+    private Experiment resolveExperiment(GeraLandingStageExecution execution) {
         Experiment experiment = execution.getExperiment();
         if (experiment == null) {
             experiment = experimentRepository.findById(execution.getExperimentId())
                     .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + execution.getExperimentId()));
         }
-        experiment.setLandingPageCopy(modelResponse);
-        experimentRepository.save(experiment);
+        return experiment;
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

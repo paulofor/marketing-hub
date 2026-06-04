@@ -1,14 +1,13 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   useCaptureMoisSalesLibrarySnapshots,
-  useMoisSalesLibraryPages,
+  useMoisSalesLibraryPageSummary,
 } from "../../api/mois/useMoisSalesLibrary";
 import type { MoisSalesLibrarySnapshotCaptureItem } from "../../api/mois/types";
 
 const WORKSPACE_ID = "workspace-001";
-const PAGE_SIZE = 100;
 const DEFAULT_CAPTURE_LIMIT = 5;
 
 const htmlAcquisitionChecklist = [
@@ -64,28 +63,9 @@ function getResultMessage(item: MoisSalesLibrarySnapshotCaptureItem) {
 
 export default function MoisSalesPagesPipelinePage() {
   const [forceCapture, setForceCapture] = useState(false);
-  const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
+  const summaryQuery = useMoisSalesLibraryPageSummary(WORKSPACE_ID);
   const captureMutation = useCaptureMoisSalesLibrarySnapshots(WORKSPACE_ID);
-
-  const summary = useMemo(() => {
-    const items = pagesQuery.data?.items ?? [];
-    return items.reduce(
-      (acc, item) => {
-        acc.total += 1;
-        if (item.analysisStatus === "PENDING" || !item.analysisStatus) {
-          acc.pending += 1;
-        }
-        if (item.analysisStatus === "DONE") {
-          acc.done += 1;
-        }
-        if (item.analysisStatus === "FAILED") {
-          acc.failed += 1;
-        }
-        return acc;
-      },
-      { total: 0, pending: 0, done: 0, failed: 0 },
-    );
-  }, [pagesQuery.data?.items]);
+  const summary = summaryQuery.data;
 
   const lastRun = captureMutation.data;
   const isRunning = captureMutation.isPending;
@@ -171,7 +151,7 @@ export default function MoisSalesPagesPipelinePage() {
               <div className="border rounded-3 p-3 h-100">
                 <p className="text-secondary mb-1">URLs na biblioteca</p>
                 <h3 className="mb-0">
-                  {pagesQuery.isLoading ? "..." : summary.total}
+                  {summaryQuery.isLoading ? "..." : (summary?.total ?? 0)}
                 </h3>
               </div>
             </div>
@@ -179,22 +159,41 @@ export default function MoisSalesPagesPipelinePage() {
               <div className="border rounded-3 p-3 h-100">
                 <p className="text-secondary mb-1">Pendentes/análise inicial</p>
                 <h3 className="mb-0">
-                  {pagesQuery.isLoading ? "..." : summary.pending}
+                  {summaryQuery.isLoading ? "..." : (summary?.pending ?? 0)}
                 </h3>
               </div>
             </div>
             <div className="col-sm-6 col-lg-3">
               <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">
-                  Capturadas na última execução
-                </p>
-                <h3 className="mb-0">{lastRun?.captured ?? 0}</h3>
+                <p className="text-secondary mb-1">Capturadas no modelo novo</p>
+                <h3 className="mb-0">{summary?.captured ?? 0}</h3>
               </div>
             </div>
             <div className="col-sm-6 col-lg-3">
               <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Falhas na última execução</p>
-                <h3 className="mb-0">{lastRun?.failed ?? 0}</h3>
+                <p className="text-secondary mb-1">Falhas globais</p>
+                <h3 className="mb-0">{summary?.failed ?? 0}</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            <div className="col-sm-6 col-lg-4">
+              <div className="border rounded-3 p-3 h-100">
+                <p className="text-secondary mb-1">Em captura</p>
+                <h3 className="mb-0">{summary?.capturing ?? 0}</h3>
+              </div>
+            </div>
+            <div className="col-sm-6 col-lg-4">
+              <div className="border rounded-3 p-3 h-100">
+                <p className="text-secondary mb-1">Analisadas</p>
+                <h3 className="mb-0">{summary?.analyzed ?? 0}</h3>
+              </div>
+            </div>
+            <div className="col-sm-6 col-lg-4">
+              <div className="border rounded-3 p-3 h-100">
+                <p className="text-secondary mb-1">Bloqueadas por cooldown</p>
+                <h3 className="mb-0">{summary?.blockedCooldown ?? 0}</h3>
               </div>
             </div>
           </div>
@@ -239,7 +238,10 @@ export default function MoisSalesPagesPipelinePage() {
                 >
                   {isRunning ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        aria-hidden="true"
+                      />
                       Executando...
                     </>
                   ) : (

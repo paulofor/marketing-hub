@@ -332,67 +332,105 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Lista páginas canônicas da biblioteca junto com a análise mais recente.
+     * Lista páginas canônicas a partir do estado consolidado do modelo novo da Fase 4.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(String workspaceId, int page, int pageSize) {
-        int normalizedPage = Math.max(1, page); int normalizedPageSize = Math.max(1, Math.min(pageSize, 100)); int offset = (normalizedPage - 1) * normalizedPageSize;
-        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE workspace_id = ?", Long.class, workspaceId);
+        int normalizedPage = Math.max(1, page);
+        int normalizedPageSize = Math.max(1, Math.min(pageSize, 100));
+        int offset = (normalizedPage - 1) * normalizedPageSize;
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page WHERE workspace_id = ?", Long.class, workspaceId);
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
-                SELECT i.id, i.workspace_id, i.source, i.url_canonical, i.title, i.updated_at,
-                       a.status AS analysis_status, a.score_total, a.analyzed_at
-                FROM mois_sales_library_url_ingest i
-                LEFT JOIN mois_sales_library_page_analysis a ON a.id = (
-                    SELECT a2.id FROM mois_sales_library_page_analysis a2
-                    WHERE a2.url_ingest_id = i.id ORDER BY a2.updated_at DESC LIMIT 1
-                )
-                WHERE i.workspace_id = ?
-                ORDER BY i.updated_at DESC LIMIT ? OFFSET ?
-                """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageResponse(
-                rs.getLong("id"), rs.getString("workspace_id"), rs.getString("source"), rs.getString("url_canonical"),
-                rs.getString("title"), rs.getString("analysis_status"), rs.getBigDecimal("score_total"),
-                toInstant(rs.getTimestamp("analyzed_at")), toInstant(rs.getTimestamp("updated_at"))), workspaceId, normalizedPageSize, offset);
+                SELECT id, workspace_id, source, url_canonical, title, current_stage, current_status, capture_status,
+                       COALESCE(analysis_status, current_status) AS analysis_status, url_final, http_status, html_sha256,
+                       html_bytes, score_total, offer_summary, mechanism_summary, promise_summary, proof_summary,
+                       last_error_category, last_error_message, last_job_execution_id, last_captured_at, last_analyzed_at, updated_at
+                FROM mois_sales_page
+                WHERE workspace_id = ?
+                ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?
+                """, this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryPageListResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
 
     /**
-     * Busca uma página canônica da biblioteca pelo identificador interno.
+     * Calcula os contadores globais da biblioteca diretamente em mois_sales_page para eliminar paginação ambígua.
+     */
+    public MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse summarizePages(String workspaceId) {
+        return jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) AS total,
+                       SUM(current_status = 'PENDING') AS pending,
+                       SUM(current_status IN ('FETCHING', 'CAPTURING')) AS capturing,
+                       SUM(current_status IN ('CAPTURED', 'DUPLICATE')) AS captured,
+                       SUM(current_status IN ('DONE', 'ANALYZED')) AS analyzed,
+                       SUM(current_status = 'FAILED') AS failed,
+                       SUM(current_status = 'BLOCKED_COOLDOWN') AS blocked_cooldown,
+                       SUM(source = 'HOTMART') AS hotmart,
+                       SUM(source = 'CLICKBANK') AS clickbank,
+                       MAX(updated_at) AS updated_at
+                FROM mois_sales_page
+                WHERE workspace_id = ?
+                """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse(
+                workspaceId, rs.getLong("total"), rs.getLong("pending"), rs.getLong("capturing"),
+                rs.getLong("captured"), rs.getLong("analyzed"), rs.getLong("failed"),
+                rs.getLong("blocked_cooldown"), rs.getLong("hotmart"), rs.getLong("clickbank"),
+                toInstant(rs.getTimestamp("updated_at"))), workspaceId);
+    }
+
+    /**
+     * Busca uma página canônica pelo identificador consolidado em mois_sales_page.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageResponse getPage(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
-                SELECT i.id, i.workspace_id, i.source, i.url_canonical, i.title, i.updated_at,
-                       a.status AS analysis_status, a.score_total, a.analyzed_at
-                FROM mois_sales_library_url_ingest i
-                LEFT JOIN mois_sales_library_page_analysis a ON a.id = (
-                    SELECT a2.id FROM mois_sales_library_page_analysis a2
-                    WHERE a2.url_ingest_id = i.id ORDER BY a2.updated_at DESC LIMIT 1
-                )
-                WHERE i.id = ? LIMIT 1
-                """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageResponse(
-                rs.getLong("id"), rs.getString("workspace_id"), rs.getString("source"), rs.getString("url_canonical"),
-                rs.getString("title"), rs.getString("analysis_status"), rs.getBigDecimal("score_total"),
-                toInstant(rs.getTimestamp("analyzed_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
+                SELECT id, workspace_id, source, url_canonical, title, current_stage, current_status, capture_status,
+                       COALESCE(analysis_status, current_status) AS analysis_status, url_final, http_status, html_sha256,
+                       html_bytes, score_total, offer_summary, mechanism_summary, promise_summary, proof_summary,
+                       last_error_category, last_error_message, last_job_execution_id, last_captured_at, last_analyzed_at, updated_at
+                FROM mois_sales_page
+                WHERE id = ? LIMIT 1
+                """, this::mapSalesPageResponse, pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Page not found: " + pageId);
         return rows.get(0);
     }
 
     /**
-     * Busca a análise mais recente de uma página da biblioteca.
+     * Busca a análise mais recente registrada no histórico consolidado da página.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse getPageAnalysis(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse> rows = jdbcTemplate.query("""
-                SELECT a.id, a.url_ingest_id, a.job_id, a.status, a.score_total, a.parser_version,
-                       a.prompt_version, a.model_name, a.sections_json, a.copy_json, a.visual_json,
-                       a.image_json, a.analysis_notes, a.request_payload_json, a.analyzed_at, a.updated_at
-                FROM mois_sales_library_page_analysis a
-                WHERE a.url_ingest_id = ? ORDER BY a.updated_at DESC LIMIT 1
+                SELECT e.id, e.sales_page_id, e.status, e.score_total, e.sections_json, e.copy_json, e.visual_json,
+                       e.image_json, e.request_payload_json, e.error_message, e.finished_at, e.updated_at
+                FROM mois_sales_page_job_execution e
+                WHERE e.sales_page_id = ? AND e.job_type = 'PAGE_ANALYSIS'
+                ORDER BY e.updated_at DESC, e.id DESC LIMIT 1
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse(
-                rs.getLong("id"), rs.getLong("url_ingest_id"), rs.getObject("job_id", Long.class),
-                rs.getString("status"), rs.getBigDecimal("score_total"), rs.getString("parser_version"),
-                rs.getString("prompt_version"), rs.getString("model_name"), rs.getString("sections_json"),
+                rs.getLong("id"), rs.getLong("sales_page_id"), null, rs.getString("status"),
+                rs.getBigDecimal("score_total"), null, null, null, rs.getString("sections_json"),
                 rs.getString("copy_json"), rs.getString("visual_json"), rs.getString("image_json"),
-                rs.getString("analysis_notes"), rs.getString("request_payload_json"), toInstant(rs.getTimestamp("analyzed_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
+                rs.getString("error_message"), rs.getString("request_payload_json"),
+                toInstant(rs.getTimestamp("finished_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Analysis not found for page: " + pageId);
         return rows.get(0);
+    }
+
+    /**
+     * Lista o histórico auditável de execuções da página a partir de mois_sales_page_job_execution.
+     */
+    public List<MoisSalesLibraryDtos.SalesLibraryPageExecutionResponse> listPageExecutions(long pageId) {
+        return jdbcTemplate.query("""
+                SELECT id, sales_page_id, job_type, stage, status, attempt, input_url, final_url, redirect_root_url,
+                       http_status, content_type, raw_html_bytes, screenshot_bytes, score_total, error_category,
+                       error_message, started_at, finished_at, created_at, updated_at
+                FROM mois_sales_page_job_execution
+                WHERE sales_page_id = ?
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 50
+                """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageExecutionResponse(
+                rs.getLong("id"), rs.getLong("sales_page_id"), rs.getString("job_type"), rs.getString("stage"),
+                rs.getString("status"), rs.getInt("attempt"), rs.getString("input_url"), rs.getString("final_url"),
+                rs.getString("redirect_root_url"), (Integer) rs.getObject("http_status"), rs.getString("content_type"),
+                rs.getLong("raw_html_bytes"), rs.getLong("screenshot_bytes"), rs.getBigDecimal("score_total"),
+                rs.getString("error_category"), rs.getString("error_message"), toInstant(rs.getTimestamp("started_at")),
+                toInstant(rs.getTimestamp("finished_at")), toInstant(rs.getTimestamp("created_at")),
+                toInstant(rs.getTimestamp("updated_at"))), pageId);
     }
 
     /**
@@ -403,8 +441,7 @@ public class MoisSalesLibraryService {
             long pageId,
             MoisSalesLibraryDtos.SalesLibraryStatusUpdateRequest request
     ) {
-        Long exists = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE id = ?", Long.class, pageId);
-        if (exists == null || exists == 0) throw new IllegalArgumentException("Page not found: " + pageId);
+        long urlIngestId = findUrlIngestIdForOperationalPage(pageId);
 
         String normalizedStatus = request.status().trim().toUpperCase(Locale.ROOT);
         if (!JOB_STATUS_PENDING.equals(normalizedStatus) && !ANALYSIS_STATUS_CANCELED.equals(normalizedStatus)) {
@@ -414,18 +451,18 @@ public class MoisSalesLibraryService {
         Long jobId = null;
         String notes = request.reason() == null || request.reason().isBlank() ? "Status atualizado manualmente via API" : request.reason().trim();
         if (JOB_STATUS_PENDING.equals(normalizedStatus)) {
-            jobId = createPendingJob(pageId);
+            jobId = createPendingJob(urlIngestId);
         }
 
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_library_page_analysis
                 (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
                 VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, pageId, jobId, normalizedStatus, notes);
+                """, urlIngestId, jobId, normalizedStatus, notes);
         if (jobId != null) {
             dualWriteGateway.syncProcessingJob(jobId);
         }
-        dualWriteGateway.syncLatestAnalysis(pageId);
+        dualWriteGateway.syncLatestAnalysis(urlIngestId);
 
         return new MoisSalesLibraryDtos.SalesLibraryStatusUpdateResponse(pageId, jobId, normalizedStatus, notes, Instant.now());
     }
@@ -435,16 +472,15 @@ public class MoisSalesLibraryService {
      */
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse reanalyzePage(long pageId) {
-        Long exists = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE id = ?", Long.class, pageId);
-        if (exists == null || exists == 0) throw new IllegalArgumentException("Page not found: " + pageId);
-        long jobId = createPendingJob(pageId);
+        long urlIngestId = findUrlIngestIdForOperationalPage(pageId);
+        long jobId = createPendingJob(urlIngestId);
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_library_page_analysis
                 (url_ingest_id, job_id, status, analysis_notes, created_at, updated_at)
                 VALUES (?, ?, 'PENDING', 'Reanálise solicitada via API', UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, pageId, jobId);
+                """, urlIngestId, jobId);
         dualWriteGateway.syncProcessingJob(jobId);
-        dualWriteGateway.syncLatestAnalysis(pageId);
+        dualWriteGateway.syncLatestAnalysis(urlIngestId);
         return new MoisSalesLibraryDtos.SalesLibraryReanalyzeResponse(pageId, jobId, JOB_STATUS_PENDING, Instant.now());
     }
 
@@ -641,6 +677,60 @@ public class MoisSalesLibraryService {
             }
         }
         return null;
+    }
+
+    /**
+     * Converte uma linha de mois_sales_page para o contrato de página consolidada usado pela UI.
+     */
+    private MoisSalesLibraryDtos.SalesLibraryPageResponse mapSalesPageResponse(ResultSet rs, int rowNum) throws SQLException {
+        return new MoisSalesLibraryDtos.SalesLibraryPageResponse(
+                rs.getLong("id"),
+                rs.getString("workspace_id"),
+                rs.getString("source"),
+                rs.getString("url_canonical"),
+                rs.getString("title"),
+                rs.getString("current_stage"),
+                rs.getString("current_status"),
+                rs.getString("capture_status"),
+                rs.getString("analysis_status"),
+                rs.getString("url_final"),
+                (Integer) rs.getObject("http_status"),
+                rs.getString("html_sha256"),
+                rs.getLong("html_bytes"),
+                rs.getBigDecimal("score_total"),
+                rs.getString("offer_summary"),
+                rs.getString("mechanism_summary"),
+                rs.getString("promise_summary"),
+                rs.getString("proof_summary"),
+                rs.getString("last_error_category"),
+                rs.getString("last_error_message"),
+                rs.getObject("last_job_execution_id", Long.class),
+                toInstant(rs.getTimestamp("last_captured_at")),
+                toInstant(rs.getTimestamp("last_analyzed_at")),
+                toInstant(rs.getTimestamp("updated_at"))
+        );
+    }
+
+    /**
+     * Resolve o identificador legado de URL a partir do identificador operacional novo para ações ainda em escrita dupla.
+     */
+    private long findUrlIngestIdForOperationalPage(long pageId) {
+        List<Long> rows = jdbcTemplate.query("""
+                SELECT i.id
+                FROM mois_sales_page sp
+                JOIN mois_sales_library_url_ingest i
+                  ON i.workspace_id = sp.workspace_id AND i.url_canonical = sp.url_canonical
+                WHERE sp.id = ?
+                LIMIT 1
+                """, (rs, rowNum) -> rs.getLong("id"), pageId);
+        if (!rows.isEmpty()) {
+            return rows.get(0);
+        }
+        Long legacyExists = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE id = ?", Long.class, pageId);
+        if (legacyExists != null && legacyExists > 0) {
+            return pageId;
+        }
+        throw new IllegalArgumentException("Page not found: " + pageId);
     }
 
     /**

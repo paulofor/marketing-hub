@@ -1,5 +1,6 @@
-package com.marketinghub.repository.jdbc.mois;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageBackfillGateway;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class MoisSalesPageBackfillService implements ApplicationRunner {
 
-    private final MoisSalesPageBackfillRepository repository;
+    private final MoisSalesPageBackfillGateway gateway;
 
     @Value("${mois.sales-page.backfill.enabled:true}")
     private boolean enabled;
@@ -32,7 +33,7 @@ public class MoisSalesPageBackfillService implements ApplicationRunner {
             return;
         }
         try {
-            if (!repository.hasBackfillTables()) {
+            if (!gateway.hasBackfillTables()) {
                 log.info("Backfill MOIS sales page ignorado porque o schema necessário ainda não existe. modulo=MOIS, operacao=salesPageBackfill");
                 return;
             }
@@ -62,19 +63,19 @@ public class MoisSalesPageBackfillService implements ApplicationRunner {
      */
     @Transactional
     public BackfillCounters executeBackfill() {
-        long legacyPages = repository.countLegacyUrlIngests();
-        long salesPagesBefore = repository.countSalesPages();
-        long jobExecutionsBefore = repository.countJobExecutions();
+        long legacyPages = gateway.countLegacyUrlIngests();
+        long salesPagesBefore = gateway.countSalesPages();
+        long jobExecutionsBefore = gateway.countJobExecutions();
 
-        int salesPageRowsAffected = repository.backfillSalesPages();
-        int processingJobsInserted = repository.backfillLatestProcessingJobs();
-        int analysesInserted = repository.backfillLatestAnalyses();
-        int snapshotsInserted = repository.backfillLatestSnapshots();
-        int collectedCapturesInserted = repository.backfillLatestCollectedReferenceHtmlCaptures();
-        int lastJobPointersUpdated = repository.updateLastJobExecutionPointers();
+        int salesPageRowsAffected = gateway.backfillSalesPages();
+        int processingJobsInserted = gateway.backfillLatestProcessingJobs();
+        int analysesInserted = gateway.backfillLatestAnalyses();
+        int snapshotsInserted = gateway.backfillLatestSnapshots();
+        int collectedCapturesInserted = gateway.backfillLatestCollectedReferenceHtmlCaptures();
+        int lastJobPointersUpdated = gateway.updateLastJobExecutionPointers();
 
-        long salesPagesAfter = repository.countSalesPages();
-        long jobExecutionsAfter = repository.countJobExecutions();
+        long salesPagesAfter = gateway.countSalesPages();
+        long jobExecutionsAfter = gateway.countJobExecutions();
         return new BackfillCounters(
                 legacyPages,
                 salesPagesBefore,

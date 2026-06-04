@@ -1,10 +1,11 @@
-package com.marketinghub.repository.jdbc.mois;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageBackfillGateway;
 import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +21,7 @@ import org.springframework.boot.DefaultApplicationArguments;
 class MoisSalesPageBackfillServiceTest {
 
     @Mock
-    private MoisSalesPageBackfillRepository repository;
+    private MoisSalesPageBackfillGateway gateway;
 
     @InjectMocks
     private MoisSalesPageBackfillService service;
@@ -30,15 +31,15 @@ class MoisSalesPageBackfillServiceTest {
      */
     @Test
     void shouldExecuteBackfillAndReturnCounters() {
-        when(repository.countLegacyUrlIngests()).thenReturn(145L);
-        when(repository.countSalesPages()).thenReturn(0L, 145L);
-        when(repository.countJobExecutions()).thenReturn(0L, 420L);
-        when(repository.backfillSalesPages()).thenReturn(145);
-        when(repository.backfillLatestProcessingJobs()).thenReturn(145);
-        when(repository.backfillLatestAnalyses()).thenReturn(145);
-        when(repository.backfillLatestSnapshots()).thenReturn(130);
-        when(repository.backfillLatestCollectedReferenceHtmlCaptures()).thenReturn(0);
-        when(repository.updateLastJobExecutionPointers()).thenReturn(145);
+        when(gateway.countLegacyUrlIngests()).thenReturn(145L);
+        when(gateway.countSalesPages()).thenReturn(0L, 145L);
+        when(gateway.countJobExecutions()).thenReturn(0L, 420L);
+        when(gateway.backfillSalesPages()).thenReturn(145);
+        when(gateway.backfillLatestProcessingJobs()).thenReturn(145);
+        when(gateway.backfillLatestAnalyses()).thenReturn(145);
+        when(gateway.backfillLatestSnapshots()).thenReturn(130);
+        when(gateway.backfillLatestCollectedReferenceHtmlCaptures()).thenReturn(0);
+        when(gateway.updateLastJobExecutionPointers()).thenReturn(145);
 
         MoisSalesPageBackfillService.BackfillCounters counters = service.executeBackfill();
 
@@ -48,7 +49,7 @@ class MoisSalesPageBackfillServiceTest {
         assertThat(counters.jobExecutionsAfter()).isEqualTo(420);
         assertThat(counters.processingJobsInserted()).isEqualTo(145);
         assertThat(counters.snapshotsInserted()).isEqualTo(130);
-        verify(repository).updateLastJobExecutionPointers();
+        verify(gateway).updateLastJobExecutionPointers();
     }
 
     /**
@@ -60,7 +61,7 @@ class MoisSalesPageBackfillServiceTest {
 
         service.run(new DefaultApplicationArguments());
 
-        verify(repository, never()).backfillSalesPages();
+        verify(gateway, never()).backfillSalesPages();
     }
 
     /**

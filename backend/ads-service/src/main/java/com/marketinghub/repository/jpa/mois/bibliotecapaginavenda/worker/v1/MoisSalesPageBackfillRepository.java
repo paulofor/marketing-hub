@@ -1,4 +1,4 @@
-package com.marketinghub.repository.jdbc.mois;
+package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1;
 
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @RequiredArgsConstructor
-public class MoisSalesPageBackfillRepository {
+public class MoisSalesPageBackfillRepository implements MoisSalesPageBackfillGateway {
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -21,6 +21,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Verifica se as tabelas necessárias ao backfill existem antes de executar consultas de migração.
      */
+    @Override
     public boolean hasBackfillTables() {
         return Boolean.TRUE.equals(jdbcTemplate.execute((ConnectionCallback<Boolean>) connection -> {
             DatabaseMetaData metadata = connection.getMetaData();
@@ -52,6 +53,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Conta páginas consolidadas no modelo novo para medir o progresso do backfill.
      */
+    @Override
     public long countSalesPages() {
         Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page", Long.class);
         return count == null ? 0 : count;
@@ -60,6 +62,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Conta execuções no histórico novo para medir a cobertura de auditoria migrada.
      */
+    @Override
     public long countJobExecutions() {
         Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page_job_execution", Long.class);
         return count == null ? 0 : count;
@@ -68,6 +71,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Conta URLs consolidadas no modelo legado que devem existir no novo estado operacional.
      */
+    @Override
     public long countLegacyUrlIngests() {
         Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest", Long.class);
         return count == null ? 0 : count;
@@ -76,6 +80,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Insere ou atualiza o estado atual consolidado em mois_sales_page a partir das tabelas legadas.
      */
+    @Override
     public int backfillSalesPages() {
         return jdbcTemplate.update("""
                 INSERT INTO mois_sales_page
@@ -196,6 +201,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Migra o último job legado de processamento de cada página como execução de análise.
      */
+    @Override
     public int backfillLatestProcessingJobs() {
         return jdbcTemplate.update("""
                 INSERT INTO mois_sales_page_job_execution
@@ -226,6 +232,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Migra a última análise de cada página como execução de auditoria de análise.
      */
+    @Override
     public int backfillLatestAnalyses() {
         return jdbcTemplate.update("""
                 INSERT INTO mois_sales_page_job_execution
@@ -258,6 +265,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Migra o último snapshot de cada página como execução de auditoria da captura.
      */
+    @Override
     public int backfillLatestSnapshots() {
         return jdbcTemplate.update("""
                 INSERT INTO mois_sales_page_job_execution
@@ -295,6 +303,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Migra a última captura bruta ligada a uma referência coletada quando há vínculo com a página consolidada.
      */
+    @Override
     public int backfillLatestCollectedReferenceHtmlCaptures() {
         return jdbcTemplate.update("""
                 INSERT INTO mois_sales_page_job_execution
@@ -326,6 +335,7 @@ public class MoisSalesPageBackfillRepository {
     /**
      * Atualiza cada página consolidada com o ponteiro para a execução mais recente migrada.
      */
+    @Override
     public int updateLastJobExecutionPointers() {
         return jdbcTemplate.update("""
                 UPDATE mois_sales_page sp

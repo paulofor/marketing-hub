@@ -899,8 +899,9 @@ Arquivos alterados:
 - tentativa de execução direta contra o MySQL pela rede do Codex falhou por bloqueio de conexão direta à porta 3306; a rotina fica habilitada para execução automática no backend após deploy/inicialização.
 
 Arquivos alterados:
-- `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/MoisSalesPageBackfillRepository.java`
-- `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/MoisSalesPageBackfillService.java`
-- `backend/ads-service/src/test/java/com/marketinghub/repository/jdbc/mois/MoisSalesPageBackfillServiceTest.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageBackfillRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageBackfillService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageBackfillGateway.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageBackfillServiceTest.java`
 - `backend/ads-service/src/main/resources/application.properties`
 - `docs/registros/mois1.md`

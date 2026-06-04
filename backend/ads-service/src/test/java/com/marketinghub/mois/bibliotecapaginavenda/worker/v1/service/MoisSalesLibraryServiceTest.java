@@ -1,20 +1,19 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -165,6 +164,29 @@ class MoisSalesLibraryServiceTest {
 
 
     /**
+     * Garante que a listagem de entradas usa a tabela operacional nova, sem ler a tabela legada de URL.
+     */
+    @Test
+    void shouldListEntriesFromOperationalSalesPageTable() throws Exception {
+        given(jdbcTemplate.queryForObject(contains("SELECT COUNT(*) FROM mois_sales_page"), eq(Long.class), eq("workspace-001")))
+                .willReturn(1L);
+        given(jdbcTemplate.query(contains("FROM mois_sales_page"), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0)))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    ResultSet row = salesPageEntryRow();
+                    return List.of(mapper.mapRow(row, 0));
+                });
+
+        MoisSalesLibraryDtos.SalesLibraryEntryPageResponse response = service.listEntries("workspace-001", 1, 20);
+
+        org.assertj.core.api.Assertions.assertThat(response.total()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.items()).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).urlCanonical()).isEqualTo("https://example.com/pagina");
+        verify(jdbcTemplate, never()).queryForObject(contains("mois_sales_library_url_ingest"), eq(Long.class), any());
+        verify(jdbcTemplate, never()).query(contains("FROM mois_sales_library_url_ingest"), isA(RowMapper.class), any(), any(), any());
+    }
+
+    /**
      * Configura mocks comuns da ingestão operacional principal em mois_sales_page.
      */
     private void stubOperationalIngest(int... upsertResults) {
@@ -178,8 +200,24 @@ class MoisSalesLibraryServiceTest {
         lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), any(), any(), any())).thenReturn(1);
         lenient().when(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).thenReturn(123L);
         lenient().when(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any())).thenReturn(1);
-        lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_url_ingest"), any(), any(), any(), any(), any(), any(), any())).thenReturn(1);
-        lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_library_processing_job"), isA(Long.class))).thenReturn(1);
+    }
+
+    /**
+     * Monta uma linha simulada de entrada operacional de página consolidada.
+     */
+    private ResultSet salesPageEntryRow() throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("id")).willReturn(99L);
+        given(resultSet.getString("workspace_id")).willReturn("workspace-001");
+        given(resultSet.getString("source")).willReturn("HOTMART");
+        given(resultSet.getString("url_original")).willReturn("https://example.com/pagina?utm=1");
+        given(resultSet.getString("url_canonical")).willReturn("https://example.com/pagina");
+        given(resultSet.getString("title")).willReturn("Página de oferta");
+        given(resultSet.getInt("ingest_count")).willReturn(2);
+        given(resultSet.getTimestamp("first_seen_at")).willReturn(Timestamp.from(Instant.parse("2026-06-01T10:00:00Z")));
+        given(resultSet.getTimestamp("last_captured_at")).willReturn(Timestamp.from(Instant.parse("2026-06-02T10:00:00Z")));
+        given(resultSet.getTimestamp("updated_at")).willReturn(Timestamp.from(Instant.parse("2026-06-03T10:00:00Z")));
+        return resultSet;
     }
 
     /**

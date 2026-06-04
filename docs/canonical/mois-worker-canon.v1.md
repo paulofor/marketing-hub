@@ -499,8 +499,8 @@ Responsabilidades canônicas das novas tabelas:
 Regra de legado após Fase 5:
 
 - Não remover `mois_sales_library_url_ingest`, `mois_sales_library_processing_job`, `mois_sales_library_page_analysis`, `mois_sales_library_page_snapshot`, `mois_sales_library_snapshot_artifact` nem `mois_collected_reference_html_capture`; elas ficam fora do caminho principal de escrita/leitura operacional.
-- Não migrar a leitura principal da UI nesta fase.
-- Não iniciar backfill nesta fase.
+- A leitura principal da UI, incluindo listagem de entradas, páginas, resumo, jobs e histórico, deve consultar `mois_sales_page` e/ou `mois_sales_page_job_execution`; leituras legadas só podem existir para auditoria histórica explícita.
+- Backfills corretivos podem existir apenas como rotinas idempotentes de migração/auditoria, sem recolocar tabelas legadas como fonte operacional.
 - Qualquer gravação futura no modelo novo deve manter `mois_sales_page` como estado atual e `mois_sales_page_job_execution` como histórico/auditoria.
 
 
@@ -515,7 +515,8 @@ Regras obrigatórias da Fase 5:
 - reanálise e atualização manual de status devem criar execuções novas no histórico consolidado sem depender de tabelas legadas;
 - tabelas legadas de URL, job e análise não podem receber a escrita operacional principal nem ser fonte de verdade da UI operacional;
 - logs de transição devem informar `pageId`, `executionId`, operação executada e resultado para rastrear cada mudança de etapa;
-- contratos Swagger da Biblioteca devem explicitar que `jobId` de claim/complete/fail representa `mois_sales_page_job_execution.id` nesta fase.
+- contratos Swagger da Biblioteca devem explicitar que `jobId` de claim/complete/fail representa `mois_sales_page_job_execution.id` nesta fase;
+- o endpoint de listagem de entradas (`GET /api/mois/sales-library/entries`) deve ler `mois_sales_page`; o campo compatível `firstCapturedAt` passa a representar `first_seen_at` enquanto o contrato externo não for renomeado.
 
 Critérios de aceite da Fase 5:
 

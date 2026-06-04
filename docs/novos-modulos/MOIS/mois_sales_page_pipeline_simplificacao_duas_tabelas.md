@@ -360,6 +360,7 @@ Critério de aceite:
 - Ajuste final da Fase 5: escrita dupla/espelhos legados foram removidos do caminho operacional do backend; `jobs`, reanálise, status manual e captura de referência coletada gravam em `mois_sales_page`/`mois_sales_page_job_execution` sem atualizar as tabelas antigas.
 - Os endpoints `/collected-reference-html:*` agora tratam `captureId` como execução `COLLECTED_REFERENCE_HTML` em `mois_sales_page_job_execution`, usando `mois_collected_reference` somente como origem bruta.
 - A listagem/busca de jobs passou a consultar `mois_sales_page_job_execution`; campos compatíveis legados devem ser interpretados como identificadores operacionais novos quando expostos.
+- A listagem de entradas (`/entries`) passou a consultar `mois_sales_page`; campos compatíveis do contrato legado agora representam a página operacional consolidada e não a tabela `mois_sales_library_url_ingest`.
 
 ### Fase 6 — Congelamento e desativação gradual do legado
 

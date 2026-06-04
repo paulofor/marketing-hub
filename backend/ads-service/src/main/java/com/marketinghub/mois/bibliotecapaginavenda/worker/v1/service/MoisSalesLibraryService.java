@@ -319,20 +319,22 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Lista entradas de URL ingeridas na biblioteca para auditoria operacional.
+     * Lista entradas de URL ingeridas usando mois_sales_page como fonte operacional principal.
      */
     public MoisSalesLibraryDtos.SalesLibraryEntryPageResponse listEntries(String workspaceId, int page, int pageSize) {
-        int normalizedPage = Math.max(1, page); int normalizedPageSize = Math.max(1, Math.min(pageSize, 100)); int offset = (normalizedPage - 1) * normalizedPageSize;
-        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_library_url_ingest WHERE workspace_id = ?", Long.class, workspaceId);
+        int normalizedPage = Math.max(1, page);
+        int normalizedPageSize = Math.max(1, Math.min(pageSize, 100));
+        int offset = (normalizedPage - 1) * normalizedPageSize;
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page WHERE workspace_id = ?", Long.class, workspaceId);
         List<MoisSalesLibraryDtos.SalesLibraryEntryResponse> items = jdbcTemplate.query("""
                         SELECT id, workspace_id, source, url_original, url_canonical, title, ingest_count,
-                               first_captured_at, last_captured_at, updated_at
-                        FROM mois_sales_library_url_ingest
-                        WHERE workspace_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?
+                               first_seen_at, last_captured_at, updated_at
+                        FROM mois_sales_page
+                        WHERE workspace_id = ? ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?
                         """, (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryEntryResponse(
                         rs.getLong("id"), rs.getString("workspace_id"), rs.getString("source"), rs.getString("url_original"),
                         rs.getString("url_canonical"), rs.getString("title"), rs.getInt("ingest_count"),
-                        toInstant(rs.getTimestamp("first_captured_at")), toInstant(rs.getTimestamp("last_captured_at")),
+                        toInstant(rs.getTimestamp("first_seen_at")), toInstant(rs.getTimestamp("last_captured_at")),
                         toInstant(rs.getTimestamp("updated_at"))), workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryEntryPageResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }

@@ -978,3 +978,9 @@ Arquivos alterados:
 - endpoints de captura de referência coletada (`/collected-reference-html:*`) agora leem `mois_collected_reference` apenas como origem bruta, criam/atualizam `mois_sales_page` e gravam HTML/erro em `mois_sales_page_job_execution`.
 - listagem e busca de jobs passam a consultar o histórico consolidado `mois_sales_page_job_execution`, mantendo o campo compatível `urlIngestId` como identificador da página operacional.
 - removidas as classes de escrita dupla MOIS para evitar que o legado volte a ser tratado como caminho principal.
+
+## 2026-06-04 — MOIS Biblioteca de Páginas de Vendas — Fase 5 leitura de entradas operacional
+
+- finalizada a troca da listagem `/api/mois/sales-library/entries` para ler `mois_sales_page`, removendo a última leitura operacional do service da Biblioteca contra `mois_sales_library_url_ingest`.
+- atualizado o Swagger do módulo para documentar `/entries`, `/jobs` e `/jobs/{jobId}` como contratos apoiados em `mois_sales_page`/`mois_sales_page_job_execution` na Fase 5.
+- ajustado o cânone MOIS para explicitar que a UI principal deve consultar apenas as duas tabelas operacionais novas, deixando tabelas antigas somente para auditoria histórica explícita.

@@ -905,3 +905,19 @@ Arquivos alterados:
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageBackfillServiceTest.java`
 - `backend/ads-service/src/main/resources/application.properties`
 - `docs/registros/mois1.md`
+
+## 2026-06-04 — Fase 3 do pipeline de páginas de vendas em duas tabelas
+- implementada escrita dupla temporária para manter o modelo legado da Biblioteca de Páginas de Vendas e o modelo consolidado `mois_sales_page`/`mois_sales_page_job_execution` sincronizados durante a transição.
+- a ingestão de URLs agora espelha inserções e atualizações em `mois_sales_page`, criando execução consolidada do job pendente quando uma página nova gera processamento.
+- alterações de job/análise (`FETCHING`, `DONE`, `FAILED`, reanálise e atualização manual de status) passam a registrar execuções no modelo novo e recalcular o estado atual consolidado da página.
+- capturas de HTML/snapshots e capturas brutas vinculadas a referências coletadas passam a registrar histórico em `mois_sales_page_job_execution` e atualizar o estado atual de captura em `mois_sales_page`.
+- adicionados logs de divergência para sinalizar quando estágio/status calculados a partir do legado não batem com o estado gravado no modelo novo.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageDualWriteGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageDualWriteRepository.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotServiceTest.java`
+- `backend/ads-service/src/test/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageDualWriteRepositoryTest.java`
+- `docs/registros/mois1.md`

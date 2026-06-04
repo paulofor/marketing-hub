@@ -39,6 +39,7 @@ export interface GeraLandingStageExecutionDetail extends GeraLandingStageExecuti
   provisionalHtml?: string;
   errorMessage?: string;
   errorDetail?: string;
+  qualityReviewAudit?: string;
   inputTokens?: number;
   outputTokens?: number;
   costUsd?: number;

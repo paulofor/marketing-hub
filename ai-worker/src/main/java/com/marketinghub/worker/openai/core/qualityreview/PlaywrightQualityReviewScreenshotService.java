@@ -12,6 +12,8 @@ import com.microsoft.playwright.options.ScreenshotType;
 import com.microsoft.playwright.options.WaitUntilState;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -41,12 +43,12 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
 
     /** Renderiza o HTML final priorizando mobile e publica os screenshots disponíveis no storage. */
     @Override
-    public List<String> renderScreenshots(QualityReviewInput input) {
+    public List<QualityReviewScreenshotEvidence> renderScreenshots(QualityReviewInput input) {
         if (input == null || !StringUtils.hasText(input.landingHtml())) {
             throw new StageWorkerException("Quality review cannot render screenshot without landing HTML");
         }
         try (Playwright playwright = Playwright.create(); Browser browser = launchBrowser(playwright)) {
-            List<String> screenshotUrls = new ArrayList<>();
+            List<QualityReviewScreenshotEvidence> screenshotUrls = new ArrayList<>();
             for (ViewportSpec viewport : VIEWPORTS) {
                 renderAndUploadPrioritized(browser, input, viewport, screenshotUrls);
             }
@@ -72,7 +74,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
             Browser browser,
             QualityReviewInput input,
             ViewportSpec viewport,
-            List<String> screenshotUrls
+            List<QualityReviewScreenshotEvidence> screenshotUrls
     ) {
         try {
             screenshotUrls.add(renderAndUpload(browser, input, viewport));
@@ -103,7 +105,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
     }
 
     /** Renderiza uma viewport específica, captura JPEG full-page sem recortar a landing e publica no storage. */
-    private String renderAndUpload(Browser browser, QualityReviewInput input, ViewportSpec viewport) {
+    private QualityReviewScreenshotEvidence renderAndUpload(Browser browser, QualityReviewInput input, ViewportSpec viewport) {
         Page page = browser.newPage(new Browser.NewPageOptions()
                 .setViewportSize(viewport.width(), viewport.height())
                 .setDeviceScaleFactor(1));
@@ -128,7 +130,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     properties.screenshotTimeout().toMillis(),
                     uploaded.publicUrl(),
                     screenshot.length);
-            return uploaded.publicUrl();
+            return new QualityReviewScreenshotEvidence(viewport.name(), uploaded.publicUrl(), sha256Hex(screenshot), screenshot.length);
         } finally {
             page.close();
         }
@@ -144,6 +146,22 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     input.idJob(),
                     viewport.name(),
                     error);
+        }
+    }
+
+
+    /** Calcula o hash SHA-256 em hexadecimal para identificar screenshots duplicados com URLs diferentes. */
+    private String sha256Hex(byte[] content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(content);
+            StringBuilder builder = new StringBuilder(hash.length * 2);
+            for (byte value : hash) {
+                builder.append(String.format("%02x", value));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException error) {
+            throw new StageWorkerException("SHA-256 algorithm unavailable for quality-review screenshot audit", error);
         }
     }
 

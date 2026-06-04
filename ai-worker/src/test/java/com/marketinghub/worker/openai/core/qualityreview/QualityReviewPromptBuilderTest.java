@@ -24,8 +24,16 @@ class QualityReviewPromptBuilderTest {
                 objectMapper,
                 workerProperties(),
                 input -> List.of(
-                        "https://cdn.example.com/screens/job-quality-1-desktop.jpg",
-                        "https://cdn.example.com/screens/job-quality-1-mobile.jpg"));
+                        new QualityReviewScreenshotEvidence(
+                                "desktop",
+                                "https://cdn.example.com/screens/job-quality-1-desktop.jpg",
+                                "sha-desktop",
+                                123),
+                        new QualityReviewScreenshotEvidence(
+                                "mobile",
+                                "https://cdn.example.com/screens/job-quality-1-mobile.jpg",
+                                "sha-mobile",
+                                456)));
         StageExecution<QualityReviewInput> execution = new StageExecution<>(
                 "job-quality-1",
                 36L,
@@ -65,6 +73,15 @@ class QualityReviewPromptBuilderTest {
                 .doesNotContain("https://cdn.example.com/asset-hero.jpg");
         assertThat(body.get("model")).isEqualTo("gpt-5.5");
         assertThat(request.model()).isEqualTo("gpt-5.5");
+        assertThat(request.metadata()).containsKeys("qualityReviewAudit", "idJob", "experimentId");
+        Map<String, Object> audit = (Map<String, Object>) request.metadata().get("qualityReviewAudit");
+        assertThat(audit)
+                .containsEntry("landingHtmlLength", 48)
+                .containsEntry("imageDetail", "original")
+                .containsEntry("visionModel", "gpt-5.5");
+        assertThat((List<Map<String, Object>>) audit.get("screenshots"))
+                .extracting(item -> item.get("sha256"))
+                .containsExactly("sha-desktop", "sha-mobile");
     }
 
     /** Cria propriedades operacionais mínimas para o builder quality-review. */

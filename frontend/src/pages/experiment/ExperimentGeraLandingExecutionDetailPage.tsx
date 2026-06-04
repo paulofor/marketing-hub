@@ -145,6 +145,36 @@ export function extractQualityReviewSentScreenshots(
   return screenshots;
 }
 
+function parseQualityReviewAudit(raw?: string | null) {
+  if (!raw?.trim()) return null;
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function auditText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : "—";
+}
+
+function auditNumber(value: unknown) {
+  return typeof value === "number" ? value.toLocaleString("pt-BR") : "—";
+}
+
+function auditBoolean(value: unknown) {
+  return value === true ? "Sim" : value === false ? "Não" : "—";
+}
+
+function auditScreenshots(value: unknown) {
+  return Array.isArray(value)
+    ? (value.filter(
+        (item): item is Record<string, unknown> =>
+          Boolean(item) && typeof item === "object" && !Array.isArray(item),
+      ) as Record<string, unknown>[])
+    : [];
+}
+
 function extractErrorFileContent(raw?: string) {
   if (!raw) return undefined;
 
@@ -219,6 +249,12 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
   const qualityReviewSentScreenshots = isQualityReviewStage
     ? extractQualityReviewSentScreenshots(detailQuery.data?.openAiRequestBody)
     : [];
+  const qualityReviewAudit = isQualityReviewStage
+    ? parseQualityReviewAudit(detailQuery.data?.qualityReviewAudit)
+    : null;
+  const qualityReviewAuditScreenshots = auditScreenshots(
+    qualityReviewAudit?.screenshots,
+  );
 
   const buildJsonDownloadProps = (fieldName: string, value?: string | null) => {
     if (!value) return null;
@@ -415,6 +451,132 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                   <strong>Custo USD:</strong> {detailQuery.data.costUsd ?? "—"}
                 </div>
               </div>
+
+              {isQualityReviewStage && qualityReviewAudit ? (
+                <div className="border rounded p-3 bg-light-subtle">
+                  <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+                    <div>
+                      <h6 className="mb-1">Auditoria da evidência visual</h6>
+                      <p className="text-muted small mb-0">
+                        Hashes e alertas usados para detectar reuso de HTML,
+                        screenshots repetidos e decisões divergentes.
+                      </p>
+                    </div>
+                    <span className="badge text-bg-light border border-secondary-subtle text-dark">
+                      {auditText(qualityReviewAudit.auditSchemaVersion)}
+                    </span>
+                  </div>
+                  {qualityReviewAudit.contradictoryDecisionDetected === true ? (
+                    <div className="alert alert-warning py-2 mb-3" role="alert">
+                      <strong>Decisão contraditória detectada:</strong>{" "}
+                      {auditText(qualityReviewAudit.auditWarning)}
+                    </div>
+                  ) : qualityReviewAudit.evidenceReuseDetected === true ? (
+                    <div className="alert alert-info py-2 mb-3" role="alert">
+                      <strong>Evidência visual reutilizada:</strong> esta
+                      execução avaliou os mesmos hashes de HTML/screenshots de
+                      outro job.
+                    </div>
+                  ) : null}
+                  <div className="row g-2 small">
+                    <div className="col-md-6">
+                      <strong>HTML SHA-256:</strong>{" "}
+                      <code>
+                        {auditText(qualityReviewAudit.landingHtmlSha256)}
+                      </code>
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Tamanho HTML:</strong>{" "}
+                      {auditNumber(qualityReviewAudit.landingHtmlLength)}{" "}
+                      caracteres
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Prompt SHA-256:</strong>{" "}
+                      <code>{auditText(qualityReviewAudit.promptSha256)}</code>
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Request SHA-256:</strong>{" "}
+                      <code>
+                        {auditText(qualityReviewAudit.openAiRequestBodySha256)}
+                      </code>
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Modelo de visão:</strong>{" "}
+                      {auditText(qualityReviewAudit.visionModel)}
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Detalhe da imagem:</strong>{" "}
+                      {auditText(qualityReviewAudit.imageDetail)}
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Reuso detectado:</strong>{" "}
+                      {auditBoolean(qualityReviewAudit.evidenceReuseDetected)}
+                    </div>
+                    <div className="col-md-6">
+                      <strong>Decisão contraditória:</strong>{" "}
+                      {auditBoolean(
+                        qualityReviewAudit.contradictoryDecisionDetected,
+                      )}
+                    </div>
+                    {qualityReviewAudit.reusedEvidenceFromJobId ? (
+                      <div className="col-md-6">
+                        <strong>Job com mesma evidência:</strong>{" "}
+                        <code>
+                          {auditText(
+                            qualityReviewAudit.reusedEvidenceFromJobId,
+                          )}
+                        </code>
+                      </div>
+                    ) : null}
+                    {qualityReviewAudit.reusedEvidencePreviousApprovalRecommendation ? (
+                      <div className="col-md-6">
+                        <strong>Decisão anterior:</strong>{" "}
+                        {auditText(
+                          qualityReviewAudit.reusedEvidencePreviousApprovalRecommendation,
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                  {qualityReviewAuditScreenshots.length > 0 ? (
+                    <div className="table-responsive mt-3">
+                      <table className="table table-sm align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th>Viewport</th>
+                            <th>Bytes</th>
+                            <th>SHA-256</th>
+                            <th>URL</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {qualityReviewAuditScreenshots.map((item, index) => (
+                            <tr key={`${auditText(item.viewport)}-${index}`}>
+                              <td>{auditText(item.viewport)}</td>
+                              <td>{auditNumber(item.bytes)}</td>
+                              <td>
+                                <code>{auditText(item.sha256)}</code>
+                              </td>
+                              <td>
+                                {typeof item.publicUrl === "string" ? (
+                                  <a
+                                    href={item.publicUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Abrir
+                                  </a>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {isQualityReviewStage ? (
                 <div>

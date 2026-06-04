@@ -89,7 +89,8 @@ public class ImageGenerationOpenAiClient implements OpenAiClientPort {
                 request.schemaJson(),
                 request.requestBodyJson(),
                 request.promptMarkdownContent(),
-                Instant.now()
+                Instant.now(),
+                request.metadata()
         );
     }
 

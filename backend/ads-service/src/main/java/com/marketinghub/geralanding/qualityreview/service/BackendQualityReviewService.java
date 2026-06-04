@@ -15,6 +15,8 @@ import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepo
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -105,13 +107,15 @@ public class BackendQualityReviewService {
             String promptMarkdownContent,
             String schemaJson,
             String requestBodyJson,
-            String openAiJobId) {
+            String openAiJobId,
+            Map<String, Object> qualityReviewAudit) {
         GeraLandingStageExecution execution = findByIdJob(idJob);
         execution.setPrompt(prompt);
         execution.setPromptMarkdownContent(StringUtils.hasText(promptMarkdownContent) ? promptMarkdownContent : prompt);
         execution.setSchemaJson(schemaJson);
         execution.setOpenAiRequestBody(requestBodyJson);
         execution.setOpenAiJobId(openAiJobId);
+        execution.setQualityReviewAudit(serializeAudit(enrichDispatchAudit(qualityReviewAudit, prompt, requestBodyJson)));
         execution.setProcessingStartedAt(Instant.now());
         execution.setStatus(STATUS_WAITING_OPENAI_DISPATCH);
         executionRepository.save(execution);
@@ -149,6 +153,7 @@ public class BackendQualityReviewService {
             execution.setErrorDetail(normalizedErrorDetail);
             execution.setCompletedAt(Instant.now());
             execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
+            execution.setQualityReviewAudit(serializeAudit(enrichCompletionAudit(execution, modelResponse)));
             executionRepository.save(execution);
             if (normalizedErrorMessage == null) {
                 persistQualityReviewArtifactOnExperiment(execution, modelResponse);
@@ -191,6 +196,162 @@ public class BackendQualityReviewService {
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
         return executionRepository.save(execution);
+    }
+
+
+    /** Enriquece a auditoria de despacho com hashes do prompt/request persistidos no backend. */
+    private Map<String, Object> enrichDispatchAudit(Map<String, Object> rawAudit, String prompt, String requestBodyJson) {
+        Map<String, Object> audit = mutableAudit(rawAudit);
+        audit.put("promptSha256", sha256Hex(prompt));
+        audit.put("openAiRequestBodySha256", sha256Hex(requestBodyJson));
+        audit.put("auditSchemaVersion", "quality-review-audit/v1");
+        return audit;
+    }
+
+    /** Enriquece a auditoria final com decisão do modelo e alertas de evidência visual reutilizada ou contraditória. */
+    private Map<String, Object> enrichCompletionAudit(GeraLandingStageExecution execution, String modelResponse) {
+        Map<String, Object> audit = parseAudit(execution.getQualityReviewAudit());
+        String currentRecommendation = extractApprovalRecommendation(modelResponse);
+        if (currentRecommendation != null) {
+            audit.put("approvalRecommendation", currentRecommendation);
+        }
+        addEvidenceReuseWarnings(execution, audit, currentRecommendation);
+        return audit;
+    }
+
+    /** Adiciona alertas quando outra execução já avaliou a mesma evidência visual. */
+    private void addEvidenceReuseWarnings(
+            GeraLandingStageExecution execution,
+            Map<String, Object> audit,
+            String currentRecommendation
+    ) {
+        List<GeraLandingStageExecution> previousExecutions = executionRepository
+                .findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(execution.getExperimentId(), STAGE_CODE);
+        if (previousExecutions == null) {
+            previousExecutions = List.of();
+        }
+        for (GeraLandingStageExecution previous : previousExecutions) {
+            if (isSameJob(execution, previous) || !STATUS_COMPLETED.equals(previous.getStatus())) {
+                continue;
+            }
+            Map<String, Object> previousAudit = parseAudit(previous.getQualityReviewAudit());
+            if (!isSameVisualEvidence(audit, previousAudit)) {
+                continue;
+            }
+            String previousRecommendation = extractApprovalRecommendation(previous.getModelResponse());
+            audit.put("evidenceReuseDetected", true);
+            audit.put("reusedEvidenceFromJobId", fromDatabaseIdJob(previous.getIdJob()));
+            audit.put("reusedEvidenceFromCompletedAt", previous.getCompletedAt() != null ? previous.getCompletedAt().toString() : null);
+            audit.put("reusedEvidencePreviousApprovalRecommendation", previousRecommendation);
+            boolean contradictory = currentRecommendation != null
+                    && previousRecommendation != null
+                    && !currentRecommendation.equals(previousRecommendation);
+            audit.put("contradictoryDecisionDetected", contradictory);
+            if (contradictory) {
+                audit.put(
+                        "auditWarning",
+                        "Mesma evidência visual gerou recomendações divergentes; comparar scores entre rubricas/prompts diferentes exige revisão humana.");
+            }
+            return;
+        }
+        audit.putIfAbsent("evidenceReuseDetected", false);
+        audit.putIfAbsent("contradictoryDecisionDetected", false);
+    }
+
+    /** Verifica se duas execuções representam o mesmo id_job persistido. */
+    private boolean isSameJob(GeraLandingStageExecution current, GeraLandingStageExecution previous) {
+        return current.getIdJob() != null
+                && previous.getIdJob() != null
+                && fromDatabaseIdJob(current.getIdJob()).equals(fromDatabaseIdJob(previous.getIdJob()));
+    }
+
+    /** Compara hashes do HTML e dos screenshots para detectar reuso real da evidência visual. */
+    private boolean isSameVisualEvidence(Map<String, Object> currentAudit, Map<String, Object> previousAudit) {
+        Object currentHtml = currentAudit.get("landingHtmlSha256");
+        Object previousHtml = previousAudit.get("landingHtmlSha256");
+        return currentHtml != null
+                && currentHtml.equals(previousHtml)
+                && screenshotHashes(currentAudit).equals(screenshotHashes(previousAudit))
+                && !screenshotHashes(currentAudit).isEmpty();
+    }
+
+    /** Extrai hashes por viewport dos screenshots registrados na auditoria. */
+    private Map<String, Object> screenshotHashes(Map<String, Object> audit) {
+        Map<String, Object> hashes = new LinkedHashMap<>();
+        Object screenshots = audit.get("screenshots");
+        if (screenshots instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> map && map.get("viewport") != null && map.get("sha256") != null) {
+                    hashes.put(String.valueOf(map.get("viewport")), map.get("sha256"));
+                }
+            }
+        }
+        return hashes;
+    }
+
+    /** Extrai a recomendação de publicação do JSON retornado pelo modelo quando possível. */
+    private String extractApprovalRecommendation(String modelResponse) {
+        if (!StringUtils.hasText(modelResponse)) {
+            return null;
+        }
+        try {
+            Object parsed = objectMapper.readValue(modelResponse, Object.class);
+            if (parsed instanceof Map<?, ?> map && map.get("approvalRecommendation") != null) {
+                return String.valueOf(map.get("approvalRecommendation"));
+            }
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao ler approvalRecommendation do Quality Review. modelResponseLength={}", modelResponse.length(), ex);
+        }
+        return null;
+    }
+
+    /** Converte auditoria recebida em mapa mutável para enriquecimento local. */
+    private Map<String, Object> mutableAudit(Map<String, Object> rawAudit) {
+        return rawAudit != null ? new LinkedHashMap<>(rawAudit) : new LinkedHashMap<>();
+    }
+
+    /** Lê a auditoria persistida como mapa mutável, preservando fluxo quando dados antigos não existem. */
+    private Map<String, Object> parseAudit(String rawAudit) {
+        if (!StringUtils.hasText(rawAudit)) {
+            return new LinkedHashMap<>();
+        }
+        try {
+            return objectMapper.readValue(rawAudit, FRAMEWORK_TYPE);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao ler qualityReviewAudit persistido; reiniciando auditoria estruturada. rawLength={}", rawAudit.length(), ex);
+            return new LinkedHashMap<>();
+        }
+    }
+
+    /** Serializa a auditoria para persistência em LONGTEXT sem bloquear a etapa por falha de formatação. */
+    private String serializeAudit(Map<String, Object> audit) {
+        if (audit == null || audit.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(audit);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao serializar qualityReviewAudit; descartando auditoria da execução", ex);
+            return null;
+        }
+    }
+
+    /** Calcula SHA-256 hexadecimal de texto auditável persistido no backend. */
+    private String sha256Hex(String text) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(hash.length * 2);
+            for (byte value : hash) {
+                builder.append(String.format("%02x", value));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm unavailable for quality-review audit", ex);
+        }
     }
 
     /** Normaliza a mensagem de erro recebida no callback da revisão visual. */
@@ -333,6 +494,7 @@ public class BackendQualityReviewService {
                 execution.getProvisionalHtml(),
                 execution.getErrorMessage(),
                 execution.getErrorDetail(),
+                execution.getQualityReviewAudit(),
                 execution.getInputTokens(),
                 execution.getOutputTokens(),
                 execution.getCostUsd());

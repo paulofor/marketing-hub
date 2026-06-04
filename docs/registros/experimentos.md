@@ -3461,3 +3461,21 @@
 - causa-raiz endereçada: a fase 1 diagnosticava divergências, mas ainda não havia um mecanismo idempotente para reparar divergências simples e bloquear alterações destrutivas com rastreabilidade.
 - correção aplicada: evoluído o registry oficial com versão canônica e política explícita de campos estruturais versus operacionais; criado `PipelineDefinitionSynchronizer` para criar pipeline/etapas oficiais ausentes, corrigir nome/posição/obrigatoriedade estruturais e preservar `openAiModel`, `active` e descrições operacionais; adicionados endpoints `POST /api/pipelines/{id}/sync` e `POST /api/pipelines/official/{code}/sync` sem payload da tela; documentação Swagger e cânone de experimento sincronizados.
 - validação automatizada: adicionados testes para criação de etapa oficial ausente, preservação de modelo OpenAI configurado, bloqueio de divergência destrutiva, criação de pipeline oficial ausente por código e aderência do registry à versão canônica.
+
+## 2026-06-04 — Fase 3 do contrato operacional da tela de Pipelines
+
+- solicitação: executar a Fase 3 do plano `docs/implementacao/backend/plano-pipelines-contrato-operacional.md`, separando definição persistente e configuração operacional.
+- causa-raiz/objetivo: permitir versionamento/auditoria futura e reduzir risco de divergência entre contrato estrutural de pipeline e campos editáveis da operação.
+- foi feito:
+  - adicionadas tabelas `pipeline_definition`, `pipeline_stage_definition` e `pipeline_stage_config` via changelog Liquibase incremental, com FKs, uniques e migração inicial das configurações atuais de `pipeline_stage` para `pipeline_stage_config`;
+  - criadas entidades JPA e repositories centralizados em `com.marketinghub.repository.jpa.pipeline` para a persistência separada do contrato;
+  - criado `PipelinePersistentContractSynchronizer` para sincronizar definições oficiais do registry e criar configuração operacional sem sobrescrever modelo OpenAI, descrição ou status configurados;
+  - integrado o sincronizador persistente ao fluxo seguro já existente de sincronização de pipelines oficiais;
+  - adicionada cobertura unitária para preservar configuração operacional na separação persistente.
+- arquivos principais:
+  - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-04-pipeline-persistent-contract.yaml
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineDefinitionEntity.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStageDefinitionEntity.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStageConfig.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelinePersistentContractSynchronizer.java
+  - backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java

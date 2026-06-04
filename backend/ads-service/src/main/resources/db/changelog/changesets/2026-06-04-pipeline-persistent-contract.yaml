@@ -1,0 +1,217 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-pipeline-persistent-contract
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: pipeline_definition
+      changes:
+        - createTable:
+            tableName: pipeline_definition
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: module
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: canonical_version
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - createTable:
+            tableName: pipeline_stage_definition
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: pipeline_definition_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: canonical_code
+                  type: VARCHAR(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: required
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: implemented_stage_enum
+                  type: VARCHAR(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requires_openai_model
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: configurable
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - createTable:
+            tableName: pipeline_stage_config
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: pipeline_stage_definition_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: openai_model_id
+                  type: BIGINT
+              - column:
+                  name: description_override
+                  type: TEXT
+              - column:
+                  name: updated_by
+                  type: VARCHAR(120)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - addUniqueConstraint:
+            tableName: pipeline_definition
+            columnNames: code, canonical_version
+            constraintName: uk_pipeline_definition_code_version
+        - addUniqueConstraint:
+            tableName: pipeline_stage_definition
+            columnNames: pipeline_definition_id, canonical_code
+            constraintName: uk_pipeline_stage_definition_code
+        - addUniqueConstraint:
+            tableName: pipeline_stage_definition
+            columnNames: pipeline_definition_id, position
+            constraintName: uk_pipeline_stage_definition_position
+        - addUniqueConstraint:
+            tableName: pipeline_stage_config
+            columnNames: pipeline_stage_definition_id
+            constraintName: uk_pipeline_stage_config_definition
+        - addForeignKeyConstraint:
+            baseTableName: pipeline_stage_definition
+            baseColumnNames: pipeline_definition_id
+            constraintName: fk_pipeline_stage_definition_pipeline_definition
+            referencedTableName: pipeline_definition
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: pipeline_stage_config
+            baseColumnNames: pipeline_stage_definition_id
+            constraintName: fk_pipeline_stage_config_stage_definition
+            referencedTableName: pipeline_stage_definition
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: pipeline_stage_config
+            baseColumnNames: openai_model_id
+            constraintName: fk_pipeline_stage_config_openai_model
+            referencedTableName: openai_model
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            tableName: pipeline_definition
+            indexName: idx_pipeline_definition_module
+            columns:
+              - column:
+                  name: module
+        - createIndex:
+            tableName: pipeline_stage_config
+            indexName: idx_pipeline_stage_config_openai_model
+            columns:
+              - column:
+                  name: openai_model_id
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pipeline_definition (module, code, name, canonical_version, active, created_at, updated_at)
+              SELECT p.module, p.code, p.name, 'legacy-operational-import', p.active, NOW(), NOW()
+              FROM pipeline p;
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, created_at, updated_at)
+              SELECT pd.id, UPPER(REPLACE(ps.code, '-', '_')), ps.name, ps.position, ps.required, UPPER(REPLACE(ps.code, '-', '_')), 1, 1, NOW(), NOW()
+              FROM pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              INNER JOIN pipeline_definition pd ON pd.code = p.code AND pd.canonical_version = 'legacy-operational-import';
+              INSERT INTO pipeline_stage_config (pipeline_stage_definition_id, active, openai_model_id, description_override, updated_by, created_at, updated_at)
+              SELECT psd.id, ps.active, ps.openai_model_id, ps.description, 'liquibase-migration', NOW(), NOW()
+              FROM pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              INNER JOIN pipeline_definition pd ON pd.code = p.code AND pd.canonical_version = 'legacy-operational-import'
+              INNER JOIN pipeline_stage_definition psd ON psd.pipeline_definition_id = pd.id AND psd.position = ps.position;

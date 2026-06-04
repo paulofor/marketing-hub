@@ -605,6 +605,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-04-pipeline-stage-openai-model.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-04-pipeline-persistent-contract.yaml
+      relativeToChangelogFile: true
 
   - include:
       file: changesets/2026-06-04-openai-model-accepts-image-input.yaml

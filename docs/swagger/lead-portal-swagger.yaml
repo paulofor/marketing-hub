@@ -1,0 +1,926 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Lead Portal API
+  version: 1.0.0
+  license:
+    name: Proprietary
+    url: https://oportunidadebrasil.shop
+  description: |
+    Contrato OpenAPI versionado dos endpoints do Lead Portal.
+
+    O Lead Portal publica fluxos públicos, recebe submissões de leads, registra sinais de engajamento
+    e expõe consultas operacionais para materiais de imagem. O tráfego público do frontend usa a base
+    `/api`, enquanto métricas Prometheus ficam em `/lead-portal/metrics`.
+servers:
+  - url: https://oportunidadebrasil.shop
+    description: Produção pública do Lead Portal
+  - url: /
+    description: Mesmo host do frontend/proxy ou backend local
+security: []
+tags:
+  - name: Flows
+    description: Publicação, consulta e entrega standalone de fluxos do Lead Portal.
+  - name: Flow Submissions
+    description: Captura de respostas e imagens enviadas por visitantes dos fluxos.
+  - name: Engagement
+    description: Sinais públicos de renderização e analytics encaminhados ao Marketing Hub.
+  - name: Leads
+    description: Captura legada de leads com imagem e consulta do resultado processado.
+  - name: Image Material
+    description: Dashboard e casos de materiais de imagem gerados a partir das submissões.
+  - name: Metrics
+    description: Métricas operacionais em formato Prometheus.
+paths:
+  /api/flows/{slug}:
+    put:
+      tags: [Flows]
+      summary: Cria ou atualiza um fluxo público
+      description: Publica o contrato do fluxo, incluindo HTML customizado, perguntas, estilo visual e Pixel da Meta.
+      operationId: upsertLeadPortalFlow
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertFlowRequest'
+            examples:
+              standaloneLanding:
+                summary: Landing standalone com tracking público
+                value:
+                  name: Landing Personal Trainer
+                  description: Captura leads para oferta de imagens profissionais.
+                  customFormHtml: "<!doctype html><html><body><form>...</form></body></html>"
+                  facebookPixelId: "1234567890"
+                  imagePromptModel: gpt-image-1
+                  imagePromptTemplate: "Crie imagens profissionais para {{activityType}}"
+                  imagePromptBatchSize: 4
+                  questions: []
+      responses:
+        '200':
+          description: Fluxo criado ou atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+    get:
+      tags: [Flows]
+      summary: Consulta o contrato público de um fluxo
+      description: Retorna o contrato renderizável do fluxo e registra o acesso com metadados da requisição.
+      operationId: getLeadPortalFlow
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+        - name: campaign
+          in: query
+          required: false
+          description: Código da campanha associado ao acesso público.
+          schema:
+            type: string
+            maxLength: 190
+      responses:
+        '200':
+          description: Fluxo encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags: [Flows]
+      summary: Remove um fluxo publicado
+      operationId: deleteLeadPortalFlow
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+      responses:
+        '204':
+          description: Fluxo removido.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /api/flows/{slug}/page:
+    get:
+      tags: [Flows]
+      summary: Entrega a landing standalone do fluxo
+      description: Retorna HTML standalone com script de analytics público injetado quando o fluxo possui documento HTML completo.
+      operationId: getLeadPortalStandalonePage
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+      responses:
+        '200':
+          description: HTML standalone renderizável.
+          content:
+            text/html:
+              schema:
+                type: string
+        '409':
+          description: O fluxo existe, mas não possui HTML standalone.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Fluxo não possui HTML standalone.
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /api/flows/{slug}/submissions:
+    post:
+      tags: [Flow Submissions]
+      summary: Envia uma submissão para um fluxo
+      description: |
+        Recebe `multipart/form-data`. O formato preferencial envia o campo `payload` como JSON serializado
+        com `name`, `email`, `answers`, `imageKey` e `campaignCode`. Para compatibilidade com formulários HTML,
+        o endpoint também aceita campos simples de form-data e monta o payload no backend.
+      operationId: submitLeadPortalFlow
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FlowSubmissionMultipartRequest'
+            encoding:
+              payload:
+                contentType: application/json
+              image:
+                contentType: image/png, image/jpeg, image/webp
+      responses:
+        '201':
+          description: Submissão criada.
+          headers:
+            Location:
+              description: URL da submissão criada.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '413':
+          $ref: '#/components/responses/PayloadTooLargeError'
+  /api/flows/submissions/{id}/image:
+    get:
+      tags: [Flow Submissions]
+      summary: Baixa a imagem enviada em uma submissão de fluxo
+      operationId: downloadFlowSubmissionImage
+      parameters:
+        - $ref: '#/components/parameters/UuidPath'
+      responses:
+        '200':
+          description: Arquivo de imagem encontrado.
+          headers:
+            Content-Disposition:
+              description: Nome original do arquivo enviado.
+              schema:
+                type: string
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /api/flows/{slug}/render-complete:
+    post:
+      tags: [Engagement]
+      summary: Registra renderização completa do fluxo
+      description: Encaminha o evento `lead-portal-render-complete` para o funil de experimento no Marketing Hub.
+      operationId: registerLeadPortalRenderComplete
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRenderCompleteRequest'
+      responses:
+        '202':
+          description: Evento encaminhado ao Marketing Hub.
+        '204':
+          description: Evento ignorado por configuração ausente ou regra operacional.
+        '502':
+          description: Falha ao encaminhar evento ao Marketing Hub.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /api/flows/{slug}/page-analytics:
+    post:
+      tags: [Engagement]
+      summary: Registra analytics da landing standalone
+      description: Recebe o payload cru de analytics público e encaminha ao Marketing Hub preservando os campos relevantes do evento.
+      operationId: registerLeadPortalPageAnalytics
+      parameters:
+        - $ref: '#/components/parameters/SlugPath'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageAnalyticsRequest'
+      responses:
+        '202':
+          description: Evento encaminhado ao Marketing Hub.
+        '204':
+          description: Evento ignorado por configuração ausente ou regra operacional.
+        '502':
+          description: Falha ao encaminhar evento ao Marketing Hub.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /api/leads:
+    post:
+      tags: [Leads]
+      summary: Cria lead legado com imagem
+      description: Captura nome, e-mail, observações opcionais e uma imagem obrigatória para processamento legado.
+      operationId: createLead
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateLeadMultipartRequest'
+      responses:
+        '201':
+          description: Lead criado.
+          headers:
+            Location:
+              description: URL do lead criado.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '413':
+          $ref: '#/components/responses/PayloadTooLargeError'
+  /api/leads/{id}:
+    get:
+      tags: [Leads]
+      summary: Consulta um lead pelo identificador
+      operationId: getLead
+      parameters:
+        - $ref: '#/components/parameters/UuidPath'
+      responses:
+        '200':
+          description: Lead encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /api/leads/{id}/result:
+    get:
+      tags: [Leads]
+      summary: Consulta o resultado processado de um lead
+      operationId: getLeadResult
+      parameters:
+        - $ref: '#/components/parameters/UuidPath'
+      responses:
+        '200':
+          description: Status e resultado do lead.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /api/leads/{id}/image:
+    get:
+      tags: [Leads]
+      summary: Baixa a imagem enviada por um lead legado
+      operationId: downloadLeadImage
+      parameters:
+        - $ref: '#/components/parameters/UuidPath'
+      responses:
+        '200':
+          description: Arquivo de imagem encontrado.
+          headers:
+            Content-Disposition:
+              description: Nome original do arquivo enviado.
+              schema:
+                type: string
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /api/image-material/dashboard:
+    get:
+      tags: [Image Material]
+      summary: Consulta o dashboard operacional de materiais de imagem
+      operationId: getImageMaterialDashboard
+      parameters:
+        - name: flowSlug
+          in: query
+          required: false
+          description: Slug do fluxo usado para filtrar o dashboard.
+          schema:
+            type: string
+            default: formulario-simples-personal-trainer
+        - name: limit
+          in: query
+          required: false
+          description: Quantidade máxima de pacotes recentes.
+          schema:
+            type: integer
+            minimum: 1
+            default: 8
+      responses:
+        '200':
+          description: Dashboard do fluxo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageMaterialDashboardResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /api/image-material/submissions/{id}:
+    get:
+      tags: [Image Material]
+      summary: Consulta o caso detalhado de uma submissão de material de imagem
+      operationId: getImageMaterialSubmission
+      parameters:
+        - $ref: '#/components/parameters/UuidPath'
+      responses:
+        '200':
+          description: Caso encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageMaterialCaseResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /lead-portal/metrics:
+    get:
+      tags: [Metrics]
+      summary: Exporta métricas Prometheus do Lead Portal
+      operationId: scrapeLeadPortalMetrics
+      responses:
+        '200':
+          description: Métricas em formato Prometheus text exposition.
+          content:
+            text/plain; version=0.0.4; charset=utf-8:
+              schema:
+                type: string
+        '404':
+          description: Endpoint de métricas indisponível no ambiente consultado.
+components:
+  parameters:
+    SlugPath:
+      name: slug
+      in: path
+      required: true
+      description: Slug público do fluxo.
+      schema:
+        type: string
+        minLength: 1
+        example: formulario-simples-personal-trainer
+    UuidPath:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID do recurso.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    ValidationError:
+      description: Payload ou parâmetros inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFoundError:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PayloadTooLargeError:
+      description: Arquivo enviado excede o limite permitido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    UpsertFlowRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          nullable: true
+        customFormHtml:
+          type: string
+          nullable: true
+          description: HTML customizado do fluxo. Quando for documento completo, pode ser entregue por `/page`.
+        facebookPixelId:
+          type: string
+          nullable: true
+        facebookPixelCode:
+          type: string
+          nullable: true
+        facebookPixelCreatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        imagePromptModel:
+          type: string
+          nullable: true
+        imagePromptTemplate:
+          type: string
+          nullable: true
+        imagePromptBatchSize:
+          type: integer
+          nullable: true
+        simpleFormStyle:
+          $ref: '#/components/schemas/SimpleFormStyle'
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowQuestionRequest'
+          default: []
+      description: Ao menos `customFormHtml` ou uma pergunta em `questions` deve ser informado.
+    FlowResponse:
+      type: object
+      required: [slug, name, questions]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        customFormHtml:
+          type: string
+          nullable: true
+        customFormRenderMode:
+          $ref: '#/components/schemas/CustomFormRenderMode'
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowQuestion'
+        simpleFormStyle:
+          $ref: '#/components/schemas/SimpleFormStyle'
+        facebookPixelId:
+          type: string
+          nullable: true
+        facebookPixelCode:
+          type: string
+          nullable: true
+        facebookPixelCreatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    FlowQuestionRequest:
+      type: object
+      required: [title, dataKey, type]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        dataKey:
+          type: string
+          minLength: 1
+        type:
+          $ref: '#/components/schemas/FlowQuestionType'
+        required:
+          type: boolean
+          default: false
+        description:
+          type: string
+          nullable: true
+        placeholder:
+          type: string
+          nullable: true
+        options:
+          type: array
+          items:
+            type: string
+          default: []
+    FlowQuestion:
+      allOf:
+        - $ref: '#/components/schemas/FlowQuestionRequest'
+    FlowQuestionType:
+      type: string
+      enum: [TEXT, TEXTAREA, NUMBER, EMAIL, PHONE, DATE, SINGLE_CHOICE, MULTIPLE_CHOICE, IMAGE_UPLOAD]
+    CustomFormRenderMode:
+      type: string
+      nullable: true
+      enum: [IFRAME, STANDALONE_PAGE]
+    SimpleFormStyle:
+      type: object
+      nullable: true
+      properties:
+        slug:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        definition:
+          $ref: '#/components/schemas/SimpleFormStyleDefinition'
+    SimpleFormStyleDefinition:
+      type: object
+      nullable: true
+      properties:
+        backgroundColor: { type: string, nullable: true }
+        backgroundGradient: { type: string, nullable: true }
+        backgroundPatternUrl: { type: string, nullable: true }
+        cardBackground: { type: string, nullable: true }
+        cardBorderColor: { type: string, nullable: true }
+        cardShadow: { type: string, nullable: true }
+        headingColor: { type: string, nullable: true }
+        textColor: { type: string, nullable: true }
+        mutedTextColor: { type: string, nullable: true }
+        primaryColor: { type: string, nullable: true }
+        accentColor: { type: string, nullable: true }
+        buttonBackground: { type: string, nullable: true }
+        buttonTextColor: { type: string, nullable: true }
+        buttonShadow: { type: string, nullable: true }
+        buttonBorderRadius: { type: string, nullable: true }
+        highlightBackground: { type: string, nullable: true }
+        inputBackground: { type: string, nullable: true }
+        inputBorderColor: { type: string, nullable: true }
+        heroLayout: { type: string, nullable: true, enum: [image-left, image-right, stacked] }
+        heroImageUrl: { type: string, nullable: true }
+        heroImageBlendColor: { type: string, nullable: true }
+    FlowSubmissionMultipartRequest:
+      type: object
+      properties:
+        payload:
+          type: string
+          description: JSON serializado compatível com `FlowSubmissionRequest`.
+          example: '{"name":"Ana","email":"ana@example.com","answers":{"activityType":"Personal trainer"},"campaignCode":"campanha-a"}'
+        name:
+          type: string
+          description: Campo alternativo quando `payload` não é enviado.
+        email:
+          type: string
+          format: email
+          description: Campo alternativo quando `payload` não é enviado.
+        answers:
+          type: string
+          description: Campo alternativo com JSON de respostas quando `payload` não é enviado.
+        imageKey:
+          type: string
+          description: Chave da pergunta de imagem quando `payload` não é enviado.
+        campaignCode:
+          type: string
+          maxLength: 190
+          description: Código de campanha quando `payload` não é enviado.
+        image:
+          type: string
+          format: binary
+          nullable: true
+    FlowSubmissionResponse:
+      type: object
+      required: [id, flowSlug, name, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        flowSlug:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    RegisterRenderCompleteRequest:
+      type: object
+      properties:
+        visitorId:
+          type: string
+          nullable: true
+        campaignCode:
+          type: string
+          nullable: true
+          maxLength: 190
+    PageAnalyticsRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        eventId:
+          type: string
+          nullable: true
+        eventType:
+          type: string
+          nullable: true
+          example: page_view
+        sectionId:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          nullable: true
+        visitorId:
+          type: string
+          nullable: true
+        campaignCode:
+          type: string
+          nullable: true
+        pageUrl:
+          type: string
+          format: uri
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+          nullable: true
+    CreateLeadMultipartRequest:
+      type: object
+      required: [name, email, image]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        notes:
+          type: string
+          nullable: true
+        image:
+          type: string
+          format: binary
+    LeadResponse:
+      type: object
+      required: [id, name, email, status, createdAt, imageUrl]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        notes:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/LeadStatus'
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        result:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          format: uri
+    ResultResponse:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/LeadStatus'
+        result:
+          type: string
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+    LeadStatus:
+      type: string
+      enum: [PROCESSING, COMPLETED]
+    ImageMaterialDashboardResponse:
+      type: object
+      required: [flowSlug, totalSubmissions, packagesQueued, packagesInProgress, packagesCompleted, packagesFailed, plannedImages, imagesGenerated, estimatedCostUsd, payments, recentPackages]
+      properties:
+        flowSlug:
+          type: string
+        totalSubmissions:
+          type: integer
+          format: int64
+        packagesQueued:
+          type: integer
+          format: int64
+        packagesInProgress:
+          type: integer
+          format: int64
+        packagesCompleted:
+          type: integer
+          format: int64
+        packagesFailed:
+          type: integer
+          format: int64
+        plannedImages:
+          type: integer
+          format: int64
+        imagesGenerated:
+          type: integer
+          format: int64
+        estimatedCostUsd:
+          type: number
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrencyTotal'
+        recentPackages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImagePackageSummary'
+    CurrencyTotal:
+      type: object
+      required: [currency, amount]
+      properties:
+        currency:
+          type: string
+        amount:
+          type: number
+    ImagePackageSummary:
+      type: object
+      required: [packageId, submissionId, status, professionalName, contactSummary, services]
+      properties:
+        packageId:
+          type: integer
+          format: int64
+        submissionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        professionalName:
+          type: string
+        contactSummary:
+          type: string
+        studioName:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        services:
+          type: array
+          items:
+            type: string
+        plannedOutputs:
+          type: integer
+          nullable: true
+        totalPrice:
+          type: number
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        failureReason:
+          type: string
+          nullable: true
+    ImageMaterialCaseResponse:
+      type: object
+      required: [submissionId, flowSlug, activityType, professionalName, email, contactSummary, services, answers, packages]
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+        flowSlug:
+          type: string
+        activityType:
+          type: string
+        professionalName:
+          type: string
+        email:
+          type: string
+          format: email
+        contactSummary:
+          type: string
+        studioName:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        services:
+          type: array
+          items:
+            type: string
+        answers:
+          type: object
+          additionalProperties: true
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageMaterialPackageDetails'
+    ImageMaterialPackageDetails:
+      type: object
+      required: [packageId, status, prompt, history]
+      properties:
+        packageId:
+          type: integer
+          format: int64
+        status:
+          type: string
+        plannedOutputs:
+          type: integer
+          nullable: true
+        freeImages:
+          type: integer
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+        totalPrice:
+          type: number
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        failureReason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageMaterialStatusHistory'
+    ImageMaterialStatusHistory:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: string

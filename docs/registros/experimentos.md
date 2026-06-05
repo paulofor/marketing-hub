@@ -3566,3 +3566,25 @@
 - correção aplicada: a etapa de aprovação/publicação da landing pública agora injeta, quando detecta controles mínimos de captura e ausência de contrato existente, o script de submissão canônico `lead-portal-submission-engagement.v1`, enviando nome/e-mail para o endpoint público do Lead Portal antes de republicar o HTML final.
 - cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` registra que a aprovação deve injetar submissão canônica idempotente na cópia publicável quando houver controles mínimos de captura.
 - validação automatizada: adicionado teste unitário no `BackendPublicLandingServiceTest` garantindo que a aprovação injeta contrato, endpoint de submissão e handler de clique no artefato publicado.
+
+## 2026-06-05 12:08:09 UTC-3
+- solicitação: criar um Swagger dos endpoints do Lead Portal, mantendo o contrato versionado no local centralizado de documentação OpenAPI.
+- raciocínio para a solução: o Lead Portal possui endpoints próprios no backend standalone (`lead-portal/backend`) para fluxos, submissões, engajamento, leads legados, materiais de imagem e métricas; portanto o contrato deveria refletir esses controllers diretamente em `docs/swagger`, sem alterar código Java.
+- registro do que foi feito: criado `docs/swagger/lead-portal-swagger.yaml` com todos os endpoints atuais do Lead Portal, schemas de payload/resposta, erros comuns, multipart de imagem e respostas text/html/Prometheus; atualizado o índice `docs/swagger/README.md` para listar o novo contrato.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/swagger/README.md
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/controller/FlowController.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/controller/FlowSubmissionController.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/controller/FlowEngagementController.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/controller/LeadController.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/controller/ImageMaterialController.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/controller/MetricsController.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/FlowResponse.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/UpsertFlowRequest.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/FlowSubmissionRequest.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/FlowSubmissionResponse.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/LeadResponse.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/ImageMaterialDashboardResponse.java
+  - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/ImageMaterialCaseResponse.java

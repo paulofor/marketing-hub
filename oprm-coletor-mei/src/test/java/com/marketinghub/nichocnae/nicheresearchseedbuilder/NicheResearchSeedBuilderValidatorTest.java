@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class NicheResearchSeedBuilderValidatorTest {
     private final NicheResearchSeedBuilderValidator validator = new NicheResearchSeedBuilderValidator();
 
-    /** Deve aceitar seed completo com doze queries específicas vinculadas a objetos comerciais do nicho. */
+    /** Deve aceitar seed completo com doze queries específicas vinculadas à rotina operacional do nicho. */
     @Test
     void shouldAcceptSpecificPendingQueries() {
         NicheResearchSeedBuilderPending pending = pending();
@@ -22,14 +22,14 @@ class NicheResearchSeedBuilderValidatorTest {
                 "manicure responsabilidades agenda",
                 "cliente unha em gel dúvidas",
                 "unha em gel quanto tempo dura",
-                "pacote manicure mensal como funciona",
+                "manicure tarefas atendimento semanal",
                 "agenda manicure horários vazios",
-                "salão beleza divulgar whatsapp",
+                "salão beleza comunicação clientes whatsapp",
                 "hidratação cabelo cliente pergunta",
                 "cabeleireiro rotina salão pequeno",
                 "pedicure biossegurança atendimento",
                 "manicure preço unha decorada",
-                "salão beleza pacote fidelidade"));
+                "salão beleza recorrência clientes"));
 
         assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
@@ -43,20 +43,46 @@ class NicheResearchSeedBuilderValidatorTest {
                 "manicure responsabilidades agenda",
                 "cliente unha em gel dúvidas",
                 "unha em gel quanto tempo dura",
-                "pacote manicure mensal como funciona",
+                "manicure tarefas atendimento semanal",
                 "agenda manicure horários vazios",
-                "salão beleza divulgar whatsapp",
+                "salão beleza comunicação clientes whatsapp",
                 "hidratação cabelo cliente pergunta",
                 "cabeleireiro rotina salão pequeno",
                 "pedicure biossegurança atendimento",
                 "manicure preço unha decorada",
-                "salão beleza pacote fidelidade"));
+                "salão beleza recorrência clientes"));
         texts.set(0, "como vender mais");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
         assertThatThrownBy(() -> validator.validate(pending, output))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Query genérica proibida");
+    }
+
+
+    /** Deve rejeitar query contaminada por solução quando o termo não faz parte literal do CNAE. */
+    @Test
+    void shouldRejectSolutionLanguageQuery() {
+        NicheResearchSeedBuilderPending pending = pending();
+        List<String> texts = new ArrayList<>(List.of(
+                "manicure rotina de atendimento",
+                "manicure responsabilidades agenda",
+                "cliente unha em gel dúvidas",
+                "unha em gel quanto tempo dura",
+                "manicure tarefas atendimento semanal",
+                "agenda manicure horários vazios",
+                "salão beleza comunicação clientes whatsapp",
+                "hidratação cabelo cliente pergunta",
+                "cabeleireiro rotina salão pequeno",
+                "pedicure biossegurança atendimento",
+                "manicure preço unha decorada",
+                "salão beleza recorrência clientes"));
+        texts.set(0, "IA para crescimento de manicure");
+        NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
+
+        assertThatThrownBy(() -> validator.validate(pending, output))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("linguagem de solução proibida");
     }
 
     /** Deve rejeitar saída com menos de doze queries para manter cobertura mínima do MVP. */
@@ -104,7 +130,9 @@ class NicheResearchSeedBuilderValidatorTest {
             queries.add(new ResearchQuery(
                     1001L,
                     queryTexts.get(index),
-                    index % 2 == 0 ? "ROUTINE_DISCOVERY" : "SALES_PAIN_DISCOVERY",
+                    index % 3 == 0
+                            ? "ROUTINE_DISCOVERY"
+                            : index % 3 == 1 ? "ROUTINE_TASK_DISCOVERY" : "OPERATIONAL_DIFFICULTY_DISCOVERY",
                     "GENERAL_WEB",
                     index + 1,
                     "PENDING",

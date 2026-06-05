@@ -716,19 +716,17 @@ components:
       properties:
         queryText:
           type: string
-          example: como lotar agenda de manicure
+          example: agenda manicure horários vazios
         queryGoal:
           type: string
           enum:
             - ROUTINE_DISCOVERY
+            - ROUTINE_TASK_DISCOVERY
+            - OPERATIONAL_DIFFICULTY_DISCOVERY
             - NICHE_OWNER_QUESTION_DISCOVERY
             - FINAL_CUSTOMER_QUESTION_DISCOVERY
-            - SALES_PAIN_DISCOVERY
-            - PRODUCT_SERVICE_DISCOVERY
-            - OFFER_PATTERN_DISCOVERY
             - LANGUAGE_DISCOVERY
-            - WORKAROUND_DISCOVERY
-            - MECHANISM_DISCOVERY
+            - OPERATIONAL_CONTEXT_DISCOVERY
         sourceGroup:
           type: string
           nullable: true
@@ -849,10 +847,10 @@ components:
           format: int64
         queryText:
           type: string
-          example: como lotar agenda de manicure
+          example: agenda manicure horários vazios
         queryGoal:
           type: string
-          example: SALES_PAIN_DISCOVERY
+          example: OPERATIONAL_DIFFICULTY_DISCOVERY
         sourceGroup:
           type: string
           nullable: true

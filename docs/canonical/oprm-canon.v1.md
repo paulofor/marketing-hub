@@ -60,6 +60,8 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Termos de solução, como IA, automação, sistema, app, software, ferramenta, curso ou marketing digital, não podem direcionar a pesquisa inicial quando vierem apenas de enquadramento comercial do nome do candidato.
 - O nome operacional usado para pesquisa deve representar o nicho/CNAE de forma neutra; nomes originais contaminados por linguagem de solução devem ser preservados apenas para auditoria e não como fonte de direcionamento da busca.
 - A etapa inicial deve priorizar evidências públicas sobre execução do trabalho, problemas operacionais, dúvidas reais, atividades, responsabilidades, limitações, sazonalidade, riscos, custos, retrabalho, gargalos e vocabulário usado pelo próprio mercado.
+- A etapa `oprmNicheResearchSeedBuilder` deve aceitar somente objetivos de query compatíveis com rotina real: `ROUTINE_DISCOVERY`, `ROUTINE_TASK_DISCOVERY`, `OPERATIONAL_DIFFICULTY_DISCOVERY`, `NICHE_OWNER_QUESTION_DISCOVERY`, `FINAL_CUSTOMER_QUESTION_DISCOVERY`, `LANGUAGE_DISCOVERY` e `OPERATIONAL_CONTEXT_DISCOVERY`.
+- A etapa `oprmNicheResearchSeedBuilder` deve rejeitar objetivos e termos que direcionem busca por produto, oferta, campanha ou solução quando não fizerem parte literal da descrição CNAE.
 
 ## Critério de efetividade — pesquisa inicial NichoCNAE sem viés de solução
 

@@ -55,7 +55,8 @@ O HTML final da landing deve implementar, no mínimo:
 - envio assíncrono com `fetch(form.action, ...)`;
 - payload usando `new FormData(form)`;
 - controle de loading no botão de submit (desabilitar durante request e restaurar depois);
-- feedback inline de sucesso/erro ao usuário.
+- feedback inline de sucesso/erro ao usuário;
+- acabamento visual do feedback como banner/card coerente com `landingPageDesignPreset`, incluindo fundo semântico, borda sutil, espaçamento, contraste AA e leitura clara no mobile.
 
 ## 5. SOP obrigatório para incidentes 422 no LHM
 

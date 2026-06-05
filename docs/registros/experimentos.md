@@ -3596,6 +3596,11 @@
 - documentação atualizada: `docs/swagger/lead-portal-swagger.yaml` registra a rota pública de compatibilidade do Lead Portal.
 - validação automatizada: adicionado teste MVC cobrindo o payload real do GeraLanding e rejeição de slug divergente.
 
+## 2026-06-05 — Acabamento visual canônico para feedback de formulário da landing
+
+- solicitação: orientar o prompt do preset de design para melhorar o acabamento da mensagem de sucesso exibida após envio do formulário da landing.
+- causa-raiz/objetivo: a mensagem estava semanticamente correta e bem posicionada após o CTA, mas dependia de texto simples no runtime; para reduzir dúvida do lead e aumentar confiança de conversão, o acabamento visual precisa ser especificado no artefato canônico de design.
+- correção aplicada: o prompt `landing-page-design-preset` agora exige cobertura de `#form-feedback` e `[data-runtime-feedback='true']`, com banner/card de sucesso/erro, fundo semântico, borda sutil, hierarquia textual, contraste AA e posicionamento natural após o CTA; os documentos canônicos relacionados foram sincronizados.
 ## 2026-06-05 15:35:05 UTC
 - solicitação para investigar formulário enviado que não aparecia na contagem do funil (experimento informado 36; evidência da tela em `/experiments/37`).
 - causa-raiz identificada: o endpoint público de submissão gravava `experiment_funnel_event` com `source=lead_portal_submission`, mas o resumo automático da etapa `ENVIO_FORM` consultava somente `lead_portal_submission` legado e `flow_submissions`, deixando o evento público recém-gravado fora da contagem.

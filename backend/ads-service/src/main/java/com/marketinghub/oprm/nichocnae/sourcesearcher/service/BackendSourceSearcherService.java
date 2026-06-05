@@ -216,10 +216,15 @@ public class BackendSourceSearcherService {
     boolean commercialRisk = Boolean.TRUE.equals(result.commercialPageRisk())
         || SOURCE_INTENT_COMMERCIAL_PAGE_RISK.equals(sourceIntent);
     boolean solutionRisk = Boolean.TRUE.equals(result.solutionLanguageRisk());
+    int routineEvidenceScore = normalizeScore(result.routineEvidenceScore(), commercialRisk);
     candidate.setSourceGroup(sourceIntent);
+    candidate.setSourceIntent(sourceIntent);
+    candidate.setRoutineEvidenceScore(routineEvidenceScore);
+    candidate.setCommercialPageRisk(commercialRisk);
+    candidate.setSolutionLanguageRisk(solutionRisk);
     candidate.setSearchProvider(requiredText(searchProvider, "searchProvider"));
     candidate.setSearchPosition(result.searchPosition());
-    candidate.setRelevanceScore(normalizeScore(result.routineEvidenceScore(), commercialRisk));
+    candidate.setRelevanceScore(routineEvidenceScore);
     candidate.setSelectedForFetch(false);
     candidate.setRejectionReason(rejectionReason(commercialRisk, solutionRisk));
     candidate.setStatus(commercialRisk ? CANDIDATE_STATUS_CONTAMINATION_RISK : CANDIDATE_STATUS_FOUND);
@@ -267,6 +272,10 @@ public class BackendSourceSearcherService {
         candidate.getStatus(),
         candidate.getRelevanceScore(),
         candidate.getRejectionReason(),
+        defaultText(candidate.getSourceIntent(), candidate.getSourceGroup()),
+        defaultInteger(candidate.getRoutineEvidenceScore(), candidate.getRelevanceScore()),
+        Boolean.TRUE.equals(candidate.getCommercialPageRisk()),
+        Boolean.TRUE.equals(candidate.getSolutionLanguageRisk()),
         candidate.getCreatedAt(),
         candidate.getUpdatedAt());
   }
@@ -315,6 +324,11 @@ public class BackendSourceSearcherService {
   /** Retorna texto normalizado ou valor padrão quando o campo opcional veio vazio. */
   private String defaultText(String value, String defaultValue) {
     return StringUtils.hasText(value) ? value.trim() : defaultValue;
+  }
+
+  /** Retorna inteiro informado ou valor padrão quando o campo opcional veio nulo. */
+  private Integer defaultInteger(Integer value, Integer defaultValue) {
+    return value == null ? defaultValue : value;
   }
 
   /** Normaliza campos opcionais de texto preservando nulo quando não há conteúdo útil. */

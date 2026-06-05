@@ -991,6 +991,21 @@ components:
           type: string
         sourceGroup:
           type: string
+        sourceIntent:
+          type: string
+          nullable: true
+          example: ROUTINE_REPORT
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        commercialPageRisk:
+          type: boolean
+          default: false
+        solutionLanguageRisk:
+          type: boolean
+          default: false
         searchProvider:
           type: string
         searchPosition:
@@ -1081,6 +1096,21 @@ components:
           type: string
         sourceGroup:
           type: string
+        sourceIntent:
+          type: string
+          nullable: true
+          example: ROUTINE_REPORT
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        commercialPageRisk:
+          type: boolean
+          default: false
+        solutionLanguageRisk:
+          type: boolean
+          default: false
         searchProvider:
           type: string
         searchPosition:
@@ -1096,7 +1126,7 @@ components:
           format: date-time
     CompleteSourceFetcherRequest:
       type: object
-      required: [sourceUrl, sourceDomain, sourceTitle, sourceType, shortExcerpt, fetchStatus, storagePolicy]
+      required: [sourceUrl, sourceDomain, sourceTitle, sourceType, sourceIntent, routineEvidenceScore, commercialPageRisk, solutionLanguageRisk, shortExcerpt, fetchStatus, storagePolicy]
       properties:
         sourceUrl:
           type: string
@@ -1112,6 +1142,20 @@ components:
           type: string
           enum: [BUSINESS_SITE, JOB_PAGE, ARTICLE, PUBLIC_CONTENT, OFFICIAL_SOURCE, INTERNAL_SOURCE, OTHER]
           example: PUBLIC_CONTENT
+        sourceIntent:
+          type: string
+          example: ROUTINE_REPORT
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 88
+        commercialPageRisk:
+          type: boolean
+          default: false
+        solutionLanguageRisk:
+          type: boolean
+          default: false
         snippet:
           type: string
           nullable: true
@@ -1176,6 +1220,18 @@ components:
           type: string
         sourceType:
           type: string
+        sourceIntent:
+          type: string
+          nullable: true
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        commercialPageRisk:
+          type: boolean
+        solutionLanguageRisk:
+          type: boolean
         snippet:
           type: string
           nullable: true

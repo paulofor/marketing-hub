@@ -41,6 +41,18 @@ public class OprmSourceCandidate {
     @Column(name = "source_group", nullable = false, length = 64)
     private String sourceGroup;
 
+    @Column(name = "source_intent", length = 64)
+    private String sourceIntent;
+
+    @Column(name = "routine_evidence_score")
+    private Integer routineEvidenceScore;
+
+    @Column(name = "commercial_page_risk", nullable = false)
+    private Boolean commercialPageRisk;
+
+    @Column(name = "solution_language_risk", nullable = false)
+    private Boolean solutionLanguageRisk;
+
     @Column(name = "search_provider", nullable = false, length = 64)
     private String searchProvider;
 

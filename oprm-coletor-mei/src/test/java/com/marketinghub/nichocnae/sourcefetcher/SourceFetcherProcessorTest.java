@@ -36,6 +36,10 @@ class SourceFetcherProcessorTest {
         assertThat(result.metrics())
                 .containsEntry("sourceCandidateId", 4001L)
                 .containsEntry("researchCycleId", 1001L)
+                .containsEntry("sourceIntent", "ROUTINE_REPORT")
+                .containsEntry("routineEvidenceScore", 90)
+                .containsEntry("commercialPageRisk", false)
+                .containsEntry("solutionLanguageRisk", false)
                 .containsEntry("httpStatus", 200)
                 .containsEntry("cycleTotalSourceSnapshots", 1);
         verify(backendClient).completeStageExecution(pending, snapshot);
@@ -52,6 +56,10 @@ class SourceFetcherProcessorTest {
                 "Resumo público da fonte",
                 "exemplo.com",
                 "GENERAL_WEB",
+                "ROUTINE_REPORT",
+                90,
+                false,
+                false,
                 "DUCKDUCKGO_HTML",
                 1,
                 "FOUND",
@@ -66,6 +74,10 @@ class SourceFetcherProcessorTest {
                 "exemplo.com",
                 "Como lotar agenda de manicure",
                 "PUBLIC_CONTENT",
+                "ROUTINE_REPORT",
+                90,
+                false,
+                false,
                 "Resumo público da fonte",
                 "Trecho curto permitido para extração de sinais.",
                 "COMPLETED",
@@ -91,6 +103,10 @@ class SourceFetcherProcessorTest {
                         "exemplo.com",
                         "Como lotar agenda de manicure",
                         "PUBLIC_CONTENT",
+                        "ROUTINE_REPORT",
+                        90,
+                        false,
+                        false,
                         "Resumo público da fonte",
                         "Trecho curto permitido para extração de sinais.",
                         Instant.parse("2026-06-04T00:01:00Z"),

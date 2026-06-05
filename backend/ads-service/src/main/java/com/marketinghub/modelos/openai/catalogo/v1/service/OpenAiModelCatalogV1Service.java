@@ -5,47 +5,88 @@ import com.marketinghub.modelos.openai.catalogo.v1.dto.OpenAiModelCatalogRespons
 import com.marketinghub.modelos.openai.catalogo.v1.entity.OpenAiCatalogModelV1;
 import com.marketinghub.repository.jpa.modelos.openai.catalogo.v1.OpenAiCatalogModelV1Repository;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/** Responsabilidade: consultar a API oficial /models da OpenAI e persistir o catálogo técnico retornado. */
 @Service
 public class OpenAiModelCatalogV1Service {
+    private static final Logger log = LoggerFactory.getLogger(OpenAiModelCatalogV1Service.class);
+
     private final WebClient openAiWebClient;
     private final OpenAiCatalogModelV1Repository repository;
 
-    public OpenAiModelCatalogV1Service(@Qualifier("openAiWebClient") WebClient openAiWebClient, OpenAiCatalogModelV1Repository repository) {
+    /** Inicializa o serviço com o WebClient autenticado da OpenAI e o repositório centralizado do catálogo técnico. */
+    public OpenAiModelCatalogV1Service(
+            @Qualifier("openAiWebClient") WebClient openAiWebClient, OpenAiCatalogModelV1Repository repository) {
         this.openAiWebClient = openAiWebClient;
         this.repository = repository;
     }
 
+    /** Busca modelos em /models, separa texto/imagem e salva os códigos reconhecidos para auditoria local. */
     @Transactional
     public OpenAiModelCatalogResponse fetchAndPersistCatalog() {
-        JsonNode response = openAiWebClient.get().uri("/models").retrieve().bodyToMono(JsonNode.class).block();
-        Set<String> text = new TreeSet<>();
-        Set<String> image = new TreeSet<>();
-        Instant now = Instant.now();
-        if (response != null && response.has("data") && response.get("data").isArray()) {
-            for (JsonNode item : response.get("data")) {
-                String id = item.path("id").asText("").trim();
-                if (id.isBlank()) continue;
-                String category = null;
-                if (isImage(id)) { image.add(id); category = "IMAGE"; }
-                else if (isText(id)) { text.add(id); category = "TEXT"; }
-                if (category != null) {
-                    OpenAiCatalogModelV1 entity = repository.findByCode(id).orElseGet(OpenAiCatalogModelV1::new);
-                    entity.setCode(id);
-                    entity.setCategory(category);
-                    entity.setLastSeenAt(now);
-                    repository.save(entity);
+        try {
+            JsonNode response = openAiWebClient.get().uri("/models").retrieve().bodyToMono(JsonNode.class).block();
+            Set<String> text = new TreeSet<>();
+            Set<String> image = new TreeSet<>();
+            Instant now = Instant.now();
+            if (response != null && response.has("data") && response.get("data").isArray()) {
+                for (JsonNode item : response.get("data")) {
+                    persistRecognizedModel(item, text, image, now);
                 }
             }
+            return new OpenAiModelCatalogResponse(
+                    new ArrayList<>(text), new ArrayList<>(image), "openai:/models", now.toString());
+        } catch (RuntimeException ex) {
+            log.error("Falha ao consultar catálogo oficial OpenAI; operation=openai-model-catalog-fetch endpoint=/models", ex);
+            throw ex;
         }
-        return new OpenAiModelCatalogResponse(new ArrayList<>(text), new ArrayList<>(image), "openai:/models", now.toString());
     }
 
-    private boolean isImage(String id) { String n=id.toLowerCase(); return n.startsWith("gpt-image")||n.startsWith("dall-e"); }
-    private boolean isText(String id) { String n=id.toLowerCase(); return n.startsWith("gpt-")||n.startsWith("o1")||n.startsWith("o3")||n.startsWith("o4")||n.startsWith("text-"); }
+    /** Classifica um item bruto da API /models e persiste quando o código pertence a uma família reconhecida. */
+    private void persistRecognizedModel(JsonNode item, Set<String> text, Set<String> image, Instant now) {
+        String id = item.path("id").asText("").trim();
+        if (id.isBlank()) {
+            return;
+        }
+        String category = null;
+        if (isImage(id)) {
+            image.add(id);
+            category = "IMAGE";
+        } else if (isText(id)) {
+            text.add(id);
+            category = "TEXT";
+        }
+        if (category != null) {
+            OpenAiCatalogModelV1 entity = repository.findByCode(id).orElseGet(OpenAiCatalogModelV1::new);
+            entity.setCode(id);
+            entity.setCategory(category);
+            entity.setLastSeenAt(now);
+            repository.save(entity);
+        }
+    }
+
+    /** Indica se o código da API representa um modelo de geração/edição de imagem. */
+    private boolean isImage(String id) {
+        String normalized = id.toLowerCase();
+        return normalized.startsWith("gpt-image") || normalized.startsWith("dall-e");
+    }
+
+    /** Indica se o código da API representa um modelo textual/reasoning usado no pipeline operacional. */
+    private boolean isText(String id) {
+        String normalized = id.toLowerCase();
+        return normalized.startsWith("gpt-")
+                || normalized.startsWith("o1")
+                || normalized.startsWith("o3")
+                || normalized.startsWith("o4")
+                || normalized.startsWith("text-");
+    }
 }

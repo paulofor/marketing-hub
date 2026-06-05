@@ -3501,6 +3501,13 @@
 - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` registra os defaults dedicados `gpt-5.4` para Copy e Image Planning.
 - validação automatizada: adicionados testes garantindo que os requests das etapas Copy e Image Planning usam `gpt-5.4` no modelo auditado e no payload enviado à OpenAI.
 
+## 2026-06-05 — Criação de modelo OpenAI com preenchimento oficial
+
+- solicitação: simplificar a tela de criação de modelo OpenAI para que o usuário informe somente o nome, deixando código, preços e demais dados serem preenchidos por consulta às fontes oficiais da OpenAI.
+- causa-raiz/objetivo: campos financeiros manuais na criação aumentavam o risco de erro operacional e divergência do catálogo oficial usado para cálculo de custo dos experimentos.
+- correção aplicada: a tela de novo modelo passou a renderizar apenas o campo obrigatório de nome e enviar somente esse valor; o backend agora valida o nome na API oficial `/models`, resolve o código canônico, busca preços oficiais e salva o cadastro com metadados de origem/sincronização.
+- cânone atualizado: `docs/canonical/openai-informacoes-tratadas-canon.v1.md` registra que a criação manual deve exigir apenas nome/código e preencher os demais campos via backend/OpenAI.
+- validação automatizada: adicionado teste de serviço para garantir preenchimento oficial na criação e rejeição de modelo ausente no catálogo OpenAI.
 ## 2026-06-05 — Ajuste controlado de etapas oficiais pela tela de Pipelines
 
 - solicitação: permitir que o usuário resolva divergências de contrato do Pipeline de Experimento pela própria tela, com um botão de ajuste/recriação das etapas oficiais.

@@ -25,6 +25,7 @@ interface Props {
   onSubmit: (values: OpenAiModelFormValues) => void;
   isSubmitting?: boolean;
   submitLabel?: string;
+  nameOnly?: boolean;
 }
 
 const DEFAULT_VALUES: OpenAiModelFormValues = {
@@ -44,6 +45,7 @@ export default function OpenAiModelForm({
   onSubmit,
   isSubmitting = false,
   submitLabel = "Salvar",
+  nameOnly = false,
 }: Props) {
   const [values, setValues] = useState<OpenAiModelFormValues>(initialValues);
 
@@ -62,6 +64,8 @@ export default function OpenAiModelForm({
     };
 
   const handleSubmit = () => onSubmit(values);
+
+  const submitDisabled = isSubmitting || !values.name.trim();
 
   const renderPriceField = (
     field: OpenAiModelPriceField,
@@ -92,7 +96,7 @@ export default function OpenAiModelForm({
         <div className="row g-3">
           <div className="col-md-6">
             <label className="form-label fw-semibold" htmlFor="name">
-              Nome do modelo
+              Nome do modelo <span className="text-danger">*</span>
             </label>
             <input
               id="name"
@@ -102,99 +106,115 @@ export default function OpenAiModelForm({
               placeholder="ex: GPT-4o mini"
             />
           </div>
-          <div className="col-md-6">
-            <label className="form-label fw-semibold" htmlFor="code">
-              Código do modelo
-            </label>
-            <input
-              id="code"
-              className="form-control"
-              value={values.code}
-              onChange={handleChange("code")}
-              placeholder="ex: gpt-4o-mini"
-            />
-          </div>
-          <div className="col-12">
-            <div className="form-check form-switch">
-              <input
-                id="acceptsImageInput"
-                className="form-check-input"
-                type="checkbox"
-                checked={values.acceptsImageInput}
-                onChange={handleChange("acceptsImageInput")}
-              />
-              <label
-                className="form-check-label fw-semibold"
-                htmlFor="acceptsImageInput"
-              >
-                Aceita imagem + prompt
+          {!nameOnly ? (
+            <div className="col-md-6">
+              <label className="form-label fw-semibold" htmlFor="code">
+                Código do modelo
               </label>
+              <input
+                id="code"
+                className="form-control"
+                value={values.code}
+                onChange={handleChange("code")}
+                placeholder="ex: gpt-4o-mini"
+              />
             </div>
-            <small className="text-body-secondary">
-              Marque quando o modelo puder receber imagens como entrada, por
-              exemplo para Quality Review visual.
-            </small>
-          </div>
+          ) : null}
+          {!nameOnly ? (
+            <div className="col-12">
+              <div className="form-check form-switch">
+                <input
+                  id="acceptsImageInput"
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={values.acceptsImageInput}
+                  onChange={handleChange("acceptsImageInput")}
+                />
+                <label
+                  className="form-check-label fw-semibold"
+                  htmlFor="acceptsImageInput"
+                >
+                  Aceita imagem + prompt
+                </label>
+              </div>
+              <small className="text-body-secondary">
+                Marque quando o modelo puder receber imagens como entrada, por
+                exemplo para Quality Review visual.
+              </small>
+            </div>
+          ) : (
+            <div className="col-12">
+              <div className="alert alert-info mb-0">
+                Informe somente o nome/código do modelo. Código canônico, preços
+                por 1 milhão de tokens e capacidade serão preenchidos pelo
+                backend consultando as fontes oficiais da OpenAI.
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="row g-3 mt-3">
-          <div className="col-12">
-            <p className="fw-semibold mb-1">
-              Preços - modo standard (por 1 milhão de tokens)
-            </p>
-            <p className="text-body-secondary small mb-0">
-              Inclui preços de entrada, entrada com cache e saída.
-            </p>
+        {!nameOnly ? (
+          <div className="row g-3 mt-3">
+            <div className="col-12">
+              <p className="fw-semibold mb-1">
+                Preços - modo standard (por 1 milhão de tokens)
+              </p>
+              <p className="text-body-secondary small mb-0">
+                Inclui preços de entrada, entrada com cache e saída.
+              </p>
+            </div>
+            {renderPriceField(
+              "priceInputStandard",
+              "Preço de input",
+              "Tokens de entrada sem cache (USD)",
+            )}
+            {renderPriceField(
+              "priceInputCachedStandard",
+              "Preço de input (cacheado)",
+              "Tokens de entrada com cache (USD)",
+            )}
+            {renderPriceField(
+              "priceOutputStandard",
+              "Preço de output",
+              "Tokens de saída (USD)",
+            )}
           </div>
-          {renderPriceField(
-            "priceInputStandard",
-            "Preço de input",
-            "Tokens de entrada sem cache (USD)",
-          )}
-          {renderPriceField(
-            "priceInputCachedStandard",
-            "Preço de input (cacheado)",
-            "Tokens de entrada com cache (USD)",
-          )}
-          {renderPriceField(
-            "priceOutputStandard",
-            "Preço de output",
-            "Tokens de saída (USD)",
-          )}
-        </div>
+        ) : null}
 
-        <div className="row g-3 mt-3">
-          <div className="col-12">
-            <p className="fw-semibold mb-1">
-              Preços - modo batch (por 1 milhão de tokens)
-            </p>
-            <p className="text-body-secondary small mb-0">
-              Valores aplicados às operações em lote.
-            </p>
+        {!nameOnly ? (
+          <div className="row g-3 mt-3">
+            <div className="col-12">
+              <p className="fw-semibold mb-1">
+                Preços - modo batch (por 1 milhão de tokens)
+              </p>
+              <p className="text-body-secondary small mb-0">
+                Valores aplicados às operações em lote.
+              </p>
+            </div>
+            {renderPriceField(
+              "priceInputBatch",
+              "Preço de input (batch)",
+              "Tokens de entrada sem cache (USD)",
+            )}
+            {renderPriceField(
+              "priceInputCachedBatch",
+              "Preço de input (cacheado, batch)",
+              "Tokens de entrada com cache (USD)",
+            )}
+            {renderPriceField(
+              "priceOutputBatch",
+              "Preço de output (batch)",
+              "Tokens de saída (USD)",
+            )}
           </div>
-          {renderPriceField(
-            "priceInputBatch",
-            "Preço de input (batch)",
-            "Tokens de entrada sem cache (USD)",
-          )}
-          {renderPriceField(
-            "priceInputCachedBatch",
-            "Preço de input (cacheado, batch)",
-            "Tokens de entrada com cache (USD)",
-          )}
-          {renderPriceField(
-            "priceOutputBatch",
-            "Preço de output (batch)",
-            "Tokens de saída (USD)",
-          )}
-        </div>
+        ) : null}
 
         <div className="mt-4">
           <button
             type="button"
             className="btn btn-primary"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={submitDisabled}
           >
             {isSubmitting ? (
               <>

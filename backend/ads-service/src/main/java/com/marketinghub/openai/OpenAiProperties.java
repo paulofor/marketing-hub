@@ -12,7 +12,7 @@ public class OpenAiProperties {
 
     private String apiKey;
     private String apiKeyFile = "/root/infra/openai-token/openai_api_key";
-    private String pricingUrl = "https://platform.openai.com/docs/pricing";
+    private String pricingUrl = "https://developers.openai.com/api/docs/pricing";
     private String baseUrl = "https://api.openai.com/v1";
     private Duration connectTimeout = Duration.ofSeconds(10);
     private Duration requestTimeout = Duration.ofSeconds(90);

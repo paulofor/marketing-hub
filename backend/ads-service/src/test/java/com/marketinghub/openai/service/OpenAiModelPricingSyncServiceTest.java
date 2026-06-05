@@ -38,7 +38,7 @@ class OpenAiModelPricingSyncServiceTest {
         assertThat(existing.getCode()).isEqualTo("gpt-5.5");
         assertThat(existing.getPriceInputStandard()).isEqualByComparingTo(new BigDecimal("5.00"));
         assertThat(existing.getPriceOutputBatch()).isEqualByComparingTo(new BigDecimal("15.00"));
-        assertThat(existing.getPricingSource()).isEqualTo("https://platform.openai.com/docs/pricing");
+        assertThat(existing.getPricingSource()).isEqualTo("https://developers.openai.com/api/docs/pricing");
         assertThat(existing.getLastPricingSyncAt()).isNotNull();
         verify(repository).save(existing);
     }

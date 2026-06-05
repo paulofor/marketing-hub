@@ -3515,3 +3515,15 @@
 - correção aplicada: criado endpoint `POST /api/pipelines/{id}/rebuild-official-stages` para remover as etapas operacionais atuais de um pipeline oficial e recriar somente as etapas canônicas, preservando descrição e modelo OpenAI quando houver mapeamento seguro de códigos legados; a tela `/pipelines` ganhou o botão “Ajustar etapas oficiais” com confirmação e indicador de carregamento.
 - documentação atualizada: cânone do procedimento de experimento e Swagger de pipelines passaram a registrar o novo endpoint de recriação controlada.
 - validação automatizada: teste unitário cobre a recriação de 9 etapas legadas para as 8 etapas oficiais, com preservação de configuração compatível em `landing-page-wireframe`.
+
+## 2026-06-05 — Cânone separa HTML puro do GeraLanding e HTML publicável instrumentado
+
+- solicitação: registrar no cânone que `html_geralanding` não deve receber scripts de funil nem pixels/analytics; ele deve permanecer HTML puro com CSS, enquanto `landing_page_html` deve concentrar a versão final publicável com todos os scripts, pixels e instrumentações comerciais.
+- causa-raiz/objetivo: eliminar ambiguidade entre o artefato fonte gerado pelo GeraLanding e o artefato publicado que alimenta o funil de vendas, evitando contaminação de `html_geralanding` por metadados operacionais e garantindo que a mensuração fique na versão publicável correta.
+- cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md`, `docs/canonical/geralanding-arquitetura-canon.v1.md` e `docs/canonical/openai-informacoes-tratadas-canon.v1.md` agora definem `html_geralanding` como HTML/CSS puro e `landing_page_html` como HTML publicável enriquecido com tracking, pixels e analytics.
+
+## 2026-06-05 — Logs nos endpoints de analytics chamados pelos scripts da landing
+
+- solicitação: adicionar logs nos endpoints chamados pelos scripts da landing porque o navegador do usuário não mostrava funcionamento claro dos eventos do funil.
+- causa-raiz/objetivo: aumentar a observabilidade do caminho completo `landing page script → Lead Portal /api/flows/{slug}/page-analytics → Marketing Hub /api/public/lead-portal/flows/{slug}/page-analytics → experiment_funnel_event`, registrando payload cru, payload parseado, endpoint de encaminhamento, status retornado e contexto operacional (`slug`, `eventId`, `eventType`, `sectionId`, `sessionId`, `pageUrl`).
+- correção aplicada: Lead Portal e backend principal passaram a logar os payloads recebidos e o resultado de encaminhamento/persistência dos eventos `page-analytics`, preservando stack trace em payload inválido e falhas de integração.

@@ -60,14 +60,33 @@ public class FlowEngagementController {
     @PostMapping("/{slug}/page-analytics")
     public ResponseEntity<Void> registerPageAnalytics(
             @PathVariable("slug") String slug,
-            @RequestBody(required = false) Map<String, Object> requestBody) {
-        Object eventType = requestBody == null ? null : requestBody.get("eventType");
-        Object eventId = requestBody == null ? null : requestBody.get("eventId");
-        log.info("Page-analytics recebido. slug={}, eventType={}, eventIdPresent={}",
+            @RequestBody(required = false) String requestBody) {
+        log.info("Page-analytics raw recebido no Lead Portal. slug={}, rawPayload={}", slug, requestBody);
+        Map<String, Object> payload = parsePageAnalyticsRequest(slug, requestBody);
+        Object eventType = payload == null ? null : payload.get("eventType");
+        Object eventId = payload == null ? null : payload.get("eventId");
+        log.info("Page-analytics parseado no Lead Portal. slug={}, eventType={}, eventIdPresent={}",
                 slug, eventType, eventId != null && !eventId.toString().isBlank());
 
-        TrackingResult result = trackingClient.registerPageAnalytics(slug, requestBody);
+        TrackingResult result = trackingClient.registerPageAnalytics(slug, payload);
+        log.info("Page-analytics encaminhado ao Marketing Hub. slug={}, eventType={}, eventId={}, result={}",
+                slug, eventType, eventId, result);
         return toResponse(result);
+    }
+
+    /**
+     * Faz o parse tolerante do payload de analytics preservando log do corpo cru recebido.
+     */
+    private Map<String, Object> parsePageAnalyticsRequest(String slug, String requestBody) {
+        if (requestBody == null || requestBody.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(requestBody, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        } catch (JsonProcessingException ex) {
+            log.warn("Payload inválido em page-analytics. slug={}, rawPayload={}", slug, requestBody, ex);
+            return Map.of();
+        }
     }
 
     /**

@@ -183,16 +183,19 @@ A publicação do HTML final da landing ocorre no Lead Portal, com integração 
 Classe responsável no backend: `GeraLandingStageExecutionService` (método `approveAndPublishLanding`).
 
 Fluxo obrigatório executado após a aprovação:
-1. carregar o experimento e resolver o HTML base para publicação (priorizando `experiment.html_geralanding`; fallback legado para `experiment.landing_page_html`);
-2. injetar instrumentação de tracking comportamental no HTML publicado (`data-track-section` + script `data-mh-funnel-tracking`);
-3. injetar controles de funil (`data-mh-funnel-controls`);
-4. resolver `facebookPixelId` do nicho do experimento e injetar snippet do Facebook Pixel quando elegível;
-5. publicar o flow no Lead Portal via `PUT /api/flows/{slug}` com payload contendo `slug`, `name`, `description` e `customFormHtml`;
-6. resolver URLs finais de publicação (`iframe` e `standalone`) e persistir no experimento a `follow_up_action_url`.
+1. carregar o experimento e resolver o HTML base puro para publicação a partir de `experiment.html_geralanding`; `experiment.landing_page_html` só pode ser usado como fallback legado quando ainda não houver `html_geralanding`;
+2. manter `experiment.html_geralanding` como artefato fonte puro: HTML + CSS de apresentação, sem scripts de funil, pixels, tags de analytics, `gtag`, Google Tag Manager, `fbq`, Meta/Facebook Pixel, `data-mh-funnel-tracking`, `data-mh-funnel-controls` ou `data-mh-landing-analytics`;
+3. criar uma cópia publicável enriquecida, persistida em `experiment.landing_page_html`, contendo toda a instrumentação necessária para venda e mensuração;
+4. injetar nessa cópia publicável a instrumentação de tracking comportamental (`data-track-section` + script `data-mh-funnel-tracking`);
+5. injetar nessa cópia publicável os controles de funil (`data-mh-funnel-controls`);
+6. resolver os pixels configurados para o experimento/nicho e injetar na cópia publicável os snippets de mensuração elegíveis, incluindo Google/gtag/GTM quando contratado e Meta/Facebook Pixel quando houver `facebookPixelId`;
+7. publicar o flow no Lead Portal via `PUT /api/flows/{slug}` com payload contendo `slug`, `name`, `description` e `customFormHtml` igual ao HTML publicável enriquecido (`experiment.landing_page_html`);
+8. resolver URLs finais de publicação (`iframe` e `standalone`) e persistir no experimento a `follow_up_action_url`.
 
 Regras adicionais:
-- a aba Landing do frontend deve usar o mesmo critério de disponibilidade do backend: `experiment.html_geralanding` preenchido é suficiente para exibir a prévia e habilitar o botão de aprovação/publicação; `experiment.landing_page_html` fica apenas como fallback legado;
-- a injeção de tracking deve ser idempotente (não duplicar quando já existir no HTML);
+- a aba Landing do frontend deve usar `experiment.html_geralanding` para prévia limpa do HTML/CSS gerado e `experiment.landing_page_html` para prévia/publicação instrumentada quando a publicação já tiver sido aprovada;
+- `experiment.html_geralanding` nunca deve ser sobrescrito com scripts, pixels ou marcadores operacionais de mensuração; se qualquer etapa precisar enriquecer o HTML, deve gerar uma cópia e gravá-la em `experiment.landing_page_html`;
+- a injeção de tracking/pixels deve ser idempotente no HTML publicável (não duplicar quando já existir em `landing_page_html`);
 - falhas de contrato na publicação para Lead Portal devem ser tratadas pela exception canônica de violação de contrato do GeraLanding.
 
 ## 10. Custos e mensuração por experimento

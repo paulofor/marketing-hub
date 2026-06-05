@@ -285,9 +285,9 @@ A tabela `experiment` armazena o experimento e os artefatos funcionais consolida
 | `landing_page_image_planning` | `LONGTEXT` | artefato funcional | Planejamento de imagens da landing page. |
 | `landing_page_image_assets` | `LONGTEXT` | artefato funcional consolidado | Manifesto JSON com URLs finais das imagens da landing por item planejado, materializado a partir de `framework_image_generation_job`. |
 | `landing_page_design_preset` | `LONGTEXT` | artefato funcional estruturado | Preset de design da landing page. |
-| `html_geralanding` | `LONGTEXT` | artefato funcional | HTML operacional consolidado do Gera Landing. |
+| `html_geralanding` | `LONGTEXT` | artefato fonte puro | HTML/CSS consolidado do GeraLanding, sem scripts, pixels, tags de analytics ou marcadores operacionais de funil. |
 | `landing_page_deliverables` | `LONGTEXT` | artefato funcional | Entregáveis associados à landing/produto. |
-| `landing_page_html` | `LONGTEXT` | artefato funcional publicável | HTML final da landing page. |
+| `landing_page_html` | `LONGTEXT` | artefato funcional publicável | HTML final enriquecido para publicação da landing page, contendo scripts de funil, pixels e analytics aplicáveis. |
 | `image_model_id` | FK | configuração de IA | Modelo de imagem configurado. |
 | `image_model_quality_id` | FK | configuração de IA | Qualidade/parâmetro de geração de imagem. |
 | `lead_portal_flow_model` | `VARCHAR(191)` | configuração/artefato | Modelo ou identificador funcional do fluxo do portal. |

@@ -36,6 +36,7 @@ public class MoisSalesLibraryService {
 
     private static final String JOB_STATUS_PENDING = "PENDING";
     private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
+    private static final int COLLECTED_REFERENCE_HTML_CANDIDATE_SCAN_LIMIT = 2000;
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -204,9 +205,15 @@ public class MoisSalesLibraryService {
     ) {
         String normalizedSource = request.source().trim().toUpperCase(Locale.ROOT);
         String claimedBy = UUID.randomUUID().toString();
+        log.info("MOIS sales-library claim de referência coletada recebido. modulo=MOIS, operacao=claimCollectedReferenceHtml, workspaceId={}, source={}",
+                request.workspaceId(), normalizedSource);
         return findNextCollectedReferenceHtmlCandidate(request.workspaceId(), normalizedSource)
                 .map(candidate -> claimCollectedReferenceCandidate(candidate, claimedBy))
-                .orElseGet(() -> new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null));
+                .orElseGet(() -> {
+                    log.info("MOIS sales-library claim de referência coletada sem candidato elegível. modulo=MOIS, operacao=claimCollectedReferenceHtml, workspaceId={}, source={}",
+                            request.workspaceId(), normalizedSource);
+                    return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(false, null);
+                });
     }
 
     /**
@@ -710,10 +717,10 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Localiza a próxima referência bruta ainda elegível para captura operacional.
+     * Localiza a próxima referência bruta ainda elegível para captura operacional, pulando URLs já consolidadas.
      */
     private java.util.Optional<MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob> findNextCollectedReferenceHtmlCandidate(String workspaceId, String source) {
-        return jdbcTemplate.query(
+        List<MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob> candidates = jdbcTemplate.query(
                 """
                         SELECT r.id AS collected_reference_id, r.job_id AS collection_job_id, r.reference_id, r.source,
                                COALESCE(NULLIF(r.product_name, ''), NULLIF(r.title, ''), r.reference_id) AS title,
@@ -736,7 +743,7 @@ public class MoisSalesLibraryService {
                               AND e.status IN ('FETCHING', 'CAPTURED')
                           )
                         ORDER BY r.collected_at ASC, r.id ASC
-                        LIMIT 1
+                        LIMIT ?
                         """,
                 (rs, rowNum) -> new MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob(
                         0L,
@@ -748,9 +755,41 @@ public class MoisSalesLibraryService {
                         rs.getString("url_original"),
                         rs.getString("url_source")),
                 workspaceId,
-                source)
-                .stream()
-                .findFirst();
+                source,
+                COLLECTED_REFERENCE_HTML_CANDIDATE_SCAN_LIMIT);
+        Set<String> operationalUrls = findOperationalCanonicalUrls(workspaceId);
+        int skippedAlreadyConsolidated = 0;
+        int skippedWithoutCanonical = 0;
+        for (MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob candidate : candidates) {
+            String canonical = canonicalize(candidate.url());
+            if (canonical == null || canonical.isBlank()) {
+                skippedWithoutCanonical++;
+                continue;
+            }
+            if (operationalUrls.contains(canonical)) {
+                skippedAlreadyConsolidated++;
+                continue;
+            }
+            log.info("MOIS sales-library referência coletada elegível localizada. modulo=MOIS, operacao=findNextCollectedReferenceHtmlCandidate, workspaceId={}, source={}, collectedReferenceId={}, urlSource={}, canonicalUrl={}, scanned={}, skippedAlreadyConsolidated={}, skippedWithoutCanonical={}",
+                    workspaceId, source, candidate.collectedReferenceId(), candidate.urlSource(), canonical, candidates.size(), skippedAlreadyConsolidated,
+                    skippedWithoutCanonical);
+            return java.util.Optional.of(candidate);
+        }
+        log.info("MOIS sales-library não encontrou referência bruta faltante para consolidar. modulo=MOIS, operacao=findNextCollectedReferenceHtmlCandidate, workspaceId={}, source={}, scanned={}, skippedAlreadyConsolidated={}, skippedWithoutCanonical={}",
+                workspaceId, source, candidates.size(), skippedAlreadyConsolidated, skippedWithoutCanonical);
+        return java.util.Optional.empty();
+    }
+
+    /**
+     * Carrega as URLs canônicas já consolidadas para evitar reprocessar duplicatas da origem bruta.
+     */
+    private Set<String> findOperationalCanonicalUrls(String workspaceId) {
+        Set<String> urls = new HashSet<>(jdbcTemplate.query(
+                "SELECT url_canonical FROM mois_sales_page WHERE workspace_id = ? AND url_canonical IS NOT NULL",
+                (rs, rowNum) -> canonicalize(rs.getString("url_canonical")),
+                workspaceId));
+        urls.remove(null);
+        return urls;
     }
 
     /**
@@ -803,8 +842,8 @@ public class MoisSalesLibraryService {
         Long executionId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         long captureId = executionId == null ? 0L : executionId;
         jdbcTemplate.update("UPDATE mois_sales_page SET last_job_execution_id = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?", captureId, pageId);
-        log.info("MOIS sales-library referência coletada reservada no modelo operacional novo. modulo=MOIS, operacao=claimCollectedReferenceHtml, pageId={}, executionId={}, collectedReferenceId={}",
-                pageId, captureId, candidate.collectedReferenceId());
+        log.info("MOIS sales-library referência coletada reservada no modelo operacional novo. modulo=MOIS, operacao=claimCollectedReferenceHtml, pageId={}, executionId={}, collectedReferenceId={}, canonicalUrl={}, urlSource={}",
+                pageId, captureId, candidate.collectedReferenceId(), canonical, candidate.urlSource());
         return new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse(
                 true,
                 new MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob(captureId, candidate.collectedReferenceId(), candidate.collectionJobId(),

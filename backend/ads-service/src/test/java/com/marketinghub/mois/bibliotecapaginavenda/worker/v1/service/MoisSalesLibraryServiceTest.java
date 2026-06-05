@@ -112,12 +112,14 @@ class MoisSalesLibraryServiceTest {
         MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest request =
                 new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest("workspace-001", "hotmart");
 
-        given(jdbcTemplate.query(contains("FROM mois_collected_reference r"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART")))
+        given(jdbcTemplate.query(contains("FROM mois_collected_reference r"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART"), eq(2000)))
                 .willAnswer(invocation -> {
                     RowMapper<?> mapper = invocation.getArgument(1);
                     ResultSet row = htmlCaptureRow();
                     return List.of(mapper.mapRow(row, 0));
                 });
+        given(jdbcTemplate.query(contains("SELECT url_canonical FROM mois_sales_page WHERE workspace_id = ? AND url_canonical IS NOT NULL"),
+                isA(RowMapper.class), eq("workspace-001"))).willReturn(List.of());
         given(jdbcTemplate.update(contains("INSERT INTO mois_sales_page"), any(), any(), eq(20L))).willReturn(1);
         given(jdbcTemplate.query(contains("SELECT workspace_id FROM mois_collected_reference"), isA(RowMapper.class), eq(20L)))
                 .willReturn(List.of("workspace-001"));
@@ -132,6 +134,43 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.claimed()).isTrue();
         org.assertj.core.api.Assertions.assertThat(response.job().url()).isEqualTo("https://go.hotmart.com/A1");
         org.assertj.core.api.Assertions.assertThat(response.job().urlSource()).isEqualTo("SALES_PAGE_URL");
+    }
+
+    /**
+     * Garante que o claim pula referências brutas cuja URL canônica já está consolidada na biblioteca.
+     */
+    @Test
+    void shouldSkipAlreadyConsolidatedCollectedReferenceHtmlCandidate() throws Exception {
+        MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest request =
+                new MoisSalesLibraryDtos.CollectedReferenceHtmlClaimRequest("workspace-001", "hotmart");
+
+        given(jdbcTemplate.query(contains("FROM mois_collected_reference r"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART"), eq(2000)))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    ResultSet alreadyConsolidated = htmlCaptureRow(20L, "ref-1", "https://go.hotmart.com/A1");
+                    ResultSet missing = htmlCaptureRow(21L, "ref-2", "https://go.hotmart.com/B2");
+                    return List.of(mapper.mapRow(alreadyConsolidated, 0), mapper.mapRow(missing, 1));
+                });
+        given(jdbcTemplate.query(contains("SELECT url_canonical FROM mois_sales_page WHERE workspace_id = ? AND url_canonical IS NOT NULL"),
+                isA(RowMapper.class), eq("workspace-001")))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(operationalUrlRow("https://go.hotmart.com/A1"), 0));
+                });
+        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_page"), any(), any(), eq(21L))).willReturn(1);
+        given(jdbcTemplate.query(contains("SELECT workspace_id FROM mois_collected_reference"), isA(RowMapper.class), eq(21L)))
+                .willReturn(List.of("workspace-001"));
+        given(jdbcTemplate.query(contains("WHERE workspace_id = ? AND url_canonical = ?"), isA(RowMapper.class), eq("workspace-001"), eq("https://go.hotmart.com/B2")))
+                .willReturn(List.of(100L));
+        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), any(), eq(100L))).willReturn(1);
+        given(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).willReturn(11L);
+        given(jdbcTemplate.update(contains("UPDATE mois_sales_page SET last_job_execution_id"), eq(11L), eq(100L))).willReturn(1);
+
+        MoisSalesLibraryDtos.CollectedReferenceHtmlClaimResponse response = service.claimCollectedReferenceHtml(request);
+
+        org.assertj.core.api.Assertions.assertThat(response.claimed()).isTrue();
+        org.assertj.core.api.Assertions.assertThat(response.job().collectedReferenceId()).isEqualTo(21L);
+        org.assertj.core.api.Assertions.assertThat(response.job().url()).isEqualTo("https://go.hotmart.com/B2");
     }
 
     /**
@@ -287,13 +326,20 @@ class MoisSalesLibraryServiceTest {
      * Monta uma linha simulada de captura de HTML bruto reservada.
      */
     private ResultSet htmlCaptureRow() throws Exception {
+        return htmlCaptureRow(20L, "ref-1", "https://go.hotmart.com/A1");
+    }
+
+    /**
+     * Monta uma linha simulada de captura de HTML bruto reservada com URL variável.
+     */
+    private ResultSet htmlCaptureRow(long collectedReferenceId, String referenceId, String url) throws Exception {
         ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
-        given(resultSet.getLong("collected_reference_id")).willReturn(20L);
+        given(resultSet.getLong("collected_reference_id")).willReturn(collectedReferenceId);
         given(resultSet.getString("collection_job_id")).willReturn("hotmart-job-400");
-        given(resultSet.getString("reference_id")).willReturn("ref-1");
+        given(resultSet.getString("reference_id")).willReturn(referenceId);
         given(resultSet.getString("source")).willReturn("HOTMART");
         given(resultSet.getString("title")).willReturn("Produto");
-        given(resultSet.getString("url_original")).willReturn("https://go.hotmart.com/A1");
+        given(resultSet.getString("url_original")).willReturn(url);
         given(resultSet.getString("url_source")).willReturn("SALES_PAGE_URL");
         return resultSet;
     }

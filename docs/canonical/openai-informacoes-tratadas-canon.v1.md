@@ -440,7 +440,7 @@ A tabela `openai_model` mantém o catálogo financeiro dos modelos OpenAI usado 
 
 1. A sincronização automática deve atualizar modelos existentes por `code` e criar novos modelos textuais/reasoning quando aparecerem na fonte oficial.
 2. Na tela de criação manual de modelo OpenAI, o usuário deve informar somente o nome/código desejado; o backend deve consultar a API oficial `/models` para validar e resolver o `code`, consultar a fonte oficial de preços para preencher os valores financeiros e persistir os demais campos sem exigir edição manual desses dados.
-3. O backend deve ler o token OpenAI de `OPENAI_API_KEY` ou, quando ausente, do arquivo seguro `/root/infra/openai-token/openai_api_key`.
+3. O backend deve ler o token OpenAI de `OPENAI_API_KEY` ou, quando ausente, do arquivo seguro montado no container em `OPENAI_API_KEY_FILE` (padrão interno `/run/secrets/openai_api_key`), usando como origem física no host o mesmo arquivo já provisionado para o Worker AI (`/root/infra/openai-token/openai_api_key`).
 4. Quando a fonte oficial não publicar preço de cache, persistir `0` para manter o contrato numérico explícito e evitar JSON dentro de JSON ou metadado ambíguo.
 5. A rotina deve registrar logs de sucesso e logs com stack trace completo em caso de falha, sem expor o token.
 

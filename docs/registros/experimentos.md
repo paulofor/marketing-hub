@@ -3566,3 +3566,11 @@
 - correção aplicada: a etapa de aprovação/publicação da landing pública agora injeta, quando detecta controles mínimos de captura e ausência de contrato existente, o script de submissão canônico `lead-portal-submission-engagement.v1`, enviando nome/e-mail para o endpoint público do Lead Portal antes de republicar o HTML final.
 - cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` registra que a aprovação deve injetar submissão canônica idempotente na cópia publicável quando houver controles mínimos de captura.
 - validação automatizada: adicionado teste unitário no `BackendPublicLandingServiceTest` garantindo que a aprovação injeta contrato, endpoint de submissão e handler de clique no artefato publicado.
+
+## 2026-06-05 — Compatibilidade do endpoint de submissão pública no Lead Portal
+
+- solicitação: investigar o erro exibido na landing do experimento 37 ao clicar em “Receber minha prévia”.
+- causa-raiz identificada: o HTML publicável do GeraLanding enviava o contrato `lead-portal-submission-engagement.v1` para `/api/public/lead-portal/flows/{slug}/submission` usando URL relativa ao domínio `oportunidadebrasil.shop`; esse domínio é atendido pelo Lead Portal, mas o endpoint existia apenas no backend principal, então a requisição caía no handler de recurso estático e retornava `500` com `No static resource .../submission`.
+- correção aplicada: o Lead Portal ganhou um endpoint de compatibilidade para receber essa rota pública, validar divergência de slug, extrair `submissionId`, `submittedAt` e `contato`, e encaminhar a submissão ao Marketing Hub pelo `ExperimentFunnelTrackingClient`, preservando o contrato já publicado nas landings.
+- documentação atualizada: `docs/swagger/lead-portal-swagger.yaml` registra a rota pública de compatibilidade do Lead Portal.
+- validação automatizada: adicionado teste MVC cobrindo o payload real do GeraLanding e rejeição de slug divergente.

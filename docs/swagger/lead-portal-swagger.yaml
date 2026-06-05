@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: Lead Portal Public API
+  version: 1.0.0
+  description: |
+    Endpoints públicos expostos pelo Lead Portal para páginas publicadas e
+    compatibilidade de tracking com o Marketing Hub.
+servers:
+  - url: https://oportunidadebrasil.shop
+    description: Produção do Lead Portal
+  - url: http://localhost:8080
+    description: Desenvolvimento local do Lead Portal
+tags:
+  - name: Public lead submissions
+    description: Recepção de submissões públicas e encaminhamento ao funil do Marketing Hub.
+paths:
+  /api/public/lead-portal/flows/{slug}/submission:
+    post:
+      tags: [Public lead submissions]
+      summary: Receber submissão pública publicada pelo GeraLanding
+      description: |
+        Endpoint de compatibilidade para landings publicadas no domínio do Lead Portal
+        que enviam o contrato `lead-portal-submission-engagement.v1` para a rota
+        pública do Marketing Hub usando URL relativa. O Lead Portal valida o slug,
+        extrai os dados de contato e encaminha a submissão ao Marketing Hub pelo
+        cliente de tracking configurado.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Slug do fluxo publicado no Lead Portal.
+          schema:
+            type: string
+            example: exp-37-landing-geralanding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contractVersion, slug, submissionId, submittedAt, contato]
+              properties:
+                contractVersion:
+                  type: string
+                  const: lead-portal-submission-engagement.v1
+                slug:
+                  type: string
+                submissionId:
+                  type: string
+                  description: UUID idempotente gerado pela landing; texto legado também é aceito e convertido de forma determinística.
+                submittedAt:
+                  type: string
+                  format: date-time
+                campaignCode:
+                  type: string
+                  nullable: true
+                contato:
+                  type: object
+                  required: [nome, email]
+                  properties:
+                    nome:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    telefone:
+                      type: string
+                      nullable: true
+            example:
+              contractVersion: lead-portal-submission-engagement.v1
+              slug: exp-37-landing-geralanding
+              submissionId: f04e8042-b50f-493a-9be2-e3d73a761321
+              submittedAt: '2026-06-05T15:03:13.127Z'
+              contato:
+                nome: Paulo Forestieri
+                email: paulofore@gmail.com
+      responses:
+        '202':
+          description: Submissão encaminhada ao Marketing Hub.
+        '204':
+          description: Marketing Hub rejeitou a submissão como evento ignorável/idempotente.
+        '400':
+          description: Slug do payload diverge do slug da rota ou payload inválido.
+        '502':
+          description: Falha ao encaminhar a submissão ao Marketing Hub.

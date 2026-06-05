@@ -77,7 +77,8 @@ class BackendSourceSearcherServiceTest {
     assertThat(response.queryStatus()).isEqualTo("COMPLETED");
     assertThat(response.resultCount()).isEqualTo(2);
     assertThat(response.cycleTotalSourceCandidates()).isEqualTo(2);
-    assertThat(response.candidates()).extracting("status").containsOnly("FOUND");
+    assertThat(response.candidates()).extracting("status").containsExactly("FOUND", "CONTAMINATION_RISK");
+    assertThat(response.candidates()).extracting("relevanceScore").containsExactly(90, 10);
 
     ArgumentCaptor<OprmResearchQuery> queryCaptor = ArgumentCaptor.forClass(OprmResearchQuery.class);
     verify(researchQueryRepository).save(queryCaptor.capture());
@@ -93,8 +94,8 @@ class BackendSourceSearcherServiceTest {
     CompleteSourceSearcherRequest request = new CompleteSourceSearcherRequest(
         "BRAVE_SEARCH",
         List.of(
-            new SourceCandidateRequest("https://exemplo.com/a", "A", "Resumo", "exemplo.com", null, 1, null),
-            new SourceCandidateRequest("https://exemplo.com/a", "A", "Resumo", "exemplo.com", null, 2, null)));
+            new SourceCandidateRequest("https://exemplo.com/a", "A", "Resumo", "exemplo.com", null, 1, null, null, null, false, false),
+            new SourceCandidateRequest("https://exemplo.com/a", "A", "Resumo", "exemplo.com", null, 2, null, null, null, false, false)));
 
     assertThatThrownBy(() -> service.complete(2001L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -196,7 +197,11 @@ class BackendSourceSearcherServiceTest {
                 "exemplo.com",
                 "PUBLIC_CONTENT",
                 1,
-                "FOUND"),
+                "FOUND",
+                "ROUTINE_REPORT",
+                90,
+                false,
+                false),
             new SourceCandidateRequest(
                 "https://exemplo.com/agenda-manicure",
                 "Como lotar agenda de manicure",
@@ -204,7 +209,11 @@ class BackendSourceSearcherServiceTest {
                 "exemplo.com",
                 null,
                 2,
-                null)));
+                null,
+                "COMMERCIAL_PAGE_RISK",
+                10,
+                true,
+                true)));
   }
 
   /** Monta uma fonte candidata persistida para simular a contagem agregada do ciclo. */

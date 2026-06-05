@@ -34,6 +34,7 @@ export default function NewOpenAiModelPage() {
         isSubmitting={create.isPending}
         submitLabel="Buscar na OpenAI e salvar"
         officialModelCodes={officialModelCodes}
+        officialModelPrices={catalog?.pricingByModel ?? {}}
         isLoadingOfficialModels={isLoadingCatalog}
         nameOnly
       />

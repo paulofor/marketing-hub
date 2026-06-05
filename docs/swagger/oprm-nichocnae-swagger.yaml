@@ -716,19 +716,17 @@ components:
       properties:
         queryText:
           type: string
-          example: como lotar agenda de manicure
+          example: agenda manicure horários vazios
         queryGoal:
           type: string
           enum:
             - ROUTINE_DISCOVERY
+            - ROUTINE_TASK_DISCOVERY
+            - OPERATIONAL_DIFFICULTY_DISCOVERY
             - NICHE_OWNER_QUESTION_DISCOVERY
             - FINAL_CUSTOMER_QUESTION_DISCOVERY
-            - SALES_PAIN_DISCOVERY
-            - PRODUCT_SERVICE_DISCOVERY
-            - OFFER_PATTERN_DISCOVERY
             - LANGUAGE_DISCOVERY
-            - WORKAROUND_DISCOVERY
-            - MECHANISM_DISCOVERY
+            - OPERATIONAL_CONTEXT_DISCOVERY
         sourceGroup:
           type: string
           nullable: true
@@ -849,10 +847,10 @@ components:
           format: int64
         queryText:
           type: string
-          example: como lotar agenda de manicure
+          example: agenda manicure horários vazios
         queryGoal:
           type: string
-          example: SALES_PAIN_DISCOVERY
+          example: OPERATIONAL_DIFFICULTY_DISCOVERY
         sourceGroup:
           type: string
           nullable: true
@@ -901,7 +899,8 @@ components:
           example: exemplo.com
         sourceGroup:
           type: string
-          default: PUBLIC_CONTENT
+          default: GENERIC_PUBLIC_CONTENT
+          description: Intenção classificada da fonte quando o coletor já executou a classificação.
         searchPosition:
           type: integer
           minimum: 1
@@ -909,6 +908,21 @@ components:
         status:
           type: string
           default: FOUND
+        sourceIntent:
+          type: string
+          nullable: true
+          example: ROUTINE_REPORT
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        commercialPageRisk:
+          type: boolean
+          default: false
+        solutionLanguageRisk:
+          type: boolean
+          default: false
     CompleteSourceSearcherResponse:
       type: object
       properties:
@@ -983,6 +997,14 @@ components:
           type: integer
         status:
           type: string
+        relevanceScore:
+          type: integer
+          nullable: true
+          description: Escore de aderência à rotina real usado para priorizar fontes não vendedoras.
+        rejectionReason:
+          type: string
+          nullable: true
+          description: Motivo de risco quando a fonte é comercial ou usa linguagem de solução.
         createdAt:
           type: string
           format: date-time

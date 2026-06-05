@@ -3639,3 +3639,24 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
 - 2026-06-05 14:35:00 (UTC): ajustado deploy do backend principal para permitir a busca oficial de modelos OpenAI na tela de cadastro de modelo. O container `marketinghub-backend` passa a montar em modo somente leitura o mesmo arquivo físico de chave OpenAI usado pelo Worker AI (`OPENAI_API_KEY_HOST_FILE`, padrão `/root/infra/openai-token/openai_api_key`) no caminho interno `/run/secrets/openai_api_key`, com `OPENAI_API_KEY_FILE` apontando para esse segredo. Objetivo: remover a causa-raiz do `401 Unauthorized` em `GET https://api.openai.com/v1/models` quando a chave existe no host, mas não estava acessível dentro do container do backend.
+
+## 2026-06-05 17:20:00 UTC
+- solicitação: ao usar o botão **Zerar contagens** no funil do experimento, zerar também os dados exibidos na aba Analytics de sessões.
+- causa-raiz: o backend já usava o mesmo marco temporal (`experiment.funnel_reset_at`) e os mesmos eventos do funil para filtrar analytics, mas o frontend invalidava apenas a query do funil; além disso, a regra canônica ainda enfatizava ocultação temporal e não deixava explícito que, antes da campanha, os eventos de teste podem ser apagados fisicamente do banco.
+- correção aplicada: o hook de reset passou a invalidar também a query `landing-analytics`; o backend passou a apagar explicitamente os eventos `landing-page-analytics` antes da limpeza dos demais eventos do funil, com log da quantidade removida; e o cânone de publicação de campanha foi atualizado para explicitar que o reset remove do banco os dados de teste de funil e analytics de sessões.
+- arquivos alterados:
+  - `frontend/src/api/experiment/useResetExperimentFunnel.ts`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/experiment/funnel/ExperimentFunnelEventRepository.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelServiceResetTest.java`
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+  - `docs/registros/experimentos.md`
+
+## 2026-06-05 20:45:00 UTC
+- solicitação: esclarecer que **Zerar contagens** apaga dados somente do experimento aberto, não de outros experimentos.
+- causa-raiz: o backend já filtra a limpeza por `experimentId`, mas a confirmação visual e o cânone não deixavam isso explícito para o operador.
+- correção aplicada: a confirmação do botão passou a mencionar que o reset afeta somente o experimento atual, a mensagem de sucesso reforça que funil e analytics deste experimento foram reiniciados, e o cânone foi sincronizado com o escopo por `experimentId`.
+- arquivos alterados:
+  - `frontend/src/pages/experiment/ExperimentFunnelTab.tsx`
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+  - `docs/registros/experimentos.md`

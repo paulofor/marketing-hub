@@ -998,3 +998,21 @@ Arquivos alterados:
 - `docs/novos-modulos/MOIS/mois_sales_page_pipeline_simplificacao_duas_tabelas.md`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/schema/MoisSalesLibraryLegacyFreezeTest.java`
+
+## 2026-06-04 — Exibição de URLs únicas coletadas na tela do pipeline MOIS
+
+- criado endpoint de resumo de URLs únicas vindas da origem bruta de referências coletadas, usando a prioridade `sales_page_url`, `product_url` e `url`, sem expor contagem de linhas brutas repetidas.
+- adicionada cobertura operacional do resumo: total único coletado, URLs já consolidadas na biblioteca, URLs ainda faltantes, páginas explícitas e desdobramentos por origem/tipo de URL.
+- atualizada a tela `/mois/sales-pages-library/pipeline` para exibir esses números antes dos cards operacionais de captura/análise, mantendo o foco nos indicadores úteis para decisão.
+- atualizado o Swagger da Biblioteca MOIS e adicionado teste unitário para proteger a contagem por URLs únicas canônicas.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `frontend/src/api/mois/types.ts`
+- `frontend/src/api/mois/useMoisSalesLibrary.ts`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

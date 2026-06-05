@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
+  MoisCollectedReferenceUrlSummary,
   MoisSalesLibraryEntryPageResponse,
   MoisSalesLibraryJobPageResponse,
   MoisSalesLibraryPage,
@@ -86,6 +87,19 @@ export function useMoisSalesLibraryPageSummary(workspaceId: string) {
     queryFn: async () => {
       const { data } = await axios.get<MoisSalesLibraryPageSummary>(
         "/api/mois/sales-library/pages/summary",
+        { params: { workspaceId } },
+      );
+      return data;
+    },
+  });
+}
+
+export function useMoisCollectedReferenceUrlSummary(workspaceId: string) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "collected-reference-url-summary", workspaceId],
+    queryFn: async () => {
+      const { data } = await axios.get<MoisCollectedReferenceUrlSummary>(
+        "/api/mois/sales-library/collected-references/url-summary",
         { params: { workspaceId } },
       );
       return data;

@@ -295,6 +295,30 @@ export interface MoisSalesLibraryPageSummary {
   updatedAt?: string;
 }
 
+
+export interface MoisCollectedReferenceUrlSourceBreakdown {
+  source: string;
+  uniqueEffectiveUrls: number;
+  operationalLibraryUrls: number;
+  missingFromOperationalLibrary: number;
+}
+
+export interface MoisCollectedReferenceUrlTypeBreakdown {
+  urlType: string;
+  uniqueUrls: number;
+}
+
+export interface MoisCollectedReferenceUrlSummary {
+  workspaceId: string;
+  uniqueEffectiveUrls: number;
+  explicitSalesPageUrls: number;
+  fallbackProductUrls: number;
+  operationalLibraryUrls: number;
+  missingFromOperationalLibrary: number;
+  bySource: MoisCollectedReferenceUrlSourceBreakdown[];
+  byUrlType: MoisCollectedReferenceUrlTypeBreakdown[];
+}
+
 export interface MoisSalesLibraryPageExecution {
   executionId: number;
   pageId: number;

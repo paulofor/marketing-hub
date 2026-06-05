@@ -2,18 +2,23 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -337,6 +342,92 @@ public class MoisSalesLibraryService {
                         toInstant(rs.getTimestamp("first_seen_at")), toInstant(rs.getTimestamp("last_captured_at")),
                         toInstant(rs.getTimestamp("updated_at"))), workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryEntryPageResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
+    }
+
+    /**
+     * Resume URLs únicas de páginas de venda vindas da origem bruta mois_collected_reference.
+     */
+    public MoisSalesLibraryDtos.CollectedReferenceUrlSummaryResponse summarizeCollectedReferenceUrls(String workspaceId) {
+        List<CollectedReferenceUrlCandidate> collectedUrls = jdbcTemplate.query("""
+                        SELECT DISTINCT source, url_source, effective_url
+                        FROM (
+                          SELECT source,
+                                 CASE
+                                   WHEN sales_page_url IS NOT NULL AND TRIM(sales_page_url) <> '' THEN 'SALES_PAGE_URL'
+                                   WHEN product_url IS NOT NULL AND TRIM(product_url) <> '' THEN 'PRODUCT_URL'
+                                   WHEN url IS NOT NULL AND TRIM(url) <> '' THEN 'URL'
+                                   ELSE 'NONE'
+                                 END AS url_source,
+                                 COALESCE(NULLIF(TRIM(sales_page_url), ''), NULLIF(TRIM(product_url), ''), NULLIF(TRIM(url), '')) AS effective_url
+                          FROM mois_collected_reference
+                          WHERE workspace_id = ?
+                        ) collected
+                        WHERE effective_url IS NOT NULL
+                        """,
+                (rs, rowNum) -> new CollectedReferenceUrlCandidate(
+                        normalizeSource(rs.getString("source")),
+                        rs.getString("url_source"),
+                        canonicalize(rs.getString("effective_url"))),
+                workspaceId);
+
+        Set<String> operationalUrls = new HashSet<>(jdbcTemplate.query(
+                "SELECT url_canonical FROM mois_sales_page WHERE workspace_id = ?",
+                (rs, rowNum) -> canonicalize(rs.getString("url_canonical")),
+                workspaceId));
+        operationalUrls.remove(null);
+
+        Map<String, Set<String>> urlsBySource = new LinkedHashMap<>();
+        Map<String, Set<String>> urlsByType = new LinkedHashMap<>();
+        Set<String> allCollectedUrls = new HashSet<>();
+        for (CollectedReferenceUrlCandidate candidate : collectedUrls) {
+            if (candidate.canonicalUrl() == null || candidate.canonicalUrl().isBlank()) {
+                continue;
+            }
+            allCollectedUrls.add(candidate.canonicalUrl());
+            urlsBySource.computeIfAbsent(candidate.source(), ignored -> new HashSet<>()).add(candidate.canonicalUrl());
+            urlsByType.computeIfAbsent(candidate.urlSource(), ignored -> new HashSet<>()).add(candidate.canonicalUrl());
+        }
+
+        List<MoisSalesLibraryDtos.CollectedReferenceUrlSourceBreakdown> bySource = urlsBySource.entrySet().stream()
+                .map(entry -> buildCollectedReferenceSourceBreakdown(entry.getKey(), entry.getValue(), operationalUrls))
+                .sorted(Comparator.comparing(MoisSalesLibraryDtos.CollectedReferenceUrlSourceBreakdown::uniqueEffectiveUrls).reversed())
+                .toList();
+        List<MoisSalesLibraryDtos.CollectedReferenceUrlTypeBreakdown> byUrlType = urlsByType.entrySet().stream()
+                .map(entry -> new MoisSalesLibraryDtos.CollectedReferenceUrlTypeBreakdown(entry.getKey(), entry.getValue().size()))
+                .sorted(Comparator.comparing(MoisSalesLibraryDtos.CollectedReferenceUrlTypeBreakdown::uniqueUrls).reversed())
+                .toList();
+
+        long operationalOverlap = allCollectedUrls.stream().filter(operationalUrls::contains).count();
+        return new MoisSalesLibraryDtos.CollectedReferenceUrlSummaryResponse(
+                workspaceId,
+                allCollectedUrls.size(),
+                sizeOf(urlsByType, "SALES_PAGE_URL"),
+                sizeOf(urlsByType, "PRODUCT_URL"),
+                operationalOverlap,
+                allCollectedUrls.size() - operationalOverlap,
+                bySource,
+                byUrlType);
+    }
+
+    /**
+     * Monta o desdobramento de cobertura operacional para uma origem de marketplace.
+     */
+    private MoisSalesLibraryDtos.CollectedReferenceUrlSourceBreakdown buildCollectedReferenceSourceBreakdown(
+            String source,
+            Set<String> sourceUrls,
+            Set<String> operationalUrls
+    ) {
+        long operationalOverlap = sourceUrls.stream().filter(operationalUrls::contains).count();
+        return new MoisSalesLibraryDtos.CollectedReferenceUrlSourceBreakdown(
+                source, sourceUrls.size(), operationalOverlap, sourceUrls.size() - operationalOverlap);
+    }
+
+    /**
+     * Retorna a quantidade de URLs únicas de um agrupamento de tipo, preservando zero para ausentes.
+     */
+    private long sizeOf(Map<String, Set<String>> groupedUrls, String key) {
+        Set<String> values = groupedUrls.get(key);
+        return values == null ? 0 : values.size();
     }
 
     /**
@@ -917,6 +1008,13 @@ public class MoisSalesLibraryService {
     }
 
     /**
+     * Normaliza a origem coletada para manter agrupamentos estáveis na tela.
+     */
+    private String normalizeSource(String source) {
+        return source == null || source.isBlank() ? "UNKNOWN" : source.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /**
      * Converte timestamp JDBC em Instant preservando nulos.
      */
     private Instant toInstant(Timestamp timestamp) {
@@ -927,6 +1025,9 @@ public class MoisSalesLibraryService {
     }
 
     private record CaptureExecution(long executionId, long salesPageId) {
+    }
+
+    private record CollectedReferenceUrlCandidate(String source, String urlSource, String canonicalUrl) {
     }
 
     private record CollectedReferenceForIngest(

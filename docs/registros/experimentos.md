@@ -3500,3 +3500,11 @@
 - ajuste aplicado: o Worker AI passou a ter propriedades dedicadas `copy.worker.model` e `imageplanning.worker.model`, ambas com default `gpt-5.4`, e os builders dessas etapas passaram a gravar esse modelo no `OpenAiRequest` e no corpo da Responses API, sem depender do `openai.model` global.
 - cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` registra os defaults dedicados `gpt-5.4` para Copy e Image Planning.
 - validação automatizada: adicionados testes garantindo que os requests das etapas Copy e Image Planning usam `gpt-5.4` no modelo auditado e no payload enviado à OpenAI.
+
+## 2026-06-05 — Ajuste controlado de etapas oficiais pela tela de Pipelines
+
+- solicitação: permitir que o usuário resolva divergências de contrato do Pipeline de Experimento pela própria tela, com um botão de ajuste/recriação das etapas oficiais.
+- causa-raiz/objetivo: o diagnóstico bloqueava corretamente etapas extras e ausentes, mas a tela ainda não oferecia uma ação explícita para o usuário confirmar a correção destrutiva e voltar o pipeline ao contrato canônico sem intervenção manual no banco.
+- correção aplicada: criado endpoint `POST /api/pipelines/{id}/rebuild-official-stages` para remover as etapas operacionais atuais de um pipeline oficial e recriar somente as etapas canônicas, preservando descrição e modelo OpenAI quando houver mapeamento seguro de códigos legados; a tela `/pipelines` ganhou o botão “Ajustar etapas oficiais” com confirmação e indicador de carregamento.
+- documentação atualizada: cânone do procedimento de experimento e Swagger de pipelines passaram a registrar o novo endpoint de recriação controlada.
+- validação automatizada: teste unitário cobre a recriação de 9 etapas legadas para as 8 etapas oficiais, com preservação de configuração compatível em `landing-page-wireframe`.

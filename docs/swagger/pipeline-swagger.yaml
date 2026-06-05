@@ -55,6 +55,26 @@ paths:
                 $ref: "#/components/schemas/PipelineSyncResult"
         "404":
           description: Pipeline não encontrado.
+  /pipelines/{id}/rebuild-official-stages:
+    post:
+      summary: Recria etapas oficiais de um pipeline após confirmação explícita do usuário.
+      description: Não aceita payload; remove as etapas operacionais atuais do pipeline oficial e recria somente as etapas canônicas, reaproveitando descrição e modelo OpenAI quando houver mapeamento seguro.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Resultado da recriação controlada das etapas oficiais.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineSyncResult"
+        "404":
+          description: Pipeline não encontrado.
   /pipelines/official/{code}/sync:
     post:
       summary: Cria ou sincroniza um pipeline oficial ausente pelo código canônico.

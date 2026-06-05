@@ -11,8 +11,11 @@ import com.marketinghub.pipeline.dto.PipelineSyncResultDto;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -90,6 +93,52 @@ public class PipelineDefinitionSynchronizer {
         for (PipelineStageDefinition stageDefinition : definition.stages()) {
             synchronizeStage(pipeline, definition, stageDefinition, appliedActions);
         }
+        pipelineRepository.save(pipeline);
+        if (persistentContractSynchronizer != null) {
+            appliedActions.addAll(persistentContractSynchronizer.sync(definition, pipeline));
+        }
+
+        PipelineDiagnosticsDto diagnostics = pipelineService.diagnostics(pipelineId);
+        return PipelineSyncResultDto.builder()
+                .status(diagnostics.status())
+                .synchronizedSafely("OK".equals(diagnostics.status()))
+                .pipelineId(diagnostics.pipelineId())
+                .pipelineCode(diagnostics.pipelineCode())
+                .canonicalPipelineCode(diagnostics.canonicalPipelineCode())
+                .expectedStages(diagnostics.expectedStages())
+                .configuredStages(diagnostics.configuredStages())
+                .appliedActions(appliedActions)
+                .issues(diagnostics.issues())
+                .build();
+    }
+
+    /**
+     * Recria explicitamente as etapas de um pipeline oficial a partir do contrato canônico,
+     * preservando configuração operacional compatível.
+     */
+    @Transactional
+    public PipelineSyncResultDto rebuildOfficialStages(Long pipelineId) {
+        Pipeline pipeline = pipelineService.get(pipelineId);
+        PipelineDefinition definition = definitionRegistry.findByPipelineCode(pipeline.getCode()).orElse(null);
+        if (definition == null) {
+            PipelineDiagnosticsDto diagnostics = pipelineService.diagnostics(pipelineId);
+            return blockedResult(diagnostics, List.of());
+        }
+
+        List<PipelineStage> existingStages = new ArrayList<>(pipeline.getStages());
+        List<String> appliedActions = new ArrayList<>();
+        synchronizePipelineFields(pipeline, definition, appliedActions);
+        stageRepository.deleteAll(existingStages);
+        stageRepository.flush();
+        pipeline.getStages().clear();
+        appliedActions.add("Etapas operacionais antigas removidas para recriação oficial controlada pela tela.");
+
+        definition.stages().stream()
+                .sorted(Comparator.comparingInt(PipelineStageDefinition::position))
+                .forEach(stageDefinition -> {
+                    PipelineStage stage = createStageFromSnapshot(pipeline, definition, stageDefinition, existingStages);
+                    appliedActions.add("Etapa oficial recriada: " + stage.getCode());
+                });
         pipelineRepository.save(pipeline);
         if (persistentContractSynchronizer != null) {
             appliedActions.addAll(persistentContractSynchronizer.sync(definition, pipeline));
@@ -209,6 +258,65 @@ public class PipelineDefinitionSynchronizer {
                 .build();
         pipeline.getStages().add(stage);
         return stageRepository.save(stage);
+    }
+
+    /**
+     * Cria uma etapa oficial reutilizando descrição e modelo OpenAI de uma etapa compatível anterior quando existir.
+     */
+    private PipelineStage createStageFromSnapshot(
+            Pipeline pipeline,
+            PipelineDefinition definition,
+            PipelineStageDefinition stageDefinition,
+            List<PipelineStage> existingStages) {
+        Optional<PipelineStage> configuredStage =
+                findConfiguredStageSnapshot(definition, stageDefinition, existingStages);
+        PipelineStage stage = PipelineStage.builder()
+                .pipeline(pipeline)
+                .position(stageDefinition.position())
+                .name(stageDefinition.name())
+                .code(stageDefinition.operationalCode())
+                .description(configuredStage.map(PipelineStage::getDescription).orElse(null))
+                .required(stageDefinition.required())
+                .active(true)
+                .openAiModel(configuredStage.map(PipelineStage::getOpenAiModel).orElse(null))
+                .build();
+        pipeline.getStages().add(stage);
+        return stageRepository.save(stage);
+    }
+
+    /**
+     * Localiza uma etapa anterior equivalente pelo contrato atual ou por aliases legados conhecidos
+     * do pipeline de experimento.
+     */
+    private Optional<PipelineStage> findConfiguredStageSnapshot(
+            PipelineDefinition definition, PipelineStageDefinition stageDefinition, List<PipelineStage> existingStages) {
+        Optional<PipelineStage> officialMatch = existingStages.stream()
+                .filter(stage -> definitionRegistry.findStage(definition, stage.getCode())
+                        .map(stageDefinition::equals)
+                        .orElse(false))
+                .findFirst();
+        if (officialMatch.isPresent()) {
+            return officialMatch;
+        }
+        return legacyStageAliases(stageDefinition).stream()
+                .flatMap(alias -> existingStages.stream()
+                        .filter(stage -> definitionRegistry.normalize(alias)
+                                .equals(definitionRegistry.normalize(stage.getCode()))))
+                .findFirst();
+    }
+
+    /**
+     * Lista aliases operacionais legados usados antes do contrato canônico atual para preservar
+     * configuração durante recriação.
+     */
+    private List<String> legacyStageAliases(PipelineStageDefinition stageDefinition) {
+        Map<String, List<String>> aliases = Map.of(
+                "LANDING_PAGE_WIREFRAME", List.of("landing-wireframe"),
+                "LANDING_PAGE_COPY", List.of("landing-copy"),
+                "LANDING_PAGE_IMAGE_PLANNING", List.of("image-planning"),
+                "LANDING_PAGE_DESIGN_PRESET", List.of("preset-design"),
+                "LANDING_PAGE_HTML", List.of("landing-html", "geralanding-html"));
+        return aliases.getOrDefault(stageDefinition.canonicalCode(), List.of());
     }
 
     /**

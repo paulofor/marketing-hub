@@ -16,6 +16,7 @@ import {
   useCreatePipelineStage,
   useDeletePipeline,
   useDeletePipelineStage,
+  useRebuildOfficialPipelineStages,
   useUpdatePipeline,
   useUpdatePipelineStage,
 } from "../../api/pipeline/usePipelineMutations";
@@ -82,6 +83,7 @@ export default function PipelineCrudPage() {
   const createStage = useCreatePipelineStage();
   const updateStage = useUpdatePipelineStage();
   const deleteStage = useDeletePipelineStage();
+  const rebuildOfficialStages = useRebuildOfficialPipelineStages();
 
   const pipelines = useMemo(() => data ?? [], [data]);
   const diagnosticsQueries = usePipelineDiagnostics(pipelines);
@@ -166,6 +168,16 @@ export default function PipelineCrudPage() {
   const resetStageForm = (pipelineId: number) => {
     setStageForms((current) => ({ ...current, [pipelineId]: emptyStage }));
     setEditingStageId(null);
+  };
+
+  const confirmOfficialStageRebuild = (pipeline: Pipeline) => {
+    if (
+      confirm(
+        "Deseja excluir as etapas atuais e recriar as etapas oficiais deste pipeline? Configurações compatíveis, como modelo OpenAI e descrição, serão reaproveitadas quando possível.",
+      )
+    ) {
+      rebuildOfficialStages.mutate(pipeline.id);
+    }
   };
 
   if (isLoading) return <p>Carregando pipelines...</p>;
@@ -372,7 +384,27 @@ export default function PipelineCrudPage() {
                     <p className="mb-0 mt-2">{pipeline.description}</p>
                   ) : null}
                 </div>
-                <div className="d-flex gap-2">
+                <div className="d-flex flex-wrap gap-2">
+                  {isOfficialPipeline ? (
+                    <button
+                      className="btn btn-sm btn-outline-warning"
+                      disabled={
+                        rebuildOfficialStages.isPending ||
+                        !diagnostic ||
+                        diagnostic.status === "OK"
+                      }
+                      onClick={() => confirmOfficialStageRebuild(pipeline)}
+                    >
+                      {rebuildOfficialStages.isPending &&
+                      rebuildOfficialStages.variables === pipeline.id ? (
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      Ajustar etapas oficiais
+                    </button>
+                  ) : null}
                   <button
                     className="btn btn-sm btn-outline-primary"
                     onClick={() => {

@@ -46,6 +46,7 @@ Endpoints administrativos vigentes:
 - `GET /api/pipelines/metadata` expõe versão canônica, aliases e política de campos;
 - `GET /api/pipelines/{id}/diagnostics` compara banco e contrato oficial com causa-raiz e ação recomendada;
 - `POST /api/pipelines/{id}/sync` sincroniza de forma idempotente um pipeline existente, sem aceitar payload da tela;
+- `POST /api/pipelines/{id}/rebuild-official-stages` permite que a tela, após confirmação explícita do usuário, remova etapas operacionais atuais de um pipeline oficial e recrie somente as etapas do contrato canônico, reaproveitando configurações compatíveis como descrição e modelo OpenAI quando houver mapeamento seguro;
 - `POST /api/pipelines/official/{code}/sync` cria ou sincroniza um pipeline oficial ausente pelo código canônico, sem aceitar payload da tela.
 
 A sincronização segura pode criar pipeline/etapas oficiais ausentes e corrigir campos estruturais permitidos, mas deve bloquear divergências destrutivas, como etapa extra sem mapeamento canônico ou duplicidade operacional, para evitar perda de histórico e preservar a causa-raiz para decisão humana.

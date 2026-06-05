@@ -84,6 +84,14 @@ public class PipelineController {
     }
 
     /**
+     * Recria explicitamente as etapas oficiais do pipeline informado quando o usuário confirmar o reparo destrutivo.
+     */
+    @PostMapping("/{id}/rebuild-official-stages")
+    public PipelineSyncResultDto rebuildOfficialStages(@PathVariable Long id) {
+        return synchronizer.rebuildOfficialStages(id);
+    }
+
+    /**
      * Cria ou sincroniza com segurança um pipeline oficial pelo código canônico.
      */
     @PostMapping("/official/{code}/sync")

@@ -539,6 +539,27 @@ paths:
         '404':
           description: Ciclo de pesquisa não encontrado.
 
+  /api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}:
+    get:
+      summary: Detalha o nicho enriquecido materializado pelo perfil.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Detalhe público do perfil de nicho enriquecido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichedNicheMaterializerDetailResponse'
+        '404':
+          description: Perfil de nicho enriquecido ou ciclo de pesquisa não encontrado.
+
 components:
   parameters:
     ResearchCycleId:

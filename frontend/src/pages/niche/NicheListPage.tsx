@@ -47,14 +47,24 @@ export default function NicheListPage() {
   );
 }
 
-function NicheRow({ niche }: { niche: { id: number; name: string } }) {
+function NicheRow({
+  niche,
+}: {
+  niche: { id: number; name: string; enrichedNicheProfileId?: number | null };
+}) {
   const { data: hyps } = useHypothesesByNiche(String(niche.id), "ALL");
   const { data: exps } = useExperimentsByNiche(String(niche.id));
   const { data: targeting } = useTargetingElementsByNiche(String(niche.id));
   const targetingList = Array.isArray(targeting) ? targeting : [];
-  const interestCount = targetingList.filter((item) => item.type === "INTEREST").length;
-  const jobTitleCount = targetingList.filter((item) => item.type === "JOB_TITLE").length;
-  const behaviorCount = targetingList.filter((item) => item.type === "BEHAVIOR").length;
+  const interestCount = targetingList.filter(
+    (item) => item.type === "INTEREST",
+  ).length;
+  const jobTitleCount = targetingList.filter(
+    (item) => item.type === "JOB_TITLE",
+  ).length;
+  const behaviorCount = targetingList.filter(
+    (item) => item.type === "BEHAVIOR",
+  ).length;
   return (
     <tr>
       <td>
@@ -72,6 +82,14 @@ function NicheRow({ niche }: { niche: { id: number; name: string } }) {
         >
           Detalhes
         </Link>
+        {niche.enrichedNicheProfileId ? (
+          <Link
+            className="btn btn-sm btn-outline-success me-1"
+            to={`/oprm/enriched-niches/profile/${niche.enrichedNicheProfileId}`}
+          >
+            Nicho enriquecido
+          </Link>
+        ) : null}
         <Link
           className="btn btn-sm btn-outline-secondary"
           to={`/niches/${niche.id}/edit`}

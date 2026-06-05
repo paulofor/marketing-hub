@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { buildApiUrl } from "../../utils/buildApiUrl";
 
 export interface OprmEnrichedNicheMaterializerDetail {
   researchCycleId: number;
@@ -22,7 +23,9 @@ async function fetchOprmEnrichedNicheMaterializerDetail(
   researchCycleId: number,
 ): Promise<OprmEnrichedNicheMaterializerDetail> {
   const response = await fetch(
-    `/api/oprm/nichocnae/enriched-niche-materializer/stage-executions/${researchCycleId}`,
+    buildApiUrl(
+      `/api/oprm/nichocnae/enriched-niche-materializer/stage-executions/${researchCycleId}`,
+    ),
   );
   if (!response.ok) {
     throw new Error(
@@ -36,7 +39,9 @@ async function fetchOprmEnrichedNicheMaterializerDetailByProfile(
   profileId: number,
 ): Promise<OprmEnrichedNicheMaterializerDetail> {
   const response = await fetch(
-    `/api/oprm/nichocnae/enriched-niche-materializer/profiles/${profileId}`,
+    buildApiUrl(
+      `/api/oprm/nichocnae/enriched-niche-materializer/profiles/${profileId}`,
+    ),
   );
   if (!response.ok) {
     throw new Error(

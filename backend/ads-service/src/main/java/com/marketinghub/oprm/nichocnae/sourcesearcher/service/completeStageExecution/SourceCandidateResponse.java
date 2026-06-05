@@ -2,7 +2,7 @@ package com.marketinghub.oprm.nichocnae.sourcesearcher.service.completeStageExec
 
 import java.time.Instant;
 
-/** Representa uma fonte candidata persistida pela etapa três de busca de fontes. */
+/** Representa uma fonte candidata persistida com escore e marcação de risco da etapa três de busca de fontes. */
 public record SourceCandidateResponse(
     Long sourceCandidateId,
     Long researchCycleId,
@@ -15,5 +15,7 @@ public record SourceCandidateResponse(
     String searchProvider,
     Integer searchPosition,
     String status,
+    Integer relevanceScore,
+    String rejectionReason,
     Instant createdAt,
     Instant updatedAt) {}

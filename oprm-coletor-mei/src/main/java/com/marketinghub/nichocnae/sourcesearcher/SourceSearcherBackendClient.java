@@ -100,9 +100,13 @@ public class SourceSearcherBackendClient {
                                 result.sourceTitle(),
                                 result.sourceSnippet(),
                                 result.sourceDomain(),
-                                pending.sourceGroup(),
+                                result.sourceIntent(),
                                 result.searchPosition(),
-                                "FOUND"))
+                                Boolean.TRUE.equals(result.commercialPageRisk()) ? "CONTAMINATION_RISK" : "FOUND",
+                                result.sourceIntent(),
+                                result.routineEvidenceScore(),
+                                result.commercialPageRisk(),
+                                result.solutionLanguageRisk()))
                         .toList();
         return new SourceSearcherCompletionRequest(searchProvider, candidates);
     }

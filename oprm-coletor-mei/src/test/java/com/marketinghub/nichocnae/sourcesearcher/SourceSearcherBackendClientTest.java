@@ -34,11 +34,16 @@ class SourceSearcherBackendClientTest {
                         "Como lotar agenda de manicure",
                         "Resumo público da fonte",
                         "exemplo.com",
-                        1)));
+                        1,
+                        "ROUTINE_REPORT",
+                        90,
+                        false,
+                        false)));
 
         assertThat(request.searchProvider()).isEqualTo("DUCKDUCKGO_HTML");
         assertThat(request.results()).hasSize(1);
-        assertThat(request.results().getFirst().sourceGroup()).isEqualTo("GENERAL_WEB");
+        assertThat(request.results().getFirst().sourceGroup()).isEqualTo("ROUTINE_REPORT");
         assertThat(request.results().getFirst().status()).isEqualTo("FOUND");
+        assertThat(request.results().getFirst().routineEvidenceScore()).isEqualTo(90);
     }
 }

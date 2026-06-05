@@ -1030,3 +1030,13 @@ Arquivos alterados:
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
 - `docs/canonical/mois-worker-canon.v1.md`
 - `docs/registros/mois1.md`
+
+## 2026-06-05 — Correção do claim de HTML da biblioteca de páginas de venda MOIS
+
+- diagnosticado via MCP que a tela de pipeline mostrava 276 URLs Hotmart faltantes porque a busca de candidatos do backend varria as primeiras 2000 linhas brutas por data, mas esse recorte continha apenas 20 URLs únicas já consolidadas, deixando as URLs faltantes fora da janela de processamento.
+- ajustado o claim `POST /api/mois/sales-library/collected-reference-html:claim` para deduplicar a origem bruta por URL efetiva antes do limite de varredura, usando `GROUP BY effective_url` e campos normalizados com `TRIM`, permitindo que as 276 URLs faltantes entrem na fila operacional.
+- adicionado teste unitário garantindo que o SQL do claim usa URLs efetivas únicas e não apenas contagem de linhas brutas repetidas.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`

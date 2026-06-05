@@ -724,17 +724,35 @@ public class MoisSalesLibraryService {
                 """
                         SELECT r.id AS collected_reference_id, r.job_id AS collection_job_id, r.reference_id, r.source,
                                COALESCE(NULLIF(r.product_name, ''), NULLIF(r.title, ''), r.reference_id) AS title,
-                               COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')) AS url_original,
-                               CASE
-                                 WHEN r.sales_page_url IS NOT NULL AND r.sales_page_url <> '' THEN 'SALES_PAGE_URL'
-                                 WHEN r.product_url IS NOT NULL AND r.product_url <> '' THEN 'PRODUCT_URL'
+                               candidate.effective_url AS url_original,
+                               CASE candidate.url_source_priority
+                                 WHEN 1 THEN 'SALES_PAGE_URL'
+                                 WHEN 2 THEN 'PRODUCT_URL'
                                  ELSE 'URL'
                                END AS url_source
                         FROM mois_collected_reference r
-                        WHERE r.workspace_id = ?
-                          AND r.source = ?
-                          AND COALESCE(NULLIF(r.sales_page_url, ''), NULLIF(r.product_url, ''), NULLIF(r.url, '')) IS NOT NULL
-                          AND NOT EXISTS (
+                        JOIN (
+                            SELECT MIN(id) AS collected_reference_id,
+                                   effective_url,
+                                   MIN(url_source_priority) AS url_source_priority,
+                                   MIN(collected_at) AS first_collected_at
+                            FROM (
+                                SELECT id,
+                                       collected_at,
+                                       COALESCE(NULLIF(TRIM(sales_page_url), ''), NULLIF(TRIM(product_url), ''), NULLIF(TRIM(url), '')) AS effective_url,
+                                       CASE
+                                         WHEN sales_page_url IS NOT NULL AND TRIM(sales_page_url) <> '' THEN 1
+                                         WHEN product_url IS NOT NULL AND TRIM(product_url) <> '' THEN 2
+                                         ELSE 3
+                                       END AS url_source_priority
+                                FROM mois_collected_reference
+                                WHERE workspace_id = ?
+                                  AND source = ?
+                                  AND COALESCE(NULLIF(TRIM(sales_page_url), ''), NULLIF(TRIM(product_url), ''), NULLIF(TRIM(url), '')) IS NOT NULL
+                            ) raw_urls
+                            GROUP BY effective_url
+                        ) candidate ON candidate.collected_reference_id = r.id
+                        WHERE NOT EXISTS (
                             SELECT 1
                             FROM mois_sales_page sp
                             JOIN mois_sales_page_job_execution e ON e.sales_page_id = sp.id
@@ -742,7 +760,7 @@ public class MoisSalesLibraryService {
                               AND e.stage = 'CAPTURE'
                               AND e.status IN ('FETCHING', 'CAPTURED')
                           )
-                        ORDER BY r.collected_at ASC, r.id ASC
+                        ORDER BY candidate.first_collected_at ASC, r.id ASC
                         LIMIT ?
                         """,
                 (rs, rowNum) -> new MoisSalesLibraryDtos.CollectedReferenceHtmlCaptureJob(

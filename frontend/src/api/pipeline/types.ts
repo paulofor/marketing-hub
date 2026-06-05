@@ -5,6 +5,8 @@ export interface PipelineStage {
   name: string;
   code: string;
   description?: string | null;
+  executionModule?: string | null;
+  rootPackage?: string | null;
   required: boolean;
   active: boolean;
   openAiModelId?: number | null;
@@ -37,6 +39,8 @@ export type PipelineStagePayload = Pick<
   | "name"
   | "code"
   | "description"
+  | "executionModule"
+  | "rootPackage"
   | "required"
   | "active"
   | "openAiModelId"
@@ -49,6 +53,8 @@ export interface OfficialPipelineStageMetadata {
   position: number;
   required: boolean;
   configurable: boolean;
+  executionModule?: string | null;
+  rootPackage?: string | null;
   aliases: string[];
 }
 

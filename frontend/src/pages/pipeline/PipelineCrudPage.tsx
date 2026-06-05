@@ -34,6 +34,8 @@ const emptyStage: PipelineStagePayload = {
   name: "",
   code: "",
   description: "",
+  executionModule: "",
+  rootPackage: "",
   required: true,
   active: true,
   openAiModelId: null,
@@ -65,6 +67,8 @@ function stageToPayload(stage: PipelineStage): PipelineStagePayload {
     name: stage.name,
     code: stage.code,
     description: stage.description ?? "",
+    executionModule: stage.executionModule ?? "",
+    rootPackage: stage.rootPackage ?? "",
     required: stage.required,
     active: stage.active,
     openAiModelId: stage.openAiModelId ?? null,
@@ -150,6 +154,8 @@ export default function PipelineCrudPage() {
       ...payload,
       code: payload.code.trim(),
       name: payload.name.trim(),
+      executionModule: payload.executionModule?.trim() || null,
+      rootPackage: payload.rootPackage?.trim() || null,
     };
     if (editingStageId) {
       updateStage.mutate(
@@ -477,6 +483,8 @@ export default function PipelineCrudPage() {
                         <th>Código banco</th>
                         <th>Código canônico</th>
                         <th>Descrição</th>
+                        <th>Módulo</th>
+                        <th>Pacote raiz</th>
                         <th>Obrigatória</th>
                         <th>Modelo OpenAI</th>
                         <th>Status</th>
@@ -511,6 +519,16 @@ export default function PipelineCrudPage() {
                               )}
                             </td>
                             <td>{stage.description || "-"}</td>
+                            <td style={{ minWidth: 160 }}>
+                              {stage.executionModule ? (
+                                <code>{stage.executionModule}</code>
+                              ) : (
+                                <span className="text-body-secondary">Backend</span>
+                              )}
+                            </td>
+                            <td style={{ minWidth: 260 }}>
+                              {stage.rootPackage ? <code>{stage.rootPackage}</code> : "-"}
+                            </td>
                             <td>{stage.required ? "Sim" : "Não"}</td>
                             <td>
                               {stage.openAiModelCode ? (
@@ -647,6 +665,10 @@ export default function PipelineCrudPage() {
                                   selected?.position ?? stageForm.position,
                                 required:
                                   selected?.required ?? stageForm.required,
+                                executionModule:
+                                  selected?.executionModule ?? stageForm.executionModule,
+                                rootPackage:
+                                  selected?.rootPackage ?? stageForm.rootPackage,
                                 active: true,
                               },
                             }));
@@ -679,6 +701,48 @@ export default function PipelineCrudPage() {
                           placeholder="campaign-angle"
                         />
                       )}
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label">Módulo da etapa</label>
+                      <input
+                        className="form-control"
+                        disabled={Boolean(stageDefinition)}
+                        value={stageForm.executionModule ?? ""}
+                        onChange={(event) =>
+                          setStageForms((current) => ({
+                            ...current,
+                            [pipeline.id]: {
+                              ...stageForm,
+                              executionModule: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Ex.: ai-worker (vazio = backend)"
+                      />
+                      <div className="form-text">
+                        Preencha somente quando a etapa for executada fora do backend.
+                      </div>
+                    </div>
+                    <div className="col-md-5">
+                      <label className="form-label">Pacote raiz</label>
+                      <input
+                        className="form-control"
+                        disabled={Boolean(stageDefinition)}
+                        value={stageForm.rootPackage ?? ""}
+                        onChange={(event) =>
+                          setStageForms((current) => ({
+                            ...current,
+                            [pipeline.id]: {
+                              ...stageForm,
+                              rootPackage: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Ex.: com.marketinghub.experiment.pipeline"
+                      />
+                      <div className="form-text">
+                        Informe o pacote raiz no backend ou no módulo executor.
+                      </div>
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">

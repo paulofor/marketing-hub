@@ -116,6 +116,8 @@ public class PipelinePersistentContractSynchronizer {
                 .position(stageDefinition.position())
                 .required(stageDefinition.required())
                 .implementedStageEnum(stageDefinition.canonicalCode())
+                .executionModule(stageDefinition.executionModule())
+                .rootPackage(stageDefinition.rootPackage())
                 .requiresOpenAiModel(true)
                 .configurable(stageDefinition.configurable())
                 .build();
@@ -142,6 +144,14 @@ public class PipelinePersistentContractSynchronizer {
         }
         if (!stageDefinition.canonicalCode().equals(entity.getImplementedStageEnum())) {
             entity.setImplementedStageEnum(stageDefinition.canonicalCode());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(stageDefinition.executionModule(), entity.getExecutionModule())) {
+            entity.setExecutionModule(stageDefinition.executionModule());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(stageDefinition.rootPackage(), entity.getRootPackage())) {
+            entity.setRootPackage(stageDefinition.rootPackage());
             changed = true;
         }
         if (stageDefinition.configurable() != entity.isConfigurable()) {

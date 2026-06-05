@@ -111,6 +111,8 @@ class PipelineServiceTest {
         assertThat(created.getPipeline()).isEqualTo(pipeline);
         assertThat(created.getPosition()).isEqualTo(1);
         assertThat(created.getName()).isEqualTo("Campaign Angle");
+        assertThat(created.getExecutionModule()).isNull();
+        assertThat(created.getRootPackage()).isNull();
         assertThat(created.isRequired()).isTrue();
         ArgumentCaptor<PipelineStage> captor = ArgumentCaptor.forClass(PipelineStage.class);
         verify(stageRepository).save(captor.capture());
@@ -252,6 +254,8 @@ class PipelineServiceTest {
                     .allSatisfy(stage -> {
                         assertThat(stage.canonicalCode()).isNotBlank();
                         assertThat(stage.operationalCode()).isNotBlank();
+                        assertThat(stage.executionModule()).isNull();
+                        assertThat(stage.rootPackage()).isEqualTo("com.marketinghub.experiment.pipeline");
                         assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
                         assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
                     });
@@ -290,6 +294,8 @@ class PipelineServiceTest {
         assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapa oficial ausente criada"));
         assertThat(pipeline.getStages()).hasSize(8);
         assertThat(pipeline.getStages()).extracting(PipelineStage::getCode).contains("landing-page-html");
+        assertThat(pipeline.getStages())
+                .allSatisfy(stage -> assertThat(stage.getRootPackage()).isEqualTo("com.marketinghub.experiment.pipeline"));
     }
 
     /**
@@ -313,6 +319,7 @@ class PipelineServiceTest {
         assertThat(configured.getName()).isEqualTo("Campaign Angle");
         assertThat(configured.getDescription()).isEqualTo("Descrição operacional do usuário");
         assertThat(configured.getOpenAiModel()).isEqualTo(model);
+        assertThat(configured.getRootPackage()).isEqualTo("com.marketinghub.experiment.pipeline");
     }
 
     /**
@@ -378,6 +385,7 @@ class PipelineServiceTest {
                 .satisfies(stage -> {
                     assertThat(stage.getDescription()).isEqualTo("Descrição operacional preservada");
                     assertThat(stage.getOpenAiModel()).isEqualTo(model);
+                    assertThat(stage.getRootPackage()).isEqualTo("com.marketinghub.experiment.pipeline");
                 });
         assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapas operacionais antigas removidas"));
         verify(stageRepository).flush();

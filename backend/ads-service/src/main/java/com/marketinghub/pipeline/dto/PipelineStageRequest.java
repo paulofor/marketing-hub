@@ -24,6 +24,13 @@ public class PipelineStageRequest {
     private String code;
 
     private String description;
+
+    @Size(max = 80)
+    private String executionModule;
+
+    @Size(max = 200)
+    private String rootPackage;
+
     private boolean required = true;
     private boolean active = true;
     private Long openAiModelId;

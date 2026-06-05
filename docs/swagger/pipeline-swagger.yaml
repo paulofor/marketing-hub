@@ -157,6 +157,16 @@ components:
         configurable:
           type: boolean
           example: true
+        executionModule:
+          type: string
+          nullable: true
+          description: Módulo executor quando a etapa roda fora do backend; nulo significa backend principal.
+          example: ai-worker
+        rootPackage:
+          type: string
+          nullable: true
+          description: Pacote raiz no backend ou no módulo executor onde a etapa é implementada.
+          example: com.marketinghub.experiment.pipeline
         fieldPolicy:
           $ref: "#/components/schemas/StageFieldPolicy"
         aliases:

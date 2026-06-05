@@ -20,6 +20,8 @@ public class PipelineStageDto {
     private String name;
     private String code;
     private String description;
+    private String executionModule;
+    private String rootPackage;
     private boolean required;
     private boolean active;
     private Long openAiModelId;

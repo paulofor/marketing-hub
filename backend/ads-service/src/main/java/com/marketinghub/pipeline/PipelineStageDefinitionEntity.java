@@ -63,6 +63,12 @@ public class PipelineStageDefinitionEntity {
     @Column(nullable = false, length = 80)
     private String implementedStageEnum;
 
+    @Column(name = "execution_module", length = 80)
+    private String executionModule;
+
+    @Column(name = "root_package", length = 200)
+    private String rootPackage;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean requiresOpenAiModel = true;

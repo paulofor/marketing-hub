@@ -109,6 +109,24 @@ paths:
       responses:
         '200':
           description: Experimento duplicado
+  /api/experiments/{experimentId}/funnel/analytics:
+    get:
+      tags: [Experiments]
+      summary: Consultar analytics de sessões da landing do experimento
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Sessões e eventos de analytics da landing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentLandingAnalytics'
   /api/experiments/{id}/creatives:
     post:
       tags: [Creatives]
@@ -1017,6 +1035,81 @@ components:
           type: integer
         journeyTemplateName:
           type: string
+    ExperimentLandingAnalytics:
+      type: object
+      properties:
+        totalEvents:
+          type: integer
+          format: int64
+        totalSessions:
+          type: integer
+          format: int64
+        pageViews:
+          type: integer
+          format: int64
+        sectionViewEvents:
+          type: integer
+          format: int64
+        totalVisibleMs:
+          type: integer
+          format: int64
+        averageVisibleMsPerSession:
+          type: integer
+          format: int64
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentLandingAnalyticsSession'
+    ExperimentLandingAnalyticsSession:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        eventCount:
+          type: integer
+          format: int64
+        pageViews:
+          type: integer
+          format: int64
+        sectionViewEvents:
+          type: integer
+          format: int64
+        totalVisibleMs:
+          type: integer
+          format: int64
+        firstEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastPageUrl:
+          type: string
+          nullable: true
+        lastUserAgent:
+          type: string
+          nullable: true
+        topSections:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentLandingAnalyticsSection'
+    ExperimentLandingAnalyticsSection:
+      type: object
+      properties:
+        sectionId:
+          type: string
+        visibleMs:
+          type: integer
+          format: int64
+        events:
+          type: integer
+          format: int64
     CreateCreativeRequest:
       type: object
       properties:

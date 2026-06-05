@@ -25,6 +25,7 @@ import {
   type ExperimentCampaignResetSummary,
 } from "../../api/experiment/useExperimentCampaignReset";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
+import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
 import LandingTab from "./LandingTab";
@@ -2328,6 +2329,9 @@ export default function ExperimentDetailPage() {
             <Tabs.Trigger value="funnel" className="nav-link">
               Funil de vendas
             </Tabs.Trigger>
+            <Tabs.Trigger value="analytics" className="nav-link">
+              Analytics
+            </Tabs.Trigger>
             <Tabs.Trigger value="creatives" className="nav-link">
               Criativos
             </Tabs.Trigger>
@@ -2377,6 +2381,9 @@ export default function ExperimentDetailPage() {
               totalSpend={data?.campaignMetric?.spend}
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
             />
+          </Tabs.Content>
+          <Tabs.Content value="analytics" asChild>
+            <ExperimentLandingAnalyticsTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="creatives" asChild>
             <CriativosTab experimentId={expId} />

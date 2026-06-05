@@ -3,6 +3,9 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
@@ -13,19 +16,23 @@ import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Serviço que consolida as etapas do funil de vendas de um experimento.
@@ -68,6 +75,60 @@ public class ExperimentFunnelService {
         return stages.values().stream()
                 .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
                 .toList();
+    }
+
+    /**
+     * Consolida sessões e eventos de analytics da landing publicados no experimento.
+     */
+    public ExperimentLandingAnalyticsDto summarizeLandingAnalytics(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+        Instant baseline = resolveBaseline(experiment);
+        List<LandingAnalyticsEventRow> rows = fetchLandingAnalyticsEvents(experimentId, baseline);
+        Map<String, LandingAnalyticsSessionAccumulator> sessions = new LinkedHashMap<>();
+        long pageViews = 0;
+        long sectionViewEvents = 0;
+        long totalVisibleMs = 0;
+        Instant lastEventAt = null;
+
+        for (LandingAnalyticsEventRow row : rows) {
+            Map<String, String> payload = parseDelimitedPayload(row.payload());
+            String sessionId = firstNonBlank(payload.get("sessionId"), "sem-sessao");
+            String eventType = firstNonBlank(payload.get("eventType"), "desconhecido");
+            String sectionId = payload.get("sectionId");
+            String pageUrl = payload.get("pageUrl");
+            String userAgent = payload.get("userAgent");
+            long elapsedMs = parseLong(payload.get("elapsedMs"));
+
+            LandingAnalyticsSessionAccumulator session = sessions.computeIfAbsent(
+                    sessionId, LandingAnalyticsSessionAccumulator::new);
+            session.record(row.occurredAt(), eventType, sectionId, elapsedMs, pageUrl, userAgent);
+
+            if ("page_view".equalsIgnoreCase(eventType)) {
+                pageViews++;
+            }
+            if ("section_view_time".equalsIgnoreCase(eventType)) {
+                sectionViewEvents++;
+                totalVisibleMs += elapsedMs;
+            }
+            lastEventAt = max(lastEventAt, row.occurredAt());
+        }
+
+        List<ExperimentLandingAnalyticsSessionDto> sessionDtos = sessions.values().stream()
+                .sorted(Comparator.comparing(LandingAnalyticsSessionAccumulator::lastEventAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(50)
+                .map(LandingAnalyticsSessionAccumulator::toDto)
+                .toList();
+        long averageVisibleMsPerSession = sessions.isEmpty() ? 0 : totalVisibleMs / sessions.size();
+        return new ExperimentLandingAnalyticsDto(
+                rows.size(),
+                sessions.size(),
+                pageViews,
+                sectionViewEvents,
+                totalVisibleMs,
+                averageVisibleMsPerSession,
+                lastEventAt,
+                sessionDtos);
     }
 
     /**
@@ -262,16 +323,18 @@ public class ExperimentFunnelService {
      * Monta um payload textual rastreável sem serializar JSON dentro de JSON.
      */
     private String buildLandingAnalyticsPayload(RegisterLandingPageAnalyticsEventRequest request, Long elapsedMs) {
-        String sectionId = request.sectionId() == null ? "" : request.sectionId().trim();
-        String sessionId = request.sessionId() == null ? "" : request.sessionId().trim();
-        String url = request.pageUrl() == null ? "" : request.pageUrl().trim();
+        String sectionId = sanitizePayloadValue(request.sectionId());
+        String sessionId = sanitizePayloadValue(request.sessionId());
+        String url = sanitizePayloadValue(request.pageUrl());
+        String userAgent = sanitizePayloadValue(request.userAgent());
         String duration = elapsedMs == null ? "" : elapsedMs.toString();
-        return "eventId=" + request.eventId().trim()
-                + ";eventType=" + request.eventType().trim()
+        return "eventId=" + sanitizePayloadValue(request.eventId())
+                + ";eventType=" + sanitizePayloadValue(request.eventType())
                 + ";sessionId=" + sessionId
                 + ";sectionId=" + sectionId
                 + ";elapsedMs=" + duration
-                + ";pageUrl=" + url;
+                + ";pageUrl=" + url
+                + ";userAgent=" + userAgent;
     }
 
     private Lead resolveLead(UUID leadId) {
@@ -528,6 +591,196 @@ public class ExperimentFunnelService {
         if (a == null) return b;
         if (b == null) return a;
         return a.isAfter(b) ? a : b;
+    }
+
+    /**
+     * Normaliza valores do payload textual para preservar o delimitador operacional entre campos.
+     */
+    private String sanitizePayloadValue(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return value.trim()
+                .replace(";", ",")
+                .replace("\r", " ")
+                .replace("\n", " ");
+    }
+
+    /**
+     * Busca no repositório centralizado os eventos de analytics da landing para o marco temporal atual.
+     */
+    private List<LandingAnalyticsEventRow> fetchLandingAnalyticsEvents(Long experimentId, Instant baseline) {
+        return eventRepository.findLandingAnalyticsEvents(
+                        experimentId,
+                        ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
+                        baseline,
+                        PageRequest.of(0, 2000))
+                .stream()
+                .map(event -> new LandingAnalyticsEventRow(event.getId(), event.getPayload(), event.getOccurredAt()))
+                .toList();
+    }
+
+    /**
+     * Converte o payload textual em pares chave/valor sem depender de JSON serializado em campo textual.
+     */
+    private Map<String, String> parseDelimitedPayload(String payload) {
+        if (payload == null || payload.isBlank()) {
+            return Map.of();
+        }
+        Map<String, String> result = new HashMap<>();
+        for (String token : payload.split(";")) {
+            int separator = token.indexOf('=');
+            if (separator <= 0) {
+                continue;
+            }
+            String key = token.substring(0, separator).trim();
+            String value = token.substring(separator + 1).trim();
+            if (!key.isEmpty()) {
+                result.put(key, value);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Retorna o primeiro valor textual preenchido ou o fallback operacional.
+     */
+    private String firstNonBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    /**
+     * Converte números textuais de duração para long, retornando zero quando ausentes ou inválidos.
+     */
+    private long parseLong(String value) {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            log.warn("Landing analytics elapsedMs inválido. elapsedMs={}", value, ex);
+            return 0;
+        }
+    }
+
+    /**
+     * Linha mínima de evento de analytics retornada da tabela de eventos do funil.
+     */
+    private record LandingAnalyticsEventRow(long id, String payload, Instant occurredAt) {
+    }
+
+    /**
+     * Acumula os eventos de analytics de uma sessão pública da landing.
+     */
+    private static final class LandingAnalyticsSessionAccumulator {
+        private final String sessionId;
+        private long eventCount;
+        private long pageViews;
+        private long sectionViewEvents;
+        private long totalVisibleMs;
+        private Instant firstEventAt;
+        private Instant lastEventAt;
+        private String lastPageUrl;
+        private String lastUserAgent;
+        private final Map<String, SectionAccumulator> sections = new LinkedHashMap<>();
+
+        private LandingAnalyticsSessionAccumulator(String sessionId) {
+            this.sessionId = sessionId;
+        }
+
+        /**
+         * Acrescenta um evento recebido na sessão e atualiza contadores de página e seção.
+         */
+        private void record(Instant occurredAt, String eventType, String sectionId, long elapsedMs,
+                            String pageUrl, String userAgent) {
+            eventCount++;
+            if (firstEventAt == null || (occurredAt != null && occurredAt.isBefore(firstEventAt))) {
+                firstEventAt = occurredAt;
+            }
+            if (lastEventAt == null || (occurredAt != null && occurredAt.isAfter(lastEventAt))) {
+                lastEventAt = occurredAt;
+                if (pageUrl != null && !pageUrl.isBlank()) {
+                    lastPageUrl = pageUrl;
+                }
+                if (userAgent != null && !userAgent.isBlank()) {
+                    lastUserAgent = userAgent;
+                }
+            }
+            if ("page_view".equalsIgnoreCase(eventType)) {
+                pageViews++;
+            }
+            if ("section_view_time".equalsIgnoreCase(eventType)) {
+                sectionViewEvents++;
+                totalVisibleMs += elapsedMs;
+                String normalizedSection = sectionId == null || sectionId.isBlank() ? "sem-secao" : sectionId.trim();
+                sections.computeIfAbsent(normalizedSection, SectionAccumulator::new).record(elapsedMs);
+            }
+        }
+
+        /**
+         * Retorna o horário do último evento para ordenação das sessões mais recentes.
+         */
+        private Instant lastEventAt() {
+            return lastEventAt;
+        }
+
+        /**
+         * Converte o acumulador interno em DTO serializável pela API.
+         */
+        private ExperimentLandingAnalyticsSessionDto toDto() {
+            List<ExperimentLandingAnalyticsSectionDto> topSections = sections.values().stream()
+                    .sorted(Comparator.comparingLong(SectionAccumulator::visibleMs).reversed())
+                    .limit(5)
+                    .map(SectionAccumulator::toDto)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            return new ExperimentLandingAnalyticsSessionDto(
+                    sessionId,
+                    eventCount,
+                    pageViews,
+                    sectionViewEvents,
+                    totalVisibleMs,
+                    firstEventAt,
+                    lastEventAt,
+                    lastPageUrl,
+                    lastUserAgent,
+                    topSections);
+        }
+    }
+
+    /**
+     * Acumula tempo visível e volume de eventos por seção da landing.
+     */
+    private static final class SectionAccumulator {
+        private final String sectionId;
+        private long visibleMs;
+        private long events;
+
+        private SectionAccumulator(String sectionId) {
+            this.sectionId = sectionId;
+        }
+
+        /**
+         * Soma um evento de tempo visível para a seção.
+         */
+        private void record(long elapsedMs) {
+            events++;
+            visibleMs += elapsedMs;
+        }
+
+        /**
+         * Retorna o tempo visível acumulado para ordenação das seções.
+         */
+        private long visibleMs() {
+            return visibleMs;
+        }
+
+        /**
+         * Converte o acumulador de seção em DTO serializável pela API.
+         */
+        private ExperimentLandingAnalyticsSectionDto toDto() {
+            return new ExperimentLandingAnalyticsSectionDto(sectionId, visibleMs, events);
+        }
     }
 
     private record AggregatedMetric(long total, Long uniqueCount, Instant lastEvent) {

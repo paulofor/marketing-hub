@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-pipeline-stage-definition-openai-column-alignment-drop-legacy
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: requires_openai_model
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: requires_open_ai_model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage_definition
+              SET requires_openai_model = requires_open_ai_model
+              WHERE requires_openai_model <> requires_open_ai_model;
+        - dropColumn:
+            tableName: pipeline_stage_definition
+            columnName: requires_open_ai_model
+  - changeSet:
+      id: 2026-06-05-pipeline-stage-definition-openai-column-alignment-rename-legacy
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: requires_open_ai_model
+        - not:
+            - columnExists:
+                tableName: pipeline_stage_definition
+                columnName: requires_openai_model
+      changes:
+        - renameColumn:
+            tableName: pipeline_stage_definition
+            oldColumnName: requires_open_ai_model
+            newColumnName: requires_openai_model
+            columnDataType: BOOLEAN

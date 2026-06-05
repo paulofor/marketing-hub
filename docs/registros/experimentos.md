@@ -3540,6 +3540,18 @@
 - causa-raiz identificada: páginas já publicadas podem conter `data-mh-landing-analytics` antigo no HTML salvo; a entrega standalone retornava o HTML sem reinjetar o script, portanto o parâmetro `mhAnalyticsDebug=1` não tinha efeito nessas publicações legadas.
 - correção aplicada: quando a landing já possui script `data-mh-landing-analytics` sem `mhAnalyticsDebug`, o Lead Portal agora substitui a instrumentação legada pelo script atualizado com logs de browser, preservando um único script de analytics e evitando duplicação.
 
+## 2026-06-05 01:25:33 UTC-3
+- erro observado na tela de Pipelines ao acionar `POST /api/pipelines/1/rebuild-official-stages`, com resposta 500 por `Duplicate entry '1-campaign-angle' for key 'uk_pipeline_stage_code'`.
+- causa-raiz identificada: a recriação destrutiva tentava excluir as etapas via repositório enquanto a coleção `Pipeline.stages` ainda mantinha os filhos associados ao aggregate JPA com `orphanRemoval`, permitindo que a inserção das novas etapas ocorresse sem a remoção efetiva prévia da linha antiga no flush.
+- correção aplicada: o rebuild agora remove as etapas pelo aggregate (`pipeline.getStages().clear()`), força `flush()` para materializar os deletes por orphanRemoval antes dos inserts e só então recria as etapas oficiais, preservando descrição e modelo OpenAI por snapshot.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelineDefinitionSynchronizer.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/Pipeline.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStage.java
+  - backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java
 ## 2026-06-05 — Correção do resumo do funil para contabilizar analytics da landing
 
 - solicitação: investigar por que o navegador indicava envio do registro de acesso da landing do experimento 37, mas a aba de funil continuava zerada.

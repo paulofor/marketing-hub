@@ -128,10 +128,10 @@ public class PipelineDefinitionSynchronizer {
         List<PipelineStage> existingStages = new ArrayList<>(pipeline.getStages());
         List<String> appliedActions = new ArrayList<>();
         synchronizePipelineFields(pipeline, definition, appliedActions);
-        stageRepository.deleteAll(existingStages);
-        stageRepository.flush();
         pipeline.getStages().clear();
-        appliedActions.add("Etapas operacionais antigas removidas para recriação oficial controlada pela tela.");
+        stageRepository.flush();
+        appliedActions.add(
+                "Etapas operacionais antigas removidas por orphanRemoval antes da recriação oficial controlada pela tela.");
 
         definition.stages().stream()
                 .sorted(Comparator.comparingInt(PipelineStageDefinition::position))

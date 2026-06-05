@@ -155,15 +155,24 @@ public class ExperimentFunnelService {
     }
 
     /**
-     * Limpa os eventos manuais e define o marco temporal de reinício do funil.
+     * Apaga eventos de teste do funil, incluindo analytics de sessão, e define o marco temporal de reinício.
      */
     @Transactional
     public Instant resetFunnel(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
-        eventRepository.deleteByExperimentId(experimentId);
+        int deletedLandingAnalytics = eventRepository.deleteByExperimentIdAndSource(
+                experimentId,
+                ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
+        int deletedRemainingEvents = eventRepository.deleteByExperimentId(experimentId);
         Instant now = Instant.now();
         experiment.setFunnelResetAt(now);
         experimentRepository.save(experiment);
+        log.info(
+                "experiment_funnel_reset experimentId={} deletedLandingAnalytics={} deletedRemainingEvents={} resetAt={}",
+                experimentId,
+                deletedLandingAnalytics,
+                deletedRemainingEvents,
+                now);
         return now;
     }
 

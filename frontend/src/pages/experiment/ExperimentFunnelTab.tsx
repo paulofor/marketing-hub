@@ -185,12 +185,12 @@ export default function ExperimentFunnelTab({
     if (resetFunnel.isPending) {
       return;
     }
-    if (!window.confirm("Deseja zerar as contagens do funil a partir de agora?")) {
+    if (!window.confirm(`Deseja zerar as contagens e analytics somente deste experimento (${experimentId}) a partir de agora?`)) {
       return;
     }
     try {
       await resetFunnel.mutateAsync();
-      toast.success("Funil reiniciado. Novos eventos passarão a ser contabilizados a partir deste momento.");
+      toast.success("Funil e analytics deste experimento foram reiniciados. Novos eventos passarão a ser contabilizados a partir deste momento.");
     } catch (error) {
       const message = axios.isAxiosError(error)
         ? error.response?.data?.message ?? error.response?.data?.detail ??

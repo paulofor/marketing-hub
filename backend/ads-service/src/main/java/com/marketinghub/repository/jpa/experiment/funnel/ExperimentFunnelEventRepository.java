@@ -59,9 +59,20 @@ public interface ExperimentFunnelEventRepository extends JpaRepository<Experimen
             @Param("baseline") Instant baseline,
             Pageable pageable);
 
+    /**
+     * Apaga fisicamente os eventos de analytics da landing para remover sessões de teste do banco.
+     */
+    @Modifying
+    @Query("delete from ExperimentFunnelEvent e where e.experiment.id = :experimentId and e.source = :source")
+    int deleteByExperimentIdAndSource(@Param("experimentId") Long experimentId,
+                                      @Param("source") String source);
+
+    /**
+     * Apaga fisicamente todos os eventos restantes do funil de um experimento.
+     */
     @Modifying
     @Query("delete from ExperimentFunnelEvent e where e.experiment.id = :experimentId")
-    void deleteByExperimentId(@Param("experimentId") Long experimentId);
+    int deleteByExperimentId(@Param("experimentId") Long experimentId);
 
     interface StageAggregation {
         ExperimentFunnelStage getStage();

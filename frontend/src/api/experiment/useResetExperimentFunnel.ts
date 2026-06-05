@@ -12,7 +12,9 @@ export function useResetExperimentFunnel(experimentId?: string) {
     mutationKey: ["experiment", experimentId, "funnel", "reset"],
     mutationFn: async () => {
       if (!experimentId) {
-        throw new Error("ID do experimento é obrigatório para resetar o funil.");
+        throw new Error(
+          "ID do experimento é obrigatório para resetar o funil.",
+        );
       }
       const { data } = await axios.post<ExperimentFunnelResetResponse>(
         `/api/experiments/${experimentId}/funnel/reset`,
@@ -21,7 +23,12 @@ export function useResetExperimentFunnel(experimentId?: string) {
     },
     onSuccess: () => {
       if (!experimentId) return;
-      queryClient.invalidateQueries({ queryKey: ["experiment", experimentId, "funnel"] });
+      queryClient.invalidateQueries({
+        queryKey: ["experiment", experimentId, "funnel"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["experiment", experimentId, "landing-analytics"],
+      });
     },
   });
 }

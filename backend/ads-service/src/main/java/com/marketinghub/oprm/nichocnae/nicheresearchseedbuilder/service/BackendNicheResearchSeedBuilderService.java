@@ -14,6 +14,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepos
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -41,14 +42,24 @@ public class BackendNicheResearchSeedBuilderService {
   private static final int MAX_QUERY_COUNT = 15;
   private static final Set<String> ALLOWED_QUERY_GOALS = Set.of(
       "ROUTINE_DISCOVERY",
+      "ROUTINE_TASK_DISCOVERY",
+      "OPERATIONAL_DIFFICULTY_DISCOVERY",
       "NICHE_OWNER_QUESTION_DISCOVERY",
       "FINAL_CUSTOMER_QUESTION_DISCOVERY",
-      "SALES_PAIN_DISCOVERY",
-      "PRODUCT_SERVICE_DISCOVERY",
-      "OFFER_PATTERN_DISCOVERY",
       "LANGUAGE_DISCOVERY",
-      "WORKAROUND_DISCOVERY",
-      "MECHANISM_DISCOVERY");
+      "OPERATIONAL_CONTEXT_DISCOVERY");
+  private static final Set<String> SOLUTION_TERMS = Set.of(
+      "ia",
+      "inteligencia artificial",
+      "automacao",
+      "software",
+      "sistema",
+      "app",
+      "ferramenta",
+      "curso",
+      "template",
+      "oferta",
+      "landing page");
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
@@ -85,7 +96,7 @@ public class BackendNicheResearchSeedBuilderService {
       Long researchCycleId, CompleteNicheResearchSeedBuilderRequest request) {
     try {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-      validateCompletionRequest(researchCycleId, request);
+      validateCompletionRequest(researchCycleId, cycle, request);
       if (nicheResearchSeedRepository.existsByResearchCycleId(researchCycleId)) {
         throw new IllegalStateException("Niche research seed already exists for cycle: " + researchCycleId);
       }
@@ -156,7 +167,8 @@ public class BackendNicheResearchSeedBuilderService {
   }
 
   /** Valida o contrato mínimo da saída de IA antes de gravar artefatos da etapa dois. */
-  private void validateCompletionRequest(Long researchCycleId, CompleteNicheResearchSeedBuilderRequest request) {
+  private void validateCompletionRequest(
+      Long researchCycleId, OprmRoutineResearchCycle cycle, CompleteNicheResearchSeedBuilderRequest request) {
     if (request == null) {
       throw new IllegalArgumentException("Request body is required for cycle: " + researchCycleId);
     }
@@ -167,25 +179,50 @@ public class BackendNicheResearchSeedBuilderService {
     requiredText(request.commercialObjects(), "commercialObjects");
     requiredText(request.initialAssumptions(), "initialAssumptions");
     requiredText(request.confidenceLevel(), "confidenceLevel");
-    validateQueries(request.queries());
+    validateQueries(cycle, request.queries());
   }
 
-  /** Valida quantidade, objetivos, duplicidade e texto mínimo das queries geradas para pesquisa. */
-  private void validateQueries(List<NicheResearchQueryRequest> queries) {
+  /** Valida quantidade, objetivos, duplicidade, texto mínimo e ausência de solução nas queries geradas. */
+  private void validateQueries(OprmRoutineResearchCycle cycle, List<NicheResearchQueryRequest> queries) {
     if (queries == null || queries.size() < MIN_QUERY_COUNT || queries.size() > MAX_QUERY_COUNT) {
       throw new IllegalArgumentException("queries must contain between 1 and 15 items");
     }
     Set<String> uniqueQueryTexts = new HashSet<>();
+    String allowedCnaeText = normalizeForTerms(cycle.getCnaeDescription());
     for (NicheResearchQueryRequest query : queries) {
-      String queryText = requiredText(query == null ? null : query.queryText(), "queryText").toLowerCase(Locale.ROOT);
+      String rawQueryText = requiredText(query == null ? null : query.queryText(), "queryText");
+      String queryText = rawQueryText.toLowerCase(Locale.ROOT);
       if (!uniqueQueryTexts.add(queryText)) {
         throw new IllegalArgumentException("Duplicate queryText is not allowed: " + query.queryText());
       }
+      rejectSolutionTerms(rawQueryText, allowedCnaeText);
       String queryGoal = requiredText(query.queryGoal(), "queryGoal");
       if (!ALLOWED_QUERY_GOALS.contains(queryGoal)) {
         throw new IllegalArgumentException("Unsupported queryGoal: " + queryGoal);
       }
     }
+  }
+
+  /** Rejeita queries que nascem procurando solução sem esse termo existir literalmente na descrição CNAE. */
+  private void rejectSolutionTerms(String queryText, String allowedCnaeText) {
+    String normalizedQuery = normalizeForTerms(queryText);
+    Set<String> queryTokens = Set.of(normalizedQuery.split("[^a-z0-9]+"));
+    for (String term : SOLUTION_TERMS) {
+      if (containsTerm(normalizedQuery, queryTokens, term) && !containsAllowedCnaeTerm(allowedCnaeText, term)) {
+        throw new IllegalArgumentException("Query contains forbidden solution language: " + queryText);
+      }
+    }
+  }
+
+  /** Verifica se a descrição CNAE autoriza literalmente o uso de um termo sensível. */
+  private boolean containsAllowedCnaeTerm(String allowedCnaeText, String term) {
+    Set<String> allowedTokens = Set.of(allowedCnaeText.split("[^a-z0-9]+"));
+    return containsTerm(allowedCnaeText, allowedTokens, term);
+  }
+
+  /** Detecta termos simples por token e expressões compostas por ocorrência textual normalizada. */
+  private boolean containsTerm(String text, Set<String> tokens, String term) {
+    return term.contains(" ") ? text.contains(term) : tokens.contains(term);
   }
 
   /** Cria a entidade de seed do nicho usando o ciclo canônico como fonte dos dados CNAE. */
@@ -305,6 +342,13 @@ public class BackendNicheResearchSeedBuilderService {
       throw new IllegalArgumentException(fieldName + " is required");
     }
     return value.trim();
+  }
+
+
+  /** Normaliza texto removendo acentos para comparar termos de solução de forma determinística. */
+  private String normalizeForTerms(String value) {
+    String normalized = value == null ? "" : value.toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
+    return Normalizer.normalize(normalized, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
   }
 
   /** Converte strings vazias em nulo para campos opcionais persistidos. */

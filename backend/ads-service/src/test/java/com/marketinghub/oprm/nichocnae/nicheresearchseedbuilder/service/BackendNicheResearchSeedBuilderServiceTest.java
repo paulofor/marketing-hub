@@ -117,6 +117,51 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(2);
   }
 
+  /** Deve rejeitar objetivos comerciais para impedir pesquisa inicial procurando produto, oferta ou solução. */
+  @Test
+  void completeRejectsCommercialQueryGoal() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        List.of(new NicheResearchQueryRequest(
+            "manicure serviços mais procurados", "PRODUCT_SERVICE_DISCOVERY", "web", 1)));
+
+    assertThatThrownBy(() -> service.complete(1001L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unsupported queryGoal");
+    verify(nicheResearchSeedRepository, never()).save(any());
+  }
+
+  /** Deve rejeitar queries contaminadas por solução quando o termo não faz parte literal do CNAE. */
+  @Test
+  void completeRejectsSolutionLanguageQuery() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        List.of(new NicheResearchQueryRequest("IA para crescimento de manicure", "ROUTINE_DISCOVERY", "web", 1)));
+
+    assertThatThrownBy(() -> service.complete(1001L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("forbidden solution language");
+    verify(nicheResearchSeedRepository, never()).save(any());
+  }
+
   /** Deve rejeitar payloads com mais de quinze queries para preservar o MVP documentado. */
   @Test
   void completeRejectsMoreThanFifteenQueries() {
@@ -171,7 +216,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         null,
         List.of(
             new NicheResearchQueryRequest("manicure responsabilidades rotina", "ROUTINE_DISCOVERY", "web", 1),
-            new NicheResearchQueryRequest("como lotar agenda de manicure", "SALES_PAIN_DISCOVERY", "web", 2)));
+            new NicheResearchQueryRequest("agenda manicure horários vazios", "OPERATIONAL_DIFFICULTY_DISCOVERY", "web", 2)));
   }
 
   /** Monta um ciclo falho pelo contrato legado para validar recuperação automática da etapa dois. */

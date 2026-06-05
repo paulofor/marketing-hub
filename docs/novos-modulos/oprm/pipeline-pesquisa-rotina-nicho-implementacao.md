@@ -411,7 +411,7 @@ Sim.
   "businessType": "serviço local de beleza",
   "operationType": "atendimento com agenda, recorrência, indicação e relacionamento por WhatsApp",
   "customerType": "consumidor final, principalmente clientes recorrentes",
-  "commercialObjects": "corte de cabelo, escova, coloração, hidratação, manicure, pedicure, unhas em gel, design de sobrancelha, pacotes de beleza, agenda de horários",
+  "commercialObjects": "corte de cabelo, escova, coloração, hidratação, manicure, pedicure, unhas em gel, design de sobrancelha, agenda de horários e materiais de atendimento",
   "initialAssumptions": "O nicho depende de agenda cheia, recorrência, indicação, presença local, relacionamento por WhatsApp e retenção de clientes.",
   "confidenceLevel": "INFERRED_FROM_CNAE",
   "createdBy": "AI"
@@ -424,31 +424,32 @@ Exemplos de queries geradas:
 
 ```text
 manicure responsabilidades rotina
-cabeleireira responsabilidades salão de beleza
-como conseguir mais clientes manicure
-como lotar agenda de manicure
-como atrair clientes para salão de beleza
-como divulgar salão de beleza no whatsapp
-como fazer clientes voltarem no salão
-como vender pacote de manicure
-como evitar horário vazio manicure
-como cobrar mais caro manicure
-unha em gel estraga a unha
+cabeleireira tarefas salão de beleza
+agenda manicure horários vazios
+manicure dificuldades atendimento cliente
+salão de beleza comunicação clientes whatsapp
+manicure materiais usados no atendimento
+pedicure cuidados biossegurança rotina
+cabeleireiro retrabalho escova coloração
+unha em gel dúvidas clientes
 quanto tempo dura unha em gel
-qual melhor hidratação para cabelo
-pacotes para salão de beleza
-promoção para manicure
+hidratação cabelo perguntas clientes
+salão de beleza sazonalidade movimento
+manicure cobrança preço atendimento
+salão beleza atrasos agenda clientes
+manicure linguagem clientes reclamações
 ```
 
 Cada query deve ser gravada com objetivo:
 
 ```text
 ROUTINE_DISCOVERY
+ROUTINE_TASK_DISCOVERY
+OPERATIONAL_DIFFICULTY_DISCOVERY
 NICHE_OWNER_QUESTION_DISCOVERY
 FINAL_CUSTOMER_QUESTION_DISCOVERY
-SALES_PAIN_DISCOVERY
-PRODUCT_SERVICE_DISCOVERY
-OFFER_PATTERN_DISCOVERY
+LANGUAGE_DISCOVERY
+OPERATIONAL_CONTEXT_DISCOVERY
 ```
 
 ### Regras para as queries geradas
@@ -543,7 +544,7 @@ pipeline.
 Para a query:
 
 ```text
-como lotar agenda de manicure
+agenda manicure horários vazios
 ```
 
 Salvar candidatos:
@@ -733,7 +734,7 @@ intentType = SALES_GROWTH | LEAD_GENERATION | CUSTOMER_RETENTION | PRICING | INV
 Exemplo:
 
 ```text
-como lotar agenda de manicure
+agenda manicure horários vazios
 ```
 
 Classificação:
@@ -1043,14 +1044,12 @@ Valores de `query_goal`:
 
 ```text
 ROUTINE_DISCOVERY
+ROUTINE_TASK_DISCOVERY
+OPERATIONAL_DIFFICULTY_DISCOVERY
 NICHE_OWNER_QUESTION_DISCOVERY
 FINAL_CUSTOMER_QUESTION_DISCOVERY
-SALES_PAIN_DISCOVERY
-PRODUCT_SERVICE_DISCOVERY
-OFFER_PATTERN_DISCOVERY
 LANGUAGE_DISCOVERY
-WORKAROUND_DISCOVERY
-MECHANISM_DISCOVERY
+OPERATIONAL_CONTEXT_DISCOVERY
 ```
 
 ---
@@ -1297,7 +1296,7 @@ sequenceDiagram
   "businessType": "serviço local de beleza",
   "operationType": "atendimento com agenda, recorrência, indicação e relacionamento por WhatsApp",
   "customerType": "consumidor final",
-  "commercialObjects": "corte de cabelo, escova, coloração, hidratação, manicure, pedicure, unhas em gel, design de sobrancelha, pacotes de beleza, agenda de horários"
+  "commercialObjects": "corte de cabelo, escova, coloração, hidratação, manicure, pedicure, unhas em gel, design de sobrancelha, agenda de horários e materiais de atendimento"
 }
 ```
 
@@ -1305,19 +1304,19 @@ sequenceDiagram
 
 ```text
 manicure responsabilidades rotina
-cabeleireira responsabilidades salão de beleza
-como conseguir mais clientes manicure
-como lotar agenda de manicure
-como atrair clientes para salão de beleza
-como divulgar salão de beleza no whatsapp
-como fazer clientes voltarem no salão
-como vender pacote de manicure
-como evitar horário vazio manicure
-como cobrar mais caro manicure
-unha em gel estraga a unha
+cabeleireira tarefas salão de beleza
+agenda manicure horários vazios
+manicure dificuldades atendimento cliente
+salão de beleza comunicação clientes whatsapp
+manicure materiais usados no atendimento
+pedicure cuidados biossegurança rotina
+cabeleireiro retrabalho escova coloração
+unha em gel dúvidas clientes
 quanto tempo dura unha em gel
-pacotes para salão de beleza
-promoção para manicure
+hidratação cabelo perguntas clientes
+salão de beleza sazonalidade movimento
+manicure cobrança preço atendimento
+manicure linguagem clientes reclamações
 ```
 
 ### Sinais esperados
@@ -1327,11 +1326,10 @@ ROUTINE_TASK: organizar agenda.
 ROUTINE_TASK: responder WhatsApp.
 PAIN_SIGNAL: horários vazios na agenda.
 PAIN_SIGNAL: cliente marca e não aparece.
-QUESTION_SIGNAL: como conseguir mais clientes manicure.
-QUESTION_SIGNAL: como lotar agenda de manicure.
-MECHANISM_OPPORTUNITY: lembretes de retorno pelo WhatsApp.
-MECHANISM_OPPORTUNITY: pacotes mensais para recorrência.
-OFFER_PATTERN: promoção para manicure e pacotes de salão.
+QUESTION_SIGNAL: quanto tempo dura unha em gel.
+QUESTION_SIGNAL: unha em gel estraga a unha.
+LANGUAGE_SIGNAL: clientes falam sobre horários vazios, atrasos, duração e cuidados.
+CONTEXT_SIGNAL: rotina depende de agenda, materiais, biossegurança, comunicação e atendimento recorrente.
 ```
 
 ### Card esperado
@@ -1343,17 +1341,17 @@ Rotina:
 Profissionais de beleza trabalham com agenda, atendimento recorrente, relacionamento por WhatsApp e forte dependência de indicação e retorno de clientes. A rotina envolve organizar horários, confirmar atendimentos, executar serviços, postar resultados, responder clientes e tentar preencher horários vagos.
 
 Dores:
-Horários vazios, faltas de clientes, dificuldade de cobrar melhor, baixa previsibilidade de renda e falta de processo para fazer clientes voltarem.
+Horários vazios, faltas de clientes, dificuldade de cobrança, baixa previsibilidade de renda, retrabalho em serviços e dúvidas repetidas sobre duração e cuidados.
 
 Perguntas encontradas:
-- como conseguir mais clientes manicure
-- como lotar agenda de manicure
-- como divulgar salão de beleza no WhatsApp
-- como fazer cliente voltar no salão
-- como vender pacote de manicure
+- quanto tempo dura unha em gel
+- unha em gel estraga a unha
+- quais cuidados depois da manicure
+- como funciona a cobrança por atendimento
+- por que horários atrasam no salão
 
-Oportunidades de mecanismo:
-Campanhas de WhatsApp para reativação, lembretes de retorno, pacotes mensais, programa de indicação e calendário de conteúdo com provas visuais.
+Contexto operacional:
+A rotina inicial fica limitada a tarefas, dificuldades, perguntas e linguagem real do nicho; oportunidades comerciais devem ser avaliadas somente em fluxo posterior separado.
 ```
 
 ---

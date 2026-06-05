@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNicheResearchSeedBuilderDetail";
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
+import { useOprmEnrichedNicheMaterializerDetail } from "../../api/oprm/useOprmEnrichedNicheMaterializerDetail";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import { useOprmRoutineSynthesizerDetail } from "../../api/oprm/useOprmRoutineSynthesizerDetail";
 import { useOprmRoutineQualityGateDetail } from "../../api/oprm/useOprmRoutineQualityGateDetail";
@@ -70,6 +71,15 @@ const pipelineStages = [
     output:
       "Decisão: pronto para hipótese, precisa de mais pesquisa ou ficou genérico.",
   },
+  {
+    number: "8",
+    title: "Nicho Enriquecido",
+    technicalName: "oprmEnrichedNicheMaterializer",
+    description:
+      "Etapa final que alimenta a tabela de nicho e a tabela de nicho enriquecido a partir do card aprovado.",
+    output:
+      "market_niche + market_niche_enrichment_profile prontos para uso posterior em hipótese.",
+  },
 ];
 
 function formatProcessedAt(value: string) {
@@ -91,6 +101,8 @@ const statusLabels: Record<string, string> = {
   RUNNING: "Em execução",
   PENDING: "Pendente",
   COMPLETED: "Concluído",
+  ENRICHED_NICHE_CREATED: "Nicho enriquecido criado",
+  ENRICHED_NICHE_FAILED: "Falha no nicho enriquecido",
 };
 
 function formatStatusLabel(status: string) {
@@ -222,6 +234,12 @@ export default function OprmPipelinePage() {
     isError: isRoutineQualityGateDetailError,
     isFetching: isRoutineQualityGateDetailFetching,
   } = useOprmRoutineQualityGateDetail(latestCycle?.researchCycleId);
+  const {
+    data: enrichedNicheMaterializerDetail,
+    error: enrichedNicheMaterializerDetailError,
+    isError: isEnrichedNicheMaterializerDetailError,
+    isFetching: isEnrichedNicheMaterializerDetailFetching,
+  } = useOprmEnrichedNicheMaterializerDetail(latestCycle?.researchCycleId);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -1007,6 +1025,98 @@ export default function OprmPipelinePage() {
                         <p className="text-secondary small mb-0">
                           Ciclo #{latestCycle.researchCycleId} ainda não possui
                           card de rotina para avaliar.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {stage.number === "8" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Resumo da última execução
+                      </span>
+                      {isEnrichedNicheMaterializerDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando nicho enriquecido do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isEnrichedNicheMaterializerDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(
+                            enrichedNicheMaterializerDetailError,
+                          )}
+                        </div>
+                      ) : enrichedNicheMaterializerDetail?.enrichedNicheProfileId ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-6 text-secondary fw-normal">
+                              Nicho
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              #{enrichedNicheMaterializerDetail.marketNicheId}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Nicho enriquecido
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              #
+                              {
+                                enrichedNicheMaterializerDetail.enrichedNicheProfileId
+                              }
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Status do ciclo
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              <span
+                                className={buildStatusBadgeClass(
+                                  enrichedNicheMaterializerDetail.cycleStatus,
+                                )}
+                              >
+                                {formatStatusLabel(
+                                  enrichedNicheMaterializerDetail.cycleStatus,
+                                )}
+                              </span>
+                            </dd>
+                            {enrichedNicheMaterializerDetail.materializedAt ? (
+                              <>
+                                <dt className="col-6 text-secondary fw-normal">
+                                  Materializado em
+                                </dt>
+                                <dd className="col-6 mb-0">
+                                  {formatProcessedAt(
+                                    enrichedNicheMaterializerDetail.materializedAt,
+                                  )}
+                                </dd>
+                              </>
+                            ) : null}
+                          </dl>
+                          <p className="mb-2 fw-semibold">
+                            {enrichedNicheMaterializerDetail.nicheName}
+                          </p>
+                          <p className="text-secondary mb-2 text-truncate">
+                            {enrichedNicheMaterializerDetail.painsSummary}
+                          </p>
+                          <p className="text-secondary mb-0">
+                            Mecanismos:{" "}
+                            {
+                              enrichedNicheMaterializerDetail.mechanismOpportunitiesSummary
+                            }
+                          </p>
+                        </div>
+                      ) : routineQualityGateDetail?.readyForHypothesis ? (
+                        <p className="text-primary mb-0 small">
+                          O card aprovado está pronto para alimentar nicho e
+                          nicho enriquecido. O agendador da etapa final executa
+                          automaticamente.
+                        </p>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não possui
+                          card aprovado para materialização final.
                         </p>
                       )}
                     </div>

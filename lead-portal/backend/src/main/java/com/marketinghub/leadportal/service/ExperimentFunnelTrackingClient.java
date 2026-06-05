@@ -133,25 +133,29 @@ public class ExperimentFunnelTrackingClient {
      * Envia uma requisição de tracking e traduz o resultado HTTP em status operacional.
      */
     private TrackingResult sendTrackingRequest(URI endpoint, HttpEntity<?> entity, String action, String slug) {
+        log.info("Enviando evento de tracking ao Marketing Hub. action={}, slug={}, endpoint={}, payload={}",
+                action, slug, endpoint, entity.getBody());
         try {
             ResponseEntity<Void> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, Void.class);
             if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("Evento de tracking aceito pelo Marketing Hub. action={}, slug={}, status={}",
+                        action, slug, response.getStatusCode());
                 return TrackingResult.FORWARDED;
             }
-            log.warn("Marketing Hub retornou status {} ao registrar {} do fluxo {}",
-                    response.getStatusCode(), action, slug);
+            log.warn("Marketing Hub retornou status {} ao registrar {} do fluxo {}. endpoint={}, payload={}",
+                    response.getStatusCode(), action, slug, endpoint, entity.getBody());
             return TrackingResult.FAILED;
         } catch (HttpStatusCodeException ex) {
             if (ex.getStatusCode().is4xxClientError()) {
-                log.info("Ignorando {} para fluxo '{}' (status {} retornado pelo Marketing Hub)",
-                        action, slug, ex.getStatusCode());
+                log.info("Ignorando {} para fluxo '{}' (status {} retornado pelo Marketing Hub). endpoint={}, responseBody={}, payload={}",
+                        action, slug, ex.getStatusCode(), endpoint, ex.getResponseBodyAsString(), entity.getBody(), ex);
                 return TrackingResult.SKIPPED;
             }
-            log.warn("Falha ao registrar {} do fluxo '{}' no Marketing Hub (status {})",
-                    action, slug, ex.getStatusCode(), ex);
+            log.warn("Falha ao registrar {} do fluxo '{}' no Marketing Hub (status {}). endpoint={}, responseBody={}, payload={}",
+                    action, slug, ex.getStatusCode(), endpoint, ex.getResponseBodyAsString(), entity.getBody(), ex);
             return TrackingResult.FAILED;
         } catch (RestClientException ex) {
-            log.warn("Erro de comunicação ao registrar {} do fluxo '{}'", action, slug, ex);
+            log.warn("Erro de comunicação ao registrar {} do fluxo '{}'. endpoint={}, payload={}", action, slug, endpoint, entity.getBody(), ex);
             return TrackingResult.FAILED;
         }
     }

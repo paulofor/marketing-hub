@@ -68,6 +68,13 @@ Regras arquiteturais refletidas (ArchUnit):
 - O preset deve declarar definições CSS completas para layouts críticos (`heroDesktopGrid`, grids de 2/3 colunas), CTAs, formulário e inputs; aplicar apenas o nome de uma classe sem propriedades suficientes não cumpre o contrato de landing comercial.
 - Como a montagem final pode combinar CSS do preset e CSS do wireframe em ordem variável, `!important` deve ser reservado principalmente para overrides mobile críticos; em desktop, deve ser pontual e justificado quando uma classe conflitante não puder ser removida.
 
+## Contrato canônico dos HTMLs da landing
+
+- `experiment.html_geralanding` é o artefato fonte puro do GeraLanding: deve conter somente HTML e CSS necessários para renderização visual da landing. É proibido inserir nesse campo scripts de funil, pixels de mídia, tags de analytics, `gtag`, Google Tag Manager, `fbq`, Meta/Facebook Pixel, `data-mh-funnel-tracking`, `data-mh-funnel-controls`, `data-mh-landing-analytics` ou qualquer metadado operacional que não faça parte da experiência visual pura.
+- `experiment.landing_page_html` é o artefato final publicável: deve ser derivado de `html_geralanding` e conter todos os enriquecimentos necessários para operação comercial, incluindo tracking comportamental, controles do funil de vendas, pixels configurados e analytics elegíveis.
+- A publicação no Lead Portal deve enviar como `customFormHtml` a versão publicável equivalente a `experiment.landing_page_html`, nunca a versão fonte pura quando a campanha precisar alimentar funil, pixels ou mensuração.
+- Qualquer injeção de scripts/pixels deve ser feita em cópia idempotente do HTML fonte e persistida em `landing_page_html`; nunca deve contaminar `html_geralanding`.
+
 ## Quality Review visual
 
 - A etapa `landing-page-quality-review` é o Quality Gate comercial final do GeraLanding e deve usar modelo com capacidade de visão da OpenAI como avaliador principal da experiência renderizada.

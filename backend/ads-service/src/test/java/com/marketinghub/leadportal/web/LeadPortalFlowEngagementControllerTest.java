@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.web;
 
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
+import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,9 +19,15 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Testa os endpoints públicos do backend que recebem eventos de engajamento do Lead Portal.
+ */
 @WebMvcTest(LeadPortalFlowEngagementController.class)
 class LeadPortalFlowEngagementControllerTest {
 
+    /**
+     * Aplicação mínima para carregar somente o slice MVC do controller testado.
+     */
     @SpringBootApplication
     static class TestConfig {}
 
@@ -30,6 +37,9 @@ class LeadPortalFlowEngagementControllerTest {
     @MockBean
     private ExperimentFunnelService experimentFunnelService;
 
+    /**
+     * Valida que render-complete com payload é encaminhado ao serviço de funil.
+     */
     @Test
     void registerRenderCompleteAcceptsPayload() throws Exception {
         mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/render-complete")
@@ -40,6 +50,9 @@ class LeadPortalFlowEngagementControllerTest {
         verify(experimentFunnelService).registerFormRenderCompleted(eq("flow-slug"), eq("visitor-123"), isNull());
     }
 
+    /**
+     * Valida que render-complete sem corpo continua aceito para compatibilidade pública.
+     */
     @Test
     void registerRenderCompleteAcceptsEmptyBody() throws Exception {
         mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/render-complete")
@@ -49,6 +62,9 @@ class LeadPortalFlowEngagementControllerTest {
         verify(experimentFunnelService).registerFormRenderCompleted(eq("flow-slug"), isNull(), isNull());
     }
 
+    /**
+     * Valida que submissão pública válida é encaminhada ao serviço de funil.
+     */
     @Test
     void registerSubmissionForwardsPayload() throws Exception {
         when(experimentFunnelService.registerFormSubmission(
@@ -71,6 +87,31 @@ class LeadPortalFlowEngagementControllerTest {
         verify(experimentFunnelService).registerFormSubmission(
                 eq("flow-slug"),
                 any(LeadPortalSubmissionEngagementContractV1.class));
+    }
+
+    /**
+     * Valida que analytics emitido pelos scripts da landing é parseado e encaminhado ao serviço.
+     */
+    @Test
+    void registerPageAnalyticsForwardsRawPayload() throws Exception {
+        mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/page-analytics")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "eventId":"evt-1",
+                                  "eventType":"page_view",
+                                  "sessionId":"session-1",
+                                  "pageUrl":"https://oportunidadebrasil.shop/api/flows/flow-slug/page"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(experimentFunnelService).registerLandingPageAnalyticsEvent(
+                eq("flow-slug"),
+                org.mockito.ArgumentMatchers.argThat((RegisterLandingPageAnalyticsEventRequest request) ->
+                        "evt-1".equals(request.eventId())
+                                && "page_view".equals(request.eventType())
+                                && "session-1".equals(request.sessionId())));
     }
 
 }

@@ -5,15 +5,7 @@ import OpenAiModelForm, { OpenAiModelFormValues } from "./OpenAiModelForm";
 
 function toPayload(values: OpenAiModelFormValues) {
   return {
-    name: values.name,
-    code: values.code,
-    priceInputStandard: Number(values.priceInputStandard || 0),
-    priceInputCachedStandard: Number(values.priceInputCachedStandard || 0),
-    priceOutputStandard: Number(values.priceOutputStandard || 0),
-    priceInputBatch: Number(values.priceInputBatch || 0),
-    priceInputCachedBatch: Number(values.priceInputCachedBatch || 0),
-    priceOutputBatch: Number(values.priceOutputBatch || 0),
-    acceptsImageInput: values.acceptsImageInput,
+    name: values.name.trim(),
   };
 }
 
@@ -33,6 +25,8 @@ export default function NewOpenAiModelPage() {
       <OpenAiModelForm
         onSubmit={handleSubmit}
         isSubmitting={create.isPending}
+        submitLabel="Buscar na OpenAI e salvar"
+        nameOnly
       />
     </div>
   );

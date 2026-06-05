@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.StageExecution;
-import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.port.StagePromptBuilder;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 
@@ -23,18 +22,15 @@ public class ImagePlanningPromptBuilder implements StagePromptBuilder<ImagePlann
     private static final Logger log = LoggerFactory.getLogger(ImagePlanningPromptBuilder.class);
 
     private final ObjectMapper objectMapper;
-    private final OpenAiClientProperties openAiProperties;
     private final ImagePlanningWorkerProperties imagePlanningProperties;
     private final PromptTemplateResolver promptTemplateResolver;
 
-    /** Inicializa o builder com serializador, propriedades OpenAI e propriedades da etapa imageplanning. */
+    /** Inicializa o builder com serializador e propriedades dedicadas da etapa imageplanning. */
     public ImagePlanningPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             ImagePlanningWorkerProperties imagePlanningProperties
     ) {
         this.objectMapper = objectMapper;
-        this.openAiProperties = openAiProperties;
         this.imagePlanningProperties = imagePlanningProperties;
         this.promptTemplateResolver = new PromptTemplateResolver(this::loadResource, this::toJsonOrText);
     }
@@ -51,7 +47,7 @@ public class ImagePlanningPromptBuilder implements StagePromptBuilder<ImagePlann
         String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
 
         return new OpenAiRequest(
-                openAiProperties.model(),
+                imagePlanningProperties.model(),
                 prompt,
                 requestBodyJson,
                 imagePlanningProperties.schemaName(),
@@ -80,7 +76,7 @@ public class ImagePlanningPromptBuilder implements StagePromptBuilder<ImagePlann
             text.put("format", format);
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", openAiProperties.model());
+            body.put("model", imagePlanningProperties.model());
             body.put("input", prompt);
             body.put("text", text);
 

@@ -70,7 +70,7 @@ describe("OprmPipelinePage", () => {
     expect(await screen.findByText("Execução mais recente")).toBeTruthy();
     expect(screen.getByText("#1")).toBeTruthy();
     expect(screen.getAllByText("9602501").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("RUNNING").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Em execução").length).toBeGreaterThan(0);
 
     await waitFor(() => {
       const alerts = screen.getAllByRole("alert");

@@ -83,6 +83,27 @@ function formatProcessedAt(value: string) {
   }).format(date);
 }
 
+const statusLabels: Record<string, string> = {
+  LIGHTLY_RESEARCHED: "Pesquisa inicial concluída",
+  NEEDS_MORE_RESEARCH: "Precisa de mais pesquisa",
+  GENERIC: "Genérico",
+  FAILED: "Falhou",
+  RUNNING: "Em execução",
+  PENDING: "Pendente",
+  COMPLETED: "Concluído",
+};
+
+function formatStatusLabel(status: string) {
+  return statusLabels[status] ?? status;
+}
+
+function formatQualityNotes(value: string) {
+  return Object.entries(statusLabels).reduce(
+    (formatted, [status, label]) => formatted.split(status).join(label),
+    value,
+  );
+}
+
 function buildStatusBadgeClass(status: string) {
   if (status === "LIGHTLY_RESEARCHED") {
     return "badge text-bg-success-subtle border border-success-subtle text-success";
@@ -306,7 +327,7 @@ export default function OprmPipelinePage() {
                         <span
                           className={buildStatusBadgeClass(item.cycleStatus)}
                         >
-                          {item.cycleStatus}
+                          {formatStatusLabel(item.cycleStatus)}
                         </span>
                         {item.cycleStatus === "FAILED" ? (
                           <div className="text-danger small mt-1">
@@ -405,7 +426,7 @@ export default function OprmPipelinePage() {
                               latestCycle.cycleStatus,
                             )}
                           >
-                            {latestCycle.cycleStatus}
+                            {formatStatusLabel(latestCycle.cycleStatus)}
                           </span>
                           {latestCycle.finishedAt ? (
                             <span className="text-secondary d-block mt-1">
@@ -651,7 +672,9 @@ export default function OprmPipelinePage() {
                                   sourceFetcherDetail.cycleStatus,
                                 )}
                               >
-                                {sourceFetcherDetail.cycleStatus}
+                                {formatStatusLabel(
+                                  sourceFetcherDetail.cycleStatus,
+                                )}
                               </span>
                             </dd>
                             {latestSourceSnapshot ? (
@@ -755,7 +778,9 @@ export default function OprmPipelinePage() {
                                   signalExtractorDetail.cycleStatus,
                                 )}
                               >
-                                {signalExtractorDetail.cycleStatus}
+                                {formatStatusLabel(
+                                  signalExtractorDetail.cycleStatus,
+                                )}
                               </span>
                             </dd>
                           </dl>
@@ -847,7 +872,9 @@ export default function OprmPipelinePage() {
                                   routineSynthesizerDetail.cycleStatus,
                                 )}
                               >
-                                {routineSynthesizerDetail.cycleStatus}
+                                {formatStatusLabel(
+                                  routineSynthesizerDetail.cycleStatus,
+                                )}
                               </span>
                             </dd>
                           </dl>
@@ -907,7 +934,9 @@ export default function OprmPipelinePage() {
                                   routineQualityGateDetail.qualityStatus,
                                 )}
                               >
-                                {routineQualityGateDetail.qualityStatus}
+                                {formatStatusLabel(
+                                  routineQualityGateDetail.qualityStatus,
+                                )}
                               </span>
                             </dd>
                             <dt className="col-6 text-secondary fw-normal">
@@ -963,7 +992,9 @@ export default function OprmPipelinePage() {
                           </dl>
                           {routineQualityGateDetail.qualityNotes ? (
                             <p className="text-secondary mb-0">
-                              {routineQualityGateDetail.qualityNotes}
+                              {formatQualityNotes(
+                                routineQualityGateDetail.qualityNotes,
+                              )}
                             </p>
                           ) : null}
                         </div>

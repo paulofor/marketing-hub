@@ -29,14 +29,26 @@ public class RoutineResearchOrchestratorProcessor implements StageProcessor<Rout
                 context.execution().idJob(),
                 context.input().requestedBy());
         RoutineResearchOrchestratorOutput output = backendClient.runNext();
-        Map<String, Object> metrics = Map.of("started", output.started());
+        Map<String, Object> metrics = output.started()
+                ? Map.of(
+                        "started", output.started(),
+                        "researchCycleId", output.researchCycleId(),
+                        "sourceNicheId", output.sourceNicheId(),
+                        "originalNicheName", output.originalNicheName(),
+                        "neutralNicheName", output.neutralNicheName(),
+                        "researchMode", output.researchMode(),
+                        "solutionLanguageRiskScore", output.solutionLanguageRiskScore())
+                : Map.of("started", output.started());
         log.info(
-                "Processor da etapa zero OPRM nichocnae recebeu resposta do backend (executionId={}, requestedBy={}, started={}, researchCycleId={}, sourceNicheId={}, routineStatus={}, message={})",
+                "Processor da etapa zero OPRM nichocnae recebeu resposta do backend (executionId={}, requestedBy={}, started={}, researchCycleId={}, sourceNicheId={}, originalNicheName={}, neutralNicheName={}, researchMode={}, routineStatus={}, message={})",
                 context.execution().idJob(),
                 context.input().requestedBy(),
                 output.started(),
                 output.researchCycleId(),
                 output.sourceNicheId(),
+                output.originalNicheName(),
+                output.neutralNicheName(),
+                output.researchMode(),
                 output.routineResearchStatus(),
                 output.message());
         return new StageResult<>(output, List.of(), metrics);

@@ -59,15 +59,36 @@ public class RoutineResearchCycleService {
                 pending,
                 Map.of("stage", "oprmRoutineResearchCycle", "requestedBy", requestedBy));
         try {
+            log.info(
+                    "Iniciando etapa um OPRM nichocnae (researchCycleId={}, sourceNicheId={}, originalNicheName={}, neutralNicheName={}, researchMode={}, requestedBy={})",
+                    pending.researchCycleId(),
+                    pending.sourceNicheId(),
+                    pending.originalNicheName(),
+                    pending.neutralNicheName(),
+                    pending.researchMode(),
+                    requestedBy);
             PipelineWorker<RoutineResearchCyclePending, RoutineResearchCycleDetail> worker = new PipelineWorker<>(
                     processor, artifactStore);
             StageResult<RoutineResearchCycleDetail> result = worker.processResult(execution);
-            return result.output();
+            RoutineResearchCycleDetail output = result.output();
+            log.info(
+                    "Etapa um OPRM nichocnae concluída (researchCycleId={}, sourceNicheId={}, originalNicheName={}, neutralNicheName={}, researchMode={}, requestedBy={}, metrics={})",
+                    output.researchCycleId(),
+                    output.sourceNicheId(),
+                    output.originalNicheName(),
+                    output.neutralNicheName(),
+                    output.researchMode(),
+                    requestedBy,
+                    result.metrics());
+            return output;
         } catch (RuntimeException ex) {
             log.error(
-                    "Erro ao executar sob demanda a etapa um OPRM nichocnae (researchCycleId={}, sourceNicheId={}, requestedBy={})",
+                    "Erro ao executar sob demanda a etapa um OPRM nichocnae (researchCycleId={}, sourceNicheId={}, originalNicheName={}, neutralNicheName={}, researchMode={}, requestedBy={})",
                     pending.researchCycleId(),
                     pending.sourceNicheId(),
+                    pending.originalNicheName(),
+                    pending.neutralNicheName(),
+                    pending.researchMode(),
                     requestedBy,
                     ex);
             throw ex;

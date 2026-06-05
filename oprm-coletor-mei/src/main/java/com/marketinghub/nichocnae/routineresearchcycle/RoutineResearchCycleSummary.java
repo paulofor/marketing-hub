@@ -3,12 +3,16 @@ package com.marketinghub.nichocnae.routineresearchcycle;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/** Resume uma execução da etapa um para acompanhamento operacional por nicho CNAE de origem. */
+/** Resume um ciclo de pesquisa de rotina para listagem operacional no coletor OPRM. */
 public record RoutineResearchCycleSummary(
         Long researchCycleId,
         Long sourceNicheId,
         String cnaeCode,
         String nicheName,
+        String originalNicheName,
+        String neutralNicheName,
+        String researchMode,
+        BigDecimal solutionLanguageRiskScore,
         BigDecimal sourceScore,
         String status,
         Integer totalQueries,

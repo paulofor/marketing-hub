@@ -33,6 +33,18 @@ public class OprmRoutineResearchCycle {
     @Column(name = "niche_name", nullable = false, length = 255)
     private String nicheName;
 
+    @Column(name = "original_niche_name", nullable = false, length = 255)
+    private String originalNicheName;
+
+    @Column(name = "neutral_niche_name", nullable = false, length = 255)
+    private String neutralNicheName;
+
+    @Column(name = "research_mode", nullable = false, length = 48)
+    private String researchMode;
+
+    @Column(name = "solution_language_risk_score", nullable = false, precision = 5, scale = 2)
+    private BigDecimal solutionLanguageRiskScore;
+
     @Column(name = "source_score", nullable = false, precision = 5, scale = 2)
     private BigDecimal sourceScore;
 

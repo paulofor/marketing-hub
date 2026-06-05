@@ -33,6 +33,10 @@ class RoutineResearchOrchestratorInitialSchedulerTest {
                         null,
                         "AUTO_SCORE_QUEUE",
                         "RUNNING",
+                        "Agenda cheia para manicures",
+                        "Agenda cheia para manicures",
+                        "ROUTINE_REALITY_RESEARCH",
+                        null,
                         "RESEARCH_RUNNING",
                         "Pesquisa iniciada."));
         RoutineResearchOrchestratorInitialScheduler scheduler = newScheduler("2026-06-03T07:00:00Z");

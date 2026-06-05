@@ -136,20 +136,58 @@ public class FlowController {
     }
 
     /**
-     * Injeta o script de analytics do Lead Portal sem alterar landings que já possuem a instrumentação.
+     * Injeta ou atualiza o script de analytics do Lead Portal com diagnóstico opcional no browser.
      */
     private String injectLandingAnalyticsScript(String slug, String html) {
-        if (html == null || html.toLowerCase(Locale.ROOT).contains("data-mh-landing-analytics")) {
+        if (html == null) {
+            return null;
+        }
+        if (html.toLowerCase(Locale.ROOT).contains("data-mh-landing-analytics")) {
+            return refreshLandingAnalyticsScriptWhenMissingDebug(slug, html);
+        }
+
+        String analyticsScript = buildLandingAnalyticsScript(slug);
+        if (html.toLowerCase(Locale.ROOT).contains("</body>")) {
+            return html.replaceFirst("(?i)</body>", java.util.regex.Matcher.quoteReplacement(analyticsScript + "\n</body>"));
+        }
+        return html + "\n" + analyticsScript;
+    }
+
+    /**
+     * Atualiza a instrumentação legada já existente para incluir logs de diagnóstico sem duplicar scripts.
+     */
+    private String refreshLandingAnalyticsScriptWhenMissingDebug(String slug, String html) {
+        if (html.contains("mhAnalyticsDebug")) {
             return html;
         }
-        String analyticsScript = """
+        String analyticsScript = buildLandingAnalyticsScript(slug);
+        return java.util.regex.Pattern
+                .compile("<script\\b(?=[^>]*data-mh-landing-analytics)[\\s\\S]*?</script>",
+                        java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(html)
+                .replaceFirst(java.util.regex.Matcher.quoteReplacement(analyticsScript));
+    }
+
+    /**
+     * Monta o script de analytics que envia page_view e expõe logs de console somente quando o debug é ativado.
+     */
+    private String buildLandingAnalyticsScript(String slug) {
+        return """
                 <script data-mh-landing-analytics="true">
                 (function(){
                   const slugValue = %s;
                   const endpoint = '/api/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
+                  const debugParam = new URLSearchParams(window.location.search).get('mhAnalyticsDebug') === '1';
+                  const debugStorage = localStorage.getItem('mhLandingAnalyticsDebug') === 'true';
+                  const debugEnabled = debugParam || debugStorage;
+                  const debugLog = function(message, details){
+                    if (!debugEnabled || !window.console || !window.console.log) return;
+                    window.console.log('[MH Landing Analytics] ' + message, details || {});
+                  };
                   const sessionKey = 'mh_lp_session_' + slugValue;
                   const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   sessionStorage.setItem(sessionKey, sessionId);
+                  debugLog('script carregado', {slug: slugValue, endpoint: endpoint, sessionId: sessionId, readyState: document.readyState});
                   const buildEventId = function(){
                     return crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   };
@@ -166,13 +204,18 @@ public class FlowController {
                       occurredAt: new Date().toISOString(),
                       userAgent: navigator.userAgent
                     };
+                    debugLog('enviando evento', {endpoint: endpoint, payload: payload});
                     if (navigator.sendBeacon) {
-                      navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                      const accepted = navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                      debugLog('sendBeacon executado', {eventId: payload.eventId, eventType: eventType, accepted: accepted});
                       return;
                     }
-                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true}).catch(function(){});
+                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true})
+                      .then(function(response){ debugLog('fetch concluído', {eventId: payload.eventId, eventType: eventType, status: response.status}); })
+                      .catch(function(error){ debugLog('fetch falhou', {eventId: payload.eventId, eventType: eventType, error: error && error.message ? error.message : String(error)}); });
                   };
                   const startTracking = function(){
+                    debugLog('tracking iniciado', {slug: slugValue});
                     sendEvent('page_view', null, null);
                     const visibleSince = new Map();
                     const observer = new IntersectionObserver(function(entries){
@@ -181,7 +224,10 @@ public class FlowController {
                         const sectionId = entry.target.id || entry.target.getAttribute('data-section-id') || entry.target.getAttribute('data-track-section');
                         if (!sectionId) return;
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-                          if (!visibleSince.has(sectionId)) visibleSince.set(sectionId, now);
+                          if (!visibleSince.has(sectionId)) {
+                            visibleSince.set(sectionId, now);
+                            debugLog('seção visível', {sectionId: sectionId});
+                          }
                         } else if (visibleSince.has(sectionId)) {
                           const startedAt = visibleSince.get(sectionId);
                           visibleSince.delete(sectionId);
@@ -189,13 +235,17 @@ public class FlowController {
                         }
                       });
                     }, {threshold:[0.5]});
-                    document.querySelectorAll('section[id], [data-section-id], [data-track-section]').forEach(function(el){ observer.observe(el); });
+                    const trackedSections = document.querySelectorAll('section[id], [data-section-id], [data-track-section]');
+                    debugLog('seções monitoradas', {count: trackedSections.length});
+                    trackedSections.forEach(function(el){ observer.observe(el); });
                     window.addEventListener('beforeunload', function(){
                       const now = performance.now();
+                      debugLog('beforeunload processando seções visíveis', {count: visibleSince.size});
                       visibleSince.forEach(function(startedAt, sectionId){ sendEvent('section_view_time', sectionId, now - startedAt); });
                     });
                   };
                   if (document.readyState === 'loading') {
+                    debugLog('aguardando DOMContentLoaded', {readyState: document.readyState});
                     document.addEventListener('DOMContentLoaded', startTracking);
                   } else {
                     startTracking();
@@ -203,10 +253,6 @@ public class FlowController {
                 })();
                 </script>
                 """.formatted(toJsStringLiteral(slug));
-        if (html.toLowerCase(Locale.ROOT).contains("</body>")) {
-            return html.replaceFirst("(?i)</body>", java.util.regex.Matcher.quoteReplacement(analyticsScript + "\n</body>"));
-        }
-        return html + "\n" + analyticsScript;
     }
 
     /**

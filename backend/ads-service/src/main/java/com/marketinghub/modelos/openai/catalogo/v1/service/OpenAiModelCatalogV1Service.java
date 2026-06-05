@@ -1,11 +1,17 @@
 package com.marketinghub.modelos.openai.catalogo.v1.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.modelos.openai.catalogo.v1.dto.OpenAiModelCatalogPriceResponse;
 import com.marketinghub.modelos.openai.catalogo.v1.dto.OpenAiModelCatalogResponse;
 import com.marketinghub.modelos.openai.catalogo.v1.entity.OpenAiCatalogModelV1;
+import com.marketinghub.openai.OpenAiModelPricing;
+import com.marketinghub.openai.OpenAiPricingPageClient;
 import com.marketinghub.repository.jpa.modelos.openai.catalogo.v1.OpenAiCatalogModelV1Repository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import org.slf4j.Logger;
@@ -22,12 +28,16 @@ public class OpenAiModelCatalogV1Service {
 
     private final WebClient openAiWebClient;
     private final OpenAiCatalogModelV1Repository repository;
+    private final OpenAiPricingPageClient pricingPageClient;
 
-    /** Inicializa o serviço com o WebClient autenticado da OpenAI e o repositório centralizado do catálogo técnico. */
+    /** Inicializa o serviço com o WebClient autenticado, repositório de catálogo técnico e cliente oficial de preços. */
     public OpenAiModelCatalogV1Service(
-            @Qualifier("openAiWebClient") WebClient openAiWebClient, OpenAiCatalogModelV1Repository repository) {
+            @Qualifier("openAiWebClient") WebClient openAiWebClient,
+            OpenAiCatalogModelV1Repository repository,
+            OpenAiPricingPageClient pricingPageClient) {
         this.openAiWebClient = openAiWebClient;
         this.repository = repository;
+        this.pricingPageClient = pricingPageClient;
     }
 
     /** Busca modelos em /models, separa texto/imagem e salva os códigos reconhecidos para auditoria local. */
@@ -44,11 +54,43 @@ public class OpenAiModelCatalogV1Service {
                 }
             }
             return new OpenAiModelCatalogResponse(
-                    new ArrayList<>(text), new ArrayList<>(image), "openai:/models", now.toString());
+                    new ArrayList<>(text),
+                    new ArrayList<>(image),
+                    fetchPricingByModel(),
+                    "openai:/models + openai:pricing",
+                    now.toString());
         } catch (RuntimeException ex) {
             log.error("Falha ao consultar catálogo oficial OpenAI; operation=openai-model-catalog-fetch endpoint=/models", ex);
             throw ex;
         }
+    }
+
+    /** Busca preços oficiais de texto e indexa por código do modelo para enriquecer a lista de seleção. */
+    private Map<String, OpenAiModelCatalogPriceResponse> fetchPricingByModel() {
+        try {
+            List<OpenAiModelPricing> pricingRows = pricingPageClient.fetchTextModelPricing();
+            Map<String, OpenAiModelCatalogPriceResponse> pricingByModel = new LinkedHashMap<>();
+            for (OpenAiModelPricing pricing : pricingRows) {
+                pricingByModel.put(pricing.code(), toPriceResponse(pricing));
+            }
+            return pricingByModel;
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha ao consultar preços oficiais OpenAI para catálogo; operation=openai-model-catalog-pricing source=pricing-page",
+                    ex);
+            return Map.of();
+        }
+    }
+
+    /** Converte a linha de preço interna no DTO exposto para o frontend. */
+    private OpenAiModelCatalogPriceResponse toPriceResponse(OpenAiModelPricing pricing) {
+        return new OpenAiModelCatalogPriceResponse(
+                pricing.priceInputStandard(),
+                pricing.priceInputCachedStandard(),
+                pricing.priceOutputStandard(),
+                pricing.priceInputBatch(),
+                pricing.priceInputCachedBatch(),
+                pricing.priceOutputBatch());
     }
 
     /** Classifica um item bruto da API /models e persiste quando o código pertence a uma família reconhecida. */

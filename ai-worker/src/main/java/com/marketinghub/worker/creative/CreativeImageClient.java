@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyExtractors;
@@ -71,18 +73,32 @@ public class CreativeImageClient {
         this.model = model;
         this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         if (!enabled) {
-            log.warn("OpenAI API key not configured; image generation will be skipped");
+            log.warn("OpenAI API key not configured; creative image generation will fail until the key is configured");
         }
     }
 
+    /**
+     * Generates an image for a prompt without an intermediate prompt.
+     */
     public String generateImage(String prompt) {
-        return generateImage(prompt, null);
+        return generateImage(prompt, null, "creative-default");
     }
 
+    /**
+     * Generates an image and returns a usable URL or fails when generation cannot run.
+     */
     public String generateImage(String prompt, String intermediatePrompt) {
+        return generateImage(prompt, intermediatePrompt, "creative");
+    }
+
+    /**
+     * Generates an image with operational context so logs can isolate OpenAI, upload or configuration failures.
+     */
+    public String generateImage(String prompt, String intermediatePrompt, String operationContext) {
+        String context = normalizeContext(operationContext);
         if (!enabled) {
-            log.warn("Skipping image generation because OpenAI API key is missing");
-            return null;
+            log.error("Cannot generate creative image because OpenAI API key is missing. context={}", context);
+            throw new IllegalStateException("OpenAI API key is required to generate creative images");
         }
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
@@ -91,20 +107,21 @@ public class CreativeImageClient {
             payload.put("response_format", "b64_json");
         }
 
-        log.info("Sending image generation prompt to OpenAI: {}", prompt);
+        log.info("Sending creative image request to OpenAI. context={} payload={}", context, payload);
         ImageResponse response;
         try {
             response = webClient.post()
                     .uri("/images/generations")
                     .bodyValue(payload)
-                    .exchangeToMono(this::readImageResponse)
+                    .exchangeToMono(clientResponse -> readImageResponse(clientResponse, context))
                     .block(REQUEST_TIMEOUT);
         } catch (Exception ex) {
-            log.error("OpenAI image generation failed after {} seconds", REQUEST_TIMEOUT.getSeconds(), ex);
+            log.error("OpenAI image generation transport failed after {} seconds. context={}",
+                    REQUEST_TIMEOUT.getSeconds(), context, ex);
             throw new RuntimeException("Failed to call OpenAI image API", ex);
         }
 
-        log.info("OpenAI image response: {}", response);
+        log.info("Parsed OpenAI image response. context={} parsedResponse={}", context, response);
 
         if (response == null) {
             throw new RuntimeException("No image returned from OpenAI");
@@ -113,7 +130,8 @@ public class CreativeImageClient {
         if (dataList == null || dataList.isEmpty()) {
             ApiError error = response.error();
             if (error != null && error.message() != null && !error.message().isBlank()) {
-                log.error("OpenAI image API returned error: {}", error.message());
+                log.error("OpenAI image API returned error. context={} message={} type={} param={} code={}",
+                        context, error.message(), error.type(), error.param(), error.code());
                 throw new RuntimeException("OpenAI image API returned error: " + error.message());
             }
             throw new RuntimeException("No image returned from OpenAI");
@@ -128,26 +146,41 @@ public class CreativeImageClient {
                             optimized.content().length);
                 }
                 String filename = "creative-" + UUID.randomUUID() + "." + optimized.extension();
-                return assetClient.uploadImage(optimized.content(), filename, model, prompt, intermediatePrompt);
+                String uploadedUrl = assetClient.uploadImage(optimized.content(), filename, model, prompt, intermediatePrompt);
+                log.info("Creative image generated by OpenAI and uploaded to backend. context={} filename={} url={}",
+                        context, filename, uploadedUrl);
+                return uploadedUrl;
+            } catch (BackendAssetClient.BackendAssetUploadException e) {
+                log.error("OpenAI returned image bytes but backend asset upload failed. context={}", context, e);
+                throw e;
             } catch (IllegalArgumentException e) {
+                log.error("Failed to decode OpenAI image payload. context={}", context, e);
                 throw new RuntimeException("Failed to decode image payload", e);
             }
         }
         if (data.url() != null && !data.url().isBlank()) {
-            log.warn("OpenAI image response missing base64 payload, using remote URL");
+            log.warn("OpenAI image response missing base64 payload, using remote URL. context={} url={}",
+                    context, data.url());
             return data.url();
         }
         throw new RuntimeException("No image returned from OpenAI");
     }
 
-    private Mono<ImageResponse> readImageResponse(ClientResponse response) {
+    /**
+     * Reads and logs the raw OpenAI response before parsing the image contract.
+     */
+    private Mono<ImageResponse> readImageResponse(ClientResponse response, String context) {
+        HttpStatusCode status = response.statusCode();
         return response.body(BodyExtractors.toDataBuffers())
                 .map(this::toByteArray)
                 .reduceWith(ByteArrayOutputStream::new, this::appendChunk)
                 .map(ByteArrayOutputStream::toByteArray)
-                .map(this::parseResponse);
+                .map(bytes -> parseResponse(bytes, status, context));
     }
 
+    /**
+     * Copies a reactive data buffer to a byte array and releases it.
+     */
     private byte[] toByteArray(DataBuffer buffer) {
         try {
             byte[] bytes = new byte[buffer.readableByteCount()];
@@ -158,6 +191,9 @@ public class CreativeImageClient {
         }
     }
 
+    /**
+     * Appends a response chunk while enforcing the configured memory limit.
+     */
     private ByteArrayOutputStream appendChunk(ByteArrayOutputStream output, byte[] chunk) {
         if (output.size() + chunk.length > DEFAULT_MAX_IN_MEMORY_SIZE) {
             throw new IllegalStateException("OpenAI image payload exceeds allowed size");
@@ -166,19 +202,40 @@ public class CreativeImageClient {
         return output;
     }
 
-    private ImageResponse parseResponse(byte[] bytes) {
+    /**
+     * Parses the raw OpenAI image response after recording status and body for root-cause analysis.
+     */
+    private ImageResponse parseResponse(byte[] bytes, HttpStatusCode status, String context) {
+        String rawResponse = new String(bytes, StandardCharsets.UTF_8);
+        log.info("Received raw OpenAI image response. context={} status={} rawResponse={}",
+                context, status.value(), rawResponse);
         try {
             return objectMapper.readValue(bytes, ImageResponse.class);
         } catch (IOException e) {
+            log.error("Failed to decode OpenAI image response as JSON. context={} status={} rawResponse={}",
+                    context, status.value(), rawResponse, e);
             throw new RuntimeException("Failed to decode image payload", e);
         }
     }
 
+    /**
+     * Indicates whether the selected model supports an explicit response_format request field.
+     */
     private boolean supportsResponseFormat(String selectedModel) {
         if (selectedModel == null || selectedModel.isBlank()) {
             return true;
         }
         return !selectedModel.toLowerCase(Locale.ROOT).startsWith("gpt-image-");
+    }
+
+    /**
+     * Normalizes absent context values to keep logs queryable.
+     */
+    private String normalizeContext(String operationContext) {
+        if (operationContext == null || operationContext.isBlank()) {
+            return "creative";
+        }
+        return operationContext.trim();
     }
 
     private record ImageResponse(List<ImageData> data, ApiError error) {}

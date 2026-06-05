@@ -474,25 +474,21 @@ export default function PipelineCrudPage() {
                     ) : null}
                   </div>
                 ) : null}
-                <div className="table-responsive mb-4">
-                  <table className="table align-middle">
-                    <thead>
-                      <tr>
-                        <th style={{ width: 90 }}>Etapa</th>
-                        <th>Nome</th>
-                        <th>Código banco</th>
-                        <th>Código canônico</th>
-                        <th>Descrição</th>
-                        <th>Módulo</th>
-                        <th>Pacote raiz</th>
-                        <th>Obrigatória</th>
-                        <th>Modelo OpenAI</th>
-                        <th>Status</th>
-                        <th>Proteção</th>
-                        <th>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                <div className="mb-4">
+                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h3 className="h6 mb-0">Etapas configuradas</h3>
+                    <span className="badge text-bg-light border">
+                      {pipeline.stages.length} etapa
+                      {pipeline.stages.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  {pipeline.stages.length === 0 ? (
+                    <div className="alert alert-info mb-0">
+                      Nenhuma etapa cadastrada para este pipeline.
+                    </div>
+                  ) : (
+                    <div className="row g-3">
                       {pipeline.stages.map((stage) => {
                         const rowDefinition = officialPipeline?.stages.find(
                           (definition) =>
@@ -504,101 +500,148 @@ export default function PipelineCrudPage() {
                                 normalizeCode(stage.code),
                             ),
                         );
+                        const protectionLabel = rowDefinition?.required
+                          ? "Estrutural"
+                          : isOfficialPipeline
+                            ? "Não mapeada"
+                            : "Editável";
+
                         return (
-                          <tr key={stage.id}>
-                            <td>Etapa {stage.position}</td>
-                            <td>{stage.name}</td>
-                            <td>
-                              <code>{stage.code}</code>
-                            </td>
-                            <td>
-                              {rowDefinition ? (
-                                <code>{rowDefinition.canonicalCode}</code>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>{stage.description || "-"}</td>
-                            <td style={{ minWidth: 160 }}>
-                              {stage.executionModule ? (
-                                <code>{stage.executionModule}</code>
-                              ) : (
-                                <span className="text-body-secondary">Backend</span>
-                              )}
-                            </td>
-                            <td style={{ minWidth: 260 }}>
-                              {stage.rootPackage ? <code>{stage.rootPackage}</code> : "-"}
-                            </td>
-                            <td>{stage.required ? "Sim" : "Não"}</td>
-                            <td>
-                              {stage.openAiModelCode ? (
-                                <span
-                                  title={stage.openAiModelName ?? undefined}
-                                >
-                                  {stage.openAiModelName ??
-                                    stage.openAiModelCode}{" "}
-                                  (<code>{stage.openAiModelCode}</code>)
-                                </span>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>{stage.active ? "Ativa" : "Inativa"}</td>
-                            <td>
-                              {rowDefinition?.required
-                                ? "Estrutural"
-                                : isOfficialPipeline
-                                  ? "Não mapeada"
-                                  : "Editável"}
-                            </td>
-                            <td className="d-flex gap-2">
-                              <button
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={() => {
-                                  setEditingStageId(stage.id);
-                                  setStageForms((current) => ({
-                                    ...current,
-                                    [pipeline.id]: stageToPayload(stage),
-                                  }));
-                                }}
-                              >
-                                Editar
-                              </button>
-                              <button
-                                className="btn btn-sm btn-outline-danger"
-                                disabled={
-                                  deleteStage.isPending ||
-                                  Boolean(rowDefinition?.required)
-                                }
-                                onClick={() => {
-                                  if (confirm("Deseja remover esta etapa?")) {
-                                    deleteStage.mutate({
-                                      pipelineId: pipeline.id,
-                                      stageId: stage.id,
-                                    });
-                                  }
-                                }}
-                              >
-                                {deleteStage.isPending
-                                  ? "Excluindo..."
-                                  : "Excluir"}
-                              </button>
-                            </td>
-                          </tr>
+                          <div className="col-12 col-xl-6" key={stage.id}>
+                            <article className="card h-100 border shadow-sm">
+                              <div className="card-body d-flex flex-column gap-3">
+                                <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                  <div>
+                                    <div className="small fw-semibold text-primary text-uppercase">
+                                      Etapa {stage.position}
+                                    </div>
+                                    <h4 className="h5 mb-1">{stage.name}</h4>
+                                    <div className="d-flex flex-wrap gap-2">
+                                      <span
+                                        className={`badge ${stage.active ? "text-bg-success" : "text-bg-secondary"}`}
+                                      >
+                                        {stage.active ? "Ativa" : "Inativa"}
+                                      </span>
+                                      <span
+                                        className={`badge ${stage.required ? "text-bg-warning" : "text-bg-light border"}`}
+                                      >
+                                        {stage.required
+                                          ? "Obrigatória"
+                                          : "Opcional"}
+                                      </span>
+                                      <span className="badge text-bg-light border">
+                                        {protectionLabel}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="d-flex gap-2">
+                                    <button
+                                      className="btn btn-sm btn-outline-primary"
+                                      onClick={() => {
+                                        setEditingStageId(stage.id);
+                                        setStageForms((current) => ({
+                                          ...current,
+                                          [pipeline.id]: stageToPayload(stage),
+                                        }));
+                                      }}
+                                    >
+                                      Editar
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-outline-danger"
+                                      disabled={
+                                        deleteStage.isPending ||
+                                        Boolean(rowDefinition?.required)
+                                      }
+                                      onClick={() => {
+                                        if (
+                                          confirm("Deseja remover esta etapa?")
+                                        ) {
+                                          deleteStage.mutate({
+                                            pipelineId: pipeline.id,
+                                            stageId: stage.id,
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      {deleteStage.isPending
+                                        ? "Excluindo..."
+                                        : "Excluir"}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <p className="mb-0 text-body-secondary">
+                                  {stage.description ||
+                                    "Sem descrição operacional cadastrada."}
+                                </p>
+
+                                <div className="row g-2 small">
+                                  <div className="col-md-6">
+                                    <div className="text-body-secondary">
+                                      Código banco
+                                    </div>
+                                    <code>{stage.code}</code>
+                                  </div>
+                                  <div className="col-md-6">
+                                    <div className="text-body-secondary">
+                                      Código canônico
+                                    </div>
+                                    {rowDefinition ? (
+                                      <code>{rowDefinition.canonicalCode}</code>
+                                    ) : (
+                                      <span>—</span>
+                                    )}
+                                  </div>
+                                  <div className="col-md-6">
+                                    <div className="text-body-secondary">
+                                      Módulo executor
+                                    </div>
+                                    {stage.executionModule ? (
+                                      <code>{stage.executionModule}</code>
+                                    ) : (
+                                      <span>Backend</span>
+                                    )}
+                                  </div>
+                                  <div className="col-md-6">
+                                    <div className="text-body-secondary">
+                                      Modelo OpenAI
+                                    </div>
+                                    {stage.openAiModelCode ? (
+                                      <span
+                                        title={
+                                          stage.openAiModelName ?? undefined
+                                        }
+                                      >
+                                        {stage.openAiModelName ??
+                                          stage.openAiModelCode}{" "}
+                                        (<code>{stage.openAiModelCode}</code>)
+                                      </span>
+                                    ) : (
+                                      <span>—</span>
+                                    )}
+                                  </div>
+                                  <div className="col-12">
+                                    <div className="text-body-secondary">
+                                      Pacote raiz
+                                    </div>
+                                    {stage.rootPackage ? (
+                                      <code className="text-break">
+                                        {stage.rootPackage}
+                                      </code>
+                                    ) : (
+                                      <span>—</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </article>
+                          </div>
                         );
                       })}
-                      {pipeline.stages.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={10}
-                            className="text-center text-body-secondary"
-                          >
-                            Nenhuma etapa cadastrada para este pipeline.
-                          </td>
-                        </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border rounded p-3 bg-light">
@@ -666,9 +709,11 @@ export default function PipelineCrudPage() {
                                 required:
                                   selected?.required ?? stageForm.required,
                                 executionModule:
-                                  selected?.executionModule ?? stageForm.executionModule,
+                                  selected?.executionModule ??
+                                  stageForm.executionModule,
                                 rootPackage:
-                                  selected?.rootPackage ?? stageForm.rootPackage,
+                                  selected?.rootPackage ??
+                                  stageForm.rootPackage,
                                 active: true,
                               },
                             }));
@@ -720,7 +765,8 @@ export default function PipelineCrudPage() {
                         placeholder="Ex.: ai-worker (vazio = backend)"
                       />
                       <div className="form-text">
-                        Preencha somente quando a etapa for executada fora do backend.
+                        Preencha somente quando a etapa for executada fora do
+                        backend.
                       </div>
                     </div>
                     <div className="col-md-5">

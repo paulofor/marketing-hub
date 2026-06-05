@@ -11,6 +11,16 @@ describe("OpenAiModelForm", () => {
         onSubmit={onSubmit}
         submitLabel="Buscar na OpenAI e salvar"
         officialModelCodes={["gpt-5.5", "gpt-5.5-mini", "gpt-4o-mini"]}
+        officialModelPrices={{
+          "gpt-5.5": {
+            priceInputStandard: 5,
+            priceInputCachedStandard: 0.5,
+            priceOutputStandard: 30,
+            priceInputBatch: 2.5,
+            priceInputCachedBatch: 0.25,
+            priceOutputBatch: 15,
+          },
+        }}
         nameOnly
       />,
     );
@@ -22,6 +32,8 @@ describe("OpenAiModelForm", () => {
     expect(screen.getByText("gpt-5.5")).toBeTruthy();
     expect(screen.getByText("gpt-5.5-mini")).toBeTruthy();
     expect(screen.queryByText("gpt-4o-mini")).toBeNull();
+    expect(screen.getByText(/Standard input: US\$ 5,00/i)).toBeTruthy();
+    expect(screen.getByText(/Standard output: US\$ 30,00/i)).toBeTruthy();
 
     fireEvent.click(
       screen.getByRole("button", { name: /Buscar na OpenAI e salvar/i }),

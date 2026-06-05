@@ -41,6 +41,9 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+/**
+ * Validates creative image generation client behavior against OpenAI and backend upload contracts.
+ */
 class CreativeImageClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -51,6 +54,9 @@ class CreativeImageClientTest {
     CreativeImageOptimizer optimizer;
     AtomicReference<Map<String, Object>> lastRequestPayload;
 
+    /**
+     * Creates the image client fixture with a stubbed successful OpenAI response.
+     */
     @BeforeEach
     void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
@@ -63,6 +69,9 @@ class CreativeImageClientTest {
         client = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
     }
 
+    /**
+     * Ensures a base64 image returned by OpenAI is optimized and uploaded to the backend.
+     */
     @Test
     void uploadsReturnedImageToBackend() {
         when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/img.jpg");
@@ -81,6 +90,9 @@ class CreativeImageClientTest {
                 isNull());
     }
 
+    /**
+     * Ensures large base64 image payloads are accepted within the configured memory limit.
+     */
     @Test
     void supportsLargeBase64Payloads() {
         byte[] imageBytes = createRandomPng(1024, 1024);
@@ -99,6 +111,9 @@ class CreativeImageClientTest {
                 argThat(name -> name.endsWith(".jpg")), any(), any(), isNull());
     }
 
+    /**
+     * Ensures OpenAI error messages are surfaced when the response has no image data.
+     */
     @Test
     void surfacesErrorMessageWhenResponseLacksData() {
         String body = "{\"data\":null,\"error\":{\"message\":\"quota exceeded\"}}";
@@ -112,6 +127,9 @@ class CreativeImageClientTest {
                 .hasMessageContaining("quota exceeded");
     }
 
+    /**
+     * Ensures non GPT image models request a base64 response explicitly.
+     */
     @Test
     void requestsBase64PayloadExplicitlyForNonGptModels() {
         String imagePayload;
@@ -134,6 +152,28 @@ class CreativeImageClientTest {
         assertThat(payload).containsEntry("response_format", "b64_json");
     }
 
+
+    /**
+     * Ensures missing OpenAI credentials fail image generation instead of returning a null URL.
+     */
+    @Test
+    void failsWhenOpenAiKeyIsMissing() {
+        CreativeImageClient disabledClient = new CreativeImageClient(
+                WebClient.builder().exchangeFunction(stubImageApi(null, "{}", HttpStatus.OK)),
+                backendAssetClient,
+                optimizer,
+                " ",
+                "http://openai",
+                "gpt-image-1");
+
+        assertThatThrownBy(() -> disabledClient.generateImage("prompt"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("OpenAI API key is required");
+    }
+
+    /**
+     * Builds an ExchangeFunction that captures OpenAI request payloads and returns a canned response.
+     */
     private ExchangeFunction stubImageApi(AtomicReference<Map<String, Object>> capturedPayload,
                                           String responseBody,
                                           HttpStatus status) {
@@ -176,6 +216,9 @@ class CreativeImageClientTest {
         }
     };
 
+    /**
+     * Creates a small deterministic PNG image for upload tests.
+     */
     private static byte[] createSolidPng(int width, int height) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         var graphics = image.createGraphics();
@@ -189,6 +232,9 @@ class CreativeImageClientTest {
         return writePng(image);
     }
 
+    /**
+     * Creates a deterministic pseudo-random PNG image for payload size tests.
+     */
     private static byte[] createRandomPng(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Random random = new Random(42);
@@ -205,6 +251,9 @@ class CreativeImageClientTest {
         return writePng(image);
     }
 
+    /**
+     * Encodes a buffered image as PNG bytes.
+     */
     private static byte[] writePng(BufferedImage image) {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             javax.imageio.ImageIO.write(image, "png", output);

@@ -82,17 +82,21 @@ public class ExperimentCreativeService {
                 result.put(exp.getId(), saved);
                 log.info("Finished experiment {} with {} creatives persisted", exp.getId(), saved.size());
             } catch (Exception e) {
-                log.error("Failed to generate creatives for experiment {}", exp.getId(), e);
+                log.error("Failed to generate creatives for experiment {}. rootCauseCategory={} rootCauseMessage={}",
+                        exp.getId(), classifyRootCause(e), rootCauseMessage(e), e);
             }
         }
         return result;
     }
 
+    /**
+     * Generates default creatives and persists the batch only when every image URL is available.
+     */
     private List<Creative> generateWithChatGpt(Experiment experiment, int quantity) {
         CreativeChatGptClient.Generation generation = chatGptClient.generateCreatives(experiment, quantity);
         List<CreateCreativeRequest> requests = generation.creatives();
         log.info("ChatGPT returned {} creatives for experiment {}", requests.size(), experiment.getId());
-        List<Creative> saved = new ArrayList<>();
+        List<CreateCreativeRequest> preparedRequests = new ArrayList<>();
         for (CreateCreativeRequest req : requests) {
             if (!StringUtils.hasText(req.getHeadline())) {
                 log.error("Skipping creative without headline for experiment {}: {}", experiment.getId(), req);
@@ -104,19 +108,15 @@ public class ExperimentCreativeService {
                 primary = truncate(primary, PRIMARY_TEXT_MAX);
             }
             req.setPrimaryText(primary);
-            try {
-                String imagePrompt = buildImagePrompt(experiment, req);
-                String imageUrl = imageClient.generateImage(imagePrompt);
-                req.setImageUrl(imageUrl);
-            } catch (Exception e) {
-                log.error("Failed to generate image for experiment {}: {}", experiment.getId(), req.getHeadline(), e);
-            }
-            log.info("Saving creative for experiment {}: {}", experiment.getId(), req);
-            saved.add(creativeService.create(experiment.getId(), req));
+            attachDefaultImage(experiment, req);
+            preparedRequests.add(req);
         }
-        return saved;
+        return persistCreatives(experiment, preparedRequests, "creative");
     }
 
+    /**
+     * Generates pipeline creatives and persists the batch only when every image URL is available.
+     */
     private List<Creative> generateFromPipeline(Experiment experiment, int quantity) {
         ExperimentPipelineAdExtractor extractor = new ExperimentPipelineAdExtractor(objectMapper);
         List<PipelineAdCreativePlan> plans = extractor.extract(experiment);
@@ -125,35 +125,124 @@ public class ExperimentCreativeService {
             return List.of();
         }
         int limit = Math.min(quantity, plans.size());
-        List<Creative> saved = new ArrayList<>();
+        List<CreateCreativeRequest> requests = new ArrayList<>();
         for (int i = 0; i < limit; i++) {
             PipelineAdCreativePlan plan = plans.get(i);
             CreateCreativeRequest req = buildRequestFromPlan(experiment, plan);
             if (req == null) {
                 continue;
             }
-            try {
-                String intermediatePrompt = buildPipelineIntermediatePrompt(experiment, plan, req);
-                String imagePrompt = buildPipelineImagePrompt(experiment, plan, req);
-                String imageUrl = imageClient.generateImage(imagePrompt, intermediatePrompt);
-                req.setImageUrl(imageUrl);
-            } catch (Exception e) {
-                log.error("Failed to generate pipeline image for experiment {} (variant {})", experiment.getId(), plan.variantKey(), e);
-            }
-            log.info("Saving pipeline creative for experiment {}: {}", experiment.getId(), req);
-            saved.add(creativeService.create(experiment.getId(), req));
+            attachPipelineImage(experiment, plan, req);
+            requests.add(req);
         }
-        if (saved.isEmpty()) {
-            log.warn("Pipeline mode did not persist creatives for experiment {}", experiment.getId());
+        if (requests.isEmpty()) {
+            log.warn("Pipeline mode did not prepare creatives for experiment {}", experiment.getId());
+            return List.of();
+        }
+        return persistCreatives(experiment, requests, "pipeline creative");
+    }
+
+
+    /**
+     * Generates and attaches the default image URL, failing the batch when image generation is incomplete.
+     */
+    private void attachDefaultImage(Experiment experiment, CreateCreativeRequest request) {
+        try {
+            String imagePrompt = buildImagePrompt(experiment, request);
+            String context = "experimentId=" + experiment.getId()
+                    + ";mode=DEFAULT;headline=" + request.getHeadline();
+            String imageUrl = imageClient.generateImage(imagePrompt, null, context);
+            requireImageUrl(imageUrl, experiment.getId(), "headline " + request.getHeadline());
+            request.setImageUrl(imageUrl);
+        } catch (Exception ex) {
+            throw new CreativeImageGenerationException("Image generation failed for experiment "
+                    + experiment.getId() + " and headline " + request.getHeadline(), ex);
+        }
+    }
+
+    /**
+     * Generates and attaches the pipeline image URL, failing the batch when image generation is incomplete.
+     */
+    private void attachPipelineImage(Experiment experiment, PipelineAdCreativePlan plan, CreateCreativeRequest request) {
+        try {
+            String intermediatePrompt = buildPipelineIntermediatePrompt(experiment, plan, request);
+            String imagePrompt = buildPipelineImagePrompt(experiment, plan, request);
+            String context = "experimentId=" + experiment.getId()
+                    + ";mode=PIPELINE_ADS;variant=" + plan.variantKey()
+                    + ";format=" + request.getFormat();
+            String imageUrl = imageClient.generateImage(imagePrompt, intermediatePrompt, context);
+            requireImageUrl(imageUrl, experiment.getId(), "variant " + plan.variantKey());
+            request.setImageUrl(imageUrl);
+        } catch (Exception ex) {
+            throw new CreativeImageGenerationException("Pipeline image generation failed for experiment "
+                    + experiment.getId() + " and variant " + plan.variantKey(), ex);
+        }
+    }
+
+    /**
+     * Ensures the image generation returned a URL before any creative can be persisted.
+     */
+    private void requireImageUrl(String imageUrl, Long experimentId, String context) {
+        if (!StringUtils.hasText(imageUrl)) {
+            throw new CreativeImageGenerationException("Image generation returned no URL for experiment "
+                    + experimentId + " and " + context);
+        }
+    }
+
+    /**
+     * Persists a fully generated batch only after all requests have valid image URLs.
+     */
+    private List<Creative> persistCreatives(Experiment experiment, List<CreateCreativeRequest> requests, String label) {
+        List<Creative> saved = new ArrayList<>();
+        for (CreateCreativeRequest request : requests) {
+            log.info("Saving {} for experiment {}: {}", label, experiment.getId(), request);
+            saved.add(creativeService.create(experiment.getId(), request));
         }
         return saved;
     }
 
+    /**
+     * Classifies the failing layer so logs can separate OpenAI errors from Marketing Hub upload/configuration errors.
+     */
+    private String classifyRootCause(Throwable throwable) {
+        String message = rootCauseMessage(throwable).toLowerCase(Locale.ROOT);
+        if (message.contains("openai api key")) {
+            return "CONFIG_OPENAI_KEY";
+        }
+        if (message.contains("backend asset") || message.contains("asset url") || message.contains("upload")) {
+            return "MARKETING_HUB_ASSET_UPLOAD";
+        }
+        if (message.contains("openai") || message.contains("no image returned") || message.contains("image generation returned no url")) {
+            return "OPENAI_IMAGE_API";
+        }
+        return "UNKNOWN";
+    }
+
+    /**
+     * Extracts the deepest exception message available for operational logs.
+     */
+    private String rootCauseMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null && current.getCause() != null) {
+            current = current.getCause();
+        }
+        if (current == null || current.getMessage() == null) {
+            return "";
+        }
+        return current.getMessage();
+    }
+
+    /**
+     * Checks whether the experiment is currently queued for pipeline ad generation.
+     */
     private boolean isPipelineAdsMode(Experiment experiment) {
         String mode = readCreativeGenerationMode(experiment);
         return "PIPELINE_ADS".equalsIgnoreCase(mode);
     }
 
+    /**
+     * Reads the creative generation mode through reflection for backend model compatibility.
+     */
     private String readCreativeGenerationMode(Experiment experiment) {
         if (experiment == null) {
             return null;
@@ -163,10 +252,15 @@ public class ExperimentCreativeService {
             Object modeValue = getter.invoke(experiment);
             return modeValue != null ? modeValue.toString() : null;
         } catch (Exception ex) {
+            Long experimentId = experiment != null ? experiment.getId() : null;
+            log.debug("Unable to read creative generation mode for experiment {}", experimentId, ex);
             return null;
         }
     }
 
+    /**
+     * Updates the creative generation mode through reflection for backend model compatibility.
+     */
     private void setCreativeGenerationMode(Experiment experiment, String modeName) {
         if (experiment == null || !StringUtils.hasText(modeName)) {
             return;
@@ -338,6 +432,19 @@ public class ExperimentCreativeService {
         parts.add("Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5.");
         parts.add("Não inclua logos das plataformas e evite rostos genéricos sem contexto.");
         return String.join(" ", parts);
+    }
+
+    /** Exception used to abort a creative batch before incomplete records are persisted. */
+    private static class CreativeImageGenerationException extends RuntimeException {
+        /** Creates a batch-aborting exception with a root cause. */
+        CreativeImageGenerationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        /** Creates a batch-aborting exception without a nested cause. */
+        CreativeImageGenerationException(String message) {
+            super(message);
+        }
     }
 
     private String resolveNicheName(Experiment experiment) {

@@ -74,7 +74,7 @@ public class DuckDuckGoHtmlSourceSearchProvider implements PublicSourceSearchPro
         }
         Element resultContainer = link.closest(".result");
         String snippet = resultContainer == null ? null : textOrNull(resultContainer.selectFirst(".result__snippet"));
-        return new SourceSearchResult(sourceUrl, title.trim(), snippet, domain, position);
+        return new SourceSearchResult(sourceUrl, title.trim(), snippet, domain, position, null, null, false, false);
     }
 
     /** Normaliza URLs diretas e redirecionamentos do DuckDuckGo para preservar a URL real da fonte. */

@@ -128,7 +128,7 @@ public class BackendAssetClient {
         }
 
         logBackendRequest("POST", url);
-        return webClient.post()
+        String uploadedUrl = webClient.post()
                 .uri(url)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(body))
@@ -137,10 +137,16 @@ public class BackendAssetClient {
                     if (status.isError()) {
                         return response.bodyToMono(String.class)
                                 .defaultIfEmpty("")
-                                .flatMap(bodyContent -> Mono.error(new BackendAssetUploadException(
-                                        status, url, bodyContent)));
+                                .flatMap(bodyContent -> {
+                                    log.error("Backend asset upload failed. status={} url={} responseBody={}",
+                                            status.value(), url, bodyContent);
+                                    return Mono.error(new BackendAssetUploadException(status, url, bodyContent));
+                                });
                     }
                     return response.bodyToMono(String.class)
+                            .doOnNext(bodyContent -> log.info(
+                                    "Backend asset upload response received. status={} url={} responseBody={}",
+                                    status.value(), url, bodyContent))
                             .map(BackendAssetClient::extractAssetUrl)
                             .filter(StringUtils::hasText)
                             .switchIfEmpty(Mono.error(new BackendAssetUploadException(
@@ -149,6 +155,8 @@ public class BackendAssetClient {
                 .blockOptional()
                 .orElseThrow(() -> new BackendAssetUploadException(
                         "Backend did not return an asset URL"));
+        log.info("Backend asset upload succeeded. filename={} url={}", filename, uploadedUrl);
+        return uploadedUrl;
     }
 
     static String extractAssetUrl(String responseBody) {

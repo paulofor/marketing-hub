@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Este documento define regras canônicas específicas do módulo OPRM para a ingestão CNPJ/CNAE e consolidação de market size por CNAE.
+Este documento define regras canônicas específicas do módulo OPRM para a ingestão CNPJ/CNAE, consolidação de market size por CNAE e pesquisa inicial NichoCNAE de realidade operacional.
 
 ## Objetivo
 
@@ -51,6 +51,22 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
   - confirmação explícita de publicação/persistência do `marketSizes` do arquivo.
 - Se qualquer item acima estiver ausente, a execução deve ser tratada como observabilidade insuficiente para operação de produção.
 
+
+## Regra obrigatória — pesquisa inicial NichoCNAE de realidade operacional
+
+- A pesquisa inicial do pipeline OPRM NichoCNAE deve operar sempre no modo `ROUTINE_REALITY_RESEARCH`.
+- O objetivo exclusivo desse modo é compreender a realidade operacional do nicho a partir do CNAE: rotina, tarefas, dificuldades, perguntas recorrentes, contexto de trabalho, linguagem orgânica e evidências públicas.
+- A pesquisa deve parar na descrição realista da rotina e das dificuldades; ela não deve procurar, inferir, preparar ou validar solução, produto, campanha, oferta, promessa comercial, landing page, hipótese de experimento ou tese de mecanismo comercial.
+- Termos de solução, como IA, automação, sistema, app, software, ferramenta, curso ou marketing digital, não podem direcionar a pesquisa inicial quando vierem apenas de enquadramento comercial do nome do candidato.
+- O nome operacional usado para pesquisa deve representar o nicho/CNAE de forma neutra; nomes originais contaminados por linguagem de solução devem ser preservados apenas para auditoria e não como fonte de direcionamento da busca.
+- A etapa inicial deve priorizar evidências públicas sobre execução do trabalho, problemas operacionais, dúvidas reais, atividades, responsabilidades, limitações, sazonalidade, riscos, custos, retrabalho, gargalos e vocabulário usado pelo próprio mercado.
+
+## Critério de efetividade — pesquisa inicial NichoCNAE sem viés de solução
+
+- Ciclos de pesquisa inicial devem expor ou persistir o modo `ROUTINE_REALITY_RESEARCH` para rastreabilidade operacional.
+- Seeds, queries, fontes, sinais, sínteses e gates da fase inicial devem ser aceitos somente quando servirem à compreensão da rotina real e das dificuldades do nicho.
+- Qualquer conteúdo de solução, produto, campanha, oferta ou hipótese comercial deve pertencer a fluxo posterior, separado e rastreável, depois da conclusão da pesquisa de realidade operacional.
+- A tela `/oprm/pipeline` deve orientar o usuário de que o NichoCNAE está levantando realidade operacional e não montando solução ou campanha nessa etapa.
 
 ## Regra obrigatória — materialização final do NichoCNAE em nicho enriquecido
 

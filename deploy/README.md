@@ -20,6 +20,9 @@ O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys est
 | `VIDEO_BACKEND_BASE_URL` | URL utilizada pelo módulo de vídeo para conversar com o backend | `http://backend:8000` |
 | `VIDEO_JOBS_POLLING_ENABLED` | Ativa o polling automático no módulo de vídeo | `false` |
 | `VIDEO_MANAGEMENT_PORT` | Porta exposta externamente | `8095` |
+| `OPENAI_API_KEY_HOST_FILE` | Arquivo físico no host backend/frontend com o token OpenAI que será montado como segredo somente leitura no backend | `/root/infra/openai-token/openai_api_key` |
+| `OPENAI_API_KEY_FILE` | Caminho interno lido pelo backend para chamadas OpenAI, incluindo a busca oficial de modelos | `/run/secrets/openai_api_key` |
+| `OPENAI_API_KEY` | Alternativa para token direto quando não houver arquivo montado; não deve ser versionada em `.env` do repositório | vazio |
 
 > **Importante:** por padrão o poller fica desativado até que o backend esteja totalmente pronto para entregar jobs reais. Basta exportar `VIDEO_JOBS_POLLING_ENABLED=true` antes de rodar `apply.sh` para habilitar.
 >

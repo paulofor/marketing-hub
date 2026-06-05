@@ -3595,3 +3595,11 @@
 - correção aplicada: o Lead Portal ganhou um endpoint de compatibilidade para receber essa rota pública, validar divergência de slug, extrair `submissionId`, `submittedAt` e `contato`, e encaminhar a submissão ao Marketing Hub pelo `ExperimentFunnelTrackingClient`, preservando o contrato já publicado nas landings.
 - documentação atualizada: `docs/swagger/lead-portal-swagger.yaml` registra a rota pública de compatibilidade do Lead Portal.
 - validação automatizada: adicionado teste MVC cobrindo o payload real do GeraLanding e rejeição de slug divergente.
+
+## 2026-06-05 — Localização técnica das etapas do pipeline administrativo
+
+- solicitação: exibir nas etapas do pipeline o módulo executor quando a etapa roda fora do backend e o pacote raiz da implementação no backend ou no módulo executor.
+- causa-raiz: a tela administrativa de pipelines mostrava código, descrição, modelo e proteção, mas não persistia nem expunha a localização técnica da implementação da etapa, dificultando rastrear rapidamente onde corrigir ou evoluir cada etapa.
+- correção aplicada: adicionados os campos `executionModule` e `rootPackage` ao contrato de etapa, com persistência em `pipeline_stage` e `pipeline_stage_definition`, sincronização canônica para o pipeline de experimento e exibição/edição na tela `/pipelines`.
+- documentação atualizada: o cânone do procedimento de experimento e o Swagger de governança de pipelines agora registram os campos de localização técnica das etapas.
+- validação automatizada: atualizado `PipelineServiceTest` para cobrir a exposição/sincronização do pacote raiz oficial e executado teste unitário do módulo de pipelines.

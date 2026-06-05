@@ -40,7 +40,7 @@ Essas seções e suas dependências fazem parte do enum oficial do backend.
 
 ### 4.1 Contrato operacional administrativo do pipeline
 
-O pipeline oficial de experimento usa a versão canônica `procedimento-experimento-canon.v1` no backend administrativo de pipelines. A sincronização segura deve considerar estruturais os campos `code`, `module` e `name` do pipeline, além de `code`, `position`, `name` e `required` das etapas oficiais. Os campos `description`, `active` e `openAiModelId` das etapas são configuração operacional e não podem ser sobrescritos pela sincronização sem regra explícita.
+O pipeline oficial de experimento usa a versão canônica `procedimento-experimento-canon.v1` no backend administrativo de pipelines. A sincronização segura deve considerar estruturais os campos `code`, `module` e `name` do pipeline, além de `code`, `position`, `name`, `required`, `executionModule` e `rootPackage` das etapas oficiais. Os campos `description`, `active` e `openAiModelId` das etapas são configuração operacional e não podem ser sobrescritos pela sincronização sem regra explícita. A etapa deve informar `executionModule` somente quando for executada fora do backend principal; `rootPackage` deve sempre indicar o pacote raiz no backend ou no módulo executor onde a implementação da etapa vive.
 
 Endpoints administrativos vigentes:
 - `GET /api/pipelines/metadata` expõe versão canônica, aliases e política de campos;

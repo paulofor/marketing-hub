@@ -228,7 +228,22 @@ public class PipelineDefinitionSynchronizer {
             stage.setRequired(stageDefinition.required());
             appliedActions.add("Obrigatoriedade estrutural da etapa corrigida: " + stageDefinition.operationalCode());
         }
+        if (!sameText(stageDefinition.executionModule(), stage.getExecutionModule())) {
+            stage.setExecutionModule(stageDefinition.executionModule());
+            appliedActions.add("Módulo executor da etapa corrigido: " + stageDefinition.operationalCode());
+        }
+        if (!sameText(stageDefinition.rootPackage(), stage.getRootPackage())) {
+            stage.setRootPackage(stageDefinition.rootPackage());
+            appliedActions.add("Pacote raiz da etapa corrigido: " + stageDefinition.operationalCode());
+        }
         stageRepository.save(stage);
+    }
+
+    /**
+     * Compara textos opcionais para detectar divergência estrutural de localização de código.
+     */
+    private boolean sameText(String expected, String actual) {
+        return java.util.Objects.equals(expected, actual);
     }
 
     /**
@@ -253,6 +268,8 @@ public class PipelineDefinitionSynchronizer {
                 .position(stageDefinition.position())
                 .name(stageDefinition.name())
                 .code(stageDefinition.operationalCode())
+                .executionModule(stageDefinition.executionModule())
+                .rootPackage(stageDefinition.rootPackage())
                 .required(stageDefinition.required())
                 .active(true)
                 .build();
@@ -276,6 +293,8 @@ public class PipelineDefinitionSynchronizer {
                 .name(stageDefinition.name())
                 .code(stageDefinition.operationalCode())
                 .description(configuredStage.map(PipelineStage::getDescription).orElse(null))
+                .executionModule(stageDefinition.executionModule())
+                .rootPackage(stageDefinition.rootPackage())
                 .required(stageDefinition.required())
                 .active(true)
                 .openAiModel(configuredStage.map(PipelineStage::getOpenAiModel).orElse(null))

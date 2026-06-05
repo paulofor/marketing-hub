@@ -3588,3 +3588,10 @@
   - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/LeadResponse.java
   - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/ImageMaterialDashboardResponse.java
   - lead-portal/backend/src/main/java/com/marketinghub/leadportal/dto/ImageMaterialCaseResponse.java
+## 2026-06-05 — Compatibilidade do endpoint de submissão pública no Lead Portal
+
+- solicitação: investigar o erro exibido na landing do experimento 37 ao clicar em “Receber minha prévia”.
+- causa-raiz identificada: o HTML publicável do GeraLanding enviava o contrato `lead-portal-submission-engagement.v1` para `/api/public/lead-portal/flows/{slug}/submission` usando URL relativa ao domínio `oportunidadebrasil.shop`; esse domínio é atendido pelo Lead Portal, mas o endpoint existia apenas no backend principal, então a requisição caía no handler de recurso estático e retornava `500` com `No static resource .../submission`.
+- correção aplicada: o Lead Portal ganhou um endpoint de compatibilidade para receber essa rota pública, validar divergência de slug, extrair `submissionId`, `submittedAt` e `contato`, e encaminhar a submissão ao Marketing Hub pelo `ExperimentFunnelTrackingClient`, preservando o contrato já publicado nas landings.
+- documentação atualizada: `docs/swagger/lead-portal-swagger.yaml` registra a rota pública de compatibilidade do Lead Portal.
+- validação automatizada: adicionado teste MVC cobrindo o payload real do GeraLanding e rejeição de slug divergente.

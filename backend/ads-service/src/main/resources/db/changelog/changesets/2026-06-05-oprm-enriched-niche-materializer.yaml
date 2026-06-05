@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-01-oprm-enriched-niche-profile
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: market_niche_enrichment_profile
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE market_niche_enrichment_profile (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                market_niche_id BIGINT NOT NULL,
+                source_module VARCHAR(32) NOT NULL,
+                source_niche_candidate_id BIGINT NULL,
+                research_cycle_id BIGINT NOT NULL,
+                routine_card_id BIGINT NOT NULL,
+                cnae_code VARCHAR(7) NOT NULL,
+                cnae_description VARCHAR(255) NOT NULL,
+                source_score DECIMAL(5,2) NOT NULL,
+                quality_status VARCHAR(32) NOT NULL,
+                specificity_score INT NULL,
+                confidence_score INT NULL,
+                duplication_score INT NULL,
+                routine_summary LONGTEXT NOT NULL,
+                pains_summary LONGTEXT NOT NULL,
+                results_summary LONGTEXT NOT NULL,
+                mechanism_opportunities_summary LONGTEXT NOT NULL,
+                evidence_summary LONGTEXT NOT NULL,
+                source_domains VARCHAR(1000) NULL,
+                persona_summary LONGTEXT NULL,
+                language_patterns LONGTEXT NULL,
+                commercial_triggers LONGTEXT NULL,
+                objections LONGTEXT NULL,
+                created_by VARCHAR(64) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_market_niche_enrichment_profile PRIMARY KEY (id),
+                CONSTRAINT fk_market_niche_enrichment_profile_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
+              );
+              CREATE UNIQUE INDEX uk_market_niche_enrichment_profile_card ON market_niche_enrichment_profile (routine_card_id);
+              CREATE UNIQUE INDEX uk_market_niche_enrichment_profile_cycle ON market_niche_enrichment_profile (research_cycle_id);
+              CREATE INDEX idx_market_niche_enrichment_profile_niche ON market_niche_enrichment_profile (market_niche_id, created_at);
+              CREATE INDEX idx_market_niche_enrichment_profile_cnae ON market_niche_enrichment_profile (cnae_code, source_score);

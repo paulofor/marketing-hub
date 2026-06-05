@@ -474,6 +474,71 @@ paths:
         '404':
           description: Ciclo de pesquisa não encontrado.
 
+  /api/internal/oprm/nichocnae/enriched-niche-materializer/stage-executions/pending:
+    get:
+      summary: Lista cartões aprovados para materializar nicho e nicho enriquecido.
+      tags: [OPRM Nicho CNAE]
+      responses:
+        '200':
+          description: Cartões aprovados com payload fechado para a etapa final.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EnrichedNicheMaterializerPending'
+  /api/internal/oprm/nichocnae/enriched-niche-materializer/stage-executions/{researchCycleId}/complete:
+    post:
+      summary: Alimenta market_niche e market_niche_enrichment_profile.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteEnrichedNicheMaterializerRequest'
+      responses:
+        '200':
+          description: Nicho e nicho enriquecido materializados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteEnrichedNicheMaterializerResponse'
+        '400':
+          description: Payload inválido ou card ainda não aprovado.
+  /api/internal/oprm/nichocnae/enriched-niche-materializer/stage-executions/{researchCycleId}/fail:
+    post:
+      summary: Registra falha operacional da etapa final.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailEnrichedNicheMaterializerRequest'
+      responses:
+        '204':
+          description: Falha registrada.
+  /api/oprm/nichocnae/enriched-niche-materializer/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha o nicho enriquecido materializado para o ciclo.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Detalhe público da etapa final de materialização.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichedNicheMaterializerDetailResponse'
+        '404':
+          description: Ciclo de pesquisa não encontrado.
+
 components:
   parameters:
     ResearchCycleId:
@@ -1498,6 +1563,158 @@ components:
       properties:
         errorMessage:
           type: string
+    EnrichedNicheMaterializerPending:
+      type: object
+      properties:
+        routineCardId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheCandidateId:
+          type: integer
+          format: int64
+        existingMarketNicheId:
+          type: integer
+          format: int64
+          nullable: true
+        cnaeCode:
+          type: string
+        cnaeDescription:
+          type: string
+        nicheName:
+          type: string
+        sourceScore:
+          type: number
+          format: double
+        qualityStatus:
+          type: string
+        specificityScore:
+          type: integer
+        confidenceScore:
+          type: integer
+        duplicationScore:
+          type: integer
+        routineSummary:
+          type: string
+        painsSummary:
+          type: string
+        resultsSummary:
+          type: string
+        mechanismOpportunitiesSummary:
+          type: string
+        evidenceSummary:
+          type: string
+        sourceDomains:
+          type: string
+        qualityCheckedAt:
+          type: string
+          format: date-time
+    CompleteEnrichedNicheMaterializerRequest:
+      type: object
+      required: [researchCycleId, routineCardId]
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        personaSummary:
+          type: string
+          nullable: true
+        languagePatterns:
+          type: string
+          nullable: true
+        commercialTriggers:
+          type: string
+          nullable: true
+        objections:
+          type: string
+          nullable: true
+        materializedBy:
+          type: string
+          example: oprmEnrichedNicheMaterializer
+    CompleteEnrichedNicheMaterializerResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        marketNicheId:
+          type: integer
+          format: int64
+        enrichedNicheProfileId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+          example: ENRICHED_NICHE_CREATED
+        materializedAt:
+          type: string
+          format: date-time
+    FailEnrichedNicheMaterializerRequest:
+      type: object
+      required: [errorMessage]
+      properties:
+        errorMessage:
+          type: string
+    EnrichedNicheMaterializerDetailResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        routineCardId:
+          type: integer
+          format: int64
+          nullable: true
+        marketNicheId:
+          type: integer
+          format: int64
+          nullable: true
+        enrichedNicheProfileId:
+          type: integer
+          format: int64
+          nullable: true
+        nicheName:
+          type: string
+          nullable: true
+        cnaeCode:
+          type: string
+          nullable: true
+        qualityStatus:
+          type: string
+          nullable: true
+        routineSummary:
+          type: string
+          nullable: true
+        painsSummary:
+          type: string
+          nullable: true
+        resultsSummary:
+          type: string
+          nullable: true
+        mechanismOpportunitiesSummary:
+          type: string
+          nullable: true
+        evidenceSummary:
+          type: string
+          nullable: true
+        sourceDomains:
+          type: string
+          nullable: true
+        materializedAt:
+          type: string
+          format: date-time
+          nullable: true
+
     RoutineQualityGateDetailResponse:
       type: object
       properties:

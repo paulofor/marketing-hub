@@ -3,6 +3,7 @@ package com.marketinghub.worker.openai.core.copy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.StageExecution;
@@ -116,6 +117,37 @@ class CopyBackendClientTest {
                 .containsEntry("jobidopenai", "openai-job-copy-1");
     }
 
+    /** Deve montar o request da etapa copy usando o modelo dedicado gpt-5.4. */
+    @Test
+    void copyPromptBuilderShouldUseDedicatedGpt54Model() throws Exception {
+        CopyWorkerProperties properties = new CopyWorkerProperties(
+                true,
+                5,
+                "http://backend",
+                "/api",
+                "prompts/geralanding/landing-page-copy.md",
+                "prompts/geralanding/landing-page-copy-schema.json",
+                "experiment_pipeline_landing_page_copy",
+                "gpt-5.4",
+                Duration.ofSeconds(5));
+        CopyPromptBuilder builder = new CopyPromptBuilder(objectMapper, properties);
+        StageExecution<CopyInput> execution = new StageExecution<>(
+                "job-copy-54",
+                12L,
+                "landing-page-copy",
+                "INICIADO",
+                Instant.parse("2026-06-05T10:00:00Z"),
+                new CopyInput(12L, "landing-page-copy", "job-copy-54", Map.of(
+                        "CASE_DATA_BLOCK", Map.of("niche", "nicho"),
+                        "WIREFRAME_JSON", Map.of("pagina", Map.of("sections", List.of())))));
+
+        var request = builder.build(execution);
+        JsonNode body = objectMapper.readTree(request.requestBodyJson());
+
+        assertThat(request.model()).isEqualTo("gpt-5.4");
+        assertThat(body.path("model").asText()).isEqualTo("gpt-5.4");
+    }
+
     /** Cria o client copy apontando para o backend simulado do teste. */
     private CopyBackendClient newClient() {
         return new CopyBackendClient(
@@ -128,6 +160,7 @@ class CopyBackendClientTest {
                         "prompts/geralanding/landing-page-copy.md",
                         "prompts/geralanding/landing-page-copy-schema.json",
                         "experiment_pipeline_landing_page_copy",
+                        "gpt-5.4",
                         Duration.ofSeconds(5)),
                 objectMapper);
     }

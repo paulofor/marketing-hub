@@ -3493,3 +3493,10 @@
 - correção aplicada: o Worker AI passou a montar `promptData` da revisão visual somente com `htmlGeraLanding`, ignorando `landingPageHtml` e artefatos intermediários; o prompt markdown foi simplificado para orientar avaliação apenas pelo HTML final e screenshots renderizados.
 - cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` registra que o Quality Review visual usa exclusivamente `experiment.html_geralanding` como HTML fonte.
 - validação automatizada: testes do `QualityReviewBackendClient` cobrem ausência de fallback legado e `landingPageHtml` nulo; teste do `QualityReviewPromptBuilder` garante que o prompt não inclui wireframe/preset.
+
+## 2026-06-05 — Modelo GPT-5.4 nas etapas Gera Landing Copy e Image Planning
+
+- solicitação: configurar as etapas `landing-page-copy` e `landing-page-image-planning` do Gera Landing para usar o modelo `gpt-5.4`.
+- ajuste aplicado: o Worker AI passou a ter propriedades dedicadas `copy.worker.model` e `imageplanning.worker.model`, ambas com default `gpt-5.4`, e os builders dessas etapas passaram a gravar esse modelo no `OpenAiRequest` e no corpo da Responses API, sem depender do `openai.model` global.
+- cânone atualizado: `docs/canonical/geralanding-arquitetura-canon.v1.md` registra os defaults dedicados `gpt-5.4` para Copy e Image Planning.
+- validação automatizada: adicionados testes garantindo que os requests das etapas Copy e Image Planning usam `gpt-5.4` no modelo auditado e no payload enviado à OpenAI.

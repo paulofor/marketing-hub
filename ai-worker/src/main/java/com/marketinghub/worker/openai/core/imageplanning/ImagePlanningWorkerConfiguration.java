@@ -41,10 +41,9 @@ public class ImagePlanningWorkerConfiguration {
     @Bean
     public ImagePlanningPromptBuilder imageplanningPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             ImagePlanningWorkerProperties imagePlanningProperties
     ) {
-        return new ImagePlanningPromptBuilder(objectMapper, openAiProperties, imagePlanningProperties);
+        return new ImagePlanningPromptBuilder(objectMapper, imagePlanningProperties);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a etapa imageplanning. */

@@ -41,10 +41,9 @@ public class CopyWorkerConfiguration {
     @Bean
     public CopyPromptBuilder copyPromptBuilder(
             ObjectMapper objectMapper,
-            OpenAiClientProperties openAiProperties,
             CopyWorkerProperties copyProperties
     ) {
-        return new CopyPromptBuilder(objectMapper, openAiProperties, copyProperties);
+        return new CopyPromptBuilder(objectMapper, copyProperties);
     }
 
     /** Cria o validador da resposta JSON retornada pela OpenAI para a etapa copy. */

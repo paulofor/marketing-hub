@@ -3,6 +3,7 @@ package com.marketinghub.worker.openai.core.imageplanning;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.StageExecution;
@@ -109,6 +110,38 @@ class ImagePlanningBackendClientTest {
                 .containsEntry("jobidopenai", "openai-job-image-1");
     }
 
+    /** Deve montar o request da etapa image planning usando o modelo dedicado gpt-5.4. */
+    @Test
+    void imagePlanningPromptBuilderShouldUseDedicatedGpt54Model() throws Exception {
+        ImagePlanningWorkerProperties properties = new ImagePlanningWorkerProperties(
+                true,
+                5,
+                "http://backend",
+                "/api",
+                "prompts/geralanding/landing-page-image-planning.md",
+                "prompts/geralanding/landing-page-image-planning-schema.json",
+                "experiment_pipeline_landing_page_image_planning",
+                "gpt-5.4",
+                Duration.ofSeconds(5));
+        ImagePlanningPromptBuilder builder = new ImagePlanningPromptBuilder(objectMapper, properties);
+        StageExecution<ImagePlanningInput> execution = new StageExecution<>(
+                "job-image-54",
+                12L,
+                "landing-page-image-planning",
+                "INICIADO",
+                Instant.parse("2026-06-05T10:00:00Z"),
+                new ImagePlanningInput(12L, "landing-page-image-planning", "job-image-54", Map.of(
+                        "CASE_DATA_BLOCK", Map.of("niche", "nicho"),
+                        "WIREFRAME_JSON", Map.of("pagina", Map.of("sections", List.of())),
+                        "COPY_JSON", Map.of("bodySections", List.of()))));
+
+        var request = builder.build(execution);
+        JsonNode body = objectMapper.readTree(request.requestBodyJson());
+
+        assertThat(request.model()).isEqualTo("gpt-5.4");
+        assertThat(body.path("model").asText()).isEqualTo("gpt-5.4");
+    }
+
     /** Cria o client image planning apontando para o backend simulado do teste. */
     private ImagePlanningBackendClient newClient() {
         return new ImagePlanningBackendClient(
@@ -121,6 +154,7 @@ class ImagePlanningBackendClientTest {
                         "prompts/geralanding/landing-page-image-planning.md",
                         "prompts/geralanding/landing-page-image-planning-schema.json",
                         "experiment_pipeline_landing_page_image_planning",
+                        "gpt-5.4",
                         Duration.ofSeconds(5)),
                 objectMapper);
     }

@@ -3539,3 +3539,10 @@
 - solicitação: validar o print do navegador com `?mhAnalyticsDebug=1` sem mensagens `[MH Landing Analytics]` no console.
 - causa-raiz identificada: páginas já publicadas podem conter `data-mh-landing-analytics` antigo no HTML salvo; a entrega standalone retornava o HTML sem reinjetar o script, portanto o parâmetro `mhAnalyticsDebug=1` não tinha efeito nessas publicações legadas.
 - correção aplicada: quando a landing já possui script `data-mh-landing-analytics` sem `mhAnalyticsDebug`, o Lead Portal agora substitui a instrumentação legada pelo script atualizado com logs de browser, preservando um único script de analytics e evitando duplicação.
+
+## 2026-06-05 — Correção do resumo do funil para contabilizar analytics da landing
+
+- solicitação: investigar por que o navegador indicava envio do registro de acesso da landing do experimento 37, mas a aba de funil continuava zerada.
+- causa-raiz identificada: os eventos estavam chegando e sendo gravados em `experiment_funnel_event` com `source=landing-page-analytics`, porém o resumo da etapa “Visualização do formulário” só contava eventos automáticos com `source=lead-portal-render-complete`, deixando os acessos reais fora do total exibido.
+- correção aplicada: o consolidado do funil agora soma, na etapa “Visualização do formulário”, tanto `lead-portal-render-complete` quanto `landing-page-analytics`; a origem de analytics foi centralizada em constante do repositório para evitar divergência futura.
+- validação automatizada: adicionado teste unitário garantindo que `summarize` consulta as duas fontes ao consolidar visualizações do formulário.

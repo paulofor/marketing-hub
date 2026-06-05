@@ -12,13 +12,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -110,8 +114,38 @@ class ExperimentFunnelServiceRenderCompleteTest {
         ExperimentFunnelEvent saved = eventCaptor.getValue();
         assertEquals(experiment, saved.getExperiment());
         assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
-        assertEquals("landing-page-analytics", saved.getSource());
+        assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
         assertEquals(Instant.parse("2026-06-04T21:00:00Z"), saved.getOccurredAt());
+    }
+
+    /**
+     * Valida que o resumo consolida page_view da landing junto com render-complete na visualização do formulário.
+     */
+    @Test
+    void summarizeCountsLandingAnalyticsAsFormVisualization() {
+        Experiment experiment = Experiment.builder().id(37L).build();
+        when(experimentRepository.findById(37L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.aggregateManualByExperiment(37L, null)).thenReturn(List.of());
+
+        service.summarize(37L);
+
+        verify(jdbcTemplate).query(
+                eq("""
+                        SELECT COUNT(*) AS total,
+                               NULL AS unique_count,
+                               MAX(occurred_at) AS last_event
+                        FROM experiment_funnel_event
+                        WHERE experiment_id = ?
+                          AND stage = 'VISUALIZACAO_FORM'
+                          AND source IN (?, ?)
+                          AND (? IS NULL OR occurred_at > ?)
+                        """),
+                any(ResultSetExtractor.class),
+                eq(37L),
+                eq(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
+                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+                eq(null),
+                eq(null));
     }
 
     /**

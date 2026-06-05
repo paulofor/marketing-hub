@@ -333,6 +333,54 @@ class PipelineServiceTest {
         });
     }
 
+    /**
+     * Garante que a recriação explícita remove etapas legadas e recria somente etapas oficiais preservando configuração compatível.
+     */
+    @Test
+    void shouldRebuildOfficialStagesFromScreenAction() {
+        OpenAiModel model = OpenAiModel.builder().id(99L).name("GPT 5.2").code("gpt-5.2").build();
+        PipelineStage legacyWireframe = stage(3L, 3, "landing-wireframe");
+        legacyWireframe.setDescription("Descrição operacional preservada");
+        legacyWireframe.setOpenAiModel(model);
+        Pipeline pipeline = officialPipelineWith(
+                stage(1L, 1, "campaign-angle"),
+                stage(2L, 2, "ad-copy"),
+                legacyWireframe,
+                stage(4L, 4, "landing-copy"),
+                stage(5L, 5, "image-planning"),
+                stage(6L, 6, "preset-design"),
+                stage(7L, 7, "geralanding-html"),
+                stage(8L, 8, "landing-html"),
+                stage(9L, 9, "landing-page-deliverables"));
+        when(pipelineRepository.findById(10L)).thenReturn(Optional.of(pipeline));
+        when(stageRepository.save(any(PipelineStage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pipelineRepository.save(any(Pipeline.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PipelineSyncResultDto result = synchronizer.rebuildOfficialStages(10L);
+
+        assertThat(result.status()).isEqualTo("OK");
+        assertThat(result.synchronizedSafely()).isTrue();
+        assertThat(pipeline.getStages()).hasSize(8);
+        assertThat(pipeline.getStages()).extracting(PipelineStage::getCode)
+                .containsExactly(
+                        "campaign-angle",
+                        "ad-copy",
+                        "ad-image-briefing",
+                        "landing-page-wireframe",
+                        "landing-page-copy",
+                        "landing-page-image-planning",
+                        "landing-page-design-preset",
+                        "landing-page-html");
+        assertThat(pipeline.getStages())
+                .filteredOn(stage -> stage.getCode().equals("landing-page-wireframe"))
+                .singleElement()
+                .satisfies(stage -> {
+                    assertThat(stage.getDescription()).isEqualTo("Descrição operacional preservada");
+                    assertThat(stage.getOpenAiModel()).isEqualTo(model);
+                });
+        assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapas operacionais antigas removidas"));
+        verify(stageRepository).deleteAll(any());
+    }
 
     /**
      * Garante que a sincronização cria pipeline oficial ausente pelo código canônico.

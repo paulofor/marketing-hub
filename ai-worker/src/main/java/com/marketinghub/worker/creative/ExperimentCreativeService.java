@@ -82,11 +82,27 @@ public class ExperimentCreativeService {
                 result.put(exp.getId(), saved);
                 log.info("Finished experiment {} with {} creatives persisted", exp.getId(), saved.size());
             } catch (Exception e) {
-                log.error("Failed to generate creatives for experiment {}. rootCauseCategory={} rootCauseMessage={}",
-                        exp.getId(), classifyRootCause(e), rootCauseMessage(e), e);
+                handleGenerationFailure(exp, pipelineMode, e);
             }
         }
         return result;
+    }
+
+
+    /**
+     * Clears a failed creative generation request so the UI does not stay indefinitely blocked after logging the root cause.
+     */
+    private void handleGenerationFailure(Experiment experiment, boolean pipelineMode, Exception exception) {
+        log.error("Failed to generate creatives for experiment {}. pendingCreatives={} generationMode={} rootCauseCategory={} rootCauseMessage={}",
+                experiment.getId(), experiment.getCreativesToGenerate(), pipelineMode ? "PIPELINE_ADS" : "DEFAULT",
+                classifyRootCause(exception), rootCauseMessage(exception), exception);
+        experiment.setCreativesToGenerate(0);
+        if (pipelineMode) {
+            setCreativeGenerationMode(experiment, "DEFAULT");
+        }
+        experimentRepository.save(experiment);
+        log.warn("Cleared failed creative generation request for experiment {} to avoid an indefinite UI lock; user can request generation again after fixing the root cause",
+                experiment.getId());
     }
 
     /**

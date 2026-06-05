@@ -559,9 +559,11 @@ Para considerar a copy **rica** e **compatível com as especificações**, a eta
 ### Cobertura obrigatória de elementos (fonte de verdade: pesquisa profunda)
 
 O `landingPageDesignPreset` deve registrar, via `componentPresets.primitives` e tokens de `theme`, cobertura explícita para os elementos:
-`<p>`, `<h1>`, `<h2>`, `<h3>`, `<ul>/<li>`, `<button>`/CTA, `<form>`, `<label>`, `<input>`, `<img>`.
+`<p>`, `<h1>`, `<h2>`, `<h3>`, `<ul>/<li>`, `<button>`/CTA, `<form>`, `<label>`, `<input>`, `<img>` e feedback inline de formulário (`#form-feedback`, `[data-runtime-feedback='true']`).
 
 Para cada elemento, o preset deve declarar atributos visuais trabalhados (tipografia, espaçamento, dimensão, contraste, foco, superfície e comportamento responsivo quando aplicável) e os tokens correspondentes. A referência de padrões é a seção **"Padrões de CSS e componentes por elemento"** de `docs/pesquisa-profunda/pesquisa-profunda-html-estilos.md`.
+
+O acabamento da mensagem de sucesso/erro do formulário é responsabilidade visual do `landingPageDesignPreset`: deve ser especificado como banner/card inline perceptível, com fundo semântico suave, borda sutil, raio coerente, espaçamento confortável, hierarquia clara entre título e descrição, contraste AA, estado de erro equivalente e posicionamento natural após o CTA sem competir com o botão.
 
 > **Atualização canônica (2026-04-29) — CSS base do LHM deve vir de artefato:**
 > - A malha CSS base da landing (`baseCss`) deve ser definida no `landingPageDesignPreset.lhmRuntime.baseCss` (ou, por compatibilidade temporária, em `landingPageDesignPreset.baseCss`).

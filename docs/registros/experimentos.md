@@ -3595,3 +3595,9 @@
 - correção aplicada: o Lead Portal ganhou um endpoint de compatibilidade para receber essa rota pública, validar divergência de slug, extrair `submissionId`, `submittedAt` e `contato`, e encaminhar a submissão ao Marketing Hub pelo `ExperimentFunnelTrackingClient`, preservando o contrato já publicado nas landings.
 - documentação atualizada: `docs/swagger/lead-portal-swagger.yaml` registra a rota pública de compatibilidade do Lead Portal.
 - validação automatizada: adicionado teste MVC cobrindo o payload real do GeraLanding e rejeição de slug divergente.
+
+## 2026-06-05 — Acabamento visual canônico para feedback de formulário da landing
+
+- solicitação: orientar o prompt do preset de design para melhorar o acabamento da mensagem de sucesso exibida após envio do formulário da landing.
+- causa-raiz/objetivo: a mensagem estava semanticamente correta e bem posicionada após o CTA, mas dependia de texto simples no runtime; para reduzir dúvida do lead e aumentar confiança de conversão, o acabamento visual precisa ser especificado no artefato canônico de design.
+- correção aplicada: o prompt `landing-page-design-preset` agora exige cobertura de `#form-feedback` e `[data-runtime-feedback='true']`, com banner/card de sucesso/erro, fundo semântico, borda sutil, hierarquia textual, contraste AA e posicionamento natural após o CTA; os documentos canônicos relacionados foram sincronizados.

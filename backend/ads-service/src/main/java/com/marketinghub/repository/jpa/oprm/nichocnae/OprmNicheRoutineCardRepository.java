@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /** Repositório responsável por persistir e consultar cartões de rotina do pipeline OPRM NichoCNAE. */
 public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheRoutineCard, Long> {
@@ -16,4 +17,16 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
 
   /** Lista cartões sintetizados ainda não avaliados pelo gate de qualidade. */
   List<OprmNicheRoutineCard> findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(Pageable pageable);
+  /** Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho enriquecido. */
+  @Query("""
+      select c from OprmNicheRoutineCard c
+      where c.readyForHypothesis = true
+        and c.qualityCheckedAt is not null
+        and not exists (
+          select 1 from MarketNicheEnrichmentProfile p
+          where p.sourceRoutineCardId = c.id
+        )
+      order by c.qualityCheckedAt asc, c.id asc
+      """)
+  List<OprmNicheRoutineCard> findPendingEnrichedNicheMaterialization(Pageable pageable);
 }

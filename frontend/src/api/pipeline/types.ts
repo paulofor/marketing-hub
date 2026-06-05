@@ -86,3 +86,15 @@ export interface PipelineDiagnostics {
   configuredStages: number;
   issues: PipelineDiagnosticsIssue[];
 }
+
+export interface PipelineSyncResult {
+  status: PipelineDiagnosticsStatus;
+  synchronizedSafely: boolean;
+  pipelineId?: number | null;
+  pipelineCode?: string | null;
+  canonicalPipelineCode?: string | null;
+  expectedStages: number;
+  configuredStages: number;
+  appliedActions: string[];
+  issues: PipelineDiagnosticsIssue[];
+}

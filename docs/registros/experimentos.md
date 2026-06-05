@@ -3508,3 +3508,10 @@
 - correção aplicada: a tela de novo modelo passou a renderizar apenas o campo obrigatório de nome e enviar somente esse valor; o backend agora valida o nome na API oficial `/models`, resolve o código canônico, busca preços oficiais e salva o cadastro com metadados de origem/sincronização.
 - cânone atualizado: `docs/canonical/openai-informacoes-tratadas-canon.v1.md` registra que a criação manual deve exigir apenas nome/código e preencher os demais campos via backend/OpenAI.
 - validação automatizada: adicionado teste de serviço para garantir preenchimento oficial na criação e rejeição de modelo ausente no catálogo OpenAI.
+## 2026-06-05 — Ajuste controlado de etapas oficiais pela tela de Pipelines
+
+- solicitação: permitir que o usuário resolva divergências de contrato do Pipeline de Experimento pela própria tela, com um botão de ajuste/recriação das etapas oficiais.
+- causa-raiz/objetivo: o diagnóstico bloqueava corretamente etapas extras e ausentes, mas a tela ainda não oferecia uma ação explícita para o usuário confirmar a correção destrutiva e voltar o pipeline ao contrato canônico sem intervenção manual no banco.
+- correção aplicada: criado endpoint `POST /api/pipelines/{id}/rebuild-official-stages` para remover as etapas operacionais atuais de um pipeline oficial e recriar somente as etapas canônicas, preservando descrição e modelo OpenAI quando houver mapeamento seguro de códigos legados; a tela `/pipelines` ganhou o botão “Ajustar etapas oficiais” com confirmação e indicador de carregamento.
+- documentação atualizada: cânone do procedimento de experimento e Swagger de pipelines passaram a registrar o novo endpoint de recriação controlada.
+- validação automatizada: teste unitário cobre a recriação de 9 etapas legadas para as 8 etapas oficiais, com preservação de configuração compatível em `landing-page-wireframe`.

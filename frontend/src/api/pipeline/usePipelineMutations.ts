@@ -5,6 +5,7 @@ import type {
   PipelinePayload,
   PipelineStage,
   PipelineStagePayload,
+  PipelineSyncResult,
 } from "./types";
 
 export function useCreatePipeline() {
@@ -101,6 +102,19 @@ export function useDeletePipelineStage() {
       stageId: number;
     }) => {
       await axios.delete(`/api/pipelines/${pipelineId}/stages/${stageId}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipelines"] }),
+  });
+}
+
+export function useRebuildOfficialPipelineStages() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (pipelineId: number) => {
+      const { data } = await axios.post<PipelineSyncResult>(
+        `/api/pipelines/${pipelineId}/rebuild-official-stages`,
+      );
+      return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipelines"] }),
   });

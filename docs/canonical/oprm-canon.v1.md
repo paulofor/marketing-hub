@@ -51,6 +51,24 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
   - confirmação explícita de publicação/persistência do `marketSizes` do arquivo.
 - Se qualquer item acima estiver ausente, a execução deve ser tratada como observabilidade insuficiente para operação de produção.
 
+
+## Regra obrigatória — materialização final do NichoCNAE em nicho enriquecido
+
+- Após o `oprmRoutineQualityGate` aprovar um cartão com `readyForHypothesis=true`, o pipeline OPRM NichoCNAE deve executar uma etapa final chamada `oprmEnrichedNicheMaterializer`.
+- Essa etapa final deve alimentar obrigatoriamente duas estruturas persistidas: a tabela principal de nichos (`market_niche`) e a tabela de nicho enriquecido (`market_niche_enrichment_profile`).
+- A materialização final não deve criar hipótese, experimento, oferta, campanha ou landing page; hipótese será tratada em fluxo próprio posterior.
+- O `market_niche` deve receber o cadastro operacional do nicho com nome, descrição enriquecida, segmentação base e contexto de uso, sem inventar uma oferta.
+- O `market_niche_enrichment_profile` deve preservar os dados enriquecidos vindos do NichoCNAE: CNAE, score OPRM, ciclo de pesquisa, cartão de rotina, rotina, dores, resultados, oportunidades de mecanismo, evidências, fontes e scores de qualidade.
+- O vínculo entre OPRM e nicho comercial deve permanecer rastreável por `research_cycle_id`, `routine_card_id`, `source_niche_candidate_id` e `market_niche_id`.
+- A conclusão da etapa deve atualizar o ciclo para `ENRICHED_NICHE_CREATED`; falhas devem registrar status `ENRICHED_NICHE_FAILED` e mensagem operacional no ciclo.
+
+## Critério de efetividade — nicho enriquecido materializado
+
+- Um cartão aprovado pelo gate só pode ser considerado finalizado quando existir um registro correspondente em `market_niche_enrichment_profile` e um `market_niche_id` persistido.
+- A etapa deve ser idempotente por `routine_card_id` e `research_cycle_id`, evitando duplicar nichos enriquecidos quando houver retentativa do coletor.
+- A tela `/oprm/pipeline` deve exibir a etapa final e informar o `marketNicheId`, o `enrichedNicheProfileId` e o status de materialização.
+- O contrato da etapa final deve seguir o padrão de unidade de trabalho fechada: o endpoint `pending` precisa entregar todos os dados necessários para o coletor concluir a materialização sem buscar detalhes adicionais.
+
 ## Referência de governança
 
 - Este documento é o cânone específico de OPRM para ingestão de CNAE e totalização de market size.

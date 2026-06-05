@@ -154,6 +154,10 @@ public class BackendSourceFetcherService {
     requiredText(request.sourceDomain(), "sourceDomain");
     requiredText(request.sourceTitle(), "sourceTitle");
     requiredText(request.sourceType(), "sourceType");
+    requiredText(request.sourceIntent(), "sourceIntent");
+    requiredScore(request.routineEvidenceScore(), "routineEvidenceScore");
+    requiredBoolean(request.commercialPageRisk(), "commercialPageRisk");
+    requiredBoolean(request.solutionLanguageRisk(), "solutionLanguageRisk");
     requiredText(request.fetchStatus(), "fetchStatus");
     requiredText(request.storagePolicy(), "storagePolicy");
     String shortExcerpt = requiredText(request.shortExcerpt(), "shortExcerpt");
@@ -185,6 +189,10 @@ public class BackendSourceFetcherService {
     snapshot.setSourceDomain(requiredText(request.sourceDomain(), "sourceDomain"));
     snapshot.setSourceTitle(requiredText(request.sourceTitle(), "sourceTitle"));
     snapshot.setSourceType(defaultText(request.sourceType(), DEFAULT_SOURCE_TYPE));
+    snapshot.setSourceIntent(requiredText(request.sourceIntent(), "sourceIntent"));
+    snapshot.setRoutineEvidenceScore(requiredScore(request.routineEvidenceScore(), "routineEvidenceScore"));
+    snapshot.setCommercialPageRisk(requiredBoolean(request.commercialPageRisk(), "commercialPageRisk"));
+    snapshot.setSolutionLanguageRisk(requiredBoolean(request.solutionLanguageRisk(), "solutionLanguageRisk"));
     snapshot.setSnippet(trimToNull(request.snippet()));
     snapshot.setShortExcerpt(requiredText(request.shortExcerpt(), "shortExcerpt"));
     snapshot.setFetchedAt(now);
@@ -217,6 +225,10 @@ public class BackendSourceFetcherService {
         candidate.getSourceSnippet(),
         candidate.getSourceDomain(),
         candidate.getSourceGroup(),
+        defaultText(candidate.getSourceIntent(), candidate.getSourceGroup()),
+        defaultInteger(candidate.getRoutineEvidenceScore(), candidate.getRelevanceScore()),
+        Boolean.TRUE.equals(candidate.getCommercialPageRisk()),
+        Boolean.TRUE.equals(candidate.getSolutionLanguageRisk()),
         candidate.getSearchProvider(),
         candidate.getSearchPosition(),
         candidate.getStatus(),
@@ -234,6 +246,10 @@ public class BackendSourceFetcherService {
         snapshot.getSourceDomain(),
         snapshot.getSourceTitle(),
         snapshot.getSourceType(),
+        snapshot.getSourceIntent(),
+        snapshot.getRoutineEvidenceScore(),
+        Boolean.TRUE.equals(snapshot.getCommercialPageRisk()),
+        Boolean.TRUE.equals(snapshot.getSolutionLanguageRisk()),
         snapshot.getSnippet(),
         snapshot.getShortExcerpt(),
         snapshot.getFetchedAt(),
@@ -261,6 +277,25 @@ public class BackendSourceFetcherService {
   /** Normaliza campos opcionais de texto preservando nulo quando não há conteúdo útil. */
   private String trimToNull(String value) {
     return StringUtils.hasText(value) ? value.trim() : null;
+  }
+
+  /** Exige pontuação de rotina no intervalo contratual de zero a cem. */
+  private Integer requiredScore(Integer value, String fieldName) {
+    if (value == null) {
+      throw new IllegalArgumentException(fieldName + " is required");
+    }
+    if (value < 0 || value > 100) {
+      throw new IllegalArgumentException(fieldName + " must be between 0 and 100");
+    }
+    return value;
+  }
+
+  /** Exige booleano explícito para preservar indicadores de risco da etapa três. */
+  private Boolean requiredBoolean(Boolean value, String fieldName) {
+    if (value == null) {
+      throw new IllegalArgumentException(fieldName + " is required");
+    }
+    return value;
   }
 
   /** Retorna inteiro informado ou valor padrão para campos opcionais de pontuação. */

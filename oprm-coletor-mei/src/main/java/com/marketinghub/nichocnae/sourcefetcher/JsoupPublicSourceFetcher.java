@@ -100,13 +100,29 @@ public class JsoupPublicSourceFetcher implements PublicSourceFetcher {
                 pending.sourceDomain(),
                 truncate(title, MAX_TITLE_LENGTH),
                 DEFAULT_SOURCE_TYPE,
+                sourceIntent(pending),
+                routineEvidenceScore(pending, shortExcerpt),
+                Boolean.TRUE.equals(pending.commercialPageRisk()),
+                Boolean.TRUE.equals(pending.solutionLanguageRisk()),
                 truncate(fallbackSnippet, MAX_SNIPPET_LENGTH),
                 truncate(shortExcerpt, MAX_SHORT_EXCERPT_LENGTH),
                 FETCH_STATUS_COMPLETED,
                 response.statusCode(),
                 STORAGE_POLICY,
                 LICENSE_STATE,
-                calculateRelevanceScore(shortExcerpt, pending));
+                routineEvidenceScore(pending, shortExcerpt));
+    }
+
+    /** Define a intenção propagada da etapa três, usando o grupo legado como compatibilidade. */
+    private String sourceIntent(SourceFetcherPending pending) {
+        return StringUtils.hasText(pending.sourceIntent()) ? pending.sourceIntent().trim() : pending.sourceGroup();
+    }
+
+    /** Define o escore de evidência de rotina propagado da etapa três ou recalculado por fallback simples. */
+    private Integer routineEvidenceScore(SourceFetcherPending pending, String shortExcerpt) {
+        return pending.routineEvidenceScore() == null
+                ? calculateRelevanceScore(shortExcerpt, pending)
+                : pending.routineEvidenceScore();
     }
 
     /** Calcula um score simples de relevância com base em texto útil e aderência ao domínio esperado. */

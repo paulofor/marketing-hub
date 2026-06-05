@@ -28,6 +28,10 @@ public class SourceFetcherProcessor implements StageProcessor<SourceFetcherPendi
         Map<String, Object> metrics = Map.of(
                 "sourceCandidateId", output.sourceCandidateId(),
                 "researchCycleId", output.researchCycleId(),
+                "sourceIntent", snapshot.sourceIntent(),
+                "routineEvidenceScore", snapshot.routineEvidenceScore() == null ? 0 : snapshot.routineEvidenceScore(),
+                "commercialPageRisk", Boolean.TRUE.equals(snapshot.commercialPageRisk()),
+                "solutionLanguageRisk", Boolean.TRUE.equals(snapshot.solutionLanguageRisk()),
                 "httpStatus", snapshot.httpStatus() == null ? 0 : snapshot.httpStatus(),
                 "cycleTotalSourceSnapshots", output.cycleTotalSourceSnapshots() == null ? 0 : output.cycleTotalSourceSnapshots());
         return new StageResult<>(output, List.of(), metrics);

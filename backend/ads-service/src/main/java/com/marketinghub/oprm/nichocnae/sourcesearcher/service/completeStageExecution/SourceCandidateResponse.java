@@ -17,5 +17,9 @@ public record SourceCandidateResponse(
     String status,
     Integer relevanceScore,
     String rejectionReason,
+    String sourceIntent,
+    Integer routineEvidenceScore,
+    Boolean commercialPageRisk,
+    Boolean solutionLanguageRisk,
     Instant createdAt,
     Instant updatedAt) {}

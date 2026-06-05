@@ -16,6 +16,10 @@ class SourceFetcherBackendClientTest {
                 "exemplo.com",
                 "Como lotar agenda de manicure",
                 "PUBLIC_CONTENT",
+                "ROUTINE_REPORT",
+                90,
+                false,
+                false,
                 "Resumo público",
                 "Trecho curto permitido para extração de sinais.",
                 "COMPLETED",
@@ -30,6 +34,10 @@ class SourceFetcherBackendClientTest {
         assertThat(request.sourceDomain()).isEqualTo("exemplo.com");
         assertThat(request.storagePolicy()).isEqualTo("SHORT_EXCERPT_ONLY");
         assertThat(request.shortExcerpt()).doesNotContain("<html");
+        assertThat(request.sourceIntent()).isEqualTo("ROUTINE_REPORT");
+        assertThat(request.routineEvidenceScore()).isEqualTo(90);
+        assertThat(request.commercialPageRisk()).isFalse();
+        assertThat(request.solutionLanguageRisk()).isFalse();
         assertThat(request.relevanceScore()).isEqualTo(95);
     }
 }

@@ -73,6 +73,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SalesLibraryEntryPageResponse'
+  /collected-references/url-summary:
+    get:
+      summary: Resume URLs únicas da origem bruta coletada
+      description: Lê `mois_collected_reference` somente como origem bruta e retorna contadores de URLs únicas efetivas, cobertura em `mois_sales_page` e desdobramento por origem/tipo sem expor contagem de linhas brutas.
+      tags: [MOIS Sales Library]
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cobertura de URLs únicas coletadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectedReferenceUrlSummaryResponse'
   /jobs:
     get:
       summary: Lista execuções operacionais consolidadas
@@ -534,6 +552,61 @@ components:
           type: integer
         skippedWithoutUrl:
           type: integer
+    CollectedReferenceUrlSummaryResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        uniqueEffectiveUrls:
+          type: integer
+          format: int64
+          description: Total de URLs únicas efetivas usando prioridade sales_page_url, product_url e url.
+        explicitSalesPageUrls:
+          type: integer
+          format: int64
+          description: Total de URLs únicas quando havia sales_page_url explícita.
+        fallbackProductUrls:
+          type: integer
+          format: int64
+          description: Total de URLs únicas obtidas por fallback em product_url.
+        operationalLibraryUrls:
+          type: integer
+          format: int64
+          description: URLs únicas coletadas que já existem em mois_sales_page.
+        missingFromOperationalLibrary:
+          type: integer
+          format: int64
+          description: URLs únicas coletadas ainda não consolidadas em mois_sales_page.
+        bySource:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectedReferenceUrlSourceBreakdown'
+        byUrlType:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectedReferenceUrlTypeBreakdown'
+    CollectedReferenceUrlSourceBreakdown:
+      type: object
+      properties:
+        source:
+          type: string
+        uniqueEffectiveUrls:
+          type: integer
+          format: int64
+        operationalLibraryUrls:
+          type: integer
+          format: int64
+        missingFromOperationalLibrary:
+          type: integer
+          format: int64
+    CollectedReferenceUrlTypeBreakdown:
+      type: object
+      properties:
+        urlType:
+          type: string
+        uniqueUrls:
+          type: integer
+          format: int64
     SalesLibraryJobResponse:
       type: object
       properties:

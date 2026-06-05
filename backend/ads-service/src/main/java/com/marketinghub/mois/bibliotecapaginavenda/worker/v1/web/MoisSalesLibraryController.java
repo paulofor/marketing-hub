@@ -124,6 +124,14 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Retorna o resumo de URLs únicas disponíveis na origem bruta de referências coletadas.
+     */
+    @GetMapping("/collected-references/url-summary")
+    public MoisSalesLibraryDtos.CollectedReferenceUrlSummaryResponse summarizeCollectedReferenceUrls(@RequestParam String workspaceId) {
+        return service.summarizeCollectedReferenceUrls(workspaceId);
+    }
+
+    /**
      * Busca os dados básicos de uma página canônica.
      */
     @GetMapping("/pages/{pageId}")

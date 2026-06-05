@@ -163,6 +163,39 @@ class MoisSalesLibraryServiceTest {
     }
 
 
+
+    /**
+     * Garante que o resumo de referências coletadas expõe apenas URLs únicas relevantes.
+     */
+    @Test
+    void shouldSummarizeUniqueCollectedReferenceUrlsWithoutRawLineCounts() throws Exception {
+        given(jdbcTemplate.query(contains("SELECT DISTINCT source, url_source, effective_url"), isA(RowMapper.class), eq("workspace-001")))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(
+                            mapper.mapRow(collectedReferenceUrlSummaryRow("HOTMART", "SALES_PAGE_URL", "https://offer.example/a?utm=1"), 0),
+                            mapper.mapRow(collectedReferenceUrlSummaryRow("HOTMART", "PRODUCT_URL", "https://product.example/p?ref=1"), 1),
+                            mapper.mapRow(collectedReferenceUrlSummaryRow("CLICKBANK", "SALES_PAGE_URL", "https://hop.clickbank.net/?affiliate=abc&vendor=x"), 2)
+                    );
+                });
+        given(jdbcTemplate.query(contains("SELECT url_canonical FROM mois_sales_page"), isA(RowMapper.class), eq("workspace-001")))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(operationalUrlRow("https://offer.example/a"), 0));
+                });
+
+        MoisSalesLibraryDtos.CollectedReferenceUrlSummaryResponse response = service.summarizeCollectedReferenceUrls("workspace-001");
+
+        org.assertj.core.api.Assertions.assertThat(response.uniqueEffectiveUrls()).isEqualTo(3);
+        org.assertj.core.api.Assertions.assertThat(response.explicitSalesPageUrls()).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(response.fallbackProductUrls()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.operationalLibraryUrls()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.missingFromOperationalLibrary()).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(response.bySource())
+                .extracting(MoisSalesLibraryDtos.CollectedReferenceUrlSourceBreakdown::source)
+                .containsExactly("HOTMART", "CLICKBANK");
+    }
+
     /**
      * Garante que a listagem de entradas usa a tabela operacional nova, sem ler a tabela legada de URL.
      */
@@ -202,6 +235,26 @@ class MoisSalesLibraryServiceTest {
         lenient().when(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any())).thenReturn(1);
     }
 
+
+    /**
+     * Monta uma linha simulada de URL efetiva única da origem bruta coletada.
+     */
+    private ResultSet collectedReferenceUrlSummaryRow(String source, String urlSource, String effectiveUrl) throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getString("source")).willReturn(source);
+        given(resultSet.getString("url_source")).willReturn(urlSource);
+        given(resultSet.getString("effective_url")).willReturn(effectiveUrl);
+        return resultSet;
+    }
+
+    /**
+     * Monta uma linha simulada de URL já consolidada na biblioteca operacional.
+     */
+    private ResultSet operationalUrlRow(String urlCanonical) throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getString("url_canonical")).willReturn(urlCanonical);
+        return resultSet;
+    }
     /**
      * Monta uma linha simulada de entrada operacional de página consolidada.
      */

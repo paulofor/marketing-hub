@@ -242,6 +242,42 @@ public final class MoisSalesLibraryDtos {
     ) {
     }
 
+
+    /**
+     * Representa a cobertura de URLs únicas vindas da origem bruta mois_collected_reference.
+     */
+    public record CollectedReferenceUrlSummaryResponse(
+            String workspaceId,
+            long uniqueEffectiveUrls,
+            long explicitSalesPageUrls,
+            long fallbackProductUrls,
+            long operationalLibraryUrls,
+            long missingFromOperationalLibrary,
+            List<CollectedReferenceUrlSourceBreakdown> bySource,
+            List<CollectedReferenceUrlTypeBreakdown> byUrlType
+    ) {
+    }
+
+    /**
+     * Representa o desdobramento de URLs únicas coletadas por marketplace/origem.
+     */
+    public record CollectedReferenceUrlSourceBreakdown(
+            String source,
+            long uniqueEffectiveUrls,
+            long operationalLibraryUrls,
+            long missingFromOperationalLibrary
+    ) {
+    }
+
+    /**
+     * Representa o desdobramento de URLs únicas coletadas por tipo de URL usada.
+     */
+    public record CollectedReferenceUrlTypeBreakdown(
+            String urlType,
+            long uniqueUrls
+    ) {
+    }
+
     /**
      * Representa uma execução auditável da página no histórico consolidado.
      */

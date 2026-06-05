@@ -14,6 +14,7 @@ Esta pasta é o local único para contratos Swagger/OpenAPI do Marketing Hub.
 - `docs/swagger/avatar-sales-video-integration-swagger.yaml` — integração Avatar Sales Video.
 - `docs/swagger/epm-swagger.yaml` — Experiment Profit Manager.
 - `docs/swagger/geralanding-backend-swagger.v1.yaml` — backend GeraLanding.
+- `docs/swagger/lead-portal-swagger.yaml` — API pública e operacional do Lead Portal.
 - `docs/swagger/openapi.yaml` — superfície geral da API Marketing Hub.
 - `docs/swagger/openapi_mds_backend_stub.yaml` — stub de integração MDS.
 - `docs/swagger/openapi_mois_backend_stub.yaml` — stub de integração MOIS.

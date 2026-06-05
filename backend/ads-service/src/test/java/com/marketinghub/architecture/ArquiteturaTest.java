@@ -52,6 +52,15 @@ class ArquiteturaTest {
             GeraLandingStageExecutionRepository.class.getName();
     private static final String GERALANDING_STAGE_EXECUTION_BUILDER_CLASS =
             "com.marketinghub.geralanding.GeraLandingStageExecution$GeraLandingStageExecutionBuilder";
+    private static final String OPRM_ENRICHED_NICHE_MATERIALIZER_SERVICE =
+            "com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.BackendEnrichedNicheMaterializerService";
+    private static final String OPRM_ENRICHED_NICHE_MATERIALIZER_SERVICE_TEST =
+            OPRM_ENRICHED_NICHE_MATERIALIZER_SERVICE + "Test";
+    private static final List<String> ALLOWED_OPRM_ENRICHED_NICHE_MATERIALIZER_CLASSES = List.of(
+            "com.marketinghub.niche.MarketNiche",
+            "com.marketinghub.niche.MarketNicheEnrichmentProfile",
+            "com.marketinghub.repository.jpa.niche.MarketNicheRepository",
+            "com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository");
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
     private static final Pattern BACKEND_STAGE_WEB_PACKAGE_PATTERN =
@@ -104,12 +113,10 @@ class ArquiteturaTest {
             .because("[ARQUITETURA][MOIS] o módulo MOIS não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
-    static final ArchRule oprmMustNotDependOnOtherMarketingHubPackages = noClasses()
+    static final ArchRule oprmMustNotDependOnOtherMarketingHubPackages = classes()
             .that()
             .resideInAPackage("com.marketinghub.oprm..")
-            .should()
-            .dependOnClassesThat(otherMarketingHubPackagesExcept(
-                    "com.marketinghub.oprm", "com.marketinghub.repository.jpa.oprm"))
+            .should(onlyDependOnAllowedOprmMarketingHubClasses())
             .because("[ARQUITETURA][OPRM] o módulo OPRM não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
@@ -625,6 +632,57 @@ class ArquiteturaTest {
             violations.sort(String::compareTo);
             throw new AssertionError(String.join(System.lineSeparator(), violations));
         }
+    }
+
+    /**
+     * Garante que o OPRM dependa apenas do próprio módulo, repositories OPRM e da exceção nominal do materializador.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedOprmMarketingHubClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA][OPRM] depende apenas de OPRM, repositories OPRM e exceção nominal do materializador") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (isAllowedOprmDependency(item, targetClass)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA][OPRM] classe-origem=" + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: OPRM só pode acessar com.marketinghub.oprm, "
+                            + "com.marketinghub.repository.jpa.oprm e, especificamente para "
+                            + "BackendEnrichedNicheMaterializerService, apenas as quatro classes autorizadas de nicho.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Verifica se a dependência OPRM está dentro dos pacotes canônicos ou na exceção nominal liberada.
+     */
+    private static boolean isAllowedOprmDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String targetPackage = targetClass.getPackageName();
+        if (targetPackage.startsWith("com.marketinghub.oprm")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.oprm")) {
+            return true;
+        }
+        return isEnrichedNicheMaterializerException(sourceClass, targetClass);
+    }
+
+    /**
+     * Autoriza somente o materializador enriquecido do OPRM, e seu teste, a acessar as quatro classes de nicho.
+     */
+    private static boolean isEnrichedNicheMaterializerException(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceName = sourceClass.getName();
+        return (OPRM_ENRICHED_NICHE_MATERIALIZER_SERVICE.equals(sourceName)
+                        || OPRM_ENRICHED_NICHE_MATERIALIZER_SERVICE_TEST.equals(sourceName))
+                && ALLOWED_OPRM_ENRICHED_NICHE_MATERIALIZER_CLASSES.contains(targetClass.getName());
     }
 
     /**

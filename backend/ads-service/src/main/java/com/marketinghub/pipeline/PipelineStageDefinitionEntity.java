@@ -69,7 +69,7 @@ public class PipelineStageDefinitionEntity {
     @Column(name = "root_package", length = 200)
     private String rootPackage;
 
-    @Column(nullable = false)
+    @Column(name = "requires_openai_model", nullable = false)
     @Builder.Default
     private boolean requiresOpenAiModel = true;
 

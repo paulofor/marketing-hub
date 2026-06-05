@@ -31,6 +31,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 - **Servidor MCP** : Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC. Quando precisar analisar casos específicos acesse o banco de dados usando esse servidor.
 - **Tecnologias padrão**: Java 21 + Spring Boot 3, React 18 + Vite + TypeScript, Zustand para state, TanStack Query para dados. Formatação: Spotless (backend) e Prettier (frontend).
 - **Banco**: MySQL 5.7. Somente o backend acessa o banco; demais módulos conversam via APIs do backend. Prefira filtros no SQL ao invés de pós-processar em memória.
+- **JPA/Hibernate x Liquibase (bloqueio de backend)**: nunca confie apenas na nomenclatura automática do Hibernate para colunas já definidas por Liquibase, principalmente campos booleanos ou com siglas/acrônimos (`OpenAI`, `URL`, `HTML`, `ID`, etc.). Toda entidade/campo novo ou alterado que tenha coluna canônica deve declarar `@Column(name = "nome_canonico_no_banco")` quando houver qualquer risco de divergência. Antes de inserir dados por Liquibase em tabela com colunas `NOT NULL`, compare o changelog, a entidade JPA e o schema real (via MCP quando necessário) para impedir colunas duplicadas/legadas que travem o bootstrap do backend.
 - **URL do BACKEND** : http://191.252.181.168:8000
 - **URL do BACKEND (Codex)** : para acessos executados pelo Codex, usar preferencialmente `http://191.252.181.168` (porta 80); o backend também responde nessa porta.
 - **Modelo único**: entidades residem no backend. Os demais módulos acessam o banco de dados pelo backend.

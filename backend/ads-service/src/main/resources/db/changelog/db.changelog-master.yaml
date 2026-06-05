@@ -9,6 +9,9 @@ databaseChangeLog:
       file: changesets/2026-06-05-pipeline-stage-implementation-location.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-05-pipeline-stage-definition-openai-column-alignment.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-05-oprm-nichocnae-official-pipeline.yaml
       relativeToChangelogFile: true
   - include:

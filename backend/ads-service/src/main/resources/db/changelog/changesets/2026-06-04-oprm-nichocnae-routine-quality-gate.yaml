@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-04-04-oprm-routine-quality-gate-columns
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_niche_routine_card
+              columnName: ready_for_hypothesis
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_routine_card
+                ADD COLUMN ready_for_hypothesis TINYINT(1) NOT NULL DEFAULT 0,
+                ADD COLUMN specificity_score INT NULL,
+                ADD COLUMN duplication_score INT NULL,
+                ADD COLUMN quality_status VARCHAR(32) NULL,
+                ADD COLUMN quality_notes LONGTEXT NULL,
+                ADD COLUMN quality_checked_by VARCHAR(64) NULL,
+                ADD COLUMN quality_checked_at DATETIME NULL;
+              CREATE INDEX idx_oprm_routine_card_quality_pending
+                ON oprm_niche_routine_card (quality_checked_at, created_at, id);
+              CREATE INDEX idx_oprm_routine_card_quality_status
+                ON oprm_niche_routine_card (quality_status, ready_for_hypothesis, confidence_score);

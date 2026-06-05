@@ -409,6 +409,71 @@ paths:
         '404':
           description: Ciclo de pesquisa não encontrado.
 
+  /api/internal/oprm/nichocnae/routine-quality-gate/stage-executions/pending:
+    get:
+      summary: Lista cartões de rotina pendentes para a etapa sete de gate de qualidade.
+      tags: [OPRM Nicho CNAE]
+      responses:
+        '200':
+          description: Cartões pendentes com contadores de fontes e sinais.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutineQualityGatePending'
+  /api/internal/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}/complete:
+    post:
+      summary: Persiste a decisão de qualidade da etapa sete.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRoutineQualityGateRequest'
+      responses:
+        '200':
+          description: Decisão de qualidade persistida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteRoutineQualityGateResponse'
+        '400':
+          description: Payload inválido ou decisão fora do contrato.
+  /api/internal/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}/fail:
+    post:
+      summary: Registra falha operacional da etapa sete.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailRoutineQualityGateRequest'
+      responses:
+        '204':
+          description: Falha registrada.
+  /api/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}:
+    get:
+      summary: Detalha a decisão de qualidade do cartão de rotina.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Detalhe público do gate de qualidade.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineQualityGateDetailResponse'
+        '404':
+          description: Ciclo de pesquisa não encontrado.
+
 components:
   parameters:
     ResearchCycleId:
@@ -1343,4 +1408,131 @@ components:
         routineCard:
           nullable: true
           $ref: '#/components/schemas/RoutineCardResponse'
+    RoutineQualityGatePending:
+      type: object
+      properties:
+        routineCardId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        nicheName:
+          type: string
+        routineSummary:
+          type: string
+        painsSummary:
+          type: string
+        resultsSummary:
+          type: string
+        mechanismOpportunitiesSummary:
+          type: string
+        evidenceSummary:
+          type: string
+        sourceDomains:
+          type: string
+        cardConfidenceScore:
+          type: integer
+        sourceCount:
+          type: integer
+        signalCount:
+          type: integer
+        questionSignalCount:
+          type: integer
+        painSignalCount:
+          type: integer
+        mechanismOpportunityCount:
+          type: integer
+        routineTaskCount:
+          type: integer
+        commercialObjectCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    CompleteRoutineQualityGateRequest:
+      type: object
+      required: [researchCycleId, routineCardId, qualityStatus, readyForHypothesis, specificityScore, confidenceScore, duplicationScore]
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        qualityStatus:
+          type: string
+          enum: [LIGHTLY_RESEARCHED, NEEDS_MORE_RESEARCH, GENERIC]
+        readyForHypothesis:
+          type: boolean
+        specificityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        confidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        duplicationScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        qualityNotes:
+          type: string
+        checkedBy:
+          type: string
+          example: oprmRoutineQualityGate
+    CompleteRoutineQualityGateResponse:
+      allOf:
+        - $ref: '#/components/schemas/CompleteRoutineQualityGateRequest'
+        - type: object
+          properties:
+            cycleStatus:
+              type: string
+            checkedAt:
+              type: string
+              format: date-time
+    FailRoutineQualityGateRequest:
+      type: object
+      required: [errorMessage]
+      properties:
+        errorMessage:
+          type: string
+    RoutineQualityGateDetailResponse:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+        routineCardId:
+          type: integer
+          format: int64
+          nullable: true
+        qualityStatus:
+          type: string
+          nullable: true
+        readyForHypothesis:
+          type: boolean
+          nullable: true
+        specificityScore:
+          type: integer
+          nullable: true
+        confidenceScore:
+          type: integer
+          nullable: true
+        duplicationScore:
+          type: integer
+          nullable: true
+        qualityNotes:
+          type: string
+          nullable: true
+        checkedBy:
+          type: string
+          nullable: true
+        checkedAt:
+          type: string
+          format: date-time
+          nullable: true
 

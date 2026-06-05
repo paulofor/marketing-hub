@@ -191,6 +191,11 @@ public class FlowController {
                   const buildEventId = function(){
                     return crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   };
+                  const sendWithFetch = function(payload){
+                    return fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true})
+                      .then(function(response){ debugLog('fetch concluído', {eventId: payload.eventId, eventType: payload.eventType, status: response.status}); })
+                      .catch(function(error){ debugLog('fetch falhou', {eventId: payload.eventId, eventType: payload.eventType, error: error && error.message ? error.message : String(error)}); });
+                  };
                   const sendEvent = function(eventType, sectionId, elapsedMs){
                     const roundedElapsed = typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null;
                     const payload = {
@@ -206,13 +211,16 @@ public class FlowController {
                     };
                     debugLog('enviando evento', {endpoint: endpoint, payload: payload});
                     if (navigator.sendBeacon) {
-                      const accepted = navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
-                      debugLog('sendBeacon executado', {eventId: payload.eventId, eventType: eventType, accepted: accepted});
-                      return;
+                      try {
+                        const accepted = navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                        debugLog('sendBeacon executado', {eventId: payload.eventId, eventType: eventType, accepted: accepted});
+                        if (accepted) return;
+                        debugLog('sendBeacon recusado; usando fetch keepalive', {eventId: payload.eventId, eventType: eventType});
+                      } catch (error) {
+                        debugLog('sendBeacon falhou; usando fetch keepalive', {eventId: payload.eventId, eventType: eventType, error: error && error.message ? error.message : String(error)});
+                      }
                     }
-                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true})
-                      .then(function(response){ debugLog('fetch concluído', {eventId: payload.eventId, eventType: eventType, status: response.status}); })
-                      .catch(function(error){ debugLog('fetch falhou', {eventId: payload.eventId, eventType: eventType, error: error && error.message ? error.message : String(error)}); });
+                    sendWithFetch(payload);
                   };
                   const startTracking = function(){
                     debugLog('tracking iniciado', {slug: slugValue});

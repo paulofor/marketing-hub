@@ -307,7 +307,9 @@ class FlowControllerTest {
         assertThat(body).contains("Landing ja publicada");
         assertThat(body).contains("mhAnalyticsDebug");
         assertThat(body).contains("[MH Landing Analytics]");
+        assertThat(body).contains("sendBeacon recusado; usando fetch keepalive");
         assertThat(body).doesNotContain("analytics antigo");
+        assertThat(body).doesNotContain("} else {\n                  } else {");
         assertThat(body.split("data-mh-landing-analytics", -1).length - 1).isEqualTo(1);
     }
 

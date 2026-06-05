@@ -3539,3 +3539,9 @@
 - solicitação: validar o print do navegador com `?mhAnalyticsDebug=1` sem mensagens `[MH Landing Analytics]` no console.
 - causa-raiz identificada: páginas já publicadas podem conter `data-mh-landing-analytics` antigo no HTML salvo; a entrega standalone retornava o HTML sem reinjetar o script, portanto o parâmetro `mhAnalyticsDebug=1` não tinha efeito nessas publicações legadas.
 - correção aplicada: quando a landing já possui script `data-mh-landing-analytics` sem `mhAnalyticsDebug`, o Lead Portal agora substitui a instrumentação legada pelo script atualizado com logs de browser, preservando um único script de analytics e evitando duplicação.
+
+## 2026-06-05 — Ajuste do debug de analytics da landing pública
+
+- solicitação: analisar o console do navegador com `mhAnalyticsDebug=1` na landing do experimento 37.
+- diagnóstico: os logs `[MH Landing Analytics]` confirmam carregamento do script, início do tracking, envio de `page_view`, aceite do `sendBeacon` e monitoramento de seções; o erro `Uncaught (in promise) ... contentScript.js` é originado por extensão do navegador, não pelo script da landing. Durante a revisão foi encontrada também uma duplicidade de `else` no script injetado que poderia quebrar novas páginas renderizadas a partir do código atual.
+- correção aplicada: removida a duplicidade de `else` e adicionado fallback explícito para `fetch keepalive` quando `navigator.sendBeacon` retornar `false` ou lançar erro, mantendo logs de debug suficientes para confirmar o caminho de envio sem depender do Network.

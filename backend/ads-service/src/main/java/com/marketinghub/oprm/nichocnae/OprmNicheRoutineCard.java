@@ -45,6 +45,27 @@ public class OprmNicheRoutineCard {
   @Column(name = "confidence_score", nullable = false)
   private Integer confidenceScore;
 
+  @Column(name = "ready_for_hypothesis", nullable = false)
+  private Boolean readyForHypothesis = false;
+
+  @Column(name = "specificity_score")
+  private Integer specificityScore;
+
+  @Column(name = "duplication_score")
+  private Integer duplicationScore;
+
+  @Column(name = "quality_status", length = 32)
+  private String qualityStatus;
+
+  @Column(name = "quality_notes", columnDefinition = "LONGTEXT")
+  private String qualityNotes;
+
+  @Column(name = "quality_checked_by", length = 64)
+  private String qualityCheckedBy;
+
+  @Column(name = "quality_checked_at")
+  private Instant qualityCheckedAt;
+
   @Column(name = "synthesized_by", nullable = false, length = 64)
   private String synthesizedBy;
 

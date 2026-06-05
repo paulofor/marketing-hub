@@ -3,6 +3,7 @@ import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNic
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import { useOprmRoutineSynthesizerDetail } from "../../api/oprm/useOprmRoutineSynthesizerDetail";
+import { useOprmRoutineQualityGateDetail } from "../../api/oprm/useOprmRoutineQualityGateDetail";
 import { useOprmSourceFetcherDetail } from "../../api/oprm/useOprmSourceFetcherDetail";
 import { useOprmSignalExtractorDetail } from "../../api/oprm/useOprmSignalExtractorDetail";
 import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
@@ -83,6 +84,15 @@ function formatProcessedAt(value: string) {
 }
 
 function buildStatusBadgeClass(status: string) {
+  if (status === "LIGHTLY_RESEARCHED") {
+    return "badge text-bg-success-subtle border border-success-subtle text-success";
+  }
+  if (status === "NEEDS_MORE_RESEARCH") {
+    return "badge text-bg-warning-subtle border border-warning-subtle text-warning";
+  }
+  if (status === "GENERIC") {
+    return "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary";
+  }
   if (status === "FAILED") {
     return "badge text-bg-danger-subtle border border-danger-subtle text-danger";
   }
@@ -185,6 +195,12 @@ export default function OprmPipelinePage() {
     isFetching: isRoutineSynthesizerDetailFetching,
   } = useOprmRoutineSynthesizerDetail(latestCycle?.researchCycleId);
   const routineCard = routineSynthesizerDetail?.routineCard;
+  const {
+    data: routineQualityGateDetail,
+    error: routineQualityGateDetailError,
+    isError: isRoutineQualityGateDetailError,
+    isFetching: isRoutineQualityGateDetailFetching,
+  } = useOprmRoutineQualityGateDetail(latestCycle?.researchCycleId);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -857,6 +873,109 @@ export default function OprmPipelinePage() {
                         <p className="text-secondary small mb-0">
                           Ciclo #{latestCycle.researchCycleId} ainda não possui
                           sinais suficientes para a etapa 6.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {stage.number === "7" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Resumo da última execução
+                      </span>
+                      {isRoutineQualityGateDetailFetching ? (
+                        <p className="text-secondary small mb-0">
+                          Consultando gate de qualidade do ciclo #
+                          {latestCycle.researchCycleId}...
+                        </p>
+                      ) : isRoutineQualityGateDetailError ? (
+                        <div
+                          className="alert alert-warning py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          {formatErrorMessage(routineQualityGateDetailError)}
+                        </div>
+                      ) : routineQualityGateDetail?.qualityStatus ? (
+                        <div className="small">
+                          <dl className="row g-2 mb-2">
+                            <dt className="col-6 text-secondary fw-normal">
+                              Decisão
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              <span
+                                className={buildStatusBadgeClass(
+                                  routineQualityGateDetail.qualityStatus,
+                                )}
+                              >
+                                {routineQualityGateDetail.qualityStatus}
+                              </span>
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Pronto para hipótese
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {routineQualityGateDetail.readyForHypothesis
+                                ? "Sim"
+                                : "Não"}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Especificidade
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                routineQualityGateDetail.specificityScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Confiança
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                routineQualityGateDetail.confidenceScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Duplicação
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                routineQualityGateDetail.duplicationScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
+                            {routineQualityGateDetail.checkedAt ? (
+                              <>
+                                <dt className="col-6 text-secondary fw-normal">
+                                  Avaliado em
+                                </dt>
+                                <dd className="col-6 mb-0">
+                                  {formatProcessedAt(
+                                    routineQualityGateDetail.checkedAt,
+                                  )}
+                                </dd>
+                              </>
+                            ) : null}
+                          </dl>
+                          {routineQualityGateDetail.qualityNotes ? (
+                            <p className="text-secondary mb-0">
+                              {routineQualityGateDetail.qualityNotes}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : routineCard ? (
+                        <p className="text-primary mb-0 small">
+                          O card #{routineCard.routineCardId} está sintetizado e
+                          aguarda avaliação automática de qualidade.
+                        </p>
+                      ) : (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} ainda não possui
+                          card de rotina para avaliar.
                         </p>
                       )}
                     </div>

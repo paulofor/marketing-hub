@@ -35,7 +35,9 @@ public class BackendSourceSearcherService {
   private static final String QUERY_STATUS_COMPLETED = "COMPLETED";
   private static final String QUERY_STATUS_FAILED = "FAILED";
   private static final String CANDIDATE_STATUS_FOUND = "FOUND";
-  private static final String DEFAULT_SOURCE_GROUP = "PUBLIC_CONTENT";
+  private static final String CANDIDATE_STATUS_CONTAMINATION_RISK = "CONTAMINATION_RISK";
+  private static final String SOURCE_INTENT_COMMERCIAL_PAGE_RISK = "COMMERCIAL_PAGE_RISK";
+  private static final String DEFAULT_SOURCE_GROUP = "GENERIC_PUBLIC_CONTENT";
   private static final int MAX_RESULTS_PER_QUERY = 20;
 
   private final OprmResearchQueryRepository researchQueryRepository;
@@ -200,7 +202,7 @@ public class BackendSourceSearcherService {
         .toList();
   }
 
-  /** Cria uma fonte candidata individual preservando apenas campos contratuais da etapa três. */
+  /** Cria uma fonte candidata individual com intenção, escore e marcação de risco comercial da etapa três. */
   private OprmSourceCandidate createCandidate(
       OprmResearchQuery query, String searchProvider, SourceCandidateRequest result, Instant now) {
     OprmSourceCandidate candidate = new OprmSourceCandidate();
@@ -210,13 +212,17 @@ public class BackendSourceSearcherService {
     candidate.setSourceTitle(requiredText(result.sourceTitle(), "sourceTitle"));
     candidate.setSourceSnippet(trimToNull(result.sourceSnippet()));
     candidate.setSourceDomain(requiredText(result.sourceDomain(), "sourceDomain"));
-    candidate.setSourceGroup(defaultText(result.sourceGroup(), DEFAULT_SOURCE_GROUP));
+    String sourceIntent = defaultText(result.sourceIntent(), defaultText(result.sourceGroup(), DEFAULT_SOURCE_GROUP));
+    boolean commercialRisk = Boolean.TRUE.equals(result.commercialPageRisk())
+        || SOURCE_INTENT_COMMERCIAL_PAGE_RISK.equals(sourceIntent);
+    boolean solutionRisk = Boolean.TRUE.equals(result.solutionLanguageRisk());
+    candidate.setSourceGroup(sourceIntent);
     candidate.setSearchProvider(requiredText(searchProvider, "searchProvider"));
     candidate.setSearchPosition(result.searchPosition());
-    candidate.setRelevanceScore(null);
+    candidate.setRelevanceScore(normalizeScore(result.routineEvidenceScore(), commercialRisk));
     candidate.setSelectedForFetch(false);
-    candidate.setRejectionReason(null);
-    candidate.setStatus(defaultText(result.status(), CANDIDATE_STATUS_FOUND));
+    candidate.setRejectionReason(rejectionReason(commercialRisk, solutionRisk));
+    candidate.setStatus(commercialRisk ? CANDIDATE_STATUS_CONTAMINATION_RISK : CANDIDATE_STATUS_FOUND);
     candidate.setCreatedAt(now);
     candidate.setUpdatedAt(now);
     return candidate;
@@ -259,6 +265,8 @@ public class BackendSourceSearcherService {
         candidate.getSearchProvider(),
         candidate.getSearchPosition(),
         candidate.getStatus(),
+        candidate.getRelevanceScore(),
+        candidate.getRejectionReason(),
         candidate.getCreatedAt(),
         candidate.getUpdatedAt());
   }
@@ -282,6 +290,26 @@ public class BackendSourceSearcherService {
       throw new IllegalArgumentException(fieldName + " is required");
     }
     return value.trim();
+  }
+
+  /** Normaliza o escore de aderência à rotina e rebaixa fontes comerciais para não virarem base principal. */
+  private Integer normalizeScore(Integer routineEvidenceScore, boolean commercialRisk) {
+    int score = routineEvidenceScore == null ? 50 : Math.max(0, Math.min(100, routineEvidenceScore));
+    return commercialRisk ? Math.min(score, 20) : score;
+  }
+
+  /** Registra o motivo de risco para fontes que não devem alimentar a coleta principal. */
+  private String rejectionReason(boolean commercialRisk, boolean solutionRisk) {
+    if (commercialRisk && solutionRisk) {
+      return "Fonte comercial com linguagem de solução; registrada apenas como risco de contaminação.";
+    }
+    if (commercialRisk) {
+      return "Fonte comercial; registrada apenas como risco de contaminação.";
+    }
+    if (solutionRisk) {
+      return "Fonte pública com linguagem de solução; revisar antes de usar como evidência principal.";
+    }
+    return null;
   }
 
   /** Retorna texto normalizado ou valor padrão quando o campo opcional veio vazio. */

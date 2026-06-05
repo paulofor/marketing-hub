@@ -3,6 +3,7 @@ package com.marketinghub.nichocnae.sourcesearcher;
 import com.marketinghub.nichocnae.pipeline.StageContext;
 import com.marketinghub.nichocnae.pipeline.StageProcessor;
 import com.marketinghub.nichocnae.pipeline.StageResult;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -14,24 +15,36 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
 
     private final PublicSourceSearchProvider searchProvider;
     private final SourceSearcherBackendClient backendClient;
+    private final SourceIntentClassifier sourceIntentClassifier;
 
-    /** Inicializa o processor com o provedor de busca pública e a borda backend da etapa três. */
-    public SourceSearcherProcessor(PublicSourceSearchProvider searchProvider, SourceSearcherBackendClient backendClient) {
+    /** Inicializa o processor com busca pública, classificador de intenção e borda backend da etapa três. */
+    public SourceSearcherProcessor(
+            PublicSourceSearchProvider searchProvider,
+            SourceSearcherBackendClient backendClient,
+            SourceIntentClassifier sourceIntentClassifier) {
         this.searchProvider = searchProvider;
         this.backendClient = backendClient;
+        this.sourceIntentClassifier = sourceIntentClassifier;
     }
 
-    /** Executa uma query pendente, normaliza os resultados e conclui a etapa três no backend. */
+    /** Executa uma query pendente, classifica a intenção das fontes e conclui a etapa três no backend. */
     @Override
     public StageResult<SourceSearcherOutput> process(StageContext<SourceSearcherPending> context) {
         SourceSearcherPending input = context.input();
-        List<SourceSearchResult> searchResults = searchProvider.search(input.queryText(), MAX_RESULTS_PER_QUERY);
-        SourceSearcherOutput output = backendClient.completeStageExecution(input, searchProvider.providerCode(), searchResults);
+        List<SourceSearchResult> searchResults = searchProvider.search(input.queryText(), MAX_RESULTS_PER_QUERY).stream()
+                .map(sourceIntentClassifier::classify)
+                .sorted(Comparator.comparing(SourceSearchResult::commercialPageRisk)
+                        .thenComparing(Comparator.comparing(SourceSearchResult::routineEvidenceScore).reversed())
+                        .thenComparing(SourceSearchResult::searchPosition))
+                .toList();
+        SourceSearcherOutput output =
+                backendClient.completeStageExecution(input, searchProvider.providerCode(), searchResults);
         Map<String, Object> metrics = Map.of(
                 "researchQueryId", output.researchQueryId(),
                 "researchCycleId", output.researchCycleId(),
                 "resultCount", output.resultCount() == null ? 0 : output.resultCount(),
-                "searchProvider", searchProvider.providerCode());
+                "searchProvider", searchProvider.providerCode(),
+                "commercialRiskCount", searchResults.stream().filter(SourceSearchResult::commercialPageRisk).count());
         return new StageResult<>(output, List.of(), metrics);
     }
 }

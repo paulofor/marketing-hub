@@ -899,7 +899,8 @@ components:
           example: exemplo.com
         sourceGroup:
           type: string
-          default: PUBLIC_CONTENT
+          default: GENERIC_PUBLIC_CONTENT
+          description: Intenção classificada da fonte quando o coletor já executou a classificação.
         searchPosition:
           type: integer
           minimum: 1
@@ -907,6 +908,21 @@ components:
         status:
           type: string
           default: FOUND
+        sourceIntent:
+          type: string
+          nullable: true
+          example: ROUTINE_REPORT
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        commercialPageRisk:
+          type: boolean
+          default: false
+        solutionLanguageRisk:
+          type: boolean
+          default: false
     CompleteSourceSearcherResponse:
       type: object
       properties:
@@ -981,6 +997,14 @@ components:
           type: integer
         status:
           type: string
+        relevanceScore:
+          type: integer
+          nullable: true
+          description: Escore de aderência à rotina real usado para priorizar fontes não vendedoras.
+        rejectionReason:
+          type: string
+          nullable: true
+          description: Motivo de risco quando a fonte é comercial ou usa linguagem de solução.
         createdAt:
           type: string
           format: date-time

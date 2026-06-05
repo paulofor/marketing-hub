@@ -1,6 +1,8 @@
 package com.marketinghub.nichocnae.sourcesearcher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,18 +22,22 @@ class SourceSearcherProcessorTest {
     void shouldSearchProviderAndCompleteSourceSearcherOutput() {
         PublicSourceSearchProvider searchProvider = mock(PublicSourceSearchProvider.class);
         SourceSearcherBackendClient backendClient = mock(SourceSearcherBackendClient.class);
-        SourceSearcherProcessor processor = new SourceSearcherProcessor(searchProvider, backendClient);
+        SourceSearcherProcessor processor = new SourceSearcherProcessor(searchProvider, backendClient, new SourceIntentClassifier());
         SourceSearcherPending pending = pending();
         List<SourceSearchResult> searchResults = List.of(new SourceSearchResult(
                 "https://exemplo.com/agenda",
                 "Como lotar agenda de manicure",
                 "Resumo público da fonte",
                 "exemplo.com",
-                1));
+                1,
+                null,
+                null,
+                false,
+                false));
         SourceSearcherOutput output = output();
         when(searchProvider.search(pending.queryText(), 20)).thenReturn(searchResults);
         when(searchProvider.providerCode()).thenReturn("DUCKDUCKGO_HTML");
-        when(backendClient.completeStageExecution(pending, "DUCKDUCKGO_HTML", searchResults)).thenReturn(output);
+        when(backendClient.completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), any())).thenReturn(output);
 
         var result = processor.process(new StageContext<>(
                 new StageExecution<>("job-1", pending, Map.of()),
@@ -45,7 +51,7 @@ class SourceSearcherProcessorTest {
                 .containsEntry("researchCycleId", 1001L)
                 .containsEntry("resultCount", 1)
                 .containsEntry("searchProvider", "DUCKDUCKGO_HTML");
-        verify(backendClient).completeStageExecution(pending, "DUCKDUCKGO_HTML", searchResults);
+        verify(backendClient).completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), any());
     }
 
     /** Cria uma pendência mínima para a etapa três. */
@@ -85,6 +91,8 @@ class SourceSearcherProcessorTest {
                         "DUCKDUCKGO_HTML",
                         1,
                         "FOUND",
+                        90,
+                        null,
                         Instant.parse("2026-06-04T00:01:00Z"),
                         Instant.parse("2026-06-04T00:01:00Z"))));
     }

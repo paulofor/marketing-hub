@@ -1016,3 +1016,17 @@ Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-05 — Diagnóstico do claim automático de referências brutas MOIS
+
+- investigada a estagnação do indicador `Faltam consolidar` em 276 URLs no pipeline da Biblioteca de Páginas de Vendas.
+- causa-raiz identificada: o claim automático de `collected-reference-html` filtrava apenas por `collected_reference_id` com execução `FETCHING`/`CAPTURED`, permitindo gastar ciclos em referências brutas duplicadas cuja URL canônica já existia em `mois_sales_page`.
+- ajustado o backend para escanear candidatos da origem bruta, canonicalizar a URL efetiva e pular URLs já consolidadas antes de reservar a próxima referência faltante.
+- adicionados logs operacionais no recebimento do claim, seleção de candidato, ausência de candidato e reserva final para confirmar se o worker está chamando o backend e quantas referências foram puladas por já estarem consolidadas.
+- atualizado o cânone MOIS para explicitar que a seleção automática deve reduzir faltantes por URL única canonicalizada, e não por linha/referência histórica.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/registros/mois1.md`

@@ -54,6 +54,12 @@ public class PipelineStage {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "execution_module", length = 80)
+    private String executionModule;
+
+    @Column(name = "root_package", length = 200)
+    private String rootPackage;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean required = true;

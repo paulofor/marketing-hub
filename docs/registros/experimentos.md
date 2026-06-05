@@ -3605,3 +3605,10 @@
 - arquivos alterados:
   - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelService.java`
   - `backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelServiceSubmissionTest.java`
+## 2026-06-05 — Localização técnica das etapas do pipeline administrativo
+
+- solicitação: exibir nas etapas do pipeline o módulo executor quando a etapa roda fora do backend e o pacote raiz da implementação no backend ou no módulo executor.
+- causa-raiz: a tela administrativa de pipelines mostrava código, descrição, modelo e proteção, mas não persistia nem expunha a localização técnica da implementação da etapa, dificultando rastrear rapidamente onde corrigir ou evoluir cada etapa.
+- correção aplicada: adicionados os campos `executionModule` e `rootPackage` ao contrato de etapa, com persistência em `pipeline_stage` e `pipeline_stage_definition`, sincronização canônica para o pipeline de experimento e exibição/edição na tela `/pipelines`.
+- documentação atualizada: o cânone do procedimento de experimento e o Swagger de governança de pipelines agora registram os campos de localização técnica das etapas.
+- validação automatizada: atualizado `PipelineServiceTest` para cobrir a exposição/sincronização do pacote raiz oficial e executado teste unitário do módulo de pipelines.

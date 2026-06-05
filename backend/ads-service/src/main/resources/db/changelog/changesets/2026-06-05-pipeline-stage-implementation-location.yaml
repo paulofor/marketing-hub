@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-pipeline-stage-implementation-location
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: pipeline_stage
+                columnName: execution_module
+      changes:
+        - addColumn:
+            tableName: pipeline_stage
+            columns:
+              - column:
+                  name: execution_module
+                  type: VARCHAR(80)
+              - column:
+                  name: root_package
+                  type: VARCHAR(200)
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.root_package = 'com.marketinghub.experiment.pipeline'
+              WHERE p.code = 'experiment-pipeline'
+                AND ps.root_package IS NULL;
+  - changeSet:
+      id: 2026-06-05-pipeline-stage-definition-implementation-location
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - not:
+            - columnExists:
+                tableName: pipeline_stage_definition
+                columnName: execution_module
+      changes:
+        - addColumn:
+            tableName: pipeline_stage_definition
+            columns:
+              - column:
+                  name: execution_module
+                  type: VARCHAR(80)
+              - column:
+                  name: root_package
+                  type: VARCHAR(200)
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.root_package = 'com.marketinghub.experiment.pipeline'
+              WHERE pd.code = 'experiment-pipeline'
+                AND psd.root_package IS NULL;

@@ -84,6 +84,10 @@ public class BackendRoutineSynthesizerService {
       card.setEvidenceSummary(requiredText(request.evidenceSummary(), "evidenceSummary"));
       card.setSourceDomains(requiredText(request.sourceDomains(), "sourceDomains"));
       card.setConfidenceScore(request.confidenceScore());
+      card.setRoutineEvidenceScore(request.routineEvidenceScore());
+      card.setDifficultyEvidenceScore(request.difficultyEvidenceScore());
+      card.setSourceDiversityScore(request.sourceDiversityScore());
+      card.setSolutionLanguageRiskScore(request.solutionLanguageRiskScore());
       card.setSynthesizedBy(defaultText(request.synthesizedBy(), DEFAULT_SYNTHESIZED_BY));
       card.setCreatedAt(now);
       OprmNicheRoutineCard saved = routineCardRepository.save(card);
@@ -152,9 +156,17 @@ public class BackendRoutineSynthesizerService {
     validateSummary(request.mechanismOpportunitiesSummary(), "mechanismOpportunitiesSummary");
     validateSummary(request.evidenceSummary(), "evidenceSummary");
     requiredText(request.sourceDomains(), "sourceDomains");
-    Integer confidence = request.confidenceScore();
-    if (confidence == null || confidence < 0 || confidence > 100) {
-      throw new IllegalArgumentException("confidenceScore must be between 0 and 100");
+    validateScore(request.confidenceScore(), "confidenceScore");
+    validateScore(request.routineEvidenceScore(), "routineEvidenceScore");
+    validateScore(request.difficultyEvidenceScore(), "difficultyEvidenceScore");
+    validateScore(request.sourceDiversityScore(), "sourceDiversityScore");
+    validateScore(request.solutionLanguageRiskScore(), "solutionLanguageRiskScore");
+  }
+
+  /** Valida uma pontuação percentual obrigatória entre zero e cem. */
+  private void validateScore(Integer value, String fieldName) {
+    if (value == null || value < 0 || value > 100) {
+      throw new IllegalArgumentException(fieldName + " must be between 0 and 100");
     }
   }
 
@@ -212,6 +224,10 @@ public class BackendRoutineSynthesizerService {
         card.getEvidenceSummary(),
         card.getSourceDomains(),
         card.getConfidenceScore(),
+        card.getRoutineEvidenceScore(),
+        card.getDifficultyEvidenceScore(),
+        card.getSourceDiversityScore(),
+        card.getSolutionLanguageRiskScore(),
         card.getSynthesizedBy(),
         card.getCreatedAt());
   }

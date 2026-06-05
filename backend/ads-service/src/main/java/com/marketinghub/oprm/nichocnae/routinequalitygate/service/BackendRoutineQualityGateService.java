@@ -134,6 +134,10 @@ public class BackendRoutineQualityGateService {
         card == null ? null : card.getSpecificityScore(),
         card == null ? null : card.getConfidenceScore(),
         card == null ? null : card.getDuplicationScore(),
+        card == null ? null : card.getRoutineEvidenceScore(),
+        card == null ? null : card.getDifficultyEvidenceScore(),
+        card == null ? null : card.getSourceDiversityScore(),
+        card == null ? null : card.getSolutionLanguageRiskScore(),
         card == null ? null : card.getQualityNotes(),
         card == null ? null : card.getQualityCheckedBy(),
         card == null ? null : card.getQualityCheckedAt());
@@ -156,12 +160,26 @@ public class BackendRoutineQualityGateService {
         card.getConfidenceScore(),
         snapshots.size(),
         signals.size(),
-        countSignals(signals, "QUESTION_SIGNAL", "CUSTOMER_QUESTION"),
+        countSignals(signals, "QUESTION_SIGNAL", "CUSTOMER_QUESTION", "NICHE_OWNER_QUESTION", "FINAL_CUSTOMER_QUESTION"),
         countSignals(signals, "PAIN_SIGNAL", "PAIN_POINT"),
+        countSignals(signals, "OPERATIONAL_FRICTION"),
         countSignals(signals, "MECHANISM_OPPORTUNITY"),
         countSignals(signals, "ROUTINE_TASK"),
         countSignals(signals, "COMMERCIAL_OBJECT", "COMMERCIAL_TASK"),
+        countSignals(signals, "LANGUAGE_MARKER", "CONTEXT_MARKER", "SEASONALITY_MARKER"),
+        countSignals(signals, "SOLUTION_LANGUAGE_RISK", "MECHANISM_OPPORTUNITY") + countSolutionRiskSnapshots(snapshots),
+        card.getRoutineEvidenceScore(),
+        card.getDifficultyEvidenceScore(),
+        card.getSourceDiversityScore(),
+        card.getSolutionLanguageRiskScore(),
         card.getCreatedAt());
+  }
+
+  /** Conta snapshots com risco explícito de linguagem de solução para reforçar a avaliação de contaminação. */
+  private int countSolutionRiskSnapshots(List<OprmSourceSnapshot> snapshots) {
+    return (int) snapshots.stream()
+        .filter(snapshot -> Boolean.TRUE.equals(snapshot.getSolutionLanguageRisk()))
+        .count();
   }
 
   /** Conta sinais por tipo de forma tolerante a variações de caixa no payload persistido. */

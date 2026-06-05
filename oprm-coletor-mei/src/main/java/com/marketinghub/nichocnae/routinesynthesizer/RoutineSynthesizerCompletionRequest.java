@@ -11,4 +11,8 @@ public record RoutineSynthesizerCompletionRequest(
         String evidenceSummary,
         String sourceDomains,
         Integer confidenceScore,
+        Integer routineEvidenceScore,
+        Integer difficultyEvidenceScore,
+        Integer sourceDiversityScore,
+        Integer solutionLanguageRiskScore,
         String synthesizedBy) {}

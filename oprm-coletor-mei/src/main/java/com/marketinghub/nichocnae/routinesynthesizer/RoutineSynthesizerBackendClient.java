@@ -96,6 +96,10 @@ public class RoutineSynthesizerBackendClient {
                 draft.evidenceSummary(),
                 draft.sourceDomains(),
                 draft.confidenceScore(),
+                draft.routineEvidenceScore(),
+                draft.difficultyEvidenceScore(),
+                draft.sourceDiversityScore(),
+                draft.solutionLanguageRiskScore(),
                 SYNTHESIZED_BY);
     }
 }

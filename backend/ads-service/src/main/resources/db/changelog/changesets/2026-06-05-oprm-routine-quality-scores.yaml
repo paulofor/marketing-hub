@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-08-oprm-routine-quality-scores
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_niche_routine_card
+              columnName: routine_evidence_score
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_routine_card
+                ADD COLUMN routine_evidence_score INT NOT NULL DEFAULT 0,
+                ADD COLUMN difficulty_evidence_score INT NOT NULL DEFAULT 0,
+                ADD COLUMN source_diversity_score INT NOT NULL DEFAULT 0,
+                ADD COLUMN solution_language_risk_score INT NOT NULL DEFAULT 0;
+              CREATE INDEX idx_oprm_routine_card_reality_scores
+                ON oprm_niche_routine_card (routine_evidence_score, difficulty_evidence_score, solution_language_risk_score);

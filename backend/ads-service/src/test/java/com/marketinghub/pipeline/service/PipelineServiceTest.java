@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -379,7 +380,8 @@ class PipelineServiceTest {
                     assertThat(stage.getOpenAiModel()).isEqualTo(model);
                 });
         assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapas operacionais antigas removidas"));
-        verify(stageRepository).deleteAll(any());
+        verify(stageRepository).flush();
+        verify(stageRepository, never()).deleteAll(any());
     }
 
     /**

@@ -3545,3 +3545,21 @@
 - solicitação: analisar o console do navegador com `mhAnalyticsDebug=1` na landing do experimento 37.
 - diagnóstico: os logs `[MH Landing Analytics]` confirmam carregamento do script, início do tracking, envio de `page_view`, aceite do `sendBeacon` e monitoramento de seções; o erro `Uncaught (in promise) ... contentScript.js` é originado por extensão do navegador, não pelo script da landing. Durante a revisão foi encontrada também uma duplicidade de `else` no script injetado que poderia quebrar novas páginas renderizadas a partir do código atual.
 - correção aplicada: removida a duplicidade de `else` e adicionado fallback explícito para `fetch keepalive` quando `navigator.sendBeacon` retornar `false` ou lançar erro, mantendo logs de debug suficientes para confirmar o caminho de envio sem depender do Network.
+## 2026-06-05 01:25:33 UTC-3
+- erro observado na tela de Pipelines ao acionar `POST /api/pipelines/1/rebuild-official-stages`, com resposta 500 por `Duplicate entry '1-campaign-angle' for key 'uk_pipeline_stage_code'`.
+- causa-raiz identificada: a recriação destrutiva tentava excluir as etapas via repositório enquanto a coleção `Pipeline.stages` ainda mantinha os filhos associados ao aggregate JPA com `orphanRemoval`, permitindo que a inserção das novas etapas ocorresse sem a remoção efetiva prévia da linha antiga no flush.
+- correção aplicada: o rebuild agora remove as etapas pelo aggregate (`pipeline.getStages().clear()`), força `flush()` para materializar os deletes por orphanRemoval antes dos inserts e só então recria as etapas oficiais, preservando descrição e modelo OpenAI por snapshot.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelineDefinitionSynchronizer.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/Pipeline.java
+  - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStage.java
+  - backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java
+## 2026-06-05 — Correção do resumo do funil para contabilizar analytics da landing
+
+- solicitação: investigar por que o navegador indicava envio do registro de acesso da landing do experimento 37, mas a aba de funil continuava zerada.
+- causa-raiz identificada: os eventos estavam chegando e sendo gravados em `experiment_funnel_event` com `source=landing-page-analytics`, porém o resumo da etapa “Visualização do formulário” só contava eventos automáticos com `source=lead-portal-render-complete`, deixando os acessos reais fora do total exibido.
+- correção aplicada: o consolidado do funil agora soma, na etapa “Visualização do formulário”, tanto `lead-portal-render-complete` quanto `landing-page-analytics`; a origem de analytics foi centralizada em constante do repositório para evitar divergência futura.
+- validação automatizada: adicionado teste unitário garantindo que `summarize` consulta as duas fontes ao consolidar visualizações do formulário.

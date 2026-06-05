@@ -44,6 +44,7 @@ public class MarketNicheDto {
     private Long differentiatedTechnologyId;
     private Long hypothesisDetailedDescriptionId;
     private Long chatDialogId;
+    private Long enrichedNicheProfileId;
     private Instant createdAt;
     private Instant updatedAt;
 }

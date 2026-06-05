@@ -51,4 +51,10 @@ public class BackendEnrichedNicheMaterializerController {
   public ResponseEntity<EnrichedNicheMaterializerDetailResponse> detail(@PathVariable Long researchCycleId) {
     return ResponseEntity.ok(executionService.detail(researchCycleId));
   }
+
+  /** Exibe o perfil enriquecido materializado a partir do identificador do perfil. */
+  @GetMapping("/api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}")
+  public ResponseEntity<EnrichedNicheMaterializerDetailResponse> detailByProfileId(@PathVariable Long profileId) {
+    return ResponseEntity.ok(executionService.detailByProfileId(profileId));
+  }
 }

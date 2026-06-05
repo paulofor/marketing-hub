@@ -37,6 +37,7 @@ export interface MarketNiche {
   differentiatedTechnologyId?: number | null;
   hypothesisDetailedDescriptionId?: number | null;
   chatDialogId?: number;
+  enrichedNicheProfileId?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }

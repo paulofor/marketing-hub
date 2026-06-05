@@ -5,15 +5,20 @@ import com.marketinghub.repository.jpa.chat.ChatDialogRepository;
 import com.marketinghub.differentiatedtechnology.DifferentiatedTechnology;
 import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTechnologyRepository;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.targeting.service.TargetingElementSyncService;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +30,21 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class MarketNicheService {
     private final MarketNicheRepository repository;
+    private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
     private final ChatDialogRepository chatDialogRepository;
     private final DifferentiatedTechnologyRepository differentiatedTechnologyRepository;
     private final NicheDetailedDescriptionRepository detailedDescriptionRepository;
     private final TargetingElementSyncService targetingElementSyncService;
 
+    /** Inicializa o serviço com os repositórios e sincronizadores necessários para administrar nichos. */
     public MarketNicheService(MarketNicheRepository repository,
+                              MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
                               ChatDialogRepository chatDialogRepository,
                               DifferentiatedTechnologyRepository differentiatedTechnologyRepository,
                               NicheDetailedDescriptionRepository detailedDescriptionRepository,
                               TargetingElementSyncService targetingElementSyncService) {
         this.repository = repository;
+        this.enrichmentProfileRepository = enrichmentProfileRepository;
         this.chatDialogRepository = chatDialogRepository;
         this.differentiatedTechnologyRepository = differentiatedTechnologyRepository;
         this.detailedDescriptionRepository = detailedDescriptionRepository;
@@ -90,10 +99,12 @@ public class MarketNicheService {
         return saved;
     }
 
+    /** Busca um nicho pelo identificador informado. */
     public MarketNiche get(Long id) {
         return repository.findById(id).orElseThrow();
     }
 
+    /** Atualiza os dados administrativos de um nicho existente. */
     @Transactional
     public MarketNiche update(Long id, CreateMarketNicheRequest request) {
         MarketNiche niche = repository.findById(id).orElseThrow();
@@ -138,6 +149,7 @@ public class MarketNicheService {
     }
 
 
+    /** Normaliza listas textuais removendo valores vazios e espaços externos. */
     private java.util.List<String> normalizeStringList(java.util.List<String> values) {
         if (values == null) {
             return List.of();
@@ -148,6 +160,7 @@ public class MarketNicheService {
                 .toList();
     }
 
+    /** Normaliza o nome do modelo para armazenar nulo quando não houver valor útil. */
     private String normalizeModel(String model) {
         if (model == null || model.isBlank()) {
             return null;
@@ -155,6 +168,7 @@ public class MarketNicheService {
         return model;
     }
 
+    /** Solicita a geração assíncrona de interesses para um nicho. */
     @Transactional
     public MarketNiche requestInterests(Long id, int quantity, String model) {
         MarketNiche niche = repository.findById(id).orElseThrow();
@@ -165,6 +179,7 @@ public class MarketNicheService {
         return niche;
     }
 
+    /** Solicita a geração assíncrona de cargos para um nicho. */
     @Transactional
     public MarketNiche requestJobTitles(Long id, int quantity, String model) {
         MarketNiche niche = repository.findById(id).orElseThrow();
@@ -175,6 +190,7 @@ public class MarketNicheService {
         return niche;
     }
 
+    /** Solicita a geração assíncrona de comportamentos para um nicho. */
     @Transactional
     public MarketNiche requestBehaviors(Long id, int quantity, String model) {
         MarketNiche niche = repository.findById(id).orElseThrow();
@@ -198,6 +214,7 @@ public class MarketNicheService {
         return niche;
     }
 
+    /** Resolve a tecnologia diferenciada opcional ou falha quando o identificador não existe. */
     private DifferentiatedTechnology resolveDifferentiatedTechnology(Long id) {
         if (id == null) {
             return null;
@@ -208,6 +225,7 @@ public class MarketNicheService {
                         "Differentiated technology not found: " + id));
     }
 
+    /** Resolve a descrição detalhada ativa usada como contexto para hipóteses. */
     private NicheDetailedDescription resolveDetailedDescription(Long nicheId, Long descriptionId) {
         if (descriptionId == null) {
             return null;
@@ -241,10 +259,26 @@ public class MarketNicheService {
         return niche;
     }
 
+    /** Lista todos os nichos cadastrados para a tela administrativa. */
     public Iterable<MarketNiche> list() {
         return repository.findAll();
     }
 
+
+    /** Lista o perfil enriquecido mais recente por nicho para habilitar navegação contextual no frontend. */
+    public Map<Long, MarketNicheEnrichmentProfile> latestEnrichmentProfilesByNiche(List<MarketNiche> niches) {
+        List<Long> nicheIds = niches.stream()
+                .map(MarketNiche::getId)
+                .filter(id -> id != null)
+                .toList();
+        if (nicheIds.isEmpty()) {
+            return Map.of();
+        }
+        return enrichmentProfileRepository.findLatestByMarketNicheIds(nicheIds).stream()
+                .collect(Collectors.toMap(profile -> profile.getMarketNiche().getId(), Function.identity()));
+    }
+
+    /** Lista nichos prontos para criação de pixel do Facebook. */
     public List<MarketNiche> listReadyForPixel() {
         List<ExperimentStatus> statuses = List.of(
                 ExperimentStatus.PLANNED,
@@ -254,6 +288,7 @@ public class MarketNicheService {
         return repository.findReadyForPixel(statuses, ExperimentPlatform.FACEBOOK);
     }
 
+    /** Vincula dados do pixel do Facebook ao nicho informado. */
     @Transactional
     public MarketNiche attachFacebookPixel(Long nicheId, String pixelId, String pixelCode, Instant createdAt) {
         if (pixelId == null || pixelId.isBlank()) {

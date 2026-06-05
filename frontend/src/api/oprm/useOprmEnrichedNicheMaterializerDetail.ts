@@ -32,6 +32,20 @@ async function fetchOprmEnrichedNicheMaterializerDetail(
   return (await response.json()) as OprmEnrichedNicheMaterializerDetail;
 }
 
+async function fetchOprmEnrichedNicheMaterializerDetailByProfile(
+  profileId: number,
+): Promise<OprmEnrichedNicheMaterializerDetail> {
+  const response = await fetch(
+    `/api/oprm/nichocnae/enriched-niche-materializer/profiles/${profileId}`,
+  );
+  if (!response.ok) {
+    throw new Error(
+      "Não foi possível consultar o perfil do nicho enriquecido.",
+    );
+  }
+  return (await response.json()) as OprmEnrichedNicheMaterializerDetail;
+}
+
 export function useOprmEnrichedNicheMaterializerDetail(
   researchCycleId?: number,
 ) {
@@ -40,5 +54,16 @@ export function useOprmEnrichedNicheMaterializerDetail(
     queryFn: () =>
       fetchOprmEnrichedNicheMaterializerDetail(researchCycleId as number),
     enabled: Boolean(researchCycleId),
+  });
+}
+
+export function useOprmEnrichedNicheMaterializerProfileDetail(
+  profileId?: number,
+) {
+  return useQuery({
+    queryKey: ["oprm-enriched-niche-materializer-profile-detail", profileId],
+    queryFn: () =>
+      fetchOprmEnrichedNicheMaterializerDetailByProfile(profileId as number),
+    enabled: Boolean(profileId),
   });
 }

@@ -105,6 +105,22 @@ public class BackendEnrichedNicheMaterializerService {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
     OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
     MarketNicheEnrichmentProfile profile = enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
+    return buildDetailResponse(cycle, card, profile);
+  }
+
+  /** Retorna o detalhe de um perfil enriquecido materializado a partir do identificador do perfil. */
+  @Transactional(readOnly = true)
+  public EnrichedNicheMaterializerDetailResponse detailByProfileId(Long profileId) {
+    MarketNicheEnrichmentProfile profile = enrichmentProfileRepository.findById(profileId)
+        .orElseThrow(() -> new EntityNotFoundException("Enriched niche profile not found: " + profileId));
+    OprmRoutineResearchCycle cycle = findCycle(profile.getResearchCycleId());
+    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(profile.getResearchCycleId()).orElse(null);
+    return buildDetailResponse(cycle, card, profile);
+  }
+
+  /** Monta o DTO público de detalhe combinando ciclo, card e perfil enriquecido. */
+  private EnrichedNicheMaterializerDetailResponse buildDetailResponse(
+      OprmRoutineResearchCycle cycle, OprmNicheRoutineCard card, MarketNicheEnrichmentProfile profile) {
     return new EnrichedNicheMaterializerDetailResponse(
         cycle.getId(),
         cycle.getStatus(),

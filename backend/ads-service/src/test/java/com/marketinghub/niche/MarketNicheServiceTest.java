@@ -2,6 +2,7 @@ package com.marketinghub.niche;
 
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.niche.service.MarketNicheService;
 import com.marketinghub.targeting.service.TargetingElementSyncService;
@@ -18,13 +19,18 @@ import static org.mockito.Mockito.mock;
 
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
+/** Testes de persistência e atualização do serviço de nichos de mercado. */
 class MarketNicheServiceTest {
 
     @Autowired
     MarketNicheRepository repository;
 
+    @Autowired
+    MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+
     MarketNicheService service;
 
+    /** Prepara o serviço com repositórios reais de nicho e dependências externas mockadas. */
     @BeforeEach
     void setup() {
         ChatDialogRepository chatRepo = mock(ChatDialogRepository.class);
@@ -36,12 +42,14 @@ class MarketNicheServiceTest {
                 mock(TargetingElementSyncService.class);
         service = new MarketNicheService(
                 repository,
+                enrichmentProfileRepository,
                 chatRepo,
                 differentiatedTechnologyRepository,
                 detailedDescriptionRepository,
                 targetingElementSyncService);
     }
 
+    /** Valida que a atualização administrativa persiste a quantidade pendente de hipóteses. */
     @Test
     void updatePersistsHypothesesToGenerate() {
         MarketNiche niche = MarketNiche.builder()
@@ -60,6 +68,7 @@ class MarketNicheServiceTest {
         assertThat(updated.getHypothesesToGenerate()).isEqualTo(5);
     }
 
+    /** Valida que a solicitação direta de hipóteses atualiza quantidade e modelo. */
     @Test
     void requestHypothesesUpdatesQuantity() {
         MarketNiche niche = MarketNiche.builder()

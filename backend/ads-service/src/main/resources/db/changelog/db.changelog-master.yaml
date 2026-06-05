@@ -898,3 +898,4 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-06-05-oprm-routine-quality-scores.yaml
+      relativeToChangelogFile: true

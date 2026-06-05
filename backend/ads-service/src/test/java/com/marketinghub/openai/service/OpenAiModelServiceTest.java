@@ -15,6 +15,7 @@ import com.marketinghub.openai.dto.CreateOpenAiModelRequest;
 import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,7 @@ class OpenAiModelServiceTest {
         when(catalogService.fetchAndPersistCatalog()).thenReturn(new OpenAiModelCatalogResponse(
                 List.of("gpt-5.5"),
                 List.of("gpt-image-1"),
+                Map.of(),
                 "openai:/models",
                 "2026-06-05T00:00:00Z"));
         when(pricingPageClient.fetchTextModelPricing()).thenReturn(List.of(new OpenAiModelPricing(
@@ -70,7 +72,7 @@ class OpenAiModelServiceTest {
         CreateOpenAiModelRequest request = new CreateOpenAiModelRequest();
         request.setName("modelo inexistente");
         when(catalogService.fetchAndPersistCatalog()).thenReturn(new OpenAiModelCatalogResponse(
-                List.of("gpt-5.5"), List.of(), "openai:/models", "2026-06-05T00:00:00Z"));
+                List.of("gpt-5.5"), List.of(), Map.of(), "openai:/models", "2026-06-05T00:00:00Z"));
 
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(IllegalArgumentException.class)

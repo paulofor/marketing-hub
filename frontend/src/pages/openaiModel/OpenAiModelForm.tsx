@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import type { OpenAiModelCatalogPrice } from "../../api/openAiModel/useOpenAiModelCatalog";
 
 export type OpenAiModelFormValues = {
   name: string;
@@ -27,6 +28,7 @@ interface Props {
   submitLabel?: string;
   nameOnly?: boolean;
   officialModelCodes?: string[];
+  officialModelPrices?: Record<string, OpenAiModelCatalogPrice>;
   isLoadingOfficialModels?: boolean;
 }
 
@@ -49,6 +51,7 @@ export default function OpenAiModelForm({
   submitLabel = "Salvar",
   nameOnly = false,
   officialModelCodes = [],
+  officialModelPrices = {},
   isLoadingOfficialModels = false,
 }: Props) {
   const [values, setValues] = useState<OpenAiModelFormValues>(initialValues);
@@ -81,6 +84,36 @@ export default function OpenAiModelForm({
   );
   const mustChooseOfficialModel =
     nameOnly && matchingOfficialModels.length > 0 && !hasExactOfficialModel;
+
+  const formatPrice = (value?: number) => {
+    if (value === undefined || value === null) return "—";
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 5,
+    }).format(value);
+  };
+
+  const renderOfficialModelPricing = (modelCode: string, selected: boolean) => {
+    const textClass = selected ? "text-white-50" : "text-body-secondary";
+    const pricing = officialModelPrices[modelCode];
+    if (!pricing) {
+      return (
+        <span className={`d-block small ${textClass} mt-1`}>
+          Preços oficiais não encontrados para esse modelo na página de preços.
+        </span>
+      );
+    }
+    return (
+      <span className={`d-flex flex-wrap gap-2 small ${textClass} mt-1`}>
+        <span>Standard input: {formatPrice(pricing.priceInputStandard)}</span>
+        <span>Standard output: {formatPrice(pricing.priceOutputStandard)}</span>
+        <span>Batch input: {formatPrice(pricing.priceInputBatch)}</span>
+        <span>Batch output: {formatPrice(pricing.priceOutputBatch)}</span>
+      </span>
+    );
+  };
 
   const selectOfficialModel = (modelCode: string) => {
     setShowSelectionWarning(false);
@@ -178,12 +211,18 @@ export default function OpenAiModelForm({
                         }`}
                         onClick={() => selectOfficialModel(modelCode)}
                       >
-                        <code>{modelCode}</code>
-                        <span className="ms-2 small">
-                          {modelCode.toLowerCase() === normalizedQuery
-                            ? "selecionado"
-                            : "selecionar"}
+                        <span className="d-flex align-items-center gap-2 flex-wrap">
+                          <code>{modelCode}</code>
+                          <span className="small">
+                            {modelCode.toLowerCase() === normalizedQuery
+                              ? "selecionado"
+                              : "selecionar"}
+                          </span>
                         </span>
+                        {renderOfficialModelPricing(
+                          modelCode,
+                          modelCode.toLowerCase() === normalizedQuery,
+                        )}
                       </button>
                     ))}
                   </div>

@@ -3639,3 +3639,7 @@
   - backend/AGENTS.md
   - docs/registros/experimentos.md
 - 2026-06-05 14:35:00 (UTC): ajustado deploy do backend principal para permitir a busca oficial de modelos OpenAI na tela de cadastro de modelo. O container `marketinghub-backend` passa a montar em modo somente leitura o mesmo arquivo físico de chave OpenAI usado pelo Worker AI (`OPENAI_API_KEY_HOST_FILE`, padrão `/root/infra/openai-token/openai_api_key`) no caminho interno `/run/secrets/openai_api_key`, com `OPENAI_API_KEY_FILE` apontando para esse segredo. Objetivo: remover a causa-raiz do `401 Unauthorized` em `GET https://api.openai.com/v1/models` quando a chave existe no host, mas não estava acessível dentro do container do backend.
+
+## 2026-06-05 — Visualização de etapas em cards
+
+- Ajustada a tela de Pipelines para substituir a tabela horizontal de etapas por cards responsivos, preservando códigos, modelo OpenAI, pacote raiz, status, obrigatoriedade, proteção e ações de edição/exclusão.

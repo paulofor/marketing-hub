@@ -3643,3 +3643,15 @@
 ## 2026-06-05 — Visualização de etapas em cards
 
 - Ajustada a tela de Pipelines para substituir a tabela horizontal de etapas por cards responsivos, preservando códigos, modelo OpenAI, pacote raiz, status, obrigatoriedade, proteção e ações de edição/exclusão.
+## 2026-06-05 18:58:00 UTC
+- solicitação: investigar por que a geração de criativos do pipeline exibia cards com “Imagem não disponível” no experimento 37.
+- causa-raiz identificada: o Worker AI capturava falhas ou retornos vazios da geração de imagem, mas continuava persistindo o criativo sem `imageUrl`; assim o frontend recebia o criativo como rascunho válido e só conseguia renderizar o placeholder de imagem ausente.
+- correção aplicada: a persistência de criativos gerados pelo Worker AI foi bloqueada quando a geração de imagem não retorna uma URL válida, tanto no fluxo padrão quanto no fluxo `PIPELINE_ADS`, mantendo log com contexto do experimento/headline/variação e a exceção completa quando houver falha.
+- validação: adicionados testes unitários garantindo que criativos sem URL de imagem não são salvos em nenhum dos dois modos de geração.
+- arquivos alterados:
+  - `ai-worker/src/main/java/com/marketinghub/worker/creative/ExperimentCreativeService.java`
+  - `ai-worker/src/test/java/com/marketinghub/worker/creative/ExperimentCreativeServiceTest.java`
+- ajuste complementar após revisão: a URL ficava `null` não porque a tela perdia a imagem, mas porque o Worker AI deixava o `CreateCreativeRequest.imageUrl` sem valor quando `CreativeImageClient` não executava por falta de chave OpenAI ou quando a chamada de imagem/upload falhava e era capturada antes da persistência. O fluxo foi endurecido para falhar o lote antes de salvar qualquer criativo incompleto e manter a solicitação pendente para nova tentativa.
+- correção complementar: `CreativeImageClient` deixou de retornar `null` quando a chave OpenAI está ausente; agora falha explicitamente, e `ExperimentCreativeService` só persiste o lote depois que todas as variações preparadas possuem `imageUrl`, evitando lote parcial e preservando a pendência para retry quando a geração falhar.
+- instrumentação adicional: adicionados logs com `context` operacional por experimento/modo/variação, payload enviado à OpenAI, resposta crua da OpenAI com status HTTP, erro estruturado da OpenAI quando existir, falha de transporte da OpenAI, sucesso/falha do upload no backend e categoria resumida da causa-raiz (`CONFIG_OPENAI_KEY`, `OPENAI_IMAGE_API`, `MARKETING_HUB_ASSET_UPLOAD` ou `UNKNOWN`). Objetivo: na próxima execução diferenciar objetivamente se o erro é da OpenAI ou do Marketing Hub/storage.
+- 2026-06-05 17:35:00 (UTC): ajustada a seleção de modelos OpenAI na tela `/openai-models/new` para exibir também os preços oficiais por 1 milhão de tokens retornados pelo backend. O catálogo oficial agora agrega os códigos de `/models` com os preços da página oficial da OpenAI quando disponíveis, e o frontend mostra input/output standard e batch diretamente na lista de seleção para apoiar a escolha do modelo antes do cadastro.

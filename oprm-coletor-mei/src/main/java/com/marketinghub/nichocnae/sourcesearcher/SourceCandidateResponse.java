@@ -2,7 +2,7 @@ package com.marketinghub.nichocnae.sourcesearcher;
 
 import java.time.Instant;
 
-/** Representa uma fonte candidata persistida pelo backend após conclusão da etapa três. */
+/** Representa uma fonte candidata persistida pelo backend com escore e risco após conclusão da etapa três. */
 public record SourceCandidateResponse(
         Long sourceCandidateId,
         Long researchCycleId,
@@ -15,5 +15,7 @@ public record SourceCandidateResponse(
         String searchProvider,
         Integer searchPosition,
         String status,
+        Integer relevanceScore,
+        String rejectionReason,
         Instant createdAt,
         Instant updatedAt) {}

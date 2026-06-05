@@ -1,9 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+export interface OpenAiModelCatalogPrice {
+  priceInputStandard: number;
+  priceInputCachedStandard: number;
+  priceOutputStandard: number;
+  priceInputBatch: number;
+  priceInputCachedBatch: number;
+  priceOutputBatch: number;
+}
+
 export interface OpenAiModelCatalog {
   textModels: string[];
   imageModels: string[];
+  pricingByModel: Record<string, OpenAiModelCatalogPrice>;
   source: string;
   fetchedAt: string;
 }

@@ -5,6 +5,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 
+/** Responsabilidade: representar um modelo retornado pelo catálogo técnico oficial da OpenAI. */
 @Entity
 @Table(name = "openai_model_catalog_v1", uniqueConstraints = {
         @UniqueConstraint(name = "uq_openai_model_catalog_v1_code", columnNames = "code")

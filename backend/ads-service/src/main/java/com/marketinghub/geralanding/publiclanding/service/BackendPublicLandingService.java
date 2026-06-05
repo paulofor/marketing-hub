@@ -61,7 +61,7 @@ public class BackendPublicLandingService {
             String slug = "exp-" + experimentId + "-landing-geralanding";
             log.info("GeraLanding public landing publish approval resolved slug (experimentId={}, slug={})", experimentId, slug);
 
-            String finalHtml = buildFinalPublicHtml(experiment, experimentId, landingPageHtml);
+            String finalHtml = buildFinalPublicHtml(experiment, experimentId, slug, landingPageHtml);
             publishToLeadPortal(slug, "Landing GeraLanding - Experimento " + experimentId, finalHtml.trim());
             log.info("GeraLanding public landing publish approval sent flow to Lead Portal successfully (experimentId={}, slug={})",
                     experimentId, slug);
@@ -139,9 +139,10 @@ public class BackendPublicLandingService {
         return landingPageHtml;
     }
 
-    /** Monta o HTML final publicável com tracking, controles de funil e pixel do Facebook. */
-    private String buildFinalPublicHtml(Experiment experiment, Long experimentId, String landingPageHtml) {
-        String htmlWithTracking = injectBehaviorTrackingAttributesAndScript(landingPageHtml);
+    /** Monta o HTML final publicável com envio de lead, tracking, controles de funil e pixel do Facebook. */
+    private String buildFinalPublicHtml(Experiment experiment, Long experimentId, String slug, String landingPageHtml) {
+        String htmlWithSubmission = injectLeadSubmissionScript(landingPageHtml, slug);
+        String htmlWithTracking = injectBehaviorTrackingAttributesAndScript(htmlWithSubmission);
         String htmlWithFunnelControls = injectFunnelControls(htmlWithTracking);
         log.info("GeraLanding public landing publish approval injected funnel controls (experimentId={}, htmlLengthBefore={}, htmlLengthAfter={})",
                 experimentId, landingPageHtml.length(), htmlWithFunnelControls.length());
@@ -202,6 +203,140 @@ public class BackendPublicLandingService {
             return html.replaceFirst("(?i)</head>", controls + "\n</head>");
         }
         return controls + "\n" + html;
+    }
+
+    /** Injeta envio canônico do formulário quando a landing possui campos de lead sem contrato de submissão. */
+    private String injectLeadSubmissionScript(String html, String slug) {
+        if (!StringUtils.hasText(html) || !StringUtils.hasText(slug) || hasLeadSubmissionContract(html)) {
+            return html;
+        }
+        Document document = Jsoup.parse(html, "", Parser.htmlParser());
+        document.outputSettings().prettyPrint(false);
+        if (!hasLeadCaptureControls(document)) {
+            return html;
+        }
+        String escapedSlug = escapeJavaScriptString(slug.trim());
+        String script = """
+                <script>
+                (function(){
+                  if (window.__mhLeadSubmissionInstalled) return;
+                  window.__mhLeadSubmissionInstalled = true;
+                  var slug = '%s';
+                  var endpoint = '/api/public/lead-portal/flows/' + encodeURIComponent(slug) + '/submission';
+                  var contractVersion = 'lead-portal-submission-engagement.v1';
+
+                  function findField(selectors){
+                    for (var i = 0; i < selectors.length; i++) {
+                      var field = document.querySelector(selectors[i]);
+                      if (field) return field;
+                    }
+                    return null;
+                  }
+
+                  function uniqueId(){
+                    if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+                    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+                  }
+
+                  function setMessage(text, isError){
+                    var message = document.getElementById('mh-lead-submission-message');
+                    if (!message) {
+                      message = document.createElement('p');
+                      message.id = 'mh-lead-submission-message';
+                      message.setAttribute('role', 'status');
+                      message.setAttribute('aria-live', 'polite');
+                      var button = document.getElementById('form-submit') || document.querySelector('button[type="submit"], button');
+                      if (button && button.parentNode) button.parentNode.insertBefore(message, button.nextSibling);
+                    }
+                    message.textContent = text;
+                    message.style.color = isError ? '#B91C1C' : '#047857';
+                  }
+
+                  function normalize(value){
+                    return value == null ? '' : String(value).trim();
+                  }
+
+                  function submitLead(event){
+                    if (event && event.preventDefault) event.preventDefault();
+                    var nameField = findField(['#input-nome', '[name="nome"]', '[autocomplete="name"]']);
+                    var emailField = findField(['#input-email', '[name="email"]', '[type="email"]', '[autocomplete="email"]']);
+                    var phoneField = findField(['#input-telefone', '[name="telefone"]', '[type="tel"]', '[autocomplete="tel"]']);
+                    var nome = normalize(nameField && nameField.value);
+                    var email = normalize(emailField && emailField.value);
+                    var telefone = normalize(phoneField && phoneField.value);
+                    if (!nome || !email) {
+                      setMessage('Informe seu nome e e-mail para receber a prévia.', true);
+                      return;
+                    }
+                    var submissionId = uniqueId();
+                    var payload = {
+                      contractVersion: contractVersion,
+                      slug: slug,
+                      submissionId: submissionId,
+                      submittedAt: new Date().toISOString(),
+                      contato: {nome: nome, email: email},
+                      idempotencyKey: submissionId
+                    };
+                    if (telefone) payload.contato.telefone = telefone;
+                    var button = document.getElementById('form-submit') || document.querySelector('button[type="submit"], button');
+                    if (button) button.disabled = true;
+                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true})
+                      .then(function(response){
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        setMessage('Pronto. Sua prévia foi solicitada com sucesso.', false);
+                      })
+                      .catch(function(){
+                        setMessage('Não foi possível enviar agora. Tente novamente em instantes.', true);
+                        if (button) button.disabled = false;
+                      });
+                  }
+
+                  function init(){
+                    var button = document.getElementById('form-submit') || document.querySelector('button[type="submit"], button');
+                    if (button) button.addEventListener('click', submitLead);
+                    var form = button ? button.closest('form') : document.querySelector('form');
+                    if (form) form.addEventListener('submit', submitLead);
+                  }
+
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                  } else {
+                    init();
+                  }
+                })();
+                </script>
+                """.formatted(escapedSlug);
+        if (document.body() != null) {
+            document.body().append(script);
+        } else {
+            document.append(script);
+        }
+        return document.outerHtml();
+    }
+
+    /** Verifica se o HTML já possui o contrato público de submissão de leads. */
+    private boolean hasLeadSubmissionContract(String html) {
+        String lowered = html.toLowerCase(Locale.ROOT);
+        return lowered.contains("lead-portal-submission-engagement.v1")
+                || (lowered.contains("/api/public/lead-portal/flows/") && lowered.contains("/submission"));
+    }
+
+    /** Verifica se a landing possui controles mínimos para captura de nome, e-mail e envio. */
+    private boolean hasLeadCaptureControls(Document document) {
+        boolean hasName = !document.select("#input-nome, [name=nome], [autocomplete=name]").isEmpty();
+        boolean hasEmail = !document.select("#input-email, [name=email], input[type=email], [autocomplete=email]").isEmpty();
+        boolean hasSubmit = !document.select("#form-submit, button[type=submit], button").isEmpty();
+        return hasName && hasEmail && hasSubmit;
+    }
+
+    /** Escapa valor textual para uso seguro dentro de string JavaScript delimitada por aspas simples. */
+    private String escapeJavaScriptString(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("</script>", "<\\/script>");
     }
 
     /** Obtém por reflexão o identificador do Facebook Pixel configurado no nicho do experimento. */

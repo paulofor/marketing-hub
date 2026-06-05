@@ -180,22 +180,23 @@ A publicação do HTML final da landing ocorre no Lead Portal, com integração 
 
 ### 9.1 O que acontece depois de clicar em "Aprovar e publicar landing"
 
-Classe responsável no backend: `GeraLandingStageExecutionService` (método `approveAndPublishLanding`).
+Classe responsável no backend: `BackendPublicLandingService` (método `approveEndPublish`, também exposto pelo alias `approve-and-publish`).
 
 Fluxo obrigatório executado após a aprovação:
 1. carregar o experimento e resolver o HTML base puro para publicação a partir de `experiment.html_geralanding`; `experiment.landing_page_html` só pode ser usado como fallback legado quando ainda não houver `html_geralanding`;
 2. manter `experiment.html_geralanding` como artefato fonte puro: HTML + CSS de apresentação, sem scripts de funil, pixels, tags de analytics, `gtag`, Google Tag Manager, `fbq`, Meta/Facebook Pixel, `data-mh-funnel-tracking`, `data-mh-funnel-controls` ou `data-mh-landing-analytics`;
 3. criar uma cópia publicável enriquecida, persistida em `experiment.landing_page_html`, contendo toda a instrumentação necessária para venda e mensuração;
-4. injetar nessa cópia publicável a instrumentação de tracking comportamental (`data-track-section` + script `data-mh-funnel-tracking`);
-5. injetar nessa cópia publicável os controles de funil (`data-mh-funnel-controls`);
-6. resolver os pixels configurados para o experimento/nicho e injetar na cópia publicável os snippets de mensuração elegíveis, incluindo Google/gtag/GTM quando contratado e Meta/Facebook Pixel quando houver `facebookPixelId`;
-7. publicar o flow no Lead Portal via `PUT /api/flows/{slug}` com payload contendo `slug`, `name`, `description` e `customFormHtml` igual ao HTML publicável enriquecido (`experiment.landing_page_html`);
-8. resolver URLs finais de publicação (`iframe` e `standalone`) e persistir no experimento a `follow_up_action_url`.
+4. quando a landing possuir controles mínimos de captura (`nome`, `email` e botão de envio) e ainda não possuir contrato de submissão, injetar na cópia publicável o envio canônico `lead-portal-submission-engagement.v1` para `/api/public/lead-portal/flows/{slug}/submission`;
+5. injetar nessa cópia publicável a instrumentação de tracking comportamental (`data-track-section` + script `data-mh-funnel-tracking`);
+6. injetar nessa cópia publicável os controles de funil (`data-mh-funnel-controls`);
+7. resolver os pixels configurados para o experimento/nicho e injetar na cópia publicável os snippets de mensuração elegíveis, incluindo Google/gtag/GTM quando contratado e Meta/Facebook Pixel quando houver `facebookPixelId`;
+8. publicar o flow no Lead Portal via `PUT /api/flows/{slug}` com payload contendo `slug`, `name`, `description` e `customFormHtml` igual ao HTML publicável enriquecido (`experiment.landing_page_html`);
+9. resolver URLs finais de publicação (`iframe` e `standalone`) e persistir no experimento a `follow_up_action_url`.
 
 Regras adicionais:
 - a aba Landing do frontend deve usar `experiment.html_geralanding` para prévia limpa do HTML/CSS gerado e `experiment.landing_page_html` para prévia/publicação instrumentada quando a publicação já tiver sido aprovada;
 - `experiment.html_geralanding` nunca deve ser sobrescrito com scripts, pixels ou marcadores operacionais de mensuração; se qualquer etapa precisar enriquecer o HTML, deve gerar uma cópia e gravá-la em `experiment.landing_page_html`;
-- a injeção de tracking/pixels deve ser idempotente no HTML publicável (não duplicar quando já existir em `landing_page_html`);
+- a injeção de submissão, tracking e pixels deve ser idempotente no HTML publicável (não duplicar quando já existir em `landing_page_html`);
 - falhas de contrato na publicação para Lead Portal devem ser tratadas pela exception canônica de violação de contrato do GeraLanding.
 
 ## 10. Custos e mensuração por experimento

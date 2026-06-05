@@ -3595,3 +3595,13 @@
 - correção aplicada: o Lead Portal ganhou um endpoint de compatibilidade para receber essa rota pública, validar divergência de slug, extrair `submissionId`, `submittedAt` e `contato`, e encaminhar a submissão ao Marketing Hub pelo `ExperimentFunnelTrackingClient`, preservando o contrato já publicado nas landings.
 - documentação atualizada: `docs/swagger/lead-portal-swagger.yaml` registra a rota pública de compatibilidade do Lead Portal.
 - validação automatizada: adicionado teste MVC cobrindo o payload real do GeraLanding e rejeição de slug divergente.
+
+## 2026-06-05 15:35:05 UTC
+- solicitação para investigar formulário enviado que não aparecia na contagem do funil (experimento informado 36; evidência da tela em `/experiments/37`).
+- causa-raiz identificada: o endpoint público de submissão gravava `experiment_funnel_event` com `source=lead_portal_submission`, mas o resumo automático da etapa `ENVIO_FORM` consultava somente `lead_portal_submission` legado e `flow_submissions`, deixando o evento público recém-gravado fora da contagem.
+- correção aplicada no backend: a consulta automática de `ENVIO_FORM` passou a consolidar também os eventos públicos em `experiment_funnel_event`, deduplicando por `submissionId` para evitar dupla contagem quando a submissão existir em mais de uma origem e normalizando collation/charset dos identificadores no `UNION ALL` para compatibilidade com MySQL 5.7.
+- validação de banco via MCP: experimento 37 possuía 1 evento `ENVIO_FORM` em `experiment_funnel_event` às 2026-06-05 15:28:30 UTC, enquanto as tabelas legado/flow não tinham submissão vinculada; experimento 36 não tinha evento de envio no recorte consultado.
+- logs via MCP foram consultados para backend, mas não havia linhas disponíveis com os filtros literais da submissão/slug na janela analisada.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelService.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelServiceSubmissionTest.java`

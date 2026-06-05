@@ -3675,3 +3675,11 @@
 - correção complementar: `CreativeImageClient` deixou de retornar `null` quando a chave OpenAI está ausente; agora falha explicitamente, e `ExperimentCreativeService` só persiste o lote depois que todas as variações preparadas possuem `imageUrl`, evitando lote parcial e preservando a pendência para retry quando a geração falhar.
 - instrumentação adicional: adicionados logs com `context` operacional por experimento/modo/variação, payload enviado à OpenAI, resposta crua da OpenAI com status HTTP, erro estruturado da OpenAI quando existir, falha de transporte da OpenAI, sucesso/falha do upload no backend e categoria resumida da causa-raiz (`CONFIG_OPENAI_KEY`, `OPENAI_IMAGE_API`, `MARKETING_HUB_ASSET_UPLOAD` ou `UNKNOWN`). Objetivo: na próxima execução diferenciar objetivamente se o erro é da OpenAI ou do Marketing Hub/storage.
 - 2026-06-05 17:35:00 (UTC): ajustada a seleção de modelos OpenAI na tela `/openai-models/new` para exibir também os preços oficiais por 1 milhão de tokens retornados pelo backend. O catálogo oficial agora agrega os códigos de `/models` com os preços da página oficial da OpenAI quando disponíveis, e o frontend mostra input/output standard e batch diretamente na lista de seleção para apoiar a escolha do modelo antes do cadastro.
+
+## 2026-06-05 — Destravamento de geração de criativos do pipeline
+
+- Investigado o experimento 37 após a tela permanecer em "Gerando anúncios/Gerando Criativo".
+- Evidência operacional: o endpoint `/api/experiments/37` retornou `creativesToGenerate=3` e `creativeGenerationMode=PIPELINE_ADS`, mantendo a UI bloqueada mesmo já existindo criativos rascunho em `/api/experiments/37/creatives`.
+- Causa-raiz no worker: falhas capturadas durante a geração eram apenas logadas e mantinham a solicitação pendente, permitindo travamento indefinido e nova tentativa automática sem feedback claro ao usuário.
+- Correção aplicada: ao capturar falha na geração, o Worker AI registra contexto da causa-raiz, limpa `creativesToGenerate`, restaura o modo para `DEFAULT` quando era pipeline e salva o experimento, liberando a tela para nova solicitação consciente após corrigir a causa operacional.
+- Mitigação operacional imediata no experimento 37: executado `PATCH /api/experiments/37/creatives-to-generate?quantity=0` para remover a pendência atual e destravar a tela antes do deploy da correção definitiva.

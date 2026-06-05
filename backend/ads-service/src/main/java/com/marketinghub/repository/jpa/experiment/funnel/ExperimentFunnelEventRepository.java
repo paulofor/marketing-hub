@@ -16,6 +16,7 @@ import java.util.List;
 public interface ExperimentFunnelEventRepository extends JpaRepository<ExperimentFunnelEvent, Long> {
 
     String RENDER_COMPLETE_SOURCE = "lead-portal-render-complete";
+    String LANDING_PAGE_ANALYTICS_SOURCE = "landing-page-analytics";
     String SUBMISSION_SOURCE = "lead_portal_submission";
 
     boolean existsByExperimentIdAndStageAndSourceAndPayload(

@@ -1,0 +1,204 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-oprm-nichocnae-official-pipeline-operational
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline
+        - tableExists:
+            tableName: pipeline_stage
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pipeline (name, code, module, description, active, created_at, updated_at)
+              SELECT 'Pipeline Nicho CNAE', 'oprm-nicho-cnae-pipeline', 'OPRM', 'Fluxo OPRM para transformar CNAEs priorizados em nichos enriquecidos por pesquisa de rotina real, sinais públicos, gate de qualidade e materialização rastreável.', 1, NOW(), NOW()
+              FROM dual
+              WHERE NOT EXISTS (SELECT 1 FROM pipeline WHERE code = 'oprm-nicho-cnae-pipeline');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 1, 'Seleção de candidato CNAE', 'routine-research-orchestrator', 'Seleciona o próximo candidato CNAE por score OPRM e abre o ciclo de pesquisa de rotina sem formular oferta.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'routine-research-orchestrator');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 2, 'Controle do ciclo de rotina', 'routine-research-cycle', 'Controla o ciclo ROUTINE_REALITY_RESEARCH e preserva o nome neutro usado para investigar rotina, tarefas e dificuldades.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'routine-research-cycle');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 3, 'Seed e queries de pesquisa', 'niche-research-seed-builder', 'Gera seed e queries compatíveis com realidade operacional, sem direcionar para produto, campanha ou solução.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'niche-research-seed-builder');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 4, 'Busca de fontes públicas', 'source-searcher', 'Busca fontes públicas para as queries aprovadas, priorizando evidências de execução do trabalho e vocabulário do mercado.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'source-searcher');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 5, 'Coleta curta de fontes', 'source-fetcher', 'Coleta trechos curtos das fontes selecionadas para alimentar extração de sinais sem contaminar o artefato final.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'source-fetcher');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 6, 'Extração de sinais de rotina', 'signal-extractor', 'Extrai sinais estruturados de rotina, dor, contexto, perguntas e linguagem orgânica a partir dos snapshots coletados.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'signal-extractor');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 7, 'Síntese do cartão de rotina', 'routine-synthesizer', 'Sintetiza o cartão de rotina do nicho CNAE a partir dos sinais extraídos, mantendo separação de oferta e campanha.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'routine-synthesizer');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 8, 'Gate de qualidade da rotina', 'routine-quality-gate', 'Avalia se o cartão tem evidência suficiente e define se pode seguir para materialização como nicho enriquecido.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'routine-quality-gate');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 9, 'Materialização do nicho enriquecido', 'enriched-niche-materializer', 'Materializa market_niche e market_niche_enrichment_profile com rastreabilidade, sem criar hipótese, oferta ou experimento.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'enriched-niche-materializer');
+  - changeSet:
+      id: 2026-06-05-oprm-nichocnae-official-pipeline-location
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage
+        - columnExists:
+            tableName: pipeline_stage
+            columnName: execution_module
+        - columnExists:
+            tableName: pipeline_stage
+            columnName: root_package
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.execution_module = 'oprm-coletor-mei',
+                  ps.root_package = CASE ps.code
+                    WHEN 'routine-research-orchestrator' THEN 'com.marketinghub.oprm.nichocnae.routineresearchorchestrator'
+                    WHEN 'routine-research-cycle' THEN 'com.marketinghub.oprm.nichocnae.routineresearchcycle'
+                    WHEN 'niche-research-seed-builder' THEN 'com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder'
+                    WHEN 'source-searcher' THEN 'com.marketinghub.oprm.nichocnae.sourcesearcher'
+                    WHEN 'source-fetcher' THEN 'com.marketinghub.oprm.nichocnae.sourcefetcher'
+                    WHEN 'signal-extractor' THEN 'com.marketinghub.oprm.nichocnae.signalextractor'
+                    WHEN 'routine-synthesizer' THEN 'com.marketinghub.oprm.nichocnae.routinesynthesizer'
+                    WHEN 'routine-quality-gate' THEN 'com.marketinghub.oprm.nichocnae.routinequalitygate'
+                    WHEN 'enriched-niche-materializer' THEN 'com.marketinghub.oprm.nichocnae.enrichednichematerializer'
+                    ELSE ps.root_package
+                  END
+              WHERE p.code = 'oprm-nicho-cnae-pipeline';
+  - changeSet:
+      id: 2026-06-05-oprm-nichocnae-official-pipeline-persistent-contract
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_definition
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - tableExists:
+            tableName: pipeline_stage_config
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: execution_module
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: root_package
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pipeline_definition (module, code, name, canonical_version, active, created_at, updated_at)
+              SELECT 'OPRM', 'oprm-nicho-cnae-pipeline', 'Pipeline Nicho CNAE', 'oprm-nichocnae-canon.v1', 1, NOW(), NOW()
+              FROM dual
+              WHERE NOT EXISTS (SELECT 1 FROM pipeline_definition WHERE code = 'oprm-nicho-cnae-pipeline' AND canonical_version = 'oprm-nichocnae-canon.v1');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'ROUTINE_RESEARCH_ORCHESTRATOR', 'Seleção de candidato CNAE', 1, 1, 'ROUTINE_RESEARCH_ORCHESTRATOR', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.routineresearchorchestrator', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'ROUTINE_RESEARCH_ORCHESTRATOR');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'ROUTINE_RESEARCH_CYCLE', 'Controle do ciclo de rotina', 2, 1, 'ROUTINE_RESEARCH_CYCLE', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.routineresearchcycle', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'ROUTINE_RESEARCH_CYCLE');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'NICHE_RESEARCH_SEED_BUILDER', 'Seed e queries de pesquisa', 3, 1, 'NICHE_RESEARCH_SEED_BUILDER', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'NICHE_RESEARCH_SEED_BUILDER');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'SOURCE_SEARCHER', 'Busca de fontes públicas', 4, 1, 'SOURCE_SEARCHER', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.sourcesearcher', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'SOURCE_SEARCHER');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'SOURCE_FETCHER', 'Coleta curta de fontes', 5, 1, 'SOURCE_FETCHER', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.sourcefetcher', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'SOURCE_FETCHER');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'SIGNAL_EXTRACTOR', 'Extração de sinais de rotina', 6, 1, 'SIGNAL_EXTRACTOR', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.signalextractor', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'SIGNAL_EXTRACTOR');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'ROUTINE_SYNTHESIZER', 'Síntese do cartão de rotina', 7, 1, 'ROUTINE_SYNTHESIZER', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.routinesynthesizer', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'ROUTINE_SYNTHESIZER');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'ROUTINE_QUALITY_GATE', 'Gate de qualidade da rotina', 8, 1, 'ROUTINE_QUALITY_GATE', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.routinequalitygate', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'ROUTINE_QUALITY_GATE');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'ENRICHED_NICHE_MATERIALIZER', 'Materialização do nicho enriquecido', 9, 1, 'ENRICHED_NICHE_MATERIALIZER', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.enrichednichematerializer', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline' AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'ENRICHED_NICHE_MATERIALIZER');
+
+              INSERT INTO pipeline_stage_config (pipeline_stage_definition_id, active, openai_model_id, description_override, updated_by, created_at, updated_at)
+              SELECT psd.id, 1, NULL, NULL, 'liquibase-oprm-nichocnae-official-pipeline', NOW(), NOW()
+              FROM pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_config psc WHERE psc.pipeline_stage_definition_id = psd.id);

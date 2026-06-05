@@ -1,6 +1,7 @@
 package com.marketinghub.pipeline.definition;
 
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.oprm.nichocnae.pipeline.OprmNichoCnaePipelineSection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +21,9 @@ public class PipelineDefinitionRegistry {
     private static final String EXPERIMENT_MODULE = "EXPERIMENT";
     private static final String EXPERIMENT_CANONICAL_VERSION = "procedimento-experimento-canon.v1";
     private static final String EXPERIMENT_BACKEND_ROOT_PACKAGE = "com.marketinghub.experiment.pipeline";
+    private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
+    private static final String OPRM_MODULE = "OPRM";
+    private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
 
     private final List<PipelineDefinition> officialPipelines;
     private final Set<String> validModules;
@@ -28,8 +32,8 @@ public class PipelineDefinitionRegistry {
      * Inicializa o registro oficial a partir das etapas canônicas implementadas no código.
      */
     public PipelineDefinitionRegistry() {
-        this.officialPipelines = List.of(buildExperimentPipeline());
-        this.validModules = Set.of(EXPERIMENT_MODULE, "GERALANDING", "MDS", "MOIS", "OPRM");
+        this.officialPipelines = List.of(buildExperimentPipeline(), buildOprmNichoCnaePipeline());
+        this.validModules = Set.of(EXPERIMENT_MODULE, "GERALANDING", "MDS", "MOIS", OPRM_MODULE);
     }
 
     /**
@@ -106,6 +110,34 @@ public class PipelineDefinitionRegistry {
                 EXPERIMENT_CANONICAL_VERSION,
                 true,
                 Set.of(EXPERIMENT_PIPELINE_CODE, "experiment_pipeline"),
+                PipelineFieldPolicy.officialDefault(),
+                StageFieldPolicy.officialDefault(),
+                stages);
+    }
+
+    /**
+     * Monta a definição oficial do pipeline OPRM NichoCNAE a partir das etapas implementadas no backend/coletor.
+     */
+    private PipelineDefinition buildOprmNichoCnaePipeline() {
+        List<PipelineStageDefinition> stages = Arrays.stream(OprmNichoCnaePipelineSection.values())
+                .map(section -> new PipelineStageDefinition(
+                        section.name(),
+                        section.path(),
+                        section.displayName(),
+                        section.position(),
+                        true,
+                        true,
+                        section.executionModule(),
+                        section.rootPackage(),
+                        section.aliases()))
+                .toList();
+        return new PipelineDefinition(
+                OPRM_MODULE,
+                OPRM_NICHO_CNAE_PIPELINE_CODE,
+                "Pipeline Nicho CNAE",
+                OPRM_NICHO_CNAE_CANONICAL_VERSION,
+                true,
+                Set.of(OPRM_NICHO_CNAE_PIPELINE_CODE, "nicho-cnae-pipeline", "oprm_nicho_cnae_pipeline"),
                 PipelineFieldPolicy.officialDefault(),
                 StageFieldPolicy.officialDefault(),
                 stages);

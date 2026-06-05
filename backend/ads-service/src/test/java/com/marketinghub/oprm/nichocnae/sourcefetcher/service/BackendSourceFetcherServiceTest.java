@@ -77,6 +77,10 @@ class BackendSourceFetcherServiceTest {
     assertThat(response.relevanceScore()).isEqualTo(88);
     assertThat(response.cycleTotalSourceSnapshots()).isEqualTo(1);
     assertThat(response.snapshot().fetchStatus()).isEqualTo("COMPLETED");
+    assertThat(response.snapshot().sourceIntent()).isEqualTo("ROUTINE_REPORT");
+    assertThat(response.snapshot().routineEvidenceScore()).isEqualTo(88);
+    assertThat(response.snapshot().commercialPageRisk()).isFalse();
+    assertThat(response.snapshot().solutionLanguageRisk()).isFalse();
     assertThat(response.snapshot().shortExcerpt()).contains("WhatsApp");
 
     ArgumentCaptor<OprmSourceCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmSourceCandidate.class);
@@ -93,6 +97,10 @@ class BackendSourceFetcherServiceTest {
         "exemplo.com",
         "Como conseguir mais clientes para manicure",
         "PUBLIC_CONTENT",
+        "ROUTINE_REPORT",
+        88,
+        false,
+        false,
         "Resumo",
         "x".repeat(1201),
         "COMPLETED",
@@ -133,6 +141,10 @@ class BackendSourceFetcherServiceTest {
     candidate.setSourceSnippet("Veja formas de divulgar serviços e preencher horários.");
     candidate.setSourceDomain("exemplo.com");
     candidate.setSourceGroup("PUBLIC_CONTENT");
+    candidate.setSourceIntent("ROUTINE_REPORT");
+    candidate.setRoutineEvidenceScore(88);
+    candidate.setCommercialPageRisk(false);
+    candidate.setSolutionLanguageRisk(false);
     candidate.setSearchProvider("BRAVE_SEARCH");
     candidate.setSearchPosition(1);
     candidate.setSelectedForFetch(false);
@@ -170,6 +182,10 @@ class BackendSourceFetcherServiceTest {
         "exemplo.com",
         "Como conseguir mais clientes para manicure",
         "PUBLIC_CONTENT",
+        "ROUTINE_REPORT",
+        88,
+        false,
+        false,
         "Veja formas de divulgar serviços e preencher horários.",
         "Manicures podem atrair mais clientes usando indicação, redes sociais, WhatsApp, pacotes mensais e lembretes de retorno.",
         "COMPLETED",
@@ -189,6 +205,10 @@ class BackendSourceFetcherServiceTest {
     snapshot.setSourceDomain("exemplo.com");
     snapshot.setSourceTitle("Como conseguir mais clientes para manicure");
     snapshot.setSourceType("PUBLIC_CONTENT");
+    snapshot.setSourceIntent("ROUTINE_REPORT");
+    snapshot.setRoutineEvidenceScore(88);
+    snapshot.setCommercialPageRisk(false);
+    snapshot.setSolutionLanguageRisk(false);
     snapshot.setSnippet("Veja formas de divulgar serviços e preencher horários.");
     snapshot.setShortExcerpt("Manicures podem atrair mais clientes usando indicação e WhatsApp.");
     snapshot.setFetchedAt(Instant.parse("2026-06-02T10:05:00Z"));

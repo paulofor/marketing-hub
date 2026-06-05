@@ -93,6 +93,10 @@ class SourceSearcherProcessorTest {
                         "FOUND",
                         90,
                         null,
+                        "ROUTINE_REPORT",
+                        90,
+                        false,
+                        false,
                         Instant.parse("2026-06-04T00:01:00Z"),
                         Instant.parse("2026-06-04T00:01:00Z"))));
     }

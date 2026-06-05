@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -19,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Component
 public class OpenAiPricingPageClient {
     private static final Logger log = LoggerFactory.getLogger(OpenAiPricingPageClient.class);
+    private static final Pattern MONEY_PATTERN = Pattern.compile("[0-9]+(?:\\.[0-9]+)?");
 
     private final WebClient.Builder webClientBuilder;
     private final OpenAiProperties properties;
@@ -35,7 +38,7 @@ public class OpenAiPricingPageClient {
         return parseTextModelPricing(html);
     }
 
-    /** Extrai os preços das duas primeiras tabelas textuais: standard e batch. */
+    /** Extrai os preços oficiais textuais, aceitando tabela legada standard/batch ou tabela atual short/long context. */
     public List<OpenAiModelPricing> parseTextModelPricing(String html) {
         if (html == null || html.isBlank()) {
             return List.of();
@@ -94,15 +97,26 @@ public class OpenAiPricingPageClient {
             if (!isTextModelCode(code)) {
                 continue;
             }
-            BigDecimal input = parseMoney(cells.get(1).text());
-            BigDecimal cachedInput = parseMoney(cells.get(2).text());
-            BigDecimal output = parseMoney(cells.get(3).text());
-            if (input == null || output == null) {
-                continue;
+            PriceTriple price = parsePriceTriple(cells, 1, code);
+            if (price != null) {
+                tablePrices.put(code, price);
             }
-            tablePrices.put(code, new PriceTriple(code, input, zeroIfNull(cachedInput), output));
         }
         return tablePrices;
+    }
+
+    /** Extrai um trio input/cache/output a partir da posição inicial informada na linha da tabela. */
+    private PriceTriple parsePriceTriple(Elements cells, int firstPriceCell, String code) {
+        if (cells.size() <= firstPriceCell + 2) {
+            return null;
+        }
+        BigDecimal input = parseMoney(cells.get(firstPriceCell).text());
+        BigDecimal cachedInput = parseMoney(cells.get(firstPriceCell + 1).text());
+        BigDecimal output = parseMoney(cells.get(firstPriceCell + 2).text());
+        if (input == null || output == null) {
+            return null;
+        }
+        return new PriceTriple(code, input, zeroIfNull(cachedInput), output);
     }
 
     /** Remove observações de contexto e normaliza o código do modelo para comparação e persistência. */
@@ -117,11 +131,12 @@ public class OpenAiPricingPageClient {
 
     /** Converte valores monetários da tabela oficial para decimal por 1 milhão de tokens. */
     private BigDecimal parseMoney(String value) {
-        String normalized = value == null ? "" : value.replace("$", "").replace(",", "").trim();
-        if (normalized.isBlank() || normalized.equals("-")) {
+        String normalized = value == null ? "" : value.replace(",", "").trim();
+        Matcher matcher = MONEY_PATTERN.matcher(normalized);
+        if (!matcher.find()) {
             return null;
         }
-        return new BigDecimal(normalized);
+        return new BigDecimal(matcher.group());
     }
 
     /** Garante valor zero para campos de preço não publicados, preservando restrição NOT NULL do banco. */

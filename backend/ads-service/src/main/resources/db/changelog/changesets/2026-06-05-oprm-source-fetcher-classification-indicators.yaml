@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-02-oprm-source-candidate-classification-indicators
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_source_candidate
+              columnName: source_intent
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_source_candidate
+                ADD COLUMN source_intent VARCHAR(64) NULL,
+                ADD COLUMN routine_evidence_score INT NULL,
+                ADD COLUMN commercial_page_risk TINYINT(1) NOT NULL DEFAULT 0,
+                ADD COLUMN solution_language_risk TINYINT(1) NOT NULL DEFAULT 0;
+              UPDATE oprm_source_candidate
+                 SET source_intent = source_group,
+                     routine_evidence_score = relevance_score,
+                     commercial_page_risk = CASE WHEN status = 'CONTAMINATION_RISK' THEN 1 ELSE 0 END,
+                     solution_language_risk = CASE WHEN rejection_reason LIKE '%linguagem de solução%' THEN 1 ELSE 0 END
+               WHERE source_intent IS NULL;
+              CREATE INDEX idx_oprm_source_candidate_intent_routine
+                ON oprm_source_candidate (source_intent, routine_evidence_score);
+
+  - changeSet:
+      id: 2026-06-05-03-oprm-source-snapshot-classification-indicators
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_source_snapshot
+              columnName: source_intent
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_source_snapshot
+                ADD COLUMN source_intent VARCHAR(64) NULL,
+                ADD COLUMN routine_evidence_score INT NULL,
+                ADD COLUMN commercial_page_risk TINYINT(1) NOT NULL DEFAULT 0,
+                ADD COLUMN solution_language_risk TINYINT(1) NOT NULL DEFAULT 0;
+              UPDATE oprm_source_snapshot snapshot
+              INNER JOIN oprm_source_candidate candidate ON candidate.id = snapshot.source_candidate_id
+                 SET snapshot.source_intent = COALESCE(candidate.source_intent, candidate.source_group),
+                     snapshot.routine_evidence_score = COALESCE(candidate.routine_evidence_score, candidate.relevance_score),
+                     snapshot.commercial_page_risk = candidate.commercial_page_risk,
+                     snapshot.solution_language_risk = candidate.solution_language_risk
+               WHERE snapshot.source_intent IS NULL;
+              CREATE INDEX idx_oprm_source_snapshot_intent_routine
+                ON oprm_source_snapshot (source_intent, routine_evidence_score);

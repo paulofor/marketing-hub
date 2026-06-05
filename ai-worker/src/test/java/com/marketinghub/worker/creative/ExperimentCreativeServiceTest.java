@@ -195,7 +195,7 @@ class ExperimentCreativeServiceTest {
     }
 
     /**
-     * Ensures default generation keeps the request pending when image generation returns no URL.
+     * Ensures default generation clears the request when image generation returns no URL.
      */
     @Test
     void defaultModeSkipsCreativeWhenImageUrlIsMissing() {
@@ -212,11 +212,12 @@ class ExperimentCreativeServiceTest {
         verify(creativeService, never()).create(anyLong(), any(CreateCreativeRequest.class));
         assertThat(req.getImageUrl()).isNull();
         assertThat(result).doesNotContainKey(1L);
-        assertThat(experiment.getCreativesToGenerate()).isEqualTo(1);
+        assertThat(experiment.getCreativesToGenerate()).isZero();
+        verify(experimentRepository).save(experiment);
     }
 
     /**
-     * Ensures pipeline generation keeps the request pending when image generation returns no URL.
+     * Ensures pipeline generation clears the request when image generation returns no URL.
      */
     @Test
     void pipelineModeSkipsCreativeWhenImageUrlIsMissing() {
@@ -235,8 +236,9 @@ class ExperimentCreativeServiceTest {
 
         verify(creativeService, never()).create(anyLong(), any(CreateCreativeRequest.class));
         assertThat(result).doesNotContainKey(1L);
-        assertThat(experiment.getCreativesToGenerate()).isEqualTo(1);
-        assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
+        assertThat(experiment.getCreativesToGenerate()).isZero();
+        assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
+        verify(experimentRepository).save(experiment);
     }
 
 }

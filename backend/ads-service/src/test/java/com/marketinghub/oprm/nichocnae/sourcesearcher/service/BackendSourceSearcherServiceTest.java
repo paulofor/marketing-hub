@@ -79,6 +79,10 @@ class BackendSourceSearcherServiceTest {
     assertThat(response.cycleTotalSourceCandidates()).isEqualTo(2);
     assertThat(response.candidates()).extracting("status").containsExactly("FOUND", "CONTAMINATION_RISK");
     assertThat(response.candidates()).extracting("relevanceScore").containsExactly(90, 10);
+    assertThat(response.candidates()).extracting("sourceIntent").containsExactly("ROUTINE_REPORT", "COMMERCIAL_PAGE_RISK");
+    assertThat(response.candidates()).extracting("routineEvidenceScore").containsExactly(90, 10);
+    assertThat(response.candidates()).extracting("commercialPageRisk").containsExactly(false, true);
+    assertThat(response.candidates()).extracting("solutionLanguageRisk").containsExactly(false, true);
 
     ArgumentCaptor<OprmResearchQuery> queryCaptor = ArgumentCaptor.forClass(OprmResearchQuery.class);
     verify(researchQueryRepository).save(queryCaptor.capture());
@@ -226,6 +230,10 @@ class BackendSourceSearcherServiceTest {
     candidate.setSourceTitle("Fonte " + position);
     candidate.setSourceDomain("exemplo.com");
     candidate.setSourceGroup("PUBLIC_CONTENT");
+    candidate.setSourceIntent("ROUTINE_REPORT");
+    candidate.setRoutineEvidenceScore(85);
+    candidate.setCommercialPageRisk(false);
+    candidate.setSolutionLanguageRisk(false);
     candidate.setSearchProvider("BRAVE_SEARCH");
     candidate.setSearchPosition(position);
     candidate.setStatus("FOUND");

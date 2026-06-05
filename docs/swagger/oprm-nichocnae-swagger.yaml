@@ -1498,7 +1498,7 @@ components:
             $ref: '#/components/schemas/SignalForRoutineSynthesis'
     CompleteRoutineSynthesizerRequest:
       type: object
-      required: [researchCycleId, nicheName, routineSummary, painsSummary, resultsSummary, mechanismOpportunitiesSummary, evidenceSummary, sourceDomains, confidenceScore]
+      required: [researchCycleId, nicheName, routineSummary, painsSummary, resultsSummary, mechanismOpportunitiesSummary, evidenceSummary, sourceDomains, confidenceScore, routineEvidenceScore, difficultyEvidenceScore, sourceDiversityScore, solutionLanguageRiskScore]
       properties:
         researchCycleId:
           type: integer
@@ -1518,6 +1518,22 @@ components:
         sourceDomains:
           type: string
         confidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        difficultyEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sourceDiversityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        solutionLanguageRiskScore:
           type: integer
           minimum: 0
           maximum: 100
@@ -1605,12 +1621,34 @@ components:
           type: integer
         painSignalCount:
           type: integer
+        operationalDifficultyCount:
+          type: integer
         mechanismOpportunityCount:
           type: integer
         routineTaskCount:
           type: integer
         commercialObjectCount:
           type: integer
+        languageMarkerCount:
+          type: integer
+        solutionLanguageRiskCount:
+          type: integer
+        routineEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        difficultyEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sourceDiversityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        solutionLanguageRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
         createdAt:
           type: string
           format: date-time
@@ -1839,6 +1877,18 @@ components:
           type: integer
           nullable: true
         duplicationScore:
+          type: integer
+          nullable: true
+        routineEvidenceScore:
+          type: integer
+          nullable: true
+        difficultyEvidenceScore:
+          type: integer
+          nullable: true
+        sourceDiversityScore:
+          type: integer
+          nullable: true
+        solutionLanguageRiskScore:
           type: integer
           nullable: true
         qualityNotes:

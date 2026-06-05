@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class RoutineQualityGateEngineTest {
     private final RoutineQualityGateEngine engine = new RoutineQualityGateEngine();
 
-    /** Deve aprovar card específico com fontes, sinais e confiança suficientes. */
+    /** Deve aprovar rotina rica em evidência mesmo sem qualquer sinal de solução sugerida. */
     @Test
     void shouldApproveSpecificCardWithEnoughEvidence() {
         RoutineQualityDecision decision = engine.evaluate(pending(
@@ -21,9 +21,16 @@ class RoutineQualityGateEngineTest {
                 14,
                 2,
                 3,
+                0,
                 3,
-                3,
-                2));
+                2,
+                2,
+                0,
+                0,
+                86,
+                84,
+                72,
+                0));
 
         assertThat(decision.qualityStatus()).isEqualTo("LIGHTLY_RESEARCHED");
         assertThat(decision.readyForHypothesis()).isTrue();
@@ -43,9 +50,16 @@ class RoutineQualityGateEngineTest {
                 4,
                 1,
                 1,
+                0,
                 1,
                 1,
-                1));
+                1,
+                0,
+                0,
+                70,
+                65,
+                24,
+                0));
 
         assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
         assertThat(decision.readyForHypothesis()).isFalse();
@@ -63,9 +77,73 @@ class RoutineQualityGateEngineTest {
                 14,
                 2,
                 3,
+                0,
                 3,
+                2,
+                2,
+                0,
+                0,
+                86,
+                84,
+                72,
+                0));
+
+        assertThat(decision.qualityStatus()).isEqualTo("GENERIC");
+        assertThat(decision.readyForHypothesis()).isFalse();
+    }
+
+    /** Deve reprovar conteúdo dominado por linguagem de IA ou software mesmo com volume de sinais. */
+    @Test
+    void shouldRejectContentDominatedBySolutionLanguage() {
+        RoutineQualityDecision decision = engine.evaluate(pending(
+                text("Rotina fala mais de IA software sistema e automação do que de agenda", 8),
+                text("Dores citam software IA app e ferramenta em vez de dificuldade concreta", 8),
+                text("Perguntas sobre IA software sistema app e automação", 8),
+                text("Contexto operacional com linguagem do nicho", 8),
+                6,
+                14,
+                2,
+                2,
+                0,
                 3,
-                2));
+                1,
+                2,
+                2,
+                9,
+                80,
+                70,
+                72,
+                70));
+
+        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes()).contains("dominadoPorSolucao=true");
+    }
+
+    /** Deve reprovar texto duplicado ou genérico ainda que existam contadores positivos. */
+    @Test
+    void shouldRejectGenericOrDuplicatedText() {
+        String duplicated = text("agenda cliente rotina", 10);
+
+        RoutineQualityDecision decision = engine.evaluate(pending(
+                duplicated,
+                duplicated,
+                duplicated,
+                duplicated,
+                6,
+                14,
+                2,
+                3,
+                0,
+                3,
+                2,
+                2,
+                0,
+                0,
+                86,
+                84,
+                72,
+                0));
 
         assertThat(decision.qualityStatus()).isEqualTo("GENERIC");
         assertThat(decision.readyForHypothesis()).isFalse();
@@ -81,9 +159,16 @@ class RoutineQualityGateEngineTest {
             Integer signalCount,
             Integer questionSignals,
             Integer painSignals,
+            Integer operationalDifficultySignals,
             Integer mechanismSignals,
             Integer routineTasks,
-            Integer commercialObjects) {
+            Integer commercialObjects,
+            Integer languageMarkers,
+            Integer solutionRiskSignals,
+            Integer routineEvidenceScore,
+            Integer difficultyEvidenceScore,
+            Integer sourceDiversityScore,
+            Integer solutionLanguageRiskScore) {
         return new RoutineQualityGatePending(
                 10L,
                 1001L,
@@ -99,9 +184,16 @@ class RoutineQualityGateEngineTest {
                 signalCount,
                 questionSignals,
                 painSignals,
+                operationalDifficultySignals,
                 mechanismSignals,
                 routineTasks,
                 commercialObjects,
+                languageMarkers,
+                solutionRiskSignals,
+                routineEvidenceScore,
+                difficultyEvidenceScore,
+                sourceDiversityScore,
+                solutionLanguageRiskScore,
                 Instant.parse("2026-06-04T00:00:00Z"));
     }
 

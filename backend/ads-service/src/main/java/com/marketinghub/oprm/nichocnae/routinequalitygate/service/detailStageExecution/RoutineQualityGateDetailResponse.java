@@ -12,6 +12,10 @@ public record RoutineQualityGateDetailResponse(
     Integer specificityScore,
     Integer confidenceScore,
     Integer duplicationScore,
+    Integer routineEvidenceScore,
+    Integer difficultyEvidenceScore,
+    Integer sourceDiversityScore,
+    Integer solutionLanguageRiskScore,
     String qualityNotes,
     String checkedBy,
     Instant checkedAt) {}

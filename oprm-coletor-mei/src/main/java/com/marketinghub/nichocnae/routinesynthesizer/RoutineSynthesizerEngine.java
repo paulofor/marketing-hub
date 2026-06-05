@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 public class RoutineSynthesizerEngine {
     private static final int MAX_ITEMS_PER_BLOCK = 6;
 
-    /** Monta o cartão de rotina sem criar oferta, campanha ou landing page. */
+    /** Monta o cartão de rotina sem criar oferta, campanha, hipótese comercial ou recomendação de solução. */
     public RoutineCardDraft synthesize(RoutineSynthesizerPending pending) {
         if (pending.signals() == null || pending.signals().isEmpty()) {
             throw new IllegalArgumentException("signals must contain at least one item");
@@ -23,10 +23,12 @@ public class RoutineSynthesizerEngine {
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(this::confidenceOrZero).reversed())
                 .toList();
-        String routine = buildBlock("Rotina operacional observada", pending, filterByType(signals, "ROUTINE", "TASK", "ROUTINE_TASK", "COMMERCIAL_TASK"));
-        String pains = buildBlock("Dores e fricções recorrentes", pending, filterByType(signals, "PAIN", "PAIN_POINT", "CUSTOMER_QUESTION"));
-        String results = buildBlock("Resultados buscados pelo público", pending, filterByType(signals, "RESULT", "RESULT_DESIRED", "DESIRED_RESULT"));
-        String mechanisms = buildBlock("Oportunidades de mecanismo sem virar oferta", pending, filterByType(signals, "MECHANISM", "MECHANISM_OPPORTUNITY", "PROOF_SIGNAL", "LANGUAGE", "LANGUAGE_MARKER"));
+        String routine = buildBlock("Rotina observada", pending, filterByType(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "COMMERCIAL_TASK"));
+        String pains = buildBlock("Dificuldades concretas", pending, filterByType(signals, "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL"));
+        String questions = buildBlock("Perguntas do profissional e do cliente final", pending,
+                filterByType(signals, "NICHE_OWNER_QUESTION", "FINAL_CUSTOMER_QUESTION", "QUESTION_SIGNAL", "CUSTOMER_QUESTION"));
+        String context = buildBlock("Contexto operacional e linguagem do nicho", pending,
+                filterByType(signals, "CONTEXT_MARKER", "LANGUAGE_MARKER", "SEASONALITY_MARKER", "COMMERCIAL_OBJECT", "PROOF_SIGNAL"));
         String evidence = buildEvidenceBlock(signals);
         String domains = signals.stream()
                 .map(SignalForRoutineSynthesis::sourceDomain)
@@ -34,35 +36,99 @@ public class RoutineSynthesizerEngine {
                 .distinct()
                 .limit(12)
                 .collect(Collectors.joining(", "));
-        int confidence = Math.max(0, Math.min(100, (int) Math.round(signals.stream().mapToInt(this::confidenceOrZero).average().orElse(0))));
-        return new RoutineCardDraft(routine, pains, results, mechanisms, evidence, domains.isBlank() ? "fontes não informadas" : domains, confidence);
+        int confidence = clamp((int) Math.round(signals.stream().mapToInt(this::confidenceOrZero).average().orElse(0)));
+        int routineEvidenceScore = calculateTypeScore(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "COMMERCIAL_TASK");
+        int difficultyEvidenceScore = calculateTypeScore(signals, "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL");
+        int sourceDiversityScore = clamp(distinctDomainCount(domains) * 12);
+        int solutionLanguageRiskScore = calculateSolutionLanguageRiskScore(signals);
+        return new RoutineCardDraft(
+                routine,
+                pains,
+                questions,
+                context,
+                evidence,
+                domains.isBlank() ? "fontes não informadas" : domains,
+                confidence,
+                routineEvidenceScore,
+                difficultyEvidenceScore,
+                sourceDiversityScore,
+                solutionLanguageRiskScore);
     }
 
-    /** Filtra sinais por tipo mantendo fallback para todos os sinais quando o bloco ficaria vazio. */
+    /** Filtra sinais por tipo mantendo fallback neutro somente para linguagem e contexto, nunca para solução. */
     private List<SignalForRoutineSynthesis> filterByType(List<SignalForRoutineSynthesis> signals, String... acceptedTypes) {
         Map<String, Boolean> accepted = List.of(acceptedTypes).stream().collect(Collectors.toMap(type -> type, type -> Boolean.TRUE));
         List<SignalForRoutineSynthesis> filtered = signals.stream()
                 .filter(signal -> accepted.containsKey(normalizeType(signal.signalType())))
                 .limit(MAX_ITEMS_PER_BLOCK)
                 .toList();
-        return filtered.isEmpty() ? signals.stream().limit(Math.min(3, signals.size())).toList() : filtered;
+        return filtered.isEmpty() ? List.of() : filtered;
     }
 
-    /** Monta um bloco textual curto do cartão citando sinais e evidências de apoio. */
+    /** Monta um bloco textual curto do cartão citando sinais e evidências de apoio sem sugerir produto ou oferta. */
     private String buildBlock(String title, RoutineSynthesizerPending pending, List<SignalForRoutineSynthesis> signals) {
         String bullets = signals.stream()
                 .limit(MAX_ITEMS_PER_BLOCK)
                 .map(signal -> "- " + clean(signal.signalText()) + " (evidência: " + clean(signal.evidenceExcerpt()) + ")")
                 .collect(Collectors.joining("\n"));
+        if (!StringUtils.hasText(bullets)) {
+            bullets = "- Sem evidência suficiente neste bloco; manter pesquisa aberta até obter sinais auditáveis.";
+        }
         return title + " para " + pending.nicheName() + " / CNAE " + pending.cnaeCode() + ":\n" + bullets;
     }
 
-    /** Monta o resumo de evidências destacando fontes e confiança dos sinais usados. */
+    /** Monta o resumo de evidências e alerta riscos de linguagem de solução em campo textual próprio do cartão. */
     private String buildEvidenceBlock(List<SignalForRoutineSynthesis> signals) {
-        return signals.stream()
+        String evidence = signals.stream()
+                .filter(signal -> !isSolutionRisk(signal))
                 .limit(MAX_ITEMS_PER_BLOCK)
                 .map(signal -> "- " + clean(signal.sourceDomain()) + " · " + confidenceOrZero(signal) + "% · " + clean(signal.evidenceExcerpt()))
                 .collect(Collectors.joining("\n"));
+        String risks = signals.stream()
+                .filter(this::isSolutionRisk)
+                .limit(MAX_ITEMS_PER_BLOCK)
+                .map(signal -> "- Alerta de contaminação por solução em " + clean(signal.sourceDomain()) + ": " + clean(signal.evidenceExcerpt()))
+                .collect(Collectors.joining("\n"));
+        if (!StringUtils.hasText(evidence)) {
+            evidence = "- Sem evidência de rotina suficiente sem risco de solução.";
+        }
+        return StringUtils.hasText(risks) ? evidence + "\nAlertas de contaminação por solução:\n" + risks : evidence;
+    }
+
+    /** Calcula pontuação média para um conjunto canônico de tipos de sinal. */
+    private int calculateTypeScore(List<SignalForRoutineSynthesis> signals, String... acceptedTypes) {
+        Map<String, Boolean> accepted = List.of(acceptedTypes).stream().collect(Collectors.toMap(type -> type, type -> Boolean.TRUE));
+        return clamp((int) Math.round(signals.stream()
+                .filter(signal -> accepted.containsKey(normalizeType(signal.signalType())))
+                .mapToInt(this::confidenceOrZero)
+                .average()
+                .orElse(0)));
+    }
+
+    /** Calcula risco percentual de contaminação por linguagem de solução nos sinais usados. */
+    private int calculateSolutionLanguageRiskScore(List<SignalForRoutineSynthesis> signals) {
+        if (signals.isEmpty()) {
+            return 0;
+        }
+        long riskCount = signals.stream().filter(this::isSolutionRisk).count();
+        return clamp((int) Math.round((riskCount * 100.0) / signals.size()));
+    }
+
+    /** Identifica sinais que representam risco de solução ou contêm vocabulário típico de solução precoce. */
+    private boolean isSolutionRisk(SignalForRoutineSynthesis signal) {
+        String type = normalizeType(signal.signalType());
+        String text = (clean(signal.signalText()) + " " + clean(signal.evidenceExcerpt())).toLowerCase(Locale.ROOT);
+        return "SOLUTION_LANGUAGE_RISK".equals(type)
+                || "MECHANISM_OPPORTUNITY".equals(type)
+                || text.matches(".*(\\bia\\b|inteligência artificial|automação|software|sistema|app|ferramenta|curso).*");
+    }
+
+    /** Conta domínios distintos declarados na síntese para estimar variedade de fontes. */
+    private int distinctDomainCount(String sourceDomains) {
+        if (!StringUtils.hasText(sourceDomains)) {
+            return 0;
+        }
+        return (int) List.of(sourceDomains.split(",")).stream().map(String::trim).filter(StringUtils::hasText).distinct().count();
     }
 
     /** Normaliza tipos de sinal para comparação estável. */
@@ -81,5 +147,10 @@ public class RoutineSynthesizerEngine {
             return "não informado";
         }
         return value.replaceAll("\\s+", " ").trim();
+    }
+
+    /** Garante que a pontuação calculada permaneça na escala percentual. */
+    private int clamp(int value) {
+        return Math.max(0, Math.min(100, value));
     }
 }

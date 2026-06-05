@@ -8,4 +8,8 @@ public record RoutineCardDraft(
         String mechanismOpportunitiesSummary,
         String evidenceSummary,
         String sourceDomains,
-        Integer confidenceScore) {}
+        Integer confidenceScore,
+        Integer routineEvidenceScore,
+        Integer difficultyEvidenceScore,
+        Integer sourceDiversityScore,
+        Integer solutionLanguageRiskScore) {}

@@ -45,6 +45,18 @@ public class OprmNicheRoutineCard {
   @Column(name = "confidence_score", nullable = false)
   private Integer confidenceScore;
 
+  @Column(name = "routine_evidence_score", nullable = false)
+  private Integer routineEvidenceScore = 0;
+
+  @Column(name = "difficulty_evidence_score", nullable = false)
+  private Integer difficultyEvidenceScore = 0;
+
+  @Column(name = "source_diversity_score", nullable = false)
+  private Integer sourceDiversityScore = 0;
+
+  @Column(name = "solution_language_risk_score", nullable = false)
+  private Integer solutionLanguageRiskScore = 0;
+
   @Column(name = "ready_for_hypothesis", nullable = false)
   private Boolean readyForHypothesis = false;
 

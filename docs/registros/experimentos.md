@@ -3552,3 +3552,9 @@
   - backend/ads-service/src/main/java/com/marketinghub/pipeline/Pipeline.java
   - backend/ads-service/src/main/java/com/marketinghub/pipeline/PipelineStage.java
   - backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java
+## 2026-06-05 — Correção do resumo do funil para contabilizar analytics da landing
+
+- solicitação: investigar por que o navegador indicava envio do registro de acesso da landing do experimento 37, mas a aba de funil continuava zerada.
+- causa-raiz identificada: os eventos estavam chegando e sendo gravados em `experiment_funnel_event` com `source=landing-page-analytics`, porém o resumo da etapa “Visualização do formulário” só contava eventos automáticos com `source=lead-portal-render-complete`, deixando os acessos reais fora do total exibido.
+- correção aplicada: o consolidado do funil agora soma, na etapa “Visualização do formulário”, tanto `lead-portal-render-complete` quanto `landing-page-analytics`; a origem de analytics foi centralizada em constante do repositório para evitar divergência futura.
+- validação automatizada: adicionado teste unitário garantindo que `summarize` consulta as duas fontes ao consolidar visualizações do formulário.

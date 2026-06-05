@@ -226,7 +226,7 @@ public class ExperimentFunnelService {
             ExperimentFunnelEvent event = ExperimentFunnelEvent.builder()
                     .experiment(experiment)
                     .stage(stage)
-                    .source("landing-page-analytics")
+                    .source(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE)
                     .campaignCode(null)
                     .payload(payload)
                     .occurredAt(occurredAt)
@@ -340,10 +340,13 @@ public class ExperimentFunnelService {
                         FROM experiment_funnel_event
                         WHERE experiment_id = ?
                           AND stage = 'VISUALIZACAO_FORM'
-                          AND source = ?
+                          AND source IN (?, ?)
                           AND (? IS NULL OR occurred_at > ?)
-                        """, experimentId, ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE, baseline, baseline),
-                "Renderização completa registrada pelo Lead Portal (evento lead-portal-render-complete)");
+                        """, experimentId,
+                        ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,
+                        ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
+                        baseline, baseline),
+                "Visualizações registradas pelo Lead Portal e analytics da landing (experiment_funnel_event)");
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
                 fetchSingleMetric("""

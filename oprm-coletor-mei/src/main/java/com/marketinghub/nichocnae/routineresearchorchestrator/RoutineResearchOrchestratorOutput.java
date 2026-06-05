@@ -13,5 +13,9 @@ public record RoutineResearchOrchestratorOutput(
         BigDecimal sourceScore,
         String triggerSource,
         String cycleStatus,
+        String originalNicheName,
+        String neutralNicheName,
+        String researchMode,
+        BigDecimal solutionLanguageRiskScore,
         String routineResearchStatus,
         String message) {}

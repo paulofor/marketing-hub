@@ -51,6 +51,10 @@ class RoutineResearchOrchestratorServiceTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 "PENDING",
                 "Nenhum nicho CNAE pendente com score disponível para pesquisa de rotina.");
         when(backendClient.runNext()).thenReturn(output);

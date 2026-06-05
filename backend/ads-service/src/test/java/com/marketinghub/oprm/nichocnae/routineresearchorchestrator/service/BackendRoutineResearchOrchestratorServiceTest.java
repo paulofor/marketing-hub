@@ -67,6 +67,10 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.getFirst().researchCycleId()).isEqualTo(321L);
         assertThat(result.getFirst().sourceNicheId()).isEqualTo(55L);
         assertThat(result.getFirst().nicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(result.getFirst().originalNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(result.getFirst().neutralNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(result.getFirst().researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
+        assertThat(result.getFirst().solutionLanguageRiskScore()).isEqualByComparingTo("0.00");
         assertThat(result.getFirst().sourceScore()).isEqualByComparingTo("92.50");
         assertThat(result.getFirst().processedAt()).isEqualTo(Instant.parse("2026-06-03T01:00:00Z"));
         assertThat(result.getFirst().finishedAt()).isEqualTo(Instant.parse("2026-06-03T02:00:00Z"));
@@ -99,6 +103,9 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.triggerSource()).isEqualTo("AUTO_SCORE_QUEUE");
         assertThat(result.cycleStatus()).isEqualTo("RUNNING");
         assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+        assertThat(result.originalNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(result.neutralNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(result.researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
 
         ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
@@ -106,6 +113,10 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(savedCycle.getSourceNicheId()).isEqualTo(55L);
         assertThat(savedCycle.getCnaeCode()).isEqualTo("9602501");
         assertThat(savedCycle.getNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(savedCycle.getOriginalNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(savedCycle.getNeutralNicheName()).isEqualTo("Cabeleireiros e manicures");
+        assertThat(savedCycle.getResearchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
+        assertThat(savedCycle.getSolutionLanguageRiskScore()).isEqualByComparingTo("0.00");
         assertThat(savedCycle.getSourceScore()).isEqualByComparingTo("92.50");
         assertThat(savedCycle.getTotalQueries()).isZero();
         assertThat(savedCycle.getTotalSourceCandidates()).isZero();
@@ -116,6 +127,40 @@ class BackendRoutineResearchOrchestratorServiceTest {
         verify(nicheCandidateRepository).save(candidateCaptor.capture());
         assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
         assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(321L);
+    }
+
+
+    /** Deve neutralizar nome contaminado e preservar o original para auditoria do ciclo. */
+    @Test
+    void runNextNeutralizesSolutionLanguageAndKeepsOriginalName() {
+        OprmNicheCandidate candidate = candidate();
+        candidate.setCandidateNicheName("IA para crescimento de Cabeleireiros, manicure e pedicure");
+        when(nicheCandidateRepository.findNextPendingRoutineResearchCandidate(any(Pageable.class)))
+                .thenReturn(List.of(candidate));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> {
+                    OprmRoutineResearchCycle cycle = invocation.getArgument(0);
+                    cycle.setId(322L);
+                    return cycle;
+                });
+
+        RecordRoutineResearchOrchestratorResult result = service.runNext();
+
+        assertThat(result.started()).isTrue();
+        assertThat(result.nicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
+        assertThat(result.originalNicheName()).isEqualTo("IA para crescimento de Cabeleireiros, manicure e pedicure");
+        assertThat(result.neutralNicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
+        assertThat(result.researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
+        assertThat(result.solutionLanguageRiskScore()).isEqualByComparingTo("100.00");
+
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+        OprmRoutineResearchCycle savedCycle = cycleCaptor.getValue();
+        assertThat(savedCycle.getNicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
+        assertThat(savedCycle.getOriginalNicheName()).isEqualTo("IA para crescimento de Cabeleireiros, manicure e pedicure");
+        assertThat(savedCycle.getNeutralNicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
+        assertThat(savedCycle.getResearchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
+        assertThat(savedCycle.getSolutionLanguageRiskScore()).isEqualByComparingTo("100.00");
     }
 
     /** Deve retornar resultado sem início quando não houver nicho pendente com score. */
@@ -138,6 +183,10 @@ class BackendRoutineResearchOrchestratorServiceTest {
         cycle.setCnaeCode("9602501");
         cycle.setCnaeDescription("Cabeleireiros, manicure e pedicure");
         cycle.setNicheName(nicheName);
+        cycle.setOriginalNicheName(nicheName);
+        cycle.setNeutralNicheName(nicheName);
+        cycle.setResearchMode("ROUTINE_REALITY_RESEARCH");
+        cycle.setSolutionLanguageRiskScore(BigDecimal.ZERO);
         cycle.setSourceScore(new BigDecimal("92.50"));
         cycle.setTriggerSource("AUTO_SCORE_QUEUE");
         cycle.setStatus("RUNNING");

@@ -2,6 +2,8 @@ package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer;
+import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer.NormalizedNicheName;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
@@ -23,9 +25,11 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String ROUTINE_STATUS_RUNNING = "RESEARCH_RUNNING";
     private static final String CYCLE_STATUS_RUNNING = "RUNNING";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
+    private static final String RESEARCH_MODE_ROUTINE_REALITY = "ROUTINE_REALITY_RESEARCH";
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
+    private final RoutineResearchNicheNameNormalizer nicheNameNormalizer = new RoutineResearchNicheNameNormalizer();
 
     /** Inicializa o serviço com os repositórios canônicos usados pela etapa zero do pipeline. */
     public BackendRoutineResearchOrchestratorService(
@@ -72,7 +76,7 @@ public class BackendRoutineResearchOrchestratorService {
         if (candidates.isEmpty()) {
             LOGGER.info("Nenhum candidato pendente encontrado para etapa zero OPRM nichocnae; ciclo não será criado.");
             return new RecordRoutineResearchOrchestratorResult(
-                    false, null, null, null, null, null, null, null, null, ROUTINE_STATUS_PENDING,
+                    false, null, null, null, null, null, null, null, null, null, null, null, null, ROUTINE_STATUS_PENDING,
                     "Nenhum nicho CNAE pendente com score disponível para pesquisa de rotina.");
         }
 
@@ -90,10 +94,14 @@ public class BackendRoutineResearchOrchestratorService {
             OprmRoutineResearchCycle cycle = createCycle(candidate, now);
             OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(cycle);
             LOGGER.info(
-                    "Ciclo de pesquisa de rotina criado pela etapa zero OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, cycleStatus={}, triggerSource={}, startedAt={})",
+                    "Ciclo de pesquisa de rotina criado pela etapa zero OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, originalNicheName={}, neutralNicheName={}, researchMode={}, solutionLanguageRiskScore={}, cycleStatus={}, triggerSource={}, startedAt={})",
                     savedCycle.getId(),
                     savedCycle.getSourceNicheId(),
                     savedCycle.getCnaeCode(),
+                    savedCycle.getOriginalNicheName(),
+                    savedCycle.getNeutralNicheName(),
+                    savedCycle.getResearchMode(),
+                    savedCycle.getSolutionLanguageRiskScore(),
                     savedCycle.getStatus(),
                     savedCycle.getTriggerSource(),
                     savedCycle.getStartedAt());
@@ -109,10 +117,13 @@ public class BackendRoutineResearchOrchestratorService {
                     candidate.getUpdatedAt());
             RecordRoutineResearchOrchestratorResult result = toStartedResult(candidate, savedCycle);
             LOGGER.info(
-                    "Etapa zero OPRM nichocnae concluída no backend (started={}, researchCycleId={}, sourceNicheId={}, routineStatus={}, cycleStatus={})",
+                    "Etapa zero OPRM nichocnae concluída no backend (started={}, researchCycleId={}, sourceNicheId={}, originalNicheName={}, neutralNicheName={}, researchMode={}, routineStatus={}, cycleStatus={})",
                     result.started(),
                     result.researchCycleId(),
                     result.sourceNicheId(),
+                    savedCycle.getOriginalNicheName(),
+                    savedCycle.getNeutralNicheName(),
+                    savedCycle.getResearchMode(),
                     result.routineResearchStatus(),
                     result.cycleStatus());
             return result;
@@ -128,13 +139,19 @@ public class BackendRoutineResearchOrchestratorService {
         }
     }
 
-    /** Cria a entidade do ciclo pai de pesquisa de rotina a partir do nicho CNAE selecionado. */
+    /** Cria a entidade do ciclo pai usando nome neutro para impedir pesquisa enviesada por solução. */
     private OprmRoutineResearchCycle createCycle(OprmNicheCandidate candidate, Instant now) {
+        NormalizedNicheName normalizedName = nicheNameNormalizer.normalize(
+                candidate.getCandidateNicheName(), candidate.getCnaeDescription());
         OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
         cycle.setSourceNicheId(candidate.getId());
         cycle.setCnaeCode(candidate.getCnaeCode());
         cycle.setCnaeDescription(candidate.getCnaeDescription());
-        cycle.setNicheName(candidate.getCandidateNicheName());
+        cycle.setNicheName(normalizedName.neutralNicheName());
+        cycle.setOriginalNicheName(normalizedName.originalNicheName());
+        cycle.setNeutralNicheName(normalizedName.neutralNicheName());
+        cycle.setResearchMode(RESEARCH_MODE_ROUTINE_REALITY);
+        cycle.setSolutionLanguageRiskScore(normalizedName.solutionLanguageRiskScore());
         cycle.setSourceScore(candidate.getOpportunityScore());
         cycle.setTriggerSource(TRIGGER_SOURCE_AUTO_SCORE_QUEUE);
         cycle.setStatus(CYCLE_STATUS_RUNNING);
@@ -156,6 +173,10 @@ public class BackendRoutineResearchOrchestratorService {
                 cycle.getCnaeCode(),
                 cycle.getCnaeDescription(),
                 cycle.getNicheName(),
+                cycle.getOriginalNicheName(),
+                cycle.getNeutralNicheName(),
+                cycle.getResearchMode(),
+                cycle.getSolutionLanguageRiskScore(),
                 cycle.getSourceScore(),
                 cycle.getTriggerSource(),
                 cycle.getStatus(),
@@ -186,10 +207,14 @@ public class BackendRoutineResearchOrchestratorService {
                 candidate.getId(),
                 candidate.getCnaeCode(),
                 candidate.getCnaeDescription(),
-                candidate.getCandidateNicheName(),
+                savedCycle.getNicheName(),
                 candidate.getOpportunityScore(),
                 savedCycle.getTriggerSource(),
                 savedCycle.getStatus(),
+                savedCycle.getOriginalNicheName(),
+                savedCycle.getNeutralNicheName(),
+                savedCycle.getResearchMode(),
+                savedCycle.getSolutionLanguageRiskScore(),
                 candidate.getRoutineResearchStatus(),
                 "Pesquisa de rotina iniciada para o próximo nicho CNAE com maior score pendente.");
     }

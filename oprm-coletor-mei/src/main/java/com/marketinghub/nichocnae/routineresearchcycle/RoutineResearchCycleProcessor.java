@@ -25,6 +25,10 @@ public class RoutineResearchCycleProcessor implements StageProcessor<RoutineRese
         Map<String, Object> metrics = Map.of(
                 "researchCycleId", output.researchCycleId(),
                 "status", output.status(),
+                "originalNicheName", output.originalNicheName(),
+                "neutralNicheName", output.neutralNicheName(),
+                "researchMode", output.researchMode(),
+                "solutionLanguageRiskScore", output.solutionLanguageRiskScore(),
                 "totalQueries", output.totalQueries(),
                 "totalSourceCandidates", output.totalSourceCandidates(),
                 "totalSourceSnapshots", output.totalSourceSnapshots(),

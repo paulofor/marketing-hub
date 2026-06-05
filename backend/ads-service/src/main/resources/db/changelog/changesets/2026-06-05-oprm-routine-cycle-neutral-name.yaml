@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-05-01-oprm-routine-cycle-neutral-name
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_routine_research_cycle
+              columnName: original_niche_name
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_routine_research_cycle
+                ADD COLUMN original_niche_name VARCHAR(255) NULL,
+                ADD COLUMN neutral_niche_name VARCHAR(255) NULL,
+                ADD COLUMN research_mode VARCHAR(48) NOT NULL DEFAULT 'ROUTINE_REALITY_RESEARCH',
+                ADD COLUMN solution_language_risk_score DECIMAL(5,2) NOT NULL DEFAULT 0.00;
+              UPDATE oprm_routine_research_cycle
+                SET original_niche_name = niche_name,
+                    neutral_niche_name = niche_name,
+                    research_mode = 'ROUTINE_REALITY_RESEARCH'
+                WHERE original_niche_name IS NULL
+                   OR neutral_niche_name IS NULL
+                   OR research_mode IS NULL;
+              ALTER TABLE oprm_routine_research_cycle
+                MODIFY original_niche_name VARCHAR(255) NOT NULL,
+                MODIFY neutral_niche_name VARCHAR(255) NOT NULL,
+                MODIFY research_mode VARCHAR(48) NOT NULL,
+                MODIFY solution_language_risk_score DECIMAL(5,2) NOT NULL DEFAULT 0.00;

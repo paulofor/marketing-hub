@@ -32,6 +32,10 @@ class RoutineResearchOrchestratorProcessorTest {
                 BigDecimal.valueOf(92),
                 "AUTO_SCORE_QUEUE",
                 "RUNNING",
+                "Kit Agenda Cheia com IA para manicures",
+                "Kit Agenda Cheia com IA para manicures",
+                "ROUTINE_REALITY_RESEARCH",
+                BigDecimal.ZERO,
                 "RESEARCH_RUNNING",
                 "Pesquisa de rotina iniciada.");
         when(backendClient.runNext()).thenReturn(backendOutput);

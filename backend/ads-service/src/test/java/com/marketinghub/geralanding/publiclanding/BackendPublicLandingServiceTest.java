@@ -73,6 +73,46 @@ class BackendPublicLandingServiceTest {
         assertTrue(payload.customFormHtml().contains("data-mh-facebook-pixel"));
     }
 
+    /** Deve injetar envio canônico quando a landing possui campos de lead sem contrato de submissão. */
+    @Test
+    void approveEndPublishShouldInjectLeadSubmissionContractWhenFormControlsExist() {
+        BackendPublicLandingService service = new BackendPublicLandingService(
+                experimentRepository,
+                restTemplate,
+                "http://lead-portal");
+        Experiment experiment = new Experiment();
+        experiment.setId(37L);
+        experiment.setName("Experimento 37");
+        experiment.setHtmlGeraLanding("""
+                <html><head><title>LP</title></head><body>
+                <section id="formulario">
+                  <input id="input-nome" type="text" name="nome" required>
+                  <input id="input-email" type="email" name="email" required>
+                  <button id="form-submit" type="button">Receber minha prévia</button>
+                </section>
+                </body></html>
+                """);
+        when(experimentRepository.findById(37L)).thenReturn(Optional.of(experiment));
+
+        service.approveEndPublish(37L);
+
+        String finalHtml = experiment.getLandingPageHtml();
+        assertTrue(finalHtml.contains("lead-portal-submission-engagement.v1"));
+        assertTrue(finalHtml.contains("/api/public/lead-portal/flows/"));
+        assertTrue(finalHtml.contains("/submission"));
+        assertTrue(finalHtml.contains("contato: {nome: nome, email: email}"));
+        assertTrue(finalHtml.contains("button.addEventListener('click', submitLead)"));
+        assertTrue(finalHtml.contains("data-track-section=\"formulario\""));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<HttpEntity<PublicLandingLeadPortalPublishRequest>> entityCaptor =
+                ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).put(any(URI.class), entityCaptor.capture());
+        PublicLandingLeadPortalPublishRequest payload = entityCaptor.getValue().getBody();
+        assertNotNull(payload);
+        assertTrue(payload.customFormHtml().contains("lead-portal-submission-engagement.v1"));
+    }
+
     /** Deve bloquear publicação quando o experimento ainda não possui HTML de landing. */
     @Test
     void approveEndPublishShouldThrowConflictWhenLandingHtmlIsMissing() {

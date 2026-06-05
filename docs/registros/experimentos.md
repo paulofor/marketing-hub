@@ -3558,3 +3558,11 @@
 - causa-raiz identificada: os eventos estavam chegando e sendo gravados em `experiment_funnel_event` com `source=landing-page-analytics`, porém o resumo da etapa “Visualização do formulário” só contava eventos automáticos com `source=lead-portal-render-complete`, deixando os acessos reais fora do total exibido.
 - correção aplicada: o consolidado do funil agora soma, na etapa “Visualização do formulário”, tanto `lead-portal-render-complete` quanto `landing-page-analytics`; a origem de analytics foi centralizada em constante do repositório para evitar divergência futura.
 - validação automatizada: adicionado teste unitário garantindo que `summarize` consulta as duas fontes ao consolidar visualizações do formulário.
+
+## 2026-06-05 — Envio canônico do formulário na aprovação da landing pública
+
+- solicitação: corrigir a landing do experimento 37 para que, ao aprovar/publicar novamente, o HTML final seja preparado para enviar o formulário de lead.
+- causa-raiz identificada: o HTML fonte salvo em `html_geralanding` e o HTML publicável em `landing_page_html` possuíam campos `input-nome`, `input-email` e botão `form-submit`, mas não continham `<form>` nem chamada ao endpoint canônico `/api/public/lead-portal/flows/{slug}/submission`.
+- correção aplicada: a etapa de aprovação/publicação da landing pública agora injeta, quando detecta controles mínimos de captura e ausência de contrato existente, o script de submissão canônico `lead-portal-submission-engagement.v1`, enviando nome/e-mail para o endpoint público do Lead Portal antes de republicar o HTML final.
+- cânone atualizado: `docs/canonical/procedimento-experimento-canon.v1.md` registra que a aprovação deve injetar submissão canônica idempotente na cópia publicável quando houver controles mínimos de captura.
+- validação automatizada: adicionado teste unitário no `BackendPublicLandingServiceTest` garantindo que a aprovação injeta contrato, endpoint de submissão e handler de clique no artefato publicado.

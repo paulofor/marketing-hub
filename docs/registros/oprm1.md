@@ -283,3 +283,6 @@
 - 2026-06-05 00:00:00 (UTC): corrigida a causa-raiz da falha de bootstrap Liquibase do pipeline oficial OPRM NichoCNAE: o campo Java `requiresOpenAiModel` agora aponta explicitamente para a coluna canônica `requires_openai_model`, e um changelog prévio remove/renomeia a coluna legada `requires_open_ai_model` criada por auto-DDL para impedir erro de `NOT NULL` sem default ao inserir etapas oficiais.
 
 - 2026-06-05 00:00:00 (UTC): executada a fase 5 do plano de ajuste do pipeline NichoCNAE sem viés. A etapa 6 passou a sintetizar cartão focado em rotina observada, dificuldades, perguntas, contexto operacional, linguagem, evidências e alertas de contaminação por solução; a etapa 7 passou a aprovar pela suficiência de rotina/dificuldade/perguntas-fontes e a bloquear domínio de linguagem de IA/software, persistindo scores próprios de evidência de rotina, dificuldade, diversidade de fontes e risco de solução.
+
+## 2026-06-05 — Correção de include Liquibase para scores de qualidade da rotina OPRM
+- Ajustado o changelog master do backend para resolver o changeset `2026-06-05-oprm-routine-quality-scores.yaml` de forma relativa ao arquivo master, evitando falha de bootstrap quando o Liquibase não encontra `changesets/...` no search path configurado.

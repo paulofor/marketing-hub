@@ -6,6 +6,9 @@ databaseChangeLog:
       file: changesets/2026-06-05-pipeline-stage-implementation-location.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-05-oprm-nichocnae-official-pipeline.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-05-oprm-enriched-niche-materializer.yaml
       relativeToChangelogFile: true
   - include:

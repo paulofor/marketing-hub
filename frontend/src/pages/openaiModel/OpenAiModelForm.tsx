@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 
 export type OpenAiModelFormValues = {
   name: string;
@@ -26,6 +26,8 @@ interface Props {
   isSubmitting?: boolean;
   submitLabel?: string;
   nameOnly?: boolean;
+  officialModelCodes?: string[];
+  isLoadingOfficialModels?: boolean;
 }
 
 const DEFAULT_VALUES: OpenAiModelFormValues = {
@@ -46,8 +48,11 @@ export default function OpenAiModelForm({
   isSubmitting = false,
   submitLabel = "Salvar",
   nameOnly = false,
+  officialModelCodes = [],
+  isLoadingOfficialModels = false,
 }: Props) {
   const [values, setValues] = useState<OpenAiModelFormValues>(initialValues);
+  const [showSelectionWarning, setShowSelectionWarning] = useState(false);
 
   useEffect(() => {
     setValues(initialValues);
@@ -60,10 +65,35 @@ export default function OpenAiModelForm({
         event.target.type === "checkbox"
           ? event.target.checked
           : event.target.value;
+      setShowSelectionWarning(false);
       setValues((prev) => ({ ...prev, [field]: nextValue }));
     };
 
-  const handleSubmit = () => onSubmit(values);
+  const normalizedQuery = values.name.trim().toLowerCase();
+  const matchingOfficialModels = useMemo(() => {
+    if (!nameOnly || !normalizedQuery) return [];
+    return officialModelCodes
+      .filter((modelCode) => modelCode.toLowerCase().includes(normalizedQuery))
+      .sort((left, right) => left.localeCompare(right));
+  }, [nameOnly, normalizedQuery, officialModelCodes]);
+  const hasExactOfficialModel = matchingOfficialModels.some(
+    (modelCode) => modelCode.toLowerCase() === normalizedQuery,
+  );
+  const mustChooseOfficialModel =
+    nameOnly && matchingOfficialModels.length > 0 && !hasExactOfficialModel;
+
+  const selectOfficialModel = (modelCode: string) => {
+    setShowSelectionWarning(false);
+    setValues((prev) => ({ ...prev, name: modelCode }));
+  };
+
+  const handleSubmit = () => {
+    if (mustChooseOfficialModel) {
+      setShowSelectionWarning(true);
+      return;
+    }
+    onSubmit(values);
+  };
 
   const submitDisabled = isSubmitting || !values.name.trim();
 
@@ -118,6 +148,58 @@ export default function OpenAiModelForm({
                 onChange={handleChange("code")}
                 placeholder="ex: gpt-4o-mini"
               />
+            </div>
+          ) : null}
+          {nameOnly && values.name.trim() ? (
+            <div className="col-12">
+              <div className="border rounded p-3 bg-light">
+                <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+                  <strong>Modelos oficiais encontrados</strong>
+                  {isLoadingOfficialModels ? (
+                    <span className="text-body-secondary small">
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        aria-hidden="true"
+                      />
+                      Consultando OpenAI...
+                    </span>
+                  ) : null}
+                </div>
+                {matchingOfficialModels.length > 0 ? (
+                  <div className="d-flex flex-column gap-2">
+                    {matchingOfficialModels.map((modelCode) => (
+                      <button
+                        key={modelCode}
+                        type="button"
+                        className={`btn text-start ${
+                          modelCode.toLowerCase() === normalizedQuery
+                            ? "btn-primary"
+                            : "btn-outline-primary"
+                        }`}
+                        onClick={() => selectOfficialModel(modelCode)}
+                      >
+                        <code>{modelCode}</code>
+                        <span className="ms-2 small">
+                          {modelCode.toLowerCase() === normalizedQuery
+                            ? "selecionado"
+                            : "selecionar"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-body-secondary mb-0">
+                    Nenhum modelo oficial encontrado para esse texto. Verifique
+                    o nome ou código antes de salvar.
+                  </p>
+                )}
+                {showSelectionWarning ? (
+                  <div className="alert alert-warning mt-3 mb-0">
+                    Escolha um modelo oficial da lista antes de inserir no
+                    catálogo administrativo.
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
           {!nameOnly ? (

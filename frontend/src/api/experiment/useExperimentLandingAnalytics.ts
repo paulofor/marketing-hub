@@ -1,0 +1,45 @@
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+
+export interface ExperimentLandingAnalyticsSection {
+  sectionId: string;
+  visibleMs: number;
+  events: number;
+}
+
+export interface ExperimentLandingAnalyticsSession {
+  sessionId: string;
+  eventCount: number;
+  pageViews: number;
+  sectionViewEvents: number;
+  totalVisibleMs: number;
+  firstEventAt?: string | null;
+  lastEventAt?: string | null;
+  lastPageUrl?: string | null;
+  lastUserAgent?: string | null;
+  topSections: ExperimentLandingAnalyticsSection[];
+}
+
+export interface ExperimentLandingAnalytics {
+  totalEvents: number;
+  totalSessions: number;
+  pageViews: number;
+  sectionViewEvents: number;
+  totalVisibleMs: number;
+  averageVisibleMsPerSession: number;
+  lastEventAt?: string | null;
+  sessions: ExperimentLandingAnalyticsSession[];
+}
+
+export function useExperimentLandingAnalytics(experimentId?: string) {
+  return useQuery<ExperimentLandingAnalytics>({
+    queryKey: ["experiment", experimentId, "landing-analytics"],
+    queryFn: async () => {
+      const { data } = await axios.get<ExperimentLandingAnalytics>(
+        `/api/experiments/${experimentId}/funnel/analytics`,
+      );
+      return data;
+    },
+    enabled: Boolean(experimentId),
+  });
+}

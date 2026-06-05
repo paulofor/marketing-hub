@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -116,6 +118,29 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
         assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
         assertEquals(Instant.parse("2026-06-04T21:00:00Z"), saved.getOccurredAt());
+    }
+
+    /**
+     * Valida que o resumo de analytics retorna contadores zerados quando ainda não há sessão capturada.
+     */
+    @Test
+    void summarizeLandingAnalyticsReturnsEmptySummaryWhenThereAreNoEvents() {
+        Experiment experiment = Experiment.builder().id(38L).build();
+        when(experimentRepository.findById(38L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.findLandingAnalyticsEvents(
+                eq(38L),
+                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+                eq(null),
+                any(Pageable.class)))
+                .thenReturn(List.of());
+
+        var summary = service.summarizeLandingAnalytics(38L);
+
+        assertNotNull(summary);
+        assertEquals(0, summary.totalEvents());
+        assertEquals(0, summary.totalSessions());
+        assertEquals(0, summary.pageViews());
+        assertEquals(0, summary.sectionViewEvents());
     }
 
     /**

@@ -3617,3 +3617,24 @@
 - correção aplicada: adicionados os campos `executionModule` e `rootPackage` ao contrato de etapa, com persistência em `pipeline_stage` e `pipeline_stage_definition`, sincronização canônica para o pipeline de experimento e exibição/edição na tela `/pipelines`.
 - documentação atualizada: o cânone do procedimento de experimento e o Swagger de governança de pipelines agora registram os campos de localização técnica das etapas.
 - validação automatizada: atualizado `PipelineServiceTest` para cobrir a exposição/sincronização do pacote raiz oficial e executado teste unitário do módulo de pipelines.
+
+## 2026-06-05 14:02:21 UTC-3
+- descrição breve do problema: os eventos de analytics da landing já eram capturados pelo Lead Portal e persistidos no funil, mas não havia uma aba específica no experimento para visualizar sessões, acessos e tempo por seção.
+- descrição breve do raciocínio para a solução: a fonte correta é `experiment_funnel_event` com `source=landing-page-analytics`; a UI do experimento precisava consumir um endpoint do próprio backend para manter o fluxo Frontend → Backend → Banco.
+- registro do que foi feito: criado endpoint `/api/experiments/{experimentId}/funnel/analytics`, DTOs de resumo de sessões/seções, aba `Analytics` no detalhe do experimento, hook frontend dedicado e atualização do contrato Swagger.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/agents.md
+  - backend/AGENTS.md
+  - docs/canonical/facebook-campaign-publication-canon.v1.md
+  - docs/registros/experimentos.md
+  - docs/swagger/openapi.yaml
+
+## 2026-06-05 14:18:39 UTC-3
+- descrição breve do problema: a primeira implementação da aba Analytics adicionou uma consulta SQL/JDBC nova dentro de `ExperimentFunnelService`, contrariando o padrão arquitetural de centralizar acesso a banco no pacote `com.marketinghub.repository`.
+- descrição breve do raciocínio para a solução: manter o endpoint e a UI, mas mover a busca de eventos de analytics para o repositório JPA existente do funil, deixando o service apenas com a orquestração e agregação de negócio.
+- registro do que foi feito: criado método `findLandingAnalyticsEvents` em `ExperimentFunnelEventRepository`, ajustado `ExperimentFunnelService` para consumir o repositório centralizado e atualizado o teste unitário do resumo de analytics.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/registros/experimentos.md

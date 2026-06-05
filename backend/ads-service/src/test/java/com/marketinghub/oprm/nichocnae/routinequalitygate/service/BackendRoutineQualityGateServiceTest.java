@@ -38,8 +38,14 @@ class BackendRoutineQualityGateServiceTest {
     OprmNicheRoutineCard card = card();
     when(cardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(any(Pageable.class))).thenReturn(List.of(card));
     when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(new OprmSourceSnapshot(), new OprmSourceSnapshot()));
+    OprmSourceSnapshot riskSnapshot = new OprmSourceSnapshot();
+    riskSnapshot.setSolutionLanguageRisk(true);
+    OprmSourceSnapshot routineSnapshot = new OprmSourceSnapshot();
+    routineSnapshot.setSolutionLanguageRisk(false);
+    when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(riskSnapshot, routineSnapshot));
     when(signalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(
-        signal("CUSTOMER_QUESTION"), signal("PAIN_POINT"), signal("MECHANISM_OPPORTUNITY"), signal("ROUTINE_TASK"), signal("COMMERCIAL_TASK")));
+        signal("CUSTOMER_QUESTION"), signal("PAIN_POINT"), signal("OPERATIONAL_FRICTION"), signal("LANGUAGE_MARKER"),
+        signal("SOLUTION_LANGUAGE_RISK"), signal("MECHANISM_OPPORTUNITY"), signal("ROUTINE_TASK"), signal("COMMERCIAL_TASK")));
 
     List<RecordRoutineQualityGatePending> pending = service.listPending();
 
@@ -48,6 +54,10 @@ class BackendRoutineQualityGateServiceTest {
     assertThat(pending.getFirst().questionSignalCount()).isEqualTo(1);
     assertThat(pending.getFirst().painSignalCount()).isEqualTo(1);
     assertThat(pending.getFirst().commercialObjectCount()).isEqualTo(1);
+    assertThat(pending.getFirst().operationalDifficultyCount()).isEqualTo(1);
+    assertThat(pending.getFirst().languageMarkerCount()).isEqualTo(1);
+    assertThat(pending.getFirst().solutionLanguageRiskCount()).isEqualTo(3);
+    assertThat(pending.getFirst().routineEvidenceScore()).isEqualTo(86);
   }
 
   /** Deve persistir a decisão final no cartão e refletir o status de qualidade no ciclo. */
@@ -86,6 +96,10 @@ class BackendRoutineQualityGateServiceTest {
     card.setEvidenceSummary("Evidências");
     card.setSourceDomains("a.com,b.com");
     card.setConfidenceScore(70);
+    card.setRoutineEvidenceScore(86);
+    card.setDifficultyEvidenceScore(84);
+    card.setSourceDiversityScore(72);
+    card.setSolutionLanguageRiskScore(10);
     card.setSynthesizedBy("test");
     card.setCreatedAt(Instant.parse("2026-06-04T00:00:00Z"));
     return card;

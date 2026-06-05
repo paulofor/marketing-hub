@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -274,7 +275,40 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("Landing direta")))
                 .andExpect(content().string(containsString("data-mh-landing-analytics=\"true\"")))
                 .andExpect(content().string(containsString("/api/flows/")))
-                .andExpect(content().string(containsString("/page-analytics")));
+                .andExpect(content().string(containsString("/page-analytics")))
+                .andExpect(content().string(containsString("mhAnalyticsDebug")))
+                .andExpect(content().string(containsString("[MH Landing Analytics]")));
+    }
+
+    /**
+     * Valida atualização de instrumentação legada para exibir diagnóstico no browser sem duplicar analytics.
+     */
+    @Test
+    void getStandaloneFlowPageRefreshesLegacyAnalyticsScriptWithBrowserDebug() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("""
+                <!doctype html><html><body>
+                <main>Landing ja publicada</main>
+                <script data-mh-landing-analytics="true">console.log('analytics antigo');</script>
+                </body></html>
+                """);
+
+        mockMvc.perform(put("/api/flows/landing-legada")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(get("/api/flows/landing-legada/page"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(body).contains("Landing ja publicada");
+        assertThat(body).contains("mhAnalyticsDebug");
+        assertThat(body).contains("[MH Landing Analytics]");
+        assertThat(body).doesNotContain("analytics antigo");
+        assertThat(body.split("data-mh-landing-analytics", -1).length - 1).isEqualTo(1);
     }
 
     /**

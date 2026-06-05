@@ -3527,3 +3527,15 @@
 - solicitação: adicionar logs nos endpoints chamados pelos scripts da landing porque o navegador do usuário não mostrava funcionamento claro dos eventos do funil.
 - causa-raiz/objetivo: aumentar a observabilidade do caminho completo `landing page script → Lead Portal /api/flows/{slug}/page-analytics → Marketing Hub /api/public/lead-portal/flows/{slug}/page-analytics → experiment_funnel_event`, registrando payload cru, payload parseado, endpoint de encaminhamento, status retornado e contexto operacional (`slug`, `eventId`, `eventType`, `sectionId`, `sessionId`, `pageUrl`).
 - correção aplicada: Lead Portal e backend principal passaram a logar os payloads recebidos e o resultado de encaminhamento/persistência dos eventos `page-analytics`, preservando stack trace em payload inválido e falhas de integração.
+
+## 2026-06-05 — Diagnóstico de carregamento do script de analytics da landing no browser
+
+- solicitação: procurar os logs dos eventos `page-analytics` do experimento 37 e, como os logs textuais não apareceram na janela consultada, adicionar logs no browser para validar se o script da landing está carregando e disparando `page_view` corretamente.
+- diagnóstico operacional: a consulta via MCP não encontrou linhas `Page-analytics` no Lead Portal nem `landing_page_analytics experimentId=37` no backend no intervalo pesquisado, apesar de eventos do experimento 37 existirem em `experiment_funnel_event`; isso indica necessidade de observabilidade no navegador para confirmar execução do script, endpoint usado e mecanismo de envio (`sendBeacon` ou `fetch`).
+- ajuste aplicado: o script injetado nas landings standalone agora possui logs de console ativados por `?mhAnalyticsDebug=1` ou por `localStorage.mhLandingAnalyticsDebug=true`, cobrindo carregamento do script, início do tracking, envio de `page_view`, status do `sendBeacon`/`fetch`, seções monitoradas e processamento no `beforeunload`.
+
+## 2026-06-05 — Atualização de instrumentação legada para debug de analytics no browser
+
+- solicitação: validar o print do navegador com `?mhAnalyticsDebug=1` sem mensagens `[MH Landing Analytics]` no console.
+- causa-raiz identificada: páginas já publicadas podem conter `data-mh-landing-analytics` antigo no HTML salvo; a entrega standalone retornava o HTML sem reinjetar o script, portanto o parâmetro `mhAnalyticsDebug=1` não tinha efeito nessas publicações legadas.
+- correção aplicada: quando a landing já possui script `data-mh-landing-analytics` sem `mhAnalyticsDebug`, o Lead Portal agora substitui a instrumentação legada pelo script atualizado com logs de browser, preservando um único script de analytics e evitando duplicação.

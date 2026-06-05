@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,6 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Validates the scheduled creative generation workflow and its persistence safeguards.
+ */
 @ExtendWith(MockitoExtension.class)
 class ExperimentCreativeServiceTest {
     @Mock
@@ -40,6 +42,9 @@ class ExperimentCreativeServiceTest {
 
     Experiment experiment;
 
+    /**
+     * Creates the shared experiment fixture and service under test.
+     */
     @BeforeEach
     void setup() {
         experiment = new Experiment();
@@ -56,6 +61,9 @@ class ExperimentCreativeServiceTest {
         service = new ExperimentCreativeService(experimentRepository, chatGptClient, imageClient, creativeService, new ObjectMapper());
     }
 
+    /**
+     * Ensures successful default generation saves the creative and clears the pending flag.
+     */
     @Test
     void generateCreatesCreativesAndResetsFlag() {
         when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
@@ -63,14 +71,14 @@ class ExperimentCreativeServiceTest {
         req.setHeadline("h1");
         req.setPrimaryText("p1");
         when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
-        when(imageClient.generateImage(anyString())).thenReturn("img");
+        when(imageClient.generateImage(anyString(), isNull(), anyString())).thenReturn("img");
         Creative saved = new Creative();
         when(creativeService.create(1L, req)).thenReturn(saved);
 
         Map<Long, List<Creative>> result = service.generate();
 
         ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-        verify(imageClient).generateImage(promptCaptor.capture());
+        verify(imageClient).generateImage(promptCaptor.capture(), isNull(), contains("mode=DEFAULT"));
         String usedPrompt = promptCaptor.getValue();
         assertThat(usedPrompt).contains("Facebook e Instagram");
         assertThat(usedPrompt).contains("headline \"h1\"");
@@ -83,6 +91,9 @@ class ExperimentCreativeServiceTest {
         assertThat(result.get(1L)).containsExactly(saved);
     }
 
+    /**
+     * Ensures long text fields are truncated before the creative is persisted.
+     */
     @Test
     void truncateLongTextsBeforeSaving() {
         when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
@@ -91,7 +102,7 @@ class ExperimentCreativeServiceTest {
         req.setHeadline(longText);
         req.setPrimaryText(longText);
         when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
-        when(imageClient.generateImage(anyString())).thenReturn("img");
+        when(imageClient.generateImage(anyString(), isNull(), anyString())).thenReturn("img");
         Creative saved = new Creative();
         when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(saved);
 
@@ -104,6 +115,9 @@ class ExperimentCreativeServiceTest {
         assertThat(captured.getPrimaryText().length()).isEqualTo(125);
     }
 
+    /**
+     * Ensures generated text keeps at most thirty hashtags.
+     */
     @Test
     void limitHashtagsToThirty() {
         when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
@@ -114,7 +128,7 @@ class ExperimentCreativeServiceTest {
         req.setHeadline("headline");
         req.setPrimaryText(hashtags);
         when(chatGptClient.generateCreatives(experiment, 1)).thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
-        when(imageClient.generateImage(anyString())).thenReturn("img");
+        when(imageClient.generateImage(anyString(), isNull(), anyString())).thenReturn("img");
         when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(new Creative());
 
         service.generate();
@@ -126,6 +140,9 @@ class ExperimentCreativeServiceTest {
         assertThat(count).isEqualTo(30);
     }
 
+    /**
+     * Ensures pipeline mode uses existing ad copy and image briefing instead of text generation.
+     */
     @Test
     void pipelineModeGeneratesCreativesFromExistingContent() {
         experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
@@ -138,7 +155,7 @@ class ExperimentCreativeServiceTest {
                 {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"estatico"}]}}
                 """);
         when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
-        when(imageClient.generateImage(anyString())).thenReturn("img");
+        when(imageClient.generateImage(anyString(), anyString(), anyString())).thenReturn("img");
         Creative savedCreative = new Creative();
         when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(savedCreative);
 
@@ -151,6 +168,9 @@ class ExperimentCreativeServiceTest {
         assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
     }
 
+    /**
+     * Ensures pipeline image prompts keep the mandatory hypothesis filter title visible.
+     */
     @Test
     void pipelineModeHighlightsHypothesisImageFilterTitleInPrompt() {
         experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
@@ -163,15 +183,60 @@ class ExperimentCreativeServiceTest {
                 {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"estatico"}]}}
                 """);
         when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
-        when(imageClient.generateImage(anyString(), anyString())).thenReturn("img");
+        when(imageClient.generateImage(anyString(), anyString(), anyString())).thenReturn("img");
         when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(new Creative());
 
         service.generate();
 
         ArgumentCaptor<String> finalPromptCaptor = ArgumentCaptor.forClass(String.class);
-        verify(imageClient).generateImage(finalPromptCaptor.capture(), anyString());
+        verify(imageClient).generateImage(finalPromptCaptor.capture(), anyString(), contains("mode=PIPELINE_ADS"));
         String prompt = finalPromptCaptor.getValue();
         assertThat(prompt).contains("Obrigatório: usar o título de filtro \"Mães empreendedoras\" em destaque dentro da imagem");
+    }
+
+    /**
+     * Ensures default generation keeps the request pending when image generation returns no URL.
+     */
+    @Test
+    void defaultModeSkipsCreativeWhenImageUrlIsMissing() {
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        CreateCreativeRequest req = new CreateCreativeRequest();
+        req.setHeadline("headline");
+        req.setPrimaryText("texto");
+        when(chatGptClient.generateCreatives(experiment, 1))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(req), null, null));
+        when(imageClient.generateImage(anyString(), isNull(), anyString())).thenReturn(null);
+
+        Map<Long, List<Creative>> result = service.generate();
+
+        verify(creativeService, never()).create(anyLong(), any(CreateCreativeRequest.class));
+        assertThat(req.getImageUrl()).isNull();
+        assertThat(result).doesNotContainKey(1L);
+        assertThat(experiment.getCreativesToGenerate()).isEqualTo(1);
+    }
+
+    /**
+     * Ensures pipeline generation keeps the request pending when image generation returns no URL.
+     */
+    @Test
+    void pipelineModeSkipsCreativeWhenImageUrlIsMissing() {
+        experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        experiment.setCreativesToGenerate(1);
+        experiment.setAdCopy("""
+                {"adCopy":{"primaryTextVariants":[{"label":"dor","primaryText":"Texto","headline":"Headline","description":"Descrição","ctaText":"Saiba mais"}]}}
+                """);
+        experiment.setAdImageBriefing("""
+                {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"estatico"}]}}
+                """);
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        when(imageClient.generateImage(anyString(), anyString(), anyString())).thenReturn(" ");
+
+        Map<Long, List<Creative>> result = service.generate();
+
+        verify(creativeService, never()).create(anyLong(), any(CreateCreativeRequest.class));
+        assertThat(result).doesNotContainKey(1L);
+        assertThat(experiment.getCreativesToGenerate()).isEqualTo(1);
+        assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
     }
 
 }

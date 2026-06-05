@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -289,6 +290,12 @@ public class PipelineService {
         if (requestedDefinition.required() && !request.isActive()) {
             throw badRequest("Etapa obrigatória oficial não pode ser desativada sem regra explícita: " + request.getCode());
         }
+        if (!java.util.Objects.equals(requestedDefinition.executionModule(), normalizeOptionalText(request.getExecutionModule()))) {
+            throw badRequest("Módulo executor de etapa oficial não pode divergir do contrato: " + request.getCode());
+        }
+        if (!java.util.Objects.equals(requestedDefinition.rootPackage(), normalizeOptionalText(request.getRootPackage()))) {
+            throw badRequest("Pacote raiz de etapa oficial não pode divergir do contrato: " + request.getCode());
+        }
     }
 
     /**
@@ -419,6 +426,8 @@ public class PipelineService {
                 .position(definition.position())
                 .required(definition.required())
                 .configurable(definition.configurable())
+                .executionModule(definition.executionModule())
+                .rootPackage(definition.rootPackage())
                 .fieldPolicy(toStageFieldPolicyDto(pipelineDefinition))
                 .aliases(definition.aliases().stream().sorted().toList())
                 .build();
@@ -478,9 +487,18 @@ public class PipelineService {
         stage.setName(request.getName());
         stage.setCode(request.getCode());
         stage.setDescription(request.getDescription());
+        stage.setExecutionModule(normalizeOptionalText(request.getExecutionModule()));
+        stage.setRootPackage(normalizeOptionalText(request.getRootPackage()));
         stage.setRequired(request.isRequired());
         stage.setActive(request.isActive());
         stage.setOpenAiModel(resolveOpenAiModel(request.getOpenAiModelId()));
+    }
+
+    /**
+     * Normaliza texto opcional para não persistir strings vazias em campos de localização técnica.
+     */
+    private String normalizeOptionalText(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     /**

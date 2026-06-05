@@ -19,6 +19,7 @@ public class PipelineDefinitionRegistry {
     private static final String EXPERIMENT_PIPELINE_CODE = "experiment-pipeline";
     private static final String EXPERIMENT_MODULE = "EXPERIMENT";
     private static final String EXPERIMENT_CANONICAL_VERSION = "procedimento-experimento-canon.v1";
+    private static final String EXPERIMENT_BACKEND_ROOT_PACKAGE = "com.marketinghub.experiment.pipeline";
 
     private final List<PipelineDefinition> officialPipelines;
     private final Set<String> validModules;
@@ -94,6 +95,8 @@ public class PipelineDefinitionRegistry {
                         section.ordinal() + 1,
                         true,
                         true,
+                        null,
+                        EXPERIMENT_BACKEND_ROOT_PACKAGE,
                         Set.of(section.path(), section.name(), section.name().toLowerCase(Locale.ROOT))))
                 .toList();
         return new PipelineDefinition(
@@ -203,6 +206,8 @@ public class PipelineDefinitionRegistry {
             int position,
             boolean required,
             boolean configurable,
+            String executionModule,
+            String rootPackage,
             Set<String> aliases) {
         /**
          * Informa se o código recebido é o código operacional ou alias da etapa.

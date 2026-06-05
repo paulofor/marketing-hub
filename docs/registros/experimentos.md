@@ -3601,3 +3601,19 @@
 - solicitação: orientar o prompt do preset de design para melhorar o acabamento da mensagem de sucesso exibida após envio do formulário da landing.
 - causa-raiz/objetivo: a mensagem estava semanticamente correta e bem posicionada após o CTA, mas dependia de texto simples no runtime; para reduzir dúvida do lead e aumentar confiança de conversão, o acabamento visual precisa ser especificado no artefato canônico de design.
 - correção aplicada: o prompt `landing-page-design-preset` agora exige cobertura de `#form-feedback` e `[data-runtime-feedback='true']`, com banner/card de sucesso/erro, fundo semântico, borda sutil, hierarquia textual, contraste AA e posicionamento natural após o CTA; os documentos canônicos relacionados foram sincronizados.
+## 2026-06-05 15:35:05 UTC
+- solicitação para investigar formulário enviado que não aparecia na contagem do funil (experimento informado 36; evidência da tela em `/experiments/37`).
+- causa-raiz identificada: o endpoint público de submissão gravava `experiment_funnel_event` com `source=lead_portal_submission`, mas o resumo automático da etapa `ENVIO_FORM` consultava somente `lead_portal_submission` legado e `flow_submissions`, deixando o evento público recém-gravado fora da contagem.
+- correção aplicada no backend: a consulta automática de `ENVIO_FORM` passou a consolidar também os eventos públicos em `experiment_funnel_event`, deduplicando por `submissionId` para evitar dupla contagem quando a submissão existir em mais de uma origem e normalizando collation/charset dos identificadores no `UNION ALL` para compatibilidade com MySQL 5.7.
+- validação de banco via MCP: experimento 37 possuía 1 evento `ENVIO_FORM` em `experiment_funnel_event` às 2026-06-05 15:28:30 UTC, enquanto as tabelas legado/flow não tinham submissão vinculada; experimento 36 não tinha evento de envio no recorte consultado.
+- logs via MCP foram consultados para backend, mas não havia linhas disponíveis com os filtros literais da submissão/slug na janela analisada.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelService.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelServiceSubmissionTest.java`
+## 2026-06-05 — Localização técnica das etapas do pipeline administrativo
+
+- solicitação: exibir nas etapas do pipeline o módulo executor quando a etapa roda fora do backend e o pacote raiz da implementação no backend ou no módulo executor.
+- causa-raiz: a tela administrativa de pipelines mostrava código, descrição, modelo e proteção, mas não persistia nem expunha a localização técnica da implementação da etapa, dificultando rastrear rapidamente onde corrigir ou evoluir cada etapa.
+- correção aplicada: adicionados os campos `executionModule` e `rootPackage` ao contrato de etapa, com persistência em `pipeline_stage` e `pipeline_stage_definition`, sincronização canônica para o pipeline de experimento e exibição/edição na tela `/pipelines`.
+- documentação atualizada: o cânone do procedimento de experimento e o Swagger de governança de pipelines agora registram os campos de localização técnica das etapas.
+- validação automatizada: atualizado `PipelineServiceTest` para cobrir a exposição/sincronização do pacote raiz oficial e executado teste unitário do módulo de pipelines.

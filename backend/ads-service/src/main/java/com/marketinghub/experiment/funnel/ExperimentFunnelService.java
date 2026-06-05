@@ -309,6 +309,9 @@ public class ExperimentFunnelService {
         }
     }
 
+    /**
+     * Aplica métricas automáticas vindas das tabelas operacionais e dos eventos públicos do funil.
+     */
     private void applyAutomaticMetrics(Long experimentId, Instant baseline, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
         mergeMetric(stages, ExperimentFunnelStage.VISUALIZACAO_ANUNCIO,
                 fetchSingleMetric("""
@@ -350,26 +353,38 @@ public class ExperimentFunnelService {
 
         mergeMetric(stages, ExperimentFunnelStage.ENVIO_FORM,
                 fetchSingleMetric("""
-                        SELECT COUNT(*) AS total,
+                        SELECT COUNT(DISTINCT canonical_submission_id) AS total,
                                COUNT(DISTINCT lead_id) AS unique_count,
                                MAX(submitted_at) AS last_event
                         FROM (
-                            SELECT CONCAT('legacy:', lps.id) AS canonical_submission_id,
+                            SELECT CAST(CONCAT('legacy:', lps.id) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS canonical_submission_id,
                                    lps.lead_id,
                                    lps.submitted_at
                             FROM lead_portal_submission lps
                             WHERE lps.experiment_id = ?
-                            UNION
-                            SELECT CAST(fs.id AS CHAR(64)) AS canonical_submission_id,
+                            UNION ALL
+                            SELECT CAST(fs.id AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS canonical_submission_id,
                                    NULL AS lead_id,
                                    fs.created_at AS submitted_at
                             FROM flow_submissions fs
                             JOIN lead_portal_flow f ON f.slug = fs.flow_slug
                             WHERE %s
+                            UNION ALL
+                            SELECT CAST(SUBSTRING(efe.payload, CHAR_LENGTH('submissionId=') + 1) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS canonical_submission_id,
+                                   efe.lead_id,
+                                   efe.occurred_at AS submitted_at
+                            FROM experiment_funnel_event efe
+                            WHERE efe.experiment_id = ?
+                              AND efe.stage = 'ENVIO_FORM'
+                              AND efe.source = ?
+                              AND efe.payload LIKE 'submissionId=%%'
                         ) submissions
-                        WHERE (? IS NULL OR submitted_at > ?)
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, experimentId, baseline, baseline),
-                "Envios do formulário (lead_portal_submission + flow_submissions)");
+                        WHERE canonical_submission_id IS NOT NULL
+                          AND canonical_submission_id <> ''
+                          AND (? IS NULL OR submitted_at > ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, experimentId, experimentId,
+                        ExperimentFunnelEventRepository.SUBMISSION_SOURCE, baseline, baseline),
+                "Envios do formulário (lead_portal_submission + flow_submissions + experiment_funnel_event)");
 
         mergeMetric(stages, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
                 fetchSingleMetric("""

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
@@ -103,6 +104,7 @@ public class FacebookAdsCampaignController {
                         com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
                 .filter(experiment -> experiment.getFacebookReleaseRequestedAt() != null)
+                .filter(experiment -> !campaignRepository.existsByExperimentId(experiment.getId()))
                 .filter(experimentReadinessService::isReadyForCampaign)
                 .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
                 .toList();
@@ -154,6 +156,14 @@ public class FacebookAdsCampaignController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Experiment not found: " + req.experimentId(), ex);
         }
+        if (campaignRepository.existsById(req.id())) {
+            experiment.setStatus(ExperimentStatus.RUNNING);
+            return;
+        }
+        if (campaignRepository.existsByExperimentId(req.experimentId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Experiment already has a Facebook campaign: " + req.experimentId());
+        }
         FacebookAccount account = accountRepository.findById(req.facebookAccountId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Facebook account not found: " + req.facebookAccountId()));
@@ -199,6 +209,7 @@ public class FacebookAdsCampaignController {
                 adRepository.save(mapAd(adRequest, savedAdSet, creative));
             }
         }
+        experiment.setStatus(ExperimentStatus.RUNNING);
     }
 
     @PostMapping("/{campaignId}/metrics")

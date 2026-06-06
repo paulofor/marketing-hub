@@ -52,6 +52,22 @@ Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>
 
 Exemplo: `BackendWireframeController.pending` deve retornar `List<RecordWireframePending>`.
 
+
+## Backend — pacote Facebook Ads
+
+O pacote `com.marketinghub.facebookads` representa a borda e o domínio backend responsável por liberar,
+registrar, medir e operar campanhas do Facebook Ads. As regras de arquitetura do backend protegem a borda
+HTTP desse pacote de forma objetiva, sem whitelist ampla de domínios auxiliares:
+
+1. controllers de Facebook Ads são borda HTTP do próprio pacote e não podem ser consumidos por outros
+   pacotes de produção;
+2. controllers de Facebook Ads não podem delegar para controllers de outros módulos; integrações internas
+   devem ocorrer por services, DTOs e repositories canônicos, mantendo o escopo de controllers por módulo.
+
+Essas regras são protegidas pelo `ArquiteturaTest` do backend com mensagens prefixadas por
+`[ARQUITETURA]`, para falhar imediatamente quando uma nova dependência entre controllers comprometer o
+isolamento da borda do pacote Facebook Ads.
+
 ## Etapa 2 — Agendamento e busca de novos itens para processamento
 
 A segunda etapa operacional de qualquer processamento assíncrono por Worker AI é o ciclo de

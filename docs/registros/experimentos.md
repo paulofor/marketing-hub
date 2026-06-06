@@ -3704,6 +3704,48 @@
 - arquivos alterados:
   - `backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/*Controller.java`
   - `docs/swagger/facebook-ads-swagger.yaml`
+## 2026-06-06 — Correção no Facebook Ads Worker para publicação do experimento 37
+
+- solicitação: ajustar a correção anterior porque a publicação de Facebook Ads deve ser responsabilidade do `facebook-ads-worker`; o `ai-worker` deve ficar restrito a chamadas de IA/OpenAI.
+- causa-raiz revisada: o experimento 37 estava liberado para publicação, mas não tinha ad set pré-gerado; depender do `ai-worker` para materializar esse ad set criava acoplamento indevido entre geração IA e publicação Meta Ads.
+- correção aplicada: removida a alteração funcional do `ai-worker` e movido o fallback operacional para o `facebook-ads-worker`, que agora busca diretamente no backend o pacote manual aprovado em `/api/facebook-adsets/experiments-ready` quando não houver playbook pronto.
+- regra operacional preservada: para targeting manual, 1 `JOB_TITLE` aprovado continua sendo o mínimo canônico; o worker monta o `targeting` da Meta preferindo `metaId/metaKey` oficiais e sem chamar OpenAI.
+- teste adicionado no módulo correto: cobertura no `FacebookCampaignServiceTest` garantindo que o Facebook Ads Worker publica usando cargos aprovados mesmo quando nenhum ad set foi pré-gerado.
+- arquivos alterados:
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
+  - `facebook-ads-worker/AGENTS.md`
+  - `facebook-ads-worker/README.md`
+  - `docs/registros/experimentos.md`
+
+## 2026-06-06 — Publicação Facebook Ads como etapa de pipeline
+
+- solicitação: organizar a publicação de campanhas seguindo o padrão de etapas descrito em `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
+- ajuste aplicado: criado um núcleo mínimo `facebookadsworker.pipeline` com `StageContext`, `StageProcessor`, `StageResult` e `PipelineWorker`, e uma etapa concreta isolada `facebookcampaign.publication` para processar uma publicação de campanha.
+- regra arquitetural preservada: o núcleo genérico não conhece a etapa concreta; a etapa concreta depende apenas do núcleo e de contratos de publicação, mantendo a publicação plugável e substituível.
+- comportamento preservado: o fluxo existente de publicação continua no `facebook-ads-worker`, incluindo o fallback de segmentação manual aprovado pelo backend, sem delegar ao `ai-worker` e sem chamada OpenAI.
+- arquivos alterados:
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/pipeline/*`
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/publication/*`
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `docs/registros/experimentos.md`
+
+## 2026-06-06 — Canonização da publicação Facebook Ads por etapa
+
+- decisão do usuário: a versão correta é a publicação de campanhas como etapa plugável no `facebook-ads-worker`, com fallback manual de segmentação também no `facebook-ads-worker`.
+- documento canônico atualizado: `docs/canonical/facebook-campaign-publication-canon.v1.md`.
+- regras canonizadas:
+  - publicação de campanhas é etapa de pipeline conforme `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`;
+  - o núcleo genérico da etapa não conhece a etapa concreta;
+  - o `ai-worker` não publica campanha nem materializa fallback de targeting para Meta;
+  - o fallback manual busca `/api/facebook-adsets/experiments-ready` e exige no mínimo 1 `JOB_TITLE` aprovado, preferindo `metaId`/`metaKey` oficiais.
+
+## 2026-06-06 — Remoção do fallback legado de ad sets na publicação Facebook Ads
+
+- solicitação: excluir a versão antiga de publicação de campanhas do Facebook Ads.
+- ajuste aplicado: removido do `facebook-ads-worker` o caminho legado de publicação que consultava ad sets persistidos por `/api/adsets?experimentId=...` antes de publicar.
+- versão canônica restante: a publicação usa a etapa plugável do `facebook-ads-worker`; para público, usa playbook válido ou fallback manual aprovado por `/api/facebook-adsets/experiments-ready`.
+- motivo: impedir reintrodução do fluxo antigo dependente de ad set pré-materializado fora da publicação, mantendo o Facebook Ads Worker como dono único da publicação e do fallback manual.
 ## 2026-06-06 02:07:00 UTC
 - solicitação: ajustar a tela `/facebook-campaigns` para mostrar os registros mais recentes no começo e paginar a listagem com 25 itens por página.
 - raciocínio para a solução: o endpoint atual já fornece todos os experimentos necessários por status; a causa do esforço visual estava na ordenação e volume renderizado no frontend, então a correção foi aplicada na apresentação sem criar novo contrato backend.

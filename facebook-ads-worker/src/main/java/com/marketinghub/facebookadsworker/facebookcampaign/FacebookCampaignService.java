@@ -13,8 +13,10 @@ import com.marketinghub.facebookadsworker.FacebookAdsService;
 import com.marketinghub.facebookadsworker.FacebookAdsService.TargetingNormalizationException;
 import com.marketinghub.facebookadsworker.FacebookPermissionException;
 import com.marketinghub.facebookadsworker.facebookinstantform.InstantFormPublicationUpdateRequest;
-import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateStatus;
-import com.marketinghub.facebookadsworker.facebooktargeting.TargetingCandidateType;
+import com.marketinghub.facebookadsworker.facebookcampaign.publication.CampaignPublicationInput;
+import com.marketinghub.facebookadsworker.facebookcampaign.publication.CampaignPublicationOutput;
+import com.marketinghub.facebookadsworker.facebookcampaign.publication.CampaignPublicationProcessor;
+import com.marketinghub.facebookadsworker.pipeline.PipelineWorker;
 import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogClient;
 import com.marketinghub.facebookadsworker.facebookapi.ExperimentFacebookApiLogContext;
 import com.marketinghub.facebookadsworker.configuration.FacebookWorkerConfigurationClient;
@@ -46,12 +48,9 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -62,6 +61,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+/**
+ * Orchestrates Facebook campaign publication for released Marketing Hub experiments.
+ */
 @Service
 public class FacebookCampaignService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignService.class);
@@ -86,7 +88,11 @@ public class FacebookCampaignService {
     private final ObjectMapper objectMapper;
     private final ExperimentFacebookApiLogClient experimentFacebookApiLogClient;
     private final HttpClient assetDownloadClient;
+    private final PipelineWorker<CampaignPublicationInput, CampaignPublicationOutput> campaignPublicationWorker;
 
+    /**
+     * Creates the campaign service and wires campaign publication through the generic stage worker.
+     */
     public FacebookCampaignService(FacebookAdsService facebookAdsService,
                                    FacebookAccessTokenManager accessTokenManager,
                                    WebClient.Builder builder,
@@ -112,6 +118,7 @@ public class FacebookCampaignService {
                 .connectTimeout(Duration.ofSeconds(10))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
+        this.campaignPublicationWorker = new PipelineWorker<>(new CampaignPublicationProcessor(this::processExperiment));
     }
 
     private Optional<FacebookWorkerConfiguration> prepareConfiguration(String contextLabel) {
@@ -167,6 +174,9 @@ public class FacebookCampaignService {
         return Optional.of(config);
     }
 
+    /**
+     * Claims released experiments from the backend and executes campaign publication as pipeline stages.
+     */
     public void createCampaignsFromExperiments() {
         var configuration = prepareConfiguration("campaign creation");
         if (configuration.isEmpty()) {
@@ -218,7 +228,12 @@ public class FacebookCampaignService {
                 );
                 return;
             }
-            processExperiment(exp, config);
+            campaignPublicationWorker.process(
+                "facebook-campaign-publication",
+                String.valueOf(exp.id()),
+                new CampaignPublicationInput(exp, config),
+                Map.of("experimentId", exp.id())
+            );
         });
     }
 
@@ -234,6 +249,9 @@ public class FacebookCampaignService {
         requests.forEach(this::handleStopRequest);
     }
 
+    /**
+     * Publishes one released experiment to Facebook Ads using the best available targeting source.
+     */
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
         String campaignId = null;
         String adSetId = null;
@@ -352,16 +370,12 @@ public class FacebookCampaignService {
                 : config.adSetOptimizationGoal();
             String resolvedCampaignObjective = hasLeadFormDestination ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
 
-            List<ExperimentAdSet> experimentAdSets = Collections.emptyList();
-            ExperimentAdSet selectedAdSet = null;
             AdSetPlaybookSpec selectedSpec = null;
             ResolvedTargeting resolvedTargeting = new ResolvedTargeting(null, Collections.emptyList());
             String adSetName = exp.name() + " - Ad Set";
             if (!exp.nextStepInstantForm()) {
                 List<AdSetPlaybookSpec> readySpecs = fetchReadyPlaybookSpecs(exp.id());
                 selectedSpec = selectPrimarySpec(readySpecs);
-                experimentAdSets = fetchExperimentAdSets(exp.id());
-                selectedAdSet = selectExperimentAdSet(experimentAdSets);
                 if (selectedSpec != null) {
                     resolvedTargeting = new ResolvedTargeting(
                         normalizeTargetingSpec(selectedSpec.targetingSpec()),
@@ -375,7 +389,7 @@ public class FacebookCampaignService {
                         exp.id()
                     );
                 } else {
-                    resolvedTargeting = resolveTargetingFromBackend(selectedAdSet);
+                    resolvedTargeting = resolveApprovedManualTargeting(exp.id());
                 }
             }
             try {
@@ -389,9 +403,6 @@ public class FacebookCampaignService {
                     )
                 );
             } catch (FacebookAccessTokenExpiredException ex) {
-                if (!exp.nextStepInstantForm()) {
-                    fetchExperimentAdSets(exp.id());
-                }
                 throw ex;
             }
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
@@ -489,7 +500,7 @@ public class FacebookCampaignService {
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
                     resolvedTargeting.targetingJson(),
-                    selectedAdSet != null ? selectedAdSet.id() : null
+                    null
                 ),
                 reportedAdCreatives.isEmpty() ? null : reportedAdCreatives.get(0),
                 reportedAds.isEmpty() ? null : reportedAds.get(0),
@@ -699,237 +710,119 @@ public class FacebookCampaignService {
         }
     }
 
-    private List<ExperimentAdSet> fetchExperimentAdSets(long experimentId) {
-        String url = UriComponentsBuilder
-            .fromHttpUrl(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/adsets"))
-            .queryParam("experimentId", experimentId)
-            .toUriString();
+    /**
+     * Resolves the backend-approved manual targeting package directly in the Facebook Ads worker.
+     */
+    private ResolvedTargeting resolveApprovedManualTargeting(long experimentId) {
+        JsonNode targeting = fetchApprovedTargetingPackage(experimentId);
+        if (targeting == null || targeting.isMissingNode() || targeting.isNull()) {
+            LOGGER.warn("Experiment {} has no approved manual targeting package returned by backend", experimentId);
+            return new ResolvedTargeting(null, Collections.emptyList());
+        }
+
+        ObjectNode targetingSpec = objectMapper.createObjectNode();
+        appendTargetingElements(targetingSpec, "interests", targeting.path("interests"));
+        appendTargetingElements(targetingSpec, "work_positions", targeting.path("jobTitles"));
+        appendTargetingElements(targetingSpec, "behaviors", targeting.path("behaviors"));
+        if (!targetingSpec.has("work_positions")) {
+            LOGGER.warn("Experiment {} targeting package has no approved job titles; campaign will continue without manual targeting", experimentId);
+            return new ResolvedTargeting(null, Collections.emptyList());
+        }
         LOGGER.info(
-            "Requesting ad sets for experiment from backend: url==>{}, params={}",
+            "Using backend-approved manual targeting package for experiment {}: {}",
+            experimentId,
+            JsonLogFormatter.wrap(objectMapper, targetingSpec)
+        );
+        return new ResolvedTargeting(targetingSpec.toString(), Collections.emptyList());
+    }
+
+    /**
+     * Fetches the approved targeting package for the experiment from the backend readiness endpoint.
+     */
+    private JsonNode fetchApprovedTargetingPackage(long experimentId) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
+        LOGGER.info(
+            "Requesting approved targeting packages from backend: url==>{}, params={}",
             url,
             JsonLogFormatter.wrap(objectMapper, Map.of("experimentId", experimentId))
         );
         try {
-            List<ExperimentAdSet> adSets = backendClient.get()
+            JsonNode response = backendClient.get()
                 .uri(url)
                 .retrieve()
-                .bodyToFlux(ExperimentAdSet.class)
-                .collectList()
+                .bodyToMono(JsonNode.class)
                 .block();
             LOGGER.info(
-                "Received ad sets response from backend: url<=={}, response={}",
+                "Received approved targeting packages from backend: url<=={}, response={}",
                 url,
-                JsonLogFormatter.wrap(objectMapper, adSets)
+                JsonLogFormatter.wrap(objectMapper, response)
             );
-            return adSets != null ? adSets : Collections.emptyList();
+            if (response == null || !response.isArray()) {
+                return null;
+            }
+            for (JsonNode item : response) {
+                if (item.path("experiment").path("id").asLong(-1L) == experimentId) {
+                    return item.path("targeting");
+                }
+            }
+            return null;
         } catch (Exception ex) {
             LOGGER.warn(
-                "Failed to fetch ad sets for experiment {} from backend: url==>{}, message={}",
+                "Failed to fetch approved targeting package for experiment {} from backend: url==>{}, message={}",
                 experimentId,
                 url,
-                ex.getMessage()
+                ex.getMessage(),
+                ex
             );
-            LOGGER.debug("Stacktrace while fetching ad sets for experiment {}", experimentId, ex);
-            return Collections.emptyList();
-        }
-    }
-
-    private ExperimentAdSet selectExperimentAdSet(List<ExperimentAdSet> adSets) {
-        if (adSets == null || adSets.isEmpty()) {
             return null;
         }
-        Optional<ExperimentAdSet> withTargetingRequest = adSets.stream()
-            .filter(adSet -> adSet.targetingRequestId() != null)
-            .findFirst();
-        if (withTargetingRequest.isPresent()) {
-            return withTargetingRequest.get();
-        }
-        return adSets.stream()
-            .filter(adSet -> StringUtils.hasText(adSet.targetingJson()))
-            .findFirst()
-            .orElse(adSets.get(0));
     }
 
-    private ResolvedTargeting resolveTargetingFromBackend(ExperimentAdSet adSet) {
-        if (adSet == null) {
-            return new ResolvedTargeting(null, Collections.emptyList());
+    /**
+     * Appends approved targeting elements to a Meta targeting field, preferring official Meta IDs.
+     */
+    private void appendTargetingElements(ObjectNode targetingSpec, String fieldName, JsonNode elements) {
+        if (targetingSpec == null || elements == null || !elements.isArray() || elements.isEmpty()) {
+            return;
         }
-
-        if (adSet.targetingRequestId() != null) {
-            List<FacebookAdsService.TargetingOption> options = fetchValidatedTargetingOptions(adSet.targetingRequestId());
-            if (options.isEmpty()) {
-                throw new IllegalStateException(
-                    "No validated targeting options found for request %s".formatted(adSet.targetingRequestId())
-                );
-            }
-
-            ObjectNode targeting = objectMapper.createObjectNode();
-            appendOptionsToTargeting(targeting, options);
-            return new ResolvedTargeting(targeting.isEmpty() ? null : targeting.toString(), options);
-        }
-
-        if (StringUtils.hasText(adSet.targetingJson())) {
-            LOGGER.warn(
-                "Experiment ad set {} does not provide targetingRequestId. Falling back to legacy targetingJson payload.",
-                adSet.id()
+        ArrayNode array = objectMapper.createArrayNode();
+        for (JsonNode element : elements) {
+            String name = coalesce(
+                textValue(element, "metaKey"),
+                textValue(element, "term"),
+                textValue(element, "name")
             );
-            return new ResolvedTargeting(adSet.targetingJson(), Collections.emptyList());
-        }
-        LOGGER.warn(
-            "Experiment ad set {} does not provide targetingRequestId. Falling back to legacy line-based targeting fields.",
-            adSet.id()
-        );
-        ObjectNode targeting = objectMapper.createObjectNode();
-        mergeTargetingValues(targeting, "interests", adSet.interests());
-        mergeTargetingValues(targeting, "work_positions", adSet.jobTitles());
-        mergeTargetingValues(targeting, "behaviors", adSet.behaviors());
-        return new ResolvedTargeting(targeting.isEmpty() ? null : targeting.toString(), Collections.emptyList());
-    }
-
-    private void mergeTargetingValues(ObjectNode targeting, String fieldName, String rawValues) {
-        if (targeting == null || !StringUtils.hasText(rawValues)) {
-            return;
-        }
-        List<String> values = splitLines(rawValues);
-        if (values.isEmpty()) {
-            return;
-        }
-        ArrayNode array = targeting.putArray(fieldName);
-        values.forEach(value -> {
+            String id = textValue(element, "metaId");
+            if (!StringUtils.hasText(name) && !StringUtils.hasText(id)) {
+                continue;
+            }
             ObjectNode item = objectMapper.createObjectNode();
-            item.put("name", value);
+            if (StringUtils.hasText(id)) {
+                item.put("id", id.trim());
+            }
+            if (StringUtils.hasText(name)) {
+                item.put("name", name.trim());
+            }
             array.add(item);
-        });
-    }
-
-    private void appendOptionsToTargeting(ObjectNode targeting, List<FacebookAdsService.TargetingOption> options) {
-        if (targeting == null || options == null || options.isEmpty()) {
-            return;
         }
-        Map<TargetingCandidateType, ArrayNode> grouped = new EnumMap<>(TargetingCandidateType.class);
-        Map<TargetingCandidateType, Set<String>> seen = new EnumMap<>(TargetingCandidateType.class);
-        for (FacebookAdsService.TargetingOption option : options) {
-            if (option == null || !StringUtils.hasText(option.facebookId())) {
-                continue;
-            }
-            TargetingCandidateType type = option.type();
-            if (type == null) {
-                continue;
-            }
-            String fieldName = mapFieldName(type);
-            if (fieldName == null) {
-                continue;
-            }
-            Set<String> dedup = seen.computeIfAbsent(type, key -> new HashSet<>());
-            String facebookId = option.facebookId().trim();
-            if (!dedup.add(facebookId)) {
-                continue;
-            }
-            ArrayNode array = grouped.computeIfAbsent(type, key -> targeting.putArray(fieldName));
-            ObjectNode node = objectMapper.createObjectNode();
-            node.put("id", facebookId);
-            if (StringUtils.hasText(option.name())) {
-                node.put("name", option.name());
-            }
-            array.add(node);
+        if (!array.isEmpty()) {
+            targetingSpec.set(fieldName, array);
         }
     }
 
-    private String mapFieldName(TargetingCandidateType type) {
-        if (type == null) {
+    /**
+     * Reads a text field from a JSON object when present.
+     */
+    private String textValue(JsonNode node, String fieldName) {
+        if (node == null || !StringUtils.hasText(fieldName)) {
             return null;
         }
-        return switch (type) {
-            case BEHAVIOR -> "behaviors";
-            case WORK_POSITION -> "work_positions";
-            case INTEREST -> "interests";
-        };
-    }
-
-    private List<String> splitLines(String rawValues) {
-        if (!StringUtils.hasText(rawValues)) {
-            return List.of();
+        JsonNode value = node.get(fieldName);
+        if (value == null || value.isNull()) {
+            return null;
         }
-        String[] parts = rawValues.split("\\r?\\n");
-        LinkedHashSet<String> unique = new LinkedHashSet<>();
-        for (String part : parts) {
-            if (part == null) {
-                continue;
-            }
-            String trimmed = part.trim();
-            if (!trimmed.isEmpty()) {
-                unique.add(trimmed);
-            }
-        }
-        return new ArrayList<>(unique);
-    }
-
-
-    private List<FacebookAdsService.TargetingOption> fetchValidatedTargetingOptions(UUID targetingRequestId) {
-        String url = UriComponentsBuilder
-            .fromHttpUrl(UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/targeting/requests/" + targetingRequestId))
-            .queryParam("includeCandidates", true)
-            .toUriString();
-        LOGGER.info(
-            "Requesting targeting request from backend: url==>{}, requestId={}",
-            url,
-            targetingRequestId
-        );
-        try {
-            TargetingRequestDetails response = backendClient.get()
-                .uri(url)
-                .retrieve()
-                .bodyToMono(TargetingRequestDetails.class)
-                .block();
-            List<FacebookAdsService.TargetingOption> options = extractValidatedOptions(response);
-            LOGGER.info(
-                "Received {} targeting options from backend for request {}",
-                options.size(),
-                targetingRequestId
-            );
-            return options;
-        } catch (Exception ex) {
-            LOGGER.warn(
-                "Failed to fetch targeting request {} from backend: url==>{}, message={}",
-                targetingRequestId,
-                url,
-                ex.getMessage()
-            );
-            LOGGER.debug("Stacktrace while fetching targeting request {}", targetingRequestId, ex);
-            return Collections.emptyList();
-        }
-    }
-
-    private List<FacebookAdsService.TargetingOption> extractValidatedOptions(TargetingRequestDetails request) {
-        if (request == null || request.candidates() == null) {
-            return Collections.emptyList();
-        }
-        List<FacebookAdsService.TargetingOption> options = new ArrayList<>();
-        for (TargetingCandidateDetails candidate : request.candidates()) {
-            if (candidate == null || candidate.status() != TargetingCandidateStatus.VALIDATED) {
-                continue;
-            }
-            TargetingCandidateType type = candidate.tipo();
-            if (candidate.options() == null) {
-                continue;
-            }
-            for (TargetingOptionDetails option : candidate.options()) {
-                if (option == null || !StringUtils.hasText(option.facebookId())) {
-                    continue;
-                }
-                TargetingCandidateType resolvedType = option.type() != null ? option.type() : type;
-                if (resolvedType == null) {
-                    continue;
-                }
-                options.add(new FacebookAdsService.TargetingOption(
-                    option.facebookId().trim(),
-                    option.name(),
-                    resolvedType,
-                    option.audienceSize()
-                ));
-            }
-        }
-        return options;
+        String text = value.asText(null);
+        return StringUtils.hasText(text) ? text.trim() : null;
     }
 
     private boolean hasTokenChangedSinceExpiration() {
@@ -966,20 +859,6 @@ public class FacebookCampaignService {
         }
         return config.adSetDailyBudget();
     }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record ExperimentAdSet(
-        Long id,
-        Long experimentId,
-        String location,
-        String interests,
-        String jobTitles,
-        String behaviors,
-        String targetingJson,
-        UUID targetingRequestId,
-        String prompt,
-        String model
-    ) {}
 
     public record ResolvedTargeting(String targetingJson, List<FacebookAdsService.TargetingOption> options) {}
 
@@ -1048,25 +927,6 @@ public class FacebookCampaignService {
         ) {}
         public record LeadPortalFlow(Long id, String name, String slug, String publicUrl) {}
     }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record TargetingRequestDetails(List<TargetingCandidateDetails> candidates) {}
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record TargetingCandidateDetails(
-        Long id,
-        TargetingCandidateType tipo,
-        TargetingCandidateStatus status,
-        List<TargetingOptionDetails> options
-    ) {}
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record TargetingOptionDetails(
-        @JsonProperty("facebook_id") String facebookId,
-        String name,
-        TargetingCandidateType type,
-        @JsonProperty("audience_size") Long audienceSize
-    ) {}
 
     public record CreateCampaignRequest(
         String id,

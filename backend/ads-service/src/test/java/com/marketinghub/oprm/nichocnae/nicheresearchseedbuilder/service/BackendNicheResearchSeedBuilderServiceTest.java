@@ -194,13 +194,32 @@ class BackendNicheResearchSeedBuilderServiceTest {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
 
-    service.fail(1001L, new FailNicheResearchSeedBuilderRequest("IA retornou queries genéricas."));
+    service.fail(1001L, new FailNicheResearchSeedBuilderRequest("IA retornou queries genéricas.", null));
 
     ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
     verify(routineResearchCycleRepository).save(cycleCaptor.capture());
     assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("FAILED");
     assertThat(cycleCaptor.getValue().getErrorMessage()).isEqualTo("IA retornou queries genéricas.");
     assertThat(cycleCaptor.getValue().getFinishedAt()).isNotNull();
+  }
+
+  /** Deve preservar detalhe técnico da falha para revelar causa-raiz em reprocessamentos do seed. */
+  @Test
+  void failPersistsTechnicalDetailWhenProvided() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+
+    service.fail(
+        1001L,
+        new FailNicheResearchSeedBuilderRequest(
+            "Falha ao gerar seed da etapa dois OPRM nichocnae.",
+            "java.lang.IllegalStateException: OpenAI retornou corpo vazio"));
+
+    ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+    verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+    assertThat(cycleCaptor.getValue().getErrorMessage())
+        .contains("Falha ao gerar seed da etapa dois OPRM nichocnae.")
+        .contains("OpenAI retornou corpo vazio");
   }
 
   /** Monta um payload válido de etapa dois com dois objetivos de pesquisa distintos. */

@@ -6,6 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.cnae.dto.OprmCnaeEnrichmentRequestDto;
+import com.marketinghub.oprm.cnae.dto.OprmNicheCandidateRequestDto;
 import com.marketinghub.oprm.cnae.dto.OprmNicheCandidateResponseDto;
 import com.marketinghub.oprm.cnae.repository.OprmCnaeOpportunityReadRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmCnaeEnrichmentArtifactRepository;
@@ -18,6 +20,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
@@ -74,6 +77,49 @@ class OprmCnaeOpportunityPersistenceServiceTest {
                 .extracting(OprmNicheCandidateResponseDto::opportunityScore)
                 .containsExactly(new BigDecimal("90.00"), new BigDecimal("30.00"));
         verify(candidateRepository).findAllByOrderByOpportunityScoreDescCreatedAtDesc(any(Pageable.class));
+    }
+
+    /**
+     * Garante que candidatos novos nascem pendentes para o pipeline de pesquisa de rotina.
+     */
+    @Test
+    void shouldCreateEnrichedCandidateWithPendingRoutineResearchStatus() {
+        when(candidateRepository.save(any(OprmNicheCandidate.class)))
+                .thenAnswer(invocation -> {
+                    OprmNicheCandidate saved = invocation.getArgument(0);
+                    saved.setId(10L);
+                    return saved;
+                });
+
+        service.saveEnrichment(new OprmCnaeEnrichmentRequestDto(
+                "9602501",
+                "OPRM-CNAE-ENRICHMENT-20260606-001",
+                "rotina",
+                "dores",
+                "mecanismos",
+                "provas",
+                "ofertas",
+                "fontes",
+                List.of(new OprmNicheCandidateRequestDto(
+                        "9602501",
+                        "Cabeleireiros, manicure e pedicure",
+                        "Cabeleireiros, manicure e pedicure",
+                        "persona",
+                        "dor",
+                        "resultado",
+                        "mecanismo",
+                        "prova",
+                        "oferta",
+                        "volume",
+                        new BigDecimal("90.00"),
+                        "OPRM-CNAE-SCORE-20260606-001",
+                        "OPRM-CNAE-ENRICHMENT-20260606-001",
+                        "ENRICHED",
+                        "artefatos"))));
+
+        ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
+        verify(candidateRepository).save(candidateCaptor.capture());
+        assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("PENDING");
     }
 
     /**

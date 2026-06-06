@@ -127,7 +127,7 @@ public class BackendNicheResearchSeedBuilderService {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
       Instant now = Instant.now();
       cycle.setStatus(CYCLE_STATUS_FAILED);
-      cycle.setErrorMessage(requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
+      cycle.setErrorMessage(buildFailureMessage(request));
       cycle.setFinishedAt(now);
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
@@ -135,6 +135,16 @@ public class BackendNicheResearchSeedBuilderService {
       LOGGER.error("Erro ao registrar falha da etapa dois do OPRM nichocnae (researchCycleId={})", researchCycleId, ex);
       throw ex;
     }
+  }
+
+  /** Monta a mensagem de falha preservando a causa técnica detalhada quando o coletor enviar essa informação. */
+  private String buildFailureMessage(FailNicheResearchSeedBuilderRequest request) {
+    String errorMessage = requiredText(request == null ? null : request.errorMessage(), "errorMessage");
+    String errorDetail = trimToNull(request.errorDetail());
+    if (errorDetail == null || errorDetail.equals(errorMessage)) {
+      return errorMessage;
+    }
+    return errorMessage + " | Detalhe técnico: " + errorDetail;
   }
 
   /** Retorna o seed e as queries gravados para um ciclo de pesquisa de rotina. */

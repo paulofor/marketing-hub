@@ -814,6 +814,10 @@ components:
         errorMessage:
           type: string
           example: IA retornou queries genéricas e fora do contrato da etapa dois.
+        errorDetail:
+          type: string
+          nullable: true
+          example: java.lang.IllegalStateException: OpenAI retornou corpo vazio.
     NicheResearchSeedBuilderDetailResponse:
       type: object
       properties:

@@ -11,6 +11,8 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
@@ -21,6 +23,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeReposito
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
@@ -40,6 +43,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +53,7 @@ import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -191,6 +196,27 @@ class FacebookAdsCampaignControllerTest {
     }
 
     @Test
+    void experimentsReadyExcludesExperimentsThatAlreadyHaveCampaign() throws Exception {
+        var experiment = Experiment.builder()
+                .id(37L)
+                .name("Experimento 37")
+                .platform(ExperimentPlatform.FACEBOOK)
+                .status(ExperimentStatus.PLANNED)
+                .facebookReleaseRequestedAt(Instant.parse("2026-06-05T23:56:48Z"))
+                .followUpActionUrl("https://landing.example.com/37")
+                .creativeApproved(true)
+                .build();
+        when(experimentService.listByStatusAndPlatform(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK))
+                .thenReturn(List.of(experiment));
+        when(campaignRepository.existsByExperimentId(37L)).thenReturn(true);
+        when(leadPortalMetricsService.listExperimentMetrics()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/facebook-campaigns/experiments-ready"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
     void createCampaignPersistsHierarchy() throws Exception {
         var experiment = Experiment.builder()
                 .id(42L)
@@ -229,6 +255,7 @@ class FacebookAdsCampaignControllerTest {
               "adAccountId": "act_555",
               "name": "Exp",
               "objective": "OUTCOME_TRAFFIC",
+              "status": "ACTIVE",
               "budgetMode": "CAMPAIGN",
               "experimentId": 42,
               "facebookAccountId": 77,
@@ -281,6 +308,8 @@ class FacebookAdsCampaignControllerTest {
         FacebookAdsCampaign savedCampaign = campaignCaptor.getValue();
         assertThat(savedCampaign.getId()).isEqualTo("cmp123");
         assertThat(savedCampaign.getExternalId()).isEqualTo("meta-campaign-123");
+        assertThat(savedCampaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
 
         ArgumentCaptor<FacebookAdsAdSet> adSetCaptor = ArgumentCaptor.forClass(FacebookAdsAdSet.class);
         verify(adSetRepository).save(adSetCaptor.capture());
@@ -314,6 +343,71 @@ class FacebookAdsCampaignControllerTest {
         assertThat(savedAd.getExternalId()).isEqualTo("meta-ad-123");
         assertThat(savedAd.getAdSet().getId()).isEqualTo("adset123");
         assertThat(savedAd.getCreative().getId()).isEqualTo("creative123");
+    }
+
+    @Test
+    void createCampaignAcceptsRetryForSameCampaignIdWithoutDuplicatingHierarchy() throws Exception {
+        var experiment = Experiment.builder()
+                .id(37L)
+                .name("Experimento 37")
+                .build();
+        when(experimentService.get(37L)).thenReturn(experiment);
+        var existingCampaign = new FacebookAdsCampaign();
+        existingCampaign.setId("cmp-existente");
+        existingCampaign.setExperiment(experiment);
+        existingCampaign.setStatus(FacebookAdStatus.PAUSED);
+        when(campaignRepository.findById("cmp-existente")).thenReturn(Optional.of(existingCampaign));
+
+        String payload = """
+            {
+              "id": "cmp-existente",
+              "adAccountId": "act_888",
+              "name": "Experimento 37",
+              "objective": "OUTCOME_TRAFFIC",
+              "status": "ACTIVE",
+              "budgetMode": "CAMPAIGN",
+              "experimentId": 37,
+              "facebookAccountId": 88
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated());
+
+        assertThat(existingCampaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+        verify(campaignRepository, never()).save(any());
+    }
+
+    @Test
+    void createCampaignRejectsAnotherCampaignForSameExperiment() throws Exception {
+        var experiment = Experiment.builder()
+                .id(37L)
+                .name("Experimento 37")
+                .build();
+        when(experimentService.get(37L)).thenReturn(experiment);
+        when(campaignRepository.existsByExperimentId(37L)).thenReturn(true);
+
+        String payload = """
+            {
+              "id": "cmp-duplicada",
+              "adAccountId": "act_888",
+              "name": "Experimento 37",
+              "objective": "OUTCOME_TRAFFIC",
+              "budgetMode": "CAMPAIGN",
+              "experimentId": 37,
+              "facebookAccountId": 88
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isConflict());
+
+        verify(campaignRepository, never()).save(any());
     }
 
     @Test

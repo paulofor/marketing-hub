@@ -54,6 +54,9 @@
 - Ao reportar a criação da campanha no backend inclua `experimentAdSetId` no payload para
   relacionar o conjunto de anúncios criado na Meta ao público do experimento e registrar os códigos
   retornados pelo Facebook.
+- Após a publicação completa da campanha/ad set/criativo/anúncio na Meta, o worker deve confirmar
+  sucesso ao backend em `POST /api/facebook-campaigns` com `status=ACTIVE`, permitindo que o backend
+  atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato.
 - Em testes com `MockWebServer`, utilize `takeRequest` com timeout e valide o retorno para evitar
   travamentos silenciosos no pipeline. Enfileire respostas para cada chamada esperada para
   não bloquear o `WebClient`.

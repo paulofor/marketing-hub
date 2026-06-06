@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
@@ -26,6 +27,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
@@ -103,6 +105,7 @@ public class FacebookAdsCampaignController {
                         com.marketinghub.experiment.ExperimentPlatform.FACEBOOK)
                 .stream()
                 .filter(experiment -> experiment.getFacebookReleaseRequestedAt() != null)
+                .filter(experiment -> !campaignRepository.existsByExperimentId(experiment.getId()))
                 .filter(experimentReadinessService::isReadyForCampaign)
                 .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
                 .toList();
@@ -154,6 +157,20 @@ public class FacebookAdsCampaignController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Experiment not found: " + req.experimentId(), ex);
         }
+        var existingCampaign = campaignRepository.findById(req.id());
+        if (existingCampaign.isPresent()) {
+            if (!Objects.equals(existingCampaign.get().getExperiment().getId(), req.experimentId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Facebook campaign already belongs to another experiment: " + req.id());
+            }
+            existingCampaign.get().setStatus(resolveCampaignPublicationStatus(req.status()));
+            experiment.setStatus(ExperimentStatus.RUNNING);
+            return;
+        }
+        if (campaignRepository.existsByExperimentId(req.experimentId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Experiment already has a Facebook campaign: " + req.experimentId());
+        }
         FacebookAccount account = accountRepository.findById(req.facebookAccountId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Facebook account not found: " + req.facebookAccountId()));
@@ -163,6 +180,7 @@ public class FacebookAdsCampaignController {
         campaign.setAdAccountId(req.adAccountId());
         campaign.setName(req.name());
         campaign.setObjective(req.objective());
+        campaign.setStatus(resolveCampaignPublicationStatus(req.status()));
         campaign.setBudgetMode(req.budgetMode());
         campaign.setExperiment(experiment);
         campaign.setFacebookAccount(account);
@@ -199,6 +217,13 @@ public class FacebookAdsCampaignController {
                 adRepository.save(mapAd(adRequest, savedAdSet, creative));
             }
         }
+        experiment.setStatus(ExperimentStatus.RUNNING);
+    }
+
+
+    // Resolve o status canônico da campanha após confirmação de publicação completa pelo worker.
+    private FacebookAdStatus resolveCampaignPublicationStatus(FacebookAdStatus status) {
+        return status != null ? status : FacebookAdStatus.ACTIVE;
     }
 
     @PostMapping("/{campaignId}/metrics")
@@ -634,6 +659,7 @@ public class FacebookAdsCampaignController {
             String adAccountId,
             String name,
             String objective,
+            FacebookAdStatus status,
             BudgetMode budgetMode,
             Long experimentId,
             Long facebookAccountId,

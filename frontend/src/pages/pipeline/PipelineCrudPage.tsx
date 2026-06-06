@@ -12,8 +12,6 @@ import type {
   PipelineStagePayload,
 } from "../../api/pipeline/types";
 import {
-  useCreatePipeline,
-  useCreatePipelineStage,
   useDeletePipeline,
   useDeletePipelineStage,
   useRebuildOfficialPipelineStages,
@@ -81,10 +79,8 @@ export default function PipelineCrudPage() {
     usePipelineMetadata();
   const { data: openAiModels, isLoading: isLoadingOpenAiModels } =
     useOpenAiModels();
-  const createPipeline = useCreatePipeline();
   const updatePipeline = useUpdatePipeline();
   const deletePipeline = useDeletePipeline();
-  const createStage = useCreatePipelineStage();
   const updateStage = useUpdatePipelineStage();
   const deleteStage = useDeletePipelineStage();
   const rebuildOfficialStages = useRebuildOfficialPipelineStages();
@@ -125,28 +121,25 @@ export default function PipelineCrudPage() {
   const selectedPipeline = pipelines.find(
     (pipeline) => pipeline.id === selectedPipelineId,
   );
-  const isSavingPipeline = createPipeline.isPending || updatePipeline.isPending;
-  const isSavingStage = createStage.isPending || updateStage.isPending;
+  const isSavingPipeline = updatePipeline.isPending;
+  const isSavingStage = updateStage.isPending;
   const editingOfficialPipeline = officialPipelines.find(
     (official) =>
       normalizeCode(official.code) === normalizeCode(pipelineForm.code),
   );
 
   const submitPipeline = () => {
+    if (!editingPipelineId) return;
+
     const payload = {
       ...pipelineForm,
       code: pipelineForm.code.trim(),
       name: pipelineForm.name.trim(),
     };
-    if (editingPipelineId) {
-      updatePipeline.mutate(
-        { id: editingPipelineId, payload },
-        { onSuccess: () => resetPipelineForm() },
-      );
-      return;
-    }
-
-    createPipeline.mutate(payload, { onSuccess: () => resetPipelineForm() });
+    updatePipeline.mutate(
+      { id: editingPipelineId, payload },
+      { onSuccess: () => resetPipelineForm() },
+    );
   };
 
   const resetPipelineForm = () => {
@@ -172,6 +165,8 @@ export default function PipelineCrudPage() {
   };
 
   const submitStage = (pipelineId: number) => {
+    if (!editingStageId) return;
+
     const payload = stageForms[pipelineId] ?? emptyStage;
     const normalizedPayload = {
       ...payload,
@@ -180,16 +175,8 @@ export default function PipelineCrudPage() {
       executionModule: payload.executionModule?.trim() || null,
       rootPackage: payload.rootPackage?.trim() || null,
     };
-    if (editingStageId) {
-      updateStage.mutate(
-        { pipelineId, stageId: editingStageId, payload: normalizedPayload },
-        { onSuccess: () => resetStageForm(pipelineId) },
-      );
-      return;
-    }
-
-    createStage.mutate(
-      { pipelineId, payload: normalizedPayload },
+    updateStage.mutate(
+      { pipelineId, stageId: editingStageId, payload: normalizedPayload },
       { onSuccess: () => resetStageForm(pipelineId) },
     );
   };
@@ -345,6 +332,7 @@ export default function PipelineCrudPage() {
             <h3 className="h5 mb-0">Etapas configuradas</h3>
             {isOfficialPipeline ? (
               <button
+                type="button"
                 className="btn btn-sm btn-outline-warning"
                 disabled={
                   rebuildOfficialStages.isPending ||
@@ -418,6 +406,7 @@ export default function PipelineCrudPage() {
                           </div>
                           <div className="d-flex gap-2">
                             <button
+                              type="button"
                               className="btn btn-sm btn-outline-primary"
                               onClick={() => {
                                 setEditingStageId(stage.id);
@@ -430,6 +419,7 @@ export default function PipelineCrudPage() {
                               Editar
                             </button>
                             <button
+                              type="button"
                               className="btn btn-sm btn-outline-danger"
                               disabled={
                                 deleteStage.isPending ||
@@ -480,279 +470,284 @@ export default function PipelineCrudPage() {
           )}
         </section>
 
-        <section className="card">
-          <div className="card-body">
-            <h3 className="h5">
-              {editingStageId ? "Editar etapa" : "Adicionar etapa"}
-            </h3>
-            {stageDefinition?.required ? (
-              <div className="alert alert-warning">
-                Etapa oficial estrutural: código, posição, módulo executor,
-                pacote raiz e obrigatoriedade ficam protegidos para evitar
-                divergência do contrato operacional.
-              </div>
-            ) : null}
-            {isOfficialPipeline && officialPipeline ? (
-              <div className="mb-3">
-                <label className="form-label">Modelo de etapa oficial</label>
-                <select
-                  className="form-select"
-                  value={stageDefinition?.operationalCode ?? ""}
-                  onChange={(event) => {
-                    const selected = officialPipeline.stages.find(
-                      (stage) => stage.operationalCode === event.target.value,
-                    );
-                    if (!selected) return;
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: {
-                        ...stageForm,
-                        position: selected.position,
-                        name: selected.name,
-                        code: selected.operationalCode,
-                        executionModule: selected.executionModule ?? "",
-                        rootPackage: selected.rootPackage ?? "",
-                        required: selected.required,
-                      },
-                    }));
-                  }}
-                >
-                  <option value="">Etapa personalizada</option>
-                  {officialPipeline.stages.map((stage) => (
-                    <option
-                      key={stage.operationalCode}
-                      value={stage.operationalCode}
-                    >
-                      {stage.position}. {stage.name} ({stage.operationalCode})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-            <div className="row g-3">
-              <div className="col-md-2">
-                <label className="form-label">Posição *</label>
-                <input
-                  className="form-control"
-                  type="number"
-                  min={1}
-                  value={stageForm.position}
-                  disabled={Boolean(stageDefinition?.required)}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: {
-                        ...stageForm,
-                        position: Number(event.target.value),
-                      },
-                    }))
-                  }
-                />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label">Nome *</label>
-                <input
-                  className="form-control"
-                  value={stageForm.name}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: { ...stageForm, name: event.target.value },
-                    }))
-                  }
-                  placeholder="Campaign Angle"
-                />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Código *</label>
-                <input
-                  className="form-control"
-                  disabled={Boolean(stageDefinition?.required)}
-                  value={stageForm.code}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: { ...stageForm, code: event.target.value },
-                    }))
-                  }
-                  placeholder="campaign-angle"
-                />
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Módulo executor</label>
-                <input
-                  className="form-control"
-                  disabled={Boolean(stageDefinition?.required)}
-                  value={stageForm.executionModule ?? ""}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: {
-                        ...stageForm,
-                        executionModule: event.target.value,
-                      },
-                    }))
-                  }
-                  placeholder="ai-worker"
-                />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label">Pacote raiz</label>
-                <input
-                  className="form-control"
-                  disabled={Boolean(stageDefinition?.required)}
-                  value={stageForm.rootPackage ?? ""}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: {
-                        ...stageForm,
-                        rootPackage: event.target.value,
-                      },
-                    }))
-                  }
-                  placeholder="com.marketinghub.worker.openai.core"
-                />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label">Modelo OpenAI</label>
-                <select
-                  className="form-select"
-                  value={stageForm.openAiModelId ?? ""}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: {
-                        ...stageForm,
-                        openAiModelId: event.target.value
-                          ? Number(event.target.value)
-                          : null,
-                      },
-                    }))
-                  }
-                >
-                  <option value="">
-                    {isLoadingOpenAiModels
-                      ? "Carregando modelos..."
-                      : "Sem modelo fixo"}
-                  </option>
-                  {modelOptions.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name} ({model.code})
-                      {model.acceptsImageInput ? " · aceita imagem" : ""}
-                    </option>
-                  ))}
-                </select>
-                <div className="form-text">
-                  Use modelos com imagem para etapas visuais, como Quality
-                  Review, e mantenha foco em venda por etapa.
+        {editingStageId ? (
+          <section className="card">
+            <div className="card-body">
+              <h3 className="h5">Editar etapa</h3>
+              {stageDefinition?.required ? (
+                <div className="alert alert-warning">
+                  Etapa oficial estrutural: código, posição, módulo executor,
+                  pacote raiz e obrigatoriedade ficam protegidos para evitar
+                  divergência do contrato operacional.
                 </div>
-              </div>
-              <div className="col-md-2 d-flex align-items-end">
-                <div className="form-check form-switch mb-2">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    checked={stageForm.required}
-                    disabled={
-                      isEditingOfficialStage ||
-                      Boolean(stageDefinition?.required)
-                    }
-                    onChange={(event) =>
+              ) : null}
+              {isOfficialPipeline && officialPipeline ? (
+                <div className="mb-3">
+                  <label className="form-label">Modelo de etapa oficial</label>
+                  <select
+                    className="form-select"
+                    value={stageDefinition?.operationalCode ?? ""}
+                    onChange={(event) => {
+                      const selected = officialPipeline.stages.find(
+                        (stage) => stage.operationalCode === event.target.value,
+                      );
+                      if (!selected) return;
                       setStageForms((current) => ({
                         ...current,
                         [pipeline.id]: {
                           ...stageForm,
-                          required: event.target.checked,
+                          position: selected.position,
+                          name: selected.name,
+                          code: selected.operationalCode,
+                          executionModule: selected.executionModule ?? "",
+                          rootPackage: selected.rootPackage ?? "",
+                          required: selected.required,
                         },
-                      }))
-                    }
-                    id={`stage-required-${pipeline.id}`}
-                  />
-                  <label
-                    className="form-check-label"
-                    htmlFor={`stage-required-${pipeline.id}`}
+                      }));
+                    }}
                   >
-                    Obrigatória
-                  </label>
+                    <option value="">Etapa personalizada</option>
+                    {officialPipeline.stages.map((stage) => (
+                      <option
+                        key={stage.operationalCode}
+                        value={stage.operationalCode}
+                      >
+                        {stage.position}. {stage.name} ({stage.operationalCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-              <div className="col-md-2 d-flex align-items-end">
-                <div className="form-check form-switch mb-2">
+              ) : null}
+              <div className="row g-3">
+                <div className="col-md-2">
+                  <label className="form-label">Posição *</label>
                   <input
-                    className="form-check-input"
-                    type="checkbox"
-                    checked={stageForm.active}
+                    className="form-control"
+                    type="number"
+                    min={1}
+                    value={stageForm.position}
                     disabled={Boolean(stageDefinition?.required)}
                     onChange={(event) =>
                       setStageForms((current) => ({
                         ...current,
                         [pipeline.id]: {
                           ...stageForm,
-                          active: event.target.checked,
+                          position: Number(event.target.value),
                         },
                       }))
                     }
-                    id={`stage-active-${pipeline.id}`}
                   />
-                  <label
-                    className="form-check-label"
-                    htmlFor={`stage-active-${pipeline.id}`}
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Nome *</label>
+                  <input
+                    className="form-control"
+                    value={stageForm.name}
+                    onChange={(event) =>
+                      setStageForms((current) => ({
+                        ...current,
+                        [pipeline.id]: {
+                          ...stageForm,
+                          name: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Campaign Angle"
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Código *</label>
+                  <input
+                    className="form-control"
+                    disabled={Boolean(stageDefinition?.required)}
+                    value={stageForm.code}
+                    onChange={(event) =>
+                      setStageForms((current) => ({
+                        ...current,
+                        [pipeline.id]: {
+                          ...stageForm,
+                          code: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="campaign-angle"
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Módulo executor</label>
+                  <input
+                    className="form-control"
+                    disabled={Boolean(stageDefinition?.required)}
+                    value={stageForm.executionModule ?? ""}
+                    onChange={(event) =>
+                      setStageForms((current) => ({
+                        ...current,
+                        [pipeline.id]: {
+                          ...stageForm,
+                          executionModule: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="ai-worker"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Pacote raiz</label>
+                  <input
+                    className="form-control"
+                    disabled={Boolean(stageDefinition?.required)}
+                    value={stageForm.rootPackage ?? ""}
+                    onChange={(event) =>
+                      setStageForms((current) => ({
+                        ...current,
+                        [pipeline.id]: {
+                          ...stageForm,
+                          rootPackage: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="com.marketinghub.worker.openai.core"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Modelo OpenAI</label>
+                  <select
+                    className="form-select"
+                    value={stageForm.openAiModelId ?? ""}
+                    onChange={(event) =>
+                      setStageForms((current) => ({
+                        ...current,
+                        [pipeline.id]: {
+                          ...stageForm,
+                          openAiModelId: event.target.value
+                            ? Number(event.target.value)
+                            : null,
+                        },
+                      }))
+                    }
                   >
-                    Ativa
-                  </label>
+                    <option value="">
+                      {isLoadingOpenAiModels
+                        ? "Carregando modelos..."
+                        : "Sem modelo fixo"}
+                    </option>
+                    {modelOptions.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name} ({model.code})
+                        {model.acceptsImageInput ? " · aceita imagem" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="form-text">
+                    Use modelos com imagem para etapas visuais, como Quality
+                    Review, e mantenha foco em venda por etapa.
+                  </div>
+                </div>
+                <div className="col-md-2 d-flex align-items-end">
+                  <div className="form-check form-switch mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={stageForm.required}
+                      disabled={
+                        isEditingOfficialStage ||
+                        Boolean(stageDefinition?.required)
+                      }
+                      onChange={(event) =>
+                        setStageForms((current) => ({
+                          ...current,
+                          [pipeline.id]: {
+                            ...stageForm,
+                            required: event.target.checked,
+                          },
+                        }))
+                      }
+                      id={`stage-required-${pipeline.id}`}
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor={`stage-required-${pipeline.id}`}
+                    >
+                      Obrigatória
+                    </label>
+                  </div>
+                </div>
+                <div className="col-md-2 d-flex align-items-end">
+                  <div className="form-check form-switch mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={stageForm.active}
+                      disabled={Boolean(stageDefinition?.required)}
+                      onChange={(event) =>
+                        setStageForms((current) => ({
+                          ...current,
+                          [pipeline.id]: {
+                            ...stageForm,
+                            active: event.target.checked,
+                          },
+                        }))
+                      }
+                      id={`stage-active-${pipeline.id}`}
+                    />
+                    <label
+                      className="form-check-label"
+                      htmlFor={`stage-active-${pipeline.id}`}
+                    >
+                      Ativa
+                    </label>
+                  </div>
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Descrição</label>
+                  <textarea
+                    className="form-control"
+                    rows={2}
+                    value={stageForm.description ?? ""}
+                    onChange={(event) =>
+                      setStageForms((current) => ({
+                        ...current,
+                        [pipeline.id]: {
+                          ...stageForm,
+                          description: event.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="Explique o objetivo prático desta etapa."
+                  />
                 </div>
               </div>
-              <div className="col-12">
-                <label className="form-label">Descrição</label>
-                <textarea
-                  className="form-control"
-                  rows={2}
-                  value={stageForm.description ?? ""}
-                  onChange={(event) =>
-                    setStageForms((current) => ({
-                      ...current,
-                      [pipeline.id]: {
-                        ...stageForm,
-                        description: event.target.value,
-                      },
-                    }))
-                  }
-                  placeholder="Explique o objetivo prático desta etapa."
-                />
-              </div>
-            </div>
-            <div className="d-flex gap-2 mt-3">
-              <button
-                className="btn btn-outline-primary"
-                disabled={
-                  isSavingStage ||
-                  !stageForm.name.trim() ||
-                  !stageForm.code.trim() ||
-                  stageForm.position < 1
-                }
-                onClick={() => submitStage(pipeline.id)}
-              >
-                {isSavingStage ? (
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  />
-                ) : null}
-                {editingStageId ? "Salvar etapa" : "Adicionar etapa"}
-              </button>
-              {editingStageId ? (
+              <div className="d-flex gap-2 mt-3">
                 <button
+                  className="btn btn-outline-primary"
+                  disabled={
+                    isSavingStage ||
+                    !stageForm.name.trim() ||
+                    !stageForm.code.trim() ||
+                    stageForm.position < 1
+                  }
+                  onClick={() => submitStage(pipeline.id)}
+                >
+                  {isSavingStage ? (
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  Salvar etapa
+                </button>
+                <button
+                  type="button"
                   className="btn btn-outline-secondary"
                   disabled={isSavingStage}
                   onClick={() => resetStageForm(pipeline.id)}
                 >
                   Cancelar edição
                 </button>
-              ) : null}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
       </div>
     );
   }
@@ -763,143 +758,145 @@ export default function PipelineCrudPage() {
       <p className="text-body-secondary">
         Lista limpa dos pipelines operacionais. Clique em{" "}
         <strong>Ver etapas</strong> para abrir a tela focada somente no fluxo
-        daquele pipeline.
+        daquele pipeline. A criação de pipelines e etapas é feita somente pelo
+        backend conforme contrato canônico.
       </p>
 
-      <section className="card mb-4">
-        <div className="card-body">
-          <h2 className="h5">
-            {editingPipelineId ? "Editar pipeline" : "Novo pipeline"}
-          </h2>
-          <div className="row g-3">
-            <div className="col-md-4">
-              <label className="form-label">Nome *</label>
-              <input
-                className="form-control"
-                value={pipelineForm.name}
-                onChange={(event) =>
-                  setPipelineForm((current) => ({
-                    ...current,
-                    name: event.target.value,
-                  }))
-                }
-                placeholder="Pipeline de Experimento"
-              />
-            </div>
-            <div className="col-md-3">
-              <label className="form-label">Código *</label>
-              <input
-                className="form-control"
-                disabled={Boolean(editingOfficialPipeline)}
-                value={pipelineForm.code}
-                onChange={(event) =>
-                  setPipelineForm((current) => ({
-                    ...current,
-                    code: event.target.value,
-                  }))
-                }
-                placeholder="experiment-pipeline"
-              />
-            </div>
-            <div className="col-md-3">
-              <label className="form-label">Módulo *</label>
-              <select
-                className="form-select"
-                value={pipelineForm.module}
-                disabled={Boolean(editingOfficialPipeline) || isLoadingMetadata}
-                onChange={(event) =>
-                  setPipelineForm((current) => ({
-                    ...current,
-                    module: event.target.value,
-                  }))
-                }
-              >
-                {validModules.map((module) => (
-                  <option key={module} value={module}>
-                    {module}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-2 d-flex align-items-end">
-              <div className="form-check form-switch mb-2">
+      {editingPipelineId ? (
+        <section className="card mb-4">
+          <div className="card-body">
+            <h2 className="h5">Editar pipeline</h2>
+            <div className="row g-3">
+              <div className="col-md-4">
+                <label className="form-label">Nome *</label>
                 <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={pipelineForm.active}
+                  className="form-control"
+                  value={pipelineForm.name}
                   onChange={(event) =>
                     setPipelineForm((current) => ({
                       ...current,
-                      active: event.target.checked,
+                      name: event.target.value,
                     }))
                   }
-                  id="pipeline-active"
+                  placeholder="Pipeline de Experimento"
                 />
-                <label className="form-check-label" htmlFor="pipeline-active">
-                  Ativo
-                </label>
               </div>
-            </div>
-            <div className="col-12">
-              <label className="form-label">Descrição</label>
-              <textarea
-                className="form-control"
-                rows={2}
-                value={pipelineForm.description ?? ""}
-                onChange={(event) =>
-                  setPipelineForm((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="Objetivo comercial e resultado esperado do pipeline."
-              />
-            </div>
-            {editingOfficialPipeline ? (
-              <div className="col-12">
-                <div className="alert alert-info mb-0">
-                  Pipeline oficial protegido: código e módulo são estruturais e
-                  só o backend pode redefinir. A tela edita apenas configuração
-                  operacional segura.
+              <div className="col-md-3">
+                <label className="form-label">Código *</label>
+                <input
+                  className="form-control"
+                  disabled={Boolean(editingOfficialPipeline)}
+                  value={pipelineForm.code}
+                  onChange={(event) =>
+                    setPipelineForm((current) => ({
+                      ...current,
+                      code: event.target.value,
+                    }))
+                  }
+                  placeholder="experiment-pipeline"
+                />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Módulo *</label>
+                <select
+                  className="form-select"
+                  value={pipelineForm.module}
+                  disabled={
+                    Boolean(editingOfficialPipeline) || isLoadingMetadata
+                  }
+                  onChange={(event) =>
+                    setPipelineForm((current) => ({
+                      ...current,
+                      module: event.target.value,
+                    }))
+                  }
+                >
+                  {validModules.map((module) => (
+                    <option key={module} value={module}>
+                      {module}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-2 d-flex align-items-end">
+                <div className="form-check form-switch mb-2">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={pipelineForm.active}
+                    onChange={(event) =>
+                      setPipelineForm((current) => ({
+                        ...current,
+                        active: event.target.checked,
+                      }))
+                    }
+                    id="pipeline-active"
+                  />
+                  <label className="form-check-label" htmlFor="pipeline-active">
+                    Ativo
+                  </label>
                 </div>
               </div>
-            ) : null}
-          </div>
-          <div className="d-flex gap-2 mt-3">
-            <button
-              className="btn btn-primary"
-              onClick={submitPipeline}
-              disabled={
-                isSavingPipeline ||
-                !pipelineForm.name.trim() ||
-                !pipelineForm.code.trim() ||
-                !pipelineForm.module.trim()
-              }
-            >
-              {isSavingPipeline ? (
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
+              <div className="col-12">
+                <label className="form-label">Descrição</label>
+                <textarea
+                  className="form-control"
+                  rows={2}
+                  value={pipelineForm.description ?? ""}
+                  onChange={(event) =>
+                    setPipelineForm((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder="Objetivo comercial e resultado esperado do pipeline."
                 />
+              </div>
+              {editingOfficialPipeline ? (
+                <div className="col-12">
+                  <div className="alert alert-info mb-0">
+                    Pipeline oficial protegido: código e módulo são estruturais
+                    e só o backend pode redefinir. A tela edita apenas
+                    configuração operacional segura.
+                  </div>
+                </div>
               ) : null}
-              {editingPipelineId ? "Salvar pipeline" : "Criar pipeline"}
-            </button>
-            {editingPipelineId ? (
+            </div>
+            <div className="d-flex gap-2 mt-3">
               <button
+                className="btn btn-primary"
+                onClick={submitPipeline}
+                disabled={
+                  isSavingPipeline ||
+                  !pipelineForm.name.trim() ||
+                  !pipelineForm.code.trim() ||
+                  !pipelineForm.module.trim()
+                }
+              >
+                {isSavingPipeline ? (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                Salvar pipeline
+              </button>
+              <button
+                type="button"
                 className="btn btn-outline-secondary"
                 onClick={resetPipelineForm}
                 disabled={isSavingPipeline}
               >
                 Cancelar edição
               </button>
-            ) : null}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {pipelines.length === 0 ? (
         <div className="alert alert-info">
-          Nenhum pipeline cadastrado ainda. Crie o primeiro pipeline acima.
+          Nenhum pipeline cadastrado pelo backend até o momento.
         </div>
       ) : (
         <section className="card">

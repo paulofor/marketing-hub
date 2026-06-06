@@ -7,6 +7,10 @@ export interface OprmEnrichedNicheMaterializerDetail {
   routineCardId?: number | null;
   marketNicheId?: number | null;
   enrichedNicheProfileId?: number | null;
+  originalNicheName?: string | null;
+  neutralNicheName?: string | null;
+  researchMode?: string | null;
+  solutionLanguageRiskScore?: number | null;
   nicheName?: string | null;
   cnaeCode?: string | null;
   qualityStatus?: string | null;

@@ -8,6 +8,8 @@ import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.detailStageExecution.EnrichedNicheMaterializerDetailResponse;
+import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticItem;
+import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
@@ -17,7 +19,10 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardReposi
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +35,9 @@ public class BackendEnrichedNicheMaterializerService {
   private static final String SOURCE_MODULE = "OPRM_NICHO_CNAE";
   private static final String ENRICHED_STATUS = "ENRICHED_NICHE_CREATED";
   private static final String FAILED_STATUS = "ENRICHED_NICHE_FAILED";
+  private static final String HISTORICAL_RESEARCH_RECOMMENDATION = "Preferir novo ciclo neutro em vez de editar manualmente o texto antigo.";
+  private static final List<String> SOLUTION_LANGUAGE_TERMS = List.of(
+      "ia", "inteligência artificial", "automação", "software", "sistema", "app", "ferramenta", "curso", "template", "oferta", "landing page");
 
   private final OprmRoutineResearchCycleRepository cycleRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
@@ -118,6 +126,25 @@ public class BackendEnrichedNicheMaterializerService {
     return buildDetailResponse(cycle, card, profile);
   }
 
+  /** Localiza ciclos e perfis históricos com termos de solução para orientar reprocessamento neutro. */
+  @Transactional(readOnly = true)
+  public ContaminatedNicheDiagnosticResponse diagnoseHistoricalContamination(int limit) {
+    int boundedLimit = Math.max(1, Math.min(limit, 50));
+    Map<String, ContaminatedNicheDiagnosticItem> uniqueItems = new LinkedHashMap<>();
+    for (String term : SOLUTION_LANGUAGE_TERMS) {
+      cycleRepository.findPotentiallyContaminatedByTerm(term, PageRequest.of(0, boundedLimit)).forEach(cycle ->
+          uniqueItems.putIfAbsent("CYCLE:" + cycle.getId(), toCycleDiagnosticItem(cycle, term)));
+      enrichmentProfileRepository.findPotentiallyContaminatedByTerm(term, PageRequest.of(0, boundedLimit)).forEach(profile ->
+          uniqueItems.putIfAbsent("PROFILE:" + profile.getId(), toProfileDiagnosticItem(profile, term)));
+    }
+    List<ContaminatedNicheDiagnosticItem> items = new ArrayList<>(uniqueItems.values()).stream()
+        .limit(boundedLimit)
+        .toList();
+    int totalCycles = (int) items.stream().filter(item -> "CYCLE".equals(item.recordType())).count();
+    int totalProfiles = (int) items.stream().filter(item -> "PROFILE".equals(item.recordType())).count();
+    return new ContaminatedNicheDiagnosticResponse(Instant.now(), totalCycles, totalProfiles, items);
+  }
+
   /** Monta o DTO público de detalhe combinando ciclo, card e perfil enriquecido. */
   private EnrichedNicheMaterializerDetailResponse buildDetailResponse(
       OprmRoutineResearchCycle cycle, OprmNicheRoutineCard card, MarketNicheEnrichmentProfile profile) {
@@ -127,7 +154,11 @@ public class BackendEnrichedNicheMaterializerService {
         card == null ? null : card.getId(),
         profile == null ? null : profile.getMarketNiche().getId(),
         profile == null ? null : profile.getId(),
-        card == null ? cycle.getNicheName() : card.getNicheName(),
+        cycle.getOriginalNicheName(),
+        cycle.getNeutralNicheName(),
+        cycle.getResearchMode(),
+        cycle.getSolutionLanguageRiskScore(),
+        card == null ? neutralNicheName(cycle) : card.getNicheName(),
         cycle.getCnaeCode(),
         card == null ? null : card.getQualityStatus(),
         profile == null ? null : profile.getRoutineSummary(),
@@ -150,7 +181,7 @@ public class BackendEnrichedNicheMaterializerService {
         candidate == null ? null : candidate.getMarketNicheId(),
         cycle.getCnaeCode(),
         cycle.getCnaeDescription(),
-        card.getNicheName(),
+        neutralNicheName(cycle),
         cycle.getSourceScore(),
         card.getQualityStatus(),
         card.getSpecificityScore(),
@@ -170,10 +201,11 @@ public class BackendEnrichedNicheMaterializerService {
     MarketNiche marketNiche = candidate != null && candidate.getMarketNicheId() != null
         ? marketNicheRepository.findById(candidate.getMarketNicheId()).orElseGet(MarketNiche::new)
         : new MarketNiche();
-    marketNiche.setName(requiredText(card.getNicheName(), "nicheName"));
+    marketNiche.setName(requiredText(neutralNicheName(cycle), "neutralNicheName"));
     marketNiche.setDescription(buildMarketNicheDescription(card, cycle));
     marketNiche.setDemandVolume("CNAE " + cycle.getCnaeCode() + " · Score OPRM " + cycle.getSourceScore());
-    marketNiche.setPromises(card.getResultsSummary());
+    marketNiche.setPromises(null);
+    marketNiche.setOffers(null);
     marketNiche.setBaseSegmentation("Nicho operacional CNAE " + cycle.getCnaeCode() + " - " + cycle.getCnaeDescription());
     marketNiche.setDemographicFilters("Público profissional/empreendedor ligado a " + cycle.getCnaeDescription());
     marketNiche.setInterests(card.getSourceDomains());
@@ -186,18 +218,19 @@ public class BackendEnrichedNicheMaterializerService {
     return String.join("\n\n",
         "Nicho materializado pelo OPRM NichoCNAE.",
         "CNAE: " + cycle.getCnaeCode() + " - " + cycle.getCnaeDescription(),
+        "Nome original recebido para auditoria: " + defaultText(cycle.getOriginalNicheName(), cycle.getNicheName()),
+        "Nome neutro pesquisado: " + neutralNicheName(cycle),
         "Rotina observada:\n" + card.getRoutineSummary(),
-        "Dores observadas:\n" + card.getPainsSummary(),
-        "Resultados desejados:\n" + card.getResultsSummary(),
-        "Oportunidades de mecanismo:\n" + card.getMechanismOpportunitiesSummary(),
-        "Evidências:\n" + card.getEvidenceSummary());
+        "Dificuldades observadas:\n" + card.getPainsSummary(),
+        "Contexto operacional:\n" + card.getResultsSummary(),
+        "Linguagem e evidências públicas:\n" + card.getEvidenceSummary());
   }
 
   /** Monta dicas operacionais de uso do nicho para próximas etapas sem acionar hipótese. */
   private String buildExtraTips(OprmNicheRoutineCard card) {
     return String.join("\n\n",
-        "Use este nicho como base enriquecida para hipótese em outro fluxo.",
-        "Status de qualidade: " + card.getQualityStatus(),
+        "Use este registro como auditoria de rotina real antes de qualquer fluxo posterior de hipótese.",
+        "Status de qualidade da rotina: " + card.getQualityStatus(),
         "Especificidade: " + card.getSpecificityScore() + "%",
         "Confiança: " + card.getConfidenceScore() + "%",
         "Duplicação: " + card.getDuplicationScore() + "%");
@@ -232,8 +265,8 @@ public class BackendEnrichedNicheMaterializerService {
     profile.setSourceDomains(trimOptional(card.getSourceDomains()));
     profile.setPersonaSummary(trimOptional(request.personaSummary()));
     profile.setLanguagePatterns(trimOptional(request.languagePatterns()));
-    profile.setCommercialTriggers(trimOptional(request.commercialTriggers()));
-    profile.setObjections(trimOptional(request.objections()));
+    profile.setCommercialTriggers(null);
+    profile.setObjections(null);
     profile.setCreatedBy(defaultText(request.materializedBy(), "oprmEnrichedNicheMaterializer"));
     profile.setCreatedAt(now);
     profile.setUpdatedAt(now);
@@ -255,6 +288,43 @@ public class BackendEnrichedNicheMaterializerService {
       candidate.setUpdatedAt(now);
       nicheCandidateRepository.save(candidate);
     }
+  }
+
+  /** Converte um ciclo contaminado em item de diagnóstico operacional. */
+  private ContaminatedNicheDiagnosticItem toCycleDiagnosticItem(OprmRoutineResearchCycle cycle, String matchedTerm) {
+    return new ContaminatedNicheDiagnosticItem(
+        "CYCLE",
+        cycle.getId(),
+        cycle.getId(),
+        null,
+        matchedTerm,
+        cycle.getOriginalNicheName(),
+        cycle.getNeutralNicheName(),
+        cycle.getNicheName(),
+        cycle.getStatus(),
+        HISTORICAL_RESEARCH_RECOMMENDATION,
+        cycle.getStartedAt());
+  }
+
+  /** Converte um perfil contaminado em item de diagnóstico operacional. */
+  private ContaminatedNicheDiagnosticItem toProfileDiagnosticItem(MarketNicheEnrichmentProfile profile, String matchedTerm) {
+    return new ContaminatedNicheDiagnosticItem(
+        "PROFILE",
+        profile.getId(),
+        profile.getResearchCycleId(),
+        profile.getMarketNiche().getId(),
+        matchedTerm,
+        null,
+        profile.getMarketNiche().getName(),
+        profile.getMarketNiche().getName(),
+        profile.getQualityStatus(),
+        HISTORICAL_RESEARCH_RECOMMENDATION,
+        profile.getCreatedAt());
+  }
+
+  /** Retorna o nome neutro operacional do ciclo com fallback seguro para ciclos legados. */
+  private String neutralNicheName(OprmRoutineResearchCycle cycle) {
+    return defaultText(cycle.getNeutralNicheName(), cycle.getNicheName());
   }
 
   /** Localiza o ciclo de pesquisa de rotina ou falha com erro contratual claro. */

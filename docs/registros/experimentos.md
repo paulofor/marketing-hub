@@ -3738,3 +3738,24 @@
 - ajuste aplicado: removido do `facebook-ads-worker` o caminho legado de publicação que consultava ad sets persistidos por `/api/adsets?experimentId=...` antes de publicar.
 - versão canônica restante: a publicação usa a etapa plugável do `facebook-ads-worker`; para público, usa playbook válido ou fallback manual aprovado por `/api/facebook-adsets/experiments-ready`.
 - motivo: impedir reintrodução do fluxo antigo dependente de ad set pré-materializado fora da publicação, mantendo o Facebook Ads Worker como dono único da publicação e do fallback manual.
+## 2026-06-06 02:07:00 UTC
+- solicitação: ajustar a tela `/facebook-campaigns` para mostrar os registros mais recentes no começo e paginar a listagem com 25 itens por página.
+- raciocínio para a solução: o endpoint atual já fornece todos os experimentos necessários por status; a causa do esforço visual estava na ordenação e volume renderizado no frontend, então a correção foi aplicada na apresentação sem criar novo contrato backend.
+- foi feito: a tela de Experimentos para Campanha passou a ordenar por ID decrescente como proxy dos cadastros mais recentes, exibir o contador de intervalo da página, limitar a tabela a 25 experimentos e oferecer navegação anterior/próxima e por número de página.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/facebook/FacebookCampaignExperimentsPage.tsx
+  - frontend/src/api/useFacebookCampaignExperiments.ts
+
+## 2026-06-06 — Remoção de criação manual de pipelines e etapas no frontend
+
+- solicitação: remover o quadro de **Adicionar etapa** e impedir criação manual de etapas ou pipelines pela tela `/pipelines`.
+- causa-raiz: a tela ainda expunha formulários de criação manual, embora o pipeline operacional deva nascer do contrato canônico e das rotinas do backend para evitar divergência estrutural.
+- correção aplicada: a tela principal passou a exibir somente a lista e, quando necessário, o formulário de edição de pipeline existente; a tela de etapas passou a mostrar o formulário somente durante edição de uma etapa existente, removendo o estado padrão de adicionar etapa.
+- documentação sincronizada: o cânone do procedimento de experimento passou a registrar que o frontend administrativo não oferece criação manual de pipelines nem de etapas.
+- arquivos alterados:
+  - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+  - `docs/canonical/procedimento-experimento-canon.v1.md`
+  - `docs/registros/experimentos.md`

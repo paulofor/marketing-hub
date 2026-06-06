@@ -18,27 +18,44 @@ public class RoutineQualityGateEngine {
         int sourceCount = value(pending.sourceCount());
         int signalCount = value(pending.signalCount());
         int solutionRiskScore = calculateSolutionLanguageRiskScore(pending);
+        int textualSolutionRiskScore = calculateTextualSolutionLanguageRiskScore(pending);
+        int effectiveSolutionRiskScore = Math.max(solutionRiskScore, textualSolutionRiskScore);
         int specificityScore = calculateSpecificityScore(pending);
-        int confidenceScore = calculateConfidenceScore(pending, sourceCount, signalCount, solutionRiskScore);
+        int confidenceScore = calculateConfidenceScore(pending, sourceCount, signalCount, effectiveSolutionRiskScore);
         int duplicationScore = calculateDuplicationScore(pending);
-        boolean hasRequiredSummaries = hasText(pending.routineSummary()) && hasText(pending.painsSummary()) && hasText(pending.resultsSummary());
+        boolean hasRequiredSummaries = hasText(pending.routineSummary()) && hasText(pending.painsSummary());
+        boolean hasAuditableEvidence = hasText(pending.evidenceSummary()) && distinctDomainCount(pending.sourceDomains()) >= 2;
         boolean hasRoutineTask = value(pending.routineTaskCount()) > 0;
         boolean hasDifficulty = value(pending.operationalDifficultyCount()) > 0 || value(pending.painSignalCount()) > 0;
         boolean hasQuestionOrLanguage = value(pending.questionSignalCount()) > 0 || value(pending.languageMarkerCount()) > 0;
         boolean hasMinimumSignalMix = hasRoutineTask && hasDifficulty && hasQuestionOrLanguage;
-        boolean dominatedBySolution = solutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
-        boolean generic = specificityScore < 40 || duplicationScore >= 70 || !hasRequiredSummaries;
+        boolean dominatedBySolution = effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
+                || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
+        boolean generic = specificityScore < 40 || duplicationScore >= 70 || !hasRequiredSummaries || !hasAuditableEvidence;
         boolean approved = sourceCount >= 3
                 && signalCount >= 6
                 && specificityScore >= 60
                 && confidenceScore >= 50
                 && hasRequiredSummaries
+                && hasAuditableEvidence
                 && hasMinimumSignalMix
                 && !dominatedBySolution
                 && !generic;
         String status = generic ? GENERIC : approved ? LIGHTLY_RESEARCHED : NEEDS_MORE_RESEARCH;
         return new RoutineQualityDecision(
-                status, approved, specificityScore, confidenceScore, duplicationScore, buildNotes(pending, status, hasMinimumSignalMix, dominatedBySolution, solutionRiskScore));
+                status,
+                approved,
+                specificityScore,
+                confidenceScore,
+                duplicationScore,
+                buildNotes(
+                        pending,
+                        status,
+                        hasMinimumSignalMix,
+                        hasAuditableEvidence,
+                        dominatedBySolution,
+                        effectiveSolutionRiskScore,
+                        textualSolutionRiskScore));
     }
 
     /** Calcula especificidade combinando rotina, dificuldade, perguntas/linguagem e variedade de fontes. */
@@ -58,7 +75,8 @@ public class RoutineQualityGateEngine {
     }
 
     /** Calcula confiança efetiva com bônus para evidência de rotina/dificuldade e penalidade por solução precoce. */
-    private int calculateConfidenceScore(RoutineQualityGatePending pending, int sourceCount, int signalCount, int solutionRiskScore) {
+    private int calculateConfidenceScore(
+            RoutineQualityGatePending pending, int sourceCount, int signalCount, int solutionRiskScore) {
         int base = value(pending.cardConfidenceScore());
         int sourceScore = Math.min(22, sourceCount * 5);
         int signalScore = Math.min(20, signalCount * 2);
@@ -69,7 +87,11 @@ public class RoutineQualityGateEngine {
 
     /** Calcula risco de duplicação/genérico por repetição simples entre os blocos principais. */
     private int calculateDuplicationScore(RoutineQualityGatePending pending) {
-        List<String> normalized = List.of(normalize(pending.routineSummary()), normalize(pending.painsSummary()), normalize(pending.resultsSummary()), normalize(pending.mechanismOpportunitiesSummary()));
+        List<String> normalized = List.of(
+                normalize(pending.routineSummary()),
+                normalize(pending.painsSummary()),
+                normalize(pending.resultsSummary()),
+                normalize(pending.mechanismOpportunitiesSummary()));
         int duplicatePairs = 0;
         for (int i = 0; i < normalized.size(); i++) {
             for (int j = i + 1; j < normalized.size(); j++) {
@@ -93,8 +115,43 @@ public class RoutineQualityGateEngine {
         return Math.max(requestScore, counterScore);
     }
 
-    /** Monta notas objetivas com a causa da decisão para exibição e investigação operacional. */
-    private String buildNotes(RoutineQualityGatePending pending, String status, boolean hasMinimumSignalMix, boolean dominatedBySolution, int solutionRiskScore) {
+    /** Calcula risco textual quando o card usa termos de solução mesmo sem contador de risco persistido. */
+    private int calculateTextualSolutionLanguageRiskScore(RoutineQualityGatePending pending) {
+        String text = normalize(String.join(
+                " ",
+                nullToEmpty(pending.routineSummary()),
+                nullToEmpty(pending.painsSummary()),
+                nullToEmpty(pending.resultsSummary()),
+                nullToEmpty(pending.mechanismOpportunitiesSummary())));
+        int matches = 0;
+        for (String term : List.of(
+                " ia ",
+                " inteligencia artificial ",
+                " automacao ",
+                " software ",
+                " sistema ",
+                " app ",
+                " ferramenta ",
+                " curso ",
+                " template ",
+                " oferta ",
+                " landing page ")) {
+            if ((" " + text + " ").contains(term)) {
+                matches++;
+            }
+        }
+        return clamp(matches * 12);
+    }
+
+    /** Monta notas objetivas para explicar a decisão operacional do gate. */
+    private String buildNotes(
+            RoutineQualityGatePending pending,
+            String status,
+            boolean hasMinimumSignalMix,
+            boolean hasAuditableEvidence,
+            boolean dominatedBySolution,
+            int solutionRiskScore,
+            int textualSolutionRiskScore) {
         List<String> notes = new ArrayList<>();
         notes.add("status=" + status);
         notes.add("fontes=" + value(pending.sourceCount()));
@@ -102,10 +159,12 @@ public class RoutineQualityGateEngine {
         notes.add("tarefasRotina=" + value(pending.routineTaskCount()));
         notes.add("dificuldades=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
         notes.add("perguntasOuLinguagem=" + (value(pending.questionSignalCount()) + value(pending.languageMarkerCount())));
-        notes.add("diversidadeFontes=" + value(pending.sourceDiversityScore()));
-        notes.add("riscoLinguagemSolucao=" + solutionRiskScore);
-        notes.add("dominadoPorSolucao=" + dominatedBySolution);
         notes.add("mixMinimoRotina=" + hasMinimumSignalMix);
+        notes.add("evidenciaAuditavel=" + hasAuditableEvidence);
+        notes.add("riscoLinguagemSolucao=" + solutionRiskScore);
+        notes.add("riscoTextualSolucao=" + textualSolutionRiskScore);
+        notes.add("dominadoPorSolucao=" + dominatedBySolution);
+        notes.add("fontesDistintas=" + distinctDomainCount(pending.sourceDomains()));
         return String.join("; ", notes);
     }
 
@@ -130,9 +189,31 @@ public class RoutineQualityGateEngine {
         return hasText(value) && value.matches(".*(\\d|WhatsApp|Instagram|agenda|cliente|preço|pacote|retorno|horário|cancelamento|atraso|falta).*");
     }
 
-    /** Normaliza texto para comparação simples de repetição. */
+    /** Normaliza texto para comparação de duplicidade simples. */
     private String normalize(String value) {
-        return hasText(value) ? value.trim().replaceAll("\\s+", " ").toLowerCase() : "";
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return value.toLowerCase()
+                .replace('á', 'a')
+                .replace('à', 'a')
+                .replace('ã', 'a')
+                .replace('â', 'a')
+                .replace('é', 'e')
+                .replace('ê', 'e')
+                .replace('í', 'i')
+                .replace('ó', 'o')
+                .replace('õ', 'o')
+                .replace('ô', 'o')
+                .replace('ú', 'u')
+                .replace('ç', 'c')
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    /** Retorna texto vazio para campos opcionais ausentes antes de unir os blocos avaliados. */
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     /** Verifica se existe texto útil no valor recebido. */

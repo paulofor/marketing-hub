@@ -31,6 +31,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class OprmCnaeOpportunityPersistenceService {
+    private static final String ROUTINE_RESEARCH_STATUS_PENDING = "PENDING";
+
     private final OprmCnaeOpportunityReadRepository opportunityReadRepository;
     private final OprmCnaeOpportunityScoreRepository scoreRepository;
     private final OprmCnaeProcessingCycleRepository cycleRepository;
@@ -247,6 +249,7 @@ public class OprmCnaeOpportunityPersistenceService {
         candidate.setScoreCycleId(request.scoreCycleId());
         candidate.setEnrichmentCycleId(request.enrichmentCycleId());
         candidate.setStatus(request.status());
+        candidate.setRoutineResearchStatus(ROUTINE_RESEARCH_STATUS_PENDING);
         candidate.setSourceArtifacts(request.sourceArtifacts());
         candidate.setCreatedAt(now);
         candidate.setUpdatedAt(now);

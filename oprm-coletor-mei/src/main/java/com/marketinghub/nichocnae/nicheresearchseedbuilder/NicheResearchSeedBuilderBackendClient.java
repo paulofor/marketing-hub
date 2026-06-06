@@ -146,8 +146,8 @@ public class NicheResearchSeedBuilderBackendClient {
         NicheResearchSeedBuilderFailureRequest request = new NicheResearchSeedBuilderFailureRequest(
                 researchCycleId,
                 "oprmNicheResearchSeedBuilder",
-                error.getMessage(),
-                error.toString());
+                buildFailureMessage(error),
+                buildFailureDetail(error));
         try {
             restClient.post().uri(url).body(request).retrieve().toBodilessEntity();
         } catch (RestClientException ex) {
@@ -158,5 +158,33 @@ public class NicheResearchSeedBuilderBackendClient {
                     ex);
             throw ex;
         }
+    }
+
+    /** Monta a mensagem principal usando a causa raiz quando a exceção encapsular uma falha técnica relevante. */
+    private String buildFailureMessage(RuntimeException error) {
+        Throwable rootCause = rootCause(error);
+        String rootMessage = rootCause.getMessage();
+        if (rootMessage == null || rootMessage.isBlank() || rootCause == error) {
+            return error.getMessage();
+        }
+        return error.getMessage() + " | Causa raiz: " + rootMessage;
+    }
+
+    /** Monta o detalhe técnico da falha para o backend preservar diagnóstico suficiente no ciclo. */
+    private String buildFailureDetail(RuntimeException error) {
+        Throwable rootCause = rootCause(error);
+        if (rootCause == error) {
+            return error.toString();
+        }
+        return error + " | rootCause=" + rootCause;
+    }
+
+    /** Encontra a causa raiz sem depender de bibliotecas externas para manter a borda simples. */
+    private Throwable rootCause(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
     }
 }

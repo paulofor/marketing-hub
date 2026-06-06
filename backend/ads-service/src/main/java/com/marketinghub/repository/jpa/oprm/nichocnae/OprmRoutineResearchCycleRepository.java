@@ -51,4 +51,14 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
             @Param("retryableErrorFragment") String retryableErrorFragment,
             @Param("completePathFragment") String completePathFragment,
             Pageable pageable);
+    /** Lista ciclos recentes cujo nome ou conteúdo principal ainda contém linguagem de solução. */
+    @Query("""
+            select cycle
+            from OprmRoutineResearchCycle cycle
+            where lower(coalesce(cycle.originalNicheName, '')) like lower(concat('%', :term, '%'))
+               or lower(coalesce(cycle.nicheName, '')) like lower(concat('%', :term, '%'))
+               or lower(coalesce(cycle.errorMessage, '')) like lower(concat('%', :term, '%'))
+            order by cycle.startedAt desc
+            """)
+    List<OprmRoutineResearchCycle> findPotentiallyContaminatedByTerm(@Param("term") String term, Pageable pageable);
 }

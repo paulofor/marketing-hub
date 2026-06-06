@@ -12,6 +12,10 @@ export interface OprmRoutineCard {
   evidenceSummary: string;
   sourceDomains: string;
   confidenceScore: number;
+  routineEvidenceScore: number;
+  difficultyEvidenceScore: number;
+  sourceDiversityScore: number;
+  solutionLanguageRiskScore: number;
   synthesizedBy: string;
   createdAt: string;
 }

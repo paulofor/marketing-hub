@@ -22,6 +22,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Expõe o endpoint JSON-RPC do MCP e roteia chamadas para ferramentas operacionais.
+ */
 @RestController
 @RequestMapping("/mcp")
 public class McpController {
@@ -33,6 +36,9 @@ public class McpController {
     private static final int DEFAULT_LIMIT = 50;
     private static final int MAX_LIMIT = 200;
     private static final int MAX_QUERY_LIMIT = 500;
+    private static final List<String> JAVA_LOG_MODULES = List.of("backend", "ai-worker", "lead-portal", "facebook-ads",
+            "email-service", "lead-portal-payment", "mds", "mois", "mois-sales-library-worker",
+            "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita");
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -40,6 +46,9 @@ public class McpController {
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
 
+    /**
+     * Inicializa o controller com os serviços responsáveis pelas ferramentas MCP.
+     */
     public McpController(McpProperties properties,
                          DatabaseDiagnosticsService databaseDiagnosticsService,
                          ModuleLogService moduleLogService,
@@ -52,6 +61,9 @@ public class McpController {
         this.githubActionsService = githubActionsService;
     }
 
+    /**
+     * Descreve o endpoint MCP para verificações simples de reachability.
+     */
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> describeEndpoint() {
         return ResponseEntity.ok(Map.of(
@@ -63,6 +75,9 @@ public class McpController {
         ));
     }
 
+    /**
+     * Processa requisições JSON-RPC de inicialização, listagem de tools e execução de tools.
+     */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> handleRequest(@RequestBody Map<String, Object> request,
                                                              HttpServletRequest httpServletRequest) {
@@ -128,13 +143,12 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "java_module_logs",
-                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java (backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita).",
+                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java (backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita).",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(
                                             "module", Map.of("type", "string",
-                                                    "enum", List.of("backend", "ai-worker", "lead-portal", "facebook-ads",
-                                                            "email-service", "lead-portal-payment", "mds", "mois", "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita"),
+                                                    "enum", JAVA_LOG_MODULES,
                                                     "description", "Módulo Java para consultar logs."),
                                             "lines", Map.of("type", "integer", "minimum", 1,
                                                     "maximum", moduleLogService.maxLines(),
@@ -231,6 +245,9 @@ public class McpController {
         };
     }
 
+    /**
+     * Valida o bearer token quando a chave MCP está configurada.
+     */
     private boolean isAuthorized(HttpServletRequest request) {
         if (!StringUtils.hasText(properties.apiKey())) {
             return true;
@@ -242,6 +259,9 @@ public class McpController {
                 && properties.apiKey().equals(authHeader.substring(BEARER_PREFIX.length()));
     }
 
+    /**
+     * Executa a tool solicitada e converte falhas em respostas JSON-RPC.
+     */
     private Map<String, Object> callTool(Object id, Map<String, Object> request) {
         Object paramsObject = request.get("params");
         if (!(paramsObject instanceof Map<?, ?> params)) {
@@ -280,6 +300,9 @@ public class McpController {
         }
     }
 
+    /**
+     * Executa a leitura paginada de uma tabela do banco.
+     */
     private Map<String, Object> callReadTable(Object id, Map<String, Object> arguments) {
         String table = stringArgument(arguments, "table");
 
@@ -300,12 +323,17 @@ public class McpController {
             return successToolResult(id, result,
                     "Read " + result.get("returnedRows") + " rows from table " + table);
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP db_read_table inválido: requestId={} table={} motivo={}", id, table, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar db_read_table: requestId={} table={} limit={} offset={}", id, table, limit, offset, ex);
             return error(id, -32603, "Failed to read table: " + ex.getMessage());
         }
     }
 
+    /**
+     * Executa uma consulta SQL somente leitura com limite controlado.
+     */
     private Map<String, Object> callQueryTool(Object id, Map<String, Object> arguments) {
         String query = stringArgument(arguments, "query");
 
@@ -320,12 +348,17 @@ public class McpController {
             return successToolResult(id, result,
                     "Query executed with " + result.get("returnedRows") + " rows returned");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP db_query inválido: requestId={} limit={} motivo={}", id, limit, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar db_query: requestId={} limit={}", id, limit, ex);
             return error(id, -32603, "Failed to execute query: " + ex.getMessage());
         }
     }
 
+    /**
+     * Lê logs do módulo Java solicitado com filtros opcionais.
+     */
     private Map<String, Object> callJavaModuleLogsTool(Object id, Map<String, Object> arguments) {
         String module = stringArgument(arguments, "module");
         Integer lines = intArgument(arguments, "lines");
@@ -339,12 +372,18 @@ public class McpController {
             Map<String, Object> result = moduleLogService.readModuleLogs(module, lines, contains, from, to, offset, cursor);
             return successToolResult(id, result, buildJavaModuleLogsText(result));
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP java_module_logs inválido: requestId={} module={} motivo={}", id, module, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar java_module_logs: requestId={} module={} lines={} contains={} from={} to={}",
+                    id, module, lines, contains, from, to, ex);
             return error(id, -32603, "Failed to read module logs: " + ex.getMessage());
         }
     }
 
+    /**
+     * Formata a resposta textual do tool de logs a partir das linhas retornadas.
+     */
     @SuppressWarnings("unchecked")
     private String buildJavaModuleLogsText(Map<String, Object> result) {
         String header = "Read " + result.get("returnedLines") + " log lines from module " + result.get("module");
@@ -358,6 +397,9 @@ public class McpController {
         return header + "\n" + logLines;
     }
 
+    /**
+     * Busca documentação Meta aprovada quando as ferramentas Meta estão ativas.
+     */
     private Map<String, Object> callMetaDocsTool(Object id, Map<String, Object> arguments) {
         String url = stringArgument(arguments, "url");
 
@@ -365,12 +407,17 @@ public class McpController {
             Map<String, Object> result = metaDiagnosticsService.getDocumentationPage(url);
             return successToolResult(id, result, "Fetched Meta docs page");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP meta_docs_get inválido: requestId={} url={} motivo={}", id, url, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar meta_docs_get: requestId={} url={}", id, url, ex);
             return error(id, -32603, "Failed to fetch Meta docs page: " + ex.getMessage());
         }
     }
 
+    /**
+     * Executa uma chamada GET na Graph API da Meta.
+     */
     @SuppressWarnings("unchecked")
     private Map<String, Object> callMetaGraphGetTool(Object id, Map<String, Object> arguments) {
         String path = stringArgument(arguments, "path");
@@ -386,12 +433,17 @@ public class McpController {
             Map<String, Object> result = metaDiagnosticsService.graphGet(path, query);
             return successToolResult(id, result, "Meta Graph GET executed");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP meta_graph_get inválido: requestId={} path={} motivo={}", id, path, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar meta_graph_get: requestId={} path={} queryKeys={}", id, path, query.keySet(), ex);
             return error(id, -32603, "Failed to execute Meta Graph GET: " + ex.getMessage());
         }
     }
 
+    /**
+     * Executa debug_token na Graph API da Meta.
+     */
     private Map<String, Object> callMetaGraphDebugTokenTool(Object id, Map<String, Object> arguments) {
         String inputToken = stringArgument(arguments, "input_token");
 
@@ -399,13 +451,18 @@ public class McpController {
             Map<String, Object> result = metaDiagnosticsService.debugToken(inputToken);
             return successToolResult(id, result, "Meta debug_token executed");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP meta_graph_debug_token inválido: requestId={} motivo={}", id, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar meta_graph_debug_token: requestId={}", id, ex);
             return error(id, -32603, "Failed to execute Meta debug_token: " + ex.getMessage());
         }
     }
 
 
+    /**
+     * Lista workflows do GitHub Actions configurado.
+     */
     private Map<String, Object> callGithubActionsListWorkflows(Object id, Map<String, Object> arguments) {
         Integer perPage = intArgument(arguments, "per_page");
 
@@ -413,12 +470,17 @@ public class McpController {
             Map<String, Object> result = githubActionsService.listWorkflows(perPage);
             return successToolResult(id, result, "GitHub workflows listed");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP github_actions_list_workflows inválido: requestId={} perPage={} motivo={}", id, perPage, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar github_actions_list_workflows: requestId={} perPage={}", id, perPage, ex);
             return error(id, -32603, "Failed to list GitHub workflows: " + ex.getMessage());
         }
     }
 
+    /**
+     * Lista execuções do GitHub Actions com filtros opcionais.
+     */
     private Map<String, Object> callGithubActionsListRuns(Object id, Map<String, Object> arguments) {
         String branch = stringArgument(arguments, "branch");
         String status = stringArgument(arguments, "status");
@@ -428,13 +490,18 @@ public class McpController {
             Map<String, Object> result = githubActionsService.listRuns(branch, status, perPage);
             return successToolResult(id, result, "GitHub workflow runs listed");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP github_actions_list_runs inválido: requestId={} branch={} status={} perPage={} motivo={}", id, branch, status, perPage, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar github_actions_list_runs: requestId={} branch={} status={} perPage={}", id, branch, status, perPage, ex);
             return error(id, -32603, "Failed to list GitHub workflow runs: " + ex.getMessage());
         }
     }
 
 
+    /**
+     * Retorna o resumo operacional de uma execução do GitHub Actions.
+     */
     private Map<String, Object> callGithubActionsGetRunSummary(Object id, Map<String, Object> arguments) {
         Integer runIdArg = intArgument(arguments, "run_id");
         Long runId = runIdArg == null ? null : runIdArg.longValue();
@@ -444,14 +511,19 @@ public class McpController {
             return successToolResult(id, result,
                     Boolean.TRUE.equals(result.get("failed")) ? "Workflow run FAILED" : "Workflow run status fetched");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP github_actions_get_run_summary inválido: requestId={} runId={} motivo={}", id, runId, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar github_actions_get_run_summary: requestId={} runId={}", id, runId, ex);
             return error(id, -32603, "Failed to fetch workflow run summary: " + ex.getMessage());
         }
     }
 
 
 
+    /**
+     * Retorna um trecho dos logs de uma execução do GitHub Actions.
+     */
     private Map<String, Object> callGithubActionsGetRunLogs(Object id, Map<String, Object> arguments) {
         Integer runIdArg = intArgument(arguments, "run_id");
         Long runId = runIdArg == null ? null : runIdArg.longValue();
@@ -460,12 +532,17 @@ public class McpController {
             Map<String, Object> result = githubActionsService.getRunLogs(runId);
             return successToolResult(id, result, "GitHub workflow run logs fetched");
         } catch (IllegalArgumentException ex) {
+            logger.warn("MCP github_actions_get_run_logs inválido: requestId={} runId={} motivo={}", id, runId, ex.getMessage());
             return error(id, -32602, ex.getMessage());
         } catch (Exception ex) {
+            logger.error("Falha ao executar github_actions_get_run_logs: requestId={} runId={}", id, runId, ex);
             return error(id, -32603, "Failed to fetch workflow run logs: " + ex.getMessage());
         }
     }
 
+    /**
+     * Extrai e valida o objeto de argumentos enviado em tools/call.
+     */
     private Map<String, Object> extractArguments(Map<?, ?> params) {
         Object argumentsObject = params.get("arguments");
         if (argumentsObject == null) {
@@ -482,11 +559,17 @@ public class McpController {
                         Map.Entry::getValue));
     }
 
+    /**
+     * Lê um argumento textual opcional removendo espaços excedentes.
+     */
     private String stringArgument(Map<String, Object> arguments, String name) {
         Object value = arguments.get(name);
         return value == null ? null : String.valueOf(value);
     }
 
+    /**
+     * Lê um argumento inteiro aceitando números ou strings numéricas.
+     */
     private Integer intArgument(Map<String, Object> arguments, String name) {
         Object value = arguments.get(name);
         if (value == null) {
@@ -500,10 +583,14 @@ public class McpController {
         try {
             return Integer.parseInt(String.valueOf(value));
         } catch (NumberFormatException ex) {
+            logger.warn("MCP intArgument inválido: name={} value={}", name, value, ex);
             throw new IllegalArgumentException(name + " must be an integer");
         }
     }
 
+    /**
+     * Lê um argumento de mapa opcional usado por tools com query params.
+     */
     @SuppressWarnings("unchecked")
     private Map<String, Object> mapArgument(Map<String, Object> arguments, String name) {
         Object value = arguments.get(name);
@@ -516,6 +603,9 @@ public class McpController {
         throw new IllegalArgumentException(name + " must be an object");
     }
 
+    /**
+     * Monta uma resposta JSON-RPC de sucesso para tools com conteúdo textual e estruturado.
+     */
     private Map<String, Object> successToolResult(Object id, Map<String, Object> data, String text) {
         return success(id, Map.of(
                 "content", List.of(Map.of(
@@ -525,6 +615,9 @@ public class McpController {
         ));
     }
 
+    /**
+     * Monta uma resposta JSON-RPC de sucesso genérica.
+     */
     private Map<String, Object> success(Object id, Map<String, Object> result) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("jsonrpc", "2.0");
@@ -533,6 +626,9 @@ public class McpController {
         return response;
     }
 
+    /**
+     * Monta uma resposta JSON-RPC de erro preservando o id da requisição.
+     */
     private Map<String, Object> error(Object id, int code, String message) {
         Map<String, Object> errorPayload = new LinkedHashMap<>();
         errorPayload.put("code", code);

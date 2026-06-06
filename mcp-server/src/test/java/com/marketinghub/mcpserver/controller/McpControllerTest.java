@@ -47,6 +47,8 @@ class McpControllerTest {
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
         registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
+        registry.add("mcp.logs.mois-sales-library-worker-path",
+                () -> TEST_LOG_DIR.resolve("mois-sales-library-worker.log").toString());
         registry.add("mcp.logs.mois-hotmart-path", () -> TEST_LOG_DIR.resolve("mois-hotmart.log").toString());
         registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
@@ -70,6 +72,9 @@ class McpControllerTest {
         Files.createDirectories(TEST_LOG_DIR);
         Files.writeString(TEST_LOG_DIR.resolve("backend.log"),
                 "line-1\nline-2\nline-3\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(TEST_LOG_DIR.resolve("mois-sales-library-worker.log"),
+                "mois-sales-library-worker-line-1\nmois-sales-library-worker-line-2\n",
                 StandardCharsets.UTF_8);
     }
 
@@ -180,6 +185,21 @@ class McpControllerTest {
     }
 
     @Test
+    void shouldReadMoisSalesLibraryWorkerLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":16,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"mois-sales-library-worker","lines":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.module").value("mois-sales-library-worker"))
+                .andExpect(jsonPath("$.result.structuredContent.path")
+                        .value(TEST_LOG_DIR.resolve("mois-sales-library-worker.log").toString()))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("mois-sales-library-worker-line-2"));
+    }
+
+    @Test
     void shouldRejectInvalidJavaModuleName() throws Exception {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -189,7 +209,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita"));
     }
 
 
@@ -283,6 +303,8 @@ class McpControllerApiKeyEnabledTest {
                 () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
         registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
         registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
+        registry.add("mcp.logs.mois-sales-library-worker-path",
+                () -> TEST_LOG_DIR.resolve("mois-sales-library-worker.log").toString());
         registry.add("mcp.logs.mois-hotmart-path", () -> TEST_LOG_DIR.resolve("mois-hotmart.log").toString());
         registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");

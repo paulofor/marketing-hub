@@ -3767,3 +3767,21 @@
   - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
   - `docs/canonical/procedimento-experimento-canon.v1.md`
   - `docs/registros/experimentos.md`
+
+## 2026-06-06 01:14:15 UTC-3
+- solicitação: verificar se os endpoints revisados de Facebook Ads tinham Swagger versionado e ajustar a documentação quando necessário.
+- raciocínio para solução: comparei os mappings dos controllers `com.marketinghub.facebookads.controller` com `docs/swagger/facebook-ads-swagger.yaml` e identifiquei que o contrato existia, mas precisava ficar mais explícito e incluir rotas operacionais legadas do fluxo Facebook Ads, como liberação do experimento, criação/listagem de ad sets e sincronização Meta Ads de targeting.
+- registro do que foi feito: atualizei `docs/swagger/facebook-ads-swagger.yaml` para versão 1.1.0 com servidores, componentes reutilizáveis, bodies principais e todos os paths atuais do pacote Facebook Ads, além das rotas operacionais relacionadas; também registrei o contrato na lista de `docs/swagger/README.md`.
+- documentos lidos para pesquisar e resolver o problema:
+  - backend/AGENTS.md
+  - docs/swagger/README.md
+  - docs/swagger/facebook-ads-swagger.yaml
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookAccountController.java
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookAdSetController.java
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookAdsCampaignController.java
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookCampaignStopController.java
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookInstantFormController.java
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookPixelController.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/web/AdSetController.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/web/ExperimentController.java
+  - backend/ads-service/src/main/java/com/marketinghub/targeting/web/TargetingInternalController.java

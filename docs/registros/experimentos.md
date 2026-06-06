@@ -3819,4 +3819,17 @@
 - arquivos alterados:
   - `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`
   - `docs/canonical/arquitetura-etapas.md`
+## 2026-06-06 — Bloqueio de alterações após publicação/execução do experimento
+
+- solicitação: depois que o experimento estiver publicado e em execução, tudo relacionado a alterações deve ficar desabilitado no frontend.
+- regra canônica atualizada: o procedimento de experimento passou a bloquear alterações quando `facebook_release_requested_at` estiver preenchido ou quando o status já representar execução/pós-execução.
+- correção aplicada: a tela de detalhe do experimento agora calcula o bloqueio operacional e repassa a trava para abas de Criativos, Landing, Gera Landing, Estrutura de conteúdo, Funil e Público, mantendo consultas e prévias disponíveis, mas desabilitando comandos de edição, reset, geração, aprovação/publicação e seleção.
+- arquivos alterados:
+  - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
+  - `frontend/src/pages/experiment/CriativosTab.tsx`
+  - `frontend/src/pages/experiment/LandingTab.tsx`
+  - `frontend/src/pages/experiment/ExperimentFunnelTab.tsx`
+  - `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`
+  - `frontend/src/pages/experiment/ExperimentAudienceTab.tsx`
+  - `docs/canonical/procedimento-experimento-canon.v1.md`
   - `docs/registros/experimentos.md`

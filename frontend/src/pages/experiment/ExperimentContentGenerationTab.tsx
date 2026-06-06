@@ -142,7 +142,11 @@ interface AutoQueueState {
   pending: ContentGenerationSectionKey[];
 }
 
-type LandingImageFlowStatus = "NOT_STARTED" | "STARTED" | "PROCESSING" | "COMPLETED";
+type LandingImageFlowStatus =
+  | "NOT_STARTED"
+  | "STARTED"
+  | "PROCESSING"
+  | "COMPLETED";
 
 const ALL_CONTENT_GENERATION_SECTION_KEYS: ContentGenerationSectionKey[] = [
   "campaign-angle",
@@ -205,17 +209,19 @@ const STAGE_LABELS: Record<string, string> = {
   FAILED: "Falhou",
 };
 
-const EXECUTION_SOURCE_LABELS: Record<"WORKER_IA" | "LHM" | "LHM_IA", string> = {
-  WORKER_IA: "Worker IA",
-  LHM: "LHM inline",
-  LHM_IA: "LHM + IA",
-};
+const EXECUTION_SOURCE_LABELS: Record<"WORKER_IA" | "LHM" | "LHM_IA", string> =
+  {
+    WORKER_IA: "Worker IA",
+    LHM: "LHM inline",
+    LHM_IA: "LHM + IA",
+  };
 
-const EXECUTION_SOURCE_BADGES: Record<"WORKER_IA" | "LHM" | "LHM_IA", string> = {
-  WORKER_IA: "primary",
-  LHM: "info",
-  LHM_IA: "dark",
-};
+const EXECUTION_SOURCE_BADGES: Record<"WORKER_IA" | "LHM" | "LHM_IA", string> =
+  {
+    WORKER_IA: "primary",
+    LHM: "info",
+    LHM_IA: "dark",
+  };
 
 const LANDING_IMAGE_FLOW_LABELS: Record<LandingImageFlowStatus, string> = {
   NOT_STARTED: "Não iniciado",
@@ -596,7 +602,6 @@ artifact {
   }
 }`;
 
-
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
@@ -624,6 +629,7 @@ interface ExperimentContentGenerationTabProps {
   hypothesis?: Hypothesis;
   campaignAngle?: string | null;
   adCopy?: string | null;
+  alterationLocked?: boolean;
 }
 
 interface AiGenerationRecord {
@@ -1203,6 +1209,7 @@ export default function ExperimentContentGenerationTab({
   hypothesis,
   campaignAngle,
   adCopy,
+  alterationLocked = false,
 }: ExperimentContentGenerationTabProps) {
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
@@ -1574,7 +1581,9 @@ export default function ExperimentContentGenerationTab({
               latestTimestamp: parsedTimestamp,
               models: new Set(model ? [model] : []),
               jobIds: [item.id],
-              openAiResponseIds: new Set(openAiResponseId ? [openAiResponseId] : []),
+              openAiResponseIds: new Set(
+                openAiResponseId ? [openAiResponseId] : [],
+              ),
             });
             return;
           }
@@ -1624,26 +1633,28 @@ export default function ExperimentContentGenerationTab({
     () =>
       CONTENT_GENERATION_SECTIONS.reduce<
         Record<ContentGenerationSectionKey, ContentGenerationSection>
-      >((acc, section) => {
-        acc[section.key] = section;
-        return acc;
-      }, {} as Record<ContentGenerationSectionKey, ContentGenerationSection>),
+      >(
+        (acc, section) => {
+          acc[section.key] = section;
+          return acc;
+        },
+        {} as Record<ContentGenerationSectionKey, ContentGenerationSection>,
+      ),
     [],
   );
 
   const loadCampaignAngles = useCallback(async () => {
     try {
       setIsLoadingCampaignAngles(true);
-      const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
-        "/api/ai/generations",
-        {
-          params: {
-            referenceId: experimentId,
-            domain: "experiment.pipeline.campaign-angle",
-            size: 20,
-          },
+      const { data: response } = await axios.get<
+        PageResponse<AiGenerationRecord>
+      >("/api/ai/generations", {
+        params: {
+          referenceId: experimentId,
+          domain: "experiment.pipeline.campaign-angle",
+          size: 20,
         },
-      );
+      });
 
       const orderedByLatest = [...(response.content ?? [])]
         .map((generation) => ({
@@ -1707,16 +1718,15 @@ export default function ExperimentContentGenerationTab({
   const loadAdCopy = useCallback(async () => {
     try {
       setIsLoadingAdCopy(true);
-      const { data: response } = await axios.get<PageResponse<AiGenerationRecord>>(
-        "/api/ai/generations",
-        {
-          params: {
-            referenceId: experimentId,
-            domain: "experiment.pipeline.ad-copy",
-            size: 20,
-          },
+      const { data: response } = await axios.get<
+        PageResponse<AiGenerationRecord>
+      >("/api/ai/generations", {
+        params: {
+          referenceId: experimentId,
+          domain: "experiment.pipeline.ad-copy",
+          size: 20,
         },
-      );
+      });
 
       const orderedByLatest = [...(response.content ?? [])]
         .map((generation) => ({
@@ -1827,7 +1837,9 @@ export default function ExperimentContentGenerationTab({
     if (autoQueue.pending.length === 0) {
       setAutoQueue(AUTO_QUEUE_INITIAL_STATE);
       imageGenerationWaitToastRef.current = null;
-      toast.success("Fila automática finalizada. Todas as etapas foram solicitadas.");
+      toast.success(
+        "Fila automática finalizada. Todas as etapas foram solicitadas.",
+      );
       return;
     }
 
@@ -1838,7 +1850,8 @@ export default function ExperimentContentGenerationTab({
       nextSectionKey === "landing-design-preset"
     ) {
       const stillLoadingImageStatuses =
-        frameworkImageStatusQuery.isLoading || frameworkImageStatusQuery.isFetching;
+        frameworkImageStatusQuery.isLoading ||
+        frameworkImageStatusQuery.isFetching;
       const mustWaitForImages =
         stillLoadingImageStatuses ||
         !hasFrameworkImages ||
@@ -2130,6 +2143,12 @@ export default function ExperimentContentGenerationTab({
 
   return (
     <div className="mt-3 d-flex flex-column gap-3">
+      {alterationLocked ? (
+        <div className="alert alert-secondary mb-0" role="status">
+          Gerações de conteúdo bloqueadas para alteração porque o experimento já
+          foi liberado ou está em execução.
+        </div>
+      ) : null}
       <div className="d-flex justify-content-end">
         <button
           type="button"
@@ -2211,7 +2230,9 @@ export default function ExperimentContentGenerationTab({
           >
             {LANDING_IMAGE_FLOW_LABELS[landingImageFlowStatus]}
           </span>
-          <span className="small text-body-secondary">{landingImageFlowMessage}</span>
+          <span className="small text-body-secondary">
+            {landingImageFlowMessage}
+          </span>
         </div>
       </div>
 
@@ -2246,174 +2267,194 @@ export default function ExperimentContentGenerationTab({
                 (frameworkImageStatusQuery.isLoading ||
                   hasFrameworkImagesInFlight);
               return (
-            <section className="card">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                  <div>
-                    <h5 className="card-title mb-1">{section.label}</h5>
-                    <p className="text-muted mb-0">{section.description}</p>
-                    {section.key === "landing-html" ? (
-                      <p className="small text-body-secondary mt-2 mb-0">
-                        Geração manual do HTML final da landing. Execute LHM e IA em botões separados.
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="d-flex align-items-start flex-wrap gap-2">
-                    {section.key === "landing-html" ? (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-outline-info btn-sm"
-                          onClick={() => void handleGenerateLandingLhm()}
-                          disabled={
-                            isGeneratingWithLhm ||
-                            isGeneratingSection ||
-                            autoQueue.isActive ||
-                            isLandingFlowBlockedByImageGeneration
-                          }
-                          title="Gera somente a variante determinística com LHM."
-                        >
-                          {isGeneratingWithLhm ? "Gerando com LHM..." : "Gerar com LHM"}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => void handleGenerateSection(section)}
-                          disabled={
-                            isGeneratingSection ||
-                            isGeneratingWithLhm ||
-                            autoQueue.isActive ||
-                            isLandingFlowBlockedByImageGeneration
-                          }
-                          title='Solicita ao Worker IA a geração da etapa "HTML da Landing".'
-                        >
-                          {isGeneratingSection &&
-                          pendingGenerationSection === section.key ? "Gerando com IA..." : "Gerar com IA"}
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-outline-primary btn-sm"
-                        onClick={() => void handleGenerateSection(section)}
-                        disabled={
-                          isGeneratingSection ||
-                          isGeneratingWithLhm ||
-                          autoQueue.isActive ||
-                          isLandingFlowBlockedByImageGeneration
-                        }
-                        title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
-                      >
-                        {isGeneratingSection &&
-                        pendingGenerationSection === section.key ? (
-                          <span className="d-inline-flex align-items-center gap-1">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Gerando com IA...
-                          </span>
-                        ) : autoQueue.isActive ? (
-                          <span className="d-inline-flex align-items-center gap-1">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Fila em execução...
-                          </span>
-                        ) : isLandingFlowBlockedByImageGeneration ? (
-                          <span className="d-inline-flex align-items-center gap-1">
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            />
-                            Gerando imagens...
-                          </span>
-                        ) : (
-                          "Gerar com IA"
-                        )}
-                      </button>
-                    )}
-                    <span className="badge text-bg-light">
-                      Estrutura pronta para prompt
-                    </span>
-                  </div>
-                </div>
-
-                <div className="row g-3 mt-1">
-                  <div className="col-12">
-                    {section.key === "campaign-angle" ? (
-                      <>
-                        <CampaignAngleSummaryPanel
-                          isLoading={isLoadingCampaignAngles}
-                          savedAngle={persistedCampaignAngle}
-                          fallbackAngle={campaignAngleGenerations[0]?.fields}
-                          fallbackTimestamp={
-                            campaignAngleGenerations[0]?.createdAt
-                          }
-                          rawContent={campaignAngle}
-                        />
-                        <CampaignAngleHistoryList
-                          generations={campaignAngleGenerations}
-                          isLoading={isLoadingCampaignAngles}
-                        />
-                      </>
-                    ) : section.key === "ad-copy" ? (
-                      <>
-                        <AdCopySummaryPanel
-                          isLoading={isLoadingAdCopy}
-                          savedCopy={persistedAdCopy}
-                          fallbackCopy={adCopyGenerations[0]?.fields}
-                          fallbackTimestamp={adCopyGenerations[0]?.createdAt}
-                          rawContent={adCopy}
-                        />
-                        <AdCopyHistoryList
-                          generations={adCopyGenerations}
-                          isLoading={isLoadingAdCopy}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <GenericGenerationSummaryPanel
-                          experimentId={experimentId}
-                          section={section}
-                          isLoading={isLoadingSectionGenerations[section.key]}
-                          latestGeneration={sectionGenerations[section.key][0]}
-                          sourceJobId={latestJobIdBySection[section.key]}
-                        />
-                        <GenericGenerationHistoryList
-                          section={section}
-                          generations={sectionGenerations[section.key]}
-                          isLoading={isLoadingSectionGenerations[section.key]}
-                        />
-                        {section.key === "landing-image-planning" ? (
-                          <FrameworkImageGenerationPanel
-                            onGenerate={async () => {
-                              try {
-                                await generateFrameworkImages.mutateAsync();
-                                toast.success(
-                                  "Solicitação de geração das imagens enviada para o Worker IA.",
-                                );
-                              } catch (error) {
-                                toast.error(getErrorMessage(error));
-                              }
-                            }}
-                            isGenerating={generateFrameworkImages.isPending}
-                            statuses={frameworkImageStatusQuery.data ?? []}
-                            isLoading={frameworkImageStatusQuery.isLoading}
-                            isError={frameworkImageStatusQuery.isError}
-                          />
+                <section className="card">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                      <div>
+                        <h5 className="card-title mb-1">{section.label}</h5>
+                        <p className="text-muted mb-0">{section.description}</p>
+                        {section.key === "landing-html" ? (
+                          <p className="small text-body-secondary mt-2 mb-0">
+                            Geração manual do HTML final da landing. Execute LHM
+                            e IA em botões separados.
+                          </p>
                         ) : null}
-                      </>
-                    )}
-                  </div>
-                </div>
+                      </div>
+                      <div className="d-flex align-items-start flex-wrap gap-2">
+                        {section.key === "landing-html" ? (
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-outline-info btn-sm"
+                              onClick={() => void handleGenerateLandingLhm()}
+                              disabled={
+                                alterationLocked ||
+                                isGeneratingWithLhm ||
+                                isGeneratingSection ||
+                                autoQueue.isActive ||
+                                isLandingFlowBlockedByImageGeneration
+                              }
+                              title="Gera somente a variante determinística com LHM."
+                            >
+                              {isGeneratingWithLhm
+                                ? "Gerando com LHM..."
+                                : "Gerar com LHM"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() =>
+                                void handleGenerateSection(section)
+                              }
+                              disabled={
+                                alterationLocked ||
+                                isGeneratingSection ||
+                                isGeneratingWithLhm ||
+                                autoQueue.isActive ||
+                                isLandingFlowBlockedByImageGeneration
+                              }
+                              title='Solicita ao Worker IA a geração da etapa "HTML da Landing".'
+                            >
+                              {isGeneratingSection &&
+                              pendingGenerationSection === section.key
+                                ? "Gerando com IA..."
+                                : "Gerar com IA"}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() => void handleGenerateSection(section)}
+                            disabled={
+                              alterationLocked ||
+                              isGeneratingSection ||
+                              isGeneratingWithLhm ||
+                              autoQueue.isActive ||
+                              isLandingFlowBlockedByImageGeneration
+                            }
+                            title={`Solicita ao Worker IA a geração da etapa "${section.label}" com prompt canônico do pipeline.`}
+                          >
+                            {isGeneratingSection &&
+                            pendingGenerationSection === section.key ? (
+                              <span className="d-inline-flex align-items-center gap-1">
+                                <span
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
+                                Gerando com IA...
+                              </span>
+                            ) : autoQueue.isActive ? (
+                              <span className="d-inline-flex align-items-center gap-1">
+                                <span
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
+                                Fila em execução...
+                              </span>
+                            ) : isLandingFlowBlockedByImageGeneration ? (
+                              <span className="d-inline-flex align-items-center gap-1">
+                                <span
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
+                                  aria-hidden="true"
+                                />
+                                Gerando imagens...
+                              </span>
+                            ) : (
+                              "Gerar com IA"
+                            )}
+                          </button>
+                        )}
+                        <span className="badge text-bg-light">
+                          Estrutura pronta para prompt
+                        </span>
+                      </div>
+                    </div>
 
-              </div>
-            </section>
+                    <div className="row g-3 mt-1">
+                      <div className="col-12">
+                        {section.key === "campaign-angle" ? (
+                          <>
+                            <CampaignAngleSummaryPanel
+                              isLoading={isLoadingCampaignAngles}
+                              savedAngle={persistedCampaignAngle}
+                              fallbackAngle={
+                                campaignAngleGenerations[0]?.fields
+                              }
+                              fallbackTimestamp={
+                                campaignAngleGenerations[0]?.createdAt
+                              }
+                              rawContent={campaignAngle}
+                            />
+                            <CampaignAngleHistoryList
+                              generations={campaignAngleGenerations}
+                              isLoading={isLoadingCampaignAngles}
+                            />
+                          </>
+                        ) : section.key === "ad-copy" ? (
+                          <>
+                            <AdCopySummaryPanel
+                              isLoading={isLoadingAdCopy}
+                              savedCopy={persistedAdCopy}
+                              fallbackCopy={adCopyGenerations[0]?.fields}
+                              fallbackTimestamp={
+                                adCopyGenerations[0]?.createdAt
+                              }
+                              rawContent={adCopy}
+                            />
+                            <AdCopyHistoryList
+                              generations={adCopyGenerations}
+                              isLoading={isLoadingAdCopy}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <GenericGenerationSummaryPanel
+                              experimentId={experimentId}
+                              section={section}
+                              isLoading={
+                                isLoadingSectionGenerations[section.key]
+                              }
+                              latestGeneration={
+                                sectionGenerations[section.key][0]
+                              }
+                              sourceJobId={latestJobIdBySection[section.key]}
+                            />
+                            <GenericGenerationHistoryList
+                              section={section}
+                              generations={sectionGenerations[section.key]}
+                              isLoading={
+                                isLoadingSectionGenerations[section.key]
+                              }
+                            />
+                            {section.key === "landing-image-planning" ? (
+                              <FrameworkImageGenerationPanel
+                                onGenerate={async () => {
+                                  try {
+                                    await generateFrameworkImages.mutateAsync();
+                                    toast.success(
+                                      "Solicitação de geração das imagens enviada para o Worker IA.",
+                                    );
+                                  } catch (error) {
+                                    toast.error(getErrorMessage(error));
+                                  }
+                                }}
+                                isGenerating={generateFrameworkImages.isPending}
+                                alterationLocked={alterationLocked}
+                                statuses={frameworkImageStatusQuery.data ?? []}
+                                isLoading={frameworkImageStatusQuery.isLoading}
+                                isError={frameworkImageStatusQuery.isError}
+                              />
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
               );
             })()}
           </Tabs.Content>
@@ -2459,15 +2500,14 @@ export default function ExperimentContentGenerationTab({
                   ? "PROCESSING"
                   : request.status;
               const waitingDependency = invalidation?.requiresRefresh === true;
-              const displayStatus: RequestUiStatus =
-                waitingDependency
+              const displayStatus: RequestUiStatus = waitingDependency
+                ? "PROCESSING"
+                : effectiveRequestStatus === "PROCESSING" ||
+                    effectiveRequestStatus === "PENDING"
                   ? "PROCESSING"
-                  : effectiveRequestStatus === "PROCESSING" ||
-                      effectiveRequestStatus === "PENDING"
-                    ? "PROCESSING"
-                    : invalidation
-                      ? "INVALIDATED"
-                      : effectiveRequestStatus;
+                  : invalidation
+                    ? "INVALIDATED"
+                    : effectiveRequestStatus;
               const workerStatus = getWorkerStatus(request);
               const executionSource = request.executionSource ?? "WORKER_IA";
               const backendError = parseBackendError(request.errorMessage);
@@ -2528,10 +2568,10 @@ export default function ExperimentContentGenerationTab({
                             ? `última execução finalizada em ${formatDateTime(request.completedAt)}`
                             : "aguardando nova execução"
                           : request.startedAt
-                          ? `iniciado em ${formatDateTime(request.startedAt)}`
-                          : request.status === "PENDING"
-                            ? "aguardando início"
-                            : "sem início registrado"}
+                            ? `iniciado em ${formatDateTime(request.startedAt)}`
+                            : request.status === "PENDING"
+                              ? "aguardando início"
+                              : "sem início registrado"}
                       </span>
                     </div>
                     <div>
@@ -2539,13 +2579,13 @@ export default function ExperimentContentGenerationTab({
                       {waitingDependency
                         ? `aguardando conclusão de ${invalidation?.sourceSection} para atualizar esta etapa.`
                         : isLandingImagePlanningSection &&
-                      landingImageFlowStatus !== "COMPLETED"
-                        ? "aguardando conclusão da geração das imagens planejadas."
-                        : request.completedAt
-                        ? `finalizada em ${formatDateTime(request.completedAt)}.`
-                        : request.status === "FAILED"
-                          ? "fluxo encerrado com erro."
-                          : "aguardando finalização."}
+                            landingImageFlowStatus !== "COMPLETED"
+                          ? "aguardando conclusão da geração das imagens planejadas."
+                          : request.completedAt
+                            ? `finalizada em ${formatDateTime(request.completedAt)}.`
+                            : request.status === "FAILED"
+                              ? "fluxo encerrado com erro."
+                              : "aguardando finalização."}
                     </div>
                   </div>
                   {isLandingImagePlanningSection ? (
@@ -2657,7 +2697,9 @@ export default function ExperimentContentGenerationTab({
                         {historyGroup.description}
                       </p>
                     </div>
-                    <span className={`badge text-bg-${historyGroup.badgeClass}`}>
+                    <span
+                      className={`badge text-bg-${historyGroup.badgeClass}`}
+                    >
                       {historyGroup.badgeLabel}
                     </span>
                   </div>
@@ -2684,27 +2726,42 @@ export default function ExperimentContentGenerationTab({
                           >
                             <div className="d-flex flex-wrap align-items-center gap-2">
                               <strong>Tentativa #{job.id.slice(0, 8)}</strong>
-                              <span className={`badge text-bg-${statusBadge}`}>{statusLabel}</span>
+                              <span className={`badge text-bg-${statusBadge}`}>
+                                {statusLabel}
+                              </span>
                             </div>
                             <div className="small mt-1 d-flex flex-column gap-1">
                               <span>
                                 Solicitação registrada:{" "}
-                                <strong>{formatDateTimeWithTimezone(job.createdAt)}</strong>
+                                <strong>
+                                  {formatDateTimeWithTimezone(job.createdAt)}
+                                </strong>
                               </span>
                               <span>
-                                Início: <strong>{formatDateTimeWithTimezone(job.startedAt)}</strong>
+                                Início:{" "}
+                                <strong>
+                                  {formatDateTimeWithTimezone(job.startedAt)}
+                                </strong>
                                 {" · "}
-                                Fim: <strong>{formatDateTimeWithTimezone(job.finishedAt)}</strong>
+                                Fim:{" "}
+                                <strong>
+                                  {formatDateTimeWithTimezone(job.finishedAt)}
+                                </strong>
                               </span>
                               {parsedError?.timestamp ? (
                                 <span>
                                   Erro retornado pelo backend em{" "}
-                                  <strong>{formatDateTimeWithTimezone(parsedError.timestamp)}</strong>
+                                  <strong>
+                                    {formatDateTimeWithTimezone(
+                                      parsedError.timestamp,
+                                    )}
+                                  </strong>
                                 </span>
                               ) : null}
                               {job.errorMessage ? (
                                 <span className="text-danger">
-                                  Motivo: {parsedError?.message ?? job.errorMessage}
+                                  Motivo:{" "}
+                                  {parsedError?.message ?? job.errorMessage}
                                 </span>
                               ) : null}
                             </div>
@@ -3256,7 +3313,10 @@ function PipelinePromptVersionsPanel({
 
         {isLoading ? (
           <div className="d-flex align-items-center gap-2 text-muted small">
-            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+            <span
+              className="spinner-border spinner-border-sm"
+              aria-hidden="true"
+            />
             Carregando versões de prompts...
           </div>
         ) : null}
@@ -3280,15 +3340,21 @@ function PipelinePromptVersionsPanel({
                   </div>
                   <div className="d-flex flex-column gap-2">
                     {section.versions.map((version, index) => (
-                      <details key={`${section.key}-${index}`} className="border rounded p-2 bg-body">
+                      <details
+                        key={`${section.key}-${index}`}
+                        className="border rounded p-2 bg-body"
+                      >
                         <summary className="small fw-semibold" role="button">
-                          Versão {index + 1} · {version.occurrences} execução(ões)
+                          Versão {index + 1} · {version.occurrences}{" "}
+                          execução(ões)
                         </summary>
                         <p className="small mb-1 mt-2">
-                          <strong>Último uso:</strong> {formatDateTime(version.latestUsedAt)}
+                          <strong>Último uso:</strong>{" "}
+                          {formatDateTime(version.latestUsedAt)}
                         </p>
                         <p className="small mb-2">
-                          <strong>Modelos:</strong> {version.models.join(", ") || "—"}
+                          <strong>Modelos:</strong>{" "}
+                          {version.models.join(", ") || "—"}
                         </p>
                         <p className="small mb-2">
                           <strong>Jobs:</strong> {version.jobIds.join(", ")}
@@ -3315,6 +3381,7 @@ function PipelinePromptVersionsPanel({
 
 interface FrameworkImageGenerationPanelProps {
   statuses: FrameworkImageStatusItem[];
+  alterationLocked?: boolean;
   isLoading: boolean;
   isError: boolean;
   isGenerating: boolean;
@@ -3371,6 +3438,7 @@ function FrameworkImageGenerationPanel({
   isError,
   isGenerating,
   onGenerate,
+  alterationLocked = false,
 }: FrameworkImageGenerationPanelProps) {
   const sortedStatuses = useMemo(
     () =>
@@ -3396,20 +3464,24 @@ function FrameworkImageGenerationPanel({
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
           <div>
-            <h6 className="card-title mb-1">Gerar imagens em lote (AI Worker)</h6>
+            <h6 className="card-title mb-1">
+              Gerar imagens em lote (AI Worker)
+            </h6>
             <p className="text-muted small mb-0">
-              Após a etapa de prompt de imagem, esta etapa envia todos os prompts
-              pendentes para o AI Worker em modo batch na OpenAI e mostra a
-              timeline operacional completa.
+              Após a etapa de prompt de imagem, esta etapa envia todos os
+              prompts pendentes para o AI Worker em modo batch na OpenAI e
+              mostra a timeline operacional completa.
             </p>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <span className="badge text-bg-light">{readyToGenerateCount} pendente(s)</span>
+            <span className="badge text-bg-light">
+              {readyToGenerateCount} pendente(s)
+            </span>
             <button
               type="button"
               className="btn btn-success btn-sm"
               onClick={() => void onGenerate()}
-              disabled={isGenerating}
+              disabled={isGenerating || alterationLocked}
             >
               {isGenerating ? (
                 <span className="d-inline-flex align-items-center gap-1">
@@ -3429,7 +3501,10 @@ function FrameworkImageGenerationPanel({
 
         {isLoading ? (
           <div className="d-flex align-items-center gap-2 text-muted mt-3">
-            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+            <span
+              className="spinner-border spinner-border-sm"
+              aria-hidden="true"
+            />
             Carregando status de geração...
           </div>
         ) : null}
@@ -3461,25 +3536,35 @@ function FrameworkImageGenerationPanel({
               </thead>
               <tbody>
                 {sortedStatuses.map((item) => {
-                  const normalizedStatus = item.status?.toUpperCase() ?? "PLANNED";
+                  const normalizedStatus =
+                    item.status?.toUpperCase() ?? "PLANNED";
                   const statusLabel =
-                    normalizedStatus === "PLANNED" ? "Planejada" : normalizedStatus;
-                  const badge = FRAMEWORK_IMAGE_STATUS_BADGE[normalizedStatus] ?? "light";
+                    normalizedStatus === "PLANNED"
+                      ? "Planejada"
+                      : normalizedStatus;
+                  const badge =
+                    FRAMEWORK_IMAGE_STATUS_BADGE[normalizedStatus] ?? "light";
                   const stageLabel = item.stage
-                    ? FRAMEWORK_IMAGE_STAGE_LABEL[item.stage] ?? item.stage
+                    ? (FRAMEWORK_IMAGE_STAGE_LABEL[item.stage] ?? item.stage)
                     : "Aguardando processamento";
 
                   return (
                     <tr key={item.planningItemKey}>
                       <td>
-                        <div className="fw-semibold">{item.sectionName ?? item.planningItemKey}</div>
+                        <div className="fw-semibold">
+                          {item.sectionName ?? item.planningItemKey}
+                        </div>
                         {item.sectionName &&
                         item.planningItemKey !== item.sectionName ? (
-                          <div className="small text-muted">{item.planningItemKey}</div>
+                          <div className="small text-muted">
+                            {item.planningItemKey}
+                          </div>
                         ) : null}
                       </td>
                       <td>
-                        <span className={`badge text-bg-${badge}`}>{statusLabel}</span>
+                        <span className={`badge text-bg-${badge}`}>
+                          {statusLabel}
+                        </span>
                         {item.errorMessage ? (
                           <div className="small text-danger mt-1">
                             Erro: {item.errorMessage}
@@ -3490,7 +3575,11 @@ function FrameworkImageGenerationPanel({
                       <td className="small">{item.model ?? "—"}</td>
                       <td className="small">
                         {item.sourceUrl ? (
-                          <a href={item.sourceUrl} target="_blank" rel="noreferrer">
+                          <a
+                            href={item.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             Ver origem
                           </a>
                         ) : (
@@ -3499,7 +3588,11 @@ function FrameworkImageGenerationPanel({
                       </td>
                       <td className="small">
                         {item.webUrl ? (
-                          <a href={item.webUrl} target="_blank" rel="noreferrer">
+                          <a
+                            href={item.webUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             Ver versão final
                           </a>
                         ) : (
@@ -3507,7 +3600,9 @@ function FrameworkImageGenerationPanel({
                         )}
                       </td>
                       <td className="small">
-                        {formatDateTime(item.updatedAt ?? item.finishedAt ?? item.startedAt)}
+                        {formatDateTime(
+                          item.updatedAt ?? item.finishedAt ?? item.startedAt,
+                        )}
                       </td>
                     </tr>
                   );
@@ -3865,8 +3960,8 @@ function LandingHtmlPreview({
   const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
   const resolvedGeneratedImages = useMemo(
     () =>
-      (frameworkImageStatusQuery.data ?? []).filter(
-        (item) => Boolean(item.webUrl || item.sourceUrl),
+      (frameworkImageStatusQuery.data ?? []).filter((item) =>
+        Boolean(item.webUrl || item.sourceUrl),
       ),
     [frameworkImageStatusQuery.data],
   );
@@ -3889,9 +3984,9 @@ function LandingHtmlPreview({
         </div>
       ) : null}
       <div className="alert alert-light border py-2 mb-0">
-        <strong>Procedimento canônico:</strong> esta etapa trabalha com duas versões
-        públicas da landing (LHM determinístico + IA) usando a mesma entrada
-        canônica e validações equivalentes.
+        <strong>Procedimento canônico:</strong> esta etapa trabalha com duas
+        versões públicas da landing (LHM determinístico + IA) usando a mesma
+        entrada canônica e validações equivalentes.
       </div>
       {deterministicUrl || aiUrl ? (
         <div className="card border-0 shadow-sm">
@@ -3916,7 +4011,8 @@ function LandingHtmlPreview({
               ) : null}
               {content.canonicalInputHash ? (
                 <div className="text-muted">
-                  Hash da entrada canônica: <code>{content.canonicalInputHash}</code>
+                  Hash da entrada canônica:{" "}
+                  <code>{content.canonicalInputHash}</code>
                 </div>
               ) : null}
             </div>
@@ -3924,7 +4020,8 @@ function LandingHtmlPreview({
         </div>
       ) : null}
       <div className="alert alert-info py-2 mb-0 small" role="status">
-        A aprovação final da landing para campanha acontece exclusivamente na aba
+        A aprovação final da landing para campanha acontece exclusivamente na
+        aba
         <strong> Landing</strong> deste experimento.
       </div>
       {canRender ? (
@@ -3945,7 +4042,9 @@ function LandingHtmlPreview({
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
-              <h6 className="card-title mb-1">Visão final: landing + imagens</h6>
+              <h6 className="card-title mb-1">
+                Visão final: landing + imagens
+              </h6>
               <p className="text-muted small mb-0">
                 Centraliza o HTML final com as imagens geradas para revisão
                 antes da aprovação.
@@ -3988,14 +4087,20 @@ function LandingHtmlPreview({
                   </div>
                 ) : null}
                 {frameworkImageStatusQuery.isError ? (
-                  <div className="alert alert-danger py-2 mb-0 small" role="alert">
+                  <div
+                    className="alert alert-danger py-2 mb-0 small"
+                    role="alert"
+                  >
                     Não foi possível carregar as imagens geradas.
                   </div>
                 ) : null}
                 {!frameworkImageStatusQuery.isLoading &&
                 !frameworkImageStatusQuery.isError &&
                 resolvedGeneratedImages.length === 0 ? (
-                  <div className="alert alert-secondary py-2 mb-0 small" role="status">
+                  <div
+                    className="alert alert-secondary py-2 mb-0 small"
+                    role="status"
+                  >
                     Nenhuma imagem final disponível ainda. Gere as imagens no
                     bloco de planejamento.
                   </div>
@@ -4016,7 +4121,11 @@ function LandingHtmlPreview({
                             src={imageUrl}
                             alt={item.sectionName ?? item.planningItemKey}
                             className="img-fluid rounded border"
-                            style={{ maxHeight: "140px", width: "100%", objectFit: "cover" }}
+                            style={{
+                              maxHeight: "140px",
+                              width: "100%",
+                              objectFit: "cover",
+                            }}
                           />
                           <p className="small fw-semibold mb-1 mt-2">
                             {item.sectionName ?? item.planningItemKey}

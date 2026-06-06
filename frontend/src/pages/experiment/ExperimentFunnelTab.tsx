@@ -1,10 +1,16 @@
 import { useState, type FormEvent } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useExperimentFunnel, type ExperimentFunnelStageSummary } from "../../api/experiment/useExperimentFunnel";
+import {
+  useExperimentFunnel,
+  type ExperimentFunnelStageSummary,
+} from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
-import { useExperimentFunnelDiagnostics, type FunnelDiagnosticStatus } from "../../api/experiment/useExperimentFunnelDiagnostics";
+import {
+  useExperimentFunnelDiagnostics,
+  type FunnelDiagnosticStatus,
+} from "../../api/experiment/useExperimentFunnelDiagnostics";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -22,6 +28,7 @@ interface ExperimentFunnelTabProps {
   experimentId: string;
   totalSpend?: number | null;
   spendLastSyncedAt?: string | null;
+  alterationLocked?: boolean;
 }
 
 function formatDate(value?: string | null) {
@@ -38,6 +45,7 @@ export default function ExperimentFunnelTab({
   experimentId,
   totalSpend,
   spendLastSyncedAt,
+  alterationLocked = false,
 }: ExperimentFunnelTabProps) {
   const { data, isLoading, isError } = useExperimentFunnel(experimentId);
   const diagnosticsQuery = useExperimentFunnelDiagnostics(experimentId);
@@ -149,8 +157,9 @@ export default function ExperimentFunnelTab({
     label: stage.label,
     quantity: stage.totalCount,
   }));
-  const maxOutcomeQuantity = outcomeQuantities.reduce((max, item) =>
-    Math.max(max, item.quantity), 0,
+  const maxOutcomeQuantity = outcomeQuantities.reduce(
+    (max, item) => Math.max(max, item.quantity),
+    0,
   );
   const totalOutcomes = outcomeQuantities.reduce(
     (accumulator, item) => accumulator + item.quantity,
@@ -185,16 +194,23 @@ export default function ExperimentFunnelTab({
     if (resetFunnel.isPending) {
       return;
     }
-    if (!window.confirm(`Deseja zerar as contagens e analytics somente deste experimento (${experimentId}) a partir de agora?`)) {
+    if (
+      !window.confirm(
+        `Deseja zerar as contagens e analytics somente deste experimento (${experimentId}) a partir de agora?`,
+      )
+    ) {
       return;
     }
     try {
       await resetFunnel.mutateAsync();
-      toast.success("Funil e analytics deste experimento foram reiniciados. Novos eventos passarão a ser contabilizados a partir deste momento.");
+      toast.success(
+        "Funil e analytics deste experimento foram reiniciados. Novos eventos passarão a ser contabilizados a partir deste momento.",
+      );
     } catch (error) {
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? error.response?.data?.detail ??
-          "Não foi possível zerar o funil."
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível zerar o funil.")
         : "Não foi possível zerar o funil.";
       toast.error(message);
     }
@@ -207,18 +223,23 @@ export default function ExperimentFunnelTab({
           <div>
             <h5 className="card-title mb-1">Funil de vendas do experimento</h5>
             <p className="text-muted small mb-0">
-              Cada etapa consolida os eventos da jornada (anúncios, Lead Portal e
-              e-mails) para dar visibilidade ao avanço das leads no experimento.
+              Cada etapa consolida os eventos da jornada (anúncios, Lead Portal
+              e e-mails) para dar visibilidade ao avanço das leads no
+              experimento.
             </p>
           </div>
           <button
             type="button"
             className="btn btn-outline-danger btn-sm"
             onClick={handleReset}
-            disabled={resetFunnel.isPending}
+            disabled={resetFunnel.isPending || alterationLocked}
           >
             {resetFunnel.isPending ? (
-              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+              <span
+                className="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              />
             ) : (
               "Zerar contagens"
             )}
@@ -255,7 +276,9 @@ export default function ExperimentFunnelTab({
               <div className="fs-2 fw-bold">{totalOutcomes}</div>
             </div>
             <div className="text-end">
-              <div className="text-muted small">Meta ideal: {BACKTEST_TARGET_TOTAL}</div>
+              <div className="text-muted small">
+                Meta ideal: {BACKTEST_TARGET_TOTAL}
+              </div>
               <div className="fs-5 fw-semibold">
                 {formatPercentage(outcomeTargetPercent)} da meta
               </div>
@@ -263,19 +286,26 @@ export default function ExperimentFunnelTab({
           </div>
           <div className="d-flex flex-column gap-2">
             {outcomeQuantities.map((item) => {
-              const widthPercent = maxOutcomeQuantity > 0
-                ? (item.quantity / maxOutcomeQuantity) * 100
-                : 0;
+              const widthPercent =
+                maxOutcomeQuantity > 0
+                  ? (item.quantity / maxOutcomeQuantity) * 100
+                  : 0;
               return (
                 <div key={item.label}>
                   <div className="d-flex justify-content-between small">
                     <span>{item.label}</span>
                     <strong>{item.quantity}</strong>
                   </div>
-                  <div className="progress" role="img" aria-label={`Quantidade do outcome ${item.label}: ${item.quantity}`}>
+                  <div
+                    className="progress"
+                    role="img"
+                    aria-label={`Quantidade do outcome ${item.label}: ${item.quantity}`}
+                  >
                     <div
                       className="progress-bar"
-                      style={{ width: `${Math.max(widthPercent, item.quantity > 0 ? 4 : 0)}%` }}
+                      style={{
+                        width: `${Math.max(widthPercent, item.quantity > 0 ? 4 : 0)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -319,9 +349,17 @@ export default function ExperimentFunnelTab({
                     <td>
                       <strong>{stage.totalCount}</strong>
                     </td>
-                    <td>{formatRateComparedToPreviousStage(stage.totalCount, selectableStages[index - 1]?.totalCount)}</td>
                     <td>
-                      {formatCostPerConversion(normalizedTotalSpend, stage.totalCount)}
+                      {formatRateComparedToPreviousStage(
+                        stage.totalCount,
+                        selectableStages[index - 1]?.totalCount,
+                      )}
+                    </td>
+                    <td>
+                      {formatCostPerConversion(
+                        normalizedTotalSpend,
+                        stage.totalCount,
+                      )}
                     </td>
                     <td>{stage.uniqueCount ?? "—"}</td>
                     <td>{formatDate(stage.lastEventAt)}</td>
@@ -355,16 +393,25 @@ export default function ExperimentFunnelTab({
                       <div className="small text-muted">{item.message}</div>
                       <div className="small text-muted">
                         Tentativas: {item.attempts} · Sucessos: {item.successes}
-                        {item.minAcceptableRate != null ? ` · Mín. aceitável: ${formatPercent(item.minAcceptableRate)}` : ""}
-                        {item.upper95RateIfZero != null ? ` · Limite 95% (0 sucessos): ${formatPercent(item.upper95RateIfZero)}` : ""}
+                        {item.minAcceptableRate != null
+                          ? ` · Mín. aceitável: ${formatPercent(item.minAcceptableRate)}`
+                          : ""}
+                        {item.upper95RateIfZero != null
+                          ? ` · Limite 95% (0 sucessos): ${formatPercent(item.upper95RateIfZero)}`
+                          : ""}
                       </div>
                       {item.thresholdChecks?.map((thresholdCheck) => (
                         <div
                           key={`${item.stageKey}-${thresholdCheck.minAcceptableRate}`}
                           className={`small ${thresholdCheck.statisticallyFailed ? "text-danger" : "text-muted"}`}
                         >
-                          Limite {formatPercent(thresholdCheck.minAcceptableRate)} · Tentativas mín. (95%, 0 sucessos): {thresholdCheck.attemptsFor95Confidence}
-                          {thresholdCheck.upper95RateIfZero != null ? ` · Limite 95% atual: ${formatPercent(thresholdCheck.upper95RateIfZero)}` : ""}
+                          Limite{" "}
+                          {formatPercent(thresholdCheck.minAcceptableRate)} ·
+                          Tentativas mín. (95%, 0 sucessos):{" "}
+                          {thresholdCheck.attemptsFor95Confidence}
+                          {thresholdCheck.upper95RateIfZero != null
+                            ? ` · Limite 95% atual: ${formatPercent(thresholdCheck.upper95RateIfZero)}`
+                            : ""}
                           {thresholdCheck.statisticallyFailed
                             ? " · Reprovada"
                             : thresholdCheck.attemptsTargetReached
@@ -373,13 +420,23 @@ export default function ExperimentFunnelTab({
                         </div>
                       ))}
                     </div>
-                    <span className={`badge ${statusBadgeClass(item.status)}`} title="Diagnóstico calculado no backend">
+                    <span
+                      className={`badge ${statusBadgeClass(item.status)}`}
+                      title="Diagnóstico calculado no backend"
+                    >
                       {statusLabel(item.status)}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        ) : null}
+
+        {alterationLocked ? (
+          <div className="alert alert-secondary mb-0" role="status">
+            Funil bloqueado para alteração manual porque o experimento já foi
+            liberado ou está em execução.
           </div>
         ) : null}
 
@@ -394,6 +451,7 @@ export default function ExperimentFunnelTab({
               className="form-select"
               value={form.stage}
               onChange={(e) => setForm({ ...form, stage: e.target.value })}
+              disabled={alterationLocked}
             >
               {stages.map((stage) => (
                 <option key={stage.stage} value={stage.stage}>
@@ -413,6 +471,7 @@ export default function ExperimentFunnelTab({
               placeholder="00000000-0000-0000-0000-000000000000"
               value={form.leadId}
               onChange={(e) => setForm({ ...form, leadId: e.target.value })}
+              disabled={alterationLocked}
             />
           </div>
           <div className="col-12 col-lg-3">
@@ -426,6 +485,7 @@ export default function ExperimentFunnelTab({
               placeholder="manual, integração, etc"
               value={form.source}
               onChange={(e) => setForm({ ...form, source: e.target.value })}
+              disabled={alterationLocked}
             />
           </div>
           <div className="col-12 col-lg-3">
@@ -438,17 +498,21 @@ export default function ExperimentFunnelTab({
               className="form-control"
               placeholder="ex.: 123456789012345"
               value={form.campaignCode}
-              onChange={(e) => setForm({ ...form, campaignCode: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, campaignCode: e.target.value })
+              }
+              disabled={alterationLocked}
             />
             <div className="form-text">
-              Use o mesmo valor configurado nos parâmetros da URL/UTM do anúncio.
+              Use o mesmo valor configurado nos parâmetros da URL/UTM do
+              anúncio.
             </div>
           </div>
           <div className="col-12 col-lg-3 d-flex align-items-end">
             <button
               type="submit"
               className="btn btn-primary w-100"
-              disabled={registerEvent.isPending}
+              disabled={registerEvent.isPending || alterationLocked}
             >
               {registerEvent.isPending ? "Registrando..." : "Registrar evento"}
             </button>
@@ -464,6 +528,7 @@ export default function ExperimentFunnelTab({
               placeholder="Detalhes adicionais para rastreabilidade"
               value={form.payload}
               onChange={(e) => setForm({ ...form, payload: e.target.value })}
+              disabled={alterationLocked}
             />
             {registerEvent.isSuccess ? (
               <div className="text-success small mt-1">
@@ -484,7 +549,10 @@ export default function ExperimentFunnelTab({
           <ul className="mb-0 small ps-3">
             <li>1) Impressões do anúncio.</li>
             <li>2) Cliques que levaram ao formulário do experimento.</li>
-            <li>3) Renderizações completas do formulário (evento lead-portal-render-complete).</li>
+            <li>
+              3) Renderizações completas do formulário (evento
+              lead-portal-render-complete).
+            </li>
             <li>4) Envios de formulário (lead_portal_submission).</li>
             <li>5) Abertura do e-mail de amostra.</li>
             <li>6) Acessos ao checkout no Mercado Pago.</li>
@@ -516,8 +584,15 @@ function formatCurrency(value?: number | null) {
   return currencyFormatter.format(value);
 }
 
-function calculateCostPerConversion(totalSpend: number | null, totalConversions?: number | null) {
-  if (totalSpend === null || totalSpend === undefined || Number.isNaN(totalSpend)) {
+function calculateCostPerConversion(
+  totalSpend: number | null,
+  totalConversions?: number | null,
+) {
+  if (
+    totalSpend === null ||
+    totalSpend === undefined ||
+    Number.isNaN(totalSpend)
+  ) {
     return null;
   }
   if (!totalConversions || totalConversions <= 0) {
@@ -526,7 +601,10 @@ function calculateCostPerConversion(totalSpend: number | null, totalConversions?
   return totalSpend / totalConversions;
 }
 
-function formatCostPerConversion(totalSpend: number | null, totalConversions?: number | null) {
+function formatCostPerConversion(
+  totalSpend: number | null,
+  totalConversions?: number | null,
+) {
   const cost = calculateCostPerConversion(totalSpend, totalConversions);
   return cost === null ? "—" : formatCurrency(cost);
 }

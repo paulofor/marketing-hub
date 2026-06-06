@@ -203,6 +203,27 @@ function resolveQualityReviewApprovalBadgeClass(
   return "text-bg-secondary";
 }
 
+const EXPERIMENT_ALTERATION_LOCK_STATUSES = new Set([
+  "RUNNING",
+  "PAUSED",
+  "USER_STOPPED",
+  "VALIDATED",
+  "INVALIDATED",
+  "INCONCLUSIVE",
+  "FINISHED",
+]);
+
+function isExperimentAlterationLocked(experiment: {
+  status?: string | null;
+  facebookReleaseRequestedAt?: string | null;
+}) {
+  const normalizedStatus = (experiment.status ?? "").trim().toUpperCase();
+  return (
+    Boolean(experiment.facebookReleaseRequestedAt) ||
+    EXPERIMENT_ALTERATION_LOCK_STATUSES.has(normalizedStatus)
+  );
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -1549,6 +1570,7 @@ export default function ExperimentDetailPage() {
   }, [hasRunningGeraLandingExecution, refetchCompletedGeraLandingExecutions]);
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
+  const alterationLocked = isExperimentAlterationLocked(data);
   const preset = presets?.find((p) => p.id === data.metricPresetId);
   const resetPreviewSummary: ExperimentCampaignResetSummary =
     resetPreviewData ?? { campaigns: 0, adSets: 0, ads: 0, creatives: 0 };
@@ -1564,6 +1586,7 @@ export default function ExperimentDetailPage() {
       : "Não foi possível carregar a prévia do reset."
     : null;
   const confirmResetDisabled =
+    alterationLocked ||
     isFetchingResetPreview ||
     !hasItemsToReset ||
     Boolean(previewErrorMessage) ||
@@ -1591,9 +1614,10 @@ export default function ExperimentDetailPage() {
     diagnosticsUpdatedAt > 0
       ? formatDateTimeValue(new Date(diagnosticsUpdatedAt).toISOString())
       : null;
+  const diagnosticsArtifacts = diagnostics?.artifacts ?? [];
   const shouldShowDiagnostics =
     !!diagnostics &&
-    diagnostics.headline.trim().toLowerCase() !==
+    (diagnostics.headline ?? "").trim().toLowerCase() !==
       "nenhuma inconsistência detectada";
   const baseKpi = data.kpiTarget ?? data.kpiTargetCpl;
   const stopLossFactor = preset?.stopLossFactor;
@@ -1665,7 +1689,10 @@ export default function ExperimentDetailPage() {
   const canReleaseExperiment =
     isReadyForFacebook && data.platform === "FACEBOOK";
   const releaseButtonDisabled =
-    releaseInProgress || !canReleaseExperiment || isLoadingReadiness;
+    releaseInProgress ||
+    !canReleaseExperiment ||
+    isLoadingReadiness ||
+    alterationLocked;
 
   const configurationChecklist: ChecklistItem[] = [
     {
@@ -1918,12 +1945,32 @@ export default function ExperimentDetailPage() {
           <p className="text-muted mb-0">{data.hypothesis}</p>
         </div>
         <div className="d-flex align-items-center">
-          <Link to="edit" className="btn btn-outline-secondary me-2">
-            Editar
-          </Link>
-          <Link to="adset-workflow" className="btn btn-outline-primary me-2">
-            Playbook de Ad Sets
-          </Link>
+          {alterationLocked ? (
+            <span
+              className="btn btn-outline-secondary disabled me-2"
+              aria-disabled="true"
+              title="Alterações desabilitadas após a liberação/publicação do experimento."
+            >
+              Editar
+            </span>
+          ) : (
+            <Link to="edit" className="btn btn-outline-secondary me-2">
+              Editar
+            </Link>
+          )}
+          {alterationLocked ? (
+            <span
+              className="btn btn-outline-primary disabled me-2"
+              aria-disabled="true"
+              title="Playbook bloqueado após a liberação/publicação do experimento."
+            >
+              Playbook de Ad Sets
+            </span>
+          ) : (
+            <Link to="adset-workflow" className="btn btn-outline-primary me-2">
+              Playbook de Ad Sets
+            </Link>
+          )}
           <Link to="facebook-api-logs" className="btn btn-outline-info me-2">
             Chamadas Meta
           </Link>
@@ -1934,7 +1981,7 @@ export default function ExperimentDetailPage() {
             type="button"
             className="btn btn-outline-danger me-2"
             onClick={openResetModal}
-            disabled={resetCampaigns.isPending}
+            disabled={resetCampaigns.isPending || alterationLocked}
           >
             {resetCampaigns.isPending ? (
               <>
@@ -2035,13 +2082,13 @@ export default function ExperimentDetailPage() {
               {diagnostics.severity}
             </span>
           </div>
-          {diagnostics.artifacts.length > 0 ? (
+          {diagnosticsArtifacts.length > 0 ? (
             <>
               <p className="mb-2 mt-2 small">
                 <strong>Itens com pendência para corrigir:</strong>
               </p>
               <ul className="mb-0 small ps-3">
-                {diagnostics.artifacts.map((artifact) => (
+                {diagnosticsArtifacts.map((artifact) => (
                   <li key={`${artifact.type}-${artifact.id}`}>
                     <strong>{artifact.type}</strong> ·{" "}
                     {artifact.name || artifact.id} — ID interno: {artifact.id}
@@ -2380,16 +2427,20 @@ export default function ExperimentDetailPage() {
               experimentId={expId}
               totalSpend={data?.campaignMetric?.spend}
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
+              alterationLocked={alterationLocked}
             />
           </Tabs.Content>
           <Tabs.Content value="analytics" asChild>
             <ExperimentLandingAnalyticsTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="creatives" asChild>
-            <CriativosTab experimentId={expId} />
+            <CriativosTab
+              experimentId={expId}
+              alterationLocked={alterationLocked}
+            />
           </Tabs.Content>
           <Tabs.Content value="landing" asChild>
-            <LandingTab experiment={data} />
+            <LandingTab experiment={data} alterationLocked={alterationLocked} />
           </Tabs.Content>
           <Tabs.Content value="gera-landing" asChild>
             <div className="d-flex flex-column gap-3">
@@ -2420,7 +2471,9 @@ export default function ExperimentDetailPage() {
                       className="btn btn-primary align-self-start"
                       onClick={handleStartWireframe}
                       disabled={
-                        isStartingWireframe || hasRunningGeraLandingExecution
+                        alterationLocked ||
+                        isStartingWireframe ||
+                        hasRunningGeraLandingExecution
                       }
                     >
                       {isStartingWireframe ? (
@@ -2549,7 +2602,9 @@ export default function ExperimentDetailPage() {
                       className="btn btn-primary align-self-start"
                       onClick={handleStartCopy}
                       disabled={
-                        isStartingCopy || hasRunningGeraLandingCopyExecution
+                        alterationLocked ||
+                        isStartingCopy ||
+                        hasRunningGeraLandingCopyExecution
                       }
                     >
                       {isStartingCopy ? (
@@ -2687,6 +2742,7 @@ export default function ExperimentDetailPage() {
                       className="btn btn-primary align-self-start"
                       onClick={handleStartImagePrompts}
                       disabled={
+                        alterationLocked ||
                         isStartingImagePrompts ||
                         hasRunningGeraLandingImagePromptsExecution
                       }
@@ -2809,6 +2865,7 @@ export default function ExperimentDetailPage() {
                                           )
                                         }
                                         disabled={
+                                          alterationLocked ||
                                           isGeneratingLandingHtml ||
                                           frameworkImagePendingCount > 0
                                         }
@@ -2874,6 +2931,7 @@ export default function ExperimentDetailPage() {
                       className="btn btn-primary align-self-start"
                       onClick={handleStartImageGeneration}
                       disabled={
+                        alterationLocked ||
                         isStartingImageGeneration ||
                         hasRunningGeraLandingImageGenerationExecution
                       }
@@ -3073,6 +3131,7 @@ export default function ExperimentDetailPage() {
                       className="btn btn-primary align-self-start"
                       onClick={handleStartDesignPreset}
                       disabled={
+                        alterationLocked ||
                         isStartingDesignPreset ||
                         hasRunningGeraLandingDesignPresetExecution
                       }
@@ -3243,6 +3302,7 @@ export default function ExperimentDetailPage() {
                     className="btn btn-primary align-self-start"
                     onClick={handleStartQualityReview}
                     disabled={
+                      alterationLocked ||
                       isStartingQualityReview ||
                       hasRunningGeraLandingQualityReviewExecution
                     }
@@ -3379,6 +3439,7 @@ export default function ExperimentDetailPage() {
                     className="btn btn-primary align-self-start"
                     onClick={handleStartDeliverables}
                     disabled={
+                      alterationLocked ||
                       isStartingDeliverables ||
                       hasRunningGeraLandingDeliverablesExecution
                     }
@@ -3503,12 +3564,14 @@ export default function ExperimentDetailPage() {
               hypothesis={hyp}
               campaignAngle={data?.campaignAngle}
               adCopy={data?.adCopy}
+              alterationLocked={alterationLocked}
             />
           </Tabs.Content>
           <Tabs.Content value="publico" asChild>
             <ExperimentAudienceTab
               experimentId={Number(expId)}
               nicheId={data?.nicheId}
+              alterationLocked={alterationLocked}
             />
           </Tabs.Content>
           <Tabs.Content value="conteudo" asChild>

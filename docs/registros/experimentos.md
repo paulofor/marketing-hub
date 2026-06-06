@@ -3683,3 +3683,15 @@
 - Causa-raiz no worker: falhas capturadas durante a geração eram apenas logadas e mantinham a solicitação pendente, permitindo travamento indefinido e nova tentativa automática sem feedback claro ao usuário.
 - Correção aplicada: ao capturar falha na geração, o Worker AI registra contexto da causa-raiz, limpa `creativesToGenerate`, restaura o modo para `DEFAULT` quando era pipeline e salva o experimento, liberando a tela para nova solicitação consciente após corrigir a causa operacional.
 - Mitigação operacional imediata no experimento 37: executado `PATCH /api/experiments/37/creatives-to-generate?quantity=0` para remover a pendência atual e destravar a tela antes do deploy da correção definitiva.
+
+## 2026-06-05 21:05:08 UTC-3
+- solicitação: reduzir a confusão visual da tela `/pipelines`, separando a lista de pipelines da visualização/edição das etapas de um pipeline específico.
+- raciocínio para a solução: a tela atual misturava cadastro de pipeline, diagnóstico, lista de etapas e formulário de etapas para todos os pipelines ao mesmo tempo; a causa-raiz da poluição era renderizar todos os detalhes simultaneamente, então a correção foi condicionar a interface entre tela de lista e tela de etapas do pipeline selecionado.
+- foi feito: a tela principal agora mostra uma lista limpa de pipelines com resumo e ação `Ver etapas`; ao clicar, a interface alterna para uma tela focada no pipeline selecionado, mantendo diagnóstico, cards de etapas e formulário de etapa apenas daquele pipeline, com botão de retorno para a lista.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/pipeline/PipelineCrudPage.tsx
+  - frontend/src/api/pipeline/types.ts
+  - frontend/src/api/pipeline/usePipelines.ts

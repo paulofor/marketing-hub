@@ -1,6 +1,8 @@
 package com.marketinghub.mcpserver.service;
 
 import com.marketinghub.mcpserver.config.McpProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -22,8 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * Lê e filtra logs operacionais dos módulos Java expostos ao MCP.
+ */
 @Service
 public class ModuleLogService {
+    private static final Logger logger = LoggerFactory.getLogger(ModuleLogService.class);
     private static final int DEFAULT_LINES = 200;
     private final McpProperties properties;
     private final HttpClient httpClient;
@@ -32,6 +38,9 @@ public class ModuleLogService {
     private final int fetchAttempts;
     private final int fetchRetryDelayMillis;
 
+    /**
+     * Inicializa o leitor de logs com timeouts e limites definidos em configuração.
+     */
     public ModuleLogService(McpProperties properties) {
         this.properties = properties;
         this.logFetchTimeout = Duration.ofSeconds(properties.logs().fetchTimeoutSeconds());
@@ -41,8 +50,14 @@ public class ModuleLogService {
         this.httpClient = HttpClient.newBuilder().connectTimeout(logFetchTimeout).build();
     }
 
+    /**
+     * Retorna o limite máximo de linhas permitido por chamada do tool de logs.
+     */
     public int maxLines() { return properties.logs().maxLines(); }
 
+    /**
+     * Lê os logs do módulo solicitado aplicando filtros de texto, período e paginação.
+     */
     public Map<String, Object> readModuleLogs(String module, Integer requestedLines, String contains, String from, String to, Integer offset, String cursor) {
         String normalizedModule = normalizeModule(module);
         int lines = sanitizeLines(requestedLines);
@@ -62,10 +77,14 @@ public class ModuleLogService {
         try (Stream<String> stream = Files.lines(path, StandardCharsets.UTF_8)) {
             return buildFilteredResponse(stream.toList(), lines, contains, from, to, offset, cursor, response, Files.size(path));
         } catch (IOException ex) {
+            logger.error("mcp-server readModuleLogs failed to read local log file for module={} path={}", normalizedModule, path, ex);
             throw new IllegalArgumentException("Failed to read log file: " + ex.getMessage());
         }
     }
 
+    /**
+     * Busca logs em uma URL HTTP/HTTPS e monta a resposta filtrada.
+     */
     private Map<String, Object> readLogsFromUrl(String configuredUrl, int lines, String contains, String from, String to, Integer offset, String cursor, Map<String, Object> response) {
         response.put("path", configuredUrl); response.put("source", "http");
         HttpRequest request = buildTailRequest(configuredUrl, true);
@@ -82,10 +101,14 @@ public class ModuleLogService {
             return buildFilteredResponse(httpResponse.body().lines().toList(), lines, contains, from, to, offset, cursor, response, null);
         } catch (IOException | InterruptedException ex) {
             if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
+            logger.error("mcp-server readLogsFromUrl failed to read log stream url={} attempts={}", configuredUrl, errors, ex);
             throw new IllegalArgumentException("Failed to read log stream URL: " + ex.getMessage());
         }
     }
 
+    /**
+     * Constrói a resposta final após aplicar filtros e resolver a janela de paginação.
+     */
     private Map<String, Object> buildFilteredResponse(List<String> allLines, int lines, String contains, String from, String to, Integer offset, String cursor, Map<String, Object> response, Long sizeBytes) {
         List<String> filtered = applyFilters(allLines, contains, from, to);
         boolean defaultTailMode = !StringUtils.hasText(contains) && !StringUtils.hasText(from) && !StringUtils.hasText(to) && offset == null && !StringUtils.hasText(cursor);
@@ -102,6 +125,9 @@ public class ModuleLogService {
         return response;
     }
 
+    /**
+     * Aplica filtros opcionais por texto literal e intervalo ISO-8601.
+     */
     private List<String> applyFilters(List<String> lines, String contains, String from, String to) {
         Instant fromTs = parseInstant(from, "from"); Instant toTs = parseInstant(to, "to");
         return lines.stream().filter(line -> {
@@ -114,22 +140,37 @@ public class ModuleLogService {
         }).toList();
     }
 
+    /**
+     * Resolve o deslocamento de paginação a partir de offset explícito ou cursor.
+     */
     private int resolveOffset(Integer offset, String cursor) {
         if (StringUtils.hasText(cursor)) {
             try {
                 String decoded = new String(Base64.getDecoder().decode(cursor), StandardCharsets.UTF_8);
                 if (!decoded.startsWith("offset:")) throw new IllegalArgumentException("invalid cursor");
                 return Integer.parseInt(decoded.substring(7));
-            } catch (Exception ex) { throw new IllegalArgumentException("invalid cursor"); }
+            } catch (Exception ex) {
+                logger.error("mcp-server resolveOffset failed to decode pagination cursor={}", cursor, ex);
+                throw new IllegalArgumentException("invalid cursor");
+            }
         }
         return offset == null ? 0 : offset;
     }
 
+    /**
+     * Converte uma string ISO-8601 para Instant validando o nome do campo informado.
+     */
     private Instant parseInstant(String value, String fieldName) {
         if (!StringUtils.hasText(value)) return null;
-        try { return Instant.parse(value); } catch (DateTimeParseException ex) { throw new IllegalArgumentException(fieldName + " must be in ISO-8601 UTC format, e.g. 2026-05-21T04:35:00Z"); }
+        try { return Instant.parse(value); } catch (DateTimeParseException ex) {
+            logger.error("mcp-server parseInstant failed for field={} value={}", fieldName, value, ex);
+            throw new IllegalArgumentException(fieldName + " must be in ISO-8601 UTC format, e.g. 2026-05-21T04:35:00Z");
+        }
     }
 
+    /**
+     * Extrai o primeiro timestamp ISO-8601 encontrado em uma linha de log.
+     */
     private Instant extractFirstInstant(String line) {
         for (String token : line.split("[\\s\\[\\]]+")) {
             try { return Instant.parse(token); } catch (DateTimeParseException ignored) { }
@@ -137,33 +178,113 @@ public class ModuleLogService {
         return null;
     }
 
-    private HttpResponse<String> sendWithRetry(HttpRequest request, List<String> errors) throws IOException, InterruptedException { /* unchanged logic */
-        IOException lastIo = null; InterruptedException lastInterrupt = null;
+    /**
+     * Executa a requisição HTTP de logs com retentativas configuradas.
+     */
+    private HttpResponse<String> sendWithRetry(HttpRequest request, List<String> errors)
+            throws IOException, InterruptedException {
+        IOException lastIo = null;
+        InterruptedException lastInterrupt = null;
         for (int attempt = 1; attempt <= fetchAttempts; attempt++) {
             try {
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                HttpResponse<String> response = httpClient.send(request,
+                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
                 errors.add("attempt " + attempt + " status " + response.statusCode());
-                if (response.statusCode() >= 500 || response.statusCode() == 429) { if (attempt < fetchAttempts) { Thread.sleep(fetchRetryDelayMillis); continue; } }
+                if ((response.statusCode() >= 500 || response.statusCode() == 429) && attempt < fetchAttempts) {
+                    Thread.sleep(fetchRetryDelayMillis);
+                    continue;
+                }
                 return response;
-            } catch (IOException ex) { lastIo = ex; errors.add("attempt " + attempt + " io-error: " + ex.getClass().getSimpleName() + " - " + ex.getMessage()); }
-            catch (InterruptedException ex) { lastInterrupt = ex; errors.add("attempt " + attempt + " interrupted: " + ex.getMessage()); break; }
-            if (attempt < fetchAttempts) Thread.sleep(fetchRetryDelayMillis);
+            } catch (IOException ex) {
+                lastIo = ex;
+                errors.add("attempt " + attempt + " io-error: " + ex.getClass().getSimpleName() + " - "
+                        + ex.getMessage());
+                logger.error("mcp-server sendWithRetry failed attempt={} uri={}", attempt, request.uri(), ex);
+            } catch (InterruptedException ex) {
+                lastInterrupt = ex;
+                errors.add("attempt " + attempt + " interrupted: " + ex.getMessage());
+                logger.error("mcp-server sendWithRetry interrupted attempt={} uri={}", attempt, request.uri(), ex);
+                break;
+            }
+            if (attempt < fetchAttempts) {
+                Thread.sleep(fetchRetryDelayMillis);
+            }
         }
-        if (lastInterrupt != null) throw lastInterrupt; if (lastIo != null) throw lastIo; throw new IOException("Failed to read log stream URL after retries");
+        if (lastInterrupt != null) {
+            throw lastInterrupt;
+        }
+        if (lastIo != null) {
+            throw lastIo;
+        }
+        throw new IOException("Failed to read log stream URL after retries");
     }
 
+    /**
+     * Monta a requisição HTTP para leitura completa ou parcial do arquivo de logs.
+     */
     private HttpRequest buildTailRequest(String configuredUrl, boolean withRange) {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(configuredUrl)).timeout(logFetchTimeout).GET();
-        if (withRange) builder.header("Range", "bytes=-" + httpTailRangeBytes);
+        if (withRange) {
+            builder.header("Range", "bytes=-" + httpTailRangeBytes);
+        }
         return builder.build();
     }
-    private boolean isHttpUrl(String value) { String normalized = value.trim().toLowerCase(); return normalized.startsWith("http://") || normalized.startsWith("https://"); }
-    private String modulePath(String module) { return switch (module) {
-        case "backend" -> properties.logs().backendPath(); case "ai-worker" -> properties.logs().aiWorkerPath(); case "lead-portal" -> properties.logs().leadPortalPath(); case "facebook-ads" -> properties.logs().facebookAdsPath(); case "email-service" -> properties.logs().emailServicePath(); case "lead-portal-payment" -> properties.logs().leadPortalPaymentPath(); case "mds" -> properties.logs().mdsPath(); case "mois" -> properties.logs().moisPath(); case "mois-hotmart" -> properties.logs().moisHotmartPath(); case "clickbank-coletor-mois" -> properties.logs().clickbankColetorMoisPath(); case "oprm-coletor-receita" -> properties.logs().oprmColetorReceitaPath(); default -> throw new IllegalArgumentException("Unknown module: " + module); }; }
-    private String normalizeModule(String module) {
-        if (!StringUtils.hasText(module)) throw new IllegalArgumentException("module is required");
-        String normalized = module.trim().toLowerCase();
-        return switch (normalized) { case "backend", "ai-worker", "lead-portal", "facebook-ads", "email-service", "lead-portal-payment", "mds", "mois", "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita" -> normalized; default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita"); };
+
+    /**
+     * Indica se o caminho configurado é uma URL HTTP/HTTPS.
+     */
+    private boolean isHttpUrl(String value) {
+        String normalized = value.trim().toLowerCase();
+        return normalized.startsWith("http://") || normalized.startsWith("https://");
     }
-    private int sanitizeLines(Integer requestedLines) { int lines = requestedLines == null ? DEFAULT_LINES : requestedLines; if (lines < 1 || lines > maxLines()) throw new IllegalArgumentException("lines must be between 1 and " + maxLines()); return lines; }
+
+    /**
+     * Resolve o caminho de logs configurado para o módulo normalizado.
+     */
+    private String modulePath(String module) {
+        return switch (module) {
+            case "backend" -> properties.logs().backendPath();
+            case "ai-worker" -> properties.logs().aiWorkerPath();
+            case "lead-portal" -> properties.logs().leadPortalPath();
+            case "facebook-ads" -> properties.logs().facebookAdsPath();
+            case "email-service" -> properties.logs().emailServicePath();
+            case "lead-portal-payment" -> properties.logs().leadPortalPaymentPath();
+            case "mds" -> properties.logs().mdsPath();
+            case "mois" -> properties.logs().moisPath();
+            case "mois-sales-library-worker" -> properties.logs().moisSalesLibraryWorkerPath();
+            case "mois-hotmart" -> properties.logs().moisHotmartPath();
+            case "clickbank-coletor-mois" -> properties.logs().clickbankColetorMoisPath();
+            case "oprm-coletor-receita" -> properties.logs().oprmColetorReceitaPath();
+            default -> throw new IllegalArgumentException("Unknown module: " + module);
+        };
+    }
+
+    /**
+     * Normaliza e valida o identificador do módulo solicitado pelo tool MCP.
+     */
+    private String normalizeModule(String module) {
+        if (!StringUtils.hasText(module)) {
+            throw new IllegalArgumentException("module is required");
+        }
+        String normalized = module.trim().toLowerCase();
+        return switch (normalized) {
+            case "backend", "ai-worker", "lead-portal", "facebook-ads", "email-service", "lead-portal-payment",
+                    "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
+                    "oprm-coletor-receita" -> normalized;
+            default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
+                    + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
+                    + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita");
+        };
+    }
+
+    /**
+     * Valida a quantidade de linhas solicitada contra os limites configurados.
+     */
+    private int sanitizeLines(Integer requestedLines) {
+        int lines = requestedLines == null ? DEFAULT_LINES : requestedLines;
+        if (lines < 1 || lines > maxLines()) {
+            throw new IllegalArgumentException("lines must be between 1 and " + maxLines());
+        }
+        return lines;
+    }
 }

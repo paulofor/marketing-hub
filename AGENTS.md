@@ -100,7 +100,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 
 - **MCP Server — filtros disponíveis para pesquisa de logs (referência operacional)**:
   - Tool de logs dos módulos Java: `java_module_logs`.
-  - Módulos aceitos em `module`: `backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`.
+  - Módulos aceitos em `module`: `backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-sales-library-worker`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`.
   - Observação importante de nomenclatura: para o coletor OPRM de MEI/CNPJ, a aplicação/serviço no projeto está nomeada como `oprm-coletor-mei`, porém no MCP o identificador aceito em `module` continua sendo `oprm-coletor-receita` (alias legado de integração do módulo de logs).
   - Filtros/parâmetros disponíveis:
     1. `module` (**obrigatório**): módulo Java de origem do log.

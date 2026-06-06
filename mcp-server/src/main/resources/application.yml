@@ -50,6 +50,7 @@ mcp:
     lead-portal-payment-path: ${MCP_LOG_LEAD_PORTAL_PAYMENT_PATH:http://191.252.102.54:8092/api/v1/logs/runtime?lines=200}
     mds-path: ${MCP_LOG_MDS_PATH:http://177.153.62.107:8091/actuator/logfile}
     mois-path: ${MCP_LOG_MOIS_PATH:http://191.252.120.96:8097/actuator/logfile}
+    mois-sales-library-worker-path: ${MCP_LOG_MOIS_SALES_LIBRARY_WORKER_PATH:http://191.252.120.96:8097/actuator/logfile}
     mois-hotmart-path: ${MCP_LOG_MOIS_HOTMART_PATH:http://177.153.62.107:8096/ops-monitor/mois-hotmart-log}
     clickbank-coletor-mois-path: ${MCP_LOG_CLICKBANK_COLETOR_MOIS_PATH:http://177.153.62.107:9096/internal/ops-monitor/logfile}
     oprm-coletor-receita-path: ${MCP_LOG_OPRM_COLETOR_RECEITA_PATH:http://177.153.62.107:8094/actuator/logfile}

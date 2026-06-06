@@ -1057,6 +1057,21 @@ Arquivos alterados:
 - `mcp-server/AGENTS.md`
 - `docs/registros/mois1.md`
 
+## 2026-06-06 — Alias de logs MCP para MOIS Sales Library Worker
+
+- adicionado o módulo `mois-sales-library-worker` ao tool MCP `java_module_logs`, apontando para o logfile público `http://191.252.120.96:8097/actuator/logfile`.
+- preservado o módulo `mois` existente e criada configuração dedicada `MCP_LOG_MOIS_SALES_LIBRARY_WORKER_PATH` para permitir ajuste independente no ambiente.
+- atualizadas a documentação do MCP e a referência operacional de módulos aceitos para investigação de logs.
+
+Arquivos alterados:
+- `mcp-server/src/main/resources/application.yml`
+- `mcp-server/src/main/java/com/marketinghub/mcpserver/config/McpProperties.java`
+- `mcp-server/src/main/java/com/marketinghub/mcpserver/service/ModuleLogService.java`
+- `mcp-server/src/main/java/com/marketinghub/mcpserver/controller/McpController.java`
+- `mcp-server/src/test/java/com/marketinghub/mcpserver/controller/McpControllerTest.java`
+- `mcp-server/README.md`
+- `mcp-server/AGENTS.md`
+- `AGENTS.md`
 ## 2026-06-06 — Correção de ambiguidade SQL no claim de referências coletadas MOIS
 
 - corrigida a causa-raiz do erro `Column 'title' in field list is ambiguous` no claim `POST /api/mois/sales-library/collected-reference-html:claim`.

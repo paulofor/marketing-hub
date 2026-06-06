@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import PageTitle from "../../components/PageTitle";
+import "./PipelineCrudPage.css";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { usePipelines } from "../../api/pipeline/usePipelines";
 import { usePipelineDiagnostics } from "../../api/pipeline/usePipelineDiagnostics";
@@ -47,6 +48,12 @@ function statusBadgeClass(status?: PipelineDiagnostics["status"]) {
   if (status === "OK") return "text-bg-success";
   if (status === "BLOQUEADO") return "text-bg-danger";
   return "text-bg-warning";
+}
+
+function diagnosticPanelClass(status: PipelineDiagnostics["status"]) {
+  if (status === "OK") return "pipeline-contract-ok";
+  if (status === "BLOQUEADO") return "pipeline-contract-bloqueado";
+  return "pipeline-contract-atencao";
 }
 
 function pipelineToPayload(pipeline: Pipeline): PipelinePayload {
@@ -224,33 +231,31 @@ export default function PipelineCrudPage() {
     const isOfficialPipeline = Boolean(officialPipeline);
 
     return (
-      <div>
-        <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+      <div className="pipeline-stage-page">
+        <div className="pipeline-stage-toolbar">
           <div>
             <PageTitle>Etapas do pipeline</PageTitle>
-            <p className="text-body-secondary mb-0">
-              Tela focada nas etapas de um único pipeline para reduzir poluição
-              visual e manter o fluxo operacional claro.
+            <p className="pipeline-stage-subtitle mb-0">
+              Ordem visual clara: primeiro o contrato, depois o fluxo das etapas
+              e por último os detalhes técnicos de execução.
             </p>
           </div>
           <button
             type="button"
-            className="btn btn-outline-secondary"
+            className="btn btn-outline-secondary pipeline-stage-back-button"
             onClick={returnToPipelineList}
           >
             ← Voltar para lista
           </button>
         </div>
 
-        <section className="card mb-4 border-primary">
-          <div className="card-body">
+        <section className="pipeline-overview-card mb-4">
+          <div className="pipeline-overview-body">
             <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
               <div>
-                <div className="small text-uppercase text-body-secondary fw-semibold">
-                  Pipeline selecionado
-                </div>
-                <h2 className="h4 mb-1">{pipeline.name}</h2>
-                <div className="d-flex flex-wrap gap-2">
+                <div className="pipeline-eyebrow">Pipeline selecionado</div>
+                <h2 className="pipeline-overview-title">{pipeline.name}</h2>
+                <div className="pipeline-badge-row">
                   <span className="badge text-bg-light border">
                     {pipeline.module}
                   </span>
@@ -284,7 +289,7 @@ export default function PipelineCrudPage() {
               </button>
             </div>
             {pipeline.description ? (
-              <p className="text-body-secondary mt-3 mb-0">
+              <p className="pipeline-overview-description">
                 {pipeline.description}
               </p>
             ) : null}
@@ -293,14 +298,28 @@ export default function PipelineCrudPage() {
 
         {diagnostic ? (
           <div
-            className={`alert ${diagnostic.status === "BLOQUEADO" ? "alert-danger" : diagnostic.status === "OK" ? "alert-success" : "alert-warning"}`}
+            className={`pipeline-contract-panel ${diagnosticPanelClass(diagnostic.status)}`}
           >
-            <div className="fw-semibold">
-              Status do contrato operacional: {diagnostic.status}
-            </div>
-            <div>
-              Etapas esperadas no código: {diagnostic.expectedStages} · etapas
-              configuradas no banco: {diagnostic.configuredStages}
+            <div className="pipeline-contract-kicker">Contrato operacional</div>
+            <div className="pipeline-contract-grid">
+              <div>
+                <div className="pipeline-contract-status">
+                  {diagnostic.status}
+                </div>
+                <div className="pipeline-contract-caption">
+                  Status atual do fluxo
+                </div>
+              </div>
+              <div className="pipeline-contract-counts">
+                <span>
+                  <strong>{diagnostic.expectedStages}</strong> esperadas no
+                  código
+                </span>
+                <span>
+                  <strong>{diagnostic.configuredStages}</strong> configuradas no
+                  banco
+                </span>
+              </div>
             </div>
             {diagnostic.issues.length > 0 ? (
               <ul className="mb-0 mt-2">
@@ -327,9 +346,12 @@ export default function PipelineCrudPage() {
           </div>
         ) : null}
 
-        <section className="mb-4">
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h3 className="h5 mb-0">Etapas configuradas</h3>
+        <section className="pipeline-stage-section mb-4">
+          <div className="pipeline-section-header">
+            <div>
+              <div className="pipeline-eyebrow">Fluxo operacional</div>
+              <h3 className="pipeline-section-title">Etapas configuradas</h3>
+            </div>
             {isOfficialPipeline ? (
               <button
                 type="button"
@@ -358,7 +380,7 @@ export default function PipelineCrudPage() {
               Nenhuma etapa cadastrada para este pipeline.
             </div>
           ) : (
-            <div className="row g-3">
+            <div className="pipeline-stage-grid">
               {pipeline.stages.map((stage) => {
                 const rowDefinition = officialPipeline?.stages.find(
                   (definition) =>
@@ -376,35 +398,27 @@ export default function PipelineCrudPage() {
                     : "Editável";
 
                 return (
-                  <div className="col-12 col-xl-6" key={stage.id}>
-                    <article className="card h-100 border shadow-sm">
-                      <div className="card-body d-flex flex-column gap-3">
-                        <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                          <div>
-                            <div className="small fw-semibold text-primary text-uppercase">
-                              Etapa {stage.position}
+                  <div className="pipeline-stage-grid-item" key={stage.id}>
+                    <article className="pipeline-stage-card">
+                      <div className="pipeline-stage-card-body">
+                        <div className="pipeline-stage-card-header">
+                          <div className="pipeline-stage-title-block">
+                            <div
+                              className="pipeline-stage-number"
+                              aria-label={`Etapa ${stage.position}`}
+                            >
+                              {stage.position}
                             </div>
-                            <h4 className="h5 mb-1">{stage.name}</h4>
-                            <div className="d-flex flex-wrap gap-2">
-                              <span className="badge text-bg-light border">
-                                {stage.code}
-                              </span>
-                              <span
-                                className={`badge ${stage.active ? "text-bg-success" : "text-bg-secondary"}`}
-                              >
-                                {stage.active ? "Ativa" : "Inativa"}
-                              </span>
-                              {stage.required ? (
-                                <span className="badge text-bg-primary">
-                                  Obrigatória
-                                </span>
-                              ) : null}
-                              <span className="badge text-bg-light border">
-                                {protectionLabel}
-                              </span>
+                            <div>
+                              <div className="pipeline-stage-label">
+                                Etapa {stage.position}
+                              </div>
+                              <h4 className="pipeline-stage-title">
+                                {stage.name}
+                              </h4>
                             </div>
                           </div>
-                          <div className="d-flex gap-2">
+                          <div className="pipeline-stage-actions">
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-primary"
@@ -440,25 +454,50 @@ export default function PipelineCrudPage() {
                             </button>
                           </div>
                         </div>
+                        <div className="pipeline-stage-badges">
+                          <span className="badge text-bg-light border">
+                            {stage.code}
+                          </span>
+                          <span
+                            className={`badge ${stage.active ? "text-bg-success" : "text-bg-secondary"}`}
+                          >
+                            {stage.active ? "Ativa" : "Inativa"}
+                          </span>
+                          {stage.required ? (
+                            <span className="badge text-bg-primary">
+                              Obrigatória
+                            </span>
+                          ) : null}
+                          <span className="badge text-bg-light border">
+                            {protectionLabel}
+                          </span>
+                        </div>
                         {stage.description ? (
-                          <p className="text-body-secondary mb-0">
-                            {stage.description}
-                          </p>
+                          <div className="pipeline-stage-purpose">
+                            <span>Objetivo da etapa</span>
+                            <p>{stage.description}</p>
+                          </div>
                         ) : null}
-                        <div className="small text-body-secondary">
+                        <div className="pipeline-stage-meta">
                           <div>
-                            <strong>Módulo executor:</strong>{" "}
-                            {stage.executionModule || "Não informado"}
+                            <span>Módulo executor</span>
+                            <strong>
+                              {stage.executionModule || "Não informado"}
+                            </strong>
                           </div>
                           <div>
-                            <strong>Pacote raiz:</strong>{" "}
-                            {stage.rootPackage || "Não informado"}
+                            <span>Pacote raiz</span>
+                            <strong>
+                              {stage.rootPackage || "Não informado"}
+                            </strong>
                           </div>
                           <div>
-                            <strong>Modelo OpenAI:</strong>{" "}
-                            {stage.openAiModelName
-                              ? `${stage.openAiModelName} (${stage.openAiModelCode})`
-                              : "Sem modelo fixo"}
+                            <span>Modelo OpenAI</span>
+                            <strong>
+                              {stage.openAiModelName
+                                ? `${stage.openAiModelName} (${stage.openAiModelCode})`
+                                : "Sem modelo fixo"}
+                            </strong>
                           </div>
                         </div>
                       </div>

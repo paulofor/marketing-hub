@@ -129,6 +129,28 @@ class ArquiteturaTest {
             .because("[ARQUITETURA] [EPM] o módulo EPM não deve depender de outros pacotes internos além dos seus repositories canônicos");
 
     @ArchTest
+    static final ArchRule otherPackagesMustNotDependOnFacebookAdsControllers = noClasses()
+            .that()
+            .resideInAPackage("com.marketinghub..")
+            .and()
+            .haveNameNotMatching(".*Test")
+            .and()
+            .resideOutsideOfPackage("com.marketinghub.facebookads.controller..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub.facebookads.controller..")
+            .because("[ARQUITETURA] [BACKEND][FacebookAds] controllers de Facebook Ads são borda HTTP "
+                    + "do próprio pacote e não devem ser consumidos por outros pacotes");
+
+    @ArchTest
+    static final ArchRule facebookAdsControllersMustNotDependOnOtherControllers = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.facebookads.controller..")
+            .should(notDependOnOtherModuleControllers())
+            .because("[ARQUITETURA] [BACKEND][FacebookAds] controllers de Facebook Ads não devem depender "
+                    + "de controllers de outros módulos");
+
+    @ArchTest
     static final ArchRule moisSalesLibraryPackageMustNotDependOnOtherMarketingHubPackages = noClasses()
             .that()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
@@ -632,6 +654,38 @@ class ArquiteturaTest {
             violations.sort(String::compareTo);
             throw new AssertionError(String.join(System.lineSeparator(), violations));
         }
+    }
+
+    /**
+     * Garante que controllers Facebook Ads não consumam controllers de outros módulos.
+     */
+    private static ArchCondition<JavaClass> notDependOnOtherModuleControllers() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][FacebookAds] não depende de controllers de outros módulos") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.getSimpleName().endsWith("Test")) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetPackage = targetClass.getPackageName();
+                    if (!targetPackage.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (!targetPackage.contains(".controller")
+                            || targetPackage.startsWith("com.marketinghub.facebookads.controller")) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][FacebookAds] classe-origem=" + item.getName()
+                            + " possui dependência para controller externo: " + dependency.getDescription()
+                            + " (alvo: " + targetClass.getName() + ")"
+                            + " | regra: a borda HTTP de Facebook Ads deve delegar para services/contratos, "
+                            + "não para controllers de outros módulos.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
     }
 
     /**

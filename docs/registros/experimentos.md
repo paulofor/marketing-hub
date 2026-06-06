@@ -3807,3 +3807,16 @@
   - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
   - `frontend/src/pages/pipeline/PipelineCrudPage.css`
   - `docs/registros/experimentos.md`
+
+## 2026-06-06 — Regras de arquitetura do backend para Facebook Ads
+
+- solicitação: adicionar no backend regras de arquitetura para o pacote de Facebook Ads.
+- raciocínio para solução: o pacote `com.marketinghub.facebookads` já concentra a borda HTTP e o domínio operacional de campanhas, mas ainda não tinha guardas ArchUnit próprias para impedir acoplamento lateral com controllers e pacotes não canônicos.
+- correção aplicada: adicionei no `ArquiteturaTest` regras objetivas para Facebook Ads, sem whitelist ampla de pacotes: proibição de consumo externo dos controllers de Facebook Ads e proibição de controllers Facebook Ads dependerem de controllers de outros módulos.
+- ajuste após revisão: removida a whitelist de domínios auxiliares porque ela era ampla demais e transformava a regra em uma lista frágil de dependências atuais, em vez de proteger a causa-raiz arquitetural: acoplamento indevido entre controllers.
+- documentação sincronizada: o cânone de arquitetura por etapa passou a registrar as regras protegidas para a borda HTTP do pacote `com.marketinghub.facebookads`.
+- testes: executados `mvn -Dtest=ArquiteturaTest test` e `mvn -Dtest=CreativeControllerTest test` com sucesso em `backend/ads-service`; `mvn test` foi reexecutado após o ajuste e falhou em `CreativeControllerTest` por violação de FK na limpeza de dados compartilhados (`targeting_element.hypothesis_id`), enquanto o mesmo teste passou isoladamente.
+- arquivos alterados:
+  - `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`
+  - `docs/canonical/arquitetura-etapas.md`
+  - `docs/registros/experimentos.md`

@@ -120,6 +120,72 @@ class RoutineQualityGateEngineTest {
         assertThat(decision.qualityNotes()).contains("dominadoPorSolucao=true");
     }
 
+
+    /** Deve bloquear texto contaminado por solução mesmo quando os contadores de risco ainda não vieram preenchidos. */
+    @Test
+    void shouldRejectSolutionLanguageDetectedOnlyInCardText() {
+        RoutineQualityDecision decision = engine.evaluate(pending(
+                text("Rotina mistura agenda do cliente com IA software sistema e automação", 8),
+                text("Dores citam falta atraso e retrabalho, mas também app ferramenta curso e oferta", 8),
+                text("Perguntas sobre template landing page e inteligência artificial para atendimento", 8),
+                text("Contexto operacional público do nicho", 8),
+                6,
+                14,
+                2,
+                2,
+                1,
+                0,
+                3,
+                0,
+                2,
+                0,
+                86,
+                84,
+                72,
+                0));
+
+        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes()).contains("riscoTextualSolucao=").contains("dominadoPorSolucao=true");
+    }
+
+    /** Deve reprovar como genérico quando a síntese não informa evidências e fontes auditáveis. */
+    @Test
+    void shouldRejectWhenAuditableEvidenceIsMissing() {
+        RoutineQualityGatePending pending = new RoutineQualityGatePending(
+                10L,
+                1001L,
+                "Cabeleireiros",
+                text("Rotina observada com agenda WhatsApp atendimento cliente e horários", 8),
+                text("Dificuldades concretas com falta atraso remarcação retrabalho e cobrança", 8),
+                text("Perguntas do profissional sobre preço retorno pacote e cancelamento", 8),
+                "",
+                "",
+                "a.com",
+                80,
+                6,
+                14,
+                3,
+                2,
+                2,
+                0,
+                3,
+                0,
+                2,
+                0,
+                86,
+                84,
+                72,
+                0,
+                Instant.parse("2026-06-04T00:00:00Z"));
+
+        RoutineQualityDecision decision = engine.evaluate(pending);
+
+        assertThat(decision.qualityStatus()).isEqualTo("GENERIC");
+        assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes()).contains("evidenciaAuditavel=false");
+    }
+
     /** Deve reprovar texto duplicado ou genérico ainda que existam contadores positivos. */
     @Test
     void shouldRejectGenericOrDuplicatedText() {

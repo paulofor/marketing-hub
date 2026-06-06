@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.dto.FacebookCampaignStopRequestDto;
@@ -15,17 +15,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Agrupa endpoints de solicitações e retorno de parada de campanhas Facebook.
+ */
 @RestController
 @RequestMapping("/api/facebook-campaigns")
 public class FacebookCampaignStopController {
 
     private final FacebookCampaignStopService stopService;
 
+    // Executa a operação FacebookCampaignStopController da integração Facebook Ads.
     public FacebookCampaignStopController(FacebookCampaignStopService stopService) {
         this.stopService = stopService;
     }
 
     @GetMapping("/stop-requests")
+    // Executa a operação listStopRequests da integração Facebook Ads.
     public List<FacebookCampaignStopRequestDto> listStopRequests() {
         return stopService.listPendingStopRequests().stream()
                 .map(this::toDto)
@@ -41,6 +46,7 @@ public class FacebookCampaignStopController {
         stopService.registerStopResult(campaignId, success, message);
     }
 
+    // Executa a operação toDto da integração Facebook Ads.
     private FacebookCampaignStopRequestDto toDto(FacebookAdsCampaign campaign) {
         return new FacebookCampaignStopRequestDto(
                 campaign.getId(),

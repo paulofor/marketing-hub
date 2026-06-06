@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.playbook.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetJobDetailDto;
 import com.marketinghub.facebookads.playbook.dto.ExperimentAdSetWorkflowDto;
@@ -17,17 +17,22 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST endpoints so the UI can inspect and trigger the playbook workflow.
  */
+/**
+ * Agrupa endpoints do workflow do playbook de conjuntos de anúncios Facebook.
+ */
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/adset-playbook")
 public class ExperimentAdSetWorkflowController {
 
     private final ExperimentAdSetWorkflowService workflowService;
 
+    // Executa a operação ExperimentAdSetWorkflowController da integração Facebook Ads.
     public ExperimentAdSetWorkflowController(ExperimentAdSetWorkflowService workflowService) {
         this.workflowService = workflowService;
     }
 
     @GetMapping
+    // Executa a operação getWorkflow da integração Facebook Ads.
     public ExperimentAdSetWorkflowDto getWorkflow(@PathVariable Long experimentId) {
         return workflowService.getDetails(experimentId);
     }

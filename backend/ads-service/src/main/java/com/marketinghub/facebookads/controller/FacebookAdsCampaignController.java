@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.repository.jpa.experiment.AdSetRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -48,6 +48,9 @@ import java.util.stream.Collectors;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
+/**
+ * Agrupa endpoints de campanhas Facebook Ads consumidos pela UI e pelo worker.
+ */
 @RestController
 @RequestMapping("/api/facebook-campaigns")
 public class FacebookAdsCampaignController {
@@ -92,6 +95,7 @@ public class FacebookAdsCampaignController {
     }
 
     @GetMapping("/experiments-ready")
+    // Executa a operação experimentsReady da integração Facebook Ads.
     public List<ExperimentSummary> experimentsReady() {
         Map<Long, LeadPortalExperimentMetricsDto> leadPortalMetrics = indexLeadPortalMetrics();
         return experimentService
@@ -115,6 +119,7 @@ public class FacebookAdsCampaignController {
                 .toList();
     }
 
+    // Executa a operação indexLeadPortalMetrics da integração Facebook Ads.
     private Map<Long, LeadPortalExperimentMetricsDto> indexLeadPortalMetrics() {
         List<LeadPortalExperimentMetricsDto> metrics = leadPortalMetricsService.listExperimentMetrics();
         if (metrics == null || metrics.isEmpty()) {
@@ -129,6 +134,7 @@ public class FacebookAdsCampaignController {
     }
 
     @GetMapping("/metrics/sync-targets")
+    // Executa a operação metricsSyncTargets da integração Facebook Ads.
     public List<CampaignMetricsSyncTarget> metricsSyncTargets() {
         return campaignRepository.findAllByExperimentStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING)
                 .stream()
@@ -139,6 +145,7 @@ public class FacebookAdsCampaignController {
     @PostMapping
     @Transactional
     @ResponseStatus(HttpStatus.CREATED)
+    // Executa a operação create da integração Facebook Ads.
     public void create(@RequestBody CreateCampaignRequest req) {
         Experiment experiment;
         try {
@@ -226,6 +233,7 @@ public class FacebookAdsCampaignController {
         campaign.setMetricsLastSyncedAt(Instant.now());
     }
 
+    // Executa a operação resolveExperimentAdSet da integração Facebook Ads.
     private AdSet resolveExperimentAdSet(CreateCampaignRequest.AdSet adSetReq, Experiment experiment) {
         if (adSetReq.experimentAdSetId() == null) {
             return null;
@@ -260,6 +268,7 @@ public class FacebookAdsCampaignController {
         return adSet;
     }
 
+    // Executa a operação mapAdCreative da integração Facebook Ads.
     private FacebookAdsAdCreative mapAdCreative(CreateCampaignRequest.AdCreative creativeReq) {
         FacebookAdsAdCreative creative = new FacebookAdsAdCreative();
         creative.setId(creativeReq.id());
@@ -282,6 +291,7 @@ public class FacebookAdsCampaignController {
         return ad;
     }
 
+    // Executa a operação resolveAdCreativeRequests da integração Facebook Ads.
     private List<CreateCampaignRequest.AdCreative> resolveAdCreativeRequests(CreateCampaignRequest req) {
         List<CreateCampaignRequest.AdCreative> creatives = new ArrayList<>();
         if (req.adCreative() != null) {
@@ -295,6 +305,7 @@ public class FacebookAdsCampaignController {
         return creatives;
     }
 
+    // Executa a operação resolveAdRequests da integração Facebook Ads.
     private List<CreateCampaignRequest.Ad> resolveAdRequests(CreateCampaignRequest req) {
         List<CreateCampaignRequest.Ad> ads = new ArrayList<>();
         if (req.ad() != null) {
@@ -308,6 +319,7 @@ public class FacebookAdsCampaignController {
         return ads;
     }
 
+    // Executa a operação resolveBidStrategy da integração Facebook Ads.
     private String resolveBidStrategy(String bidStrategy) {
         if (StringUtils.hasText(bidStrategy)) {
             return bidStrategy.trim();
@@ -315,6 +327,7 @@ public class FacebookAdsCampaignController {
         return "LOWEST_COST_WITHOUT_CAP";
     }
 
+    // Executa a operação parseLong da integração Facebook Ads.
     private Long parseLong(String numeric) {
         if (!StringUtils.hasText(numeric)) {
             return null;
@@ -326,6 +339,7 @@ public class FacebookAdsCampaignController {
         }
     }
 
+    // Executa a operação resolveMetaId da integração Facebook Ads.
     private String resolveMetaId(String externalId, String fallbackId) {
         if (StringUtils.hasText(externalId)) {
             return externalId.trim();
@@ -336,6 +350,7 @@ public class FacebookAdsCampaignController {
         return null;
     }
 
+    // Executa a operação isUuid da integração Facebook Ads.
     private boolean isUuid(String value) {
         try {
             UUID.fromString(value.trim());
@@ -345,6 +360,7 @@ public class FacebookAdsCampaignController {
         }
     }
 
+    // Executa a operação buildPromotedObjectJson da integração Facebook Ads.
     private String buildPromotedObjectJson(String pageId) {
         if (!StringUtils.hasText(pageId)) {
             return null;
@@ -354,6 +370,7 @@ public class FacebookAdsCampaignController {
         return node.toString();
     }
 
+    // Executa a operação buildTargetingJson da integração Facebook Ads.
     private String buildTargetingJson(String targetCountry, String targetingJson, String savedAudienceId) {
         ObjectNode node;
         if (StringUtils.hasText(targetingJson)) {
@@ -386,6 +403,7 @@ public class FacebookAdsCampaignController {
         return node.toString();
     }
 
+    // Executa a operação buildLinkDataJson da integração Facebook Ads.
     private String buildLinkDataJson(CreateCampaignRequest.AdCreative creativeReq) {
         ObjectNode linkData = objectMapper.createObjectNode();
         if (StringUtils.hasText(creativeReq.websiteUrl())) {
@@ -415,6 +433,7 @@ public class FacebookAdsCampaignController {
         return linkData.toString();
     }
 
+    // Executa a operação toSummary da integração Facebook Ads.
     private ExperimentSummary toSummary(Experiment experiment, LeadPortalExperimentMetricsDto leadPortalMetrics) {
         String pageId = resolveExperimentPageId(experiment);
         return new ExperimentSummary(
@@ -438,6 +457,7 @@ public class FacebookAdsCampaignController {
                 toMetricSummary(experiment.getCampaignMetric()));
     }
 
+    // Executa a operação resolveExperimentPageId da integração Facebook Ads.
     private String resolveExperimentPageId(Experiment experiment) {
         if (experiment.getFacebookPage() == null) {
             return null;
@@ -445,6 +465,7 @@ public class FacebookAdsCampaignController {
         return experiment.getFacebookPage().getPageId();
     }
 
+    // Executa a operação toLeadPortalFunnelSummary da integração Facebook Ads.
     private LeadPortalFunnelSummary toLeadPortalFunnelSummary(LeadPortalExperimentMetricsDto metrics) {
         if (metrics == null) {
             return null;
@@ -453,6 +474,7 @@ public class FacebookAdsCampaignController {
         return new LeadPortalFunnelSummary(metrics.leadsAccessed(), submissions);
     }
 
+    // Executa a operação toLeadPortalFlowSummary da integração Facebook Ads.
     private LeadPortalFlowSummary toLeadPortalFlowSummary(Experiment experiment) {
         LeadPortalFlow flow = experiment.getLeadPortalFlow();
         if (flow == null) {
@@ -466,6 +488,7 @@ public class FacebookAdsCampaignController {
         );
     }
 
+    // Executa a operação toFacebookPageSummary da integração Facebook Ads.
     private FacebookPageSummary toFacebookPageSummary(Experiment experiment) {
         if (experiment.getFacebookPage() == null) {
             return null;
@@ -475,6 +498,7 @@ public class FacebookAdsCampaignController {
         return new FacebookPageSummary(page.getId(), accountId, page.getPageId(), page.getName());
     }
 
+    // Executa a operação toInstagramAccountSummary da integração Facebook Ads.
     private InstagramAccountSummary toInstagramAccountSummary(Experiment experiment) {
         if (experiment.getInstagramAccount() == null) {
             return null;
@@ -483,6 +507,7 @@ public class FacebookAdsCampaignController {
         return new InstagramAccountSummary(account.getId(), account.getHandle(), account.getCode(), account.getName());
     }
 
+    // Executa a operação toInstantFormSummary da integração Facebook Ads.
     private InstantFormSummary toInstantFormSummary(Experiment experiment) {
         if (experiment.getFacebookInstantForm() == null) {
             return null;
@@ -499,6 +524,7 @@ public class FacebookAdsCampaignController {
         );
     }
 
+    // Executa a operação toMetricSummary da integração Facebook Ads.
     private CampaignMetricSummary toMetricSummary(ExperimentCampaignMetric metric) {
         if (metric == null) {
             return null;
@@ -519,6 +545,7 @@ public class FacebookAdsCampaignController {
                 lastSyncError);
     }
 
+    // Executa a operação isNextStepInstantForm da integração Facebook Ads.
     private boolean isNextStepInstantForm(Experiment experiment) {
         if (experiment.getJourneyTemplate() == null) {
             return false;

@@ -1,4 +1,9 @@
-package com.marketinghub.ads;
+package com.marketinghub.facebookads.controller;
+
+import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.ads.FacebookTokenRenewalStatus;
+import com.marketinghub.ads.FacebookTokenRevalidationService;
+import com.marketinghub.ads.FacebookWorkerValidationError;
 
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import org.slf4j.Logger;
@@ -12,6 +17,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Agrupa endpoints de conta Facebook usados pela UI e pelo worker de Facebook Ads.
+ */
 @RestController
 @RequestMapping("/api/accounts/facebook")
 public class FacebookAccountController {
@@ -28,11 +36,13 @@ public class FacebookAccountController {
     }
 
     @GetMapping
+    // Executa a operação findAll da integração Facebook Ads.
     public List<FacebookAccount> findAll() {
         return repository.findAll();
     }
 
     @PostMapping
+    // Executa a operação create da integração Facebook Ads.
     public FacebookAccount create(@RequestBody FacebookAccount account) {
         normalizeAccount(account);
         if (account.getAccessToken() == null) {
@@ -57,6 +67,7 @@ public class FacebookAccountController {
     }
 
     @PutMapping("/{id}")
+    // Executa a operação update da integração Facebook Ads.
     public FacebookAccount update(@PathVariable Long id, @RequestBody FacebookAccount account) {
         FacebookAccount persisted = repository.findById(id).orElseThrow();
         normalizeAccount(account);
@@ -132,6 +143,7 @@ public class FacebookAccountController {
     }
 
     @GetMapping("/worker-config")
+    // Executa a operação workerConfiguration da integração Facebook Ads.
     public FacebookWorkerConfiguration workerConfiguration() {
         FacebookAccount account = repository
             .findFirstByWorkerEnabledTrue()
@@ -141,6 +153,7 @@ public class FacebookAccountController {
     }
 
     @GetMapping("/renewal/eligible")
+    // Executa a operação findEligibleForRenewal da integração Facebook Ads.
     public List<FacebookAccountRenewalCandidate> findEligibleForRenewal() {
         return repository
             .findAll()
@@ -193,6 +206,7 @@ public class FacebookAccountController {
     }
 
     @PostMapping("/{id}/token/revalidation")
+    // Executa a operação revalidateToken da integração Facebook Ads.
     public FacebookTokenRevalidationResponse revalidateToken(@PathVariable Long id) {
         FacebookAccount account = repository.findById(id).orElseThrow();
         validateRevalidationPrerequisites(account);
@@ -208,10 +222,12 @@ public class FacebookAccountController {
     }
 
     @DeleteMapping("/{id}")
+    // Executa a operação delete da integração Facebook Ads.
     public void delete(@PathVariable Long id) {
         repository.deleteById(id);
     }
 
+    // Executa a operação normalizeAccount da integração Facebook Ads.
     private void normalizeAccount(FacebookAccount account) {
         account.setName(trim(account.getName()));
         account.setCurrency(trim(account.getCurrency()));
@@ -250,6 +266,7 @@ public class FacebookAccountController {
         }
     }
 
+    // Executa a operação enforceSingleWorkerEnabled da integração Facebook Ads.
     private void enforceSingleWorkerEnabled(FacebookAccount saved) {
         if (!saved.isWorkerEnabled()) {
             return;
@@ -265,6 +282,7 @@ public class FacebookAccountController {
             });
     }
 
+    // Executa a operação toWorkerConfiguration da integração Facebook Ads.
     private FacebookWorkerConfiguration toWorkerConfiguration(FacebookAccount account) {
         String creativeMessageTemplate = StringUtils.hasText(account.getDefaultCreativeMessageTemplate())
             ? account.getDefaultCreativeMessageTemplate()
@@ -296,6 +314,7 @@ public class FacebookAccountController {
         );
     }
 
+    // Executa a operação validateWorkerConfiguration da integração Facebook Ads.
     private void validateWorkerConfiguration(FacebookAccount account) {
         requireField(account, account.getAccessToken(), "access token", FacebookWorkerValidationError.ACCESS_TOKEN_MISSING);
         requireField(account, account.getAdAccountId(), "ad account id", FacebookWorkerValidationError.AD_ACCOUNT_ID_MISSING);
@@ -359,6 +378,7 @@ public class FacebookAccountController {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.apiMessage());
     }
 
+    // Executa a operação recordWorkerValidationFailure da integração Facebook Ads.
     private void recordWorkerValidationFailure(FacebookAccount account, FacebookWorkerValidationError error) {
         LocalDateTime now = LocalDateTime.now();
         account.setWorkerLastValidationAt(now);
@@ -367,6 +387,7 @@ public class FacebookAccountController {
         repository.save(account);
     }
 
+    // Executa a operação recordWorkerValidationSuccess da integração Facebook Ads.
     private void recordWorkerValidationSuccess(FacebookAccount account) {
         LocalDateTime now = LocalDateTime.now();
         account.setWorkerLastValidationAt(now);
@@ -380,10 +401,12 @@ public class FacebookAccountController {
         repository.save(account);
     }
 
+    // Executa a operação trim da integração Facebook Ads.
     private static String trim(String value) {
         return value == null ? null : value.trim();
     }
 
+    // Executa a operação trimToNull da integração Facebook Ads.
     private static String trimToNull(String value) {
         if (value == null) {
             return null;
@@ -392,6 +415,7 @@ public class FacebookAccountController {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    // Executa a operação validateRevalidationPrerequisites da integração Facebook Ads.
     private void validateRevalidationPrerequisites(FacebookAccount account) {
         if (!StringUtils.hasText(account.getAccessToken())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conta sem token configurado para gerar um novo acesso");

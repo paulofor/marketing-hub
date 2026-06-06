@@ -1,4 +1,7 @@
-package com.marketinghub.ads;
+package com.marketinghub.facebookads.controller;
+
+import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.ads.FacebookPage;
 
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
@@ -11,6 +14,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Agrupa endpoints de páginas Facebook vinculadas às contas de mídia.
+ */
 @RestController
 @RequestMapping("/api/accounts/facebook/{accountId}/pages")
 public class FacebookPageController {
@@ -27,6 +33,7 @@ public class FacebookPageController {
     }
 
     @GetMapping
+    // Executa a operação list da integração Facebook Ads.
     public List<FacebookPageDto> list(@PathVariable Long accountId) {
         ensureAccountExists(accountId);
         return pageRepository.findByAccountId(accountId).stream()
@@ -68,6 +75,7 @@ public class FacebookPageController {
     @DeleteMapping("/{pageRecordId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
+    // Executa a operação delete da integração Facebook Ads.
     public void delete(@PathVariable Long accountId, @PathVariable Long pageRecordId) {
         ensureAccountExists(accountId);
         FacebookPage page = pageRepository.findById(pageRecordId)
@@ -77,15 +85,18 @@ public class FacebookPageController {
         pageRepository.delete(page);
     }
 
+    // Executa a operação ensureAccountExists da integração Facebook Ads.
     private FacebookAccount ensureAccountExists(Long accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    // Executa a operação toDto da integração Facebook Ads.
     private static FacebookPageDto toDto(FacebookPage page) {
         return new FacebookPageDto(page.getId(), page.getAccount().getId(), page.getPageId(), page.getName());
     }
 
+    // Executa a operação normalize da integração Facebook Ads.
     private static String normalize(String value) {
         if (value == null) {
             return null;

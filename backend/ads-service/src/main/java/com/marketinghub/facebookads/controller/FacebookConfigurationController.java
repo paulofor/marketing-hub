@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Agrupa endpoints de diagnóstico da configuração operacional de Facebook Ads.
+ */
 @RestController
 @RequestMapping("/api/facebook")
 public class FacebookConfigurationController {
@@ -30,6 +33,7 @@ public class FacebookConfigurationController {
     }
 
     @GetMapping("/configuration-status")
+    // Executa a operação configurationStatus da integração Facebook Ads.
     public FacebookConfigurationStatus configurationStatus() {
         boolean hasConfiguredPages = pageRepository.count() > 0;
         List<FacebookAccount> accounts = accountRepository.findAll();
@@ -38,6 +42,7 @@ public class FacebookConfigurationController {
         return new FacebookConfigurationStatus(hasConfiguredPages, worker, tokenRenewal);
     }
 
+    // Executa a operação buildWorkerDiagnostics da integração Facebook Ads.
     private FacebookConfigurationStatus.WorkerDiagnostics buildWorkerDiagnostics(List<FacebookAccount> accounts) {
         FacebookAccount workerAccount = accounts
             .stream()
@@ -148,6 +153,7 @@ public class FacebookConfigurationController {
         messages.add(new FacebookConfigurationStatus.DiagnosticMessage(error.code(), error.userMessage()));
     }
 
+    // Executa a operação buildTokenRenewalDiagnostics da integração Facebook Ads.
     private FacebookConfigurationStatus.TokenRenewalDiagnostics buildTokenRenewalDiagnostics(List<FacebookAccount> accounts) {
         List<FacebookAccount> enabledAccounts = accounts
             .stream()

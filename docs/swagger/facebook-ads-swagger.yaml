@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Facebook Ads API
+  version: 1.0.0
+  description: |
+    Contrato dos endpoints do backend que atendem a integração com Facebook Ads.
+    A implementação canônica dos controllers fica concentrada no pacote
+    `com.marketinghub.facebookads.controller`, mantendo as rotas públicas legadas
+    para compatibilidade com frontend e workers.
+tags:
+  - name: Facebook Accounts
+  - name: Facebook Pages
+  - name: Facebook Interests
+  - name: Facebook Instant Forms
+  - name: Facebook Campaigns
+  - name: Facebook Ad Sets
+  - name: Facebook Pixels
+  - name: Facebook Configuration
+  - name: Facebook Playbook
+paths:
+  /api/accounts/facebook:
+    get:
+      tags: [Facebook Accounts]
+      summary: Lista contas do Facebook cadastradas.
+      responses: { '200': { description: Contas retornadas. } }
+    post:
+      tags: [Facebook Accounts]
+      summary: Cria uma conta do Facebook preservando campos operacionais enviados.
+      responses: { '200': { description: Conta criada. } }
+  /api/accounts/facebook/{id}:
+    put:
+      tags: [Facebook Accounts]
+      summary: Atualiza uma conta do Facebook sem descartar campos não enviados pela UI.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Conta atualizada. } }
+    delete:
+      tags: [Facebook Accounts]
+      summary: Remove uma conta do Facebook.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '204': { description: Conta removida. } }
+  /api/accounts/facebook/worker-config:
+    get:
+      tags: [Facebook Accounts]
+      summary: Retorna a conta habilitada para o Facebook Ads Worker.
+      responses: { '200': { description: Configuração operacional do worker. } }
+  /api/accounts/facebook/renewal/eligible:
+    get:
+      tags: [Facebook Accounts]
+      summary: Lista contas elegíveis para renovação de token.
+      responses: { '200': { description: Candidatas retornadas. } }
+  /api/accounts/facebook/{id}/token/renewal:
+    post:
+      tags: [Facebook Accounts]
+      summary: Registra resultado de renovação do token da conta.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Renovação registrada. } }
+  /api/accounts/facebook/{id}/token/revalidation:
+    post:
+      tags: [Facebook Accounts]
+      summary: Revalida o token da conta com a integração Meta.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Revalidação registrada. } }
+  /api/accounts/facebook/{accountId}/pages:
+    get:
+      tags: [Facebook Pages]
+      summary: Lista páginas vinculadas à conta Facebook.
+      parameters: [ { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Páginas retornadas. } }
+    post:
+      tags: [Facebook Pages]
+      summary: Vincula uma página à conta Facebook.
+      parameters: [ { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Página criada. } }
+  /api/accounts/facebook/{accountId}/pages/{pageRecordId}:
+    put:
+      tags: [Facebook Pages]
+      summary: Atualiza uma página vinculada à conta Facebook.
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: pageRecordId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses: { '200': { description: Página atualizada. } }
+    delete:
+      tags: [Facebook Pages]
+      summary: Remove uma página vinculada quando não houver experimentos dependentes.
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: pageRecordId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses: { '204': { description: Página removida. } }
+  /api/facebook-interests/pending:
+    get:
+      tags: [Facebook Interests]
+      summary: Lista interesses pendentes de ID da Meta.
+      responses: { '200': { description: Interesses pendentes retornados. } }
+  /api/facebook-interests:
+    post:
+      tags: [Facebook Interests]
+      summary: Cria interesse Facebook para enriquecimento.
+      responses: { '201': { description: Interesse criado. } }
+  /api/facebook-interests/{id}:
+    patch:
+      tags: [Facebook Interests]
+      summary: Atualiza ID/status de um interesse Facebook.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Interesse atualizado. } }
+  /api/hypotheses/{hypothesisId}/instant-forms:
+    get:
+      tags: [Facebook Instant Forms]
+      summary: Lista formulários instantâneos por hipótese.
+      parameters: [ { name: hypothesisId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { '200': { description: Formulários retornados. } }
+    post:
+      tags: [Facebook Instant Forms]
+      summary: Cria rascunho de formulário instantâneo para hipótese.
+      parameters: [ { name: hypothesisId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { '201': { description: Formulário criado. } }
+  /api/instant-forms/ready-to-publish:
+    get:
+      tags: [Facebook Instant Forms]
+      summary: Lista formulários aprovados prontos para publicação pelo worker.
+      responses: { '200': { description: Formulários prontos retornados. } }
+  /api/instant-forms/approved-drafts:
+    get:
+      tags: [Facebook Instant Forms]
+      summary: Lista rascunhos aprovados para publicação.
+      responses: { '200': { description: Rascunhos aprovados retornados. } }
+  /api/instant-forms/{id}:
+    get:
+      tags: [Facebook Instant Forms]
+      summary: Busca formulário instantâneo por ID.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Formulário retornado. } }
+    delete:
+      tags: [Facebook Instant Forms]
+      summary: Remove formulário instantâneo.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '204': { description: Formulário removido. } }
+  /api/instant-forms/{id}/approval:
+    patch:
+      tags: [Facebook Instant Forms]
+      summary: Atualiza aprovação do formulário instantâneo.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Aprovação atualizada. } }
+  /api/instant-forms/{id}/publication:
+    patch:
+      tags: [Facebook Instant Forms]
+      summary: Atualiza dados de publicação do formulário instantâneo.
+      parameters: [ { name: id, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Publicação atualizada. } }
+  /api/facebook-campaigns/experiments-ready:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista experimentos liberados para publicação de campanhas.
+      responses: { '200': { description: Experimentos prontos retornados. } }
+  /api/facebook-campaigns/experiments:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista experimentos por status para leitura do worker.
+      responses: { '200': { description: Experimentos retornados. } }
+  /api/facebook-campaigns/metrics/sync-targets:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista campanhas que precisam sincronizar métricas da Meta.
+      responses: { '200': { description: Alvos de sincronização retornados. } }
+  /api/facebook-campaigns:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Registra campanha publicada pelo Facebook Ads Worker.
+      responses: { '200': { description: Campanha registrada. } }
+  /api/facebook-campaigns/{campaignId}/metrics:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Atualiza métricas sincronizadas para a campanha.
+      parameters: [ { name: campaignId, in: path, required: true, schema: { type: string } } ]
+      responses: { '202': { description: Métricas aceitas. } }
+  /api/facebook-campaigns/{campaignId}/metrics-error:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Registra falha de sincronização de métricas da campanha.
+      parameters: [ { name: campaignId, in: path, required: true, schema: { type: string } } ]
+      responses: { '202': { description: Erro registrado. } }
+  /api/facebook-campaigns/stop-requests:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista campanhas com solicitação de parada pendente.
+      responses: { '200': { description: Solicitações retornadas. } }
+  /api/facebook-campaigns/{campaignId}/stop-results:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Registra resultado de parada de campanha na Meta.
+      parameters: [ { name: campaignId, in: path, required: true, schema: { type: string } } ]
+      responses: { '202': { description: Resultado aceito. } }
+  /api/experiments/{experimentId}/facebook-campaigns:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista campanhas Facebook vinculadas ao experimento.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Campanhas retornadas. } }
+  /api/experiments/{experimentId}/facebook-campaigns/reset-preview:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Simula reset das campanhas Facebook do experimento.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Prévia retornada. } }
+  /api/experiments/{experimentId}/facebook-campaigns/reset:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Executa reset das campanhas Facebook do experimento.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Reset executado. } }
+  /api/facebook-adsets/experiments-ready:
+    get:
+      tags: [Facebook Ad Sets]
+      summary: Lista experimentos prontos para criação de conjuntos de anúncios.
+      responses: { '200': { description: Experimentos retornados. } }
+  /api/facebook-pixels/niches-ready:
+    get:
+      tags: [Facebook Pixels]
+      summary: Lista nichos prontos para criação de pixel.
+      responses: { '200': { description: Nichos retornados. } }
+  /api/facebook-pixels:
+    post:
+      tags: [Facebook Pixels]
+      summary: Registra pixel criado para um nicho.
+      responses: { '200': { description: Nicho atualizado. } }
+  /api/facebook-pixels/conversions-ready:
+    get:
+      tags: [Facebook Pixels]
+      summary: Lista conversões prontas para envio à Meta.
+      responses: { '200': { description: Conversões retornadas. } }
+  /api/facebook-pixels/conversions/{purchaseId}/ack:
+    post:
+      tags: [Facebook Pixels]
+      summary: Confirma envio de conversão à Meta.
+      parameters: [ { name: purchaseId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '202': { description: Conversão confirmada. } }
+  /api/facebook/configuration-status:
+    get:
+      tags: [Facebook Configuration]
+      summary: Retorna diagnóstico de configuração da integração Facebook Ads.
+      responses: { '200': { description: Diagnóstico retornado. } }
+  /api/experiments/{experimentId}/adset-playbook:
+    get:
+      tags: [Facebook Playbook]
+      summary: Consulta workflow do playbook de adsets por experimento.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Workflow retornado. } }
+  /api/experiments/{experimentId}/adset-playbook/start:
+    post:
+      tags: [Facebook Playbook]
+      summary: Inicia workflow do playbook de adsets.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '202': { description: Workflow iniciado. } }
+  /api/experiments/{experimentId}/adset-playbook/jobs/{jobId}:
+    get:
+      tags: [Facebook Playbook]
+      summary: Consulta detalhes de job do playbook de adsets.
+      parameters:
+        - { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: jobId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses: { '200': { description: Job retornado. } }
+  /internal/adset-playbook/jobs/claim:
+    post:
+      tags: [Facebook Playbook]
+      summary: Permite que workers internos reivindiquem jobs do playbook.
+      responses: { '200': { description: Jobs reivindicados. } }
+  /internal/adset-playbook/jobs/{jobId}/complete:
+    post:
+      tags: [Facebook Playbook]
+      summary: Marca job interno do playbook como concluído.
+      parameters: [ { name: jobId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '202': { description: Job concluído. } }
+  /internal/adset-playbook/jobs/{jobId}/fail:
+    post:
+      tags: [Facebook Playbook]
+      summary: Marca job interno do playbook como falho.
+      parameters: [ { name: jobId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '202': { description: Job falho registrado. } }
+  /api/experiments/{experimentId}/facebook-api-logs:
+    get:
+      tags: [Facebook Playbook]
+      summary: Lista logs da API Facebook associados ao experimento.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '200': { description: Logs retornados. } }
+    post:
+      tags: [Facebook Playbook]
+      summary: Ingere logs brutos da API Facebook para auditoria operacional.
+      parameters: [ { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } } ]
+      responses: { '202': { description: Logs aceitos. } }

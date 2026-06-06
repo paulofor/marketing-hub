@@ -3696,6 +3696,16 @@
   - frontend/src/api/pipeline/types.ts
   - frontend/src/api/pipeline/usePipelines.ts
 
+## 2026-06-06 02:07:00 UTC
+- solicitação: ajustar a tela `/facebook-campaigns` para mostrar os registros mais recentes no começo e paginar a listagem com 25 itens por página.
+- raciocínio para a solução: o endpoint atual já fornece todos os experimentos necessários por status; a causa do esforço visual estava na ordenação e volume renderizado no frontend, então a correção foi aplicada na apresentação sem criar novo contrato backend.
+- foi feito: a tela de Experimentos para Campanha passou a ordenar por ID decrescente como proxy dos cadastros mais recentes, exibir o contador de intervalo da página, limitar a tabela a 25 experimentos e oferecer navegação anterior/próxima e por número de página.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/facebook/FacebookCampaignExperimentsPage.tsx
+  - frontend/src/api/useFacebookCampaignExperiments.ts
 
 ## 2026-06-06 — Remoção de criação manual de pipelines e etapas no frontend
 

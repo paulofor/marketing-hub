@@ -140,12 +140,6 @@ class FacebookCampaignServiceTest {
             () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
         );
         backend.enqueueConditionalResponse(
-            request -> request.getPath() != null
-                && request.getPath().startsWith("/api/adsets?experimentId=")
-                && "GET".equals(request.getMethod()),
-            () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
-        );
-        backend.enqueueConditionalResponse(
             request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath())
                 && "GET".equals(request.getMethod()),
             () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
@@ -311,8 +305,8 @@ class FacebookCampaignServiceTest {
         assertEquals("20", adPayload.get("adset_id").asText());
         assertEquals("30", adPayload.get("creative").get("creative_id").asText());
 
-        RecordedRequest adSetsFallbackGet = takeBackendRequest("backend request");
-        assertEquals("/api/adsets?experimentId=1", adSetsFallbackGet.getPath());
+        RecordedRequest manualTargetingRequest = takeBackendRequest("backend request");
+        assertEquals("/api/facebook-adsets/experiments-ready", manualTargetingRequest.getPath());
 
         RecordedRequest postBackend = takeBackendRequestMatching(
             "campaign report",
@@ -416,92 +410,6 @@ class FacebookCampaignServiceTest {
         assertTrue(cleanupDelete.getPath().startsWith("/v23.0/99"));
     }
 
-    @Test
-    void usesAudiencePipelineTargetingWhenCreatingAdSet() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
-            .addHeader("Content-Type", "application/json"));
-        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[]")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":900,\"experimentId\":1,\"location\":\"Brasil\",\"targetingRequestId\":\"1c9fc7e0-5731-4453-a9f7-a4d404fb80fd\",\"targetingJson\":null,\"prompt\":\"Detalhes\",\"model\":\"gpt-4\"}]")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{\"candidates\":[{\"id\":11,\"tipo\":\"INTEREST\",\"status\":\"VALIDATED\",\"options\":[{\"facebook_id\":\"601\",\"name\":\"Interesse A\",\"type\":\"INTEREST\"},{\"facebook_id\":\"602\",\"name\":\"Interesse B\",\"type\":\"INTEREST\"}]},{\"id\":12,\"tipo\":\"WORK_POSITION\",\"status\":\"VALIDATED\",\"options\":[{\"facebook_id\":\"701\",\"name\":\"Cargo 1\",\"type\":\"WORK_POSITION\"}]},{\"id\":13,\"tipo\":\"BEHAVIOR\",\"status\":\"VALIDATED\",\"options\":[{\"facebook_id\":\"801\",\"name\":\"Comportamento X\",\"type\":\"BEHAVIOR\"},{\"facebook_id\":\"802\",\"name\":\"Comportamento Y\",\"type\":\"BEHAVIOR\"}]}]}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
-
-        service.createCampaignsFromExperiments();
-
-        takeBackendRequest("backend request"); // experiments ready
-        takeBackendRequest("backend request"); // creatives
-        RecordedRequest playbookRequest = takeBackendRequestMatching(
-            "playbook request",
-            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
-                && "GET".equals(request.getMethod())
-        );
-        assertEquals("/api/experiments/1/adset-playbook", playbookRequest.getPath());
-        RecordedRequest adSetsFallbackRequest = takeBackendRequest("backend request");
-        assertEquals("/api/adsets?experimentId=1", adSetsFallbackRequest.getPath());
-        RecordedRequest targetingRequest = takeBackendRequestMatching(
-            "targeting request",
-            request -> "/api/targeting/requests/1c9fc7e0-5731-4453-a9f7-a4d404fb80fd?includeCandidates=true".equals(request.getPath())
-                && "GET".equals(request.getMethod())
-        );
-
-        RecordedRequest campaignRequest = takeFacebookRequest("facebook request");
-        assertEquals("/v23.0/act_1/campaigns", campaignRequest.getPath());
-
-        RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
-        assertEquals("/v23.0/act_1/adsets", adSetRequest.getPath());
-        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        JsonNode targeting = adSetPayload.get("targeting");
-        assertFalse(targeting.has("saved_audience_id"));
-        assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
-        JsonNode interests = targeting.get("interests");
-        assertEquals(2, interests.size());
-        assertEquals("Interesse A", interests.get(0).get("name").asText());
-        assertEquals("Interesse B", interests.get(1).get("name").asText());
-        JsonNode workPositions = targeting.get("work_positions");
-        assertEquals(1, workPositions.size());
-        assertEquals("Cargo 1", workPositions.get(0).get("name").asText());
-        JsonNode behaviors = targeting.get("behaviors");
-        assertEquals(2, behaviors.size());
-        assertEquals("Comportamento X", behaviors.get(0).get("name").asText());
-        assertEquals("Comportamento Y", behaviors.get(1).get("name").asText());
-
-        takeFacebookRequest("facebook request"); // ad creative
-        takeFacebookRequest("facebook request"); // ad
-
-        takeBackendRequestMatching(
-            "campaign report",
-            request -> "/api/facebook-campaigns".equals(request.getPath()) && "POST".equals(request.getMethod())
-        );
-        takeBackendRequestMatching(
-            "mark running",
-            request -> "/api/experiments/1/status?status=RUNNING".equals(request.getPath()) && "PATCH".equals(request.getMethod())
-        );
-    }
     @Test
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{"
@@ -980,7 +888,7 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", secondGet.getPath());
 
         assertEquals(2, facebook.getRequestCount());
-        assertEquals(9, backend.getRequestCount());
+        assertEquals(8, backend.getRequestCount());
     }
 
     @Test
@@ -1065,11 +973,11 @@ class FacebookCampaignServiceTest {
         RecordedRequest expiredCampaignRequest = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", expiredCampaignRequest.getPath());
 
-        RecordedRequest firstAdSetsFallbackRequest = takeBackendRequestMatching(
-            "first fallback adsets request",
-            request -> "/api/adsets?experimentId=1".equals(request.getPath()) && "GET".equals(request.getMethod())
+        RecordedRequest firstManualTargetingRequest = takeBackendRequestMatching(
+            "first manual targeting package request",
+            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath()) && "GET".equals(request.getMethod())
         );
-        assertEquals("/api/adsets?experimentId=1", firstAdSetsFallbackRequest.getPath());
+        assertEquals("/api/facebook-adsets/experiments-ready", firstManualTargetingRequest.getPath());
 
         RecordedRequest secondExperimentRequest = takeBackendRequestMatching(
             "second experiments-ready request",
@@ -1161,11 +1069,11 @@ class FacebookCampaignServiceTest {
         RecordedRequest expiredCampaign = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", expiredCampaign.getPath());
 
-        RecordedRequest firstAdSetsFallbackRequest = takeBackendRequestMatching(
-            "first fallback adsets request",
-            request -> "/api/adsets?experimentId=1".equals(request.getPath()) && "GET".equals(request.getMethod())
+        RecordedRequest firstManualTargetingRequest = takeBackendRequestMatching(
+            "first manual targeting package request",
+            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath()) && "GET".equals(request.getMethod())
         );
-        assertEquals("/api/adsets?experimentId=1", firstAdSetsFallbackRequest.getPath());
+        assertEquals("/api/facebook-adsets/experiments-ready", firstManualTargetingRequest.getPath());
 
         RecordedRequest secondExperiment = takeBackendRequestMatching(
             "second experiments-ready request",
@@ -1330,7 +1238,6 @@ class FacebookCampaignServiceTest {
         );
         backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[]").addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[]").addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(
             new MockResponse()
                 .setBody("""
@@ -1358,11 +1265,6 @@ class FacebookCampaignServiceTest {
         takeBackendRequestMatching(
             "playbook request",
             request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
-                && "GET".equals(request.getMethod())
-        );
-        takeBackendRequestMatching(
-            "adsets request",
-            request -> "/api/adsets?experimentId=1".equals(request.getPath())
                 && "GET".equals(request.getMethod())
         );
         takeBackendRequestMatching(

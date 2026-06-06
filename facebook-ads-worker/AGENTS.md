@@ -36,10 +36,11 @@
   (incluindo aspas em strings) e manter tokens mascarados.
 - Prefixe os valores de URL nos logs de integração com endpoints usando `==>` para requisições e `<==` para respostas (incluindo
   erros), garantindo um padrão visual consistente em todo o módulo.
-- O fluxo de campanhas consulta o backend (`/api/adsets?experimentId={id}`) antes de criar campanhas na Meta para preparar a
-  segmentação e Saved Audiences; mantenha esse detalhe documentado ao ajustar o fluxo.
-- Na criação de campanhas, priorize sempre a segmentação validada pelo pipeline de público (`targetingRequestId` com
-  `GET /api/targeting/requests/{id}?includeCandidates=true`); use `targetingJson`/campos legados apenas como fallback de compatibilidade.
+- O fluxo de campanhas consulta primeiro o playbook (`/api/experiments/{id}/adset-playbook`) e, sem playbook válido, usa
+  o pacote manual aprovado (`/api/facebook-adsets/experiments-ready`); o fallback antigo por `/api/adsets?experimentId={id}`
+  foi removido da publicação canônica e não deve ser reintroduzido.
+- Na criação de campanhas, não delegue materialização de targeting ao `ai-worker`; o `facebook-ads-worker` monta o targeting
+  da Meta localmente a partir do playbook ou do pacote manual aprovado.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta
   através de `PATCH /api/instant-forms/{id}/publication`. A criação automática foi descontinuada; os formulários devem ser
@@ -86,9 +87,9 @@
 
 - Configuração padrão de execução em Docker grava logs em arquivo (`LOGGING_FILE_NAME`) com volume dedicado em `/var/log/facebook-ads-worker`; preserve esse comportamento ao ajustar compose/deploy.
 
-- Os testes de campanha devem considerar a sequência de backend com `/api/experiments/{id}/adset-playbook` antes do fallback em `/api/adsets?experimentId={id}` e possíveis POSTs em `/api/experiments/{id}/facebook-api-logs` entre as etapas de criação.
+- Os testes de campanha devem considerar a sequência de backend com `/api/experiments/{id}/adset-playbook` antes do fallback manual em `/api/facebook-adsets/experiments-ready` e possíveis POSTs em `/api/experiments/{id}/facebook-api-logs` entre as etapas de criação.
 
 - Em testes com `FailFastMockWebServer`, mantenha stubs explícitos para o fluxo principal e use respostas condicionais de fallback apenas para chamadas auxiliares (logs/status/publicação), para evitar flakiness por ordem de requisição.
 - Nos cenários de criação de campanha, lembre que o worker realiza `POST /adimages` antes de `POST /campaigns` e finaliza com `POST /ads`; enfileire respostas para essas chamadas para não deslocar os stubs esperados de campanha/ad set/criativo.
-- O fallback de segmentação manual para publicação de campanha pertence ao `facebook-ads-worker`: quando não houver playbook/ad set pronto, buscar o pacote aprovado no backend (`/api/facebook-adsets/experiments-ready`) e montar o targeting da Meta localmente, sem delegar ao `ai-worker` ou chamar OpenAI.
+- O fallback de segmentação manual para publicação de campanha pertence ao `facebook-ads-worker`: quando não houver playbook pronto, buscar o pacote aprovado no backend (`/api/facebook-adsets/experiments-ready`) e montar o targeting da Meta localmente, sem delegar ao `ai-worker` ou chamar OpenAI.
 - A publicação de campanhas deve seguir o padrão de etapa plugável: núcleo genérico em `facebookadsworker.pipeline` e implementação concreta em `facebookcampaign.publication`, sem acoplar o núcleo a etapas concretas.

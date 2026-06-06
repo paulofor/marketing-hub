@@ -100,12 +100,11 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
    `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). Antes de
-   chamar a Graph API o worker consulta o backend (`GET
-   /api/adsets?experimentId={id}`) para montar a segmentação e, quando
-   necessário, criar uma Saved Audience reutilizável. Sempre que o ad set
-   possuir `targetingRequestId`, o worker prioriza as opções validadas pelo
-   pipeline de público via `GET /api/targeting/requests/{id}?includeCandidates=true`.
-   A segmentação enviada
+   chamar a Graph API o worker consulta primeiro o playbook (`GET
+   /api/experiments/{id}/adset-playbook`) e, sem playbook válido, usa o pacote
+   manual aprovado (`GET /api/facebook-adsets/experiments-ready`). O fallback
+   antigo por `GET /api/adsets?experimentId={id}` não faz mais parte da
+   publicação canônica. A segmentação enviada
    para a Meta é sempre o Brasil inteiro (`geo_locations.countries = ["BR"]`)
    e com Advantage+ Audience desabilitado (`targeting_automation.advantage_audience = 0`),
    garantindo o alcance nacional independente do público retornado pelo backend.
@@ -597,12 +596,12 @@ curl "http://<host>:8082/public/runtime-logs/tail?lines=300"
 
 ## Notas de teste (FacebookCampaignServiceTest)
 
-- O fluxo atual consulta primeiro o playbook (`/api/experiments/{id}/adset-playbook`) e só então faz fallback para `/api/adsets?experimentId={id}` quando necessário.
+- O fluxo atual consulta primeiro o playbook (`/api/experiments/{id}/adset-playbook`) e só então faz fallback para o pacote manual aprovado em `/api/facebook-adsets/experiments-ready` quando necessário; o fallback legado por `/api/adsets?experimentId={id}` foi removido da publicação.
 - As chamadas à Graph API podem gerar registros intermediários em `/api/experiments/{id}/facebook-api-logs`; por isso, asserções de ordem rígida de requests no backend devem considerar esses POSTs adicionais.
 
 ## Manual targeting fallback
 
-When an experiment has no ready ad set playbook spec and no persisted ad set, the campaign publication flow resolves the backend-approved manual targeting package directly from `/api/facebook-adsets/experiments-ready`. The Facebook Ads Worker then builds the Meta `targeting` payload itself, preferring official `metaId`/`metaKey` values and requiring at least one approved `JOB_TITLE`, without delegating this publication fallback to the AI Worker.
+When an experiment has no ready ad set playbook spec, the campaign publication flow resolves the backend-approved manual targeting package directly from `/api/facebook-adsets/experiments-ready`; the legacy persisted-ad-set fallback is not part of the canonical publication flow. The Facebook Ads Worker then builds the Meta `targeting` payload itself, preferring official `metaId`/`metaKey` values and requiring at least one approved `JOB_TITLE`, without delegating this publication fallback to the AI Worker.
 
 ## Campaign publication as a pipeline stage
 

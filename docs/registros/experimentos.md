@@ -3700,7 +3700,7 @@
 
 - solicitação: ajustar a correção anterior porque a publicação de Facebook Ads deve ser responsabilidade do `facebook-ads-worker`; o `ai-worker` deve ficar restrito a chamadas de IA/OpenAI.
 - causa-raiz revisada: o experimento 37 estava liberado para publicação, mas não tinha ad set pré-gerado; depender do `ai-worker` para materializar esse ad set criava acoplamento indevido entre geração IA e publicação Meta Ads.
-- correção aplicada: removida a alteração funcional do `ai-worker` e movido o fallback operacional para o `facebook-ads-worker`, que agora busca diretamente no backend o pacote manual aprovado em `/api/facebook-adsets/experiments-ready` quando não houver playbook/ad set pronto.
+- correção aplicada: removida a alteração funcional do `ai-worker` e movido o fallback operacional para o `facebook-ads-worker`, que agora busca diretamente no backend o pacote manual aprovado em `/api/facebook-adsets/experiments-ready` quando não houver playbook pronto.
 - regra operacional preservada: para targeting manual, 1 `JOB_TITLE` aprovado continua sendo o mínimo canônico; o worker monta o `targeting` da Meta preferindo `metaId/metaKey` oficiais e sem chamar OpenAI.
 - teste adicionado no módulo correto: cobertura no `FacebookCampaignServiceTest` garantindo que o Facebook Ads Worker publica usando cargos aprovados mesmo quando nenhum ad set foi pré-gerado.
 - arquivos alterados:
@@ -3731,3 +3731,10 @@
   - o núcleo genérico da etapa não conhece a etapa concreta;
   - o `ai-worker` não publica campanha nem materializa fallback de targeting para Meta;
   - o fallback manual busca `/api/facebook-adsets/experiments-ready` e exige no mínimo 1 `JOB_TITLE` aprovado, preferindo `metaId`/`metaKey` oficiais.
+
+## 2026-06-06 — Remoção do fallback legado de ad sets na publicação Facebook Ads
+
+- solicitação: excluir a versão antiga de publicação de campanhas do Facebook Ads.
+- ajuste aplicado: removido do `facebook-ads-worker` o caminho legado de publicação que consultava ad sets persistidos por `/api/adsets?experimentId=...` antes de publicar.
+- versão canônica restante: a publicação usa a etapa plugável do `facebook-ads-worker`; para público, usa playbook válido ou fallback manual aprovado por `/api/facebook-adsets/experiments-ready`.
+- motivo: impedir reintrodução do fluxo antigo dependente de ad set pré-materializado fora da publicação, mantendo o Facebook Ads Worker como dono único da publicação e do fallback manual.

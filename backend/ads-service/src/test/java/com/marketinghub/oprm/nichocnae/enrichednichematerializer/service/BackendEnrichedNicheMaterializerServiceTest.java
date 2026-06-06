@@ -52,6 +52,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(pending.getFirst().routineCardId()).isEqualTo(10L);
     assertThat(pending.getFirst().sourceNicheCandidateId()).isEqualTo(77L);
     assertThat(pending.getFirst().existingMarketNicheId()).isNull();
+    assertThat(pending.getFirst().nicheName()).isEqualTo("Salões pequenos");
     assertThat(pending.getFirst().mechanismOpportunitiesSummary()).contains("agenda");
   }
 
@@ -83,8 +84,30 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(response.enrichedNicheProfileId()).isEqualTo(300L);
     assertThat(cycle.getStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
     assertThat(candidate.getMarketNicheId()).isEqualTo(200L);
-    verify(marketNicheRepository).save(any(MarketNiche.class));
-    verify(profileRepository).save(any(MarketNicheEnrichmentProfile.class));
+    verify(marketNicheRepository).save(org.mockito.ArgumentMatchers.argThat(niche ->
+        "Salões pequenos".equals(niche.getName())
+            && niche.getPromises() == null
+            && niche.getOffers() == null
+            && niche.getDescription().contains("Nome original recebido para auditoria: IA para salões pequenos")
+            && niche.getDescription().contains("Nome neutro pesquisado: Salões pequenos")
+            && !niche.getDescription().contains("Oportunidades de mecanismo:")));
+    verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
+        profile.getCommercialTriggers() == null && profile.getObjections() == null));
+  }
+
+  /** Deve localizar registros históricos contaminados para orientar novo ciclo neutro. */
+  @Test
+  void shouldDiagnoseHistoricalContamination() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(cycleRepository.findPotentiallyContaminatedByTerm(org.mockito.ArgumentMatchers.eq("ia"), any(Pageable.class))).thenReturn(List.of(cycle));
+    when(profileRepository.findPotentiallyContaminatedByTerm(org.mockito.ArgumentMatchers.eq("ia"), any(Pageable.class))).thenReturn(List.of());
+
+    var diagnostic = service.diagnoseHistoricalContamination(10);
+
+    assertThat(diagnostic.totalCycles()).isEqualTo(1);
+    assertThat(diagnostic.items()).hasSize(1);
+    assertThat(diagnostic.items().getFirst().matchedTerm()).isEqualTo("ia");
+    assertThat(diagnostic.items().getFirst().recommendation()).contains("novo ciclo neutro");
   }
 
   /** Cria um cartão aprovado mínimo para testes da etapa final. */
@@ -118,6 +141,10 @@ class BackendEnrichedNicheMaterializerServiceTest {
     cycle.setCnaeCode("9602501");
     cycle.setCnaeDescription("Cabeleireiros, manicure e pedicure");
     cycle.setNicheName("IA para salões pequenos");
+    cycle.setOriginalNicheName("IA para salões pequenos");
+    cycle.setNeutralNicheName("Salões pequenos");
+    cycle.setResearchMode("ROUTINE_REALITY_RESEARCH");
+    cycle.setSolutionLanguageRiskScore(new BigDecimal("65.00"));
     cycle.setSourceScore(new BigDecimal("90.00"));
     cycle.setStatus("LIGHTLY_RESEARCHED");
     cycle.setStartedAt(Instant.parse("2026-06-04T00:00:00Z"));

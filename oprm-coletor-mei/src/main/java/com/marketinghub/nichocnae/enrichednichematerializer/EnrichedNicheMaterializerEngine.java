@@ -1,20 +1,19 @@
 package com.marketinghub.nichocnae.enrichednichematerializer;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-/** Monta campos complementares determinísticos do nicho enriquecido sem gerar hipótese ou oferta. */
+/** Monta campos complementares determinísticos de rotina real sem gerar hipótese, oferta ou gatilho comercial. */
 @Component
 public class EnrichedNicheMaterializerEngine {
-    /** Deriva persona, linguagem, gatilhos e objeções a partir do card aprovado no NichoCNAE. */
+    /** Deriva apenas persona e linguagem operacional auditável a partir do card aprovado no NichoCNAE. */
     public EnrichedNicheProfileDraft buildDraft(EnrichedNicheMaterializerPending pending) {
         return new EnrichedNicheProfileDraft(
                 buildPersonaSummary(pending),
                 buildLanguagePatterns(pending),
-                buildCommercialTriggers(pending),
-                buildObjections(pending));
+                null,
+                null);
     }
 
     /** Resume a persona operacional observada sem inventar uma hipótese comercial. */
@@ -29,30 +28,6 @@ public class EnrichedNicheMaterializerEngine {
                 firstUsefulSentence(pending.painsSummary()),
                 firstUsefulSentence(pending.routineSummary()),
                 firstUsefulSentence(pending.resultsSummary())));
-    }
-
-    /** Identifica gatilhos comerciais seguros a partir de rotina, dores e resultados observados. */
-    private String buildCommercialTriggers(EnrichedNicheMaterializerPending pending) {
-        List<String> triggers = new ArrayList<>();
-        triggers.add("Redução de esforço na rotina operacional");
-        if (hasText(pending.painsSummary())) {
-            triggers.add("Dor observada: " + firstUsefulSentence(pending.painsSummary()));
-        }
-        if (hasText(pending.resultsSummary())) {
-            triggers.add("Resultado buscado: " + firstUsefulSentence(pending.resultsSummary()));
-        }
-        return String.join("\n", triggers);
-    }
-
-    /** Registra objeções prováveis sem criar oferta, preço ou promessa de hipótese. */
-    private String buildObjections(EnrichedNicheMaterializerPending pending) {
-        List<String> objections = new ArrayList<>();
-        objections.add("Precisa enxergar aplicação prática no dia a dia antes de investir tempo.");
-        objections.add("Pode desconfiar de solução genérica que não respeite a rotina do CNAE " + pending.cnaeCode() + ".");
-        if (hasText(pending.evidenceSummary())) {
-            objections.add("Exige evidência concreta: " + firstUsefulSentence(pending.evidenceSummary()));
-        }
-        return String.join("\n", objections);
     }
 
     /** Junta apenas frases com conteúdo útil. */

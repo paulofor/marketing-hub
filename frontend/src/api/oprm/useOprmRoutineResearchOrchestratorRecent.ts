@@ -7,6 +7,10 @@ export interface OprmRoutineResearchOrchestratorRecent {
   cnaeCode: string;
   cnaeDescription: string;
   nicheName: string;
+  originalNicheName?: string | null;
+  neutralNicheName?: string | null;
+  researchMode?: string | null;
+  solutionLanguageRiskScore?: number | null;
   sourceScore: number;
   triggerSource: string;
   cycleStatus: string;

@@ -25,7 +25,8 @@ class EnrichedNicheMaterializerEngineTest {
                 Instant.parse("2026-06-05T00:00:00Z")));
 
         assertThat(draft.personaSummary()).contains("Cabeleireiros");
-        assertThat(draft.commercialTriggers()).contains("Redução de esforço");
-        assertThat(draft.objections()).doesNotContain("hipótese");
+        assertThat(draft.languagePatterns()).contains("Dores de falta de tempo");
+        assertThat(draft.commercialTriggers()).isNull();
+        assertThat(draft.objections()).isNull();
     }
 }

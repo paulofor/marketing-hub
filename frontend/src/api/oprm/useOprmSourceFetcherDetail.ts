@@ -9,6 +9,10 @@ export interface OprmSourceSnapshotDetail {
   sourceDomain: string;
   sourceTitle: string;
   sourceType: string;
+  sourceIntent?: string | null;
+  routineEvidenceScore?: number | null;
+  commercialPageRisk?: boolean | null;
+  solutionLanguageRisk?: boolean | null;
   snippet?: string | null;
   shortExcerpt: string;
   fetchedAt: string;

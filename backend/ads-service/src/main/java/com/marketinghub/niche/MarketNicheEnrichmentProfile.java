@@ -63,6 +63,27 @@ public class MarketNicheEnrichmentProfile {
   @Column(name = "duplication_score")
   private Integer duplicationScore;
 
+  @Column(name = "routine_evidence_score", nullable = false)
+  private Integer routineEvidenceScore = 0;
+
+  @Column(name = "difficulty_evidence_score", nullable = false)
+  private Integer difficultyEvidenceScore = 0;
+
+  @Column(name = "source_diversity_score", nullable = false)
+  private Integer sourceDiversityScore = 0;
+
+  @Column(name = "solution_language_risk_score", nullable = false)
+  private Integer solutionLanguageRiskScore = 0;
+
+  @Column(name = "original_niche_name", length = 255)
+  private String originalNicheName;
+
+  @Column(name = "neutral_niche_name", nullable = false, length = 255)
+  private String neutralNicheName;
+
+  @Column(name = "research_mode", nullable = false, length = 40)
+  private String researchMode;
+
   @Column(name = "routine_summary", nullable = false, columnDefinition = "LONGTEXT")
   private String routineSummary;
 

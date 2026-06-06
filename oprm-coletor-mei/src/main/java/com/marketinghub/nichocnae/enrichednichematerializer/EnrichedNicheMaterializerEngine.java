@@ -7,7 +7,11 @@ import org.springframework.util.StringUtils;
 /** Monta campos complementares determinísticos de rotina real sem gerar hipótese, oferta ou gatilho comercial. */
 @Component
 public class EnrichedNicheMaterializerEngine {
-    /** Deriva apenas persona e linguagem operacional auditável a partir do card aprovado no NichoCNAE. */
+    private static final List<String> SOLUTION_LANGUAGE_TERMS = List.of(
+            "ia", "inteligência artificial", "automação", "software", "sistema", "app", "ferramenta", "curso",
+            "template", "oferta", "landing page");
+
+    /** Deriva apenas contexto operacional auditável a partir do card aprovado no NichoCNAE. */
     public EnrichedNicheProfileDraft buildDraft(EnrichedNicheMaterializerPending pending) {
         return new EnrichedNicheProfileDraft(
                 buildPersonaSummary(pending),
@@ -19,15 +23,17 @@ public class EnrichedNicheMaterializerEngine {
     /** Resume a persona operacional observada sem inventar uma hipótese comercial. */
     private String buildPersonaSummary(EnrichedNicheMaterializerPending pending) {
         return "Profissional ou pequeno negócio ligado a " + pending.cnaeDescription()
-                + " que vive a rotina descrita no NichoCNAE e busca reduzir esforço operacional percebido.";
+                + " observado no modo " + pending.researchMode()
+                + " com foco em rotina, tarefas, dificuldades e perguntas reais.";
     }
 
-    /** Preserva linguagem do público a partir dos blocos de dores, rotina e resultados. */
+    /** Preserva linguagem pública a partir dos blocos de rotina, dificuldades, perguntas e contexto operacional. */
     private String buildLanguagePatterns(EnrichedNicheMaterializerPending pending) {
         return joinUseful(List.of(
-                firstUsefulSentence(pending.painsSummary()),
-                firstUsefulSentence(pending.routineSummary()),
-                firstUsefulSentence(pending.resultsSummary())));
+                firstUsefulSentenceWithoutSolutionFrame(pending.painsSummary()),
+                firstUsefulSentenceWithoutSolutionFrame(pending.routineSummary()),
+                firstUsefulSentenceWithoutSolutionFrame(pending.resultsSummary()),
+                firstUsefulSentenceWithoutSolutionFrame(pending.mechanismOpportunitiesSummary())));
     }
 
     /** Junta apenas frases com conteúdo útil. */
@@ -35,8 +41,8 @@ public class EnrichedNicheMaterializerEngine {
         return values.stream().filter(this::hasText).reduce((left, right) -> left + "\n" + right).orElse(null);
     }
 
-    /** Extrai a primeira frase útil de um bloco textual. */
-    private String firstUsefulSentence(String value) {
+    /** Extrai a primeira frase útil quando ela não repete enquadramento de solução. */
+    private String firstUsefulSentenceWithoutSolutionFrame(String value) {
         if (!hasText(value)) {
             return null;
         }
@@ -44,7 +50,14 @@ public class EnrichedNicheMaterializerEngine {
         int dot = normalized.indexOf('.');
         int line = normalized.indexOf('-');
         int end = dot > 40 ? dot + 1 : (line > 20 ? line : Math.min(normalized.length(), 220));
-        return normalized.substring(0, Math.min(end, normalized.length())).trim();
+        String sentence = normalized.substring(0, Math.min(end, normalized.length())).trim();
+        return containsSolutionLanguage(sentence) ? null : sentence;
+    }
+
+    /** Detecta vocabulário de solução para não transformar esse texto em linguagem pública do perfil. */
+    private boolean containsSolutionLanguage(String value) {
+        String normalized = value == null ? "" : value.toLowerCase(java.util.Locale.ROOT);
+        return SOLUTION_LANGUAGE_TERMS.stream().anyMatch(normalized::contains);
     }
 
     /** Verifica se existe texto útil no valor recebido. */

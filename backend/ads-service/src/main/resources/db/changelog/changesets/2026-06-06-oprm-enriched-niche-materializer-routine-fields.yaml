@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-06-01-oprm-enriched-niche-routine-fields
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: market_niche_enrichment_profile
+        - not:
+            columnExists:
+              tableName: market_niche_enrichment_profile
+              columnName: routine_evidence_score
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE market_niche_enrichment_profile
+                ADD COLUMN routine_evidence_score INT NOT NULL DEFAULT 0 AFTER duplication_score,
+                ADD COLUMN difficulty_evidence_score INT NOT NULL DEFAULT 0 AFTER routine_evidence_score,
+                ADD COLUMN source_diversity_score INT NOT NULL DEFAULT 0 AFTER difficulty_evidence_score,
+                ADD COLUMN solution_language_risk_score INT NOT NULL DEFAULT 0 AFTER source_diversity_score,
+                ADD COLUMN original_niche_name VARCHAR(255) NULL AFTER solution_language_risk_score,
+                ADD COLUMN neutral_niche_name VARCHAR(255) NULL AFTER original_niche_name,
+                ADD COLUMN research_mode VARCHAR(40) NULL AFTER neutral_niche_name;
+              UPDATE market_niche_enrichment_profile profile
+              INNER JOIN oprm_routine_research_cycle cycle ON cycle.id = profile.research_cycle_id
+              LEFT JOIN oprm_niche_routine_card card ON card.id = profile.routine_card_id
+              SET profile.routine_evidence_score = COALESCE(card.routine_evidence_score, 0),
+                  profile.difficulty_evidence_score = COALESCE(card.difficulty_evidence_score, 0),
+                  profile.source_diversity_score = COALESCE(card.source_diversity_score, 0),
+                  profile.solution_language_risk_score = COALESCE(card.solution_language_risk_score, 0),
+                  profile.original_niche_name = COALESCE(cycle.original_niche_name, cycle.niche_name),
+                  profile.neutral_niche_name = COALESCE(cycle.neutral_niche_name, cycle.niche_name, profile.cnae_description),
+                  profile.research_mode = COALESCE(cycle.research_mode, 'ROUTINE_REALITY_RESEARCH');
+              ALTER TABLE market_niche_enrichment_profile
+                MODIFY neutral_niche_name VARCHAR(255) NOT NULL,
+                MODIFY research_mode VARCHAR(40) NOT NULL;
+              CREATE INDEX idx_market_niche_enrichment_profile_routine_quality
+                ON market_niche_enrichment_profile (routine_evidence_score, difficulty_evidence_score, source_diversity_score, solution_language_risk_score);

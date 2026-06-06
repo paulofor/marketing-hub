@@ -1481,8 +1481,14 @@ components:
           type: string
         cnaeDescription:
           type: string
+        originalNicheName:
+          type: string
+          nullable: true
         nicheName:
           type: string
+        researchMode:
+          type: string
+          example: ROUTINE_REALITY_RESEARCH
         sourceScore:
           type: number
         cycleStatus:
@@ -1720,8 +1726,14 @@ components:
           type: string
         cnaeDescription:
           type: string
+        originalNicheName:
+          type: string
+          nullable: true
         nicheName:
           type: string
+        researchMode:
+          type: string
+          example: ROUTINE_REALITY_RESEARCH
         sourceScore:
           type: number
           format: double
@@ -1732,6 +1744,14 @@ components:
         confidenceScore:
           type: integer
         duplicationScore:
+          type: integer
+        routineEvidenceScore:
+          type: integer
+        difficultyEvidenceScore:
+          type: integer
+        sourceDiversityScore:
+          type: integer
+        solutionLanguageRiskScore:
           type: integer
         routineSummary:
           type: string
@@ -1820,6 +1840,19 @@ components:
           type: integer
           format: int64
           nullable: true
+        originalNicheName:
+          type: string
+          nullable: true
+        neutralNicheName:
+          type: string
+          nullable: true
+        researchMode:
+          type: string
+          nullable: true
+        solutionLanguageRiskScore:
+          type: number
+          format: double
+          nullable: true
         nicheName:
           type: string
           nullable: true
@@ -1846,6 +1879,18 @@ components:
           nullable: true
         sourceDomains:
           type: string
+          nullable: true
+        routineEvidenceScore:
+          type: integer
+          nullable: true
+        difficultyEvidenceScore:
+          type: integer
+          nullable: true
+        sourceDiversityScore:
+          type: integer
+          nullable: true
+        materializedSolutionLanguageRiskScore:
+          type: integer
           nullable: true
         materializedAt:
           type: string

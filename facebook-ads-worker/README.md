@@ -599,3 +599,11 @@ curl "http://<host>:8082/public/runtime-logs/tail?lines=300"
 
 - O fluxo atual consulta primeiro o playbook (`/api/experiments/{id}/adset-playbook`) e só então faz fallback para `/api/adsets?experimentId={id}` quando necessário.
 - As chamadas à Graph API podem gerar registros intermediários em `/api/experiments/{id}/facebook-api-logs`; por isso, asserções de ordem rígida de requests no backend devem considerar esses POSTs adicionais.
+
+## Manual targeting fallback
+
+When an experiment has no ready ad set playbook spec and no persisted ad set, the campaign publication flow resolves the backend-approved manual targeting package directly from `/api/facebook-adsets/experiments-ready`. The Facebook Ads Worker then builds the Meta `targeting` payload itself, preferring official `metaId`/`metaKey` values and requiring at least one approved `JOB_TITLE`, without delegating this publication fallback to the AI Worker.
+
+## Campaign publication as a pipeline stage
+
+Campaign publication is now routed through the generic stage pattern described in `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`: `facebookadsworker.pipeline` contains the generic contracts and `facebookcampaign.publication` contains the concrete publication stage. This keeps Meta Ads publication as a plug-in stage inside the Facebook Ads Worker while preserving the existing backend/Graph API side effects.

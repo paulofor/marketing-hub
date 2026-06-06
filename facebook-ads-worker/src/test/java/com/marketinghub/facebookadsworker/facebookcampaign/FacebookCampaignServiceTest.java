@@ -41,6 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Verifies Facebook campaign publication orchestration against backend and Meta API stubs.
+ */
 @Timeout(value = 15, unit = TimeUnit.SECONDS)
 class FacebookCampaignServiceTest {
     private FailFastMockWebServer backend;
@@ -52,6 +55,9 @@ class FacebookCampaignServiceTest {
     private WebClient.Builder webClientBuilder;
     private ExperimentFacebookApiLogClient apiLogClient;
 
+    /**
+     * Creates isolated backend and Facebook API stubs for each campaign publication scenario.
+     */
     @BeforeEach
     void setUp() throws IOException {
         backend = new FailFastMockWebServer();
@@ -136,6 +142,11 @@ class FacebookCampaignServiceTest {
         backend.enqueueConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().startsWith("/api/adsets?experimentId=")
+                && "GET".equals(request.getMethod()),
+            () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
+        );
+        backend.enqueueConditionalResponse(
+            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath())
                 && "GET".equals(request.getMethod()),
             () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
         );
@@ -920,6 +931,9 @@ class FacebookCampaignServiceTest {
         assertTrue(backend.getRequestCount() >= 3);
     }
 
+    /**
+     * Verifies that a permission-blocked experiment is not retried in the same worker lifecycle.
+     */
     @Test
     void skipsExperimentAfterPermissionErrorEvenIfBackendKeepsReturningIt() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
@@ -966,7 +980,7 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", secondGet.getPath());
 
         assertEquals(2, facebook.getRequestCount());
-        assertEquals(8, backend.getRequestCount());
+        assertEquals(9, backend.getRequestCount());
     }
 
     @Test
@@ -1291,6 +1305,79 @@ class FacebookCampaignServiceTest {
             request -> "/api/facebook-campaigns".equals(request.getPath()) && "POST".equals(request.getMethod())
         );
         assertTrue(backend.getRequestCount() >= 4);
+    }
+
+    /**
+     * Ensures the Facebook Ads worker uses approved manual job-title targeting when no ad set was pre-generated.
+     */
+    @Test
+    void createsCampaignUsingApprovedManualTargetingPackageWhenNoAdSetExists() throws Exception {
+        backend.enqueueResponse(
+            new MockResponse()
+                .setBody("[{\"id\":1,\"name\":\"Exp\",\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
+                .addHeader("Content-Type", "application/json")
+        );
+        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(
+            new MockResponse()
+                .setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"https://cdn.example/img.jpg\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+                .addHeader("Content-Type", "application/json")
+        );
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(
+            new MockResponse()
+                .setBody("""
+                    [{
+                      "experiment":{"id":1},
+                      "targeting":{
+                        "interests":[],
+                        "jobTitles":[
+                          {"id":10,"term":"Personal Trainer","metaId":"1419795191647433","metaKey":"Certified Personal Trainer"}
+                        ],
+                        "behaviors":[]
+                      }
+                    }]
+                    """)
+                .addHeader("Content-Type", "application/json")
+        );
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("backend request"); // experiments-ready
+        takeBackendRequest("backend request"); // creatives fetch
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "adsets request",
+            request -> "/api/adsets?experimentId=1".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+
+        takeFacebookRequest("facebook request"); // campaign
+        RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        JsonNode workPositions = adSetPayload.get("targeting").get("work_positions");
+        assertEquals(1, workPositions.size());
+        assertEquals("1419795191647433", workPositions.get(0).get("id").asText());
+        assertEquals("Certified Personal Trainer", workPositions.get(0).get("name").asText());
     }
 
     @Test

@@ -3695,3 +3695,29 @@
   - frontend/src/pages/pipeline/PipelineCrudPage.tsx
   - frontend/src/api/pipeline/types.ts
   - frontend/src/api/pipeline/usePipelines.ts
+
+## 2026-06-06 — Correção no Facebook Ads Worker para publicação do experimento 37
+
+- solicitação: ajustar a correção anterior porque a publicação de Facebook Ads deve ser responsabilidade do `facebook-ads-worker`; o `ai-worker` deve ficar restrito a chamadas de IA/OpenAI.
+- causa-raiz revisada: o experimento 37 estava liberado para publicação, mas não tinha ad set pré-gerado; depender do `ai-worker` para materializar esse ad set criava acoplamento indevido entre geração IA e publicação Meta Ads.
+- correção aplicada: removida a alteração funcional do `ai-worker` e movido o fallback operacional para o `facebook-ads-worker`, que agora busca diretamente no backend o pacote manual aprovado em `/api/facebook-adsets/experiments-ready` quando não houver playbook/ad set pronto.
+- regra operacional preservada: para targeting manual, 1 `JOB_TITLE` aprovado continua sendo o mínimo canônico; o worker monta o `targeting` da Meta preferindo `metaId/metaKey` oficiais e sem chamar OpenAI.
+- teste adicionado no módulo correto: cobertura no `FacebookCampaignServiceTest` garantindo que o Facebook Ads Worker publica usando cargos aprovados mesmo quando nenhum ad set foi pré-gerado.
+- arquivos alterados:
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
+  - `facebook-ads-worker/AGENTS.md`
+  - `facebook-ads-worker/README.md`
+  - `docs/registros/experimentos.md`
+
+## 2026-06-06 — Publicação Facebook Ads como etapa de pipeline
+
+- solicitação: organizar a publicação de campanhas seguindo o padrão de etapas descrito em `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
+- ajuste aplicado: criado um núcleo mínimo `facebookadsworker.pipeline` com `StageContext`, `StageProcessor`, `StageResult` e `PipelineWorker`, e uma etapa concreta isolada `facebookcampaign.publication` para processar uma publicação de campanha.
+- regra arquitetural preservada: o núcleo genérico não conhece a etapa concreta; a etapa concreta depende apenas do núcleo e de contratos de publicação, mantendo a publicação plugável e substituível.
+- comportamento preservado: o fluxo existente de publicação continua no `facebook-ads-worker`, incluindo o fallback de segmentação manual aprovado pelo backend, sem delegar ao `ai-worker` e sem chamada OpenAI.
+- arquivos alterados:
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/pipeline/*`
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/publication/*`
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `docs/registros/experimentos.md`

@@ -1,3 +1,22 @@
+server:
+  port: ${SERVER_PORT:8097}
+
+management:
+  endpoint:
+    logfile:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,logfile
+
+logging:
+  file:
+    name: ${LOG_FILE_NAME:/tmp/mois-sales-library-worker.log}
+
 spring:
   application:
     name: mois-sales-library-worker

@@ -54,7 +54,7 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_EMAIL_SERVICE_PATH` (default `http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log`);
 - `MCP_LOG_LEAD_PORTAL_PAYMENT_PATH` (default `http://191.252.102.54:8092/api/v1/logs/runtime?lines=200`);
 - `MCP_LOG_MDS_PATH` (default `http://177.153.62.107:8091/actuator/logfile`);
-- `MCP_LOG_MOIS_PATH` (default `http://177.153.62.107:8094/manage/logfile`);
+- `MCP_LOG_MOIS_PATH` (MOIS Sales Library Worker; default `http://191.252.120.96:8097/actuator/logfile`);
 - `MCP_LOG_MOIS_HOTMART_PATH` (default `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`);
 - `MCP_LOG_CLICKBANK_COLETOR_MOIS_PATH` (default `http://177.153.62.107:9096/internal/ops-monitor/logfile`);
 - `MCP_LOG_OPRM_COLETOR_RECEITA_PATH` (default `http://177.153.62.107:8094/actuator/logfile`).

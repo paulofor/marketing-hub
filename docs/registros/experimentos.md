@@ -3721,3 +3721,13 @@
   - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/publication/*`
   - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
   - `docs/registros/experimentos.md`
+
+## 2026-06-06 — Canonização da publicação Facebook Ads por etapa
+
+- decisão do usuário: a versão correta é a publicação de campanhas como etapa plugável no `facebook-ads-worker`, com fallback manual de segmentação também no `facebook-ads-worker`.
+- documento canônico atualizado: `docs/canonical/facebook-campaign-publication-canon.v1.md`.
+- regras canonizadas:
+  - publicação de campanhas é etapa de pipeline conforme `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`;
+  - o núcleo genérico da etapa não conhece a etapa concreta;
+  - o `ai-worker` não publica campanha nem materializa fallback de targeting para Meta;
+  - o fallback manual busca `/api/facebook-adsets/experiments-ready` e exige no mínimo 1 `JOB_TITLE` aprovado, preferindo `metaId`/`metaKey` oficiais.

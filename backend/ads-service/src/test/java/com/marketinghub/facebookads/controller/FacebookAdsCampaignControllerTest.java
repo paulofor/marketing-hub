@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.fasterxml.jackson.databind.JsonNode;

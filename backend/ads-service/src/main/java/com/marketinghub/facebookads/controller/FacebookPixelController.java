@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.MarketNicheDto;
@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Agrupa endpoints de pixels e conversões da integração Facebook Ads.
+ */
 @RestController
 @RequestMapping("/api/facebook-pixels")
 public class FacebookPixelController {
@@ -28,6 +31,7 @@ public class FacebookPixelController {
     }
 
     @GetMapping("/niches-ready")
+    // Executa a operação listNichesReadyForPixel da integração Facebook Ads.
     public List<NichePixelDto> listNichesReadyForPixel() {
         return marketNicheService.listReadyForPixel().stream()
                 .map(niche -> new NichePixelDto(niche.getId(), niche.getName()))
@@ -35,6 +39,7 @@ public class FacebookPixelController {
     }
 
     @PostMapping
+    // Executa a operação registerPixel da integração Facebook Ads.
     public MarketNicheDto registerPixel(@RequestBody CreatePixelRequest request) {
         MarketNiche niche = marketNicheService.attachFacebookPixel(
                 request.nicheId(),
@@ -64,6 +69,7 @@ public class FacebookPixelController {
 
     @PostMapping("/conversions/{purchaseId}/ack")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    // Executa a operação acknowledgeConversion da integração Facebook Ads.
     public void acknowledgeConversion(@PathVariable("purchaseId") long purchaseId) {
         conversionService.markConversionRecorded(purchaseId);
     }

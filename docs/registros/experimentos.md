@@ -3696,6 +3696,14 @@
   - frontend/src/api/pipeline/types.ts
   - frontend/src/api/pipeline/usePipelines.ts
 
+## 2026-06-06 — Refatoração dos endpoints de Facebook Ads no backend
+
+- solicitação: concentrar os endpoints que lidam com integração do Facebook Ads em um único pacote e aplicar o padrão atual de arquitetura do backend.
+- causa-raiz: os controllers de contas, páginas, interesses, formulários instantâneos, campanhas, pixels e playbook estavam espalhados entre `com.marketinghub.ads`, `com.marketinghub.facebookads.web` e `com.marketinghub.facebookads.playbook.web`, dificultando auditoria do contrato e evolução modular.
+- correção aplicada: os controllers públicos e internos da integração foram movidos para o pacote único `com.marketinghub.facebookads.controller`, mantendo as rotas legadas para compatibilidade com UI e workers; também foi criado o contrato Swagger dedicado `docs/swagger/facebook-ads-swagger.yaml`.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/*Controller.java`
+  - `docs/swagger/facebook-ads-swagger.yaml`
 ## 2026-06-06 — Correção no Facebook Ads Worker para publicação do experimento 37
 
 - solicitação: ajustar a correção anterior porque a publicação de Facebook Ads deve ser responsabilidade do `facebook-ads-worker`; o `ai-worker` deve ficar restrito a chamadas de IA/OpenAI.

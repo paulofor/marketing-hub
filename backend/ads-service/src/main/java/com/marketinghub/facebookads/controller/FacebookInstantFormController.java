@@ -1,4 +1,6 @@
-package com.marketinghub.ads;
+package com.marketinghub.facebookads.controller;
+
+import com.marketinghub.ads.FacebookInstantForm;
 
 import com.marketinghub.repository.jpa.ads.FacebookInstantFormRepository;
 import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
@@ -23,6 +25,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Objects;
 
+/**
+ * Agrupa endpoints de formulários instantâneos usados na integração Facebook Ads.
+ */
 @RestController
 @RequestMapping("/api")
 public class FacebookInstantFormController {
@@ -48,6 +53,7 @@ public class FacebookInstantFormController {
     }
 
     @GetMapping("/hypotheses/{hypothesisId}/instant-forms")
+    // Executa a operação list da integração Facebook Ads.
     public List<FacebookInstantFormDto> list(@PathVariable UUID hypothesisId) {
         if (!hypothesisRepository.existsById(hypothesisId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "hypothesis not found");
@@ -76,6 +82,7 @@ public class FacebookInstantFormController {
     }
 
     @GetMapping("/instant-forms/ready-to-publish")
+    // Executa a operação readyToPublish da integração Facebook Ads.
     public List<FacebookInstantFormPublicationDto> readyToPublish() {
         return repository.findByApprovedTrueAndPublishedFalse().stream()
                 .filter(form -> form.getPage() != null)
@@ -84,6 +91,7 @@ public class FacebookInstantFormController {
     }
 
     @GetMapping("/instant-forms/approved-drafts")
+    // Executa a operação approvedDrafts da integração Facebook Ads.
     public List<FacebookInstantFormPublicationDto> approvedDrafts() {
         return repository.findApprovedDraftsWithoutExternalId().stream()
                 .filter(form -> form.getPage() != null)
@@ -143,6 +151,7 @@ public class FacebookInstantFormController {
     }
 
     @GetMapping("/instant-forms/{id}")
+    // Executa a operação get da integração Facebook Ads.
     public FacebookInstantFormDto get(@PathVariable Long id) {
         return repository.findById(id)
                 .map(mapper::toDto)
@@ -197,6 +206,7 @@ public class FacebookInstantFormController {
     @DeleteMapping("/instant-forms/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
+    // Executa a operação delete da integração Facebook Ads.
     public void delete(@PathVariable Long id) {
         FacebookInstantForm form = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "instant form not found"));
@@ -204,6 +214,7 @@ public class FacebookInstantFormController {
         repository.delete(form);
     }
 
+    // Executa a operação applyDefaults da integração Facebook Ads.
     private FacebookInstantFormDto applyDefaults(FacebookInstantFormDto dto) {
         if (dto == null) {
             return null;
@@ -242,6 +253,7 @@ public class FacebookInstantFormController {
         );
     }
 
+    // Executa a operação resolveFollowUpActionUrl da integração Facebook Ads.
     private String resolveFollowUpActionUrl(FacebookInstantFormDto dto) {
         if (dto == null) {
             return null;
@@ -259,6 +271,7 @@ public class FacebookInstantFormController {
                 .orElse(null);
     }
 
+    // Executa a operação resolvePrivacyPolicyUrl da integração Facebook Ads.
     private String resolvePrivacyPolicyUrl(String candidate) {
         if (StringUtils.hasText(candidate)) {
             return candidate.trim();
@@ -269,6 +282,7 @@ public class FacebookInstantFormController {
                 .orElse(null);
     }
 
+    // Executa a operação toPublicationDto da integração Facebook Ads.
     private FacebookInstantFormPublicationDto toPublicationDto(FacebookInstantForm form) {
         return new FacebookInstantFormPublicationDto(
                 form.getId(),

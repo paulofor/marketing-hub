@@ -1,4 +1,7 @@
-package com.marketinghub.ads;
+package com.marketinghub.facebookads.controller;
+
+import com.marketinghub.ads.FacebookInterest;
+import com.marketinghub.ads.FacebookInterestStatus;
 
 import com.marketinghub.repository.jpa.ads.FacebookInterestRepository;
 import org.springframework.http.HttpStatus;
@@ -8,16 +11,21 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+/**
+ * Agrupa endpoints de interesses Facebook pendentes e normalizados para segmentação.
+ */
 @RestController
 @RequestMapping("/api/facebook-interests")
 public class FacebookInterestController {
     private final FacebookInterestRepository repository;
 
+    // Executa a operação FacebookInterestController da integração Facebook Ads.
     public FacebookInterestController(FacebookInterestRepository repository) {
         this.repository = repository;
     }
 
     @GetMapping("/pending")
+    // Executa a operação findPendingInterests da integração Facebook Ads.
     public List<PendingInterestResponse> findPendingInterests() {
         return repository
             .findByStatusAndFacebookInterestIdIsNull(FacebookInterestStatus.PENDING)
@@ -28,6 +36,7 @@ public class FacebookInterestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    // Executa a operação create da integração Facebook Ads.
     public FacebookInterest create(@RequestBody CreateFacebookInterestRequest request) {
         if (!StringUtils.hasText(request.name())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");

@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.ads.FacebookAccount;

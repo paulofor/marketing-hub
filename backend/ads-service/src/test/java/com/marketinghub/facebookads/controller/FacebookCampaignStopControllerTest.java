@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.web;
+package com.marketinghub.facebookads.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.facebookads.FacebookAdsCampaign;

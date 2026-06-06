@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.playbook.web;
+package com.marketinghub.facebookads.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 /**
  * Internal endpoints consumed by the AI Worker and Facebook Ads Worker to process jobs.
  */
+/**
+ * Agrupa endpoints internos de jobs do playbook de conjuntos de anúncios Facebook.
+ */
 @RestController
 @RequestMapping("/internal/adset-playbook/jobs")
 @Validated
@@ -42,6 +45,7 @@ public class ExperimentAdSetJobController {
     }
 
     @PostMapping("/claim")
+    // Executa a operação claimJobs da integração Facebook Ads.
     public List<ExperimentAdSetJobPayloadDto> claimJobs(@Valid @RequestBody ExperimentAdSetJobClaimRequest request) {
         List<ExperimentAdSetJob> jobs = coordinator.claimJobs(request.worker(), request.workerId(), request.limit());
         return jobs.stream()
@@ -63,6 +67,7 @@ public class ExperimentAdSetJobController {
         coordinator.failJob(jobId, request.errorMessage(), request.apiCalls());
     }
 
+    // Executa a operação toPayload da integração Facebook Ads.
     private ExperimentAdSetJobPayloadDto toPayload(ExperimentAdSetJob job) {
         JsonNode payloadNode = readPayload(job.getPayload());
         return new ExperimentAdSetJobPayloadDto(
@@ -76,6 +81,7 @@ public class ExperimentAdSetJobController {
         );
     }
 
+    // Executa a operação readPayload da integração Facebook Ads.
     private JsonNode readPayload(String raw) {
         if (raw == null) {
             return null;
@@ -83,7 +89,7 @@ public class ExperimentAdSetJobController {
         try {
             return objectMapper.readTree(raw);
         } catch (Exception ex) {
-            LOGGER.error("Falha ao desserializar payload do job: {}", ex.getMessage());
+            LOGGER.error("Falha ao desserializar payload do job da integração Facebook Ads. rawPayloadLength={}", raw.length(), ex);
             return null;
         }
     }

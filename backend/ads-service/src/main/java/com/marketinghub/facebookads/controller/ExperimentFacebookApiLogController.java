@@ -1,4 +1,4 @@
-package com.marketinghub.facebookads.playbook.web;
+package com.marketinghub.facebookads.controller;
 
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogIngestionRequest;
@@ -8,12 +8,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Agrupa endpoints de ingestão e consulta dos logs da API Facebook por experimento.
+ */
 @RestController
 @RequestMapping("/api/experiments/{experimentId}/facebook-api-logs")
 public class ExperimentFacebookApiLogController {
 
     private final ExperimentFacebookApiLogService apiLogService;
 
+    // Executa a operação ExperimentFacebookApiLogController da integração Facebook Ads.
     public ExperimentFacebookApiLogController(ExperimentFacebookApiLogService apiLogService) {
         this.apiLogService = apiLogService;
     }

@@ -1072,4 +1072,13 @@ Arquivos alterados:
 - `mcp-server/README.md`
 - `mcp-server/AGENTS.md`
 - `AGENTS.md`
+## 2026-06-06 — Correção de ambiguidade SQL no claim de referências coletadas MOIS
+
+- corrigida a causa-raiz do erro `Column 'title' in field list is ambiguous` no claim `POST /api/mois/sales-library/collected-reference-html:claim`.
+- o `ON DUPLICATE KEY UPDATE` do upsert em `mois_sales_page` agora referencia explicitamente os campos atuais da tabela alvo (`mois_sales_page.title`, `mois_sales_page.collected_reference_id`, `mois_sales_page.source_job_id`, `mois_sales_page.source_reference_id`) ao combinar dados já existentes com `VALUES(...)` vindos da referência coletada.
+- adicionada cobertura unitária para impedir regressão para referência não qualificada de `title` no SQL de reserva de captura.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
 - `docs/registros/mois1.md`

@@ -829,10 +829,10 @@ public class MoisSalesLibraryService {
                         FROM mois_collected_reference r
                         WHERE r.id = ?
                         ON DUPLICATE KEY UPDATE
-                            collected_reference_id = COALESCE(collected_reference_id, VALUES(collected_reference_id)),
-                            source_job_id = COALESCE(source_job_id, VALUES(source_job_id)),
-                            source_reference_id = COALESCE(source_reference_id, VALUES(source_reference_id)),
-                            title = COALESCE(NULLIF(VALUES(title), ''), title),
+                            collected_reference_id = COALESCE(mois_sales_page.collected_reference_id, VALUES(collected_reference_id)),
+                            source_job_id = COALESCE(mois_sales_page.source_job_id, VALUES(source_job_id)),
+                            source_reference_id = COALESCE(mois_sales_page.source_reference_id, VALUES(source_reference_id)),
+                            title = COALESCE(NULLIF(VALUES(title), ''), mois_sales_page.title),
                             current_stage = 'CAPTURE',
                             current_status = 'FETCHING',
                             capture_status = 'FETCHING',

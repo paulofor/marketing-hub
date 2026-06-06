@@ -141,6 +141,13 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
                 .contains("GROUP BY effective_url")
                 .contains("TRIM(sales_page_url)");
+
+        ArgumentCaptor<String> upsertSqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).update(upsertSqlCaptor.capture(), any(), any(), eq(20L));
+        org.assertj.core.api.Assertions.assertThat(upsertSqlCaptor.getValue())
+                .contains("mois_sales_page.title")
+                .contains("mois_sales_page.collected_reference_id")
+                .doesNotContain("NULLIF(VALUES(title), ''), title");
     }
 
     /**

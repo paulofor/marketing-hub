@@ -49,7 +49,7 @@ Endpoints administrativos vigentes:
 - `POST /api/pipelines/{id}/rebuild-official-stages` permite que a tela, após confirmação explícita do usuário, remova etapas operacionais atuais de um pipeline oficial e recrie somente as etapas do contrato canônico, reaproveitando configurações compatíveis como descrição e modelo OpenAI quando houver mapeamento seguro;
 - `POST /api/pipelines/official/{code}/sync` cria ou sincroniza um pipeline oficial ausente pelo código canônico, sem aceitar payload da tela.
 
-A sincronização segura pode criar pipeline/etapas oficiais ausentes e corrigir campos estruturais permitidos, mas deve bloquear divergências destrutivas, como etapa extra sem mapeamento canônico ou duplicidade operacional, para evitar perda de histórico e preservar a causa-raiz para decisão humana.
+A sincronização segura pode criar pipeline/etapas oficiais ausentes e corrigir campos estruturais permitidos, mas deve bloquear divergências destrutivas, como etapa extra sem mapeamento canônico ou duplicidade operacional, para evitar perda de histórico e preservar a causa-raiz para decisão humana. A interface administrativa do frontend não deve oferecer criação manual de pipelines nem de etapas; esses cadastros nascem do contrato canônico e de rotinas do backend, enquanto a tela fica restrita à visualização, diagnóstico, ajuste oficial controlado e edição operacional segura de registros existentes.
 
 ### 4.2 Prompts dessas etapas
 Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.

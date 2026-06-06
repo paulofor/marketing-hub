@@ -13,6 +13,10 @@ export interface OprmSourceCandidateDetail {
   searchProvider: string;
   searchPosition: number;
   status: string;
+  sourceIntent?: string | null;
+  routineEvidenceScore?: number | null;
+  commercialPageRisk?: boolean | null;
+  solutionLanguageRisk?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }

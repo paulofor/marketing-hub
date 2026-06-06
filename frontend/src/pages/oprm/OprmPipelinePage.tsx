@@ -25,9 +25,9 @@ const pipelineStages = [
     title: "Seed de Pesquisa do Nicho",
     technicalName: "oprmNicheResearchSeedBuilder",
     description:
-      "Usa IA para transformar o CNAE em nicho operacional, objetos comerciais, suposições iniciais e queries de pesquisa.",
+      "Usa IA para transformar o CNAE em nicho operacional, contexto de rotina e queries sem procurar solução.",
     output:
-      "Seed do nicho e frases de pesquisa para rotina, dores, perguntas e ofertas.",
+      "Seed do nicho e frases de pesquisa para rotina, tarefas, dificuldades, perguntas e linguagem pública.",
   },
   {
     number: "3",
@@ -50,7 +50,7 @@ const pipelineStages = [
     title: "Extração de Sinais",
     technicalName: "oprmSignalExtractor",
     description:
-      "Extrai sinais estruturados sobre rotina, tarefas comerciais, dores, perguntas, linguagem e oportunidades de mecanismo.",
+      "Extrai sinais estruturados sobre rotina, tarefas recorrentes, dificuldades, perguntas, linguagem e risco de solução.",
     output: "Sinais classificados para sustentar a síntese da rotina.",
   },
   {
@@ -67,9 +67,9 @@ const pipelineStages = [
     title: "Gate de Qualidade",
     technicalName: "oprmRoutineQualityGate",
     description:
-      "Avalia se o card tem fontes, sinais, especificidade e confiança suficientes para seguir para hipótese comercial.",
+      "Avalia se o card representa a rotina e as dificuldades com fontes suficientes, baixa duplicação e baixo risco de solução.",
     output:
-      "Decisão: pronto para hipótese, precisa de mais pesquisa ou ficou genérico.",
+      "Decisão operacional: rotina pesquisada, precisa de mais pesquisa ou ficou genérica/contaminada.",
   },
   {
     number: "8",
@@ -78,9 +78,53 @@ const pipelineStages = [
     description:
       "Etapa final que alimenta a tabela de nicho e a tabela de nicho enriquecido a partir do card aprovado.",
     output:
-      "market_niche + market_niche_enrichment_profile prontos para uso posterior em hipótese.",
+      "market_niche + market_niche_enrichment_profile com nome neutro, rotina, dificuldades, linguagem e evidências auditáveis.",
   },
 ];
+
+function getOperationalName(item: {
+  neutralNicheName?: string | null;
+  nicheName: string;
+}) {
+  return item.neutralNicheName?.trim() || item.nicheName;
+}
+
+function getOriginalName(item: {
+  originalNicheName?: string | null;
+  nicheName: string;
+}) {
+  return item.originalNicheName?.trim() || item.nicheName;
+}
+
+function countByValue<T>(
+  items: T[],
+  selector: (item: T) => string | null | undefined,
+) {
+  return items.reduce<Record<string, number>>((acc, item) => {
+    const rawValue = selector(item)?.trim();
+    const value = rawValue || "Não classificado";
+    acc[value] = (acc[value] ?? 0) + 1;
+    return acc;
+  }, {});
+}
+
+function formatMix(mix: Record<string, number>) {
+  const entries = Object.entries(mix);
+  if (entries.length === 0) {
+    return "Sem dados";
+  }
+  return entries
+    .sort(([, leftCount], [, rightCount]) => rightCount - leftCount)
+    .map(([label, count]) => `${label}: ${count}`)
+    .join(" · ");
+}
+
+function formatRiskScore(value?: number | null) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "Sem score";
+  }
+  return `${Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+}
 
 function formatProcessedAt(value: string) {
   const date = new Date(value);
@@ -240,6 +284,24 @@ export default function OprmPipelinePage() {
     isError: isEnrichedNicheMaterializerDetailError,
     isFetching: isEnrichedNicheMaterializerDetailFetching,
   } = useOprmEnrichedNicheMaterializerDetail(latestCycle?.researchCycleId);
+  const queryGoalMix = countByValue(
+    generatedSeed?.queries ?? [],
+    (query) => query.queryGoal,
+  );
+  const sourceIntentMix = countByValue(
+    sourceSearcherDetail?.candidates ?? [],
+    (candidate) => candidate.sourceIntent,
+  );
+  const snapshotIntentMix = countByValue(
+    sourceSnapshots,
+    (snapshot) => snapshot.sourceIntent,
+  );
+  const sourceSolutionRiskCount = (
+    sourceSearcherDetail?.candidates ?? []
+  ).filter((candidate) => candidate.solutionLanguageRisk).length;
+  const snapshotSolutionRiskCount = sourceSnapshots.filter(
+    (snapshot) => snapshot.solutionLanguageRisk,
+  ).length;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -249,8 +311,8 @@ export default function OprmPipelinePage() {
           Esta tela mostra o pipeline OPRM que transforma um nicho CNAE já
           priorizado em um cartão de rotina pesquisado. Ingestão de mercado,
           cálculo de score e enriquecimento CNAE ficam na aba CNAEs; aqui o foco
-          é conhecer como o nicho funciona no dia a dia antes da hipótese
-          comercial.
+          é conhecer como o nicho funciona no dia a dia antes de qualquer
+          solução, produto ou oferta.
         </p>
       </header>
 
@@ -261,9 +323,9 @@ export default function OprmPipelinePage() {
           <h2 className="h5 mb-2">Fluxo do pipeline de pesquisa da rotina</h2>
           <p className="text-secondary mb-0">
             Entrada: nicho CNAE com score alto. Saída esperada:
-            <strong> oprm_niche_routine_card</strong>, que será usado depois
-            pelo pipeline de hipótese comercial para trabalhar dor, resultado,
-            mecanismo, prova e oferta.
+            <strong> oprm_niche_routine_card</strong>, usado para entender
+            rotina, dificuldades, perguntas e evidências antes de qualquer fluxo
+            posterior de hipótese ou oferta.
           </p>
         </div>
       </section>
@@ -323,10 +385,14 @@ export default function OprmPipelinePage() {
                       </td>
                       <td>
                         <span className="fw-semibold d-block">
-                          {item.nicheName}
+                          {getOperationalName(item)}
+                        </span>
+                        <span className="text-secondary small d-block">
+                          Original: {getOriginalName(item)}
                         </span>
                         <span className="text-secondary small">
-                          Ciclo #{item.researchCycleId}
+                          Ciclo #{item.researchCycleId} ·{" "}
+                          {item.researchMode ?? "modo não informado"}
                         </span>
                       </td>
                       <td>
@@ -427,6 +493,30 @@ export default function OprmPipelinePage() {
                           </span>
                         </dd>
                         <dt className="col-5 text-secondary fw-normal">
+                          Nome neutro
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {getOperationalName(latestCycle)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Nome original
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {getOriginalName(latestCycle)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">Modo</dt>
+                        <dd className="col-7 mb-0">
+                          {latestCycle.researchMode ?? "Não informado"}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Risco solução
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {formatRiskScore(
+                            latestCycle.solutionLanguageRiskScore,
+                          )}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
                           Score
                         </dt>
                         <dd className="col-7 mb-0">
@@ -500,6 +590,12 @@ export default function OprmPipelinePage() {
                             </dt>
                             <dd className="col-7 mb-0">
                               {generatedSeed.nicheName}
+                            </dd>
+                            <dt className="col-5 text-secondary fw-normal">
+                              Mix objetivos
+                            </dt>
+                            <dd className="col-7 mb-0">
+                              {formatMix(queryGoalMix)}
                             </dd>
                             <dt className="col-5 text-secondary fw-normal">
                               Tipo
@@ -594,6 +690,18 @@ export default function OprmPipelinePage() {
                                 sourceSearcherDetail.cycleTotalSourceCandidates,
                               )}
                             </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Mix intenção
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              {formatMix(sourceIntentMix)}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Risco solução
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {sourceSolutionRiskCount}
+                            </dd>
                             {sourceSearcherDetail.lastExecutedAt ? (
                               <>
                                 <dt className="col-6 text-secondary fw-normal">
@@ -680,6 +788,18 @@ export default function OprmPipelinePage() {
                               {formatStageCount(
                                 sourceFetcherDetail.cycleTotalSourceSnapshots,
                               )}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Mix intenção
+                            </dt>
+                            <dd className="col-6 mb-0">
+                              {formatMix(snapshotIntentMix)}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Risco solução
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {snapshotSolutionRiskCount}
                             </dd>
                             <dt className="col-6 text-secondary fw-normal">
                               Status do ciclo
@@ -882,6 +1002,18 @@ export default function OprmPipelinePage() {
                               {routineCard.confidenceScore}%
                             </dd>
                             <dt className="col-6 text-secondary fw-normal">
+                              Evidência rotina
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {routineCard.routineEvidenceScore}%
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Risco solução
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {routineCard.solutionLanguageRiskScore}%
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
                               Status do ciclo
                             </dt>
                             <dd className="col-6 mb-0">
@@ -995,6 +1127,26 @@ export default function OprmPipelinePage() {
                               )}
                               %
                             </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Evidência rotina
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                routineQualityGateDetail.routineEvidenceScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Risco solução
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {formatStageCount(
+                                routineQualityGateDetail.solutionLanguageRiskScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
                             {routineQualityGateDetail.checkedAt ? (
                               <>
                                 <dt className="col-6 text-secondary fw-normal">
@@ -1095,16 +1247,27 @@ export default function OprmPipelinePage() {
                             ) : null}
                           </dl>
                           <p className="mb-2 fw-semibold">
-                            {enrichedNicheMaterializerDetail.nicheName}
+                            {enrichedNicheMaterializerDetail.neutralNicheName ??
+                              enrichedNicheMaterializerDetail.nicheName}
+                          </p>
+                          <p className="text-secondary mb-2">
+                            Original:{" "}
+                            {enrichedNicheMaterializerDetail.originalNicheName ??
+                              "Não informado"}{" "}
+                            · Modo:{" "}
+                            {enrichedNicheMaterializerDetail.researchMode ??
+                              "Não informado"}{" "}
+                            · Risco solução:{" "}
+                            {formatRiskScore(
+                              enrichedNicheMaterializerDetail.solutionLanguageRiskScore,
+                            )}
                           </p>
                           <p className="text-secondary mb-2 text-truncate">
                             {enrichedNicheMaterializerDetail.painsSummary}
                           </p>
                           <p className="text-secondary mb-0">
-                            Mecanismos:{" "}
-                            {
-                              enrichedNicheMaterializerDetail.mechanismOpportunitiesSummary
-                            }
+                            Evidências:{" "}
+                            {enrichedNicheMaterializerDetail.evidenceSummary}
                           </p>
                         </div>
                       ) : routineQualityGateDetail?.readyForHypothesis ? (

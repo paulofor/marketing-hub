@@ -1,5 +1,6 @@
 package com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.detailStageExecution;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Detalhe público da materialização de nicho enriquecido para a tela do pipeline. */
@@ -9,6 +10,10 @@ public record EnrichedNicheMaterializerDetailResponse(
     Long routineCardId,
     Long marketNicheId,
     Long enrichedNicheProfileId,
+    String originalNicheName,
+    String neutralNicheName,
+    String researchMode,
+    BigDecimal solutionLanguageRiskScore,
     String nicheName,
     String cnaeCode,
     String qualityStatus,

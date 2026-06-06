@@ -286,3 +286,4 @@
 
 ## 2026-06-05 — Correção de include Liquibase para scores de qualidade da rotina OPRM
 - Ajustado o changelog master do backend para resolver o changeset `2026-06-05-oprm-routine-quality-scores.yaml` de forma relativa ao arquivo master, evitando falha de bootstrap quando o Liquibase não encontra `changesets/...` no search path configurado.
+- 2026-06-06 00:00:00 (UTC): executada a fase 6 do plano de ajuste NichoCNAE sem viés: materialização passou a usar nome neutro no `market_niche`, preservar nome original apenas na descrição de auditoria, não preencher campos comerciais de promessa/oferta/gatilhos/objeções na etapa inicial de rotina, expor diagnóstico de registros históricos com linguagem de solução e ampliar a tela `/oprm/pipeline` com nome original, nome neutro, modo de pesquisa, mix de objetivos/fontes, risco de linguagem de solução e motivo do gate.

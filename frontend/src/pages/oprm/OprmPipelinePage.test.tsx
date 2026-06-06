@@ -40,6 +40,11 @@ describe("OprmPipelinePage", () => {
               cnaeDescription: "Cabeleireiros, manicure e pedicure",
               nicheName:
                 "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              originalNicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              neutralNicheName: "Cabeleireiros, manicure e pedicure",
+              researchMode: "ROUTINE_REALITY_RESEARCH",
+              solutionLanguageRiskScore: 65,
               sourceScore: 90,
               triggerSource: "AUTO_SCORE_QUEUE",
               cycleStatus: "RUNNING",
@@ -70,6 +75,12 @@ describe("OprmPipelinePage", () => {
     expect(await screen.findByText("Execução mais recente")).toBeTruthy();
     expect(screen.getByText("#1")).toBeTruthy();
     expect(screen.getAllByText("9602501").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Cabeleireiros, manicure e pedicure").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("ROUTINE_REALITY_RESEARCH").length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Em execução").length).toBeGreaterThan(0);
 
     await waitFor(() => {
@@ -109,6 +120,11 @@ describe("OprmPipelinePage", () => {
               cnaeDescription: "Cabeleireiros, manicure e pedicure",
               nicheName:
                 "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              originalNicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              neutralNicheName: "Cabeleireiros, manicure e pedicure",
+              researchMode: "ROUTINE_REALITY_RESEARCH",
+              solutionLanguageRiskScore: 65,
               sourceScore: 90,
               triggerSource: "AUTO_SCORE_QUEUE",
               cycleStatus: "RUNNING",
@@ -191,6 +207,7 @@ describe("OprmPipelinePage", () => {
     expect(
       screen.getByText("Profissionais enfrentam desafios na gestão de agenda."),
     ).toBeTruthy();
+    expect(screen.getByText("ROUTINE_DISCOVERY: 1")).toBeTruthy();
     expect(
       screen.getByText(
         "1 queries geradas para as próximas etapas. Abra o detalhe para ver a requisição enviada à IA e o JSON completo gerado.",

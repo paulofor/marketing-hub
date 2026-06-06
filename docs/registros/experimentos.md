@@ -3706,3 +3706,14 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/facebook/FacebookCampaignExperimentsPage.tsx
   - frontend/src/api/useFacebookCampaignExperiments.ts
+
+## 2026-06-06 — Remoção de criação manual de pipelines e etapas no frontend
+
+- solicitação: remover o quadro de **Adicionar etapa** e impedir criação manual de etapas ou pipelines pela tela `/pipelines`.
+- causa-raiz: a tela ainda expunha formulários de criação manual, embora o pipeline operacional deva nascer do contrato canônico e das rotinas do backend para evitar divergência estrutural.
+- correção aplicada: a tela principal passou a exibir somente a lista e, quando necessário, o formulário de edição de pipeline existente; a tela de etapas passou a mostrar o formulário somente durante edição de uma etapa existente, removendo o estado padrão de adicionar etapa.
+- documentação sincronizada: o cânone do procedimento de experimento passou a registrar que o frontend administrativo não oferece criação manual de pipelines nem de etapas.
+- arquivos alterados:
+  - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+  - `docs/canonical/procedimento-experimento-canon.v1.md`
+  - `docs/registros/experimentos.md`

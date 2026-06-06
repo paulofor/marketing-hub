@@ -4,6 +4,7 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.Backend
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.detailStageExecution.EnrichedNicheMaterializerDetailResponse;
+import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -57,4 +59,12 @@ public class BackendEnrichedNicheMaterializerController {
   public ResponseEntity<EnrichedNicheMaterializerDetailResponse> detailByProfileId(@PathVariable Long profileId) {
     return ResponseEntity.ok(executionService.detailByProfileId(profileId));
   }
+
+  /** Diagnostica ciclos e perfis históricos com linguagem de solução para reprocessamento neutro. */
+  @GetMapping("/api/oprm/nichocnae/enriched-niche-materializer/diagnostics/solution-contamination")
+  public ResponseEntity<ContaminatedNicheDiagnosticResponse> diagnoseContamination(
+      @RequestParam(defaultValue = "20") int limit) {
+    return ResponseEntity.ok(executionService.diagnoseHistoricalContamination(limit));
+  }
+
 }

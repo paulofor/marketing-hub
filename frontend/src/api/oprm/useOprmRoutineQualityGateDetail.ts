@@ -10,6 +10,10 @@ export interface OprmRoutineQualityGateDetail {
   specificityScore: number | null;
   confidenceScore: number | null;
   duplicationScore: number | null;
+  routineEvidenceScore?: number | null;
+  difficultyEvidenceScore?: number | null;
+  sourceDiversityScore?: number | null;
+  solutionLanguageRiskScore?: number | null;
   qualityNotes: string | null;
   checkedBy: string | null;
   checkedAt: string | null;

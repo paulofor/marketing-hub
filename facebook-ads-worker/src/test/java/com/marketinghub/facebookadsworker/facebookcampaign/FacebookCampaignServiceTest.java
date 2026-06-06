@@ -140,9 +140,10 @@ class FacebookCampaignServiceTest {
             () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
         );
         backend.enqueueConditionalResponse(
-            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath())
+            request -> request.getPath() != null
+                && request.getPath().startsWith("/api/facebook-adsets/experiments-ready")
                 && "GET".equals(request.getMethod()),
-            () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
+            () -> new MockResponse().setBody(defaultManualTargetingPackage()).addHeader("Content-Type", "application/json")
         );
         backend.enqueueConditionalResponse(
             request -> request.getPath() != null
@@ -186,6 +187,22 @@ class FacebookCampaignServiceTest {
         facebook.assertNoUnmatchedRequests();
         backend.shutdown();
         facebook.shutdown();
+    }
+
+
+    private String defaultManualTargetingPackage() {
+        return """
+            [{
+              "experiment":{"id":1},
+              "targeting":{
+                "interests":[],
+                "jobTitles":[
+                  {"id":10,"term":"Personal Trainer","metaId":"1419795191647433","metaKey":"Certified Personal Trainer"}
+                ],
+                "behaviors":[]
+              }
+            }]
+            """;
     }
 
     private RecordedRequest takeBackendRequest(String description) throws InterruptedException {

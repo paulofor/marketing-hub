@@ -5,14 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.reactive.function.client.WebClient;
 
 class OpenAiPricingPageClientTest {
 
     @Test
     void shouldParseStandardAndBatchPricesFromOfficialPricingTables() {
         OpenAiProperties properties = new OpenAiProperties();
-        OpenAiPricingPageClient client = new OpenAiPricingPageClient(WebClient.builder(), properties);
+        OpenAiPricingPageClient client = new OpenAiPricingPageClient(properties);
 
         List<OpenAiModelPricing> prices = client.parseTextModelPricing("""
                 <html><body>
@@ -46,7 +45,7 @@ class OpenAiPricingPageClientTest {
     @Test
     void shouldUseHalfStandardAsBatchFallbackWhenBatchTableIsMissing() {
         OpenAiProperties properties = new OpenAiProperties();
-        OpenAiPricingPageClient client = new OpenAiPricingPageClient(WebClient.builder(), properties);
+        OpenAiPricingPageClient client = new OpenAiPricingPageClient(properties);
 
         List<OpenAiModelPricing> prices = client.parseTextModelPricing("""
                 <table>
@@ -66,7 +65,7 @@ class OpenAiPricingPageClientTest {
     @Test
     void shouldParsePricesFromCurrentShortAndLongContextTable() {
         OpenAiProperties properties = new OpenAiProperties();
-        OpenAiPricingPageClient client = new OpenAiPricingPageClient(WebClient.builder(), properties);
+        OpenAiPricingPageClient client = new OpenAiPricingPageClient(properties);
 
         List<OpenAiModelPricing> prices = client.parseTextModelPricing("""
                 <table>
@@ -90,6 +89,38 @@ class OpenAiPricingPageClientTest {
         assertThat(pricing.priceInputBatch()).isEqualByComparingTo(new BigDecimal("1.25"));
         assertThat(pricing.priceInputCachedBatch()).isEqualByComparingTo(new BigDecimal("0.125"));
         assertThat(pricing.priceOutputBatch()).isEqualByComparingTo(new BigDecimal("7.50"));
+    }
+
+    @Test
+    void shouldResolvePricingForDatedModelVariantUsingMostSpecificBaseCode() {
+        OpenAiProperties properties = new OpenAiProperties();
+        OpenAiPricingPageClient client = new OpenAiPricingPageClient(properties);
+        List<OpenAiModelPricing> prices = List.of(
+                new OpenAiModelPricing(
+                        "gpt-5.4",
+                        "gpt-5.4",
+                        new BigDecimal("2.50"),
+                        new BigDecimal("0.25"),
+                        new BigDecimal("15.00"),
+                        new BigDecimal("1.25"),
+                        new BigDecimal("0.125"),
+                        new BigDecimal("7.50")),
+                new OpenAiModelPricing(
+                        "gpt-5.4-pro",
+                        "gpt-5.4-pro",
+                        new BigDecimal("30.00"),
+                        BigDecimal.ZERO,
+                        new BigDecimal("180.00"),
+                        new BigDecimal("15.00"),
+                        BigDecimal.ZERO,
+                        new BigDecimal("90.00")));
+
+        OpenAiModelPricing pricing = client
+                .findBestTextModelPricing(prices, "gpt-5.4-pro-2026-03-05")
+                .orElseThrow();
+
+        assertThat(pricing.code()).isEqualTo("gpt-5.4-pro");
+        assertThat(pricing.priceInputStandard()).isEqualByComparingTo(new BigDecimal("30.00"));
     }
 
 }

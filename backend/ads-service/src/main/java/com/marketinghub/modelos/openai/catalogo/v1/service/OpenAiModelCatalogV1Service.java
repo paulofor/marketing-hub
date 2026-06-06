@@ -73,6 +73,13 @@ public class OpenAiModelCatalogV1Service {
             for (OpenAiModelPricing pricing : pricingRows) {
                 pricingByModel.put(pricing.code(), toPriceResponse(pricing));
             }
+            List<OpenAiCatalogModelV1> catalogModels = repository.findAll();
+            for (OpenAiCatalogModelV1 catalogModel : catalogModels) {
+                pricingPageClient
+                        .findBestTextModelPricing(pricingRows, catalogModel.getCode())
+                        .ifPresent(pricing -> pricingByModel.putIfAbsent(
+                                catalogModel.getCode(), toPriceResponse(pricing)));
+            }
             return pricingByModel;
         } catch (RuntimeException ex) {
             log.error(

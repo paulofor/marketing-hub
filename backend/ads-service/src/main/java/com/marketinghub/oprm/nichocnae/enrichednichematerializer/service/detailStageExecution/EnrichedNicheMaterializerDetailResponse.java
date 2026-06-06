@@ -23,4 +23,8 @@ public record EnrichedNicheMaterializerDetailResponse(
     String mechanismOpportunitiesSummary,
     String evidenceSummary,
     String sourceDomains,
+    Integer routineEvidenceScore,
+    Integer difficultyEvidenceScore,
+    Integer sourceDiversityScore,
+    Integer materializedSolutionLanguageRiskScore,
     Instant materializedAt) {}

@@ -52,8 +52,12 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(pending.getFirst().routineCardId()).isEqualTo(10L);
     assertThat(pending.getFirst().sourceNicheCandidateId()).isEqualTo(77L);
     assertThat(pending.getFirst().existingMarketNicheId()).isNull();
+    assertThat(pending.getFirst().originalNicheName()).isEqualTo("IA para salões pequenos");
     assertThat(pending.getFirst().nicheName()).isEqualTo("Salões pequenos");
-    assertThat(pending.getFirst().mechanismOpportunitiesSummary()).contains("agenda");
+    assertThat(pending.getFirst().researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
+    assertThat(pending.getFirst().routineEvidenceScore()).isEqualTo(87);
+    assertThat(pending.getFirst().solutionLanguageRiskScore()).isEqualTo(35);
+    assertThat(pending.getFirst().mechanismOpportunitiesSummary()).contains("Contexto operacional");
   }
 
   /** Deve criar nicho base, perfil enriquecido e atualizar ciclo/candidato sem gerar hipótese. */
@@ -90,9 +94,20 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && niche.getOffers() == null
             && niche.getDescription().contains("Nome original recebido para auditoria: IA para salões pequenos")
             && niche.getDescription().contains("Nome neutro pesquisado: Salões pequenos")
+            && niche.getDescription().contains("Contexto operacional e linguagem pública:")
             && !niche.getDescription().contains("Oportunidades de mecanismo:")));
     verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
-        profile.getCommercialTriggers() == null && profile.getObjections() == null));
+        "Salões pequenos".equals(profile.getNeutralNicheName())
+            && "IA para salões pequenos".equals(profile.getOriginalNicheName())
+            && "ROUTINE_REALITY_RESEARCH".equals(profile.getResearchMode())
+            && Integer.valueOf(87).equals(profile.getRoutineEvidenceScore())
+            && Integer.valueOf(82).equals(profile.getDifficultyEvidenceScore())
+            && Integer.valueOf(72).equals(profile.getSourceDiversityScore())
+            && Integer.valueOf(35).equals(profile.getSolutionLanguageRiskScore())
+            && profile.getMechanismOpportunitiesSummary().contains("Contexto operacional")
+            && !profile.getMechanismOpportunitiesSummary().contains("Mecanismo de agenda")
+            && profile.getCommercialTriggers() == null
+            && profile.getObjections() == null));
   }
 
   /** Deve localizar registros históricos contaminados para orientar novo ciclo neutro. */
@@ -118,11 +133,15 @@ class BackendEnrichedNicheMaterializerServiceTest {
     card.setNicheName("IA para salões pequenos");
     card.setRoutineSummary("Rotina com agenda, atendimento e retorno de clientes.");
     card.setPainsSummary("Dores de falta de tempo e organização.");
-    card.setResultsSummary("Resultado de preencher horários e reduzir esforço.");
-    card.setMechanismOpportunitiesSummary("Mecanismo de agenda inteligente e mensagens prontas.");
+    card.setResultsSummary("Perguntas do profissional sobre encaixes e retornos de clientes.");
+    card.setMechanismOpportunitiesSummary("Contexto operacional e linguagem do nicho: agenda, encaixes, retorno e horários vagos.");
     card.setEvidenceSummary("Evidência em fontes de gestão para salões.");
     card.setSourceDomains("exemplo.com");
     card.setConfidenceScore(90);
+    card.setRoutineEvidenceScore(87);
+    card.setDifficultyEvidenceScore(82);
+    card.setSourceDiversityScore(72);
+    card.setSolutionLanguageRiskScore(35);
     card.setReadyForHypothesis(true);
     card.setSpecificityScore(84);
     card.setDuplicationScore(0);

@@ -158,7 +158,7 @@ public class BackendEnrichedNicheMaterializerService {
         cycle.getNeutralNicheName(),
         cycle.getResearchMode(),
         cycle.getSolutionLanguageRiskScore(),
-        card == null ? neutralNicheName(cycle) : card.getNicheName(),
+        profile == null ? neutralNicheName(cycle) : profile.getNeutralNicheName(),
         cycle.getCnaeCode(),
         card == null ? null : card.getQualityStatus(),
         profile == null ? null : profile.getRoutineSummary(),
@@ -167,6 +167,10 @@ public class BackendEnrichedNicheMaterializerService {
         profile == null ? null : profile.getMechanismOpportunitiesSummary(),
         profile == null ? null : profile.getEvidenceSummary(),
         profile == null ? null : profile.getSourceDomains(),
+        profile == null ? scoreOrZero(card == null ? null : card.getRoutineEvidenceScore()) : profile.getRoutineEvidenceScore(),
+        profile == null ? scoreOrZero(card == null ? null : card.getDifficultyEvidenceScore()) : profile.getDifficultyEvidenceScore(),
+        profile == null ? scoreOrZero(card == null ? null : card.getSourceDiversityScore()) : profile.getSourceDiversityScore(),
+        profile == null ? scoreOrZero(card == null ? null : card.getSolutionLanguageRiskScore()) : profile.getSolutionLanguageRiskScore(),
         profile == null ? null : profile.getCreatedAt());
   }
 
@@ -181,12 +185,18 @@ public class BackendEnrichedNicheMaterializerService {
         candidate == null ? null : candidate.getMarketNicheId(),
         cycle.getCnaeCode(),
         cycle.getCnaeDescription(),
+        defaultText(cycle.getOriginalNicheName(), cycle.getNicheName()),
         neutralNicheName(cycle),
+        defaultText(cycle.getResearchMode(), "ROUTINE_REALITY_RESEARCH"),
         cycle.getSourceScore(),
         card.getQualityStatus(),
         card.getSpecificityScore(),
         card.getConfidenceScore(),
         card.getDuplicationScore(),
+        scoreOrZero(card.getRoutineEvidenceScore()),
+        scoreOrZero(card.getDifficultyEvidenceScore()),
+        scoreOrZero(card.getSourceDiversityScore()),
+        scoreOrZero(card.getSolutionLanguageRiskScore()),
         card.getRoutineSummary(),
         card.getPainsSummary(),
         card.getResultsSummary(),
@@ -222,8 +232,9 @@ public class BackendEnrichedNicheMaterializerService {
         "Nome neutro pesquisado: " + neutralNicheName(cycle),
         "Rotina observada:\n" + card.getRoutineSummary(),
         "Dificuldades observadas:\n" + card.getPainsSummary(),
-        "Contexto operacional:\n" + card.getResultsSummary(),
-        "Linguagem e evidências públicas:\n" + card.getEvidenceSummary());
+        "Perguntas observadas:\n" + card.getResultsSummary(),
+        "Contexto operacional e linguagem pública:\n" + materializableOperationalContext(card),
+        "Evidências e fontes públicas:\n" + card.getEvidenceSummary());
   }
 
   /** Monta dicas operacionais de uso do nicho para próximas etapas sem acionar hipótese. */
@@ -257,10 +268,17 @@ public class BackendEnrichedNicheMaterializerService {
     profile.setSpecificityScore(card.getSpecificityScore());
     profile.setConfidenceScore(card.getConfidenceScore());
     profile.setDuplicationScore(card.getDuplicationScore());
+    profile.setRoutineEvidenceScore(scoreOrZero(card.getRoutineEvidenceScore()));
+    profile.setDifficultyEvidenceScore(scoreOrZero(card.getDifficultyEvidenceScore()));
+    profile.setSourceDiversityScore(scoreOrZero(card.getSourceDiversityScore()));
+    profile.setSolutionLanguageRiskScore(scoreOrZero(card.getSolutionLanguageRiskScore()));
+    profile.setOriginalNicheName(defaultText(cycle.getOriginalNicheName(), cycle.getNicheName()));
+    profile.setNeutralNicheName(requiredText(neutralNicheName(cycle), "neutralNicheName"));
+    profile.setResearchMode(defaultText(cycle.getResearchMode(), "ROUTINE_REALITY_RESEARCH"));
     profile.setRoutineSummary(requiredText(card.getRoutineSummary(), "routineSummary"));
     profile.setPainsSummary(requiredText(card.getPainsSummary(), "painsSummary"));
     profile.setResultsSummary(requiredText(card.getResultsSummary(), "resultsSummary"));
-    profile.setMechanismOpportunitiesSummary(requiredText(card.getMechanismOpportunitiesSummary(), "mechanismOpportunitiesSummary"));
+    profile.setMechanismOpportunitiesSummary(materializableOperationalContext(card));
     profile.setEvidenceSummary(requiredText(card.getEvidenceSummary(), "evidenceSummary"));
     profile.setSourceDomains(trimOptional(card.getSourceDomains()));
     profile.setPersonaSummary(trimOptional(request.personaSummary()));
@@ -271,6 +289,21 @@ public class BackendEnrichedNicheMaterializerService {
     profile.setCreatedAt(now);
     profile.setUpdatedAt(now);
     return profile;
+  }
+
+  /** Preserva apenas o bloco de contexto/linguagem quando ele foi sintetizado como pesquisa de rotina real. */
+  private String materializableOperationalContext(OprmNicheRoutineCard card) {
+    String context = requiredText(card.getMechanismOpportunitiesSummary(), "operationalContextSummary");
+    String normalized = context.toLowerCase(java.util.Locale.ROOT);
+    if (normalized.contains("contexto operacional") || normalized.contains("linguagem do nicho")) {
+      return context.trim();
+    }
+    return "Contexto operacional e linguagem pública não disponíveis em formato compatível no cartão aprovado; reprocessar a síntese neutra antes de usar este bloco.";
+  }
+
+  /** Normaliza pontuações nulas para zero mantendo escala percentual. */
+  private Integer scoreOrZero(Integer value) {
+    return value == null ? 0 : Math.max(0, Math.min(100, value));
   }
 
   /** Atualiza ciclo e candidato para indicar que o nicho enriquecido foi materializado. */

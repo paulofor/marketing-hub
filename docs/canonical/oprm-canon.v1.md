@@ -77,8 +77,9 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Após o `oprmRoutineQualityGate` aprovar um cartão com `readyForHypothesis=true`, o pipeline OPRM NichoCNAE deve executar uma etapa final chamada `oprmEnrichedNicheMaterializer`.
 - Essa etapa final deve alimentar obrigatoriamente duas estruturas persistidas: a tabela principal de nichos (`market_niche`) e a tabela de nicho enriquecido (`market_niche_enrichment_profile`).
 - A materialização final não deve criar hipótese, experimento, oferta, campanha ou landing page; hipótese será tratada em fluxo próprio posterior.
-- O `market_niche` deve receber o cadastro operacional do nicho com nome, descrição enriquecida, segmentação base e contexto de uso, sem inventar uma oferta.
-- O `market_niche_enrichment_profile` deve preservar os dados enriquecidos vindos do NichoCNAE: CNAE, score OPRM, ciclo de pesquisa, cartão de rotina, rotina, dores, resultados, oportunidades de mecanismo, evidências, fontes e scores de qualidade.
+- O `market_niche` deve receber o cadastro operacional do nicho com nome neutro, descrição enriquecida, segmentação base e contexto de uso, sem inventar uma oferta; o nome original contaminado deve ficar apenas como auditoria.
+- O `market_niche_enrichment_profile` deve preservar apenas dados compatíveis com pesquisa de rotina real vindos do NichoCNAE: CNAE, score OPRM, ciclo de pesquisa, cartão de rotina, nome original para auditoria, nome neutro, modo de pesquisa, rotina, tarefas recorrentes, dificuldades, perguntas, contexto operacional, linguagem pública, evidências, fontes, scores de qualidade e risco de contaminação por linguagem de solução.
+- Campos legados de materialização com nomes comerciais devem receber somente conteúdo operacional compatível ou valor funcional de reprocessamento neutro; não podem eternizar hipótese, oferta, produto, curso, ferramenta, automação ou oportunidade de solução como verdade da pesquisa inicial.
 - O vínculo entre OPRM e nicho comercial deve permanecer rastreável por `research_cycle_id`, `routine_card_id`, `source_niche_candidate_id` e `market_niche_id`.
 - A conclusão da etapa deve atualizar o ciclo para `ENRICHED_NICHE_CREATED`; falhas devem registrar status `ENRICHED_NICHE_FAILED` e mensagem operacional no ciclo.
 

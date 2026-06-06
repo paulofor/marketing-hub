@@ -18,11 +18,17 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.http.HttpMethod.GET;
 
+/**
+ * Valida as integrações auxiliares da Meta expostas pelo servidor MCP.
+ */
 class MetaToolsServiceTest {
 
     private MetaToolsService service;
     private MockRestServiceServer server;
 
+    /**
+     * Prepara o serviço da Meta com dependências mockadas para cada teste.
+     */
     @BeforeEach
     void setUp() {
         RestTemplate restTemplate = new RestTemplate();
@@ -32,7 +38,7 @@ class MetaToolsServiceTest {
                 "marketing-hub-mcp",
                 "1.0.0",
                 null,
-                new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", 45, 3, 400, 500, 262144),
+                new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", 45, 3, 400, 500, 262144),
                 new McpProperties.Meta(
                         true,
                         "https://graph.facebook.com",
@@ -52,6 +58,9 @@ class MetaToolsServiceTest {
         service = new MetaToolsService(properties, restTemplate, new ObjectMapper());
     }
 
+    /**
+     * Garante que a documentação da Meta seja carregada apenas de host permitido.
+     */
     @Test
     void shouldFetchMetaDocumentationFromAllowedHost() {
         server.expect(requestTo("https://developers.facebook.com/docs/marketing-apis/"))
@@ -66,6 +75,9 @@ class MetaToolsServiceTest {
         server.verify();
     }
 
+    /**
+     * Garante rejeição de URLs de documentação fora da lista permitida.
+     */
     @Test
     void shouldRejectDocumentationHostOutsideAllowlist() {
         assertThatThrownBy(() -> service.getDocumentationPage("https://example.org/meta-docs"))
@@ -73,6 +85,9 @@ class MetaToolsServiceTest {
                 .hasMessage("host not allowed for meta_docs_get: example.org");
     }
 
+    /**
+     * Garante mascaramento do token de acesso nos metadados da resposta Graph.
+     */
     @Test
     void shouldMaskAccessTokenOnGraphResponseMetadata() {
         server.expect(requestTo("https://graph.facebook.com/v22.0/me?fields=id,name&access_token=system-token"))

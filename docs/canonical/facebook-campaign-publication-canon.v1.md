@@ -8,6 +8,8 @@
 > - esclarece que o formulário de captação do experimento é do fluxo interno do Marketing Hub (não é o Instant Form nativo da Meta)
 > - adiciona invariante canônico de unicidade: um experimento não pode gerar campanhas duplicadas na mesma plataforma
 > - adiciona fluxo canônico de deduplicação de upload de imagem com reuso de `meta_image_hash`
+> - formaliza que a publicação de campanhas é uma etapa plugável executada pelo `facebook-ads-worker` seguindo o padrão `Pipeline Stage Execution Engine`
+> - formaliza que o fallback de segmentação manual aprovado pelo backend pertence ao `facebook-ads-worker`, sem delegação ao `ai-worker`
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -23,13 +25,16 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | --- | --- |
 | Requisitos mínimos para o worker liberar conjuntos de anúncios, regras de orquestração da liberação e telemetria do funil em 9 etapas. | Configuração detalhada de criativos, copywriting, regras de aprovação editorial ou playbooks completos de segmentação. |
 | Fontes de verdade das flags usadas pela UI (cartão Campanha de Facebook Ads) e pelos serviços (`ExperimentReadinessService`, `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels`). | Contratos de outros canais pagos ou fluxos do Lead Portal que já possuem cânone próprio. |
+| Padrão arquitetural da publicação de campanhas como etapa plugável dentro do `facebook-ads-worker`. | Migração genérica de todos os workers para pipeline; este cânone cobre somente publicação de campanha Facebook. |
 
 ## 3. Ownership e módulos
 
 | Regra | Dono | Consumidores |
 | --- | --- | --- |
-| Invariantes de prontidão (`creative`, `experiment.follow_up_action_url`, `targeting_element`) | Backend `ads-service` + domínio de experimentos | Frontend (cartão checklist), `facebook-ads-worker`, `ai-worker` |
+| Invariantes de prontidão (`creative`, `experiment.follow_up_action_url`, `targeting_element`) | Backend `ads-service` + domínio de experimentos | Frontend (cartão checklist), `facebook-ads-worker` |
+| Publicação de campanha, criação de campanha/ad set/criativos/anúncios e fallback de segmentação manual | `facebook-ads-worker` | Backend `ads-service`, Meta Marketing API |
 | Fluxo de liberação (`facebook_release_requested_at`, `status`, `market_niche.facebook_pixel_id`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
+| Geração por IA de ativos prévios (ex.: texto/imagem criativa antes da aprovação) | `ai-worker` | Backend `ads-service`, Frontend |
 | Funil de 9 etapas (`experiment_campaign_metric`, eventos do Lead Portal e checkout) | Backend `ads-service` + `lead-portal` | Frontend (aba Funil), operadores, times de mídia |
 
 ## 4. Entidades e fontes de verdade
@@ -38,7 +43,7 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | --- | --- | --- |
 | `experiment.creative_approved`, `creative.status` | Tabelas do schema `marketinghubdb` | Ao menos um `creative` do experimento precisa estar em `READY` ou `IN_PRODUCTION` após aprovação. |
 | `experiment.follow_up_action_url` | `marketinghubdb.experiment` | Representa a landing aprovada na aba Landing; com valor preenchido, a página está publicada para uso como destino da campanha. |
-| `targeting_element` (job_title) | `marketinghubdb.targeting_element` | Para publicação manual, pelo menos **1** elemento `JOB_TITLE` com `status='APPROVED'`. |
+| `targeting_element` (job_title) | `marketinghubdb.targeting_element` | Para publicação manual, pelo menos **1** elemento `JOB_TITLE` com `status='APPROVED'`; quando existirem `meta_id`/`meta_key`, o `facebook-ads-worker` deve preferi-los no payload de targeting. |
 | `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
 | `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher o funil e o custo por etapa. |
 
@@ -106,6 +111,24 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
    - se não existir, realizar upload para a Meta, capturar o `image_hash` retornado e persistir o mapeamento para reuso futuro.
    - **invariante operacional**: deduplicação por conteúdo de imagem é obrigatória para reduzir custo, latência e risco de variação acidental entre anúncios com o mesmo asset.
 
+
+## 7.1 Publicação como etapa plugável do pipeline
+
+A publicação de campanhas no Facebook Ads é uma **etapa de pipeline** executada dentro do `facebook-ads-worker`, seguindo o padrão descrito em `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`. Esta é a versão canônica correta para o fluxo.
+
+Regras obrigatórias:
+
+1. **Núcleo genérico separado** – o núcleo de execução deve ficar em pacote genérico de pipeline (ex.: `facebookadsworker.pipeline`) com contratos como `StageContext`, `StageProcessor`, `StageResult` e `PipelineWorker`. Esse núcleo não pode conhecer classes concretas da etapa de publicação.
+2. **Etapa concreta isolada** – a publicação de campanhas deve ficar em pacote próprio (ex.: `facebookcampaign.publication`) e implementar o contrato genérico da etapa. A etapa concreta pode depender do núcleo e dos contratos oficiais de publicação, mas não deve acoplar o núcleo a detalhes da Meta API.
+3. **Dono operacional único** – criação de campanha, ad set, criativo, anúncio, publicação de Instant Form e fallback de segmentação manual pertencem ao `facebook-ads-worker`. É proibido delegar publicação ou fallback de publicação ao `ai-worker`.
+4. **AI Worker fora da publicação** – o `ai-worker` pode gerar ativos prévios que serão aprovados e persistidos pelo backend, mas não deve ser usado como mecanismo para materializar ad set, segmentação final ou chamada à Meta durante a publicação.
+5. **Fallback manual de targeting** – quando não houver playbook de ad set válido para o experimento, o `facebook-ads-worker` deve buscar o pacote manual aprovado no backend por `/api/facebook-adsets/experiments-ready`, selecionar o item do experimento e montar localmente o `targeting` da Meta. O fallback legado por ad set persistido (`/api/adsets?experimentId=...`) não faz parte da publicação canônica e não deve ser usado.
+6. **Mínimo operacional de público** – no fallback manual, ao menos 1 `JOB_TITLE` aprovado é obrigatório. `INTEREST` e `BEHAVIOR` podem enriquecer o targeting quando aprovados, mas não são requisitos bloqueantes.
+7. **Preferência por IDs oficiais** – ao montar `work_positions`, `interests` ou `behaviors`, o worker deve preferir `meta_id`/`meta_key` oficiais (`metaId`/`metaKey` no contrato JSON) e usar termos textuais apenas como fallback compatível com normalização local.
+8. **Rastreabilidade** – a etapa deve preservar os logs e registros já exigidos para chamadas ao backend e à Graph API, incluindo URL completa, parâmetros, payload enviado e resposta recebida quando aplicável.
+
+Consequência arquitetural: a publicação de campanha passa a ser substituível como etapa operacional sem transformar o `ai-worker` em publicador e sem acoplar o núcleo genérico às classes concretas da publicação Facebook Ads.
+
 ## 8. Funil e telemetria operacional
 
 1. **Aba Funil de vendas** – expõe nove etapas da jornada (impressão → download/compra) usando `experiment_campaign_metric` para mídia, eventos do `lead-portal` para engajamentos e eventos de checkout/pagamento para conversões finais.
@@ -134,5 +157,6 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 
 - `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.
-- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels/niches-ready`, `/api/experiments/{experimentId}/funnel/diagnostics`.
+- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/niches-ready`, `/api/experiments/{experimentId}/funnel/diagnostics`.
+- Metodologia de arquitetura por etapa: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
 - Tabelas do schema `marketinghubdb`: `experiment`, `creative`, `lead_portal_flow`, `targeting_element`, `experiment_campaign_metric`.

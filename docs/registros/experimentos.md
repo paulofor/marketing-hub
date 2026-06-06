@@ -3833,3 +3833,17 @@
   - `frontend/src/pages/experiment/ExperimentAudienceTab.tsx`
   - `docs/canonical/procedimento-experimento-canon.v1.md`
   - `docs/registros/experimentos.md`
+
+
+## 2026-06-06 — Bloqueio de publicação sem cargos aprovados no Facebook Ads
+
+- solicitação: garantir que, se há cargos escolhidos/aprovados para o público do experimento, o publicador de campanha use esses cargos como público e não publique campanha ampla.
+- causa-raiz: o `facebook-ads-worker` aceitava ausência de pacote manual aprovado ou ausência de `work_positions` e seguia criando ad set apenas com Brasil/posicionamentos, gerando público amplo mesmo quando havia `JOB_TITLE` aprovado.
+- regra canônica atualizada: o publicador agora deve falhar fechado; sem conseguir materializar ao menos 1 cargo aprovado em `work_positions`, a publicação deve ser bloqueada.
+- correção aplicada: o worker passou a buscar targeting manual também por URL filtrada com `experimentId`, aplicar o fallback manual inclusive em campanhas com Instant Form e lançar erro operacional quando não houver pacote/cargo aprovado, evitando criação de ad set amplo.
+- validação: teste direcionado do `facebook-ads-worker` confirmou que o pacote manual aprovado gera `work_positions` no payload enviado à Meta. A suíte completa de `FacebookCampaignServiceTest` ainda possui cenários legados que assumem publicação sem pacote manual e falhou após a nova regra de bloqueio.
+- arquivos alterados:
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+  - `docs/registros/experimentos.md`

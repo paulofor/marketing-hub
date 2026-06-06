@@ -371,26 +371,24 @@ public class FacebookCampaignService {
             String resolvedCampaignObjective = hasLeadFormDestination ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
 
             AdSetPlaybookSpec selectedSpec = null;
-            ResolvedTargeting resolvedTargeting = new ResolvedTargeting(null, Collections.emptyList());
+            ResolvedTargeting resolvedTargeting;
             String adSetName = exp.name() + " - Ad Set";
-            if (!exp.nextStepInstantForm()) {
-                List<AdSetPlaybookSpec> readySpecs = fetchReadyPlaybookSpecs(exp.id());
-                selectedSpec = selectPrimarySpec(readySpecs);
-                if (selectedSpec != null) {
-                    resolvedTargeting = new ResolvedTargeting(
-                        normalizeTargetingSpec(selectedSpec.targetingSpec()),
-                        Collections.emptyList()
-                    );
-                    adSetName = buildAdSetName(exp.name(), selectedSpec);
-                    LOGGER.info(
-                        "Using ad set playbook spec {} ({}) for experiment {}",
-                        selectedSpec.id(),
-                        selectedSpec.slot(),
-                        exp.id()
-                    );
-                } else {
-                    resolvedTargeting = resolveApprovedManualTargeting(exp.id());
-                }
+            List<AdSetPlaybookSpec> readySpecs = fetchReadyPlaybookSpecs(exp.id());
+            selectedSpec = selectPrimarySpec(readySpecs);
+            if (selectedSpec != null) {
+                resolvedTargeting = new ResolvedTargeting(
+                    normalizeTargetingSpec(selectedSpec.targetingSpec()),
+                    Collections.emptyList()
+                );
+                adSetName = buildAdSetName(exp.name(), selectedSpec);
+                LOGGER.info(
+                    "Using ad set playbook spec {} ({}) for experiment {}",
+                    selectedSpec.id(),
+                    selectedSpec.slot(),
+                    exp.id()
+                );
+            } else {
+                resolvedTargeting = resolveApprovedManualTargeting(exp.id());
             }
             try {
                 campaignId = executeFacebookCallWithLogging(
@@ -712,13 +710,14 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Resolves the backend-approved manual targeting package directly in the Facebook Ads worker.
+     * Resolves the backend-approved manual targeting package and blocks publication when approved job titles are missing.
      */
     private ResolvedTargeting resolveApprovedManualTargeting(long experimentId) {
         JsonNode targeting = fetchApprovedTargetingPackage(experimentId);
         if (targeting == null || targeting.isMissingNode() || targeting.isNull()) {
-            LOGGER.warn("Experiment {} has no approved manual targeting package returned by backend", experimentId);
-            return new ResolvedTargeting(null, Collections.emptyList());
+            throw new IllegalStateException(
+                "Experimento " + experimentId + " sem pacote de segmentação aprovado; publicação bloqueada para evitar público amplo"
+            );
         }
 
         ObjectNode targetingSpec = objectMapper.createObjectNode();
@@ -726,8 +725,9 @@ public class FacebookCampaignService {
         appendTargetingElements(targetingSpec, "work_positions", targeting.path("jobTitles"));
         appendTargetingElements(targetingSpec, "behaviors", targeting.path("behaviors"));
         if (!targetingSpec.has("work_positions")) {
-            LOGGER.warn("Experiment {} targeting package has no approved job titles; campaign will continue without manual targeting", experimentId);
-            return new ResolvedTargeting(null, Collections.emptyList());
+            throw new IllegalStateException(
+                "Experimento " + experimentId + " sem cargos aprovados no targeting manual; publicação bloqueada para evitar público amplo"
+            );
         }
         LOGGER.info(
             "Using backend-approved manual targeting package for experiment {}: {}",
@@ -741,7 +741,22 @@ public class FacebookCampaignService {
      * Fetches the approved targeting package for the experiment from the backend readiness endpoint.
      */
     private JsonNode fetchApprovedTargetingPackage(long experimentId) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
+        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
+        JsonNode targeting = fetchApprovedTargetingPackageFromUrl(baseUrl, experimentId);
+        if (targeting != null && !targeting.isMissingNode() && !targeting.isNull()) {
+            return targeting;
+        }
+        String filteredUrl = UriComponentsBuilder.fromUriString(baseUrl)
+            .queryParam("experimentId", experimentId)
+            .build()
+            .toUriString();
+        return fetchApprovedTargetingPackageFromUrl(filteredUrl, experimentId);
+    }
+
+    /**
+     * Fetches and selects the targeting package for one experiment from a backend URL.
+     */
+    private JsonNode fetchApprovedTargetingPackageFromUrl(String url, long experimentId) {
         LOGGER.info(
             "Requesting approved targeting packages from backend: url==>{}, params={}",
             url,

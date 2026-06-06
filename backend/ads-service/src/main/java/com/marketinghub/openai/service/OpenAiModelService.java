@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -120,9 +119,8 @@ public class OpenAiModelService {
 
     /** Aplica na entidade persistida os dados oficiais resolvidos a partir da API e da página de preços da OpenAI. */
     private void applyOfficialData(OpenAiModel model, String requestedName, String code, boolean imageModel) {
-        Optional<OpenAiModelPricing> pricing = pricingPageClient.fetchTextModelPricing().stream()
-                .filter(price -> Objects.equals(price.code(), code))
-                .findFirst();
+        List<OpenAiModelPricing> prices = pricingPageClient.fetchTextModelPricing();
+        Optional<OpenAiModelPricing> pricing = pricingPageClient.findBestTextModelPricing(prices, code);
         model.setName(toDisplayName(requestedName, code));
         model.setCode(code);
         if (pricing.isPresent()) {

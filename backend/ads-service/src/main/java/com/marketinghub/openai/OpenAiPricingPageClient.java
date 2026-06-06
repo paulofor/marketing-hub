@@ -1,11 +1,13 @@
 package com.marketinghub.openai;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
@@ -15,7 +17,6 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: consultar a página oficial de preços da OpenAI e extrair preços de modelos de texto. */
 @Component
@@ -23,19 +24,60 @@ public class OpenAiPricingPageClient {
     private static final Logger log = LoggerFactory.getLogger(OpenAiPricingPageClient.class);
     private static final Pattern MONEY_PATTERN = Pattern.compile("[0-9]+(?:\\.[0-9]+)?");
 
-    private final WebClient.Builder webClientBuilder;
     private final OpenAiProperties properties;
 
-    /** Inicializa o cliente com WebClient e propriedades de URL/timeout da integração OpenAI. */
-    public OpenAiPricingPageClient(WebClient.Builder webClientBuilder, OpenAiProperties properties) {
-        this.webClientBuilder = webClientBuilder;
+    /** Inicializa o cliente com as propriedades de URL/timeout da integração OpenAI. */
+    public OpenAiPricingPageClient(OpenAiProperties properties) {
         this.properties = properties;
     }
 
     /** Busca a página oficial de preços e retorna os modelos com preços standard e batch consolidados. */
     public List<OpenAiModelPricing> fetchTextModelPricing() {
-        String html = webClientBuilder.build().get().uri(properties.getPricingUrl()).retrieve().bodyToMono(String.class).block();
-        return parseTextModelPricing(html);
+        try {
+            String html = Jsoup.connect(properties.getPricingUrl())
+                    .userAgent("MarketingHub/1.0 (+https://oportunidadebrasil.shop)")
+                    .timeout(toRequestTimeoutMillis())
+                    .ignoreContentType(true)
+                    .followRedirects(true)
+                    .execute()
+                    .body();
+            return parseTextModelPricing(html);
+        } catch (IOException ex) {
+            log.error(
+                    "Falha de IO ao buscar página oficial de preços OpenAI; operation=openai-pricing-fetch source={}",
+                    properties.getPricingUrl(),
+                    ex);
+            throw new IllegalStateException("Não foi possível consultar a página oficial de preços da OpenAI.", ex);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha inesperada ao buscar página oficial de preços OpenAI; operation=openai-pricing-fetch source={}",
+                    properties.getPricingUrl(),
+                    ex);
+            throw ex;
+        }
+    }
+
+    /** Seleciona preço exato ou preço-base mais específico para variantes datadas retornadas por /models. */
+    public Optional<OpenAiModelPricing> findBestTextModelPricing(List<OpenAiModelPricing> prices, String modelCode) {
+        if (prices == null || modelCode == null || modelCode.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedCode = modelCode.trim().toLowerCase(Locale.ROOT);
+        Optional<OpenAiModelPricing> exact = prices.stream()
+                .filter(price -> normalizedCode.equals(price.code()))
+                .findFirst();
+        if (exact.isPresent()) {
+            return exact;
+        }
+        return prices.stream()
+                .filter(price -> isVersionVariantOf(normalizedCode, price.code()))
+                .max((left, right) -> Integer.compare(left.code().length(), right.code().length()));
+    }
+
+    /** Converte o timeout configurado para milissegundos aceitos pelo cliente HTTP de preços. */
+    private int toRequestTimeoutMillis() {
+        long millis = properties.getRequestTimeout().toMillis();
+        return millis > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.max(1, (int) millis);
     }
 
     /** Extrai os preços oficiais textuais, aceitando tabela legada standard/batch ou tabela atual short/long context. */
@@ -127,6 +169,14 @@ public class OpenAiPricingPageClient {
     /** Indica se o código extraído representa modelo de texto/reasoning suportado no catálogo financeiro. */
     private boolean isTextModelCode(String code) {
         return code.startsWith("gpt-") || code.startsWith("o1") || code.startsWith("o3") || code.startsWith("o4");
+    }
+
+    /** Verifica se o código de /models é uma variante datada do código-base publicado na página de preços. */
+    private boolean isVersionVariantOf(String requestedCode, String pricedCode) {
+        if (requestedCode == null || pricedCode == null || requestedCode.equals(pricedCode)) {
+            return false;
+        }
+        return requestedCode.startsWith(pricedCode + "-");
     }
 
     /** Converte valores monetários da tabela oficial para decimal por 1 milhão de tokens. */

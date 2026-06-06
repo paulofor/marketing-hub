@@ -37,7 +37,7 @@ class OpenAiModelServiceTest {
                 Map.of(),
                 "openai:/models",
                 "2026-06-05T00:00:00Z"));
-        when(pricingPageClient.fetchTextModelPricing()).thenReturn(List.of(new OpenAiModelPricing(
+        OpenAiModelPricing pricing = new OpenAiModelPricing(
                 "gpt-5.5",
                 "gpt-5.5",
                 new BigDecimal("5.00"),
@@ -45,7 +45,10 @@ class OpenAiModelServiceTest {
                 new BigDecimal("30.00"),
                 new BigDecimal("2.50"),
                 new BigDecimal("0.25"),
-                new BigDecimal("15.00"))));
+                new BigDecimal("15.00"));
+        List<OpenAiModelPricing> prices = List.of(pricing);
+        when(pricingPageClient.fetchTextModelPricing()).thenReturn(prices);
+        when(pricingPageClient.findBestTextModelPricing(prices, "gpt-5.5")).thenReturn(Optional.of(pricing));
         when(repository.findByCode("gpt-5.5")).thenReturn(Optional.empty());
         when(repository.save(org.mockito.ArgumentMatchers.any(OpenAiModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -60,6 +63,45 @@ class OpenAiModelServiceTest {
         assertThat(created.getPricingSource()).isEqualTo("https://developers.openai.com/api/docs/pricing");
         assertThat(created.getLastPricingSyncAt()).isNotNull();
         verify(catalogService).fetchAndPersistCatalog();
+    }
+
+    /** Garante que a criação de variante datada use o preço-base oficial mais específico. */
+    @Test
+    void createShouldPriceDatedVariantFromMostSpecificBaseModel() {
+        OpenAiModelRepository repository = mock(OpenAiModelRepository.class);
+        OpenAiModelCatalogV1Service catalogService = mock(OpenAiModelCatalogV1Service.class);
+        OpenAiPricingPageClient pricingPageClient = mock(OpenAiPricingPageClient.class);
+        OpenAiModelService service = new OpenAiModelService(repository, catalogService, pricingPageClient);
+        CreateOpenAiModelRequest request = new CreateOpenAiModelRequest();
+        request.setName("gpt-5.4-pro-2026-03-05");
+        when(catalogService.fetchAndPersistCatalog()).thenReturn(new OpenAiModelCatalogResponse(
+                List.of("gpt-5.4-pro-2026-03-05"),
+                List.of(),
+                Map.of(),
+                "openai:/models",
+                "2026-06-05T00:00:00Z"));
+        OpenAiModelPricing pricing = new OpenAiModelPricing(
+                "gpt-5.4-pro",
+                "gpt-5.4-pro",
+                new BigDecimal("30.00"),
+                BigDecimal.ZERO,
+                new BigDecimal("180.00"),
+                new BigDecimal("15.00"),
+                BigDecimal.ZERO,
+                new BigDecimal("90.00"));
+        List<OpenAiModelPricing> prices = List.of(pricing);
+        when(pricingPageClient.fetchTextModelPricing()).thenReturn(prices);
+        when(pricingPageClient.findBestTextModelPricing(prices, "gpt-5.4-pro-2026-03-05"))
+                .thenReturn(Optional.of(pricing));
+        when(repository.findByCode("gpt-5.4-pro-2026-03-05")).thenReturn(Optional.empty());
+        when(repository.save(org.mockito.ArgumentMatchers.any(OpenAiModel.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        OpenAiModel created = service.create(request);
+
+        assertThat(created.getCode()).isEqualTo("gpt-5.4-pro-2026-03-05");
+        assertThat(created.getPriceInputStandard()).isEqualByComparingTo("30.00");
+        assertThat(created.getPriceOutputBatch()).isEqualByComparingTo("90.00");
     }
 
     /** Garante que a criação bloqueie modelos inexistentes na API oficial /models. */

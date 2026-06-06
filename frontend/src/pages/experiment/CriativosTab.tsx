@@ -21,16 +21,18 @@ import {
 } from "lucide-react";
 import "./CriativosTab.css";
 import { hasAdCopyContent, parseAdCopyPayload } from "./adCopyParser";
-import { hasImagePromptContent, parseImagePromptPayload } from "./imageBriefingParser";
+import {
+  hasImagePromptContent,
+  parseImagePromptPayload,
+} from "./imageBriefingParser";
 import { useRequestPipelineCreatives } from "../../api/experiment/useRequestPipelineCreatives";
 
 interface Props {
   experimentId: string;
+  alterationLocked?: boolean;
 }
 
-
 const ICON_SIZE = 16;
-
 
 type FeedbackVariant = "success" | "warning" | "error";
 
@@ -151,7 +153,9 @@ const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
 
 const resolvePromptSourceStatus = (prompt?: string | null) => {
   const normalizedPrompt = prompt?.trim() ?? "";
-  const allMarkers = PIPELINE_PROMPT_SOURCE_FIELDS.flatMap((field) => field.markers);
+  const allMarkers = PIPELINE_PROMPT_SOURCE_FIELDS.flatMap(
+    (field) => field.markers,
+  );
 
   const extractContentValue = (markers: string[]) => {
     if (!normalizedPrompt) {
@@ -172,7 +176,9 @@ const resolvePromptSourceStatus = (prompt?: string | null) => {
 
       const rawValue = normalizedPrompt.slice(
         contentStart,
-        nextMarkerIndex === undefined ? normalizedPrompt.length : nextMarkerIndex,
+        nextMarkerIndex === undefined
+          ? normalizedPrompt.length
+          : nextMarkerIndex,
       );
 
       const cleanedValue = rawValue
@@ -219,22 +225,42 @@ const statusLabel = (status: string) => {
   }
 };
 
-export default function CriativosTab({ experimentId }: Props) {
+export default function CriativosTab({
+  experimentId,
+  alterationLocked = false,
+}: Props) {
   const { data, isLoading } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
   const { data: experiment } = useExperiment(experimentId);
   const pipelineRequest = useRequestPipelineCreatives(experimentId);
-  const adCopyContent = useMemo(() => parseAdCopyPayload(experiment?.adCopy ?? null), [experiment?.adCopy]);
-  const imageBriefingContent = useMemo(() => parseImagePromptPayload(experiment?.adImageBriefing ?? null), [experiment?.adImageBriefing]);
+  const adCopyContent = useMemo(
+    () => parseAdCopyPayload(experiment?.adCopy ?? null),
+    [experiment?.adCopy],
+  );
+  const imageBriefingContent = useMemo(
+    () => parseImagePromptPayload(experiment?.adImageBriefing ?? null),
+    [experiment?.adImageBriefing],
+  );
   const pipelineHasAdCopy = hasAdCopyContent(adCopyContent);
   const pipelineHasBriefing = hasImagePromptContent(imageBriefingContent);
-  const pipelineVariantCount = pipelineHasAdCopy ? adCopyContent.primaryTextVariants.length : 0;
-  const pipelineBriefingCount = pipelineHasBriefing ? imageBriefingContent.briefings.length : 0;
+  const pipelineVariantCount = pipelineHasAdCopy
+    ? adCopyContent.primaryTextVariants.length
+    : 0;
+  const pipelineBriefingCount = pipelineHasBriefing
+    ? imageBriefingContent.briefings.length
+    : 0;
   const pipelinePairs = Math.min(pipelineVariantCount, pipelineBriefingCount);
   const pipelineAvailable = pipelinePairs > 0;
   const pendingCreativeRequests = experiment?.creativesToGenerate ?? 0;
-  const pipelineInProgress = experiment?.creativeGenerationMode === "PIPELINE_ADS" && pendingCreativeRequests > 0;
-  const pipelineButtonDisabled = pipelineRequest.isPending || pipelineInProgress || pendingCreativeRequests > 0 || !pipelineAvailable;
+  const pipelineInProgress =
+    experiment?.creativeGenerationMode === "PIPELINE_ADS" &&
+    pendingCreativeRequests > 0;
+  const pipelineButtonDisabled =
+    alterationLocked ||
+    pipelineRequest.isPending ||
+    pipelineInProgress ||
+    pendingCreativeRequests > 0 ||
+    !pipelineAvailable;
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -247,16 +273,20 @@ export default function CriativosTab({ experimentId }: Props) {
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
   const [showPreview, setShowPreview] = useState(false);
-  const [processingCreativeId, setProcessingCreativeId] = useState<number | null>(
-    null,
-  );
+  const [processingCreativeId, setProcessingCreativeId] = useState<
+    number | null
+  >(null);
   const [expandedPromptByCreativeId, setExpandedPromptByCreativeId] = useState<
     Record<number, boolean>
   >({});
-  const [expandedPreviousPromptByCreativeId, setExpandedPreviousPromptByCreativeId] =
-    useState<Record<number, boolean>>({});
-  const [expandedIntermediatePromptByCreativeId, setExpandedIntermediatePromptByCreativeId] =
-    useState<Record<number, boolean>>({});
+  const [
+    expandedPreviousPromptByCreativeId,
+    setExpandedPreviousPromptByCreativeId,
+  ] = useState<Record<number, boolean>>({});
+  const [
+    expandedIntermediatePromptByCreativeId,
+    setExpandedIntermediatePromptByCreativeId,
+  ] = useState<Record<number, boolean>>({});
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
     useAllFacebookPages();
   const { data: instagramAccounts, isLoading: isLoadingInstagramAccounts } =
@@ -368,14 +398,16 @@ export default function CriativosTab({ experimentId }: Props) {
       const selectedPage =
         parsedPageId === null
           ? null
-          : facebookPages?.find((page) => page.id === parsedPageId) ?? null;
+          : (facebookPages?.find((page) => page.id === parsedPageId) ?? null);
       const selectedInstagramAccount = Array.isArray(instagramAccounts)
-        ? instagramAccounts.find(
+        ? (instagramAccounts.find(
             (account) => account.id === Number(experimentInstagramAccountId),
-          ) ?? null
+          ) ?? null)
         : null;
       const rawHandle =
-        selectedInstagramAccount?.handle ?? experiment.instagramAccount?.handle ?? "";
+        selectedInstagramAccount?.handle ??
+        experiment.instagramAccount?.handle ??
+        "";
       const formattedHandle = rawHandle
         ? rawHandle.startsWith("@")
           ? rawHandle
@@ -436,14 +468,14 @@ export default function CriativosTab({ experimentId }: Props) {
         format: c.format || "LINK",
         headline: c.headline,
         primaryText: c.primaryText,
-      imageUrl: c.imageUrl,
-      description: c.description || "",
-      cta: c.cta || "LEARN_MORE",
-      destinationUrl: c.destinationUrl || "",
-      leadGenFormId: c.leadGenFormId || "",
-      instagramUserId: c.instagramUserId || "",
-      status: "READY",
-    });
+        imageUrl: c.imageUrl,
+        description: c.description || "",
+        cta: c.cta || "LEARN_MORE",
+        destinationUrl: c.destinationUrl || "",
+        leadGenFormId: c.leadGenFormId || "",
+        instagramUserId: c.instagramUserId || "",
+        status: "READY",
+      });
     } catch {
       setFeedback({
         variant: "error",
@@ -499,7 +531,9 @@ export default function CriativosTab({ experimentId }: Props) {
     const isPreviousPromptExpanded = Boolean(
       expandedPreviousPromptByCreativeId[c.id],
     );
-    const hasIntermediateImagePrompt = Boolean(c.imageIntermediatePrompt?.trim());
+    const hasIntermediateImagePrompt = Boolean(
+      c.imageIntermediatePrompt?.trim(),
+    );
     const isIntermediatePromptExpanded = Boolean(
       expandedIntermediatePromptByCreativeId[c.id],
     );
@@ -579,7 +613,9 @@ export default function CriativosTab({ experimentId }: Props) {
                 </a>
               )}
               {c.leadGenFormId && (
-                <span className="d-block mt-1">Formulário: {c.leadGenFormId}</span>
+                <span className="d-block mt-1">
+                  Formulário: {c.leadGenFormId}
+                </span>
               )}
             </div>
           )}
@@ -590,7 +626,7 @@ export default function CriativosTab({ experimentId }: Props) {
               type="button"
               className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
               onClick={() => openEdit(c)}
-              disabled={isProcessing}
+              disabled={isProcessing || alterationLocked}
             >
               <Edit3 size={ICON_SIZE} />
               <span>Editar</span>
@@ -599,7 +635,7 @@ export default function CriativosTab({ experimentId }: Props) {
               type="button"
               className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1"
               onClick={() => remove(c)}
-              disabled={isProcessing}
+              disabled={isProcessing || alterationLocked}
             >
               <Trash2 size={ICON_SIZE} />
               <span>Excluir</span>
@@ -609,7 +645,7 @@ export default function CriativosTab({ experimentId }: Props) {
                 type="button"
                 className="btn btn-outline-success btn-sm d-flex align-items-center justify-content-center gap-1"
                 onClick={() => approve(c)}
-                disabled={isProcessing}
+                disabled={isProcessing || alterationLocked}
               >
                 <CheckCircle2 size={ICON_SIZE} />
                 <span>Aprovar</span>
@@ -654,14 +690,17 @@ export default function CriativosTab({ experimentId }: Props) {
                           <code>{field.source}</code>
                           <span
                             className={`badge rounded-pill ${
-                              field.hasContent ? "text-bg-success" : "text-bg-secondary"
+                              field.hasContent
+                                ? "text-bg-success"
+                                : "text-bg-secondary"
                             }`}
                           >
                             {field.hasContent ? "Com conteúdo" : "Sem conteúdo"}
                           </span>
                           {field.hasContent && (
                             <small className="creative-card-prompt-source-value">
-                              {field.contentValue ?? "Trecho identificado no prompt (sem valor explícito)."}
+                              {field.contentValue ??
+                                "Trecho identificado no prompt (sem valor explícito)."}
                             </small>
                           )}
                         </li>
@@ -735,7 +774,9 @@ export default function CriativosTab({ experimentId }: Props) {
           <div className="creative-feedback-content">
             <p className="creative-feedback-title">{feedback.title}</p>
             {feedback.description && (
-              <p className="creative-feedback-description">{feedback.description}</p>
+              <p className="creative-feedback-description">
+                {feedback.description}
+              </p>
             )}
           </div>
           <button
@@ -749,6 +790,12 @@ export default function CriativosTab({ experimentId }: Props) {
         </div>
       )}
       <div className="mb-4">
+        {alterationLocked ? (
+          <div className="alert alert-secondary" role="status">
+            Criativos e configurações de publicação bloqueados para alteração
+            porque o experimento já foi liberado ou está em execução.
+          </div>
+        ) : null}
         <label className="form-label" htmlFor="experiment-instagram-id">
           Conta do Instagram <span className="text-danger">*</span>
         </label>
@@ -758,7 +805,10 @@ export default function CriativosTab({ experimentId }: Props) {
           value={experimentInstagramAccountId}
           onChange={(e) => setExperimentInstagramAccountId(e.target.value)}
           disabled={
-            isSavingPageId || isLoadingInstagramAccounts || noInstagramAccounts
+            alterationLocked ||
+            isSavingPageId ||
+            isLoadingInstagramAccounts ||
+            noInstagramAccounts
           }
         >
           <option value="">
@@ -776,7 +826,8 @@ export default function CriativosTab({ experimentId }: Props) {
             ))}
         </select>
         <div className="form-text mb-2">
-          O worker utilizará esta conta como identidade do Instagram nas campanhas.
+          O worker utilizará esta conta como identidade do Instagram nas
+          campanhas.
         </div>
         {noInstagramAccounts && (
           <div className="alert alert-warning" role="alert">
@@ -801,7 +852,9 @@ export default function CriativosTab({ experimentId }: Props) {
             className="form-select"
             value={experimentPageId}
             onChange={(e) => setExperimentPageId(e.target.value)}
-            disabled={isSavingPageId || isLoadingFacebookPages}
+            disabled={
+              isSavingPageId || isLoadingFacebookPages || alterationLocked
+            }
           >
             <option value="">
               {isLoadingFacebookPages
@@ -819,7 +872,12 @@ export default function CriativosTab({ experimentId }: Props) {
             type="button"
             className="btn btn-primary d-flex align-items-center gap-2"
             onClick={handleSavePageId}
-            disabled={isSavingPageId || !experiment || noInstagramAccounts}
+            disabled={
+              isSavingPageId ||
+              !experiment ||
+              noInstagramAccounts ||
+              alterationLocked
+            }
           >
             {isSavingPageId ? (
               <>
@@ -845,8 +903,10 @@ export default function CriativosTab({ experimentId }: Props) {
           <div>
             <h4 className="h6 mb-1">Anúncios do pipeline prontos</h4>
             <p className="mb-0 small text-muted">
-              Encontramos {pipelinePairs} {pipelinePairs === 1 ? "variação" : "variações"} com texto e briefing estruturados.
-              O Worker AI usará o modelo gpt-imagem-1.5 para gerar as imagens alinhadas ao experimento.
+              Encontramos {pipelinePairs}{" "}
+              {pipelinePairs === 1 ? "variação" : "variações"} com texto e
+              briefing estruturados. O Worker AI usará o modelo gpt-imagem-1.5
+              para gerar as imagens alinhadas ao experimento.
             </p>
           </div>
           <div className="d-flex flex-column align-items-lg-end gap-2 w-100 w-lg-auto">
@@ -857,11 +917,18 @@ export default function CriativosTab({ experimentId }: Props) {
               disabled={pipelineButtonDisabled}
             >
               {pipelineRequest.isPending ? (
-                <span className="spinner-border spinner-border-sm" role="status" />
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                />
               ) : (
                 <Sparkles size={ICON_SIZE} />
               )}
-              <span>{pipelineInProgress ? "Gerando anúncios..." : "Gerar anúncios do pipeline"}</span>
+              <span>
+                {pipelineInProgress
+                  ? "Gerando anúncios..."
+                  : "Gerar anúncios do pipeline"}
+              </span>
             </button>
             {pipelineInProgress && (
               <span className="badge text-bg-info-subtle text-info-emphasis">
@@ -872,7 +939,8 @@ export default function CriativosTab({ experimentId }: Props) {
         </div>
       ) : pipelineInProgress ? (
         <div className="alert alert-info mt-3">
-          <strong>Worker AI em produção.</strong> Estamos finalizando os anúncios solicitados com os ativos do pipeline.
+          <strong>Worker AI em produção.</strong> Estamos finalizando os
+          anúncios solicitados com os ativos do pipeline.
         </div>
       ) : null}
 
@@ -894,9 +962,7 @@ export default function CriativosTab({ experimentId }: Props) {
           </p>
         </div>
       ) : creativeSections.length === 0 ? (
-        <div className="creative-grid">
-          {creatives.map(renderCreativeCard)}
-        </div>
+        <div className="creative-grid">{creatives.map(renderCreativeCard)}</div>
       ) : (
         <div className="creative-sections">
           {creativeSections.map((section) => (
@@ -906,7 +972,10 @@ export default function CriativosTab({ experimentId }: Props) {
               aria-labelledby={`${section.id}-title`}
             >
               <div className="creative-section-header">
-                <h3 id={`${section.id}-title`} className="creative-section-title">
+                <h3
+                  id={`${section.id}-title`}
+                  className="creative-section-title"
+                >
                   {section.title}
                 </h3>
                 <span className={`badge rounded-pill ${section.badgeClass}`}>

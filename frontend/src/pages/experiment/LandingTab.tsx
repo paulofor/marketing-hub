@@ -4,6 +4,7 @@ import { useApproveAndPublishLanding } from "../../api/experiment/useApproveAndP
 
 interface LandingTabProps {
   experiment: Experiment;
+  alterationLocked?: boolean;
 }
 
 type FeedbackState = {
@@ -38,7 +39,10 @@ export function canAttemptLandingApproval(experiment: Pick<Experiment, "id">) {
   return String(experiment.id ?? "").trim().length > 0;
 }
 
-export default function LandingTab({ experiment }: LandingTabProps) {
+export default function LandingTab({
+  experiment,
+  alterationLocked = false,
+}: LandingTabProps) {
   const approveAndPublishLanding = useApproveAndPublishLanding(
     Number(experiment.id),
   );
@@ -52,7 +56,8 @@ export default function LandingTab({ experiment }: LandingTabProps) {
     iframeUrl: string | null;
     standaloneUrl: string | null;
   } | null>(null);
-  const canApproveLanding = canAttemptLandingApproval(experiment);
+  const canApproveLanding =
+    !alterationLocked && canAttemptLandingApproval(experiment);
   const selectedDestinationUrl = normalizeUrl(
     publishedUrls?.standaloneUrl ?? experiment.followUpActionUrl,
   );
@@ -179,6 +184,13 @@ export default function LandingTab({ experiment }: LandingTabProps) {
           </div>
         </div>
       )}
+
+      {alterationLocked ? (
+        <div className="alert alert-secondary mb-0" role="status">
+          Landing bloqueada para alteração porque o experimento já foi liberado
+          ou está em execução.
+        </div>
+      ) : null}
 
       <div className="d-flex justify-content-end">
         <button

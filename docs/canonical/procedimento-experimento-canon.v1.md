@@ -159,6 +159,14 @@ Com a landing gerada:
 2. faz visualização e aprovação/publicação;
 3. nesse ponto é consolidada a URL final usada na campanha.
 
+### 7.1 Bloqueio de alterações após liberação/publicação
+
+Depois que o experimento for liberado para publicação/execução, a interface administrativa deve tratar o experimento como operacionalmente bloqueado para alterações. O bloqueio começa quando `facebook_release_requested_at` estiver preenchido ou quando o status já representar execução ou pós-execução (`RUNNING`, `PAUSED`, `USER_STOPPED`, `VALIDATED`, `INVALIDATED`, `INCONCLUSIVE` ou `FINISHED`).
+
+Enquanto bloqueado, o frontend deve manter disponíveis as visões de acompanhamento e auditoria (Overview, Funil, Analytics, Chamadas Meta, Jobs e prévias), mas deve desabilitar comandos e campos que alterem artefatos ou configuração do experimento, incluindo edição do experimento, reset de campanhas, geração/regeneração de landing, aprovação/publicação de landing, geração/aprovação/exclusão de criativos, seleção de público e registros manuais no funil.
+
+A regra existe para impedir divergência entre o que já foi publicado/executado no Meta/Lead Portal e os artefatos canônicos usados para mensuração comercial do experimento. Correções após publicação devem seguir fluxo operacional explícito (ex.: duplicar/republicar novo experimento ou rotina de parada/correção autorizada), não edição silenciosa dos ativos em execução.
+
 ## 8. Regras de integração com OpenAI
 
 ### 8.1 Worker AI como camada obrigatória

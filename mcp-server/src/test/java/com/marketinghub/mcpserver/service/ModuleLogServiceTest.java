@@ -14,10 +14,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * Valida a leitura resiliente de logs dos módulos Java pelo servidor MCP.
+ */
 class ModuleLogServiceTest {
 
     private HttpServer server;
 
+    /**
+     * Encerra o servidor HTTP local usado pelos testes.
+     */
     @AfterEach
     void tearDown() {
         if (server != null) {
@@ -25,6 +31,9 @@ class ModuleLogServiceTest {
         }
     }
 
+    /**
+     * Garante retentativas em falha temporária e retorno apenas das últimas linhas solicitadas.
+     */
     @Test
     void shouldRetryWhenEndpointFailsAndReturnTailLines() throws Exception {
         AtomicInteger calls = new AtomicInteger(0);
@@ -54,8 +63,12 @@ class ModuleLogServiceTest {
         assertEquals(List.of("line-2", "line-3"), result.get("lines"));
     }
 
+    /**
+     * Monta propriedades MCP apontando todos os módulos para a URL local informada.
+     */
     private McpProperties buildProperties(String logUrl) {
         McpProperties.Logs logs = new McpProperties.Logs(
+                logUrl,
                 logUrl,
                 logUrl,
                 logUrl,

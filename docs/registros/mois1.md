@@ -1040,3 +1040,19 @@ Arquivos alterados:
 Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+
+## 2026-06-06 — Logfile público do MOIS Sales Library Worker para MCP
+
+- habilitada geração de arquivo de log Spring Boot no `mois-sales-library-worker`, com Actuator expondo `logfile` para auditoria operacional remota.
+- publicado o worker na porta padrão `8097` no host usado pelo workflow de deploy (`191.252.120.96`), preservando configuração por variáveis de ambiente.
+- atualizado o MCP Server para consultar o log do módulo `mois` no endpoint público `http://191.252.120.96:8097/actuator/logfile`, permitindo investigar ciclos do worker via tool `java_module_logs`.
+
+Arquivos alterados:
+- `mois-sales-library-worker/pom.xml`
+- `mois-sales-library-worker/src/main/resources/application.yml`
+- `mois-sales-library-worker/docker-compose.yml`
+- `mois-sales-library-worker/docker-compose.deploy.yml`
+- `mcp-server/src/main/resources/application.yml`
+- `mcp-server/README.md`
+- `mcp-server/AGENTS.md`
+- `docs/registros/mois1.md`

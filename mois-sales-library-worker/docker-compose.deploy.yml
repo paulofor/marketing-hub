@@ -3,12 +3,16 @@ services:
     image: ${MOIS_SALES_LIBRARY_WORKER_IMAGE:-ghcr.io/marketing-hub-org/marketing-hub/mois-sales-library-worker:latest}
     container_name: mois-sales-library-worker
     restart: unless-stopped
+    ports:
+      - "${MOIS_SALES_LIBRARY_WORKER_PORT:-8097}:${SERVER_PORT:-8097}"
     environment:
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.181.168:80}
       MOIS_WORKSPACE_ID: ${MOIS_WORKSPACE_ID:-workspace-001}
       MOIS_SOURCE: ${MOIS_SOURCE:-CLICKBANK}
       MOIS_SOURCES: ${MOIS_SOURCES:-CLICKBANK,HOTMART}
       MOIS_POLL_INTERVAL_MS: ${MOIS_POLL_INTERVAL_MS:-15000}
+      SERVER_PORT: ${SERVER_PORT:-8097}
+      LOG_FILE_NAME: ${LOG_FILE_NAME:-/tmp/mois-sales-library-worker.log}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}

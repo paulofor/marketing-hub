@@ -26,18 +26,13 @@ public class OpenAiModelPricingSyncService {
         this.repository = repository;
     }
 
-    /** Consulta a fonte oficial e persiste os preços atuais dos modelos encontrados. */
+    /** Consulta a fonte oficial e persiste preços atuais, inclusive para variantes datadas já cadastradas. */
     @Transactional
     public int syncOfficialPricing() {
         List<OpenAiModelPricing> prices = pricingPageClient.fetchTextModelPricing();
         Instant syncedAt = Instant.now();
-        int updated = 0;
-        for (OpenAiModelPricing price : prices) {
-            OpenAiModel model = repository.findByCode(price.code()).orElseGet(OpenAiModel::new);
-            applyPrice(model, price, syncedAt);
-            repository.save(model);
-            updated++;
-        }
+        int updated = upsertOfficialBaseModels(prices, syncedAt);
+        updated += refreshExistingModelVariants(prices, syncedAt);
         log.info(
                 "Preços oficiais OpenAI sincronizados; operation=openai-pricing-sync modelsUpdated={} source={}",
                 updated,
@@ -45,10 +40,41 @@ public class OpenAiModelPricingSyncService {
         return updated;
     }
 
+    /** Cria ou atualiza os modelos-base publicados diretamente na fonte oficial de preços. */
+    private int upsertOfficialBaseModels(List<OpenAiModelPricing> prices, Instant syncedAt) {
+        int updated = 0;
+        for (OpenAiModelPricing price : prices) {
+            OpenAiModel model = repository.findByCode(price.code()).orElseGet(OpenAiModel::new);
+            applyPrice(model, price, syncedAt, true);
+            repository.save(model);
+            updated++;
+        }
+        return updated;
+    }
+
+    /** Atualiza modelos existentes que são variantes datadas de códigos-base publicados pela OpenAI. */
+    private int refreshExistingModelVariants(List<OpenAiModelPricing> prices, Instant syncedAt) {
+        int updated = 0;
+        for (OpenAiModel model : repository.findAll()) {
+            if (prices.stream().anyMatch(price -> price.code().equals(model.getCode()))) {
+                continue;
+            }
+            var pricing = pricingPageClient.findBestTextModelPricing(prices, model.getCode());
+            if (pricing.isPresent()) {
+                applyPrice(model, pricing.get(), syncedAt, false);
+                repository.save(model);
+                updated++;
+            }
+        }
+        return updated;
+    }
+
     /** Aplica preços e metadados de sincronização na entidade persistida. */
-    private void applyPrice(OpenAiModel model, OpenAiModelPricing price, Instant syncedAt) {
-        model.setName(price.name());
-        model.setCode(price.code());
+    private void applyPrice(OpenAiModel model, OpenAiModelPricing price, Instant syncedAt, boolean updateIdentity) {
+        if (updateIdentity) {
+            model.setName(price.name());
+            model.setCode(price.code());
+        }
         model.setPriceInputStandard(price.priceInputStandard());
         model.setPriceInputCachedStandard(price.priceInputCachedStandard());
         model.setPriceOutputStandard(price.priceOutputStandard());

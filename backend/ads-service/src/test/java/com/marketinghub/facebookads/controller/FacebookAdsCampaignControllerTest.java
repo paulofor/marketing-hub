@@ -23,6 +23,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeReposito
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
@@ -254,6 +255,7 @@ class FacebookAdsCampaignControllerTest {
               "adAccountId": "act_555",
               "name": "Exp",
               "objective": "OUTCOME_TRAFFIC",
+              "status": "ACTIVE",
               "budgetMode": "CAMPAIGN",
               "experimentId": 42,
               "facebookAccountId": 77,
@@ -306,6 +308,7 @@ class FacebookAdsCampaignControllerTest {
         FacebookAdsCampaign savedCampaign = campaignCaptor.getValue();
         assertThat(savedCampaign.getId()).isEqualTo("cmp123");
         assertThat(savedCampaign.getExternalId()).isEqualTo("meta-campaign-123");
+        assertThat(savedCampaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
 
         ArgumentCaptor<FacebookAdsAdSet> adSetCaptor = ArgumentCaptor.forClass(FacebookAdsAdSet.class);
@@ -349,7 +352,11 @@ class FacebookAdsCampaignControllerTest {
                 .name("Experimento 37")
                 .build();
         when(experimentService.get(37L)).thenReturn(experiment);
-        when(campaignRepository.existsById("cmp-existente")).thenReturn(true);
+        var existingCampaign = new FacebookAdsCampaign();
+        existingCampaign.setId("cmp-existente");
+        existingCampaign.setExperiment(experiment);
+        existingCampaign.setStatus(FacebookAdStatus.PAUSED);
+        when(campaignRepository.findById("cmp-existente")).thenReturn(Optional.of(existingCampaign));
 
         String payload = """
             {
@@ -357,6 +364,7 @@ class FacebookAdsCampaignControllerTest {
               "adAccountId": "act_888",
               "name": "Experimento 37",
               "objective": "OUTCOME_TRAFFIC",
+              "status": "ACTIVE",
               "budgetMode": "CAMPAIGN",
               "experimentId": 37,
               "facebookAccountId": 88
@@ -368,6 +376,7 @@ class FacebookAdsCampaignControllerTest {
                         .content(payload))
                 .andExpect(status().isCreated());
 
+        assertThat(existingCampaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
         verify(campaignRepository, never()).save(any());
     }

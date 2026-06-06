@@ -27,6 +27,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
@@ -156,7 +157,13 @@ public class FacebookAdsCampaignController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Experiment not found: " + req.experimentId(), ex);
         }
-        if (campaignRepository.existsById(req.id())) {
+        var existingCampaign = campaignRepository.findById(req.id());
+        if (existingCampaign.isPresent()) {
+            if (!Objects.equals(existingCampaign.get().getExperiment().getId(), req.experimentId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Facebook campaign already belongs to another experiment: " + req.id());
+            }
+            existingCampaign.get().setStatus(resolveCampaignPublicationStatus(req.status()));
             experiment.setStatus(ExperimentStatus.RUNNING);
             return;
         }
@@ -173,6 +180,7 @@ public class FacebookAdsCampaignController {
         campaign.setAdAccountId(req.adAccountId());
         campaign.setName(req.name());
         campaign.setObjective(req.objective());
+        campaign.setStatus(resolveCampaignPublicationStatus(req.status()));
         campaign.setBudgetMode(req.budgetMode());
         campaign.setExperiment(experiment);
         campaign.setFacebookAccount(account);
@@ -210,6 +218,12 @@ public class FacebookAdsCampaignController {
             }
         }
         experiment.setStatus(ExperimentStatus.RUNNING);
+    }
+
+
+    // Resolve o status canônico da campanha após confirmação de publicação completa pelo worker.
+    private FacebookAdStatus resolveCampaignPublicationStatus(FacebookAdStatus status) {
+        return status != null ? status : FacebookAdStatus.ACTIVE;
     }
 
     @PostMapping("/{campaignId}/metrics")
@@ -645,6 +659,7 @@ public class FacebookAdsCampaignController {
             String adAccountId,
             String name,
             String objective,
+            FacebookAdStatus status,
             BudgetMode budgetMode,
             Long experimentId,
             Long facebookAccountId,

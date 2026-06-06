@@ -312,6 +312,8 @@ class FacebookCampaignServiceTest {
             "campaign report",
             request -> "/api/facebook-campaigns".equals(request.getPath()) && "POST".equals(request.getMethod())
         );
+        JsonNode backendPayload = objectMapper.readTree(postBackend.getBody().inputStream());
+        assertEquals("ACTIVE", backendPayload.get("status").asText());
         assertTrue(backend.getRequestCount() >= 4);
     }
 

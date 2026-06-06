@@ -618,7 +618,13 @@ components:
     CreateCampaignRequest:
       type: object
       additionalProperties: true
-      description: Payload do worker com campanha, ad sets, ads, criativos e métricas iniciais publicadas na Meta.
+      description: Payload do worker com campanha, ad sets, ads, criativos e confirmação de publicação completa na Meta.
+      properties:
+        status:
+          type: string
+          nullable: true
+          enum: [PAUSED, ACTIVE, ARCHIVED, DELETED]
+          description: Status canônico confirmado pelo worker após concluir a publicação completa; quando omitido, o backend assume ACTIVE.
     CampaignMetricsUpdateRequest:
       type: object
       additionalProperties: true

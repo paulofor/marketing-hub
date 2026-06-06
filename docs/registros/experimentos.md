@@ -3791,3 +3791,8 @@
 - causa-raiz verificada: via MCP/banco, o experimento 37 permanecia com `status='PLANNED'` e `facebook_release_requested_at` preenchido mesmo após 22 campanhas persistidas em `facebook_ads_campaign`; por isso `/api/facebook-campaigns/experiments-ready` continuava recolocando o mesmo experimento na fila do Facebook Ads Worker.
 - correção aplicada: o backend passou a excluir da fila de publicação qualquer experimento que já tenha campanha persistida, tornou o `POST /api/facebook-campaigns` idempotente para o mesmo ID de campanha, bloqueou nova campanha para o mesmo `experimentId` com `409 Conflict` e marca o experimento como `RUNNING` no registro canônico da campanha.
 - testes: executado `mvn -Dtest=FacebookAdsCampaignControllerTest test` em `backend/ads-service`, validando a deduplicação da fila, o bloqueio de duplicidade por experimento e a transição do experimento para `RUNNING` após registro da campanha.
+
+## 2026-06-06 05:10:00 UTC
+- solicitação: ajustar a confirmação da nova publicação de campanha para que o Facebook Ads Worker informe sucesso completo ao backend e o backend atualize o status da campanha.
+- correção aplicada: o worker passou a enviar `status=ACTIVE` no `POST /api/facebook-campaigns` somente após criar campanha, ad set, criativo e anúncio com sucesso; o backend passou a persistir esse status na tabela `facebook_ads_campaign`, inclusive em retry idempotente do mesmo `campaignId`.
+- documentação sincronizada: atualizado o cânone de publicação de campanha, Swagger do contrato Facebook Ads e documentação operacional do `facebook-ads-worker`.

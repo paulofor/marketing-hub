@@ -173,10 +173,12 @@ As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 "nenhum experimento disponível" para evitar falhas no agendamento. Falhas de
 conexão ao recuperar os experimentos são registradas em log e ignoradas para
 que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
-anúncio, o worker envia um `CreateCampaignRequest` para o backend via
+anúncio com sucesso na Meta, o worker envia um `CreateCampaignRequest` para o backend via
 `POST /api/facebook-campaigns`, preenchendo os identificadores de cada nível da
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
-`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). O
+`facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Essa chamada é a
+confirmação de publicação completa e por isso envia `status=ACTIVE`, permitindo que o
+backend atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato. O
 `CreateCampaignRequest` também leva `experimentAdSetId` para relacionar o
 conjunto criado na Meta ao público configurado no experimento e registrar os
 códigos retornados pelo Facebook no banco de dados do backend. O

@@ -3796,3 +3796,14 @@
 - solicitação: ajustar a confirmação da nova publicação de campanha para que o Facebook Ads Worker informe sucesso completo ao backend e o backend atualize o status da campanha.
 - correção aplicada: o worker passou a enviar `status=ACTIVE` no `POST /api/facebook-campaigns` somente após criar campanha, ad set, criativo e anúncio com sucesso; o backend passou a persistir esse status na tabela `facebook_ads_campaign`, inclusive em retry idempotente do mesmo `campaignId`.
 - documentação sincronizada: atualizado o cânone de publicação de campanha, Swagger do contrato Facebook Ads e documentação operacional do `facebook-ads-worker`.
+
+## 2026-06-06 — Hierarquia visual da tela de etapas do pipeline
+
+- solicitação: reduzir a confusão visual da tela `/pipelines` ao abrir as etapas de um pipeline, criando hierarquia de informação por cores, tamanhos de letra e organização dos blocos.
+- causa-raiz: a tela usava cartões Bootstrap genéricos com pouco contraste entre identificação do pipeline, diagnóstico do contrato, objetivo da etapa e metadados técnicos, exigindo esforço do usuário para entender a prioridade operacional.
+- correção aplicada: a tela de etapas passou a ter painel de contexto do pipeline com destaque visual, bloco de contrato operacional com status e contadores em hierarquia própria, grade de cards responsiva com número grande da etapa, cores por cartão, objetivo destacado e metadados técnicos separados em blocos menores.
+- validação visual: foi gerado screenshot local com Playwright e APIs mockadas para confirmar a renderização da nova hierarquia sem depender do backend remoto.
+- arquivos alterados:
+  - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+  - `frontend/src/pages/pipeline/PipelineCrudPage.css`
+  - `docs/registros/experimentos.md`

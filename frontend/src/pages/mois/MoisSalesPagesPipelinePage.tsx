@@ -62,16 +62,6 @@ function getResultMessage(item: MoisSalesLibrarySnapshotCaptureItem) {
   return redirectInfo || "Sem detalhe adicional";
 }
 
-function formatUrlTypeLabel(urlType: string) {
-  if (urlType === "SALES_PAGE_URL") {
-    return "URLs explícitas de página de venda";
-  }
-  if (urlType === "PRODUCT_URL") {
-    return "Fallback por URL de produto";
-  }
-  return urlType;
-}
-
 export default function MoisSalesPagesPipelinePage() {
   const [forceCapture, setForceCapture] = useState(false);
   const summaryQuery = useMoisSalesLibraryPageSummary(WORKSPACE_ID);
@@ -162,155 +152,53 @@ export default function MoisSalesPagesPipelinePage() {
           <div className="border rounded-3 p-3">
             <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
               <div>
-                <h3 className="h6 mb-1">Cobertura da origem bruta coletada</h3>
+                <h3 className="h6 mb-1">Resumo operacional</h3>
                 <p className="text-secondary small mb-0">
-                  URLs únicas vindas dos coletores, sem contar registros repetidos
-                  ou ruidosos.
+                  Apenas os totais necessários para entender a origem, a
+                  consolidação na tabela sales e o volume com página obtida.
                 </p>
               </div>
-              {collectedUrlSummaryQuery.isLoading ? (
+              {collectedUrlSummaryQuery.isLoading || summaryQuery.isLoading ? (
                 <span className="badge text-bg-secondary">Carregando...</span>
               ) : null}
             </div>
 
             {collectedUrlSummaryQuery.isError ? (
-              <div className="alert alert-warning mb-0">
-                Não foi possível carregar o resumo de URLs únicas coletadas.
+              <div className="alert alert-warning mb-3">
+                Não foi possível carregar o total bruto coletado.
               </div>
             ) : null}
 
-            {collectedUrlSummary ? (
-              <div className="d-flex flex-column gap-3">
-                <div className="row g-3">
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="bg-light rounded-3 p-3 h-100">
-                      <p className="text-secondary mb-1">URLs únicas coletadas</p>
-                      <h3 className="mb-0">
-                        {collectedUrlSummary.uniqueEffectiveUrls}
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="bg-light rounded-3 p-3 h-100">
-                      <p className="text-secondary mb-1">Já na biblioteca</p>
-                      <h3 className="mb-0">
-                        {collectedUrlSummary.operationalLibraryUrls}
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="bg-light rounded-3 p-3 h-100">
-                      <p className="text-secondary mb-1">Faltam consolidar</p>
-                      <h3 className="mb-0 text-warning">
-                        {collectedUrlSummary.missingFromOperationalLibrary}
-                      </h3>
-                    </div>
-                  </div>
-                  <div className="col-sm-6 col-lg-3">
-                    <div className="bg-light rounded-3 p-3 h-100">
-                      <p className="text-secondary mb-1">Páginas explícitas</p>
-                      <h3 className="mb-0">
-                        {collectedUrlSummary.explicitSalesPageUrls}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="row g-3">
-                  <div className="col-12 col-lg-7">
-                    <div className="table-responsive">
-                      <table className="table table-sm align-middle mb-0">
-                        <thead>
-                          <tr>
-                            <th>Origem</th>
-                            <th>URLs únicas</th>
-                            <th>Na biblioteca</th>
-                            <th>Faltam</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {collectedUrlSummary.bySource.map((item) => (
-                            <tr key={item.source}>
-                              <td>{item.source}</td>
-                              <td>{item.uniqueEffectiveUrls}</td>
-                              <td>{item.operationalLibraryUrls}</td>
-                              <td className="fw-semibold text-warning">
-                                {item.missingFromOperationalLibrary}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <div className="col-12 col-lg-5">
-                    <div className="d-flex flex-column gap-2">
-                      {collectedUrlSummary.byUrlType.map((item) => (
-                        <div
-                          className="d-flex justify-content-between gap-3 border rounded-3 p-2"
-                          key={item.urlType}
-                        >
-                          <span className="text-secondary small">
-                            {formatUrlTypeLabel(item.urlType)}
-                          </span>
-                          <strong>{item.uniqueUrls}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            <div className="row g-3">
+              <div className="col-sm-6 col-lg-4">
+                <div className="bg-light rounded-3 p-3 h-100">
+                  <p className="text-secondary mb-1">Total bruto</p>
+                  <h3 className="mb-0">
+                    {collectedUrlSummaryQuery.isLoading
+                      ? "..."
+                      : (collectedUrlSummary?.uniqueEffectiveUrls ?? 0)}
+                  </h3>
                 </div>
               </div>
-            ) : null}
-          </div>
-
-          <div className="row g-3">
-            <div className="col-sm-6 col-lg-3">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">URLs na biblioteca</p>
-                <h3 className="mb-0">
-                  {summaryQuery.isLoading ? "..." : (summary?.total ?? 0)}
-                </h3>
+              <div className="col-sm-6 col-lg-4">
+                <div className="bg-light rounded-3 p-3 h-100">
+                  <p className="text-secondary mb-1">Total na tabela de sales</p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading ? "..." : (summary?.total ?? 0)}
+                  </h3>
+                </div>
               </div>
-            </div>
-            <div className="col-sm-6 col-lg-3">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Pendentes/análise inicial</p>
-                <h3 className="mb-0">
-                  {summaryQuery.isLoading ? "..." : (summary?.pending ?? 0)}
-                </h3>
-              </div>
-            </div>
-            <div className="col-sm-6 col-lg-3">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Capturadas no modelo novo</p>
-                <h3 className="mb-0">{summary?.captured ?? 0}</h3>
-              </div>
-            </div>
-            <div className="col-sm-6 col-lg-3">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Falhas globais</p>
-                <h3 className="mb-0">{summary?.failed ?? 0}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="row g-3">
-            <div className="col-sm-6 col-lg-4">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Em captura</p>
-                <h3 className="mb-0">{summary?.capturing ?? 0}</h3>
-              </div>
-            </div>
-            <div className="col-sm-6 col-lg-4">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Analisadas</p>
-                <h3 className="mb-0">{summary?.analyzed ?? 0}</h3>
-              </div>
-            </div>
-            <div className="col-sm-6 col-lg-4">
-              <div className="border rounded-3 p-3 h-100">
-                <p className="text-secondary mb-1">Bloqueadas por cooldown</p>
-                <h3 className="mb-0">{summary?.blockedCooldown ?? 0}</h3>
+              <div className="col-sm-6 col-lg-4">
+                <div className="bg-light rounded-3 p-3 h-100">
+                  <p className="text-secondary mb-1">
+                    Total com página obtida (HTML/imagem)
+                  </p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading
+                      ? "..."
+                      : (summary?.captured ?? 0) + (summary?.analyzed ?? 0)}
+                  </h3>
+                </div>
               </div>
             </div>
           </div>

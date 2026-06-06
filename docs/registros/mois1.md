@@ -1072,6 +1072,7 @@ Arquivos alterados:
 - `mcp-server/README.md`
 - `mcp-server/AGENTS.md`
 - `AGENTS.md`
+
 ## 2026-06-06 — Correção de ambiguidade SQL no claim de referências coletadas MOIS
 
 - corrigida a causa-raiz do erro `Column 'title' in field list is ambiguous` no claim `POST /api/mois/sales-library/collected-reference-html:claim`.
@@ -1081,4 +1082,13 @@ Arquivos alterados:
 Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `docs/registros/mois1.md`
+
+## 2026-06-06 — Simplificação dos totais do pipeline de páginas de vendas MOIS
+
+- simplificada a tela `/mois/sales-pages-library/pipeline` para reduzir confusão visual e exibir apenas três indicadores principais: total bruto, total na tabela de sales e total com página obtida (HTML/imagem).
+- removidos da visão principal os detalhamentos intermediários de origem, tipo, pendências, falhas, captura, análise e cooldown, preservando o foco operacional nos números necessários para decisão.
+
+Arquivos alterados:
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/registros/mois1.md`

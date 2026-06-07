@@ -341,3 +341,34 @@
     padding: 1.15rem 1.1rem 1.15rem 1.45rem;
   }
 }
+
+.pipeline-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.pipeline-list-content {
+  min-width: 0;
+}
+
+.pipeline-list-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pipeline-list-stage-button {
+  min-width: 5.6rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .pipeline-list-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pipeline-list-action {
+    justify-content: flex-start;
+  }
+}

@@ -28,6 +28,8 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String ROUTINE_STATUS_RUNNING = "RESEARCH_RUNNING";
     private static final String CYCLE_STATUS_RUNNING = "RUNNING";
     private static final String CYCLE_STATUS_FAILED = "FAILED";
+    private static final String CYCLE_STATUS_NEEDS_MORE_RESEARCH = "NEEDS_MORE_RESEARCH";
+    private static final String CYCLE_STATUS_GENERIC = "GENERIC";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
     private static final String RESEARCH_MODE_ROUTINE_REALITY = "ROUTINE_REALITY_RESEARCH";
@@ -71,20 +73,20 @@ public class BackendRoutineResearchOrchestratorService {
         return recentCycles;
     }
 
-    /** Cria imediatamente um novo ciclo para reprocessar um nicho CNAE com ciclo falho. */
+    /** Cria imediatamente um novo ciclo para tirar o usuário de ciclos falhos, fracos ou genéricos. */
     @Transactional
-    public RecordRoutineResearchOrchestratorReprocessResult reprocessFailedCycle(Long researchCycleId) {
+    public RecordRoutineResearchOrchestratorReprocessResult reprocessCycle(Long researchCycleId) {
         LOGGER.info(
-                "Criando novo ciclo para reprocessamento pela etapa zero OPRM nichocnae (failedResearchCycleId={})",
+                "Criando novo ciclo para nova pesquisa pela etapa zero OPRM nichocnae (researchCycleId={})",
                 researchCycleId);
         OprmRoutineResearchCycle cycle = routineResearchCycleRepository
                 .findById(researchCycleId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Routine research cycle not found: " + researchCycleId));
-        if (!CYCLE_STATUS_FAILED.equals(cycle.getStatus())) {
+        if (!isReprocessableStatus(cycle.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only FAILED routine research cycles can be reprocessed: " + researchCycleId);
+                    "Only FAILED, NEEDS_MORE_RESEARCH or GENERIC routine research cycles can be reprocessed: " + researchCycleId);
         }
         OprmNicheCandidate candidate = nicheCandidateRepository
                 .findById(cycle.getSourceNicheId())
@@ -100,7 +102,7 @@ public class BackendRoutineResearchOrchestratorService {
         candidate.setUpdatedAt(now);
         OprmNicheCandidate savedCandidate = nicheCandidateRepository.save(candidate);
         LOGGER.info(
-                "Novo ciclo criado imediatamente para reprocessamento OPRM nichocnae (failedResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={}, triggerSource={})",
+                "Novo ciclo criado imediatamente para reprocessamento OPRM nichocnae (previousResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={}, triggerSource={})",
                 cycle.getId(),
                 savedCycle.getId(),
                 savedCandidate.getId(),
@@ -119,7 +121,25 @@ public class BackendRoutineResearchOrchestratorService {
                 previousRoutineResearchStatus,
                 savedCandidate.getRoutineResearchStatus(),
                 savedCandidate.getLastRoutineResearchCycleId(),
-                "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE.");
+                buildReprocessMessage(cycle.getStatus()));
+    }
+
+    /** Informa se o ciclo terminal permite nova pesquisa manual para sair de falha ou material fraco/genérico. */
+    private boolean isReprocessableStatus(String status) {
+        return CYCLE_STATUS_FAILED.equals(status)
+                || CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(status)
+                || CYCLE_STATUS_GENERIC.equals(status);
+    }
+
+    /** Monta mensagem operacional para explicar ao usuário por que o novo ciclo foi criado. */
+    private String buildReprocessMessage(String previousStatus) {
+        if (CYCLE_STATUS_FAILED.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.";
+        }
+        if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um CNAE que precisava de mais pesquisa.";
+        }
+        return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer um CNAE genérico ou sem material suficiente.";
     }
 
     /** Executa a etapa zero, marcando o nicho selecionado como em pesquisa e criando o ciclo pai. */

@@ -35,13 +35,13 @@ paths:
                   $ref: '#/components/schemas/RoutineResearchOrchestratorRecent'
   /api/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess:
     post:
-      summary: Cria imediatamente novo ciclo para reprocessar um CNAE falho.
+      summary: Cria imediatamente novo ciclo para reprocessar CNAE falho, fraco ou genérico.
       tags: [OPRM Nicho CNAE]
       parameters:
         - $ref: '#/components/parameters/ResearchCycleId'
       responses:
         '200':
-          description: Novo ciclo criado e nicho marcado como em pesquisa.
+          description: Novo ciclo criado e nicho marcado como em pesquisa para sair de FAILED, NEEDS_MORE_RESEARCH ou GENERIC.
           content:
             application/json:
               schema:
@@ -49,7 +49,7 @@ paths:
         '404':
           description: Ciclo ou nicho CNAE de origem não encontrado.
         '409':
-          description: Ciclo não está em status FAILED e não pode ser reprocessado.
+          description: Ciclo não está em status FAILED, NEEDS_MORE_RESEARCH ou GENERIC e não pode ser reprocessado.
   /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
     post:
       summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.
@@ -647,6 +647,7 @@ components:
           example: AUTO_SCORE_QUEUE
         cycleStatus:
           type: string
+          description: Status do ciclo; NEEDS_MORE_RESEARCH e GENERIC indicam material insuficiente e podem abrir novo ciclo manual pelo endpoint de reprocessamento.
           example: RUNNING
         processedAt:
           type: string
@@ -676,6 +677,10 @@ components:
           example: Cabeleireiros, manicure e pedicure
         previousCycleStatus:
           type: string
+          enum:
+            - FAILED
+            - NEEDS_MORE_RESEARCH
+            - GENERIC
           example: FAILED
         previousRoutineResearchStatus:
           type: string

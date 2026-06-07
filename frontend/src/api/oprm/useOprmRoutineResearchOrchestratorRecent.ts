@@ -50,7 +50,7 @@ export interface OprmRoutineResearchOrchestratorReprocessResult {
   message: string;
 }
 
-async function reprocessFailedCycle(
+async function createNewResearchCycle(
   researchCycleId: number,
 ): Promise<OprmRoutineResearchOrchestratorReprocessResult> {
   const response = await fetch(
@@ -61,7 +61,7 @@ async function reprocessFailedCycle(
   );
   if (!response.ok) {
     throw new Error(
-      `Não foi possível liberar o CNAE para reprocessamento (status ${response.status}).`,
+      `Não foi possível criar novo ciclo de pesquisa para o CNAE (status ${response.status}).`,
     );
   }
   return (await response.json()) as OprmRoutineResearchOrchestratorReprocessResult;
@@ -77,7 +77,7 @@ export function useOprmRoutineResearchOrchestratorRecent(limit = 10) {
 export function useReprocessOprmRoutineResearchCycle(limit = 10) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: reprocessFailedCycle,
+    mutationFn: createNewResearchCycle,
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: oprmRoutineResearchOrchestratorRecentQueryKey(limit),

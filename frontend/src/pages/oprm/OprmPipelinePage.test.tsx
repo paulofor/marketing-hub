@@ -126,7 +126,7 @@ describe("OprmPipelinePage", () => {
               routineResearchStatus: "RESEARCH_RUNNING",
               lastRoutineResearchCycleId: 3,
               message:
-                "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE.",
+                "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.",
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           );
@@ -183,7 +183,86 @@ describe("OprmPipelinePage", () => {
     });
     expect(
       await screen.findByText(
-        "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE.",
+        "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("permite criar novo ciclo quando o status precisa de mais pesquisa", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input.toString();
+        if (
+          url.includes("routine-research-orchestrator/recent-processed") &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              researchCycleId: 6,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              previousCycleStatus: "NEEDS_MORE_RESEARCH",
+              previousRoutineResearchStatus: "RESEARCH_RUNNING",
+              routineResearchStatus: "RESEARCH_RUNNING",
+              lastRoutineResearchCycleId: 6,
+              message:
+                "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um CNAE que precisava de mais pesquisa.",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("routine-research-orchestrator/recent-processed")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 5,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Cabeleireiros, manicure e pedicure",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Cabeleireiros, manicure e pedicure",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 0,
+                sourceScore: 90,
+                triggerSource: "AUTO_SCORE_QUEUE",
+                cycleStatus: "NEEDS_MORE_RESEARCH",
+                processedAt: "2026-06-07T14:11:00Z",
+                finishedAt: null,
+                errorMessage: null,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("[]", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Pesquisar novamente" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "routine-research-orchestrator/recent-processed/5/reprocess",
+        ),
+        { method: "POST" },
+      );
+    });
+    expect(
+      await screen.findByText(
+        "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um CNAE que precisava de mais pesquisa.",
       ),
     ).toBeTruthy();
   });
